@@ -1,0 +1,437 @@
+@extends('layouts.app')
+
+@section('title', 'Detail PO: ' . $po->po_number . ' — ADASI Portal')
+@section('page-title', __('Detail Purchase Order'))
+
+@section('content')
+<div class="mb-3">
+    <a href="{{ route('purchasing.purchase-orders.index') }}" class="text-decoration-none text-muted small">
+        <i class="bi bi-arrow-left me-1"></i> {{ __('Kembali ke Daftar PO') }}
+    </a>
+</div>
+
+{{-- ═══════════ SECTION A — Info PO ═══════════ --}}
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
+                @php
+                    $badgeClass = match($po->status) {
+                        'active' => 'bg-primary',
+                        'waiting_qc' => 'bg-warning text-dark',
+                        'completed' => 'bg-success',
+                        'cancelled' => 'bg-danger',
+                        default => 'bg-secondary'
+                    };
+                @endphp
+                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ str_replace('_', ' ', $po->status) }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">Supplier</div>
+                    <div class="col-md-8 fw-medium">{{ $po->quotation->supplier->name }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">Periode</div>
+                    <div class="col-md-8 fw-medium">{{ $po->quotation->purchaseRequirement->period->name ?? '-' }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">Tanggal Dibuat</div>
+                    <div class="col-md-8 fw-medium">{{ $po->created_at->format('d F Y, H:i') }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">Est. Kedatangan</div>
+                    <div class="col-md-8 fw-medium">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">Actual Arrival</div>
+                    <div class="col-md-8 fw-medium">
+                        @if($po->actual_arrival)
+                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ $po->actual_arrival->format('d F Y') }}</span>
+                        @else
+                            <span class="text-muted">Belum tiba</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">Kurs Digunakan</div>
+                    <div class="col-md-8 fw-medium">
+                        @if($rate)
+                            1 {{ $po->quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                        @else
+                            -
+                        @endif
+                    </div>
+                </div>
+                @if($po->notes)
+                <div class="row">
+                    <div class="col-md-4 text-muted small">Catatan</div>
+                    <div class="col-md-8">{{ $po->notes }}</div>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Material Table --}}
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Detail Material</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>No</th>
+                                <th>Material</th>
+                                <th>Spesifikasi</th>
+                                <th>Berat (Kg)</th>
+                                <th>Harga/Kg</th>
+                                <th>Amount</th>
+                                <th>IDR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php $totalAmount = 0; $totalIdr = 0; @endphp
+                            @foreach($po->quotation->items as $idx => $item)
+                                @php
+                                    $idr = $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                                    $totalAmount += $item->amount;
+                                    $totalIdr += $idr;
+                                @endphp
+                                <tr>
+                                    <td class="text-center">{{ $idx + 1 }}</td>
+                                    <td class="fw-medium">{{ $item->prItem->material_name }}</td>
+                                    <td class="text-center" style="font-size: 0.8rem;">
+                                        {{ $item->prItem->shape }}
+                                        @if($item->prItem->thickness) T:{{ $item->prItem->thickness }} @endif
+                                        @if($item->prItem->d_inner) ID:{{ $item->prItem->d_inner }} @endif
+                                        @if($item->prItem->d_outer) OD:{{ $item->prItem->d_outer }} @endif
+                                        @if($item->prItem->width) W:{{ $item->prItem->width }} @endif
+                                        @if($item->prItem->length) L:{{ $item->prItem->length }} @endif
+                                    </td>
+                                    <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                                    <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
+                                    <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
+                                    <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="5" class="text-end">GRAND TOTAL</td>
+                                <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
+                                <td class="text-end text-primary">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════════ SECTION C — Timeline ═══════════ --}}
+    <div class="col-lg-4">
+        {{-- Chat & Action Card --}}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">{{ __('Negosiasi & Chat') }}</h6>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('purchasing.conversations.start.po', $po->id) }}" method="POST" data-chat-start-form>
+                    @csrf
+                    <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-chat-dots me-2"></i> {{ __('Chat dengan Supplier') }}</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </form>
+                <div class="mt-3 text-muted small text-center">
+                    {{ __('Gunakan fitur ini untuk komunikasi terkait pengiriman atau komplain PO ini.') }}
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Timeline</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="position-relative">
+                    <div class="position-absolute h-100 border-start" style="left: 10px; top: 0; border-color: #dee2e6 !important;"></div>
+
+                    {{-- PO Created --}}
+                    <div class="position-relative mb-4 ps-4">
+                        <div class="position-absolute bg-primary rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
+                        <h6 class="mb-1 text-primary fw-bold" style="font-size: 0.85rem;">PO Dibuat</h6>
+                        <div class="small text-muted">{{ $po->created_at->format('d M Y, H:i') }}</div>
+                    </div>
+
+                    {{-- Document Updates --}}
+                    @foreach($po->documents->sortBy('updated_at') as $doc)
+                        @if($doc->status !== 'pending')
+                        <div class="position-relative mb-4 ps-4">
+                            <div class="position-absolute bg-info rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
+                            <h6 class="mb-1 text-info fw-bold" style="font-size: 0.85rem;">
+                                @php
+                                    $docLabels = [
+                                        'invoice' => 'Invoice',
+                                        'bl' => 'Bill of Lading',
+                                        'packing_list' => 'Packing List',
+                                        'form_e' => 'Form-E',
+                                    ];
+                                @endphp
+                                {{ $docLabels[$doc->doc_type] ?? $doc->doc_type }}: {{ ucfirst($doc->status) }}
+                            </h6>
+                            <div class="small text-muted">{{ $doc->updated_at->format('d M Y, H:i') }}</div>
+                        </div>
+                        @endif
+                    @endforeach
+
+                    {{-- Est. Arrival --}}
+                    <div class="position-relative mb-4 ps-4">
+                        <div class="position-absolute {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'bg-warning' : 'bg-light border' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
+                        <h6 class="mb-1 {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Estimasi Kedatangan</h6>
+                        <div class="small text-muted">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}</div>
+                    </div>
+
+                    {{-- Actual Arrival --}}
+                    <div class="position-relative ps-4">
+                        <div class="position-absolute {{ $po->actual_arrival ? 'bg-success' : 'bg-light border' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
+                        <h6 class="mb-1 {{ $po->actual_arrival ? 'text-success fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Material Tiba</h6>
+                        @if($po->actual_arrival)
+                            <div class="small text-muted">{{ $po->actual_arrival->format('d M Y') }}</div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Confirm Arrival --}}
+        @if($po->status === 'active' && !$po->actual_arrival)
+            <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po->id) }}" method="POST" id="arrivalForm">
+                @csrf
+                <button type="button" class="btn btn-success w-100 mb-3 {{ $allDocsComplete ? '' : 'btn-outline-success' }}" id="btnConfirmArrival">
+                    <i class="bi bi-box-seam me-1"></i> {{ __('Konfirmasi Material Tiba') }}
+                </button>
+            </form>
+        @endif
+    </div>
+</div>
+
+{{-- ═══════════ SECTION B — Tracking Dokumen Impor ═══════════ --}}
+<div class="card border-0 shadow-sm mb-5">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold">{{ __('Tracking Dokumen Impor') }}</h6>
+        <span class="badge bg-light text-dark border px-3 py-2" id="docProgressBadge">{{ $completedDocs }}/{{ $totalDocs }} {{ __('Dokumen Selesai') }}</span>
+    </div>
+    <div class="card-body">
+        {{-- Progress Bar --}}
+        <div class="progress mb-4" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar" id="docProgressBar"
+                 style="width: {{ $totalDocs > 0 ? ($completedDocs/$totalDocs*100) : 0 }}%"></div>
+        </div>
+
+        @if($allDocsComplete)
+            <div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <span class="fw-medium">Semua dokumen impor lengkap ✅</span>
+            </div>
+        @endif
+
+        <div class="row g-3">
+            @php
+                $docConfig = [
+                    'invoice' => ['label' => 'Invoice', 'icon' => 'bi-receipt', 'statuses' => ['pending' => __('Belum Ada'), 'received' => __('Diterima'), 'verified' => __('Diverifikasi')]],
+                    'bl' => ['label' => 'Bill of Lading', 'icon' => 'bi-truck', 'statuses' => ['pending' => __('Belum Ada'), 'issued' => __('Sudah Diterbitkan'), 'done' => __('Diterima')]],
+                    'packing_list' => ['label' => 'Packing List', 'icon' => 'bi-list-check', 'statuses' => ['pending' => __('Belum Ada'), 'received' => __('Diterima'), 'verified' => __('Diverifikasi')]],
+                    'form_e' => ['label' => 'Form-E', 'icon' => 'bi-file-earmark-text', 'statuses' => ['pending' => __('Belum Ada'), 'processing' => __('Sedang Diproses'), 'done' => __('Selesai')]],
+                ];
+            @endphp
+
+            @foreach($po->documents as $doc)
+                @php
+                    $config = $docConfig[$doc->doc_type] ?? ['label' => $doc->doc_type, 'icon' => 'bi-file', 'statuses' => []];
+                    $statusLabel = $config['statuses'][$doc->status] ?? $doc->status;
+                    $statusBadge = match($doc->status) {
+                        'pending' => 'bg-secondary',
+                        'received', 'issued', 'processing' => 'bg-info',
+                        'verified', 'done' => 'bg-success',
+                        default => 'bg-secondary'
+                    };
+                @endphp
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border h-100" id="doc-card-{{ $doc->id }}">
+                        <div class="card-body text-center py-4">
+                            <i class="bi {{ $config['icon'] }} fs-2 mb-2 d-block {{ $doc->status === 'pending' ? 'text-muted' : 'text-primary' }}"></i>
+                            <h6 class="fw-bold mb-2">{{ $config['label'] }}</h6>
+                            <span class="badge {{ $statusBadge }} mb-2 doc-status-badge" id="doc-badge-{{ $doc->id }}">{{ $statusLabel }}</span>
+                            <div class="small text-muted mb-3" id="doc-date-{{ $doc->id }}">
+                                {{ $doc->status !== 'pending' ? $doc->updated_at->format('d M Y, H:i') : '' }}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-update-doc"
+                                    data-doc-id="{{ $doc->id }}"
+                                    data-doc-type="{{ $doc->doc_type }}"
+                                    data-doc-label="{{ $config['label'] }}"
+                                    data-doc-status="{{ $doc->status }}"
+                                    data-doc-statuses='@json($config['statuses'])'>
+                                <i class="bi bi-pencil-square me-1"></i> {{ __('Update Status') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
+{{-- Update Document Modal --}}
+<div class="modal fade" id="updateDocModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="modalDocTitle">{{ __('Update Status Dokumen') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modalDocId">
+                <div class="mb-3">
+                    <label class="form-label fw-medium">{{ __('Status Baru') }}</label>
+                    <select class="form-select" id="modalDocStatus"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('Batal') }}</button>
+                <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSaveDocStatus">
+                    <span class="spinner-border spinner-border-sm d-none me-1" id="docSpinner"></span>
+                    {{ __('Simpan') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+    // Open modal
+    $('.btn-update-doc').on('click', function() {
+        const docId = $(this).data('doc-id');
+        const docLabel = $(this).data('doc-label');
+        const currentStatus = $(this).data('doc-status');
+        const statuses = $(this).data('doc-statuses');
+
+        $('#modalDocId').val(docId);
+        $('#modalDocTitle').text('Update: ' + docLabel);
+
+        const select = $('#modalDocStatus');
+        select.empty();
+        for (const [key, label] of Object.entries(statuses)) {
+            select.append(`<option value="${key}" ${key === currentStatus ? 'selected' : ''}>${label}</option>`);
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('updateDocModal'));
+        modal.show();
+    });
+
+    // Save via AJAX
+    $('#btnSaveDocStatus').on('click', function() {
+        const docId = $('#modalDocId').val();
+        const newStatus = $('#modalDocStatus').val();
+
+        $('#docSpinner').removeClass('d-none');
+        $(this).prop('disabled', true);
+
+        $.ajax({
+            url: '/purchasing/po-documents/' + docId,
+            method: 'PUT',
+            data: {
+                _token: '{{ csrf_token() }}',
+                status: newStatus
+            },
+            success: function(res) {
+                if (res.success) {
+                    // Update badge
+                    const statusLabels = {
+                        'pending': @json(__('Belum Ada')), 'received': @json(__('Diterima')), 'verified': @json(__('Diverifikasi')),
+                        'issued': @json(__('Sudah Diterbitkan')), 'processing': @json(__('Sedang Diproses')), 'done': @json(__('Selesai'))
+                    };
+                    const statusClasses = {
+                        'pending': 'bg-secondary', 'received': 'bg-info', 'verified': 'bg-success',
+                        'issued': 'bg-info', 'processing': 'bg-info', 'done': 'bg-success'
+                    };
+
+                    const badge = $('#doc-badge-' + docId);
+                    badge.text(statusLabels[res.doc.status] || res.doc.status);
+                    badge.attr('class', 'badge mb-2 doc-status-badge ' + (statusClasses[res.doc.status] || 'bg-secondary'));
+                    $('#doc-date-' + docId).text(res.doc.updated_at);
+
+                    // Update the button's data-doc-status
+                    $(`.btn-update-doc[data-doc-id="${docId}"]`).data('doc-status', res.doc.status);
+
+                    // Recalculate progress
+                    const completedStatuses = ['verified', 'done'];
+                    let completed = 0;
+                    const total = {{ $totalDocs }};
+                    $('.doc-status-badge').each(function() {
+                        const text = $(this).text();
+                        if (text === 'Diverifikasi' || text === 'Selesai' || text === 'Diterima') {
+                            // Check actual status from data
+                        }
+                    });
+                    // Simpler: reload progress from DOM
+                    completed = $('.doc-status-badge').filter(function() {
+                        const cls = $(this).attr('class');
+                        return cls.includes('bg-success');
+                    }).length;
+
+                    const pct = total > 0 ? (completed / total * 100) : 0;
+                    $('#docProgressBar').css('width', pct + '%');
+                    $('#docProgressBadge').text(completed + '/' + total + ' ' + @json(__('Dokumen Selesai')));
+
+                    if (completed === total) {
+                        if ($('#allDocsAlert').length === 0) {
+                            $('.progress').after('<div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert"><i class="bi bi-check-circle-fill me-2 fs-5"></i><span class="fw-medium">Semua dokumen impor lengkap ✅</span></div>');
+                        }
+                    }
+
+                    bootstrap.Modal.getInstance(document.getElementById('updateDocModal')).hide();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: @json(__('Berhasil!')),
+                        text: res.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            },
+            error: function(xhr) {
+                Swal.fire(@json(__('Error')), @json(__('Gagal memperbarui status dokumen.')), 'error');
+            },
+            complete: function() {
+                $('#docSpinner').addClass('d-none');
+                $('#btnSaveDocStatus').prop('disabled', false);
+            }
+        });
+    });
+
+    // Confirm Arrival
+    $('#btnConfirmArrival').on('click', function() {
+        Swal.fire({
+            title: @json(__('Konfirmasi Material Tiba?')),
+            text: @json(__('Tanggal kedatangan akan diset hari ini dan QC akan dinotifikasi.')),
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: @json(__('Ya, Konfirmasi!')),
+            cancelButtonText: @json(__('Batal'))
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#arrivalForm').submit();
+            }
+        });
+    });
+</script>
+@endpush

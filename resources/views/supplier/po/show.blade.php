@@ -1,0 +1,151 @@
+@extends('layouts.app')
+
+@section('title', 'Detail PO: ' . $po->po_number . ' — ADASI Portal')
+@section('page-title', __('Detail Purchase Order'))
+
+@section('content')
+<div class="mb-3">
+    <a href="{{ route('supplier.purchase-orders.index') }}" class="text-decoration-none text-muted small">
+        <i class="bi bi-arrow-left me-1"></i> {{ __('Kembali ke Daftar PO') }}
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        {{-- PO Info --}}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
+                @php
+                    $badgeClass = match($po->status) {
+                        'active' => 'bg-primary',
+                        'waiting_qc' => 'bg-warning text-dark',
+                        'completed' => 'bg-success',
+                        default => 'bg-secondary'
+                    };
+                @endphp
+                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ __(ucwords(str_replace('_', ' ', $po->status))) }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">{{ __('Tanggal Dibuat') }}</div>
+                    <div class="col-md-8 fw-medium">{{ $po->created_at->format('d F Y, H:i') }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">{{ __('Estimasi Kedatangan') }}</div>
+                    <div class="col-md-8 fw-medium">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">{{ __('Actual Arrival') }}</div>
+                    <div class="col-md-8 fw-medium">
+                        @if($po->actual_arrival)
+                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ $po->actual_arrival->format('d F Y') }}</span>
+                        @else
+                            <span class="text-muted">{{ __('Belum tiba') }}</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 text-muted small">{{ __('Kurs') }}</div>
+                    <div class="col-md-8 fw-medium">
+                        @if($rate)
+                            1 {{ $po->quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                        @else
+                            -
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Material Table --}}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">{{ __('Detail Material') }}</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>{{ __('No') }}</th>
+                                <th>{{ __('Material') }}</th>
+                                <th>{{ __('Weight (Kg)') }}</th>
+                                <th>{{ __('Harga/Kg') }}</th>
+                                <th>Amount</th>
+                                <th>IDR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php $totalAmount = 0; $totalIdr = 0; @endphp
+                            @foreach($po->quotation->items as $idx => $item)
+                                @php
+                                    $idr = $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                                    $totalAmount += $item->amount;
+                                    $totalIdr += $idr;
+                                @endphp
+                                <tr>
+                                    <td class="text-center">{{ $idx + 1 }}</td>
+                                    <td class="fw-medium">{{ $item->prItem->material_name }}</td>
+                                    <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                                    <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
+                                    <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
+                                    <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="4" class="text-end">{{ __('TOTAL') }}</td>
+                                <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
+                                <td class="text-end text-primary">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {{-- Document Status (read-only for supplier) --}}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">{{ __('Status Dokumen Impor') }}</h6>
+            </div>
+            <div class="card-body">
+                @php
+                    $docLabels = [
+                        'invoice' => 'Invoice',
+                        'bl' => 'Bill of Lading',
+                        'packing_list' => 'Packing List',
+                        'form_e' => 'Form-E',
+                    ];
+                    $statusLabels = [
+                        'pending' => __('Belum Ada'),
+                        'received' => __('Diterima'),
+                        'verified' => __('Diverifikasi'),
+                        'issued' => __('Sudah Diterbitkan'),
+                        'processing' => __('Sedang Diproses'),
+                        'done' => __('Selesai')
+                    ];
+                @endphp
+                @foreach($po->documents as $doc)
+                    @php
+                        $statusBadge = match($doc->status) {
+                            'pending' => 'bg-secondary',
+                            'received', 'issued', 'processing' => 'bg-info',
+                            'verified', 'done' => 'bg-success',
+                            default => 'bg-secondary'
+                        };
+                    @endphp
+                    <div class="d-flex justify-content-between align-items-center py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
+                        <span class="fw-medium">{{ $docLabels[$doc->doc_type] ?? $doc->doc_type }}</span>
+                        <span class="badge {{ $statusBadge }}">{{ $statusLabels[$doc->status] ?? $doc->status }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

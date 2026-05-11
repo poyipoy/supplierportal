@@ -1,0 +1,63 @@
+<?php
+
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Purchasing\PurchasingController;
+use App\Http\Controllers\Supplier\SupplierController;
+use App\Http\Controllers\Qc\QcController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Guest / Public Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+});
+
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Admin Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Purchasing Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:purchasing'])->prefix('purchasing')->name('purchasing.')->group(function () {
+    Route::get('/dashboard', [PurchasingController::class, 'dashboard'])->name('dashboard');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Supplier Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+    Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
+});
+
+/*
+|--------------------------------------------------------------------------
+| QC Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:qc'])->prefix('qc')->name('qc.')->group(function () {
+    Route::get('/dashboard', [QcController::class, 'dashboard'])->name('dashboard');
+});
