@@ -27,6 +27,6 @@ class NotificationController extends Controller
     public function markAllRead()
     {
         auth()->user()->unreadNotifications->markAsRead();
-        return back()->with('success', __('Semua notifikasi telah ditandai dibaca.'));
+        return back()->with('success', 'Semua notifikasi telah ditandai dibaca.');
     }
 }

@@ -29,7 +29,7 @@ class ClaimController extends Controller
         ])->findOrFail($id);
 
         if ($claim->supplier_id !== auth()->id()) {
-            abort(403, __('Akses ditolak.'));
+            abort(403, 'Akses ditolak.');
         }
 
         return view('supplier.claims.show', compact('claim'));
@@ -40,7 +40,7 @@ class ClaimController extends Controller
         $claim = MaterialClaim::findOrFail($id);
 
         if ($claim->supplier_id !== auth()->id()) {
-            abort(403, __('Akses ditolak.'));
+            abort(403, 'Akses ditolak.');
         }
 
         $request->validate([
@@ -71,14 +71,12 @@ class ClaimController extends Controller
         foreach ($purchasingUsers as $pUser) {
             $pUser->notify(new SystemNotification(
                 'Respons Klaim Diterima',
-                'Supplier telah merespons klaim untuk PO :po_number.',
+                'Supplier telah merespons klaim untuk PO ' . $claim->purchaseOrder->po_number . '.',
                 route('purchasing.claims.show', $claim->id),
-                'bi-reply text-primary',
-                [],
-                ['po_number' => $claim->purchaseOrder->po_number]
+                'bi-reply text-primary'
             ));
         }
 
-        return redirect()->route('supplier.claims.show', $claim->id)->with('success', __('Respons berhasil dikirim.'));
+        return redirect()->route('supplier.claims.show', $claim->id)->with('success', 'Respons berhasil dikirim.');
     }
 }

@@ -36,12 +36,12 @@ class MaterialClaimController extends Controller
             ->findOrFail($inspection_id);
 
         if ($inspection->status !== 'ng') {
-            return redirect()->route('purchasing.claims.index')->with('error', __('Inspeksi ini bukan NG, tidak perlu diklaim.'));
+            return redirect()->route('purchasing.claims.index')->with('error', 'Inspeksi ini bukan NG, tidak perlu diklaim.');
         }
 
         // Pastikan belum ada klaim aktif
         if (MaterialClaim::where('inspection_id', $inspection_id)->whereIn('status', ['pending', 'responded', 'escalated'])->exists()) {
-            return redirect()->route('purchasing.claims.index')->with('error', __('Klaim sudah dibuat untuk inspeksi ini.'));
+            return redirect()->route('purchasing.claims.index')->with('error', 'Klaim sudah dibuat untuk inspeksi ini.');
         }
 
         return view('purchasing.claims.create', compact('inspection'));
@@ -74,18 +74,13 @@ class MaterialClaimController extends Controller
         if ($supplierUser) {
             $supplierUser->notify(new SystemNotification(
                 'Klaim Material Baru',
-                'Anda menerima klaim baru untuk PO :po_number. Harap direspons sebelum :deadline.',
+                'Anda menerima klaim baru untuk PO ' . $inspection->purchaseOrder->po_number . '. Harap direspons sebelum ' . \Carbon\Carbon::parse($claim->deadline)->format('d M Y') . '.',
                 route('supplier.claims.show', $claim->id),
-                'bi-exclamation-octagon text-danger',
-                [],
-                [
-                    'po_number' => $inspection->purchaseOrder->po_number,
-                    'deadline' => \Carbon\Carbon::parse($claim->deadline)->format('d M Y'),
-                ]
+                'bi-exclamation-octagon text-danger'
             ));
         }
 
-        return redirect()->route('purchasing.claims.show', $claim->id)->with('success', __('Klaim berhasil dikirim ke supplier.'));
+        return redirect()->route('purchasing.claims.show', $claim->id)->with('success', 'Klaim berhasil dikirim ke supplier.');
     }
 
     public function show($id)
@@ -105,7 +100,7 @@ class MaterialClaimController extends Controller
         $claim = MaterialClaim::findOrFail($id);
         
         if ($claim->status !== 'responded') {
-            return back()->with('error', __('Hanya klaim yang sudah direspons yang dapat diselesaikan.'));
+            return back()->with('error', 'Hanya klaim yang sudah direspons yang dapat diselesaikan.');
         }
 
         $claim->update(['status' => 'resolved']);
@@ -121,14 +116,12 @@ class MaterialClaimController extends Controller
         if ($supplierUser) {
             $supplierUser->notify(new SystemNotification(
                 'Klaim Material Selesai',
-                'Klaim untuk PO :po_number telah ditandai selesai oleh Purchasing.',
+                'Klaim untuk PO ' . $claim->purchaseOrder->po_number . ' telah ditandai selesai oleh Purchasing.',
                 route('supplier.claims.show', $claim->id),
-                'bi-check-circle text-success',
-                [],
-                ['po_number' => $claim->purchaseOrder->po_number]
+                'bi-check-circle text-success'
             ));
         }
 
-        return back()->with('success', __('Klaim telah ditandai selesai.'));
+        return back()->with('success', 'Klaim telah ditandai selesai.');
     }
 }

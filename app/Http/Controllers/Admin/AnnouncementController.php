@@ -24,7 +24,7 @@ class AnnouncementController extends Controller
             'created_by' => auth()->id(),
             'published_at' => $request->has('is_published') ? now() : null,
         ]);
-        return redirect()->route('admin.announcements.index')->with('success', __('Pengumuman berhasil dibuat.'));
+        return redirect()->route('admin.announcements.index')->with('success', "Pengumuman berhasil dibuat.");
     }
 
     public function edit(Announcement $announcement) { return view('admin.announcements.edit', compact('announcement')); }
@@ -36,18 +36,18 @@ class AnnouncementController extends Controller
             'title' => $request->title, 'content' => $request->content,
             'published_at' => $request->has('is_published') ? ($announcement->published_at ?? now()) : null,
         ]);
-        return redirect()->route('admin.announcements.index')->with('success', __('Pengumuman berhasil diperbarui.'));
+        return redirect()->route('admin.announcements.index')->with('success', "Pengumuman berhasil diperbarui.");
     }
 
     public function destroy(Announcement $announcement)
     {
         $announcement->delete();
-        return redirect()->route('admin.announcements.index')->with('success', __('Pengumuman berhasil dihapus.'));
+        return redirect()->route('admin.announcements.index')->with('success', "Pengumuman berhasil dihapus.");
     }
 
     public function togglePublish(Announcement $announcement)
     {
         $announcement->update(['published_at' => $announcement->published_at ? null : now()]);
-        return back()->with('success', $announcement->published_at ? __('Pengumuman dipublish.') : __('Pengumuman ditarik.'));
+        return back()->with('success', $announcement->published_at ? "Pengumuman dipublish." : "Pengumuman ditarik.");
     }
 }

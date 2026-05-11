@@ -73,11 +73,11 @@ class UserController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', __('User berhasil ditambahkan.'));
+            return redirect()->route('admin.users.index')->with('success', "User berhasil ditambahkan.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', __('Terjadi kesalahan: :message', ['message' => $e->getMessage()]));
+            return back()->withInput()->with('error', "Terjadi kesalahan: {$e->getMessage()}");
         }
     }
 
@@ -148,11 +148,11 @@ class UserController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', __('Data user berhasil diperbarui.'));
+            return redirect()->route('admin.users.index')->with('success', "Data user berhasil diperbarui.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', __('Terjadi kesalahan: :message', ['message' => $e->getMessage()]));
+            return back()->withInput()->with('error', "Terjadi kesalahan: {$e->getMessage()}");
         }
     }
 
@@ -162,7 +162,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', __('Anda tidak dapat menghapus akun Anda sendiri.'));
+            return back()->with('error', "Anda tidak dapat menghapus akun Anda sendiri.");
         }
 
         try {
@@ -173,10 +173,10 @@ class UserController extends Controller
             $user->delete();
             DB::commit();
             
-            return redirect()->route('admin.users.index')->with('success', __('User berhasil dihapus.'));
+            return redirect()->route('admin.users.index')->with('success', "User berhasil dihapus.");
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', __('Gagal menghapus user, pastikan tidak ada data yang terkait erat.'));
+            return back()->with('error', "Gagal menghapus user, pastikan tidak ada data yang terkait erat.");
         }
     }
 }

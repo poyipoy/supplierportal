@@ -14,18 +14,6 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', function () { return redirect()->route('login'); });
 
-Route::post('/language/{locale}', function ($locale) {
-    if (in_array($locale, config('app.available_locales'), true)) {
-        session(['locale' => $locale]);
-
-        if (auth()->check()) {
-            auth()->user()->update(['preferred_locale' => $locale]);
-        }
-    }
-
-    return back();
-})->name('language.switch');
-
 /*
 |--------------------------------------------------------------------------
 | Authenticated (Shared) Routes

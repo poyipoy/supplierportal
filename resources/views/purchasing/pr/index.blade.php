@@ -126,7 +126,7 @@
         // Initialize DataTable
         $('#prTable').DataTable({
             language: {
-                url: @json(app()->getLocale() === 'id' ? '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' : '//cdn.datatables.net/plug-ins/1.13.6/i18n/en-GB.json'),
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json',
             },
             pageLength: 25,
             ordering: false // Let backend handle ordering or enable if needed

@@ -46,6 +46,6 @@ class AdminController extends Controller
             'valid_from' => now(),
             'created_by' => auth()->id(),
         ]);
-        return back()->with('success', __('Kurs :currency berhasil diupdate.', ['currency' => $request->currency]));
+        return back()->with('success', "Kurs {$request->currency} berhasil diupdate.");
     }
 }

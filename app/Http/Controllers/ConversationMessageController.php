@@ -93,11 +93,10 @@ class ConversationMessageController extends Controller
             $url = route("{$routePrefix}.conversations.show", $conversation->id);
 
             $partner->notify(new SystemNotification(
-                'Pesan baru dari :name',
+                'Pesan baru dari ' . $senderName,
                 $preview,
                 $url,
-                'bi-chat-dots',
-                ['name' => $senderName]
+                'bi-chat-dots'
             ));
         }
 
@@ -181,7 +180,7 @@ class ConversationMessageController extends Controller
             'context_type' => $conversation->conversable_type === \App\Models\PurchaseRequirement::class ? 'PR' : 'PO',
             'partner_name' => $this->displayName($partner),
             'partner_role' => $partner?->role,
-            'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : __('Belum ada pesan'),
+            'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : 'Belum ada pesan',
             'latest_time' => $latestMessage?->created_at?->diffForHumans(),
             'latest_at' => $latestMessage?->created_at?->toIso8601String(),
             'unread_count' => $conversation->unreadCountFor(auth()->id()),
@@ -193,10 +192,10 @@ class ConversationMessageController extends Controller
         return [
             'id' => $message->id,
             'sender_id' => $message->sender_id,
-            'sender_name' => $message->sender?->name ?? __('User'),
+            'sender_name' => $message->sender?->name ?? 'User',
             'sender' => [
                 'id' => $message->sender_id,
-                'name' => $message->sender?->name ?? __('User'),
+                'name' => $message->sender?->name ?? 'User',
             ],
             'body' => $message->body,
             'created_at' => $message->created_at?->toIso8601String(),
@@ -208,7 +207,7 @@ class ConversationMessageController extends Controller
     private function displayName(?User $user): string
     {
         if (!$user) {
-            return __('User');
+            return 'User';
         }
 
         if ($user->role === 'supplier') {

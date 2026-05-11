@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', __('ADASI Supplier Portal'))</title>
+    <title>@yield('title', 'ADASI Supplier Portal')</title>
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -408,9 +408,6 @@
 
     <!-- Custom JS -->
     <script>
-        window.adasiLocale = @json(app()->getLocale());
-        window.adasiDataTableLanguageUrl = @json(app()->getLocale() === 'id' ? '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' : '//cdn.datatables.net/plug-ins/1.13.6/i18n/en-GB.json');
-
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainWrapper = document.getElementById('mainWrapper');
@@ -438,16 +435,6 @@
                     document.getElementById('sidebar').classList.add('collapsed');
                     document.getElementById('mainWrapper').classList.add('expanded');
                 }
-            }
-        });
-
-        $(function() {
-            if ($.fn.DataTable) {
-                $('.datatable').DataTable({
-                    language: { url: window.adasiDataTableLanguageUrl },
-                    pageLength: 25,
-                    ordering: false
-                });
             }
         });
 

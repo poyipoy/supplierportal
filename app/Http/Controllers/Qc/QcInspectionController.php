@@ -41,12 +41,12 @@ class QcInspectionController extends Controller
         $po = PurchaseOrder::with(['quotation.supplier', 'quotation.items.prItem'])->findOrFail($po_id);
 
         if ($po->status !== 'waiting_qc') {
-            return redirect()->route('qc.inspections.index')->with('error', __('PO ini tidak dalam status Menunggu QC.'));
+            return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak dalam status Menunggu QC.');
         }
 
         // Cek apakah sudah pernah diinspeksi
         if (QcInspection::where('po_id', $po->id)->exists()) {
-            return redirect()->route('qc.inspections.index')->with('error', __('PO ini sudah pernah diinspeksi.'));
+            return redirect()->route('qc.inspections.index')->with('error', 'PO ini sudah pernah diinspeksi.');
         }
 
         return view('qc.inspections.create', compact('po'));
@@ -60,7 +60,7 @@ class QcInspectionController extends Controller
         $po = PurchaseOrder::with(['quotation.supplier', 'quotation.items.prItem'])->findOrFail($po_id);
 
         if ($po->status !== 'waiting_qc') {
-            return redirect()->route('qc.inspections.index')->with('error', __('PO ini tidak valid untuk diinspeksi.'));
+            return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak valid untuk diinspeksi.');
         }
 
         $request->validate([
@@ -139,11 +139,9 @@ class QcInspectionController extends Controller
                     /** @var User $pUser */
                     $pUser->notify(new SystemNotification(
                         'Inspeksi QC Selesai',
-                        'Material dari :po_number telah lulus inspeksi QC',
+                        'Material dari ' . $po->po_number . ' telah lulus inspeksi QC',
                         route('purchasing.purchase-orders.show', $po->id),
-                        'bi-check-circle text-success',
-                        [],
-                        ['po_number' => $po->po_number]
+                        'bi-check-circle text-success'
                     ));
                 }
             } else {
@@ -152,22 +150,20 @@ class QcInspectionController extends Controller
                     /** @var User $pUser */
                     $pUser->notify(new SystemNotification(
                         'Material NG Ditemukan',
-                        'Material dari :po_number dinyatakan NG oleh QC. Silakan ajukan klaim ke supplier.',
+                        'Material dari ' . $po->po_number . ' dinyatakan NG oleh QC. Silakan ajukan klaim ke supplier.',
                         route('purchasing.claims.create', $inspection->id),
-                        'bi-exclamation-triangle text-danger',
-                        [],
-                        ['po_number' => $po->po_number]
+                        'bi-exclamation-triangle text-danger'
                     ));
                 }
             }
 
             DB::commit();
 
-            return redirect()->route('qc.inspections.show', $inspection->id)->with('success', __('Hasil inspeksi berhasil disimpan.'));
+            return redirect()->route('qc.inspections.show', $inspection->id)->with('success', 'Hasil inspeksi berhasil disimpan.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', __('Gagal menyimpan inspeksi: :message', ['message' => $e->getMessage()]));
+            return back()->withInput()->with('error', 'Gagal menyimpan inspeksi: ' . $e->getMessage());
         }
     }
 

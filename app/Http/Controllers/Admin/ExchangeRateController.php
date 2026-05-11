@@ -42,6 +42,6 @@ class ExchangeRateController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return back()->with('success', __('Kurs :currency baru berhasil ditambahkan.', ['currency' => $request->currency]));
+        return back()->with('success', "Kurs {$request->currency} baru berhasil ditambahkan.");
     }
 }

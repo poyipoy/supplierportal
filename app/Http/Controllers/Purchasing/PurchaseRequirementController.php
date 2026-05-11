@@ -43,7 +43,7 @@ class PurchaseRequirementController extends Controller
 
         if ($periods->isEmpty()) {
             return redirect()->route('purchasing.requirements.index')
-                ->with('error', __('Tidak ada periode aktif (open). Silakan hubungi Admin untuk membuka periode.'));
+                ->with('error', 'Tidak ada periode aktif (open). Silakan hubungi Admin untuk membuka periode.');
         }
 
         return view('purchasing.pr.create', compact('periods'));
@@ -106,24 +106,22 @@ class PurchaseRequirementController extends Controller
                 foreach ($admins as $admin) {
                     $admin->notify(new \App\Notifications\SystemNotification(
                         'Permintaan Material Baru',
-                        'PR baru :pr_number telah diajukan oleh :name',
+                        "PR baru {$pr->pr_number} telah diajukan oleh " . auth()->user()->name,
                         route('purchasing.requirements.show', $pr->id),
                         'bi-clipboard-plus text-primary',
-                        [],
-                        ['pr_number' => $pr->pr_number, 'name' => auth()->user()->name]
                     ));
                 }
             }
 
             $message = $request->action === 'submitted'
-                ? __('Permintaan material berhasil diajukan!')
-                : __('Permintaan material berhasil disimpan sebagai draft.');
+                ? "Permintaan material berhasil diajukan!"
+                : "Permintaan material berhasil disimpan sebagai draft.";
 
             return redirect()->route('purchasing.requirements.index')->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', __('Terjadi kesalahan sistem saat menyimpan data: :message', ['message' => $e->getMessage()]));
+            return back()->withInput()->with('error', 'Terjadi kesalahan sistem saat menyimpan data: ' . $e->getMessage());
         }
     }
 
@@ -135,7 +133,7 @@ class PurchaseRequirementController extends Controller
         $pr = PurchaseRequirement::with(['period', 'items'])->findOrFail($id);
 
         if ($pr->created_by !== auth()->id()) {
-            abort(403, __('Unauthorized action.'));
+            abort(403, "Unauthorized action.");
         }
 
         return view('purchasing.pr.show', compact('pr'));
@@ -150,7 +148,7 @@ class PurchaseRequirementController extends Controller
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
             return redirect()->route('purchasing.requirements.index')
-                ->with('error', __('Anda tidak dapat mengedit permintaan ini.'));
+                ->with('error', "Anda tidak dapat mengedit permintaan ini.");
         }
 
         $periods = Period::where('status', 'open')
@@ -169,7 +167,7 @@ class PurchaseRequirementController extends Controller
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
             return redirect()->route('purchasing.requirements.index')
-                ->with('error', __('Anda tidak dapat mengedit permintaan ini.'));
+                ->with('error', "Anda tidak dapat mengedit permintaan ini.");
         }
 
         $request->validate([
@@ -242,7 +240,7 @@ class PurchaseRequirementController extends Controller
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
             return redirect()->route('purchasing.requirements.index')
-                ->with('error', __('Permintaan material tidak dapat dihapus karena sudah diproses.'));
+                ->with('error', "Permintaan material tidak dapat dihapus karena sudah diproses.");
         }
 
         try {
@@ -252,10 +250,10 @@ class PurchaseRequirementController extends Controller
             DB::commit();
 
             return redirect()->route('purchasing.requirements.index')
-                ->with('success', __('Permintaan material berhasil dihapus.'));
+                ->with('success', 'Permintaan material berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', __('Terjadi kesalahan saat menghapus data.'));
+            return back()->with('error', 'Terjadi kesalahan saat menghapus data.');
         }
     }
 }
