@@ -55,9 +55,16 @@ class NewPasswordController extends Controller
         // If the password was successfully reset, we will redirect the user back to
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
+        $message = match ($status) {
+            Password::PASSWORD_RESET => 'Password berhasil direset.',
+            Password::INVALID_TOKEN => 'Token reset password tidak valid.',
+            Password::INVALID_USER => 'Kami tidak menemukan pengguna dengan alamat email tersebut.',
+            default => 'Gagal mereset password.',
+        };
+
         return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
+                    ? redirect()->route('login')->with('status', $message)
                     : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+                        ->withErrors(['email' => $message]);
     }
 }

@@ -1,28 +1,28 @@
 @extends('layouts.app')
 
 @section('title', 'Klaim Material — ADASI Portal')
-@section('page-title', __('Klaim Material'))
+@section('page-title', 'Klaim Material')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-semibold">{{ __('Daftar Klaim Material dari ADASI') }}</h5>
+        <h5 class="mb-0 fw-semibold">Daftar Klaim Material dari ADASI</h5>
     </div>
     <div class="card-body">
         <div class="alert alert-warning small mb-4">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> {!! __('Daftar di bawah adalah klaim material NG (Not Good) yang diajukan oleh tim Purchasing ADASI. Harap segera merespons klaim yang berstatus <strong>PENDING</strong> sebelum batas waktu (deadline).') !!}
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> Daftar di bawah adalah klaim material NG (Not Good) yang diajukan oleh tim Purchasing ADASI. Harap segera merespons klaim yang berstatus <strong>PENDING</strong> sebelum batas waktu (deadline).
         </div>
         
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="claimTable" style="width: 100%;">
                 <thead class="table-light">
                     <tr>
-                        <th>{{ __('ID Klaim') }}</th>
-                        <th>{{ __('Nomor PO') }}</th>
-                        <th>{{ __('Tanggal Diajukan') }}</th>
-                        <th>{{ __('Deadline') }}</th>
-                        <th class="text-center">{{ __('Status') }}</th>
-                        <th class="text-end">{{ __('Aksi') }}</th>
+                        <th>ID Klaim</th>
+                        <th>Nomor PO</th>
+                        <th>Tanggal Diajukan</th>
+                        <th>Deadline</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -43,13 +43,13 @@
                         <td class="{{ $claim->status === 'pending' && $claim->deadline->isPast() ? 'text-danger fw-bold' : '' }}">
                             {{ $claim->deadline->format('d M Y') }}
                         </td>
-                        <td class="text-center"><span class="badge {{ $badgeClass }} text-uppercase">{{ __(ucwords(str_replace('_', ' ', $claim->status))) }}</span></td>
+                        <td class="text-center"><span class="badge {{ $badgeClass }} text-uppercase">{{ ucwords(str_replace('_', ' ', $claim->status)) }}</span></td>
                         <td class="text-end">
                             <a href="{{ route('supplier.claims.show', $claim->id) }}" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">
                                 @if($claim->status === 'pending')
-                                    {{ __('Beri Respons') }}
+                                    Beri Respons
                                 @else
-                                    {{ __('Lihat Detail') }}
+                                    Lihat Detail
                                 @endif
                             </a>
                         </td>

@@ -1,39 +1,39 @@
 @extends('layouts.app')
 
 @section('title', 'Daftar Purchase Order — ADASI Portal')
-@section('page-title', __('Purchase Order'))
+@section('page-title', 'Purchase Order')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">{{ __('Daftar Purchase Order') }}</h5>
+        <h5 class="mb-0 fw-semibold">Daftar Purchase Order</h5>
         <a href="{{ route('purchasing.export.purchase-orders', request()->all()) }}" class="btn btn-success btn-sm">
-            <i class="bi bi-file-earmark-excel me-1"></i> {{ __('Export Excel') }}
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
     </div>
     <div class="card-body">
         {{-- Filters --}}
         <form method="GET" action="{{ route('purchasing.purchase-orders.index') }}" class="row g-3 mb-4">
             <div class="col-md-3">
-                <label class="form-label small fw-medium">{{ __('Status') }}</label>
+                <label class="form-label small fw-medium">Status</label>
                 <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">{{ __('Semua Status') }}</option>
-                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
-                    <option value="waiting_qc" {{ request('status') == 'waiting_qc' ? 'selected' : '' }}>{{ __('Waiting QC') }}</option>
-                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>{{ __('Completed') }}</option>
+                    <option value="">Semua Status</option>
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="waiting_qc" {{ request('status') == 'waiting_qc' ? 'selected' : '' }}>Waiting QC</option>
+                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-medium">{{ __('Supplier') }}</label>
+                <label class="form-label small fw-medium">Supplier</label>
                 <select name="supplier_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">{{ __('Semua Supplier') }}</option>
+                    <option value="">Semua Supplier</option>
                     @foreach($suppliers as $s)
                         <option value="{{ $s->id }}" {{ request('supplier_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="col-md-3 d-flex align-items-end">
-                <a href="{{ route('purchasing.purchase-orders.index') }}" class="btn btn-light btn-sm w-100">{{ __('Reset') }}</a>
+                <a href="{{ route('purchasing.purchase-orders.index') }}" class="btn btn-light btn-sm w-100">Reset</a>
             </div>
         </form>
 
@@ -41,13 +41,13 @@
             <table class="table table-hover align-middle" id="poTable">
                 <thead class="table-light">
                     <tr>
-                        <th>{{ __('Nomor PO') }}</th>
-                        <th>{{ __('Supplier') }}</th>
-                        <th>{{ __('Periode') }}</th>
-                        <th class="text-end">{{ __('Total IDR') }}</th>
-                        <th class="text-center">{{ __('Status') }}</th>
-                        <th>{{ __('Estimasi Kedatangan') }}</th>
-                        <th class="text-end">{{ __('Aksi') }}</th>
+                        <th>Nomor PO</th>
+                        <th>Supplier</th>
+                        <th>Periode</th>
+                        <th class="text-end">Total IDR</th>
+                        <th class="text-center">Status</th>
+                        <th>Estimasi Kedatangan</th>
+                        <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -66,11 +66,11 @@
                                 default => 'bg-secondary'
                             };
                             $statusLabel = match(true) {
-                                $po->is_overdue => __('Overdue'),
-                                $po->status === 'active' => __('Active'),
-                                $po->status === 'waiting_qc' => __('Waiting QC'),
-                                $po->status === 'completed' => __('Completed'),
-                                default => __(ucwords(str_replace('_', ' ', $po->status)))
+                                $po->is_overdue => 'Overdue',
+                                $po->status === 'active' => 'Active',
+                                $po->status === 'waiting_qc' => 'Waiting QC',
+                                $po->status === 'completed' => 'Completed',
+                                default => ucwords(str_replace('_', ' ', $po->status))
                             };
                         @endphp
                         <tr>
@@ -84,7 +84,7 @@
                             <td>{{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info">
-                                    <i class="bi bi-eye"></i> {{ __('Detail') }}
+                                    <i class="bi bi-eye"></i> Detail
                                 </a>
                             </td>
                         </tr>

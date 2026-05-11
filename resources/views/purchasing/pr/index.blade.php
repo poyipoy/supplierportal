@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
 @section('title', 'Daftar Permintaan Material — ADASI Portal')
-@section('page-title', __('Permintaan Material'))
+@section('page-title', 'Permintaan Material')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">{{ __('Daftar Permintaan Material') }}</h5>
+        <h5 class="mb-0 fw-semibold">Daftar Permintaan Material</h5>
         <div class="d-flex gap-2">
             <a href="{{ route('purchasing.export.requirements', request()->all()) }}" class="btn btn-success btn-sm">
-                <i class="bi bi-file-earmark-excel me-1"></i> {{ __('Export Excel') }}
+                <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
             </a>
             <a href="{{ route('purchasing.requirements.create') }}" class="btn btn-primary btn-sm" style="background-color: var(--adasi-blue); border-color: var(--adasi-blue);">
-                <i class="bi bi-plus-circle me-1"></i> {{ __('Buat Permintaan Baru') }}
+                <i class="bi bi-plus-circle me-1"></i> Buat Permintaan Baru
             </a>
         </div>
     </div>
@@ -21,9 +21,9 @@
         {{-- Filter Form --}}
         <form method="GET" action="{{ route('purchasing.requirements.index') }}" class="row g-3 mb-4">
             <div class="col-md-4">
-                <label for="period_id" class="form-label small fw-medium">{{ __('Filter Periode') }}</label>
+                <label for="period_id" class="form-label small fw-medium">Filter Periode</label>
                 <select name="period_id" id="period_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">{{ __('Semua Periode') }}</option>
+                    <option value="">Semua Periode</option>
                     @foreach($periods as $period)
                         <option value="{{ $period->id }}" {{ request('period_id') == $period->id ? 'selected' : '' }}>
                             {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
@@ -32,19 +32,19 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <label for="status" class="form-label small fw-medium">{{ __('Filter Status') }}</label>
+                <label for="status" class="form-label small fw-medium">Filter Status</label>
                 <select name="status" id="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">{{ __('Semua Status') }}</option>
-                    <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>{{ __('Draft') }}</option>
-                    <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>{{ __('Submitted') }}</option>
-                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>{{ __('Approved') }}</option>
-                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>{{ __('Rejected') }}</option>
-                    <option value="bidding" {{ request('status') == 'bidding' ? 'selected' : '' }}>{{ __('Bidding') }}</option>
-                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>{{ __('Completed') }}</option>
+                    <option value="">Semua Status</option>
+                    <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                    <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
+                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                    <option value="bidding" {{ request('status') == 'bidding' ? 'selected' : '' }}>Bidding</option>
+                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                 </select>
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <a href="{{ route('purchasing.requirements.index') }}" class="btn btn-light btn-sm w-100">{{ __('Reset Filter') }}</a>
+                <a href="{{ route('purchasing.requirements.index') }}" class="btn btn-light btn-sm w-100">Reset Filter</a>
             </div>
         </form>
 
@@ -52,13 +52,13 @@
             <table class="table table-hover align-middle" id="prTable">
                 <thead class="table-light">
                     <tr>
-                        <th>{{ __('No') }}</th>
-                        <th>{{ __('No. PR') }}</th>
-                        <th>{{ __('Periode') }}</th>
-                        <th>{{ __('Jumlah Item') }}</th>
-                        <th>{{ __('Status') }}</th>
-                        <th>{{ __('Tanggal Dibuat') }}</th>
-                        <th class="text-end">{{ __('Aksi') }}</th>
+                        <th>No</th>
+                        <th>No. PR</th>
+                        <th>Periode</th>
+                        <th>Jumlah Item</th>
+                        <th>Status</th>
+                        <th>Tanggal Dibuat</th>
+                        <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,13 +80,13 @@
                                         default => 'bg-secondary'
                                     };
                                     $statusLabel = match($pr->status) {
-                                        'draft' => __('Draft'),
-                                        'submitted' => __('Submitted'),
-                                        'approved' => __('Approved'),
-                                        'rejected' => __('Rejected'),
-                                        'bidding' => __('Bidding'),
-                                        'completed' => __('Completed'),
-                                        default => __(ucwords(str_replace('_', ' ', $pr->status))),
+                                        'draft' => 'Draft',
+                                        'submitted' => 'Submitted',
+                                        'approved' => 'Approved',
+                                        'rejected' => 'Rejected',
+                                        'bidding' => 'Bidding',
+                                        'completed' => 'Completed',
+                                        default => ucwords(str_replace('_', ' ', $pr->status)),
                                     };
                                 @endphp
                                 <span class="badge {{ $badgeClass }} text-uppercase" style="font-size: 0.7rem;">
@@ -95,17 +95,17 @@
                             </td>
                             <td>{{ $pr->created_at->format('d M Y, H:i') }}</td>
                             <td class="text-end">
-                                <a href="{{ route('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info" title="{{ __('Lihat Detail') }}">
+                                <a href="{{ route('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 @if(in_array($pr->status, ['draft', 'rejected']))
-                                    <a href="{{ route('purchasing.requirements.edit', $pr->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Edit') }}">
+                                    <a href="{{ route('purchasing.requirements.edit', $pr->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('purchasing.requirements.destroy', $pr->id) }}" method="POST" class="d-inline delete-form">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="{{ __('Hapus') }}">
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Hapus">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -136,14 +136,14 @@
         $('.btn-delete').on('click', function() {
             const form = $(this).closest('form');
             Swal.fire({
-                title: @json(__('Yakin ingin menghapus?')),
-                text: @json(__('Permintaan material ini akan dihapus permanen!')),
+                title: @json('Yakin ingin menghapus?'),
+                text: @json('Permintaan material ini akan dihapus permanen!'),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: @json(__('Ya, hapus!')),
-                cancelButtonText: @json(__('Batal'))
+                confirmButtonText: @json('Ya, hapus!'),
+                cancelButtonText: @json('Batal')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

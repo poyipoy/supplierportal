@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Mulai Inspeksi QC: ' . $po->po_number . ' — ADASI Portal')
-@section('page-title', __('Inspeksi QC Material'))
+@section('page-title', 'Inspeksi QC Material')
 
 @section('content')
 <div class="mb-3">
     <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> {{ __('Kembali ke Daftar Inspeksi') }}
+        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Inspeksi
     </a>
 </div>
 
@@ -15,15 +15,15 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-4">
-                <div class="text-muted small">{{ __('Nomor PO') }}</div>
+                <div class="text-muted small">Nomor PO</div>
                 <div class="fw-bold fs-6">{{ $po->po_number }}</div>
             </div>
             <div class="col-md-4">
-                <div class="text-muted small">{{ __('Supplier') }}</div>
+                <div class="text-muted small">Supplier</div>
                 <div class="fw-bold">{{ $po->quotation->supplier->name }}</div>
             </div>
             <div class="col-md-4">
-                <div class="text-muted small">{{ __('Tanggal Material Tiba') }}</div>
+                <div class="text-muted small">Tanggal Material Tiba</div>
                 <div class="fw-bold">{{ $po->actual_arrival ? $po->actual_arrival->format('d F Y') : '-' }}</div>
             </div>
         </div>
@@ -32,12 +32,12 @@
 
 <div class="alert alert-success d-none mb-4" id="bannerOk">
     <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-    <span class="fw-bold">{{ __('Status Inspeksi') }}: OK</span> - {{ __('Semua material sesuai spesifikasi.') }}
+    <span class="fw-bold">Status Inspeksi: OK</span> - Semua material sesuai spesifikasi.
 </div>
 
 <div class="alert alert-danger d-none mb-4" id="bannerNg">
     <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-    <span class="fw-bold">{{ __('Status Inspeksi') }}: NG (Not Good)</span> - {{ __('Terdapat material yang tidak sesuai spesifikasi. Harap unggah foto bukti.') }}
+    <span class="fw-bold">Status Inspeksi: NG (Not Good)</span> - Terdapat material yang tidak sesuai spesifikasi. Harap unggah foto bukti.
 </div>
 
 <form action="{{ route('qc.inspections.store', $po->id) }}" method="POST" enctype="multipart/form-data" id="inspectionForm">
@@ -59,35 +59,35 @@
                 <div class="row g-4">
                     {{-- Read Only Specs --}}
                     <div class="col-md-5 border-end pe-4">
-                        <h6 class="fw-bold mb-3 small text-muted text-uppercase">{{ __('Spesifikasi Diminta') }}</h6>
+                        <h6 class="fw-bold mb-3 small text-muted text-uppercase">Spesifikasi Diminta</h6>
                         <table class="table table-sm table-borderless small mb-0">
                             <tbody>
                                 <tr>
-                                    <td class="text-muted" width="40%">{{ __('Shape') }}</td>
+                                    <td class="text-muted" width="40%">Shape</td>
                                     <td class="fw-medium">{{ $prItem->shape ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">{{ __('Thickness') }} (mm)</td>
+                                    <td class="text-muted">Thickness (mm)</td>
                                     <td class="fw-medium spec-val" data-spec-type="thickness" data-val="{{ $prItem->thickness }}">{{ $prItem->thickness ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">{{ __('Inner Dia.') }} (mm)</td>
+                                    <td class="text-muted">Inner Dia. (mm)</td>
                                     <td class="fw-medium spec-val" data-spec-type="d_inner" data-val="{{ $prItem->d_inner }}">{{ $prItem->d_inner ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">{{ __('Outer Dia.') }} (mm)</td>
+                                    <td class="text-muted">Outer Dia. (mm)</td>
                                     <td class="fw-medium spec-val" data-spec-type="d_outer" data-val="{{ $prItem->d_outer }}">{{ $prItem->d_outer ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">{{ __('Width') }} (mm)</td>
+                                    <td class="text-muted">Width (mm)</td>
                                     <td class="fw-medium spec-val" data-spec-type="width" data-val="{{ $prItem->width }}">{{ $prItem->width ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">{{ __('Length') }} (mm)</td>
+                                    <td class="text-muted">Length (mm)</td>
                                     <td class="fw-medium spec-val" data-spec-type="length" data-val="{{ $prItem->length }}">{{ $prItem->length ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">{{ __('Weight (Kg)') }}</td>
+                                    <td class="text-muted">Weight (Kg)</td>
                                     <td class="fw-medium spec-val" data-spec-type="weight" data-val="{{ $prItem->weight_needed }}">{{ $prItem->weight_needed ?? '-' }}</td>
                                 </tr>
                             </tbody>
@@ -97,49 +97,49 @@
                     {{-- Actual Inputs --}}
                     <div class="col-md-7 ps-md-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold small text-primary text-uppercase mb-0">{{ __('Input Aktual') }}</h6>
+                            <h6 class="fw-bold small text-primary text-uppercase mb-0">Input Aktual</h6>
                             <div class="form-check form-switch">
                                 <input class="form-check-input manual-override-switch" type="checkbox" role="switch" id="override-{{ $index }}" data-index="{{ $index }}">
-                                <label class="form-check-label small" for="override-{{ $index }}">{{ __('Set Manual NG') }}</label>
+                                <label class="form-check-label small" for="override-{{ $index }}">Set Manual NG</label>
                             </div>
                         </div>
                         
                         <div class="row g-3 input-row" data-index="{{ $index }}">
                             <div class="col-md-4">
-                                <label class="form-label small">{{ __('Thickness') }} (mm)</label>
+                                <label class="form-label small">Thickness (mm)</label>
                                 <input type="number" step="any" name="items[{{ $index }}][actual_thickness]" class="form-control form-control-sm actual-input" data-spec-type="thickness">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small">{{ __('Inner Dia.') }} (mm)</label>
+                                <label class="form-label small">Inner Dia. (mm)</label>
                                 <input type="number" step="any" name="items[{{ $index }}][actual_d_inner]" class="form-control form-control-sm actual-input" data-spec-type="d_inner">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small">{{ __('Outer Dia.') }} (mm)</label>
+                                <label class="form-label small">Outer Dia. (mm)</label>
                                 <input type="number" step="any" name="items[{{ $index }}][actual_d_outer]" class="form-control form-control-sm actual-input" data-spec-type="d_outer">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small">{{ __('Width') }} (mm)</label>
+                                <label class="form-label small">Width (mm)</label>
                                 <input type="number" step="any" name="items[{{ $index }}][actual_width]" class="form-control form-control-sm actual-input" data-spec-type="width">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small">{{ __('Length') }} (mm)</label>
+                                <label class="form-label small">Length (mm)</label>
                                 <input type="number" step="any" name="items[{{ $index }}][actual_length]" class="form-control form-control-sm actual-input" data-spec-type="length">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small">{{ __('Weight (Kg)') }}</label>
+                                <label class="form-label small">Weight (Kg)</label>
                                 <input type="number" step="any" name="items[{{ $index }}][actual_weight]" class="form-control form-control-sm actual-input" data-spec-type="weight">
                             </div>
                             <div class="col-12 mt-3">
-                                <label class="form-label small">{{ __('Catatan Item') }}</label>
-                                <textarea name="items[{{ $index }}][notes]" class="form-control form-control-sm" rows="1" placeholder="{{ __('Opsional...') }}"></textarea>
+                                <label class="form-label small">Catatan Item</label>
+                                <textarea name="items[{{ $index }}][notes]" class="form-control form-control-sm" rows="1" placeholder="Opsional..."></textarea>
                             </div>
                         </div>
 
                         {{-- NG Photo Upload (Hidden by default) --}}
                         <div class="ng-photo-section mt-3 p-3 bg-danger bg-opacity-10 border border-danger rounded d-none" id="photo-section-{{ $index }}">
-                            <label class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>{{ __('Foto Bukti NG (Wajib)') }}</label>
+                            <label class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>Foto Bukti NG (Wajib)</label>
                             <input type="file" name="attachments[{{ $index }}][]" class="form-control form-control-sm photo-input" accept=".jpg,.jpeg,.png" multiple>
-                            <div class="form-text text-danger small">{{ __('Maks 10MB per file. Pilih minimal 1 foto karena status item ini NG.') }}</div>
+                            <div class="form-text text-danger small">Maks 10MB per file. Pilih minimal 1 foto karena status item ini NG.</div>
                         </div>
                     </div>
                 </div>
@@ -148,9 +148,9 @@
     @endforeach
 
     <div class="d-flex justify-content-end gap-2 mb-5">
-        <a href="javascript:history.back()" class="btn btn-light">{{ __('Batal') }}</a>
+        <a href="javascript:history.back()" class="btn btn-light">Batal</a>
         <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSubmit">
-            <i class="bi bi-save me-1"></i> {{ __('Simpan Hasil Inspeksi') }}
+            <i class="bi bi-save me-1"></i> Simpan Hasil Inspeksi
         </button>
     </div>
 </form>
@@ -256,14 +256,14 @@
             }
 
             Swal.fire({
-                title: @json(__('Simpan Hasil Inspeksi?')),
-                html: @json(__('Hasil inspeksi tidak dapat diubah setelah disimpan.<br>PO status akan diperbarui otomatis.')),
+                title: @json('Simpan Hasil Inspeksi?'),
+                html: @json('Hasil inspeksi tidak dapat diubah setelah disimpan.<br>PO status akan diperbarui otomatis.'),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: 'var(--adasi-blue)',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: @json(__('Ya, Simpan!')),
-                cancelButtonText: @json(__('Batal'))
+                confirmButtonText: @json('Ya, Simpan!'),
+                cancelButtonText: @json('Batal')
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('#inspectionForm').submit();

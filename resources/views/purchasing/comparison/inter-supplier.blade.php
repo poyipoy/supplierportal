@@ -34,8 +34,17 @@
 @if($comparison)
     {{-- Grafik Batang --}}
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
+        <div class="card-header bg-white py-3 d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center">
             <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart me-1"></i> Grafik Perbandingan Harga per Material (IDR/Kg)</h6>
+            <div style="min-width: 240px;">
+                <label class="form-label small fw-bold mb-1">Material</label>
+                <select class="form-select form-select-sm" id="comparisonMaterialFilter">
+                    <option value="">Semua Material</option>
+                    @foreach($materialOptions as $material)
+                        <option value="{{ $material->id }}">{{ $material->material_name }}</option>
+                    @endforeach
+                </select>
+            </div>
         </div>
         <div class="card-body">
             <canvas id="comparisonChart" height="280"></canvas>
@@ -75,7 +84,7 @@
                                 $idrPrices = collect($row['prices'])->pluck('price_idr')->filter()->values();
                                 $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
                             @endphp
-                            <tr>
+                            <tr data-comparison-row data-material-id="{{ $row['item']->id }}">
                                 <td class="fw-medium">{{ $row['item']->material_name }}</td>
                                 <td class="text-center">{{ number_format($row['item']->weight_needed, 2) }}</td>
                                 @foreach($comparison['suppliers'] as $sup)
@@ -115,9 +124,11 @@
 @if($chartData)
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-new Chart(document.getElementById('comparisonChart'), {
+const comparisonChartData = {!! json_encode($chartData) !!};
+const comparisonMaterialIds = @json($chartMaterialIds);
+const comparisonChart = new Chart(document.getElementById('comparisonChart'), {
     type: 'bar',
-    data: {!! json_encode($chartData) !!},
+    data: JSON.parse(JSON.stringify(comparisonChartData)),
     options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -126,6 +137,29 @@ new Chart(document.getElementById('comparisonChart'), {
             y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + v.toLocaleString('id-ID') } }
         }
     }
+});
+
+document.getElementById('comparisonMaterialFilter').addEventListener('change', function() {
+    const materialId = this.value;
+    document.querySelectorAll('[data-comparison-row]').forEach((row) => {
+        row.classList.toggle('d-none', materialId !== '' && row.dataset.materialId !== materialId);
+    });
+
+    if (materialId === '') {
+        comparisonChart.data = JSON.parse(JSON.stringify(comparisonChartData));
+        comparisonChart.update();
+        return;
+    }
+
+    const materialIndex = comparisonMaterialIds.indexOf(materialId);
+    if (materialIndex === -1) return;
+
+    comparisonChart.data.labels = [comparisonChartData.labels[materialIndex]];
+    comparisonChart.data.datasets = comparisonChartData.datasets.map((dataset) => ({
+        ...dataset,
+        data: [dataset.data[materialIndex] ?? 0],
+    }));
+    comparisonChart.update();
 });
 </script>
 @endif

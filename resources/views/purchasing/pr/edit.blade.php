@@ -35,7 +35,7 @@
                 </div>
                 <div class="col-md-6">
                     <label for="notes" class="form-label fw-medium">Catatan / Keterangan Tambahan</label>
-                    <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="{{ __('Opsional...') }}">{{ old('notes', $pr->notes) }}</textarea>
+                    <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="Opsional...">{{ old('notes', $pr->notes) }}</textarea>
                 </div>
             </div>
 

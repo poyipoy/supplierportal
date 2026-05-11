@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Detail PO: ' . $po->po_number . ' — ADASI Portal')
-@section('page-title', __('Detail Purchase Order'))
+@section('page-title', 'Detail Purchase Order')
 
 @section('content')
 <div class="mb-3">
     <a href="{{ route('purchasing.purchase-orders.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> {{ __('Kembali ke Daftar PO') }}
+        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar PO
     </a>
 </div>
 
@@ -136,18 +136,18 @@
         {{-- Chat & Action Card --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">{{ __('Negosiasi & Chat') }}</h6>
+                <h6 class="mb-0 fw-bold">Negosiasi & Chat</h6>
             </div>
             <div class="card-body">
                 <form action="{{ route('purchasing.conversations.start.po', $po->id) }}" method="POST" data-chat-start-form>
                     @csrf
                     <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-chat-dots me-2"></i> {{ __('Chat dengan Supplier') }}</span>
+                        <span><i class="bi bi-chat-dots me-2"></i> Chat dengan Supplier</span>
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </form>
                 <div class="mt-3 text-muted small text-center">
-                    {{ __('Gunakan fitur ini untuk komunikasi terkait pengiriman atau komplain PO ini.') }}
+                    Gunakan fitur ini untuk komunikasi terkait pengiriman atau komplain PO ini.
                 </div>
             </div>
         </div>
@@ -211,8 +211,7 @@
         @if($po->status === 'active' && !$po->actual_arrival)
             <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po->id) }}" method="POST" id="arrivalForm">
                 @csrf
-                <button type="button" class="btn btn-success w-100 mb-3 {{ $allDocsComplete ? '' : 'btn-outline-success' }}" id="btnConfirmArrival">
-                    <i class="bi bi-box-seam me-1"></i> {{ __('Konfirmasi Material Tiba') }}
+                <button type="button" class="btn btn-success w-100 mb-3 py-2 fw-semibold shadow-sm" id="btnConfirmArrival">               <i class="bi bi-box-seam me-1"></i> Konfirmasi Material Tiba
                 </button>
             </form>
         @endif
@@ -222,8 +221,8 @@
 {{-- ═══════════ SECTION B — Tracking Dokumen Impor ═══════════ --}}
 <div class="card border-0 shadow-sm mb-5">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">{{ __('Tracking Dokumen Impor') }}</h6>
-        <span class="badge bg-light text-dark border px-3 py-2" id="docProgressBadge">{{ $completedDocs }}/{{ $totalDocs }} {{ __('Dokumen Selesai') }}</span>
+        <h6 class="mb-0 fw-bold">Tracking Dokumen Impor</h6>
+        <span class="badge bg-light text-dark border px-3 py-2" id="docProgressBadge">{{ $completedDocs }}/{{ $totalDocs }} Dokumen Selesai</span>
     </div>
     <div class="card-body">
         {{-- Progress Bar --}}
@@ -242,10 +241,10 @@
         <div class="row g-3">
             @php
                 $docConfig = [
-                    'invoice' => ['label' => 'Invoice', 'icon' => 'bi-receipt', 'statuses' => ['pending' => __('Belum Ada'), 'received' => __('Diterima'), 'verified' => __('Diverifikasi')]],
-                    'bl' => ['label' => 'Bill of Lading', 'icon' => 'bi-truck', 'statuses' => ['pending' => __('Belum Ada'), 'issued' => __('Sudah Diterbitkan'), 'done' => __('Diterima')]],
-                    'packing_list' => ['label' => 'Packing List', 'icon' => 'bi-list-check', 'statuses' => ['pending' => __('Belum Ada'), 'received' => __('Diterima'), 'verified' => __('Diverifikasi')]],
-                    'form_e' => ['label' => 'Form-E', 'icon' => 'bi-file-earmark-text', 'statuses' => ['pending' => __('Belum Ada'), 'processing' => __('Sedang Diproses'), 'done' => __('Selesai')]],
+                    'invoice' => ['label' => 'Invoice', 'icon' => 'bi-receipt', 'statuses' => ['pending' => 'Belum Ada', 'received' => 'Diterima', 'verified' => 'Diverifikasi']],
+                    'bl' => ['label' => 'Bill of Lading', 'icon' => 'bi-truck', 'statuses' => ['pending' => 'Belum Ada', 'issued' => 'Sudah Diterbitkan', 'done' => 'Diterima']],
+                    'packing_list' => ['label' => 'Packing List', 'icon' => 'bi-list-check', 'statuses' => ['pending' => 'Belum Ada', 'received' => 'Diterima', 'verified' => 'Diverifikasi']],
+                    'form_e' => ['label' => 'Form-E', 'icon' => 'bi-file-earmark-text', 'statuses' => ['pending' => 'Belum Ada', 'processing' => 'Sedang Diproses', 'done' => 'Selesai']],
                 ];
             @endphp
 
@@ -265,7 +264,7 @@
                         <div class="card-body text-center py-4">
                             <i class="bi {{ $config['icon'] }} fs-2 mb-2 d-block {{ $doc->status === 'pending' ? 'text-muted' : 'text-primary' }}"></i>
                             <h6 class="fw-bold mb-2">{{ $config['label'] }}</h6>
-                            <span class="badge {{ $statusBadge }} mb-2 doc-status-badge" id="doc-badge-{{ $doc->id }}">{{ $statusLabel }}</span>
+                            <span class="badge {{ $statusBadge }} mb-2 doc-status-badge" id="doc-badge-{{ $doc->id }}" data-status="{{ $doc->status }}">{{ $statusLabel }}</span>
                             <div class="small text-muted mb-3" id="doc-date-{{ $doc->id }}">
                                 {{ $doc->status !== 'pending' ? $doc->updated_at->format('d M Y, H:i') : '' }}
                             </div>
@@ -275,7 +274,7 @@
                                     data-doc-label="{{ $config['label'] }}"
                                     data-doc-status="{{ $doc->status }}"
                                     data-doc-statuses='@json($config['statuses'])'>
-                                <i class="bi bi-pencil-square me-1"></i> {{ __('Update Status') }}
+                                <i class="bi bi-pencil-square me-1"></i> Update Status
                             </button>
                         </div>
                     </div>
@@ -290,21 +289,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="modalDocTitle">{{ __('Update Status Dokumen') }}</h5>
+                <h5 class="modal-title fw-bold" id="modalDocTitle">Update Status Dokumen</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modalDocId">
                 <div class="mb-3">
-                    <label class="form-label fw-medium">{{ __('Status Baru') }}</label>
+                    <label class="form-label fw-medium">Status Baru</label>
                     <select class="form-select" id="modalDocStatus"></select>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('Batal') }}</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSaveDocStatus">
                     <span class="spinner-border spinner-border-sm d-none me-1" id="docSpinner"></span>
-                    {{ __('Simpan') }}
+                    Simpan
                 </button>
             </div>
         </div>
@@ -353,8 +352,8 @@
                 if (res.success) {
                     // Update badge
                     const statusLabels = {
-                        'pending': @json(__('Belum Ada')), 'received': @json(__('Diterima')), 'verified': @json(__('Diverifikasi')),
-                        'issued': @json(__('Sudah Diterbitkan')), 'processing': @json(__('Sedang Diproses')), 'done': @json(__('Selesai'))
+                        'pending': @json('Belum Ada'), 'received': @json('Diterima'), 'verified': @json('Diverifikasi'),
+                        'issued': @json('Sudah Diterbitkan'), 'processing': @json('Sedang Diproses'), 'done': @json('Selesai')
                     };
                     const statusClasses = {
                         'pending': 'bg-secondary', 'received': 'bg-info', 'verified': 'bg-success',
@@ -364,30 +363,23 @@
                     const badge = $('#doc-badge-' + docId);
                     badge.text(statusLabels[res.doc.status] || res.doc.status);
                     badge.attr('class', 'badge mb-2 doc-status-badge ' + (statusClasses[res.doc.status] || 'bg-secondary'));
+                    badge.attr('data-status', res.doc.status);
                     $('#doc-date-' + docId).text(res.doc.updated_at);
 
                     // Update the button's data-doc-status
                     $(`.btn-update-doc[data-doc-id="${docId}"]`).data('doc-status', res.doc.status);
 
                     // Recalculate progress
-                    const completedStatuses = ['verified', 'done'];
+                    const completedStatuses = ['received', 'verified', 'done'];
                     let completed = 0;
                     const total = {{ $totalDocs }};
-                    $('.doc-status-badge').each(function() {
-                        const text = $(this).text();
-                        if (text === 'Diverifikasi' || text === 'Selesai' || text === 'Diterima') {
-                            // Check actual status from data
-                        }
-                    });
-                    // Simpler: reload progress from DOM
                     completed = $('.doc-status-badge').filter(function() {
-                        const cls = $(this).attr('class');
-                        return cls.includes('bg-success');
+                        return completedStatuses.includes($(this).attr('data-status'));
                     }).length;
 
                     const pct = total > 0 ? (completed / total * 100) : 0;
                     $('#docProgressBar').css('width', pct + '%');
-                    $('#docProgressBadge').text(completed + '/' + total + ' ' + @json(__('Dokumen Selesai')));
+                    $('#docProgressBadge').text(completed + '/' + total + ' ' + @json('Dokumen Selesai'));
 
                     if (completed === total) {
                         if ($('#allDocsAlert').length === 0) {
@@ -399,7 +391,7 @@
 
                     Swal.fire({
                         icon: 'success',
-                        title: @json(__('Berhasil!')),
+                        title: @json('Berhasil!'),
                         text: res.message,
                         timer: 1500,
                         showConfirmButton: false
@@ -407,7 +399,7 @@
                 }
             },
             error: function(xhr) {
-                Swal.fire(@json(__('Error')), @json(__('Gagal memperbarui status dokumen.')), 'error');
+                Swal.fire(@json('Error'), @json('Gagal memperbarui status dokumen.'), 'error');
             },
             complete: function() {
                 $('#docSpinner').addClass('d-none');
@@ -419,14 +411,14 @@
     // Confirm Arrival
     $('#btnConfirmArrival').on('click', function() {
         Swal.fire({
-            title: @json(__('Konfirmasi Material Tiba?')),
-            text: @json(__('Tanggal kedatangan akan diset hari ini dan QC akan dinotifikasi.')),
+            title: @json('Konfirmasi Material Tiba?'),
+            text: @json('Tanggal kedatangan akan diset hari ini dan QC akan dinotifikasi.'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#198754',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: @json(__('Ya, Konfirmasi!')),
-            cancelButtonText: @json(__('Batal'))
+            confirmButtonText: @json('Ya, Konfirmasi!'),
+            cancelButtonText: @json('Batal')
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#arrivalForm').submit();

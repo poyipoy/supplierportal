@@ -91,6 +91,9 @@ Route::middleware(['auth', 'role:purchasing'])->prefix('purchasing')->name('purc
     Route::get('/comparison/inter-supplier', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'interSupplier'])->name('comparison.inter-supplier');
     Route::get('/comparison/historical', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'historical'])->name('comparison.historical');
     Route::get('/comparison/vs-best', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'vsBestPrice'])->name('comparison.vs-best');
+    Route::get('/comparison/{pr_id}', function ($pr_id) {
+        return redirect()->route('purchasing.comparison.inter-supplier', ['pr_id' => $pr_id]);
+    })->whereNumber('pr_id')->name('comparison.show');
     // Laporan
     Route::get('/reports', [\App\Http\Controllers\Purchasing\ReportController::class, 'index'])->name('reports.index');
     // Export

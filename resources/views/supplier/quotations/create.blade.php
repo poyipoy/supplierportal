@@ -1,26 +1,26 @@
 @extends('layouts.app')
 
 @section('title', 'Form Penawaran Harga — ADASI Portal')
-@section('page-title', __('Form Penawaran Harga'))
+@section('page-title', 'Form Penawaran Harga')
 
 @section('content')
 <div class="mb-3">
     <a href="{{ route('supplier.quotations.period', $pr->period_id) }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> {{ __('Kembali ke Daftar Permintaan') }}
+        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Permintaan
     </a>
 </div>
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">{{ __('Detail Permintaan Pembelian') }}</h6>
+        <h6 class="mb-0 fw-bold">Detail Permintaan Pembelian</h6>
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-2 text-muted small">{{ __('Periode') }}</div>
+            <div class="col-md-2 text-muted small">Periode</div>
             <div class="col-md-10 fw-medium">{{ $pr->period->name }} ({{ str_pad($pr->period->month, 2, '0', STR_PAD_LEFT) }}/{{ $pr->period->year }})</div>
         </div>
         <div class="row mt-2">
-            <div class="col-md-2 text-muted small">{{ __('Catatan PR') }}</div>
+            <div class="col-md-2 text-muted small">Catatan PR</div>
             <div class="col-md-10">{{ $pr->notes ?? '-' }}</div>
         </div>
     </div>
@@ -32,9 +32,9 @@
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">{{ __('Pengisian Harga Material') }}</h6>
+            <h6 class="mb-0 fw-bold">Pengisian Harga Material</h6>
             <div class="d-flex align-items-center">
-                <label for="currency" class="form-label mb-0 me-2 small fw-medium">{{ __('Mata Uang') }}:</label>
+                <label for="currency" class="form-label mb-0 me-2 small fw-medium">Mata Uang:</label>
                 <select name="currency" id="currency" class="form-select form-select-sm" style="width: 100px;">
                     <option value="USD" {{ old('currency', $quotation->currency ?? 'USD') == 'USD' ? 'selected' : '' }}>USD</option>
                     <option value="JPY" {{ old('currency', $quotation->currency ?? 'JPY') == 'JPY' ? 'selected' : '' }}>JPY</option>
@@ -46,13 +46,13 @@
                 <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
                     <thead class="table-light text-center">
                         <tr>
-                            <th width="5%">{{ __('No') }}</th>
-                            <th width="20%">{{ __('Material & Spesifikasi') }}</th>
-                            <th width="10%">{{ __('Weight (Kg)') }}</th>
-                            <th width="15%">{{ __('Harga per-KG') }} (<span class="currency-label">USD</span>) <span class="text-danger">*</span></th>
+                            <th width="5%">No</th>
+                            <th width="20%">Material & Spesifikasi</th>
+                            <th width="10%">Weight (Kg)</th>
+                            <th width="15%">Harga per-KG (<span class="currency-label">USD</span>) <span class="text-danger">*</span></th>
                             <th width="15%">Amount (<span class="currency-label">USD</span>)</th>
                             <th width="15%">Est. IDR</th>
-                            <th width="20%">{{ __('Catatan Item') }}</th>
+                            <th width="20%">Catatan Item</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -92,14 +92,14 @@
                                     <input type="text" class="form-control form-control-sm idr-display text-end bg-light" readonly>
                                 </td>
                                 <td>
-                                    <input type="text" name="items[{{ $index }}][notes]" class="form-control form-control-sm" value="{{ $oldNotes }}" placeholder="{{ __('Opsional') }}">
+                                    <input type="text" name="items[{{ $index }}][notes]" class="form-control form-control-sm" value="{{ $oldNotes }}" placeholder="Opsional">
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot class="table-light fw-bold">
                         <tr>
-                            <td colspan="4" class="text-end">{{ __('TOTAL') }}</td>
+                            <td colspan="4" class="text-end">TOTAL</td>
                             <td class="text-end" id="totalAmount">0.00</td>
                             <td class="text-end text-primary" id="totalIdr">0</td>
                             <td></td>
@@ -112,35 +112,35 @@
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold">{{ __('Informasi Tambahan') }}</h6>
+            <h6 class="mb-0 fw-bold">Informasi Tambahan</h6>
         </div>
         <div class="card-body">
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">{{ __('Estimasi Waktu Pengiriman') }} <span class="text-danger">*</span></label>
+                    <label class="form-label fw-medium">Estimasi Waktu Pengiriman <span class="text-danger">*</span></label>
                     <input type="date" name="estimated_delivery" class="form-control" value="{{ old('estimated_delivery', $quotation->estimated_delivery ?? '') }}" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">{{ __('Masa Berlaku Penawaran') }}</label>
+                    <label class="form-label fw-medium">Masa Berlaku Penawaran</label>
                     <input type="date" name="validity_period" class="form-control" value="{{ old('validity_period', $quotation->validity_period ?? '') }}">
                 </div>
             </div>
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">{{ __('Syarat Pembayaran') }}</label>
-                    <textarea name="payment_terms" class="form-control" rows="2" placeholder="{{ __('Contoh: TT 30 Days') }}">{{ old('payment_terms', $quotation->payment_terms ?? '') }}</textarea>
+                    <label class="form-label fw-medium">Syarat Pembayaran</label>
+                    <textarea name="payment_terms" class="form-control" rows="2" placeholder="Contoh: TT 30 Days">{{ old('payment_terms', $quotation->payment_terms ?? '') }}</textarea>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">{{ __('Catatan Umum') }}</label>
-                    <textarea name="general_notes" class="form-control" rows="2" placeholder="{{ __('Opsional...') }}">{{ old('general_notes', $quotation->general_notes ?? '') }}</textarea>
+                    <label class="form-label fw-medium">Catatan Umum</label>
+                    <textarea name="general_notes" class="form-control" rows="2" placeholder="Opsional...">{{ old('general_notes', $quotation->general_notes ?? '') }}</textarea>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="d-flex justify-content-end gap-2 mb-5">
-        <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">{{ __('Simpan Draft') }}</button>
-        <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">{{ __('Kirim Penawaran Final') }}</button>
+        <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">Simpan Draft</button>
+        <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">Kirim Penawaran Final</button>
     </div>
 </form>
 
@@ -216,19 +216,19 @@
         });
 
         if (!isValid) {
-            Swal.fire(@json(__('Error')), @json(__('Mohon lengkapi semua field yang wajib diisi (Harga & Estimasi Waktu).')), 'error');
+            Swal.fire(@json('Error'), @json('Mohon lengkapi semua field yang wajib diisi (Harga & Estimasi Waktu).'), 'error');
             return;
         }
 
         Swal.fire({
-            title: @json(__('Kirim Penawaran Final?')),
-            text: @json(__('Penawaran yang sudah dikirim tidak dapat diubah lagi.')),
+            title: @json('Kirim Penawaran Final?'),
+            text: @json('Penawaran yang sudah dikirim tidak dapat diubah lagi.'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: 'var(--adasi-blue)',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: @json(__('Ya, Kirim!')),
-            cancelButtonText: @json(__('Batal'))
+            confirmButtonText: @json('Ya, Kirim!'),
+            cancelButtonText: @json('Batal')
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#formAction').val('submitted');

@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Detail Inspeksi QC: ' . $inspection->purchaseOrder->po_number . ' — ADASI Portal')
-@section('page-title', __('Detail Inspeksi QC'))
+@section('page-title', 'Detail Inspeksi QC')
 
 @section('content')
 <div class="mb-3">
     <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> {{ __('Kembali ke Daftar Inspeksi') }}
+        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Inspeksi
     </a>
 </div>
 
@@ -14,28 +14,28 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0">{{ __('Inspeksi PO') }}: {{ $inspection->purchaseOrder->po_number }}</h5>
+            <h5 class="fw-bold mb-0">Inspeksi PO: {{ $inspection->purchaseOrder->po_number }}</h5>
             @if($inspection->status === 'ok')
-                <span class="badge bg-success fs-6 px-3 py-2">{{ __('STATUS') }}: OK</span>
+                <span class="badge bg-success fs-6 px-3 py-2">STATUS: OK</span>
             @else
-                <span class="badge bg-danger fs-6 px-3 py-2">{{ __('STATUS') }}: NG</span>
+                <span class="badge bg-danger fs-6 px-3 py-2">STATUS: NG</span>
             @endif
         </div>
         <div class="row">
             <div class="col-md-3">
-                <div class="text-muted small">{{ __('Supplier') }}</div>
+                <div class="text-muted small">Supplier</div>
                 <div class="fw-medium">{{ $inspection->purchaseOrder->quotation->supplier->name }}</div>
             </div>
             <div class="col-md-3">
-                <div class="text-muted small">{{ __('Diinspeksi Oleh') }}</div>
+                <div class="text-muted small">Diinspeksi Oleh</div>
                 <div class="fw-medium">{{ $inspection->inspector->name }}</div>
             </div>
             <div class="col-md-3">
-                <div class="text-muted small">{{ __('Waktu Inspeksi') }}</div>
+                <div class="text-muted small">Waktu Inspeksi</div>
                 <div class="fw-medium">{{ $inspection->inspected_at->format('d M Y, H:i') }}</div>
             </div>
             <div class="col-md-3">
-                <div class="text-muted small">{{ __('Tanggal Material Tiba') }}</div>
+                <div class="text-muted small">Tanggal Material Tiba</div>
                 <div class="fw-medium">{{ $inspection->purchaseOrder->actual_arrival ? $inspection->purchaseOrder->actual_arrival->format('d M Y') : '-' }}</div>
             </div>
         </div>
@@ -75,9 +75,9 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-bold">Item #{{ $index + 1 }}: {{ $prItem->material_name }}</h6>
             @if($item->status === 'ok')
-                <span class="badge bg-success">{{ __('Item OK') }}</span>
+                <span class="badge bg-success">Item OK</span>
             @else
-                <span class="badge bg-danger">{{ __('Item NG') }}</span>
+                <span class="badge bg-danger">Item NG</span>
             @endif
         </div>
         <div class="card-body p-0">
@@ -85,20 +85,20 @@
                 <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
                     <thead class="table-light text-center">
                         <tr>
-                            <th>{{ __('Parameter') }}</th>
-                            <th>{{ __('Shape') }}</th>
-                            <th>{{ __('Thickness') }} (mm)</th>
-                            <th>{{ __('Inner Dia.') }} (mm)</th>
-                            <th>{{ __('Outer Dia.') }} (mm)</th>
-                            <th>{{ __('Width') }} (mm)</th>
-                            <th>{{ __('Length') }} (mm)</th>
-                            <th>{{ __('Weight (Kg)') }}</th>
+                            <th>Parameter</th>
+                            <th>Shape</th>
+                            <th>Thickness (mm)</th>
+                            <th>Inner Dia. (mm)</th>
+                            <th>Outer Dia. (mm)</th>
+                            <th>Width (mm)</th>
+                            <th>Length (mm)</th>
+                            <th>Weight (Kg)</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{-- Requested --}}
                         <tr class="text-center">
-                            <td class="text-start text-muted fw-medium bg-light">{{ __('Diminta') }}</td>
+                            <td class="text-start text-muted fw-medium bg-light">Diminta</td>
                             <td>{{ $prItem->shape ?? '-' }}</td>
                             <td>{{ $prItem->thickness ?? '-' }}</td>
                             <td>{{ $prItem->d_inner ?? '-' }}</td>
@@ -109,7 +109,7 @@
                         </tr>
                         {{-- Actual --}}
                         <tr class="text-center">
-                            <td class="text-start fw-bold text-primary bg-light">{{ __('Aktual') }}</td>
+                            <td class="text-start fw-bold text-primary bg-light">Aktual</td>
                             <td class="text-muted">N/A</td>
                             <td class="{{ $thick['class'] }}">{{ $thick['val'] }}</td>
                             <td class="{{ $dInner['class'] }}">{{ $dInner['val'] }}</td>
@@ -124,7 +124,7 @@
             
             @if($item->notes)
             <div class="p-3 border-top bg-light">
-                <div class="small text-muted fw-medium mb-1">{{ __('Catatan') }}:</div>
+                <div class="small text-muted fw-medium mb-1">Catatan:</div>
                 <p class="mb-0 small">{{ $item->notes }}</p>
             </div>
             @endif
@@ -136,7 +136,7 @@
 @if($inspection->attachments->count() > 0)
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">{{ __('Foto Bukti NG') }}</h6>
+        <h6 class="mb-0 fw-bold">Foto Bukti NG</h6>
     </div>
     <div class="card-body">
         <div class="row g-3">

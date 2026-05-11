@@ -68,9 +68,9 @@ class PurchaseRequirementController extends Controller
             'items.*.width' => 'nullable|numeric',
             'items.*.length' => 'nullable|numeric',
         ], [
-            'items.required' => __('Minimal 1 material wajib ditambahkan.'),
-            'items.*.material_name.required' => __('Nama material wajib diisi.'),
-            'items.*.weight_needed.required' => __('Berat dibutuhkan wajib diisi.'),
+            'items.required' => 'Minimal 1 material wajib ditambahkan.',
+            'items.*.material_name.required' => 'Nama material wajib diisi.',
+            'items.*.weight_needed.required' => 'Berat dibutuhkan wajib diisi.',
         ]);
 
         try {
@@ -130,13 +130,50 @@ class PurchaseRequirementController extends Controller
      */
     public function show(string $id)
     {
-        $pr = PurchaseRequirement::with(['period', 'items'])->findOrFail($id);
+        $pr = PurchaseRequirement::with([
+            'period',
+            'items',
+            'quotations.supplier',
+            'quotations.items.prItem',
+            'quotations.exchange_rate',
+        ])->findOrFail($id);
 
         if ($pr->created_by !== auth()->id()) {
             abort(403, "Unauthorized action.");
         }
 
-        return view('purchasing.pr.show', compact('pr'));
+        $quotations = $pr->quotations->map(function ($quotation) {
+            $quotation->total_amount = $quotation->items->sum(function ($item) {
+                $weight = optional($item->prItem)->weight_needed ?? 0;
+
+                return (float) $item->price_per_kg * (float) $weight;
+            });
+
+            $rate = $quotation->exchange_rate;
+            $quotation->total_idr = $rate
+                ? $quotation->items->sum(function ($item) use ($rate) {
+                    $weight = optional($item->prItem)->weight_needed ?? 0;
+
+                    return (float) $item->price_per_kg * (float) $weight * (float) $rate->rate_to_idr;
+                })
+                : null;
+
+            return $quotation;
+        });
+
+        $lowestTotalIdr = $quotations
+            ->pluck('total_idr')
+            ->filter(fn($total) => $total !== null && $total > 0)
+            ->min();
+
+        $submittedQuotationCount = $quotations->where('status', 'submitted')->count();
+
+        return view('purchasing.pr.show', compact(
+            'pr',
+            'quotations',
+            'lowestTotalIdr',
+            'submittedQuotationCount'
+        ));
     }
 
     /**
@@ -184,9 +221,9 @@ class PurchaseRequirementController extends Controller
             'items.*.width' => 'nullable|numeric',
             'items.*.length' => 'nullable|numeric',
         ], [
-            'items.required' => __('Minimal 1 material wajib ditambahkan.'),
-            'items.*.material_name.required' => __('Nama material wajib diisi.'),
-            'items.*.weight_needed.required' => __('Berat dibutuhkan wajib diisi.'),
+            'items.required' => 'Minimal 1 material wajib ditambahkan.',
+            'items.*.material_name.required' => 'Nama material wajib diisi.',
+            'items.*.weight_needed.required' => 'Berat dibutuhkan wajib diisi.',
         ]);
 
         try {
@@ -220,14 +257,14 @@ class PurchaseRequirementController extends Controller
             DB::commit();
 
             $message = $request->action === 'submitted'
-                ? __('Permintaan material berhasil diajukan!')
-                : __('Draft permintaan material berhasil diperbarui.');
+                ? 'Permintaan material berhasil diajukan!'
+                : 'Draft permintaan material berhasil diperbarui.';
 
             return redirect()->route('purchasing.requirements.index')->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', __('Terjadi kesalahan sistem saat menyimpan data: :message', ['message' => $e->getMessage()]));
+            return back()->withInput()->with('error', 'Terjadi kesalahan sistem saat menyimpan data: ' . $e->getMessage());
         }
     }
 

@@ -44,7 +44,7 @@
                 class="sidebar-link {{ request()->routeIs('purchasing.purchase-orders.*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i> <span>Purchase Order</span>
             </a>
-            <a href="{{ route('purchasing.conversations.index') }}" data-chat-drawer
+            <a href="{{ route('purchasing.conversations.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.conversations.*') ? 'active' : '' }}">
                 <i class="bi bi-chat-dots"></i> <span>Negosiasi & Chat</span>
                 <span class="chat-badge badge bg-danger rounded-pill {{ $initChatCount > 0 ? '' : 'd-none' }} ms-auto" style="font-size:0.7rem;">{{ $initChatCount }}</span>
@@ -80,7 +80,7 @@
                 class="sidebar-link {{ request()->routeIs('supplier.purchase-orders.*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i> <span>Purchase Order</span>
             </a>
-            <a href="{{ route('supplier.conversations.index') }}" data-chat-drawer
+            <a href="{{ route('supplier.conversations.index') }}"
                 class="sidebar-link {{ request()->routeIs('supplier.conversations.*') ? 'active' : '' }}">
                 <i class="bi bi-chat-dots"></i> <span>Negosiasi & Chat</span>
                 <span class="chat-badge badge bg-danger rounded-pill {{ $initChatCount > 0 ? '' : 'd-none' }} ms-auto" style="font-size:0.7rem;">{{ $initChatCount }}</span>

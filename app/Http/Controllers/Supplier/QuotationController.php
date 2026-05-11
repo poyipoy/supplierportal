@@ -16,7 +16,7 @@ class QuotationController extends Controller
     /**
      * Tampilkan daftar periode yang open.
      */
-    public function index()
+    public function index(Request $request)
     {
         $periods = Period::where('status', 'open')->orderBy('created_at', 'desc')->get();
 
@@ -43,16 +43,34 @@ class QuotationController extends Controller
     /**
      * Tampilkan daftar PR pada periode tertentu.
      */
-    public function period($period_id)
+    public function period(Request $request, $period_id)
     {
         $period = Period::findOrFail($period_id);
         
-        $requirements = PurchaseRequirement::with(['items', 'quotations' => function($query) {
+        $query = PurchaseRequirement::with(['items', 'quotations' => function($query) {
                 $query->where('supplier_id', auth()->id());
             }])
             ->where('period_id', $period_id)
-            ->whereIn('status', ['submitted', 'bidding'])
-            ->get();
+            ->whereIn('status', ['submitted', 'bidding']);
+
+        if ($request->filled('pr_number')) {
+            $query->where('pr_number', 'like', '%' . $request->pr_number . '%');
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'unresponded') {
+                $query->whereDoesntHave('quotations', function ($q) {
+                    $q->where('supplier_id', auth()->id());
+                });
+            } else {
+                $query->whereHas('quotations', function ($q) use ($request) {
+                    $q->where('supplier_id', auth()->id())
+                        ->where('status', $request->status);
+                });
+            }
+        }
+
+        $requirements = $query->orderByDesc('updated_at')->get();
 
         return view('supplier.quotations.period', compact('period', 'requirements'));
     }
@@ -65,7 +83,7 @@ class QuotationController extends Controller
         $pr = PurchaseRequirement::with('items')->findOrFail($pr_id);
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
-            return redirect()->route('supplier.quotations.index')->with('error', __('Permintaan ini tidak tersedia untuk penawaran.'));
+            return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
         }
 
         // Cari quotation yang sudah ada
@@ -77,7 +95,7 @@ class QuotationController extends Controller
         // Jika sudah submitted, redirect ke show
         if ($quotation && $quotation->status !== 'draft') {
             return redirect()->route('supplier.quotations.show', $quotation->id)
-                ->with('info', __('Anda sudah mengirim penawaran untuk permintaan ini.'));
+                ->with('info', 'Anda sudah mengirim penawaran untuk permintaan ini.');
         }
 
         $usdRate = ExchangeRate::where('currency', 'USD')->orderBy('valid_from', 'desc')->first();
@@ -94,7 +112,7 @@ class QuotationController extends Controller
         $pr = PurchaseRequirement::findOrFail($pr_id);
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
-            return redirect()->route('supplier.quotations.index')->with('error', __('Permintaan ini tidak tersedia untuk penawaran.'));
+            return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
         }
 
         $request->validate([
@@ -116,7 +134,7 @@ class QuotationController extends Controller
 
         if ($quotation && $quotation->status !== 'draft') {
             return redirect()->route('supplier.quotations.show', $quotation->id)
-                ->with('error', __('Penawaran ini sudah diajukan dan tidak bisa diubah.'));
+                ->with('error', 'Penawaran ini sudah diajukan dan tidak bisa diubah.');
         }
 
         try {
@@ -196,12 +214,12 @@ class QuotationController extends Controller
                 }
             }
 
-            $msg = $request->action === 'submitted' ? __('Penawaran berhasil dikirim.') : __('Draft penawaran berhasil disimpan.');
+            $msg = $request->action === 'submitted' ? 'Penawaran berhasil dikirim.' : 'Draft penawaran berhasil disimpan.';
             return redirect()->route('supplier.quotations.period', $pr->period_id)->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', __('Gagal menyimpan penawaran: :message', ['message' => $e->getMessage()]));
+            return back()->withInput()->with('error', 'Gagal menyimpan penawaran: ' . $e->getMessage());
         }
     }
 

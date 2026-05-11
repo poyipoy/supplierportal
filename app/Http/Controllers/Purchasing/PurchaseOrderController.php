@@ -59,13 +59,13 @@ class PurchaseOrderController extends Controller
         ])->findOrFail($quotation_id);
 
         if ($quotation->status !== 'submitted') {
-            return redirect()->back()->with('error', __('Quotation ini tidak valid untuk pembuatan PO.'));
+            return redirect()->back()->with('error', 'Quotation ini tidak valid untuk pembuatan PO.');
         }
 
         // Check if PO already exists for this quotation
         if (PurchaseOrder::where('quotation_id', $quotation_id)->exists()) {
             return redirect()->route('purchasing.purchase-orders.index')
-                ->with('error', __('PO sudah pernah dibuat untuk quotation ini.'));
+                ->with('error', 'PO sudah pernah dibuat untuk quotation ini.');
         }
 
         $rate = $quotation->exchange_rate;
@@ -87,7 +87,7 @@ class PurchaseOrderController extends Controller
         $quotation = Quotation::with('purchaseRequirement')->findOrFail($request->quotation_id);
 
         if ($quotation->status !== 'submitted') {
-            return redirect()->back()->with('error', __('Quotation ini tidak valid.'));
+            return redirect()->back()->with('error', 'Quotation ini tidak valid.');
         }
 
         try {
@@ -141,11 +141,11 @@ class PurchaseOrderController extends Controller
             }
 
             return redirect()->route('purchasing.purchase-orders.show', $po->id)
-                ->with('success', __('Purchase Order :number berhasil dibuat!', ['number' => $po->po_number]));
+                ->with('success', 'Purchase Order ' . $po->po_number . ' berhasil dibuat!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', __('Gagal membuat PO: :message', ['message' => $e->getMessage()]));
+            return back()->withInput()->with('error', 'Gagal membuat PO: ' . $e->getMessage());
         }
     }
 
@@ -166,8 +166,9 @@ class PurchaseOrderController extends Controller
         $rate = $po->quotation->exchange_rate;
 
         // Compute document completion
-        $completedDocs = $po->documents->filter(function ($doc) {
-            return in_array($doc->status, ['verified', 'done']);
+        $completedStatuses = ['received', 'verified', 'done'];
+        $completedDocs = $po->documents->filter(function ($doc) use ($completedStatuses) {
+            return in_array($doc->status, $completedStatuses);
         })->count();
         $totalDocs = $po->documents->count();
         $allDocsComplete = ($completedDocs === $totalDocs && $totalDocs > 0);
@@ -202,6 +203,6 @@ class PurchaseOrderController extends Controller
         }
 
         return redirect()->route('purchasing.purchase-orders.show', $po->id)
-            ->with('success', __('Material dikonfirmasi tiba. QC akan dinotifikasi untuk inspeksi.'));
+            ->with('success', 'Material dikonfirmasi tiba. QC akan dinotifikasi untuk inspeksi.');
     }
 }

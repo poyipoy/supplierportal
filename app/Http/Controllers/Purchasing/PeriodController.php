@@ -35,7 +35,7 @@ class PeriodController extends Controller
             ->exists();
 
         if ($exists) {
-            return back()->with('error', __('Periode untuk bulan dan tahun tersebut sudah ada.'));
+            return back()->with('error', 'Periode untuk bulan dan tahun tersebut sudah ada.');
         }
 
         Period::create([
@@ -46,7 +46,7 @@ class PeriodController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return back()->with('success', __('Periode berhasil ditambahkan.'));
+        return back()->with('success', 'Periode berhasil ditambahkan.');
     }
 
     /**
@@ -71,7 +71,7 @@ class PeriodController extends Controller
                 ->exists();
 
             if ($exists) {
-                return back()->with('error', __('Periode untuk bulan dan tahun tersebut sudah ada.'));
+                return back()->with('error', 'Periode untuk bulan dan tahun tersebut sudah ada.');
             }
         }
 
@@ -82,6 +82,6 @@ class PeriodController extends Controller
             'status' => $request->status,
         ]);
 
-        return back()->with('success', __('Periode berhasil diperbarui.'));
+        return back()->with('success', 'Periode berhasil diperbarui.');
     }
 }

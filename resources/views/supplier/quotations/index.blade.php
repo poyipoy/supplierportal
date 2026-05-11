@@ -1,23 +1,23 @@
 @extends('layouts.app')
 
 @section('title', 'Daftar Periode Penawaran — ADASI Portal')
-@section('page-title', __('Periode Penawaran'))
+@section('page-title', 'Periode Penawaran')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-semibold">{{ __('Pilih Periode') }}</h5>
+        <h5 class="mb-0 fw-semibold">Pilih Periode</h5>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>{{ __('Periode') }}</th>
-                        <th class="text-center">{{ __('Status') }}</th>
-                        <th class="text-center">{{ __('Belum Direspons') }}</th>
-                        <th class="text-center">{{ __('Sudah Dikirim') }}</th>
-                        <th class="text-end pe-4">{{ __('Aksi') }}</th>
+                        <th>Periode</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Belum Direspons</th>
+                        <th class="text-center">Sudah Dikirim</th>
+                        <th class="text-end pe-4">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -43,13 +43,13 @@
                             </td>
                             <td class="text-end pe-4">
                                 <a href="{{ route('supplier.quotations.period', $period->id) }}" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">
-                                    {{ __('Lihat Permintaan') }} <i class="bi bi-arrow-right ms-1"></i>
+                                    Lihat Permintaan <i class="bi bi-arrow-right ms-1"></i>
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">{{ __('Belum ada periode penawaran yang dibuka.') }}</td>
+                            <td colspan="5" class="text-center py-4 text-muted">Belum ada periode penawaran yang dibuka.</td>
                         </tr>
                     @endforelse
                 </tbody>

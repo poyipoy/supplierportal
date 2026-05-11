@@ -1,15 +1,15 @@
 @extends('layouts.app')
 @section('title', 'Manajemen Periode — ADASI Portal')
-@section('page-title', __('Manajemen Periode'))
+@section('page-title', 'Manajemen Periode')
 
 @section('content')
     <div class="row">
         <div class="col-lg-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">{{ __('Daftar Periode Penawaran') }}</h6>
+                    <h6 class="mb-0 fw-bold">Daftar Periode Penawaran</h6>
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
-                        <i class="bi bi-plus-lg"></i> {{ __('Tambah Periode') }}
+                        <i class="bi bi-plus-lg"></i> Tambah Periode
                     </button>
                 </div>
                 <div class="card-body">
@@ -17,12 +17,12 @@
                         <table class="table table-hover align-middle datatable" style="font-size: 0.9rem;">
                             <thead class="table-light">
                                 <tr>
-                                    <th>{{ __('Nama Periode') }}</th>
-                                    <th>{{ __('Bulan') }}</th>
-                                    <th>{{ __('Tahun') }}</th>
-                                    <th>{{ __('Status') }}</th>
-                                    <th>{{ __('Dibuat Oleh') }}</th>
-                                    <th class="text-end">{{ __('Aksi') }}</th>
+                                    <th>Nama Periode</th>
+                                    <th>Bulan</th>
+                                    <th>Tahun</th>
+                                    <th>Status</th>
+                                    <th>Dibuat Oleh</th>
+                                    <th class="text-end">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -33,15 +33,15 @@
                                         <td>{{ $period->year }}</td>
                                         <td>
                                             @if($period->status === 'open')
-                                                <span class="badge bg-success text-uppercase">{{ __('Open') }}</span>
+                                                <span class="badge bg-success text-uppercase">Open</span>
                                             @else
-                                                <span class="badge bg-secondary text-uppercase">{{ __('Closed') }}</span>
+                                                <span class="badge bg-secondary text-uppercase">Closed</span>
                                             @endif
                                         </td>
                                         <td>{{ $period->creator->name ?? '-' }}</td>
                                         <td class="text-end">
                                             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ $period->id }}">
-                                                <i class="bi bi-pencil"></i> {{ __('Edit') }}
+                                                <i class="bi bi-pencil"></i> Edit
                                             </button>
                                         </td>
                                     </tr>
@@ -54,17 +54,17 @@
                                                     @csrf
                                                     @method('PUT')
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title fw-bold">{{ __('Edit Periode') }}</h5>
+                                                        <h5 class="modal-title fw-bold">Edit Periode</h5>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
                                                         <div class="mb-3">
-                                                            <label class="form-label">{{ __('Nama Periode') }}</label>
+                                                            <label class="form-label">Nama Periode</label>
                                                             <input type="text" name="name" class="form-control" value="{{ $period->name }}" required>
                                                         </div>
                                                         <div class="row mb-3">
                                                             <div class="col-md-6">
-                                                                <label class="form-label">{{ __('Bulan') }}</label>
+                                                                <label class="form-label">Bulan</label>
                                                                 <select name="month" class="form-select" required>
                                                                     @for($m=1; $m<=12; $m++)
                                                                         <option value="{{ $m }}" {{ $period->month == $m ? 'selected' : '' }}>
@@ -74,21 +74,21 @@
                                                                 </select>
                                                             </div>
                                                             <div class="col-md-6">
-                                                                <label class="form-label">{{ __('Tahun') }}</label>
+                                                                <label class="form-label">Tahun</label>
                                                                 <input type="number" name="year" class="form-control" value="{{ $period->year }}" min="2000" required>
                                                             </div>
                                                         </div>
                                                         <div class="mb-3">
-                                                            <label class="form-label">{{ __('Status') }}</label>
+                                                            <label class="form-label">Status</label>
                                                             <select name="status" class="form-select" required>
-                                                                <option value="open" {{ $period->status === 'open' ? 'selected' : '' }}>{{ __('Open (Menerima Penawaran)') }}</option>
-                                                                <option value="closed" {{ $period->status === 'closed' ? 'selected' : '' }}>{{ __('Closed (Selesai)') }}</option>
+                                                                <option value="open" {{ $period->status === 'open' ? 'selected' : '' }}>Open (Menerima Penawaran)</option>
+                                                                <option value="closed" {{ $period->status === 'closed' ? 'selected' : '' }}>Closed (Selesai)</option>
                                                             </select>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer bg-light">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
-                                                        <button type="submit" class="btn btn-primary">{{ __('Simpan Perubahan') }}</button>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                                                     </div>
                                                 </form>
                                             </div>
@@ -110,17 +110,17 @@
                 <form action="{{ route('purchasing.periods.store') }}" method="POST">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title fw-bold">{{ __('Tambah Periode Baru') }}</h5>
+                        <h5 class="modal-title fw-bold">Tambah Periode Baru</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">{{ __('Nama Periode') }}</label>
-                            <input type="text" name="name" class="form-control" placeholder="{{ __('Contoh: Periode Mei 2026') }}" required>
+                            <label class="form-label">Nama Periode</label>
+                            <input type="text" name="name" class="form-control" placeholder="Contoh: Periode Mei 2026" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">{{ __('Bulan') }}</label>
+                                <label class="form-label">Bulan</label>
                                 <select name="month" class="form-select" required>
                                     @for($m=1; $m<=12; $m++)
                                         <option value="{{ $m }}" {{ now()->month == $m ? 'selected' : '' }}>
@@ -130,22 +130,22 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">{{ __('Tahun') }}</label>
+                                <label class="form-label">Tahun</label>
                                 <input type="number" name="year" class="form-control" value="{{ now()->year }}" min="2000" required>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">{{ __('Status') }}</label>
+                            <label class="form-label">Status</label>
                             <select name="status" class="form-select" required>
-                                <option value="open">{{ __('Open (Menerima Penawaran)') }}</option>
-                                <option value="closed">{{ __('Closed (Selesai)') }}</option>
+                                <option value="open">Open (Menerima Penawaran)</option>
+                                <option value="closed">Closed (Selesai)</option>
                             </select>
-                            <div class="form-text">{{ __('PR hanya bisa dibuat pada periode berstatus Open.') }}</div>
+                            <div class="form-text">PR hanya bisa dibuat pada periode berstatus Open.</div>
                         </div>
                     </div>
                     <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Batal') }}</button>
-                        <button type="submit" class="btn btn-primary">{{ __('Simpan Periode') }}</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan Periode</button>
                     </div>
                 </form>
             </div>

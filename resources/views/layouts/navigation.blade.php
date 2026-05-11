@@ -26,24 +26,24 @@
                     
                     @if($role === 'admin')
                         <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                            {{ __('Dashboard Admin') }}
+                            Dashboard Admin
                         </x-nav-link>
-                        <x-nav-link href="#">{{ __('Manajemen User') }}</x-nav-link>
+                        <x-nav-link href="#">Manajemen User</x-nav-link>
                     @elseif($role === 'purchasing')
                         <x-nav-link :href="route('purchasing.dashboard')" :active="request()->routeIs('purchasing.dashboard')">
-                            {{ __('Dashboard Purchasing') }}
+                            Dashboard Purchasing
                         </x-nav-link>
-                        <x-nav-link href="#">{{ __('Permintaan Material') }}</x-nav-link>
+                        <x-nav-link href="#">Permintaan Material</x-nav-link>
                     @elseif($role === 'supplier')
                         <x-nav-link :href="route('supplier.dashboard')" :active="request()->routeIs('supplier.dashboard')">
-                            {{ __('Dashboard Supplier') }}
+                            Dashboard Supplier
                         </x-nav-link>
-                        <x-nav-link href="#">{{ __('Penawaran') }}</x-nav-link>
+                        <x-nav-link href="#">Penawaran</x-nav-link>
                     @elseif($role === 'qc')
                         <x-nav-link :href="route('qc.dashboard')" :active="request()->routeIs('qc.dashboard')">
-                            {{ __('Dashboard QC') }}
+                            Dashboard QC
                         </x-nav-link>
-                        <x-nav-link href="#">{{ __('Inspeksi') }}</x-nav-link>
+                        <x-nav-link href="#">Inspeksi</x-nav-link>
                     @endif
                 </div>
             </div>
@@ -65,7 +65,7 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            Profile
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -75,7 +75,7 @@
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                Log Out
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -101,19 +101,19 @@
             
             @if($role === 'admin')
                 <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                    {{ __('Dashboard Admin') }}
+                    Dashboard Admin
                 </x-responsive-nav-link>
             @elseif($role === 'purchasing')
                 <x-responsive-nav-link :href="route('purchasing.dashboard')" :active="request()->routeIs('purchasing.dashboard')">
-                    {{ __('Dashboard Purchasing') }}
+                    Dashboard Purchasing
                 </x-responsive-nav-link>
             @elseif($role === 'supplier')
                 <x-responsive-nav-link :href="route('supplier.dashboard')" :active="request()->routeIs('supplier.dashboard')">
-                    {{ __('Dashboard Supplier') }}
+                    Dashboard Supplier
                 </x-responsive-nav-link>
             @elseif($role === 'qc')
                 <x-responsive-nav-link :href="route('qc.dashboard')" :active="request()->routeIs('qc.dashboard')">
-                    {{ __('Dashboard QC') }}
+                    Dashboard QC
                 </x-responsive-nav-link>
             @endif
         </div>
@@ -127,7 +127,7 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
+                    Profile
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
@@ -137,7 +137,7 @@
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                        Log Out
                     </x-responsive-nav-link>
                 </form>
             </div>

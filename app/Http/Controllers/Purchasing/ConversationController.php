@@ -60,7 +60,7 @@ class ConversationController extends Controller
             ->exists();
 
         if (!$hasQuotation) {
-            return back()->with('error', __('Supplier ini belum memiliki penawaran pada permintaan ini.'));
+            return back()->with('error', 'Supplier ini belum memiliki penawaran pada permintaan ini.');
         }
 
         // Cari conversation yang sudah ada

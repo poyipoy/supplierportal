@@ -1,13 +1,13 @@
 @extends('layouts.app')
 @section('title', 'Manajemen User — ADASI Portal')
-@section('page-title', __('Manajemen User'))
+@section('page-title', 'Manajemen User')
 
 @section('content')
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">{{ __('Daftar Pengguna') }}</h6>
+            <h6 class="mb-0 fw-bold">Daftar Pengguna</h6>
             <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm fw-medium">
-                <i class="bi bi-plus-lg me-1"></i> {{ __('Tambah User') }}
+                <i class="bi bi-plus-lg me-1"></i> Tambah User
             </a>
         </div>
         <div class="card-body">
@@ -15,13 +15,13 @@
                 <table class="table table-hover align-middle datatable" style="font-size: 0.9rem;">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('No') }}</th>
-                            <th>{{ __('Nama') }}</th>
-                            <th>{{ __('Email') }}</th>
-                            <th>{{ __('Role') }}</th>
-                            <th>{{ __('Status') }}</th>
-                            <th>{{ __('Terdaftar Sejak') }}</th>
-                            <th class="text-end">{{ __('Aksi') }}</th>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Terdaftar Sejak</th>
+                            <th class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,21 +48,21 @@
                                 </td>
                                 <td>
                                     @if($user->is_active)
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">{{ __('Aktif') }}</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">Aktif</span>
                                     @else
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{{ __('Nonaktif') }}</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Nonaktif</span>
                                     @endif
                                 </td>
                                 <td>{{ $user->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
-                                    <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('Edit') }}">
+                                    <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     @if($user->id !== auth()->id())
-                                        <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="d-inline" onsubmit='return confirm(@json(__('Yakin ingin menghapus user ini?')));'>
+                                        <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="d-inline" onsubmit='return confirm(@json('Yakin ingin menghapus user ini?'));'>
                                             @csrf
                                             @method('DELETE')
-                                            <button class="btn btn-sm btn-outline-danger" title="{{ __('Hapus') }}">
+                                            <button class="btn btn-sm btn-outline-danger" title="Hapus">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>

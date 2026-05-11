@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Manajemen Kurs — ADASI Portal')
-@section('page-title', __('Manajemen Kurs & Riwayat'))
+@section('page-title', 'Manajemen Kurs & Riwayat')
 
 @section('content')
     <div class="row g-4">
@@ -8,9 +8,9 @@
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">{{ __('Riwayat Pembaruan Kurs') }}</h6>
+                    <h6 class="mb-0 fw-bold">Riwayat Pembaruan Kurs</h6>
                     <div>
-                        <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">{{ __('Semua') }}</a>
+                        <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">Semua</a>
                         <a href="{{ route('admin.exchange-rates.index', ['currency' => 'USD']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'USD' ? 'active' : '' }}">USD</a>
                         <a href="{{ route('admin.exchange-rates.index', ['currency' => 'JPY']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'JPY' ? 'active' : '' }}">JPY</a>
                     </div>
@@ -20,11 +20,11 @@
                         <table class="table table-hover align-middle" style="font-size: 0.9rem;">
                             <thead class="table-light">
                                 <tr>
-                                    <th>{{ __('Mata Uang') }}</th>
-                                    <th>{{ __('Nilai ke IDR') }}</th>
-                                    <th>{{ __('Berlaku Sejak') }}</th>
-                                    <th>{{ __('Diperbarui Oleh') }}</th>
-                                    <th>{{ __('Waktu Update') }}</th>
+                                    <th>Mata Uang</th>
+                                    <th>Nilai ke IDR</th>
+                                    <th>Berlaku Sejak</th>
+                                    <th>Diperbarui Oleh</th>
+                                    <th>Waktu Update</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -42,7 +42,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center py-4 text-muted">{{ __('Belum ada riwayat kurs yang dimasukkan.') }}</td>
+                                        <td colspan="5" class="text-center py-4 text-muted">Belum ada riwayat kurs yang dimasukkan.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -60,16 +60,16 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-plus-circle me-1"></i> {{ __('Input Kurs Baru') }}</h6>
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-plus-circle me-1"></i> Input Kurs Baru</h6>
                 </div>
                 <div class="card-body bg-light">
                     <p class="small text-muted mb-3">
-                        <i class="bi bi-info-circle"></i> {!! __('Memasukkan kurs baru <strong>tidak akan menghapus</strong> kurs lama, melainkan menambah histori baru yang akan digunakan mulai tanggal berlaku.') !!}
+                        <i class="bi bi-info-circle"></i> Memasukkan kurs baru <strong>tidak akan menghapus</strong> kurs lama, melainkan menambah histori baru yang akan digunakan mulai tanggal berlaku.
                     </p>
                     <form action="{{ route('admin.exchange-rates.store') }}" method="POST">
                         @csrf
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">{{ __('Mata Uang') }} <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted">Mata Uang <span class="text-danger">*</span></label>
                             <select name="currency" class="form-select @error('currency') is-invalid @enderror" required>
                                 <option value="USD">USD - US Dollar</option>
                                 <option value="JPY">JPY - Japanese Yen</option>
@@ -78,22 +78,22 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">{{ __('Nilai ke Rupiah (IDR)') }} <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted">Nilai ke Rupiah (IDR) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
-                                <input type="number" step="0.01" name="rate_to_idr" class="form-control @error('rate_to_idr') is-invalid @enderror" required placeholder="{{ __('Misal: 15500') }}">
+                                <input type="number" step="0.01" name="rate_to_idr" class="form-control @error('rate_to_idr') is-invalid @enderror" required placeholder="Misal: 15500">
                             </div>
                             @error('rate_to_idr')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label small fw-medium text-muted">{{ __('Berlaku Sejak') }} <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted">Berlaku Sejak <span class="text-danger">*</span></label>
                             <input type="date" name="valid_from" class="form-control @error('valid_from') is-invalid @enderror" value="{{ date('Y-m-d') }}" required>
                             @error('valid_from')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 fw-medium">
-                            <i class="bi bi-save me-1"></i> {{ __('Simpan Histori Kurs') }}
+                            <i class="bi bi-save me-1"></i> Simpan Histori Kurs
                         </button>
                     </form>
                 </div>

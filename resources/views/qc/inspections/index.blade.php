@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'QC Inspections — ADASI Portal')
-@section('page-title', __('QC Inspections'))
+@section('page-title', 'QC Inspections')
 
 @section('content')
 <div class="card border-0 shadow-sm">
@@ -9,17 +9,17 @@
         <ul class="nav nav-tabs border-bottom-0" id="inspectionTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-medium px-4 pb-3" id="waiting-tab" data-bs-toggle="tab" data-bs-target="#waiting" type="button" role="tab">
-                    {{ __('Menunggu Inspeksi') }} <span class="badge bg-warning text-dark ms-2">{{ $waitingPOs->count() }}</span>
+                    Menunggu Inspeksi <span class="badge bg-warning text-dark ms-2">{{ $waitingPOs->count() }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                    {{ __('Riwayat Inspeksi') }}
+                    Riwayat Inspeksi
                 </button>
             </li>
         </ul>
         <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center">
-            <i class="bi bi-file-earmark-excel me-1"></i> {{ __('Export Excel') }}
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
     </div>
     <div class="card-body border-top">
@@ -30,11 +30,11 @@
                     <table class="table table-hover align-middle" id="waitingTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('No. PO') }}</th>
-                                <th>{{ __('Supplier') }}</th>
-                                <th>{{ __('Tanggal Material Tiba') }}</th>
-                                <th>{{ __('Jumlah Item') }}</th>
-                                <th class="text-end">{{ __('Aksi') }}</th>
+                                <th>No. PO</th>
+                                <th>Supplier</th>
+                                <th>Tanggal Material Tiba</th>
+                                <th>Jumlah Item</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -43,10 +43,10 @@
                                 <td class="fw-bold">{{ $po->po_number }}</td>
                                 <td>{{ $po->quotation->supplier->name }}</td>
                                 <td>{{ $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-' }}</td>
-                                <td>{{ $po->quotation->items->count() }} {{ __('Item') }}</td>
+                                <td>{{ $po->quotation->items->count() }} Item</td>
                                 <td class="text-end">
                                     <a href="{{ route('qc.inspections.create', $po->id) }}" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">
-                                        <i class="bi bi-clipboard-check me-1"></i> {{ __('Mulai Inspeksi') }}
+                                        <i class="bi bi-clipboard-check me-1"></i> Mulai Inspeksi
                                     </a>
                                 </td>
                             </tr>
@@ -62,12 +62,12 @@
                     <table class="table table-hover align-middle" id="historyTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('No. PO') }}</th>
-                                <th>{{ __('Supplier') }}</th>
-                                <th>{{ __('Tanggal Inspeksi') }}</th>
-                                <th class="text-center">{{ __('Status') }}</th>
-                                <th>{{ __('Diinspeksi Oleh') }}</th>
-                                <th class="text-end">{{ __('Aksi') }}</th>
+                                <th>No. PO</th>
+                                <th>Supplier</th>
+                                <th>Tanggal Inspeksi</th>
+                                <th class="text-center">Status</th>
+                                <th>Diinspeksi Oleh</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -86,7 +86,7 @@
                                 <td>{{ $insp->inspector->name }}</td>
                                 <td class="text-end">
                                     <a href="{{ route('qc.inspections.show', $insp->id) }}" class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-eye"></i> {{ __('Detail') }}
+                                        <i class="bi bi-eye"></i> Detail
                                     </a>
                                 </td>
                             </tr>

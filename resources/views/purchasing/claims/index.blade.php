@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Klaim Material — ADASI Portal')
-@section('page-title', __('Klaim Material'))
+@section('page-title', 'Klaim Material')
 
 @section('content')
 <div class="card border-0 shadow-sm">
@@ -9,12 +9,12 @@
         <ul class="nav nav-tabs border-bottom-0" id="claimTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-medium px-4 pb-3" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab">
-                    {{ __('Perlu Tindakan') }} <span class="badge bg-danger ms-2">{{ $actionNeeded->count() }}</span>
+                    Perlu Tindakan <span class="badge bg-danger ms-2">{{ $actionNeeded->count() }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                    {{ __('Riwayat Klaim') }}
+                    Riwayat Klaim
                 </button>
             </li>
         </ul>
@@ -24,17 +24,17 @@
             {{-- Tab: Perlu Tindakan --}}
             <div class="tab-pane fade show active" id="action" role="tabpanel">
                 <div class="alert alert-info small mb-4">
-                    <i class="bi bi-info-circle-fill me-1"></i> {{ __('Daftar PO di bawah ini telah diinspeksi oleh QC dan berstatus NG (Not Good). Silakan ajukan klaim kepada supplier terkait.') }}
+                    <i class="bi bi-info-circle-fill me-1"></i> Daftar PO di bawah ini telah diinspeksi oleh QC dan berstatus NG (Not Good). Silakan ajukan klaim kepada supplier terkait.
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle" id="actionTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('Nomor PO') }}</th>
-                                <th>{{ __('Supplier') }}</th>
-                                <th>{{ __('Tanggal Inspeksi') }}</th>
-                                <th class="text-center">{{ __('Status PO') }}</th>
-                                <th class="text-end">{{ __('Aksi') }}</th>
+                                <th>Nomor PO</th>
+                                <th>Supplier</th>
+                                <th>Tanggal Inspeksi</th>
+                                <th class="text-center">Status PO</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -46,7 +46,7 @@
                                 <td class="text-center"><span class="badge bg-danger text-uppercase">{{ str_replace('_', ' ', $po->status) }}</span></td>
                                 <td class="text-end">
                                     <a href="{{ route('purchasing.claims.create', $po->qcInspections->last()->id) }}" class="btn btn-sm btn-danger">
-                                        <i class="bi bi-exclamation-octagon me-1"></i> {{ __('Buat Klaim') }}
+                                        <i class="bi bi-exclamation-octagon me-1"></i> Buat Klaim
                                     </a>
                                 </td>
                             </tr>
@@ -62,12 +62,12 @@
                     <table class="table table-hover align-middle" id="historyTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('ID Klaim') }}</th>
-                                <th>{{ __('Nomor PO') }}</th>
-                                <th>{{ __('Supplier') }}</th>
-                                <th>{{ __('Tanggal Diajukan') }}</th>
-                                <th class="text-center">{{ __('Status Klaim') }}</th>
-                                <th class="text-end">{{ __('Aksi') }}</th>
+                                <th>ID Klaim</th>
+                                <th>Nomor PO</th>
+                                <th>Supplier</th>
+                                <th>Tanggal Diajukan</th>
+                                <th class="text-center">Status Klaim</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -86,10 +86,10 @@
                                 <td>{{ $claim->purchaseOrder->po_number }}</td>
                                 <td>{{ $claim->purchaseOrder->quotation->supplier->name }}</td>
                                 <td>{{ $claim->created_at->format('d M Y') }}</td>
-                                <td class="text-center"><span class="badge {{ $badgeClass }} text-uppercase">{{ __(ucwords(str_replace('_', ' ', $claim->status))) }}</span></td>
+                                <td class="text-center"><span class="badge {{ $badgeClass }} text-uppercase">{{ ucwords(str_replace('_', ' ', $claim->status)) }}</span></td>
                                 <td class="text-end">
                                     <a href="{{ route('purchasing.claims.show', $claim->id) }}" class="btn btn-sm btn-outline-primary">
-                                        {{ __('Detail') }}
+                                        Detail
                                     </a>
                                 </td>
                             </tr>
