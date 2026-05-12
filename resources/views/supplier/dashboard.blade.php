@@ -84,7 +84,7 @@
                             <tr>
                                 <td class="fw-bold">{{ $po->po_number }}</td>
                                 <td>{{ optional(optional($po->quotation)->purchaseRequirement)->period->name ?? '-' }}</td>
-                                <td>@php $c=match($po->status){'active'=>'bg-primary','waiting_qc'=>'bg-warning text-dark','completed'=>'bg-success','claim_needed'=>'bg-danger',default=>'bg-secondary'};@endphp<span class="badge {{ $c }} text-uppercase" style="font-size:.65rem">{{ ucwords(str_replace('_', ' ', $po->status)) }}</span></td>
+                                <td>@php $c=match(true){$po->is_overdue=>'bg-danger',$po->status==='active'=>'bg-primary',$po->status==='waiting_qc'=>'bg-warning text-dark',$po->status==='completed'=>'bg-success',$po->status==='claim_needed'=>'bg-danger',default=>'bg-secondary'};@endphp<span class="badge {{ $c }} text-uppercase" style="font-size:.65rem">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span></td>
                                 <td>{{ $po->created_at->format('d M Y') }}</td>
                                 <td class="text-end"><a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
                             </tr>

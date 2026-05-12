@@ -63,7 +63,7 @@
                         <th class="text-center">Mata Uang</th>
                         <th class="text-center">Jumlah Item</th>
                         <th class="text-center">Status</th>
-                        <th>Tanggal Kirim</th>
+                        <th>Tanggal Diajukan</th>
                         <th class="text-end">Aksi</th>
                     </tr>
                 </thead>

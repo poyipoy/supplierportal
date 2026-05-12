@@ -14,16 +14,18 @@ class SystemNotification extends Notification
     protected $message;
     protected $url;
     protected $icon;
+    protected $data;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct($title, $message, $url = '#', $icon = 'bi-bell')
+    public function __construct($title, $message, $url = '#', $icon = 'bi-bell', array $data = [], array $replace = [])
     {
-        $this->title = $title;
-        $this->message = $message;
+        $this->title = __($title, $replace);
+        $this->message = __($message, $replace);
         $this->url = $url;
         $this->icon = $icon;
+        $this->data = $data;
     }
 
     /**
@@ -43,11 +45,11 @@ class SystemNotification extends Notification
      */
     public function toDatabase(object $notifiable): array
     {
-        return [
+        return array_merge([
             'title' => $this->title,
             'message' => $this->message,
             'url' => $this->url,
             'icon' => $this->icon,
-        ];
+        ], $this->data);
     }
 }

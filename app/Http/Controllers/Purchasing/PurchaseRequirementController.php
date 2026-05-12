@@ -16,8 +16,7 @@ class PurchaseRequirementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PurchaseRequirement::with(['period', 'items'])
-            ->where('created_by', auth()->id())
+        $query = PurchaseRequirement::with(['period', 'items', 'creator'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('period_id')) {
@@ -136,11 +135,8 @@ class PurchaseRequirementController extends Controller
             'quotations.supplier',
             'quotations.items.prItem',
             'quotations.exchange_rate',
+            'creator',
         ])->findOrFail($id);
-
-        if ($pr->created_by !== auth()->id()) {
-            abort(403, "Unauthorized action.");
-        }
 
         $quotations = $pr->quotations->map(function ($quotation) {
             $quotation->total_amount = $quotation->items->sum(function ($item) {

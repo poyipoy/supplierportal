@@ -26,11 +26,12 @@ class AdminController extends Controller
 
         $kursUsd = ExchangeRate::where('currency', 'USD')->orderBy('valid_from', 'desc')->first();
         $kursJpy = ExchangeRate::where('currency', 'JPY')->orderBy('valid_from', 'desc')->first();
-        $riwayatKurs = ExchangeRate::orderBy('valid_from', 'desc')->take(10)->get();
+        $riwayatKurs = ExchangeRate::orderBy('valid_from', 'desc')->take(30)->get();
+        $riwayatKursTotal = ExchangeRate::count();
 
         return view('admin.dashboard', compact(
             'usersByRole', 'totalUsersActive', 'transaksiBulanIni', 'supplierCount',
-            'klaimAktif', 'recentActivities', 'kursUsd', 'kursJpy', 'riwayatKurs'
+            'klaimAktif', 'recentActivities', 'kursUsd', 'kursJpy', 'riwayatKurs', 'riwayatKursTotal'
         ));
     }
 

@@ -36,7 +36,7 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
         <form method="GET" action="{{ route('purchasing.comparison.historical') }}" class="row g-3 align-items-end" id="historicalFilterForm">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label small fw-bold">Supplier</label>
                 <select name="supplier_id" class="form-select form-select-sm" id="historicalSupplierSelect" required onchange="this.form.submit()">
                     <option value="">Pilih Supplier</option>
@@ -45,9 +45,9 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label small fw-bold">Material</label>
-                <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required>
+                <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required onchange="this.form.submit()">
                     <option value="">Pilih Material</option>
                     @foreach($materials as $material)
                         <option value="{{ $material }}" {{ $selectedMaterialName === $material ? 'selected' : '' }}>{{ $material }}</option>
@@ -72,11 +72,6 @@
                     <input type="radio" class="btn-check" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }} onchange="this.form.submit()">
                     <label class="btn btn-outline-primary" for="periodViewYearly">Per Tahun</label>
                 </div>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:var(--adasi-blue)">
-                    <i class="bi bi-search me-1"></i>Tampilkan
-                </button>
             </div>
         </form>
     </div>
@@ -185,8 +180,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const initialHistoricalPayload = @json($payload);
-const historicalForm = document.getElementById('historicalFilterForm');
-const historicalMaterialSelect = document.getElementById('historicalMaterialSelect');
 let historicalChart = null;
 
 function formatRupiah(value) {
@@ -402,31 +395,6 @@ function renderPayload(payload) {
 }
 
 renderHistoricalChart(initialHistoricalPayload);
-
-historicalMaterialSelect.addEventListener('change', function() {
-    if (!this.value || !historicalChart) {
-        historicalForm.submit();
-        return;
-    }
-
-    const params = new URLSearchParams(new FormData(historicalForm));
-    params.set('view', 'json');
-
-    fetch(historicalForm.action + '?' + params.toString(), {
-        headers: { 'Accept': 'application/json' },
-    })
-        .then((response) => response.json())
-        .then((payload) => {
-            if (!payload.chartData || !payload.tableData || payload.tableData.length === 0) {
-                historicalForm.submit();
-                return;
-            }
-
-            renderPayload(payload);
-            params.delete('view');
-            history.replaceState(null, '', historicalForm.action + '?' + params.toString());
-        });
-});
 </script>
 @endif
 @endpush

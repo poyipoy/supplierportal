@@ -39,6 +39,7 @@
                     <option value="unresponded" {{ request('status') === 'unresponded' ? 'selected' : '' }}>Belum Direspons</option>
                     <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Draft</option>
                     <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>Terkirim</option>
+                    <option value="accepted" {{ request('status') === 'accepted' ? 'selected' : '' }}>Diterima</option>
                     <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Ditolak</option>
                 </select>
             </div>
@@ -80,6 +81,8 @@
                                     <span class="badge bg-secondary">Draft</span>
                                 @elseif($status === 'submitted')
                                     <span class="badge bg-success">Terkirim ({{ $quotation->submitted_at->format('d M Y H:i') }})</span>
+                                @elseif($status === 'accepted')
+                                    <span class="badge bg-primary">Diterima</span>
                                 @elseif($status === 'rejected')
                                     <span class="badge bg-dark">Ditolak</span>
                                 @endif
@@ -93,7 +96,7 @@
                                     <a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-pencil me-1"></i> Lanjutkan
                                     </a>
-                                @elseif($status === 'submitted' || $status === 'rejected')
+                                @elseif(in_array($status, ['submitted', 'accepted', 'rejected']))
                                     <a href="{{ route('supplier.quotations.show', $quotation->id) }}" class="btn btn-sm btn-outline-success">
                                         <i class="bi bi-eye me-1"></i> Lihat
                                     </a>

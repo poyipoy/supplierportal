@@ -18,23 +18,50 @@ class QuotationController extends Controller
      */
     public function index(Request $request)
     {
-        $periods = Period::where('status', 'open')->orderBy('created_at', 'desc')->get();
+        $supplierId = auth()->id();
+
+        $periods = Period::where('status', 'open')
+            ->orWhereHas('purchaseRequirements.quotations', function ($query) use ($supplierId) {
+                $query->where('supplier_id', $supplierId);
+            })
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->get();
 
         // Count PRs for each period
         foreach ($periods as $period) {
-            $allPrs = PurchaseRequirement::where('period_id', $period->id)
+            $activePrs = PurchaseRequirement::where('period_id', $period->id)
                 ->whereIn('status', ['submitted', 'bidding'])
                 ->get();
 
-            $period->total_prs = $allPrs->count();
+            $quotedPrIds = Quotation::where('supplier_id', $supplierId)
+                ->whereHas('purchaseRequirement', function ($query) use ($period) {
+                    $query->where('period_id', $period->id);
+                })
+                ->pluck('pr_id');
+
+            $period->total_prs = $activePrs->pluck('id')
+                ->merge($quotedPrIds)
+                ->unique()
+                ->count();
             
-            // Berapa PR yang sudah dikirim penawaran oleh user ini (termasuk draft/submitted)
+            // Berapa PR yang sudah dikirim penawaran oleh user ini (termasuk draft/submitted/rejected/accepted)
             $respondedCount = Quotation::where('supplier_id', auth()->id())
-                ->whereIn('pr_id', $allPrs->pluck('id'))
+                ->whereIn('pr_id', $quotedPrIds)
+                ->count();
+
+            $rejectedCount = Quotation::where('supplier_id', auth()->id())
+                ->whereIn('pr_id', $quotedPrIds)
+                ->where('status', 'rejected')
                 ->count();
                 
             $period->responded_prs = $respondedCount;
-            $period->unresponded_prs = $period->total_prs - $respondedCount;
+            $period->rejected_prs = $rejectedCount;
+            $period->unresponded_prs = $activePrs->filter(function ($pr) use ($supplierId) {
+                return ! Quotation::where('supplier_id', $supplierId)
+                    ->where('pr_id', $pr->id)
+                    ->exists();
+            })->count();
         }
 
         return view('supplier.quotations.index', compact('periods'));
@@ -46,12 +73,18 @@ class QuotationController extends Controller
     public function period(Request $request, $period_id)
     {
         $period = Period::findOrFail($period_id);
+        $supplierId = auth()->id();
         
-        $query = PurchaseRequirement::with(['items', 'quotations' => function($query) {
-                $query->where('supplier_id', auth()->id());
+        $query = PurchaseRequirement::with(['items', 'quotations' => function($query) use ($supplierId) {
+                $query->where('supplier_id', $supplierId);
             }])
             ->where('period_id', $period_id)
-            ->whereIn('status', ['submitted', 'bidding']);
+            ->where(function ($query) use ($supplierId) {
+                $query->whereIn('status', ['submitted', 'bidding'])
+                    ->orWhereHas('quotations', function ($q) use ($supplierId) {
+                        $q->where('supplier_id', $supplierId);
+                    });
+            });
 
         if ($request->filled('pr_number')) {
             $query->where('pr_number', 'like', '%' . $request->pr_number . '%');
@@ -59,12 +92,13 @@ class QuotationController extends Controller
 
         if ($request->filled('status')) {
             if ($request->status === 'unresponded') {
-                $query->whereDoesntHave('quotations', function ($q) {
-                    $q->where('supplier_id', auth()->id());
-                });
+                $query->whereIn('status', ['submitted', 'bidding'])
+                    ->whereDoesntHave('quotations', function ($q) use ($supplierId) {
+                        $q->where('supplier_id', $supplierId);
+                    });
             } else {
-                $query->whereHas('quotations', function ($q) use ($request) {
-                    $q->where('supplier_id', auth()->id())
+                $query->whereHas('quotations', function ($q) use ($request, $supplierId) {
+                    $q->where('supplier_id', $supplierId)
                         ->where('status', $request->status);
                 });
             }

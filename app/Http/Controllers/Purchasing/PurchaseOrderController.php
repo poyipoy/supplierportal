@@ -27,7 +27,19 @@ class PurchaseOrderController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'overdue') {
+                $query->where(function ($q) {
+                    $q->where('status', 'overdue')
+                        ->orWhere(function ($q) {
+                            $q->where('status', 'active')
+                                ->whereNotNull('estimated_arrival')
+                                ->whereDate('estimated_arrival', '<', today())
+                                ->whereNull('actual_arrival');
+                        });
+                });
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->filled('supplier_id')) {
@@ -36,15 +48,12 @@ class PurchaseOrderController extends Controller
 
         $purchaseOrders = $query->get();
 
-        // Compute overdue flag dynamically
-        foreach ($purchaseOrders as $po) {
-            $po->is_overdue = ($po->status === 'active' && $po->estimated_arrival && $po->estimated_arrival->isPast() && !$po->actual_arrival);
-        }
-
         $suppliers = \App\Models\User::where('role', 'supplier')->get();
 
         return view('purchasing.po.index', compact('purchaseOrders', 'suppliers'));
     }
+
+    
 
     /**
      * Form buat PO dari quotation terpilih.
@@ -132,11 +141,9 @@ class PurchaseOrderController extends Controller
             if ($supplierUser) {
                 $supplierUser->notify(new \App\Notifications\SystemNotification(
                     'PO Baru Diterbitkan',
-                    'Purchase Order :po_number telah diterbitkan untuk penawaran Anda.',
+                    "Purchase Order {$po->po_number} telah diterbitkan untuk penawaran Anda.",
                     route('supplier.purchase-orders.show', $po->id),
-                    'bi-receipt text-primary',
-                    [],
-                    ['po_number' => $po->po_number]
+                    'bi-receipt text-primary'
                 ));
             }
 
@@ -183,6 +190,11 @@ class PurchaseOrderController extends Controller
     {
         $po = PurchaseOrder::findOrFail($id);
 
+        if (!in_array($po->status, ['active', 'overdue'])) {
+            return redirect()->route('purchasing.purchase-orders.show', $po->id)
+                ->with('error', 'Material hanya bisa dikonfirmasi tiba untuk PO berstatus Active atau Overdue.');
+        }
+
         $po->update([
             'actual_arrival' => now()->toDateString(),
             'status' => 'waiting_qc',
@@ -194,11 +206,9 @@ class PurchaseOrderController extends Controller
             /** @var \App\Models\User $qcUser */
             $qcUser->notify(new \App\Notifications\SystemNotification(
                 'Material Tiba - Siap Inspeksi',
-                'Material dari PO :po_number telah tiba. Silakan lakukan inspeksi QC.',
+                "Material dari PO {$po->po_number} telah tiba. Silakan lakukan inspeksi QC.",
                 route('qc.inspections.create', $po->id),
-                'bi-box-seam text-warning',
-                [],
-                ['po_number' => $po->po_number]
+                'bi-box-seam text-warning'
             ));
         }
 

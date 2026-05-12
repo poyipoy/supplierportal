@@ -37,7 +37,6 @@
                     <option value="">Semua Status</option>
                     <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                     <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
-                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     <option value="bidding" {{ request('status') == 'bidding' ? 'selected' : '' }}>Bidding</option>
                     <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
@@ -55,6 +54,7 @@
                         <th>No</th>
                         <th>No. PR</th>
                         <th>Periode</th>
+                        <th>Dibuat Oleh</th>
                         <th>Jumlah Item</th>
                         <th>Status</th>
                         <th>Tanggal Dibuat</th>
@@ -67,13 +67,13 @@
                             <td>{{ $index + 1 }}</td>
                             <td class="fw-medium">{{ $pr->pr_number ?? '-' }}</td>
                             <td>{{ $pr->period->name }}</td>
+                            <td>{{ $pr->creator->name ?? '-' }}</td>
                             <td>{{ $pr->items->count() }} Item</td>
                             <td>
                                 @php
                                     $badgeClass = match($pr->status) {
                                         'draft' => 'bg-secondary',
                                         'submitted' => 'bg-primary',
-                                        'approved' => 'bg-success',
                                         'rejected' => 'bg-danger',
                                         'bidding' => 'bg-warning text-dark',
                                         'completed' => 'bg-success', // Can use dark green if preferred
@@ -82,7 +82,6 @@
                                     $statusLabel = match($pr->status) {
                                         'draft' => 'Draft',
                                         'submitted' => 'Submitted',
-                                        'approved' => 'Approved',
                                         'rejected' => 'Rejected',
                                         'bidding' => 'Bidding',
                                         'completed' => 'Completed',
@@ -98,7 +97,7 @@
                                 <a href="{{ route('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                @if(in_array($pr->status, ['draft', 'rejected']))
+                                @if($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected']))
                                     <a href="{{ route('purchasing.requirements.edit', $pr->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>

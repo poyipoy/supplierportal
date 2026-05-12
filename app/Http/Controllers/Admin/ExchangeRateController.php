@@ -13,15 +13,24 @@ class ExchangeRateController extends Controller
      */
     public function index(Request $request)
     {
+        $request->validate([
+            'currency' => 'nullable|in:USD,JPY',
+        ]);
+
         $query = ExchangeRate::with('creator')->orderBy('valid_from', 'desc');
 
         if ($request->filled('currency')) {
             $query->where('currency', $request->currency);
         }
 
-        $rates = $query->paginate(20);
+        $rates = $query->paginate(30)->withQueryString();
+        $currencyCounts = ExchangeRate::selectRaw('currency, COUNT(*) as total')
+            ->groupBy('currency')
+            ->pluck('total', 'currency')
+            ->toArray();
+        $totalRates = ExchangeRate::count();
 
-        return view('admin.exchange-rates.index', compact('rates'));
+        return view('admin.exchange-rates.index', compact('rates', 'currencyCounts', 'totalRates'));
     }
 
     /**

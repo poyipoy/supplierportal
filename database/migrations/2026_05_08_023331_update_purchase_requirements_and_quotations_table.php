@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // Fix PR status Enum
-        DB::statement("ALTER TABLE purchase_requirements MODIFY COLUMN status ENUM('draft', 'submitted', 'approved', 'rejected', 'bidding', 'completed') DEFAULT 'draft'");
+        DB::statement("ALTER TABLE purchase_requirements MODIFY COLUMN status ENUM('draft', 'submitted', 'rejected', 'bidding', 'completed') DEFAULT 'draft'");
 
         // Add new columns to quotations
         Schema::table('quotations', function (Blueprint $table) {

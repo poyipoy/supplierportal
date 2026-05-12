@@ -13,7 +13,6 @@
                     $badgeClass = match($pr->status) {
                         'draft' => 'bg-secondary',
                         'submitted' => 'bg-primary',
-                        'approved' => 'bg-success',
                         'rejected' => 'bg-danger',
                         'bidding' => 'bg-warning text-dark',
                         'completed' => 'bg-success',
@@ -22,7 +21,6 @@
                     $statusLabel = match($pr->status) {
                         'draft' => 'Draft',
                         'submitted' => 'Submitted',
-                        'approved' => 'Approved',
                         'rejected' => 'Rejected',
                         'bidding' => 'Bidding',
                         'completed' => 'Completed',
@@ -39,6 +37,10 @@
                 <div class="row mb-3">
                     <div class="col-md-4 text-muted small">Tanggal Dibuat</div>
                     <div class="col-md-8 fw-medium">{{ $pr->created_at->format('d F Y, H:i') }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 text-muted small">Dibuat Oleh</div>
+                    <div class="col-md-8 fw-medium">{{ $pr->creator->name ?? '-' }}</div>
                 </div>
                 <div class="row">
                     <div class="col-md-4 text-muted small">Catatan Tambahan</div>
@@ -116,7 +118,7 @@
                                     <th>Total Harga</th>
                                     <th>Estimasi IDR</th>
                                     <th>Est. Pengiriman</th>
-                                    <th>Tgl Dikirim</th>
+                                    <th>Tanggal Diajukan</th>
                                     <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -186,7 +188,11 @@
                 <h6 class="mb-0 fw-bold">Aksi & Status</h6>
             </div>
             <div class="card-body">
-                @if($pr->status === 'draft')
+                @if($pr->created_by !== auth()->id())
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-eye-fill me-1"></i> Anda melihat permintaan yang dibuat oleh {{ $pr->creator->name ?? 'purchasing lain' }}. Aksi edit dan hapus hanya tersedia untuk pembuat PR.
+                    </div>
+                @elseif($pr->status === 'draft')
                     <div class="alert alert-secondary small">
                         <i class="bi bi-info-circle me-1"></i> Permintaan ini masih berstatus draft. Silakan edit dan ajukan jika sudah selesai.
                     </div>

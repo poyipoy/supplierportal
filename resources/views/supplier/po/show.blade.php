@@ -17,14 +17,15 @@
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
                 @php
-                    $badgeClass = match($po->status) {
-                        'active' => 'bg-primary',
-                        'waiting_qc' => 'bg-warning text-dark',
-                        'completed' => 'bg-success',
+                    $badgeClass = match(true) {
+                        $po->is_overdue => 'bg-danger',
+                        $po->status === 'active' => 'bg-primary',
+                        $po->status === 'waiting_qc' => 'bg-warning text-dark',
+                        $po->status === 'completed' => 'bg-success',
                         default => 'bg-secondary'
                     };
                 @endphp
-                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ ucwords(str_replace('_', ' ', $po->status)) }}</span>
+                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
             </div>
             <div class="card-body">
                 <div class="row mb-2">

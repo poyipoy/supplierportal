@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Update purchase_orders status enum
-        DB::statement("ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('active','waiting_qc','completed','claim_needed','cancelled') DEFAULT 'active'");
+        DB::statement("ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('active','overdue','waiting_qc','completed','claim_needed','cancelled') DEFAULT 'active'");
 
         // 2. Add notes to qc_items
         Schema::table('qc_items', function (Blueprint $table) {
@@ -32,7 +32,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('active','waiting_qc','completed','cancelled') DEFAULT 'active'");
+        DB::statement("ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('active','overdue','waiting_qc','completed','cancelled') DEFAULT 'active'");
 
         Schema::table('qc_items', function (Blueprint $table) {
             $table->dropColumn('notes');

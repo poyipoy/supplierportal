@@ -27,6 +27,17 @@ class PurchaseOrder extends Model
         ];
     }
 
+    public function getIsOverdueAttribute(): bool
+    {
+        return $this->status === 'overdue'
+            || (
+                $this->status === 'active'
+                && $this->estimated_arrival
+                && $this->estimated_arrival->isBefore(today())
+                && !$this->actual_arrival
+            );
+    }
+
     // ─── Relationships ───
 
     public function quotation(): BelongsTo

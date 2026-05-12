@@ -16,7 +16,23 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">Detail Harga Material</h6>
-                    <span class="badge bg-success px-3 py-2 text-uppercase">Terkirim</span>
+                    @php
+                        $statusBadge = match($quotation->status) {
+                            'accepted' => 'bg-primary',
+                            'rejected' => 'bg-dark',
+                            'submitted' => 'bg-success',
+                            'draft' => 'bg-secondary',
+                            default => 'bg-secondary',
+                        };
+                        $statusLabel = match($quotation->status) {
+                            'accepted' => 'Diterima',
+                            'rejected' => 'Ditolak',
+                            'submitted' => 'Terkirim',
+                            'draft' => 'Draft',
+                            default => ucwords(str_replace('_', ' ', $quotation->status)),
+                        };
+                    @endphp
+                    <span class="badge {{ $statusBadge }} px-3 py-2 text-uppercase">{{ $statusLabel }}</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -123,10 +139,20 @@
                 </div>
             </div>
 
-            <div class="alert alert-info small">
-                <i class="bi bi-info-circle-fill me-1"></i> Penawaran Anda sudah terekam dan sedang menunggu evaluasi dari
-                tim Purchasing ADASI.
-            </div>
+            @if($quotation->status === 'rejected')
+                <div class="alert alert-dark small">
+                    <i class="bi bi-x-circle-fill me-1"></i> Penawaran ini tidak dipilih oleh tim Purchasing ADASI.
+                </div>
+            @elseif($quotation->status === 'accepted')
+                <div class="alert alert-success small">
+                    <i class="bi bi-check-circle-fill me-1"></i> Penawaran ini dipilih oleh tim Purchasing ADASI.
+                </div>
+            @else
+                <div class="alert alert-info small">
+                    <i class="bi bi-info-circle-fill me-1"></i> Penawaran Anda sudah terekam dan sedang menunggu evaluasi dari
+                    tim Purchasing ADASI.
+                </div>
+            @endif
         </div>
     </div>
 @endsection

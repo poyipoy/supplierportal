@@ -16,7 +16,7 @@ class PurchasingController extends Controller
         $prAktif = PurchaseRequirement::whereIn('status', ['submitted', 'bidding'])->count();
         $menungguPenawaran = PurchaseRequirement::where('status', 'submitted')
             ->whereDoesntHave('quotations')->count();
-        $poBerjalan = PurchaseOrder::whereIn('status', ['active', 'waiting_qc'])->count();
+        $poBerjalan = PurchaseOrder::whereIn('status', ['active', 'overdue', 'waiting_qc'])->count();
         $materialMingguIni = PurchaseOrder::where('status', 'active')
             ->whereBetween('estimated_arrival', [now(), now()->addDays(7)])->count();
 
@@ -38,7 +38,7 @@ class PurchasingController extends Controller
         // Tabel cepat
         $prTerbaru = PurchaseRequirement::with('period')->orderBy('created_at', 'desc')->take(5)->get();
         $poTerdekat = PurchaseOrder::with(['quotation.supplier', 'quotation.purchaseRequirement'])
-            ->where('status', 'active')->whereNotNull('estimated_arrival')
+            ->whereIn('status', ['active', 'overdue'])->whereNotNull('estimated_arrival')
             ->orderBy('estimated_arrival', 'asc')->take(5)->get();
 
         // Kurs

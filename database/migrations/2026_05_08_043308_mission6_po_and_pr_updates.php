@@ -20,7 +20,7 @@ return new class extends Migration
         });
 
         // 3. Update purchase_orders status enum to include waiting_qc
-        DB::statement("ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('active','waiting_qc','completed','cancelled') DEFAULT 'active'");
+        DB::statement("ALTER TABLE purchase_orders MODIFY COLUMN status ENUM('active','overdue','waiting_qc','completed','cancelled') DEFAULT 'active'");
 
         // 4. Update po_documents status enum per user requirements
         DB::statement("ALTER TABLE po_documents MODIFY COLUMN status ENUM('pending','received','verified','issued','processing','done') DEFAULT 'pending'");

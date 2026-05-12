@@ -76,7 +76,10 @@
                     <div class="col-6"><div class="p-3 bg-light rounded text-center"><div class="text-muted small mb-1">USD → IDR</div><h5 class="fw-bold mb-0">Rp {{ $kursUsd ? number_format($kursUsd->rate_to_idr, 0, ',', '.') : '-' }}</h5></div></div>
                     <div class="col-6"><div class="p-3 bg-light rounded text-center"><div class="text-muted small mb-1">JPY → IDR</div><h5 class="fw-bold mb-0">Rp {{ $kursJpy ? number_format($kursJpy->rate_to_idr, 0, ',', '.') : '-' }}</h5></div></div>
                 </div>
-                <h6 class="fw-bold small mb-2">Riwayat 10 Kurs Terakhir</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold small mb-0">Riwayat Kurs Terbaru</h6>
+                    <a href="{{ route('admin.exchange-rates.index') }}" class="small text-decoration-none">Lihat semua {{ $riwayatKursTotal }}</a>
+                </div>
                 <div class="table-responsive" style="max-height:250px;overflow-y:auto">
                     <table class="table table-sm table-hover align-middle mb-0" style="font-size:.8rem">
                         <thead class="table-light"><tr><th>Mata Uang</th><th>Rate</th><th>Berlaku Dari</th></tr></thead>

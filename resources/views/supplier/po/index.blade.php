@@ -29,16 +29,18 @@
                             foreach($po->quotation->items as $item) {
                                 $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
                             }
-                            $badgeClass = match($po->status) {
-                                'active' => 'bg-primary',
-                                'waiting_qc' => 'bg-warning text-dark',
-                                'completed' => 'bg-success',
+                            $badgeClass = match(true) {
+                                $po->is_overdue => 'bg-danger',
+                                $po->status === 'active' => 'bg-primary',
+                                $po->status === 'waiting_qc' => 'bg-warning text-dark',
+                                $po->status === 'completed' => 'bg-success',
                                 default => 'bg-secondary'
                             };
-                            $statusLabel = match($po->status) {
-                                'active' => 'Active',
-                                'waiting_qc' => 'Waiting QC',
-                                'completed' => 'Completed',
+                            $statusLabel = match(true) {
+                                $po->is_overdue => 'Overdue',
+                                $po->status === 'active' => 'Active',
+                                $po->status === 'waiting_qc' => 'Waiting QC',
+                                $po->status === 'completed' => 'Completed',
                                 default => ucwords(str_replace('_', ' ', $po->status)),
                             };
                         @endphp

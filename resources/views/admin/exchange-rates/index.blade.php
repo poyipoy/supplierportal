@@ -8,14 +8,25 @@
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Riwayat Pembaruan Kurs</h6>
                     <div>
-                        <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">Semua</a>
-                        <a href="{{ route('admin.exchange-rates.index', ['currency' => 'USD']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'USD' ? 'active' : '' }}">USD</a>
-                        <a href="{{ route('admin.exchange-rates.index', ['currency' => 'JPY']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'JPY' ? 'active' : '' }}">JPY</a>
+                        <h6 class="mb-0 fw-bold">Riwayat Pembaruan Kurs</h6>
+                        <div class="small text-muted">Total {{ $totalRates }} record kurs tersimpan.</div>
+                    </div>
+                    <div>
+                        <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">Semua <span class="badge text-bg-light">{{ $totalRates }}</span></a>
+                        <a href="{{ route('admin.exchange-rates.index', ['currency' => 'USD']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'USD' ? 'active' : '' }}">USD <span class="badge text-bg-light">{{ $currencyCounts['USD'] ?? 0 }}</span></a>
+                        <a href="{{ route('admin.exchange-rates.index', ['currency' => 'JPY']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'JPY' ? 'active' : '' }}">JPY <span class="badge text-bg-light">{{ $currencyCounts['JPY'] ?? 0 }}</span></a>
                     </div>
                 </div>
                 <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="small text-muted">
+                            Menampilkan {{ $rates->count() }} dari {{ $rates->total() }} record
+                            @if(request('currency'))
+                                untuk mata uang {{ request('currency') }}
+                            @endif
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle" style="font-size: 0.9rem;">
                             <thead class="table-light">

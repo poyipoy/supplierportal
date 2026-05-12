@@ -14,7 +14,7 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                    Riwayat Inspeksi
+                    Riwayat Inspeksi <span class="badge bg-secondary ms-2">{{ $history->count() }}</span>
                 </button>
             </li>
         </ul>

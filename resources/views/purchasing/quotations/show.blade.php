@@ -29,7 +29,7 @@
                         <div class="mb-3"><span class="text-muted small d-block">Mata Uang</span><span class="badge bg-dark">{{ $quotation->currency }}</span></div>
                     </div>
                     <div class="col-md-6">
-                        <div class="mb-3"><span class="text-muted small d-block">Tanggal Kirim</span><span class="fw-medium">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d F Y, H:i') : '-' }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">Tanggal Diajukan</span><span class="fw-medium">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d F Y, H:i') : '-' }}</span></div>
                         <div class="mb-3"><span class="text-muted small d-block">Estimasi Pengiriman</span><span class="fw-medium">{{ $quotation->estimated_delivery ?? '-' }}</span></div>
                         <div class="mb-3"><span class="text-muted small d-block">Termin Pembayaran</span><span class="fw-medium">{{ $quotation->payment_terms ?? '-' }}</span></div>
                     </div>
