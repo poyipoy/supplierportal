@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequirement;
 use App\Models\Quotation;
+use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 
 class ConversationController extends Controller
@@ -56,7 +57,7 @@ class ConversationController extends Controller
         // Validasi: supplier harus punya quotation pada PR ini
         $hasQuotation = Quotation::where('pr_id', $pr_id)
             ->where('supplier_id', $supplier_id)
-            ->whereIn('status', ['submitted', 'accepted'])
+            ->whereIn('status', ['submitted', 'revision_requested', 'accepted'])
             ->exists();
 
         if (!$hasQuotation) {
@@ -86,7 +87,12 @@ class ConversationController extends Controller
             ]);
         }
 
-        return redirect()->route('purchasing.conversations.show', $conversation->id);
+        $showParameters = [$conversation->id];
+        if (PurchasingNavigation::isSafeUrl(request()->input('return_url'))) {
+            $showParameters['return_url'] = request()->input('return_url');
+        }
+
+        return redirect()->route('purchasing.conversations.show', $showParameters);
     }
 
     /**
@@ -121,6 +127,11 @@ class ConversationController extends Controller
             ]);
         }
 
-        return redirect()->route('purchasing.conversations.show', $conversation->id);
+        $showParameters = [$conversation->id];
+        if (PurchasingNavigation::isSafeUrl(request()->input('return_url'))) {
+            $showParameters['return_url'] = request()->input('return_url');
+        }
+
+        return redirect()->route('purchasing.conversations.show', $showParameters);
     }
 }

@@ -28,7 +28,10 @@ class SupplierController extends Controller
             ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))
             ->orderBy('created_at', 'desc')->take(5)->get();
 
-        $poTerbaru = PurchaseOrder::with(['quotation.purchaseRequirement.period'])
+        $poTerbaru = PurchaseOrder::with([
+                'quotation.purchaseRequirement.period',
+                'materialClaims' => fn($q) => $q->where('supplier_id', $sid)->latest(),
+            ])
             ->whereHas('quotation', fn($q) => $q->where('supplier_id', $sid))
             ->orderBy('created_at', 'desc')->take(5)->get();
 

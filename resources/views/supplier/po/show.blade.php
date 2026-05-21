@@ -21,6 +21,7 @@
                         $po->is_overdue => 'bg-danger',
                         $po->status === 'active' => 'bg-primary',
                         $po->status === 'waiting_qc' => 'bg-warning text-dark',
+                        $po->status === 'claim_needed' => 'bg-danger',
                         $po->status === 'completed' => 'bg-success',
                         default => 'bg-secondary'
                     };
@@ -28,6 +29,10 @@
                 <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
             </div>
             <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">No. PR</div>
+                    <div class="col-md-8 fw-medium text-primary">{{ $po->quotation->purchaseRequirement->pr_number ?? '-' }}</div>
+                </div>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Tanggal Dibuat</div>
                     <div class="col-md-8 fw-medium">{{ $po->created_at->format('d F Y, H:i') }}</div>
@@ -109,6 +114,48 @@
     </div>
 
     <div class="col-lg-4">
+        @php
+            $pendingClaim = $po->materialClaims
+                ->where('status', 'pending')
+                ->sortByDesc('created_at')
+                ->first();
+            $latestClaim = $po->materialClaims
+                ->sortByDesc('created_at')
+                ->first();
+        @endphp
+
+        @if($pendingClaim || $latestClaim)
+            <div class="card border-danger shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-danger">
+                        <i class="bi bi-exclamation-octagon me-2"></i>Klaim Material
+                    </h6>
+                    <span class="badge {{ $pendingClaim ? 'bg-warning text-dark' : 'bg-danger' }}">
+                        {{ $pendingClaim ? 'Perlu Respons' : 'Ada Klaim' }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    @if($pendingClaim)
+                        <p class="small text-muted mb-3">
+                            ADASI mengajukan klaim untuk PO ini. Silakan berikan tanggapan dan lampiran pendukung.
+                        </p>
+                        <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-reply me-2"></i> Respons Klaim</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    @else
+                        <p class="small text-muted mb-3">
+                            PO ini memiliki riwayat klaim material. Buka detail klaim untuk melihat status dan respons.
+                        </p>
+                        <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-exclamation-octagon me-2"></i> Lihat Klaim Material</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    @endif
+                </div>
+            </div>
+        @endif
+
         {{-- Document Status (read-only for supplier) --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3">

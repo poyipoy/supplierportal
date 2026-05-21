@@ -129,9 +129,18 @@
                                         $statusBadge = match($quotation->status) {
                                             'draft' => 'bg-secondary',
                                             'submitted' => 'bg-primary',
+                                            'revision_requested' => 'bg-warning text-dark',
                                             'accepted' => 'bg-success',
                                             'rejected' => 'bg-danger',
                                             default => 'bg-secondary',
+                                        };
+                                        $statusLabel = match($quotation->status) {
+                                            'draft' => 'Draft',
+                                            'submitted' => 'Terkirim',
+                                            'revision_requested' => 'Perlu Revisi',
+                                            'accepted' => 'Diterima',
+                                            'rejected' => 'Ditolak',
+                                            default => ucwords(str_replace('_', ' ', $quotation->status)),
                                         };
                                         $isLowest = $lowestTotalIdr !== null
                                             && $quotation->total_idr !== null
@@ -157,15 +166,15 @@
                                             {{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge {{ $statusBadge }} text-uppercase">{{ $quotation->status }}</span>
+                                            <span class="badge {{ $statusBadge }} text-uppercase">{{ $statusLabel }}</span>
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ route('purchasing.quotations.show', $quotation->id) }}" class="btn btn-outline-primary">
+                                                <a href="{{ route('purchasing.quotations.show', [$quotation->id, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()]) }}" class="btn btn-outline-primary">
                                                     <i class="bi bi-eye me-1"></i> Lihat Detail
                                                 </a>
                                                 @if($submittedQuotationCount >= 2)
-                                                    <a href="{{ route('purchasing.comparison.inter-supplier', ['pr_id' => $pr->id]) }}" class="btn btn-outline-success">
+                                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.comparison.inter-supplier', ['pr_id' => $pr->id]) }}" class="btn btn-outline-success">
                                                         <i class="bi bi-bar-chart me-1"></i> Bandingkan
                                                     </a>
                                                 @endif
@@ -197,10 +206,11 @@
                         <i class="bi bi-info-circle me-1"></i> Permintaan ini masih berstatus draft. Silakan edit dan ajukan jika sudah selesai.
                     </div>
                     <div class="d-grid gap-2">
-                        <a href="{{ route('purchasing.requirements.edit', $pr->id) }}" class="btn btn-outline-primary">Edit Draft</a>
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.edit', $pr->id) }}" class="btn btn-outline-primary">Edit Draft</a>
                         <form action="{{ route('purchasing.requirements.update', $pr->id) }}" method="POST">
                             @csrf
                             @method('PUT')
+                            <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                             <input type="hidden" name="action" value="submitted">
                             <input type="hidden" name="period_id" value="{{ $pr->period_id }}">
                             <input type="hidden" name="notes" value="{{ $pr->notes }}">
@@ -223,7 +233,7 @@
                         <i class="bi bi-exclamation-triangle-fill me-1"></i> Permintaan ditolak oleh Admin. Silakan periksa catatan dan revisi.
                     </div>
                     <div class="d-grid gap-2">
-                        <a href="{{ route('purchasing.requirements.edit', $pr->id) }}" class="btn btn-danger">Revisi & Ajukan Ulang</a>
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.edit', $pr->id) }}" class="btn btn-danger">Revisi & Ajukan Ulang</a>
                     </div>
                 @else
                     <div class="alert alert-success small mb-0">
@@ -231,22 +241,23 @@
                     </div>
                 @endif
                 <div class="mt-3 text-center">
-                    <a href="{{ route('purchasing.requirements.index') }}" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i>Kembali ke Daftar</a>
+                    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.requirements.index') }}" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i>Kembali ke Daftar</a>
                 </div>
             </div>
         </div>
 
         {{-- Chat Suppliers --}}
-        @if($pr->quotations && $pr->quotations->whereIn('status', ['submitted', 'accepted'])->count() > 0)
+        @if($pr->quotations && $pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->count() > 0)
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
                 <h6 class="mb-0 fw-bold">Negosiasi & Chat</h6>
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    @foreach($pr->quotations->whereIn('status', ['submitted', 'accepted'])->unique('supplier_id') as $quotation)
+                    @foreach($pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->unique('supplier_id') as $quotation)
                         <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr->id, 'supplier_id' => $quotation->supplier_id]) }}" method="POST" data-chat-start-form>
                             @csrf
+                            <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                             <button type="submit" class="btn btn-outline-primary w-100 text-start">
                                 <i class="bi bi-chat-dots me-2"></i> {{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}
                             </button>

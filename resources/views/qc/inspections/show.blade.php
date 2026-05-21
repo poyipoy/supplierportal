@@ -110,7 +110,7 @@
                         {{-- Actual --}}
                         <tr class="text-center">
                             <td class="text-start fw-bold text-primary bg-light">Aktual</td>
-                            <td class="text-muted">N/A</td>
+                            <td>{{ $prItem->shape ?? '-' }}</td>
                             <td class="{{ $thick['class'] }}">{{ $thick['val'] }}</td>
                             <td class="{{ $dInner['class'] }}">{{ $dInner['val'] }}</td>
                             <td class="{{ $dOuter['class'] }}">{{ $dOuter['val'] }}</td>
@@ -133,21 +133,48 @@
 @endforeach
 
 {{-- Photos if NG --}}
-@if($inspection->attachments->count() > 0)
+@if($inspection->status === 'ng')
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
         <h6 class="mb-0 fw-bold">Foto Bukti NG</h6>
     </div>
     <div class="card-body">
-        <div class="row g-3">
-            @foreach($inspection->attachments as $att)
-                <div class="col-6 col-md-4 col-lg-3">
-                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm" style="height: 150px;">
-                        <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100" style="object-fit: cover;">
-                    </a>
+        @if($inspection->attachments->count() > 0)
+            <div class="row g-3">
+                @foreach($inspection->attachments as $att)
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm" style="height: 150px;">
+                            <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100" style="object-fit: cover;">
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="alert alert-warning small">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Belum ada foto bukti NG pada inspeksi ini.
+            </div>
+        @endif
+
+        @if(auth()->user()->role === 'qc')
+            <form action="{{ route('qc.inspections.attachments.store', $inspection->id) }}" method="POST" enctype="multipart/form-data" class="border-top mt-3 pt-3">
+                @csrf
+                <label class="form-label fw-medium small">Tambah Foto Bukti NG</label>
+                <input type="file" name="attachments[]" class="form-control @error('attachments') is-invalid @enderror @error('attachments.*') is-invalid @enderror" accept=".jpg,.jpeg,.png" multiple required>
+                <div class="form-text">Format JPG, JPEG, atau PNG. Maksimal 10MB per file.</div>
+                @error('attachments')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+                @error('attachments.*')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+                <div class="text-end mt-3">
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="bi bi-upload me-1"></i>Upload Foto
+                    </button>
                 </div>
-            @endforeach
-        </div>
+            </form>
+        @endif
     </div>
 </div>
 @endif

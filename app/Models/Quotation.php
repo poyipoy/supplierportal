@@ -10,6 +10,12 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Quotation extends Model
 {
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_SUBMITTED = 'submitted';
+    public const STATUS_REVISION_REQUESTED = 'revision_requested';
+    public const STATUS_ACCEPTED = 'accepted';
+    public const STATUS_REJECTED = 'rejected';
+
     protected $fillable = [
         'pr_id',
         'supplier_id',
@@ -27,7 +33,53 @@ class Quotation extends Model
     {
         return [
             'submitted_at' => 'datetime',
+            'estimated_delivery' => 'date',
+            'validity_period' => 'date',
         ];
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->validity_period !== null && $this->validity_period->lt(today());
+    }
+
+    public function canRequestRevision(): bool
+    {
+        return $this->status === self::STATUS_SUBMITTED
+            && $this->isExpired()
+            && ! $this->purchaseOrder()->exists();
+    }
+
+    public function canBeRevisedBySupplier(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_DRAFT,
+            self::STATUS_REVISION_REQUESTED,
+        ], true);
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            self::STATUS_DRAFT => 'Draft',
+            self::STATUS_SUBMITTED => 'Terkirim',
+            self::STATUS_REVISION_REQUESTED => 'Perlu Revisi',
+            self::STATUS_ACCEPTED => 'Diterima',
+            self::STATUS_REJECTED => 'Ditolak',
+            default => ucwords(str_replace('_', ' ', (string) $this->status)),
+        };
+    }
+
+    public function statusBadgeClass(): string
+    {
+        return match ($this->status) {
+            self::STATUS_DRAFT => 'bg-secondary',
+            self::STATUS_SUBMITTED => 'bg-primary',
+            self::STATUS_REVISION_REQUESTED => 'bg-warning text-dark',
+            self::STATUS_ACCEPTED => 'bg-success',
+            self::STATUS_REJECTED => 'bg-danger',
+            default => 'bg-secondary',
+        };
     }
 
     // ─── Relationships ───

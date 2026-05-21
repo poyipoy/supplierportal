@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseRequirement;
 use App\Models\PrItem;
 use App\Models\Period;
+use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -41,7 +42,7 @@ class PurchaseRequirementController extends Controller
         $periods = Period::where('status', 'open')->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
 
         if ($periods->isEmpty()) {
-            return redirect()->route('purchasing.requirements.index')
+            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
                 ->with('error', 'Tidak ada periode aktif (open). Silakan hubungi Admin untuk membuka periode.');
         }
 
@@ -116,7 +117,7 @@ class PurchaseRequirementController extends Controller
                 ? "Permintaan material berhasil diajukan!"
                 : "Permintaan material berhasil disimpan sebagai draft.";
 
-            return redirect()->route('purchasing.requirements.index')->with('success', $message);
+            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -180,7 +181,7 @@ class PurchaseRequirementController extends Controller
         $pr = PurchaseRequirement::with(['period', 'items'])->findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return redirect()->route('purchasing.requirements.index')
+            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
                 ->with('error', "Anda tidak dapat mengedit permintaan ini.");
         }
 
@@ -199,7 +200,7 @@ class PurchaseRequirementController extends Controller
         $pr = PurchaseRequirement::findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return redirect()->route('purchasing.requirements.index')
+            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
                 ->with('error', "Anda tidak dapat mengedit permintaan ini.");
         }
 
@@ -256,7 +257,7 @@ class PurchaseRequirementController extends Controller
                 ? 'Permintaan material berhasil diajukan!'
                 : 'Draft permintaan material berhasil diperbarui.';
 
-            return redirect()->route('purchasing.requirements.index')->with('success', $message);
+            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -272,7 +273,7 @@ class PurchaseRequirementController extends Controller
         $pr = PurchaseRequirement::findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return redirect()->route('purchasing.requirements.index')
+            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
                 ->with('error', "Permintaan material tidak dapat dihapus karena sudah diproses.");
         }
 
@@ -282,7 +283,7 @@ class PurchaseRequirementController extends Controller
             $pr->delete();
             DB::commit();
 
-            return redirect()->route('purchasing.requirements.index')
+            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
                 ->with('success', 'Permintaan material berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();

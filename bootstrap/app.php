@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'purchasing.navigation' => \App\Http\Middleware\RememberPurchasingListUrl::class,
         ]);
         
         $middleware->redirectUsersTo(function () {

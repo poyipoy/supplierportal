@@ -7,6 +7,8 @@ use App\Models\ExchangeRate;
 use App\Models\Period;
 use App\Models\PurchaseRequirement;
 use App\Models\Quotation;
+use App\Models\Conversation;
+use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -126,8 +128,8 @@ class QuotationController extends Controller
             ->where('supplier_id', auth()->id())
             ->first();
 
-        // Jika sudah submitted, redirect ke show
-        if ($quotation && $quotation->status !== 'draft') {
+        // Jika sudah final, redirect ke show. Draft dan revision_requested boleh diedit.
+        if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation->id)
                 ->with('info', 'Anda sudah mengirim penawaran untuk permintaan ini.');
         }
@@ -154,19 +156,26 @@ class QuotationController extends Controller
             'currency' => 'required|in:USD,JPY',
             'estimated_delivery' => 'required|date',
             'payment_terms' => 'nullable|string',
-            'validity_period' => 'nullable|date',
+            'validity_period' => $request->action === 'submitted'
+                ? 'required|date|after_or_equal:today'
+                : 'nullable|date',
             'general_notes' => 'nullable|string',
             'items' => 'required|array',
             'items.*.pr_item_id' => 'required|exists:pr_items,id',
             'items.*.price_per_kg' => 'required|numeric|min:0.01',
             'items.*.notes' => 'nullable|string'
+        ], [
+            'validity_period.required' => 'Masa berlaku penawaran wajib diisi saat mengirim penawaran final.',
+            'validity_period.after_or_equal' => 'Masa berlaku penawaran tidak boleh kurang dari hari ini.',
         ]);
 
         $quotation = Quotation::where('pr_id', $pr_id)
             ->where('supplier_id', auth()->id())
             ->first();
 
-        if ($quotation && $quotation->status !== 'draft') {
+        $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
+
+        if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation->id)
                 ->with('error', 'Penawaran ini sudah diajukan dan tidak bisa diubah.');
         }
@@ -174,8 +183,12 @@ class QuotationController extends Controller
         try {
             DB::beginTransaction();
 
+            $nextStatus = $request->action === 'submitted'
+                ? Quotation::STATUS_SUBMITTED
+                : ($wasRevisionRequested ? Quotation::STATUS_REVISION_REQUESTED : Quotation::STATUS_DRAFT);
+
             // Hitung exchange rate jika disubmit
-            $exchangeRateId = null;
+            $exchangeRateId = $quotation?->exchange_rate_id;
             if ($request->action === 'submitted') {
                 $rate = ExchangeRate::where('currency', $request->currency)->orderBy('valid_from', 'desc')->first();
                 if ($rate) {
@@ -188,7 +201,7 @@ class QuotationController extends Controller
                     'pr_id' => $pr_id,
                     'supplier_id' => auth()->id(),
                     'currency' => $request->currency,
-                    'status' => $request->action,
+                    'status' => $nextStatus,
                     'submitted_at' => $request->action === 'submitted' ? now() : null,
                     'exchange_rate_id' => $exchangeRateId,
                     'estimated_delivery' => $request->estimated_delivery,
@@ -199,8 +212,8 @@ class QuotationController extends Controller
             } else {
                 $quotation->update([
                     'currency' => $request->currency,
-                    'status' => $request->action,
-                    'submitted_at' => $request->action === 'submitted' ? now() : null,
+                    'status' => $nextStatus,
+                    'submitted_at' => $request->action === 'submitted' ? now() : $quotation->submitted_at,
                     'exchange_rate_id' => $exchangeRateId,
                     'estimated_delivery' => $request->estimated_delivery,
                     'payment_terms' => $request->payment_terms,
@@ -235,20 +248,27 @@ class QuotationController extends Controller
             // Notify purchasing when quotation submitted
             if ($request->action === 'submitted') {
                 $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+                $title = $wasRevisionRequested ? 'Revisi Penawaran Masuk' : 'Penawaran Baru Masuk';
+                $message = $wasRevisionRequested
+                    ? 'Supplier :name mengirim ulang penawaran revisi untuk PR :pr_number'
+                    : 'Supplier :name mengirim penawaran untuk PR :pr_number';
+
                 foreach ($purchasingUsers as $pUser) {
                     /** @var \App\Models\User $pUser */
                     $pUser->notify(new \App\Notifications\SystemNotification(
-                        'Penawaran Baru Masuk',
-                        'Supplier :name mengirim penawaran untuk PR :pr_number',
+                        $title,
+                        $message,
                         route('purchasing.requirements.show', $pr->id),
                         'bi-envelope-check text-success',
-                        [],
+                        ['category' => NotificationCategory::QUOTATION],
                         ['name' => auth()->user()->name, 'pr_number' => $pr->pr_number]
                     ));
                 }
             }
 
-            $msg = $request->action === 'submitted' ? 'Penawaran berhasil dikirim.' : 'Draft penawaran berhasil disimpan.';
+            $msg = $request->action === 'submitted'
+                ? ($wasRevisionRequested ? 'Revisi penawaran berhasil dikirim ulang.' : 'Penawaran berhasil dikirim.')
+                : ($wasRevisionRequested ? 'Revisi penawaran sementara berhasil disimpan.' : 'Draft penawaran berhasil disimpan.');
             return redirect()->route('supplier.quotations.period', $pr->period_id)->with('success', $msg);
 
         } catch (\Exception $e) {
@@ -267,6 +287,11 @@ class QuotationController extends Controller
 
         Gate::authorize('view', $quotation);
 
-        return view('supplier.quotations.show', compact('quotation'));
+        $conversation = Conversation::where('conversable_type', PurchaseRequirement::class)
+            ->where('conversable_id', $quotation->pr_id)
+            ->where('supplier_user_id', auth()->id())
+            ->first();
+
+        return view('supplier.quotations.show', compact('quotation', 'conversation'));
     }
 }

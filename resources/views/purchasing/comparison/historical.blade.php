@@ -27,10 +27,18 @@
     };
 @endphp
 
+@push('styles')
+<style>
+    .hover-underline:hover {
+        text-decoration: underline !important;
+    }
+</style>
+@endpush
+
 <ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link" href="{{ route('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Antar Supplier</a></li>
-    <li class="nav-item"><a class="nav-link active" href="{{ route('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historis</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ route('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Harga Terbaik</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Antar Supplier</a></li>
+    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historis</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Harga Terbaik</a></li>
 </ul>
 
 <div class="card border-0 shadow-sm mb-4">
@@ -128,12 +136,12 @@
                             </tr>
                         @else
                             <tr>
-                                <th>Periode</th>
+                                <th>No. PR</th>
+                                <th>Supplier</th>
                                 <th>Harga/Kg</th>
-                                <th>Mata Uang</th>
-                                <th>Harga/Kg (IDR)</th>
-                                <th>Perubahan dari Periode Sebelumnya</th>
-                                <th>Tanggal Kirim</th>
+                                <th>Total Material IDR</th>
+                                <th>Tgl Diajukan</th>
+                                <th>% Perubahan</th>
                             </tr>
                         @endif
                     </thead>
@@ -149,12 +157,32 @@
                                 </tr>
                             @else
                                 <tr>
-                                    <td class="text-center fw-medium">{{ $row['period'] }}</td>
-                                    <td class="text-end">{{ number_format($row['price_per_kg'], 2, ',', '.') }}</td>
-                                    <td class="text-center"><span class="badge bg-dark">{{ $row['currency'] }}</span></td>
-                                    <td class="text-end text-primary fw-bold">{{ $row['price_idr'] ? 'Rp ' . number_format($row['price_idr'], 0, ',', '.') : '-' }}</td>
+                                    <td class="text-center fw-medium">
+                                        @if(!empty($row['pr_id']) && !empty($row['pr_url']))
+                                            <a href="{{ $row['pr_url'] }}"
+                                               class="text-primary text-decoration-none hover-underline"
+                                               style="color:#1F5FA6 !important;">
+                                                {{ $row['pr_number'] }}
+                                                <i class="bi bi-arrow-right-short ms-1" style="font-size: 0.85rem;"></i>
+                                            </a>
+                                        @else
+                                            {{ $row['pr_number'] ?? '-' }}
+                                        @endif
+                                    </td>
+                                    <td class="text-center">{{ $row['supplier'] ?? '-' }}</td>
+                                    <td class="text-end">
+                                        {{ number_format($row['price_per_kg'], 2, ',', '.') }}
+                                        <span class="badge bg-dark ms-1">{{ $row['currency'] }}</span>
+                                    </td>
+                                    <td class="text-end text-primary fw-bold">{{ $row['total_idr'] ? 'Rp ' . number_format($row['total_idr'], 0, ',', '.') : '-' }}</td>
+                                    <td class="text-center">
+                                        @if(!empty($row['submitted_at_display']))
+                                            {{ $row['submitted_at_display'] }}
+                                        @else
+                                            <span class="badge bg-secondary">Draft</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
-                                    <td class="text-center">{{ $row['submitted_at'] ?? '-' }}</td>
                                 </tr>
                             @endif
                         @endforeach
@@ -366,22 +394,26 @@ function renderTable(payload) {
 
     head.innerHTML = `
         <tr>
-            <th>Periode</th>
+            <th>No. PR</th>
+            <th>Supplier</th>
             <th>Harga/Kg</th>
-            <th>Mata Uang</th>
-            <th>Harga/Kg (IDR)</th>
-            <th>Perubahan dari Periode Sebelumnya</th>
-            <th>Tanggal Kirim</th>
+            <th>Total Material IDR</th>
+            <th>Tgl Diajukan</th>
+            <th>% Perubahan</th>
         </tr>
     `;
     body.innerHTML = rows.map((row) => `
         <tr>
-            <td class="text-center fw-medium">${escapeHtml(row.period)}</td>
-            <td class="text-end">${formatNumber(row.price_per_kg)}</td>
-            <td class="text-center"><span class="badge bg-dark">${escapeHtml(row.currency)}</span></td>
-            <td class="text-end text-primary fw-bold">${formatRupiah(row.price_idr)}</td>
+            <td class="text-center fw-medium">
+                ${row.pr_url
+                    ? `<a href="${escapeHtml(row.pr_url)}" class="text-primary text-decoration-none hover-underline" style="color:#1F5FA6 !important;">${escapeHtml(row.pr_number || '-')}<i class="bi bi-arrow-right-short ms-1" style="font-size: 0.85rem;"></i></a>`
+                    : escapeHtml(row.pr_number || '-')}
+            </td>
+            <td class="text-center">${escapeHtml(row.supplier || '-')}</td>
+            <td class="text-end">${formatNumber(row.price_per_kg)} <span class="badge bg-dark ms-1">${escapeHtml(row.currency)}</span></td>
+            <td class="text-end text-primary fw-bold">${formatRupiah(row.total_idr)}</td>
+            <td class="text-center">${row.submitted_at_display ? escapeHtml(row.submitted_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
             <td class="text-center">${changeHtml(row.change_pct)}</td>
-            <td class="text-center">${escapeHtml(row.submitted_at || '-')}</td>
         </tr>
     `).join('');
 }

@@ -7,6 +7,7 @@ use App\Models\ExchangeRate;
 use App\Models\PoDocument;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
+use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -22,9 +23,15 @@ class PurchaseOrderController extends Controller
             'quotation.purchaseRequirement.period',
             'quotation.exchange_rate',
             'quotation.items.prItem',
-            'documents'
+            'documents',
+            'qcInspections',
+            'materialClaims',
         ])
             ->orderBy('created_at', 'desc');
+
+        if ($request->filled('po_number')) {
+            $query->where('po_number', 'like', '%' . trim($request->po_number) . '%');
+        }
 
         if ($request->filled('status')) {
             if ($request->status === 'overdue') {
@@ -71,9 +78,14 @@ class PurchaseOrderController extends Controller
             return redirect()->back()->with('error', 'Quotation ini tidak valid untuk pembuatan PO.');
         }
 
+        if ($quotation->isExpired()) {
+            return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
+                ->with('error', 'Masa berlaku penawaran sudah kadaluarsa. Minta supplier mengirim penawaran ulang sebelum membuat PO.');
+        }
+
         // Check if PO already exists for this quotation
         if (PurchaseOrder::where('quotation_id', $quotation_id)->exists()) {
-            return redirect()->route('purchasing.purchase-orders.index')
+            return redirect(PurchasingNavigation::backUrl('purchasing.purchase-orders.index'))
                 ->with('error', 'PO sudah pernah dibuat untuk quotation ini.');
         }
 
@@ -97,6 +109,11 @@ class PurchaseOrderController extends Controller
 
         if ($quotation->status !== 'submitted') {
             return redirect()->back()->with('error', 'Quotation ini tidak valid.');
+        }
+
+        if ($quotation->isExpired()) {
+            return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
+                ->with('error', 'Masa berlaku penawaran sudah kadaluarsa. PO tidak dapat dibuat dari penawaran ini.');
         }
 
         try {
@@ -147,7 +164,12 @@ class PurchaseOrderController extends Controller
                 ));
             }
 
-            return redirect()->route('purchasing.purchase-orders.show', $po->id)
+            $showParameters = [$po->id];
+            if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
+                $showParameters['return_url'] = $request->input('return_url');
+            }
+
+            return redirect()->route('purchasing.purchase-orders.show', $showParameters)
                 ->with('success', 'Purchase Order ' . $po->po_number . ' berhasil dibuat!');
 
         } catch (\Exception $e) {
@@ -167,7 +189,11 @@ class PurchaseOrderController extends Controller
             'quotation.purchaseRequirement.period',
             'quotation.exchange_rate',
             'documents',
-            'creator'
+            'creator',
+            'qcInspections.inspector',
+            'qcInspections.items.prItem',
+            'qcInspections.attachments',
+            'materialClaims',
         ])->findOrFail($id);
 
         $rate = $po->quotation->exchange_rate;

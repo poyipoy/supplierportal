@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('purchasing.purchase-orders.index') }}" class="text-decoration-none text-muted small">
+    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar PO
     </a>
 </div>
@@ -21,6 +21,7 @@
                         $po->is_overdue => 'bg-danger',
                         $po->status === 'active' => 'bg-primary',
                         $po->status === 'waiting_qc' => 'bg-warning text-dark',
+                        $po->status === 'claim_needed' => 'bg-danger',
                         $po->status === 'completed' => 'bg-success',
                         $po->status === 'cancelled' => 'bg-danger',
                         default => 'bg-secondary'
@@ -32,6 +33,19 @@
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Supplier</div>
                     <div class="col-md-8 fw-medium">{{ $po->quotation->supplier->name }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted small">No. PR</div>
+                    <div class="col-md-8 fw-medium">
+                        @if($po->quotation->purchaseRequirement)
+                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $po->quotation->purchaseRequirement->id) }}" class="text-primary text-decoration-none">
+                                {{ $po->quotation->purchaseRequirement->pr_number ?? '-' }}
+                                <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
+                            </a>
+                        @else
+                            -
+                        @endif
+                    </div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Periode</div>
@@ -130,6 +144,77 @@
                 </div>
             </div>
         </div>
+
+        @php
+            $latestInspection = $po->qcInspections->sortByDesc('inspected_at')->first();
+            $latestNgInspection = $po->qcInspections
+                ->where('status', 'ng')
+                ->sortByDesc('inspected_at')
+                ->first();
+            $activeClaim = $po->materialClaims
+                ->whereIn('status', ['pending', 'responded', 'escalated'])
+                ->sortByDesc('created_at')
+                ->first();
+        @endphp
+
+        @if($latestInspection)
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">Laporan Inspeksi QC</h6>
+                    <span class="badge {{ $latestInspection->status === 'ng' ? 'bg-danger' : 'bg-success' }} text-uppercase px-3 py-2">
+                        {{ $latestInspection->status }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="text-muted small">Tanggal Inspeksi</div>
+                            <div class="fw-medium">{{ $latestInspection->inspected_at?->format('d M Y, H:i') ?? '-' }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small">Diinspeksi Oleh</div>
+                            <div class="fw-medium">{{ $latestInspection->inspector->name ?? '-' }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small">Item NG</div>
+                            <div class="fw-medium text-danger">{{ $latestInspection->items->where('status', 'ng')->count() }} item</div>
+                        </div>
+                    </div>
+
+                    @if($latestInspection->items->where('status', 'ng')->count() > 0)
+                        <h6 class="fw-bold small text-danger text-uppercase mb-2">Material Bermasalah</h6>
+                        <ul class="list-group list-group-flush border rounded mb-3">
+                            @foreach($latestInspection->items->where('status', 'ng') as $item)
+                                <li class="list-group-item py-2 px-3 small">
+                                    <span class="fw-bold d-block">{{ $item->prItem->material_name }}</span>
+                                    @if($item->notes)
+                                        <span class="text-muted fst-italic">Catatan QC: {{ $item->notes }}</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+
+                    @if($latestInspection->attachments->count() > 0)
+                        <h6 class="fw-bold small text-muted text-uppercase mb-2">Foto Bukti QC</h6>
+                        <div class="row g-2">
+                            @foreach($latestInspection->attachments as $att)
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm bg-light" style="height: 120px;">
+                                        <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100" style="object-fit: cover;">
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif($latestInspection->status === 'ng')
+                        <div class="alert alert-warning small mb-0">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Inspeksi berstatus NG, tetapi foto bukti QC belum tersedia.
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- ═══════════ SECTION C — Timeline ═══════════ --}}
@@ -142,6 +227,7 @@
             <div class="card-body">
                 <form action="{{ route('purchasing.conversations.start.po', $po->id) }}" method="POST" data-chat-start-form>
                     @csrf
+                    <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                     <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-chat-dots me-2"></i> Chat dengan Supplier</span>
                         <i class="bi bi-chevron-right"></i>
@@ -152,6 +238,39 @@
                 </div>
             </div>
         </div>
+
+        @if($po->status === 'claim_needed')
+            <div class="card border-danger shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-danger">
+                        <i class="bi bi-exclamation-octagon me-2"></i>Klaim Material
+                    </h6>
+                    <span class="badge bg-danger">NG</span>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">
+                        PO ini membutuhkan tindak lanjut klaim karena hasil inspeksi QC berstatus NG.
+                    </p>
+
+                    @if($activeClaim)
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-exclamation-octagon me-2"></i> Lihat Klaim Material</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    @elseif($latestNgInspection)
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-plus-circle me-2"></i> Ajukan Klaim Material</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    @else
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.index') }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-folder2-open me-2"></i> Buka Menu Klaim</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
@@ -191,7 +310,7 @@
 
                     {{-- Est. Arrival --}}
                     <div class="position-relative mb-4 ps-4">
-                        <div class="position-absolute {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'bg-warning' : 'bg-light border' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
+                        <div class="position-absolute {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'bg-warning' : 'bg-secondary' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
                         <h6 class="mb-1 {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Estimasi Kedatangan</h6>
                         <div class="small text-muted">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}</div>
                     </div>

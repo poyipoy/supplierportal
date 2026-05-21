@@ -8,6 +8,7 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\PrItem;
 use App\Models\User;
+use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 
 class PriceComparisonController extends Controller
@@ -31,11 +32,35 @@ class PriceComparisonController extends Controller
         $chartMaterialIds = [];
         $materialOptions = collect();
         $selectedPr = null;
+        $selectedPrOption = null;
+
+        $eligiblePrOptions = $eligiblePrs->map(function ($pr) {
+            $label = ($pr->pr_number ?? 'DRAFT')
+                . ' - '
+                . ($pr->period->name ?? '-')
+                . ' ('
+                . $pr->quotations->count()
+                . ' penawaran)';
+
+            return [
+                'id' => (string) $pr->id,
+                'label' => $label,
+                'prNumber' => $pr->pr_number ?? 'DRAFT',
+                'period' => $pr->period->name ?? '-',
+                'quotationCount' => $pr->quotations->count(),
+                'search' => strtolower($label),
+            ];
+        })->values();
 
         if ($request->filled('pr_id')) {
             $selectedPr = PurchaseRequirement::with(['items', 'period'])->find($request->pr_id);
 
             if ($selectedPr) {
+                $selectedPrOption = $eligiblePrOptions->firstWhere('id', (string) $selectedPr->id);
+                $selectedPrOption ??= [
+                    'id' => (string) $selectedPr->id,
+                    'label' => ($selectedPr->pr_number ?? 'DRAFT') . ' - ' . ($selectedPr->period->name ?? '-'),
+                ];
                 $materialOptions = $selectedPr->items;
                 $quotations = Quotation::with(['supplier', 'items.prItem', 'exchange_rate'])
                     ->where('pr_id', $selectedPr->id)
@@ -118,7 +143,9 @@ class PriceComparisonController extends Controller
             'chartData',
             'chartMaterialIds',
             'materialOptions',
-            'selectedPr'
+            'selectedPr',
+            'eligiblePrOptions',
+            'selectedPrOption'
         ));
     }
 
@@ -260,42 +287,56 @@ class PriceComparisonController extends Controller
 
     private function buildMonthlyHistoricalData($supplierId, string $materialName, $dateFrom): array
     {
-        $items = QuotationItem::with(['quotation.purchaseRequirement.period', 'quotation.exchange_rate'])
-            ->whereHas('quotation', function ($q) use ($supplierId, $dateFrom) {
-                $q->where('supplier_id', $supplierId)
-                    ->whereIn('status', ['submitted', 'accepted', 'rejected']);
-
-                if ($dateFrom) {
-                    $q->where('created_at', '>=', $dateFrom);
-                }
-            })
+        $items = QuotationItem::query()
+            ->select('quotation_items.*')
+            ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
+            ->where('quotations.supplier_id', $supplierId)
+            ->whereIn('quotations.status', ['submitted', 'accepted', 'rejected'])
             ->whereHas('prItem', function ($q) use ($materialName) {
                 $q->where('material_name', $materialName);
             })
-            ->get()
-            ->sortBy(function ($item) {
-                $period = optional(optional($item->quotation->purchaseRequirement)->period);
-                $year = $period->year ?? 0;
-                $month = $period->month ?? 0;
-                $submittedAt = optional($item->quotation->submitted_at)->format('YmdHis') ?? '';
+            ->with([
+                'quotation.supplier',
+                'quotation.purchaseRequirement.period',
+                'quotation.exchange_rate',
+                'prItem.purchaseRequirement' => function ($q) {
+                    $q->select('id', 'pr_number');
+                },
+            ]);
 
-                return sprintf('%04d-%02d-%s', $year, $month, $submittedAt);
-            })
-            ->values();
+        if ($dateFrom) {
+            $items->where('quotations.submitted_at', '>=', $dateFrom);
+        }
+
+        $items = $items
+            ->orderBy('quotations.submitted_at', 'asc')
+            ->orderBy('quotation_items.id', 'asc')
+            ->get();
 
         $tableData = $items->map(function ($item) {
             $period = optional(optional($item->quotation->purchaseRequirement)->period);
             $rate = $item->quotation->exchange_rate;
             $priceIdr = $rate ? round((float) $item->price_per_kg * (float) $rate->rate_to_idr, 0) : null;
+            $totalIdr = $rate ? round((float) $item->amount * (float) $rate->rate_to_idr, 0) : null;
+            $purchaseRequirement = $item->prItem?->purchaseRequirement;
+            $submittedAt = $item->quotation->submitted_at;
 
             return [
                 'period' => $period->name ?? 'Unknown',
+                'pr_id' => $purchaseRequirement?->id,
+                'pr_number' => $purchaseRequirement?->pr_number ?? '-',
+                'pr_url' => $purchaseRequirement
+                    ? PurchasingNavigation::toRoute('purchasing.requirements.show', $purchaseRequirement->id)
+                    : null,
+                'supplier' => $item->quotation->supplier->name ?? '-',
                 'price_per_kg' => (float) $item->price_per_kg,
                 'currency' => $item->quotation->currency,
                 'price_idr' => $priceIdr,
+                'total_idr' => $totalIdr,
                 'min_idr' => null,
                 'max_idr' => null,
-                'submitted_at' => optional($item->quotation->submitted_at)->format('d M Y'),
+                'submitted_at' => $submittedAt?->toIso8601String(),
+                'submitted_at_display' => $submittedAt?->format('d M Y'),
             ];
         });
 

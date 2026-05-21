@@ -1,28 +1,42 @@
 @extends('layouts.app')
-@section('title', 'Perbandingan Antar Supplier — ADASI Portal')
+@section('title', 'Perbandingan Antar Supplier - ADASI Portal')
 @section('page-title', 'Perbandingan Harga')
 
 @section('content')
 {{-- Tabs --}}
 <ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link active" href="{{ route('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Antar Supplier</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ route('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historis</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ route('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Harga Terbaik</a></li>
+    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Antar Supplier</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historis</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Harga Terbaik</a></li>
 </ul>
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
-        <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="row g-3 align-items-end">
+        <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="row g-3 align-items-end" id="interSupplierFilterForm">
             <div class="col-md-8">
-                <label class="form-label small fw-bold">Pilih Permintaan Material (PR dengan ≥2 penawaran)</label>
-                <select name="pr_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">— Pilih PR —</option>
-                    @foreach($eligiblePrs as $pr)
-                        <option value="{{ $pr->id }}" {{ request('pr_id') == $pr->id ? 'selected' : '' }}>
-                            {{ $pr->pr_number ?? 'DRAFT' }} — {{ $pr->period->name ?? '-' }} ({{ $pr->quotations->count() }} penawaran)
-                        </option>
-                    @endforeach
-                </select>
+                <label class="form-label small fw-bold">Pilih Permintaan Material (PR dengan minimal 2 penawaran)</label>
+                <div class="position-relative">
+                    <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text"
+                               class="form-control"
+                               id="comparisonPrSearch"
+                               value="{{ $selectedPrOption['label'] ?? '' }}"
+                               placeholder="Ketik nomor PR atau periode..."
+                               autocomplete="off">
+                        <button type="button"
+                                class="btn btn-outline-secondary {{ $selectedPrOption ? '' : 'd-none' }}"
+                                id="comparisonPrClear"
+                                title="Hapus pilihan">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="list-group position-absolute w-100 shadow-sm d-none"
+                         id="comparisonPrSuggestions"
+                         style="z-index: 1050; max-height: 260px; overflow-y: auto;"></div>
+                </div>
+                <div class="form-text">Ketik untuk menampilkan beberapa opsi PR, lalu pilih salah satu opsi.</div>
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:var(--adasi-blue)"><i class="bi bi-search me-1"></i>Bandingkan</button>
@@ -54,7 +68,7 @@
     {{-- Tabel Side-by-Side --}}
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-table me-1"></i> Tabel Perbandingan — {{ $selectedPr->pr_number }}</h6>
+            <h6 class="mb-0 fw-bold"><i class="bi bi-table me-1"></i> Tabel Perbandingan - {{ $selectedPr->pr_number }}</h6>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -80,7 +94,6 @@
                     <tbody>
                         @foreach($comparison['matrix'] as $row)
                             @php
-                                // Find min IDR price for highlighting
                                 $idrPrices = collect($row['prices'])->pluck('price_idr')->filter()->values();
                                 $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
                             @endphp
@@ -98,7 +111,7 @@
                                             @endif
                                         </td>
                                     @else
-                                        <td class="text-center text-muted" colspan="2">— tidak menawar —</td>
+                                        <td class="text-center text-muted" colspan="2">- tidak menawar -</td>
                                     @endif
                                 @endforeach
                             </tr>
@@ -121,10 +134,133 @@
 @endsection
 
 @push('scripts')
+<script>
+const eligiblePrOptions = @json($eligiblePrOptions);
+const comparisonFilterForm = document.getElementById('interSupplierFilterForm');
+const comparisonPrId = document.getElementById('comparisonPrId');
+const comparisonPrSearch = document.getElementById('comparisonPrSearch');
+const comparisonPrSuggestions = document.getElementById('comparisonPrSuggestions');
+const comparisonPrClear = document.getElementById('comparisonPrClear');
+
+const normalizeComparisonKeyword = (value) => String(value || '').toLowerCase().trim();
+
+const hideComparisonPrSuggestions = () => {
+    comparisonPrSuggestions.classList.add('d-none');
+};
+
+const toggleComparisonClear = () => {
+    comparisonPrClear.classList.toggle('d-none', comparisonPrSearch.value.trim() === '');
+};
+
+const selectComparisonPr = (option) => {
+    comparisonPrId.value = option.id;
+    comparisonPrSearch.value = option.label;
+    comparisonPrSearch.classList.remove('is-invalid');
+    toggleComparisonClear();
+    hideComparisonPrSuggestions();
+    comparisonFilterForm.submit();
+};
+
+const renderComparisonPrSuggestions = () => {
+    const keyword = normalizeComparisonKeyword(comparisonPrSearch.value);
+    const matches = (keyword === ''
+        ? eligiblePrOptions
+        : eligiblePrOptions.filter((option) => option.search.includes(keyword))
+    ).slice(0, 8);
+
+    comparisonPrSuggestions.innerHTML = '';
+
+    if (matches.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'list-group-item small text-muted';
+        empty.textContent = 'Tidak ada PR yang cocok.';
+        comparisonPrSuggestions.appendChild(empty);
+        comparisonPrSuggestions.classList.remove('d-none');
+        return;
+    }
+
+    matches.forEach((option) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'list-group-item list-group-item-action py-2';
+
+        const title = document.createElement('div');
+        title.className = 'fw-semibold small';
+        title.textContent = option.prNumber;
+
+        const meta = document.createElement('div');
+        meta.className = 'text-muted';
+        meta.style.fontSize = '.75rem';
+        meta.textContent = `${option.period} - ${option.quotationCount} penawaran`;
+
+        button.appendChild(title);
+        button.appendChild(meta);
+        button.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            selectComparisonPr(option);
+        });
+
+        comparisonPrSuggestions.appendChild(button);
+    });
+
+    comparisonPrSuggestions.classList.remove('d-none');
+};
+
+comparisonPrSearch.addEventListener('focus', renderComparisonPrSuggestions);
+comparisonPrSearch.addEventListener('input', () => {
+    comparisonPrId.value = '';
+    comparisonPrSearch.classList.remove('is-invalid');
+    toggleComparisonClear();
+    renderComparisonPrSuggestions();
+});
+
+comparisonPrSearch.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        hideComparisonPrSuggestions();
+    }
+});
+
+comparisonPrClear.addEventListener('click', () => {
+    comparisonPrId.value = '';
+    comparisonPrSearch.value = '';
+    comparisonPrSearch.classList.remove('is-invalid');
+    toggleComparisonClear();
+    renderComparisonPrSuggestions();
+    comparisonPrSearch.focus();
+});
+
+comparisonFilterForm.addEventListener('submit', (event) => {
+    if (comparisonPrId.value) {
+        return;
+    }
+
+    const keyword = normalizeComparisonKeyword(comparisonPrSearch.value);
+    const exact = eligiblePrOptions.find((option) =>
+        normalizeComparisonKeyword(option.label) === keyword
+        || normalizeComparisonKeyword(option.prNumber) === keyword
+    );
+
+    if (exact) {
+        comparisonPrId.value = exact.id;
+        return;
+    }
+
+    event.preventDefault();
+    comparisonPrSearch.classList.add('is-invalid');
+    renderComparisonPrSuggestions();
+});
+
+document.addEventListener('click', (event) => {
+    if (!comparisonPrSuggestions.contains(event.target) && event.target !== comparisonPrSearch) {
+        hideComparisonPrSuggestions();
+    }
+});
+</script>
+
 @if($chartData)
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const comparisonChartData = {!! json_encode($chartData) !!};
+const comparisonChartData = @json($chartData);
 const comparisonMaterialIds = @json($chartMaterialIds);
 const comparisonChart = new Chart(document.getElementById('comparisonChart'), {
     type: 'bar',

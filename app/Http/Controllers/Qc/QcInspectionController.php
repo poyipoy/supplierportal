@@ -63,7 +63,7 @@ class QcInspectionController extends Controller
             return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak valid untuk diinspeksi.');
         }
 
-        $request->validate([
+        $rules = [
             'items' => 'required|array',
             'items.*.pr_item_id' => 'required|exists:pr_items,id',
             'items.*.actual_thickness' => 'nullable|numeric',
@@ -74,7 +74,24 @@ class QcInspectionController extends Controller
             'items.*.actual_weight' => 'nullable|numeric',
             'items.*.status' => 'required|in:ok,ng',
             'items.*.notes' => 'nullable|string',
-            'attachments.*.*' => 'nullable|file|mimes:jpg,jpeg,png|max:10240', // Attachments dikelompokkan per index item
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'nullable|array',
+            'attachments.*.*' => 'nullable|file|mimes:jpg,jpeg,png|max:10240',
+        ];
+
+        foreach ($request->input('items', []) as $index => $itemData) {
+            if (($itemData['status'] ?? null) === 'ng') {
+                $rules["attachments.{$index}"] = 'required|array|min:1';
+                $rules["attachments.{$index}.*"] = 'required|file|mimes:jpg,jpeg,png|max:10240';
+            }
+        }
+
+        $request->validate($rules, [
+            'attachments.*.required' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
+            'attachments.*.min' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
+            'attachments.*.*.required' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
+            'attachments.*.*.mimes' => 'Foto bukti NG harus berupa file JPG, JPEG, atau PNG.',
+            'attachments.*.*.max' => 'Ukuran foto bukti NG maksimal 10MB per file.',
         ]);
 
         try {
@@ -97,6 +114,8 @@ class QcInspectionController extends Controller
                 'inspected_at' => now(),
             ]);
 
+            $uploadedFiles = $request->file('attachments', []);
+
             // Simpan QC Items
             foreach ($request->items as $index => $itemData) {
                 $qcItem = QcItem::create([
@@ -111,14 +130,13 @@ class QcInspectionController extends Controller
                     'status' => $itemData['status'],
                     'notes' => $itemData['notes'] ?? null,
                 ]);
-            }
 
-            // Handle Uploads per QC Item using the general inspection as the morph root (since attachments belong to the inspection in general, but let's see. Wait, if it belongs to inspection, we can just save it morphMany on QcInspection).
-            // But we need to know which attachment belongs to which item? The requirement says:
-            // "Foto bukti NG ditampilkan sebagai thumbnail gallery" on show page. It's fine to attach them to the Inspection model.
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $itemIndex => $files) {
-                    foreach ($files as $file) {
+                if (($itemData['status'] ?? null) === 'ng') {
+                    foreach ($uploadedFiles[$index] ?? [] as $file) {
+                        if (! $file || ! $file->isValid()) {
+                            continue;
+                        }
+
                         $path = $file->store('attachments/' . now()->format('Y/m'), 'private');
                         $inspection->attachments()->create([
                             'file_path' => $path,
@@ -128,6 +146,10 @@ class QcInspectionController extends Controller
                         ]);
                     }
                 }
+            }
+
+            if ($overallStatus === 'ng' && ! $inspection->attachments()->exists()) {
+                throw new \RuntimeException('Foto bukti NG tidak terkirim. Silakan unggah ulang foto bukti sebelum menyimpan inspeksi.');
             }
 
             // Update PO Status & Kirim Notifikasi
@@ -180,5 +202,43 @@ class QcInspectionController extends Controller
         ])->findOrFail($id);
 
         return view('qc.inspections.show', compact('inspection'));
+    }
+
+    /**
+     * Tambah foto bukti untuk inspeksi NG yang sudah tersimpan.
+     */
+    public function storeAttachments(Request $request, $id)
+    {
+        $inspection = QcInspection::findOrFail($id);
+
+        if ($inspection->status !== 'ng') {
+            return back()->with('error', 'Foto bukti hanya dapat ditambahkan untuk inspeksi berstatus NG.');
+        }
+
+        $request->validate([
+            'attachments' => 'required|array|min:1',
+            'attachments.*' => 'required|file|mimes:jpg,jpeg,png|max:10240',
+        ], [
+            'attachments.required' => 'Pilih minimal 1 foto bukti NG.',
+            'attachments.min' => 'Pilih minimal 1 foto bukti NG.',
+            'attachments.*.mimes' => 'Foto bukti NG harus berupa file JPG, JPEG, atau PNG.',
+            'attachments.*.max' => 'Ukuran foto bukti NG maksimal 10MB per file.',
+        ]);
+
+        foreach ($request->file('attachments', []) as $file) {
+            if (! $file || ! $file->isValid()) {
+                continue;
+            }
+
+            $path = $file->store('attachments/' . now()->format('Y/m'), 'private');
+            $inspection->attachments()->create([
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $file->getMimeType(),
+                'uploaded_by' => auth()->id(),
+            ]);
+        }
+
+        return back()->with('success', 'Foto bukti QC berhasil ditambahkan.');
     }
 }

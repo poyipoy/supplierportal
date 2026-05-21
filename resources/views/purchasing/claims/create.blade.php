@@ -5,13 +5,14 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('purchasing.claims.index') }}" class="text-decoration-none text-muted small">
+    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.claims.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Klaim
     </a>
 </div>
 
 <form action="{{ route('purchasing.claims.store') }}" method="POST" id="claimForm">
     @csrf
+    <input type="hidden" name="return_url" value="{{ request('return_url') }}">
     <input type="hidden" name="inspection_id" value="{{ $inspection->id }}">
 
     <div class="row g-4">
@@ -44,7 +45,7 @@
             </div>
 
             <div class="d-flex justify-content-end gap-2 mb-5">
-                <a href="{{ route('purchasing.claims.index') }}" class="btn btn-light">Batal</a>
+                <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.claims.index') }}" class="btn btn-light">Batal</a>
                 <button type="submit" class="btn btn-danger">
                     <i class="bi bi-send me-1"></i> Kirim Klaim ke Supplier
                 </button>

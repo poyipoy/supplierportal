@@ -38,6 +38,7 @@
                     <option value="">Semua Status</option>
                     <option value="unresponded" {{ request('status') === 'unresponded' ? 'selected' : '' }}>Belum Direspons</option>
                     <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Draft</option>
+                    <option value="revision_requested" {{ request('status') === 'revision_requested' ? 'selected' : '' }}>Perlu Revisi</option>
                     <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>Terkirim</option>
                     <option value="accepted" {{ request('status') === 'accepted' ? 'selected' : '' }}>Diterima</option>
                     <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Ditolak</option>
@@ -79,6 +80,8 @@
                                     <span class="badge bg-danger">Belum Direspons</span>
                                 @elseif($status === 'draft')
                                     <span class="badge bg-secondary">Draft</span>
+                                @elseif($status === 'revision_requested')
+                                    <span class="badge bg-warning text-dark">Perlu Revisi</span>
                                 @elseif($status === 'submitted')
                                     <span class="badge bg-success">Terkirim ({{ $quotation->submitted_at->format('d M Y H:i') }})</span>
                                 @elseif($status === 'accepted')
@@ -95,6 +98,10 @@
                                 @elseif($status === 'draft')
                                     <a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-pencil me-1"></i> Lanjutkan
+                                    </a>
+                                @elseif($status === 'revision_requested')
+                                    <a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-warning text-dark">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Revisi Penawaran
                                     </a>
                                 @elseif(in_array($status, ['submitted', 'accepted', 'rejected']))
                                     <a href="{{ route('supplier.quotations.show', $quotation->id) }}" class="btn btn-sm btn-outline-success">

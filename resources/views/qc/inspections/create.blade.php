@@ -138,7 +138,7 @@
                         {{-- NG Photo Upload (Hidden by default) --}}
                         <div class="ng-photo-section mt-3 p-3 bg-danger bg-opacity-10 border border-danger rounded d-none" id="photo-section-{{ $index }}">
                             <label class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>Foto Bukti NG (Wajib)</label>
-                            <input type="file" name="attachments[{{ $index }}][]" class="form-control form-control-sm photo-input" accept=".jpg,.jpeg,.png" multiple>
+                            <input type="file" name="attachments[{{ $index }}][]" class="form-control form-control-sm photo-input" accept=".jpg,.jpeg,.png" multiple disabled>
                             <div class="form-text text-danger small">Maks 10MB per file. Pilih minimal 1 foto karena status item ini NG.</div>
                         </div>
                     </div>
@@ -203,19 +203,46 @@
                 badge.removeClass('bg-success').addClass('bg-danger').text('NG');
                 input.val('ng');
                 photoSection.removeClass('d-none');
+                photoInput.prop('disabled', false);
                 photoInput.prop('required', true);
             } else {
                 badge.removeClass('bg-danger').addClass('bg-success').text('OK');
                 input.val('ok');
                 photoSection.addClass('d-none');
                 photoInput.prop('required', false);
+                photoInput.prop('disabled', true);
+                photoInput.val('');
             }
 
             evaluateOverall();
         }
 
         function evaluateOverall() {
+            let hasInspectionInput = false;
             let overallNg = false;
+
+            $('.actual-input').each(function() {
+                if ($(this).val() !== '') {
+                    hasInspectionInput = true;
+                    return false;
+                }
+            });
+
+            if (!hasInspectionInput) {
+                $('.manual-override-switch').each(function() {
+                    if ($(this).is(':checked')) {
+                        hasInspectionInput = true;
+                        return false;
+                    }
+                });
+            }
+
+            if (!hasInspectionInput) {
+                $('#bannerNg').addClass('d-none');
+                $('#bannerOk').addClass('d-none');
+                return;
+            }
+
             $('.item-status-input').each(function() {
                 if ($(this).val() === 'ng') {
                     overallNg = true;
@@ -243,12 +270,14 @@
         });
 
         // Initial evaluation
-        $('.input-row').each(function() {
-            evaluateItem($(this).data('index'));
-        });
+        evaluateOverall();
 
         // Submit Action
         $('#btnSubmit').on('click', function() {
+            $('.input-row').each(function() {
+                evaluateItem($(this).data('index'));
+            });
+
             // Check HTML5 validity for required photos
             if (!$('#inspectionForm')[0].checkValidity()) {
                 $('#inspectionForm')[0].reportValidity();

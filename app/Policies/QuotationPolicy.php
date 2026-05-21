@@ -39,7 +39,7 @@ class QuotationPolicy
     {
         return $user->role === 'supplier' 
             && $user->id === $quotation->supplier_id 
-            && $quotation->status === 'draft';
+            && $quotation->canBeRevisedBySupplier();
     }
 
     /**

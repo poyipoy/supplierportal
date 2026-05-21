@@ -20,44 +20,44 @@
         @if($role === 'purchasing')
             <div class="sidebar-heading">Menu Utama</div>
 
-            <a href="{{ route('purchasing.dashboard') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.dashboard') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.dashboard') ? 'active' : '' }}">
                 <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
             </a>
-            <a href="{{ route('purchasing.periods.index') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.periods.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.periods.*') ? 'active' : '' }}">
                 <i class="bi bi-calendar3"></i> <span>Manajemen Periode</span>
             </a>
-            <a href="{{ route('purchasing.requirements.index') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.requirements.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.requirements.*') ? 'active' : '' }}">
                 <i class="bi bi-clipboard-data"></i> <span>Permintaan Material</span>
             </a>
-            <a href="{{ route('purchasing.quotations.index') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.quotations.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.quotations.*') ? 'active' : '' }}">
                 <i class="bi bi-tags"></i> <span>Penawaran</span>
             </a>
-            <a href="{{ route('purchasing.comparison.inter-supplier') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.comparison.*') ? 'active' : '' }}">
                 <i class="bi bi-bar-chart-line"></i> <span>Perbandingan Harga</span>
             </a>
-            <a href="{{ route('purchasing.purchase-orders.index') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.purchase-orders.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.purchase-orders.*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i> <span>Purchase Order</span>
             </a>
-            <a href="{{ route('purchasing.conversations.index') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.conversations.*') ? 'active' : '' }}">
                 <i class="bi bi-chat-dots"></i> <span>Negosiasi & Chat</span>
                 <span class="chat-badge badge bg-danger rounded-pill {{ $initChatCount > 0 ? '' : 'd-none' }} ms-auto" style="font-size:0.7rem;">{{ $initChatCount }}</span>
             </a>
 
             <div class="sidebar-heading">Quality & Claims</div>
-            <a href="{{ route('purchasing.claims.index') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.claims.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.claims.*') ? 'active' : '' }}">
                 <i class="bi bi-shield-exclamation"></i> <span>Klaim Material</span>
             </a>
 
             <div class="sidebar-heading">Lainnya</div>
-            <a href="{{ route('purchasing.reports.index') }}"
+            <a href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.reports.index') }}"
                 class="sidebar-link {{ request()->routeIs('purchasing.reports.*') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-bar-graph"></i> <span>Laporan</span>
             </a>

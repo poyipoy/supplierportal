@@ -26,6 +26,15 @@
     </div>
 </div>
 
+@if($quotation?->status === 'revision_requested')
+    <div class="alert alert-warning border-0 shadow-sm">
+        <div class="fw-semibold mb-1"><i class="bi bi-arrow-repeat me-1"></i> Revisi Penawaran Diminta</div>
+        <div class="small mb-0">
+            Purchasing meminta penawaran ini dikirim ulang. Perbarui harga, estimasi pengiriman, masa berlaku, dan catatan bila diperlukan.
+        </div>
+    </div>
+@endif
+
 <form id="quotationForm" action="{{ route('supplier.quotations.store', $pr->id) }}" method="POST">
     @csrf
     <input type="hidden" name="action" id="formAction" value="draft">
@@ -118,11 +127,20 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label fw-medium">Estimasi Waktu Pengiriman <span class="text-danger">*</span></label>
-                    <input type="date" name="estimated_delivery" class="form-control" value="{{ old('estimated_delivery', $quotation->estimated_delivery ?? '') }}" required>
+                    <input type="date" name="estimated_delivery" class="form-control" value="{{ old('estimated_delivery', optional($quotation?->estimated_delivery)->format('Y-m-d')) }}" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">Masa Berlaku Penawaran</label>
-                    <input type="date" name="validity_period" class="form-control" value="{{ old('validity_period', $quotation->validity_period ?? '') }}">
+                    <label class="form-label fw-medium">Masa Berlaku Penawaran <span class="text-danger">*</span></label>
+                    <input type="date"
+                           name="validity_period"
+                           id="validityPeriod"
+                           class="form-control @error('validity_period') is-invalid @enderror"
+                           value="{{ old('validity_period', optional($quotation?->validity_period)->format('Y-m-d')) }}"
+                           min="{{ now()->toDateString() }}">
+                    <div class="form-text">Wajib saat mengirim penawaran final. Harga dan syarat berlaku sampai tanggal ini.</div>
+                    @error('validity_period')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
             <div class="row mb-3">
@@ -139,8 +157,12 @@
     </div>
 
     <div class="d-flex justify-content-end gap-2 mb-5">
-        <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">Simpan Draft</button>
-        <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">Kirim Penawaran Final</button>
+        <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">
+            {{ $quotation?->status === 'revision_requested' ? 'Simpan Revisi Sementara' : 'Simpan Draft' }}
+        </button>
+        <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">
+            {{ $quotation?->status === 'revision_requested' ? 'Kirim Ulang Penawaran' : 'Kirim Penawaran Final' }}
+        </button>
     </div>
 </form>
 
@@ -206,7 +228,7 @@
     function confirmSubmit() {
         // Validate required fields visually
         let isValid = true;
-        $('#quotationForm').find('input[required]').each(function() {
+        $('#quotationForm').find('input[required], #validityPeriod').each(function() {
             if (!$(this).val()) {
                 isValid = false;
                 $(this).addClass('is-invalid');
@@ -216,18 +238,18 @@
         });
 
         if (!isValid) {
-            Swal.fire(@json('Error'), @json('Mohon lengkapi semua field yang wajib diisi (Harga & Estimasi Waktu).'), 'error');
+            Swal.fire(@json('Error'), @json('Mohon lengkapi semua field yang wajib diisi (Harga, Estimasi Waktu, dan Masa Berlaku Penawaran).'), 'error');
             return;
         }
 
         Swal.fire({
-            title: @json('Kirim Penawaran Final?'),
-            text: @json('Penawaran yang sudah dikirim tidak dapat diubah lagi.'),
+            title: @json($quotation?->status === 'revision_requested' ? 'Kirim Ulang Penawaran?' : 'Kirim Penawaran Final?'),
+            text: @json($quotation?->status === 'revision_requested' ? 'Penawaran revisi akan dikirim ulang ke Purchasing untuk dievaluasi.' : 'Penawaran yang sudah dikirim tidak dapat diubah lagi.'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: 'var(--adasi-blue)',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: @json('Ya, Kirim!'),
+            confirmButtonText: @json($quotation?->status === 'revision_requested' ? 'Ya, Kirim Ulang!' : 'Ya, Kirim!'),
             cancelButtonText: @json('Batal')
         }).then((result) => {
             if (result.isConfirmed) {

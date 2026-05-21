@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="javascript:history.back()" class="text-decoration-none text-muted small">
+    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali
     </a>
 </div>
@@ -92,6 +92,7 @@
 {{-- PO Form --}}
 <form action="{{ route('purchasing.purchase-orders.store') }}" method="POST" id="poForm">
     @csrf
+    <input type="hidden" name="return_url" value="{{ request('return_url') }}">
     <input type="hidden" name="quotation_id" value="{{ $quotation->id }}">
 
     <div class="card border-0 shadow-sm mb-4">
@@ -116,7 +117,7 @@
     </div>
 
     <div class="d-flex justify-content-end gap-2 mb-5">
-        <a href="javascript:history.back()" class="btn btn-light">Batal</a>
+        <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="btn btn-light">Batal</a>
         <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnCreatePo">
             <i class="bi bi-check-circle me-1"></i> Buat Purchase Order
         </button>

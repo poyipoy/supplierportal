@@ -60,6 +60,7 @@ class ProductionDummySeeder extends Seeder
             $this->seedPeriods($admin);
             $this->seedRequirementsAndQuotations($purchasing, $purchasing2, $supplier1, $supplier2, $supplier3, $supplier4, $supplier5);
             $this->seedPurchaseOrders($purchasing);
+            $this->seedMissingCompletedPurchaseOrders($purchasing);
             $this->seedQcInspections($qc);
             $this->seedMaterialClaims($purchasing, $supplier1);
             $this->seedAnnouncements($admin);
@@ -845,6 +846,74 @@ class ProductionDummySeeder extends Seeder
             'packing_list' => 'received',
             'form_e' => 'processing',
         ]);
+    }
+
+    private function seedMissingCompletedPurchaseOrders(User $purchasing): void
+    {
+        $doneDocuments = [
+            'invoice' => 'verified',
+            'bl' => 'done',
+            'packing_list' => 'verified',
+            'form_e' => 'done',
+        ];
+
+        $requirements = PurchaseRequirement::with([
+            'quotations' => fn ($query) => $query->where('status', 'accepted')->with('purchaseOrder'),
+        ])
+            ->where('status', 'completed')
+            ->orderBy('created_at')
+            ->get();
+
+        foreach ($requirements as $requirement) {
+            $quotation = $requirement->quotations->first();
+
+            if (! $quotation || $quotation->purchaseOrder) {
+                continue;
+            }
+
+            $createdAt = Carbon::parse($quotation->submitted_at ?? $requirement->created_at)->addDays(7);
+            $estimatedArrival = $createdAt->copy()->addDays(45);
+            $actualArrival = $estimatedArrival->copy()->addDays(3);
+
+            $purchaseOrder = PurchaseOrder::create([
+                'quotation_id' => $quotation->id,
+                'po_number' => $this->nextHistoricalPoNumber($createdAt),
+                'status' => 'completed',
+                'created_by' => $purchasing->id,
+                'estimated_arrival' => $estimatedArrival->toDateString(),
+                'actual_arrival' => $actualArrival->toDateString(),
+                'notes' => 'Dummy purchase order historis yang dibuat otomatis agar status PR completed konsisten.',
+                'created_at' => $createdAt,
+                'updated_at' => $actualArrival,
+            ]);
+
+            foreach ($doneDocuments as $type => $documentStatus) {
+                PoDocument::create([
+                    'po_id' => $purchaseOrder->id,
+                    'doc_type' => $type,
+                    'status' => $documentStatus,
+                    'created_at' => $createdAt,
+                    'updated_at' => $actualArrival->copy()->subDays(2),
+                ]);
+            }
+
+            $this->purchaseOrders[$purchaseOrder->po_number] = $purchaseOrder;
+        }
+    }
+
+    private function nextHistoricalPoNumber(Carbon $date): string
+    {
+        $prefix = 'PO/' . $date->format('m/Y') . '/';
+        $lastSequence = PurchaseOrder::where('po_number', 'like', $prefix . '%')
+            ->pluck('po_number')
+            ->map(function ($number) {
+                $parts = explode('/', $number);
+
+                return (int) end($parts);
+            })
+            ->max() ?? 0;
+
+        return $prefix . str_pad((string) ($lastSequence + 1), 3, '0', STR_PAD_LEFT);
     }
 
     private function purchaseOrder(

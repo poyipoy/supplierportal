@@ -62,7 +62,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 | Purchasing Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:purchasing'])->prefix('purchasing')->name('purchasing.')->group(function () {
+Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix('purchasing')->name('purchasing.')->group(function () {
     Route::get('/dashboard', [PurchasingController::class, 'dashboard'])->name('dashboard');
     Route::post('/kurs/update', [PurchasingController::class, 'updateKurs'])->name('kurs.update');
     // Manajemen Periode
@@ -86,6 +86,7 @@ Route::middleware(['auth', 'role:purchasing'])->prefix('purchasing')->name('purc
     Route::post('/conversations/start-po/{po_id}', [\App\Http\Controllers\Purchasing\ConversationController::class, 'startFromPo'])->name('conversations.start.po');
     // Penawaran (view-only dari sisi Purchasing)
     Route::get('/quotations', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'index'])->name('quotations.index');
+    Route::post('/quotations/{id}/request-revision', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'requestRevision'])->name('quotations.request-revision');
     Route::get('/quotations/{id}', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'show'])->name('quotations.show');
     // Perbandingan Harga
     Route::get('/comparison/inter-supplier', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'interSupplier'])->name('comparison.inter-supplier');
@@ -134,6 +135,7 @@ Route::middleware(['auth', 'role:qc'])->prefix('qc')->name('qc.')->group(functio
     Route::get('/dashboard', [\App\Http\Controllers\Qc\DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/inspections/{po_id}/create', [\App\Http\Controllers\Qc\QcInspectionController::class, 'create'])->name('inspections.create');
     Route::post('/inspections/{po_id}', [\App\Http\Controllers\Qc\QcInspectionController::class, 'store'])->name('inspections.store');
+    Route::post('/inspections/{id}/attachments', [\App\Http\Controllers\Qc\QcInspectionController::class, 'storeAttachments'])->name('inspections.attachments.store');
     Route::get('/inspections', [\App\Http\Controllers\Qc\QcInspectionController::class, 'index'])->name('inspections.index');
     Route::get('/export/inspections', [\App\Http\Controllers\Qc\QcExportController::class, 'inspections'])->name('export.inspections');
 });

@@ -33,6 +33,7 @@
                                 $po->is_overdue => 'bg-danger',
                                 $po->status === 'active' => 'bg-primary',
                                 $po->status === 'waiting_qc' => 'bg-warning text-dark',
+                                $po->status === 'claim_needed' => 'bg-danger',
                                 $po->status === 'completed' => 'bg-success',
                                 default => 'bg-secondary'
                             };
@@ -40,9 +41,17 @@
                                 $po->is_overdue => 'Overdue',
                                 $po->status === 'active' => 'Active',
                                 $po->status === 'waiting_qc' => 'Waiting QC',
+                                $po->status === 'claim_needed' => 'Claim Needed',
                                 $po->status === 'completed' => 'Completed',
                                 default => ucwords(str_replace('_', ' ', $po->status)),
                             };
+                            $pendingClaim = $po->materialClaims
+                                ->where('status', 'pending')
+                                ->sortByDesc('created_at')
+                                ->first();
+                            $latestClaim = $po->materialClaims
+                                ->sortByDesc('created_at')
+                                ->first();
                         @endphp
                         <tr>
                             <td class="fw-bold">{{ $po->po_number }}</td>
@@ -53,9 +62,20 @@
                             </td>
                             <td>{{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}</td>
                             <td class="text-end">
-                                <a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info">
-                                    <i class="bi bi-eye"></i> Detail
-                                </a>
+                                <div class="d-inline-flex gap-1 justify-content-end flex-wrap">
+                                    @if($pendingClaim)
+                                        <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-reply me-1"></i> Respons Klaim
+                                        </a>
+                                    @elseif($latestClaim)
+                                        <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-exclamation-octagon me-1"></i> Lihat Klaim
+                                        </a>
+                                    @endif
+                                    <a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i> Detail
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @endforeach

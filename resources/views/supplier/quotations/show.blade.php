@@ -16,23 +16,7 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">Detail Harga Material</h6>
-                    @php
-                        $statusBadge = match($quotation->status) {
-                            'accepted' => 'bg-primary',
-                            'rejected' => 'bg-dark',
-                            'submitted' => 'bg-success',
-                            'draft' => 'bg-secondary',
-                            default => 'bg-secondary',
-                        };
-                        $statusLabel = match($quotation->status) {
-                            'accepted' => 'Diterima',
-                            'rejected' => 'Ditolak',
-                            'submitted' => 'Terkirim',
-                            'draft' => 'Draft',
-                            default => ucwords(str_replace('_', ' ', $quotation->status)),
-                        };
-                    @endphp
-                    <span class="badge {{ $statusBadge }} px-3 py-2 text-uppercase">{{ $statusLabel }}</span>
+                    <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -139,7 +123,22 @@
                 </div>
             </div>
 
-            @if($quotation->status === 'rejected')
+            @if($quotation->status === 'revision_requested')
+                <div class="alert alert-warning small">
+                    <i class="bi bi-arrow-repeat me-1"></i>
+                    Purchasing meminta revisi penawaran ini. Perbarui harga, estimasi pengiriman, dan masa berlaku sebelum mengirim ulang.
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="{{ route('supplier.quotations.create', $quotation->purchaseRequirement->id) }}" class="btn btn-warning text-dark fw-semibold">
+                        <i class="bi bi-pencil-square me-1"></i> Revisi Penawaran
+                    </a>
+                    @if($conversation)
+                        <a href="{{ route('supplier.conversations.show', $conversation->id) }}" class="btn btn-outline-primary" data-open-chat-conversation="{{ $conversation->id }}">
+                            <i class="bi bi-chat-dots me-1"></i> Buka Chat Revisi
+                        </a>
+                    @endif
+                </div>
+            @elseif($quotation->status === 'rejected')
                 <div class="alert alert-dark small">
                     <i class="bi bi-x-circle-fill me-1"></i> Penawaran ini tidak dipilih oleh tim Purchasing ADASI.
                 </div>

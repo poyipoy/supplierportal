@@ -6,7 +6,7 @@
     <div class="mb-3">
         @php
             $backRoute = auth()->user()->role === 'purchasing' 
-                ? route('purchasing.conversations.index') 
+                ? \App\Support\PurchasingNavigation::backUrl('purchasing.conversations.index') 
                 : route('supplier.conversations.index');
         @endphp
         <a href="{{ $backRoute }}" class="text-decoration-none text-muted small">

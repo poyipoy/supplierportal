@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Http\Controllers\Controller;
 use App\Models\PoDocument;
 use App\Notifications\SystemNotification;
+use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
 
 class PoDocumentController extends Controller
@@ -49,7 +50,8 @@ class PoDocumentController extends Controller
                 'Status Dokumen Diperbarui',
                 "Dokumen {$docLabel} pada PO {$po->po_number} telah diperbarui menjadi \"{$statusLabel}\".",
                 route('purchasing.purchase-orders.show', $po->id),
-                'bi-file-earmark-check text-primary'
+                'bi-file-earmark-check text-primary',
+                ['category' => NotificationCategory::DOCUMENT]
             ));
         }
 
@@ -62,7 +64,8 @@ class PoDocumentController extends Controller
                 'Semua Dokumen Impor Lengkap',
                 "Semua dokumen impor untuk PO {$po->po_number} telah lengkap. Konfirmasi kedatangan material jika sudah tiba.",
                 route('purchasing.purchase-orders.show', $po->id),
-                'bi-check2-circle text-success'
+                'bi-check2-circle text-success',
+                ['category' => NotificationCategory::DOCUMENT]
             ));
         }
 

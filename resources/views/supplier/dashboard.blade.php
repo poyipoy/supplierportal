@@ -81,12 +81,34 @@
                         <thead class="table-light"><tr><th>No. PO</th><th>Periode</th><th>Status</th><th>Tanggal</th><th></th></tr></thead>
                         <tbody>
                             @forelse($poTerbaru as $po)
+                            @php
+                                $pendingClaim = $po->materialClaims
+                                    ->where('status', 'pending')
+                                    ->sortByDesc('created_at')
+                                    ->first();
+                                $latestClaim = $po->materialClaims
+                                    ->sortByDesc('created_at')
+                                    ->first();
+                            @endphp
                             <tr>
                                 <td class="fw-bold">{{ $po->po_number }}</td>
                                 <td>{{ optional(optional($po->quotation)->purchaseRequirement)->period->name ?? '-' }}</td>
                                 <td>@php $c=match(true){$po->is_overdue=>'bg-danger',$po->status==='active'=>'bg-primary',$po->status==='waiting_qc'=>'bg-warning text-dark',$po->status==='completed'=>'bg-success',$po->status==='claim_needed'=>'bg-danger',default=>'bg-secondary'};@endphp<span class="badge {{ $c }} text-uppercase" style="font-size:.65rem">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span></td>
                                 <td>{{ $po->created_at->format('d M Y') }}</td>
-                                <td class="text-end"><a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1 justify-content-end flex-wrap">
+                                        @if($pendingClaim)
+                                            <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-sm btn-danger py-0" title="Respons Klaim">
+                                                <i class="bi bi-reply"></i>
+                                            </a>
+                                        @elseif($latestClaim)
+                                            <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-sm btn-outline-danger py-0" title="Lihat Klaim">
+                                                <i class="bi bi-exclamation-octagon"></i>
+                                            </a>
+                                        @endif
+                                        <a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0" title="Detail PO"><i class="bi bi-eye"></i></a>
+                                    </div>
+                                </td>
                             </tr>
                             @empty<tr><td colspan="5" class="text-center text-muted py-3">Belum ada PO.</td></tr>@endforelse
                         </tbody>

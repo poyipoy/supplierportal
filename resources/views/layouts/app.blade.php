@@ -29,7 +29,7 @@
         :root {
             --adasi-blue: #1F5FA6;
             --adasi-red: #C0392B;
-            --bg-light: #dadadaff;
+            --bg-light: #f0f0f0;
             --sidebar-width: 260px;
             --sidebar-width-collapsed: 70px;
         }
@@ -315,6 +315,116 @@
             color: #1e293b;
         }
 
+        .notification-dropdown {
+            border: 0;
+            border-radius: 0.75rem;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+            overflow: hidden;
+            padding: 0;
+            width: min(780px, calc(100vw - 2rem));
+        }
+
+        .notification-panel {
+            display: grid;
+            grid-template-columns: 210px minmax(0, 1fr);
+            height: min(620px, calc(100vh - 110px));
+            min-height: 380px;
+            overflow: hidden;
+        }
+
+        .notification-menu {
+            background: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 0.85rem;
+        }
+
+        .notification-menu-heading {
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.65rem;
+            text-transform: uppercase;
+        }
+
+        .notification-menu .nav-link {
+            align-items: center;
+            border-radius: 0.55rem;
+            color: #475569;
+            display: flex;
+            font-size: 0.82rem;
+            font-weight: 600;
+            flex: 0 0 auto;
+            gap: 0.5rem;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            padding: 0.55rem 0.65rem;
+            text-align: left;
+            width: 100%;
+        }
+
+        .notification-menu .nav-link.active {
+            background: rgba(31, 95, 166, 0.1);
+            color: var(--adasi-blue);
+        }
+
+        .notification-list-pane {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .notification-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            color: inherit;
+            display: block;
+            padding: 0.85rem 1rem;
+            text-decoration: none;
+        }
+
+        .notification-item:hover {
+            background: rgba(31, 95, 166, 0.05);
+        }
+
+        .min-w-0 {
+            min-width: 0;
+        }
+
+        .notification-page-menu {
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 0.85rem;
+        }
+
+        .notification-page-menu .list-group-item {
+            align-items: center;
+            border: 0;
+            border-radius: 0.55rem;
+            color: #475569;
+            display: flex;
+            font-size: 0.88rem;
+            font-weight: 600;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            padding: 0.7rem 0.75rem;
+        }
+
+        .notification-page-menu .list-group-item.active {
+            background: rgba(31, 95, 166, 0.1);
+            color: var(--adasi-blue);
+        }
+
         /* Responsive */
         @media (max-width: 992px) {
             .sidebar {
@@ -351,6 +461,36 @@
 
             .chat-drawer {
                 width: 100vw !important;
+            }
+
+            .notification-panel {
+                grid-template-columns: 1fr;
+                height: min(620px, calc(100vh - 95px));
+            }
+
+            .notification-menu {
+                border-bottom: 1px solid #e2e8f0;
+                border-right: 0;
+                display: flex;
+                flex-direction: row;
+                gap: 0.35rem;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+
+            .notification-menu-heading {
+                align-items: center;
+                display: flex;
+                flex: 0 0 auto;
+                margin-bottom: 0;
+                margin-right: 0.35rem;
+            }
+
+            .notification-menu .nav-link {
+                flex: 0 0 auto;
+                margin-bottom: 0;
+                white-space: nowrap;
+                width: auto;
             }
         }
     </style>
@@ -478,6 +618,58 @@
             setInterval(updateBadges, 30000);
         @endauth
     </script>
+    @auth
+        @if(auth()->user()->role === 'purchasing')
+            <script>
+                document.addEventListener('click', (event) => {
+                    const link = event.target.closest('a[href]');
+
+                    if (!link || event.defaultPrevented || event.button !== 0) {
+                        return;
+                    }
+
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+
+                    if (
+                        link.target && link.target !== '_self'
+                        || link.hasAttribute('download')
+                        || link.closest('.sidebar-menu')
+                        || link.hasAttribute('data-chat-drawer')
+                        || link.hasAttribute('data-open-chat-conversation')
+                        || link.hasAttribute('data-bs-toggle')
+                    ) {
+                        return;
+                    }
+
+                    const href = link.getAttribute('href');
+
+                    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+                        return;
+                    }
+
+                    const targetUrl = new URL(href, window.location.origin);
+                    const listPaths = new Set(@json(\App\Support\PurchasingNavigation::listRoutePaths()));
+
+                    if (
+                        targetUrl.origin !== window.location.origin
+                        || !targetUrl.pathname.startsWith('/purchasing/')
+                        || targetUrl.pathname.startsWith('/purchasing/export/')
+                        || listPaths.has(targetUrl.pathname)
+                        || targetUrl.searchParams.has('return_url')
+                    ) {
+                        return;
+                    }
+
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.delete('return_url');
+                    targetUrl.searchParams.set('return_url', currentUrl.toString());
+                    link.href = targetUrl.toString();
+                }, true);
+            </script>
+        @endif
+    @endauth
     @stack('scripts')
 </body>
 

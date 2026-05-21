@@ -6,6 +6,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -96,7 +97,8 @@ class ConversationMessageController extends Controller
                 'Pesan baru dari ' . $senderName,
                 $preview,
                 $url,
-                'bi-chat-dots'
+                'bi-chat-dots',
+                ['category' => NotificationCategory::CHAT]
             ));
         }
 

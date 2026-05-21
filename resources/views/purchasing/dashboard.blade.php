@@ -87,7 +87,7 @@
                                 <td class="fw-bold">{{ $pr->pr_number ?? 'DRAFT' }}</td>
                                 <td>{{ $pr->period->name }}</td>
                                 <td>@php $c=match($pr->status){'draft'=>'bg-secondary','submitted'=>'bg-primary','bidding'=>'bg-warning text-dark','completed'=>'bg-success',default=>'bg-secondary'};@endphp<span class="badge {{ $c }} text-uppercase" style="font-size:.65rem">{{ ucwords(str_replace('_', ' ', $pr->status)) }}</span></td>
-                                <td class="text-end"><a href="{{ route('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
                             </tr>
                             @empty<tr><td colspan="4" class="text-center text-muted py-3">Belum ada data.</td></tr>@endforelse
                         </tbody>
@@ -137,7 +137,7 @@
                                 <td>{{ $po->quotation->supplier->name }}</td>
                                 <td>{{ \Carbon\Carbon::parse($po->estimated_arrival)->format('d M Y') }}</td>
                                 <td><span class="badge bg-primary text-uppercase" style="font-size:.65rem">{{ ucwords(str_replace('_', ' ', $po->status)) }}</span></td>
-                                <td class="text-end"><a href="{{ route('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
                             </tr>
                             @empty<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada PO aktif.</td></tr>@endforelse
                         </tbody>

@@ -11,7 +11,7 @@
             <a href="{{ route('purchasing.export.requirements', request()->all()) }}" class="btn btn-success btn-sm">
                 <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
             </a>
-            <a href="{{ route('purchasing.requirements.create') }}" class="btn btn-primary btn-sm" style="background-color: var(--adasi-blue); border-color: var(--adasi-blue);">
+            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.create') }}" class="btn btn-primary btn-sm" style="background-color: var(--adasi-blue); border-color: var(--adasi-blue);">
                 <i class="bi bi-plus-circle me-1"></i> Buat Permintaan Baru
             </a>
         </div>
@@ -94,11 +94,11 @@
                             </td>
                             <td>{{ $pr->created_at->format('d M Y, H:i') }}</td>
                             <td class="text-end">
-                                <a href="{{ route('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
+                                <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 @if($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected']))
-                                    <a href="{{ route('purchasing.requirements.edit', $pr->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.edit', $pr->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('purchasing.requirements.destroy', $pr->id) }}" method="POST" class="d-inline delete-form">
@@ -127,6 +127,7 @@
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json',
             },
+            stateSave: true,
             pageLength: 25,
             ordering: false // Let backend handle ordering or enable if needed
         });

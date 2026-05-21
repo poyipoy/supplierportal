@@ -11,6 +11,7 @@
     <div class="card-body">
         <form id="prForm" action="{{ route('purchasing.requirements.store') }}" method="POST">
             @csrf
+            <input type="hidden" name="return_url" value="{{ request('return_url') }}">
             
             <input type="hidden" name="action" id="formAction" value="draft">
 
@@ -73,7 +74,7 @@
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <a href="{{ route('purchasing.requirements.index') }}" class="btn btn-light">Batal</a>
+                <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.requirements.index') }}" class="btn btn-light">Batal</a>
                 <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">Simpan Draft</button>
                 <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">Ajukan Sekarang</button>
             </div>

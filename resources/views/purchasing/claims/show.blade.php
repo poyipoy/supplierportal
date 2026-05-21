@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('purchasing.claims.index') }}" class="text-decoration-none text-muted small">
+    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.claims.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Klaim
     </a>
 </div>

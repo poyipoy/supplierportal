@@ -45,7 +45,7 @@
                                 <td>{{ $po->qcInspections->last()->inspected_at->format('d M Y') }}</td>
                                 <td class="text-center"><span class="badge bg-danger text-uppercase">{{ str_replace('_', ' ', $po->status) }}</span></td>
                                 <td class="text-end">
-                                    <a href="{{ route('purchasing.claims.create', $po->qcInspections->last()->id) }}" class="btn btn-sm btn-danger">
+                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $po->qcInspections->last()->id) }}" class="btn btn-sm btn-danger">
                                         <i class="bi bi-exclamation-octagon me-1"></i> Buat Klaim
                                     </a>
                                 </td>
@@ -88,7 +88,7 @@
                                 <td>{{ $claim->created_at->format('d M Y') }}</td>
                                 <td class="text-center"><span class="badge {{ $badgeClass }} text-uppercase">{{ ucwords(str_replace('_', ' ', $claim->status)) }}</span></td>
                                 <td class="text-end">
-                                    <a href="{{ route('purchasing.claims.show', $claim->id) }}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $claim->id) }}" class="btn btn-sm btn-outline-primary">
                                         Detail
                                     </a>
                                 </td>
@@ -108,6 +108,7 @@
     $(document).ready(function() {
         $('#actionTable, #historyTable').DataTable({
             language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+            stateSave: true,
             pageLength: 25,
             ordering: false
         });

@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 
 class MaterialClaimController extends Controller
@@ -36,12 +37,12 @@ class MaterialClaimController extends Controller
             ->findOrFail($inspection_id);
 
         if ($inspection->status !== 'ng') {
-            return redirect()->route('purchasing.claims.index')->with('error', 'Inspeksi ini bukan NG, tidak perlu diklaim.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'Inspeksi ini bukan NG, tidak perlu diklaim.');
         }
 
         // Pastikan belum ada klaim aktif
         if (MaterialClaim::where('inspection_id', $inspection_id)->whereIn('status', ['pending', 'responded', 'escalated'])->exists()) {
-            return redirect()->route('purchasing.claims.index')->with('error', 'Klaim sudah dibuat untuk inspeksi ini.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'Klaim sudah dibuat untuk inspeksi ini.');
         }
 
         return view('purchasing.claims.create', compact('inspection'));
@@ -80,7 +81,12 @@ class MaterialClaimController extends Controller
             ));
         }
 
-        return redirect()->route('purchasing.claims.show', $claim->id)->with('success', 'Klaim berhasil dikirim ke supplier.');
+        $showParameters = [$claim->id];
+        if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
+            $showParameters['return_url'] = $request->input('return_url');
+        }
+
+        return redirect()->route('purchasing.claims.show', $showParameters)->with('success', 'Klaim berhasil dikirim ke supplier.');
     }
 
     public function show($id)
