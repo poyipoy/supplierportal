@@ -37,7 +37,7 @@ class PurchasingController extends Controller
 
         // Tabel cepat
         $prTerbaru = PurchaseRequirement::with('period')->orderBy('created_at', 'desc')->take(5)->get();
-        $poTerdekat = PurchaseOrder::with(['quotation.supplier', 'quotation.purchaseRequirement'])
+        $poTerdekat = PurchaseOrder::with(['supplier', 'quotations.purchaseRequirement'])
             ->whereIn('status', ['active', 'overdue'])->whereNotNull('estimated_arrival')
             ->orderBy('estimated_arrival', 'asc')->take(5)->get();
 

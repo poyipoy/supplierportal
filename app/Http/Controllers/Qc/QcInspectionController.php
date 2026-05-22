@@ -28,15 +28,15 @@ class QcInspectionController extends Controller
 
     public function dataWaiting(Request $request)
     {
-        $query = PurchaseOrder::with(['quotation.supplier', 'quotation.items'])
+        $query = PurchaseOrder::with(['supplier', 'quotations.items'])
             ->where('status', 'waiting_qc')
             ->orderBy('actual_arrival', 'asc');
 
         return DataTables::eloquent($query)
             ->addColumn('po_number_display', fn($po) => $po->po_number)
-            ->addColumn('supplier_name', fn($po) => $po->quotation->supplier->name ?? '-')
+            ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
             ->addColumn('arrival_date', fn($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
-            ->addColumn('item_count', fn($po) => $po->quotation->items->count() . ' Item')
+            ->addColumn('item_count', fn($po) => $po->quotations->sum(fn($q) => $q->items->count()) . ' Item')
             ->addColumn('action', fn($po) => '<a href="' . route('qc.inspections.create', $po->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Mulai Inspeksi</a>')
             ->rawColumns(['action'])
             ->make(true);
@@ -49,7 +49,7 @@ class QcInspectionController extends Controller
 
         return DataTables::eloquent($query)
             ->addColumn('po_number', fn($i) => $i->purchaseOrder->po_number ?? '-')
-            ->addColumn('supplier_name', fn($i) => $i->purchaseOrder->quotation->supplier->name ?? '-')
+            ->addColumn('supplier_name', fn($i) => $i->purchaseOrder->supplier->name ?? '-')
             ->addColumn('inspected_date', fn($i) => $i->inspected_at->format('d M Y, H:i'))
             ->addColumn('status_badge', fn($i) => $i->status === 'ok'
                 ? '<span class="badge bg-success">OK</span>'
@@ -65,7 +65,7 @@ class QcInspectionController extends Controller
      */
     public function create($po_id)
     {
-        $po = PurchaseOrder::with(['quotation.supplier', 'quotation.items.prItem'])->findOrFail($po_id);
+        $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem'])->findOrFail($po_id);
 
         if ($po->status !== 'waiting_qc') {
             return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak dalam status Menunggu QC.');
@@ -84,7 +84,7 @@ class QcInspectionController extends Controller
      */
     public function store(Request $request, $po_id)
     {
-        $po = PurchaseOrder::with(['quotation.supplier', 'quotation.items.prItem'])->findOrFail($po_id);
+        $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem'])->findOrFail($po_id);
 
         if ($po->status !== 'waiting_qc') {
             return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak valid untuk diinspeksi.');
@@ -222,7 +222,7 @@ class QcInspectionController extends Controller
     public function show($id)
     {
         $inspection = QcInspection::with([
-            'purchaseOrder.quotation.supplier',
+            'purchaseOrder.supplier',
             'inspector',
             'items.prItem',
             'attachments'

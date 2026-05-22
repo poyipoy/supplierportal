@@ -254,24 +254,27 @@
                 <div class="info-label">Tanggal PO</div>
                 <div class="info-value"><strong>{{ $po->created_at->format('d F Y') }}</strong></div>
 
-                <div class="info-label">Periode</div>
-                <div class="info-value">{{ $po->quotation->purchaseRequirement->period->name ?? '-' }}</div>
-
                 <div class="info-label">No. PR</div>
-                <div class="info-value">{{ $po->quotation->purchaseRequirement->pr_number ?? '-' }}</div>
+                <div class="info-value">
+                    @php $prs = $po->purchaseRequirements(); @endphp
+                    {{ $prs->map(fn($pr) => $pr->pr_number ?? '-')->implode(', ') }}
+                    @if($prs->count() > 1)
+                        ({{ $prs->count() }} PR digabung)
+                    @endif
+                </div>
+
+                <div class="info-label">Periode</div>
+                <div class="info-value">{{ $prs->map(fn($pr) => $pr->period->name ?? '-')->unique()->implode(', ') }}</div>
 
                 <div class="info-label">Dibuat Oleh</div>
                 <div class="info-value">{{ $po->creator->name ?? '-' }}</div>
             </div>
             <div class="info-box info-box-right">
                 <div class="info-label">Supplier</div>
-                <div class="info-value"><strong>{{ $po->quotation->supplier->name ?? '-' }}</strong></div>
+                <div class="info-value"><strong>{{ $po->supplier->name ?? '-' }}</strong></div>
 
                 <div class="info-label">Mata Uang</div>
-                <div class="info-value">{{ $po->quotation->currency ?? 'USD' }}</div>
-
-                <div class="info-label">Kurs ({{ $po->quotation->currency ?? 'USD' }} → IDR)</div>
-                <div class="info-value">Rp {{ $rate ? number_format($rate->rate_to_idr, 0, ',', '.') : '-' }}</div>
+                <div class="info-value">{{ $po->currency ?? 'USD' }}</div>
 
                 <div class="info-label">Estimasi Kedatangan</div>
                 <div class="info-value">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
@@ -288,36 +291,51 @@
                     <th class="text-center">Spesifikasi</th>
                     <th class="text-right">Berat (kg)</th>
                     <th class="text-right">Harga/kg</th>
-                    <th class="text-right">Total ({{ $po->quotation->currency ?? 'USD' }})</th>
+                    <th class="text-right">Total ({{ $po->currency ?? 'USD' }})</th>
                     <th class="text-right">Total (IDR)</th>
                 </tr>
             </thead>
             <tbody>
-                @php $grandTotalFx = 0; $grandTotalIdr = 0; @endphp
-                @foreach($po->quotation->items as $index => $item)
-                    @php
-                        $totalFx = $item->amount;
-                        $totalIdr = $totalFx * ($rate ? $rate->rate_to_idr : 1);
-                        $grandTotalFx += $totalFx;
-                        $grandTotalIdr += $totalIdr;
+                @php $grandTotalFx = 0; $grandTotalIdr = 0; $globalNo = 1; @endphp
+                @foreach($po->quotations as $quotation)
+                    @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
+                    @if($po->quotations->count() > 1)
+                        <tr>
+                            <td colspan="8" style="background-color: #eef2f7; font-weight: 700; font-size: 10px; padding: 6px;">
+                                {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
+                                @if($rate)
+                                    <span style="color: #64748b; font-weight: 400; margin-left: 8px;">
+                                        Kurs: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endif
+                    @foreach($quotation->items as $item)
+                        @php
+                            $totalFx = $item->amount;
+                            $totalIdr = $totalFx * ($rate ? $rate->rate_to_idr : 1);
+                            $grandTotalFx += $totalFx;
+                            $grandTotalIdr += $totalIdr;
 
-                        $spec = [];
-                        if ($item->prItem->thickness) $spec[] = 'T:' . rtrim(rtrim(number_format($item->prItem->thickness, 4), '0'), '.') . 'mm';
-                        if ($item->prItem->width) $spec[] = 'W:' . rtrim(rtrim(number_format($item->prItem->width, 1), '0'), '.') . 'mm';
-                        if ($item->prItem->length) $spec[] = 'L:' . rtrim(rtrim(number_format($item->prItem->length, 1), '0'), '.') . 'mm';
-                        if ($item->prItem->d_outer) $spec[] = 'OD:' . rtrim(rtrim(number_format($item->prItem->d_outer, 1), '0'), '.') . 'mm';
-                        if ($item->prItem->d_inner) $spec[] = 'ID:' . rtrim(rtrim(number_format($item->prItem->d_inner, 1), '0'), '.') . 'mm';
-                    @endphp
-                    <tr>
-                        <td class="text-center">{{ $index + 1 }}</td>
-                        <td><strong>{{ $item->prItem->material_name }}</strong><br><small style="color:#64748b;">{{ $item->prItem->shape ?? '-' }}</small></td>
-                        <td class="text-center">{{ $item->prItem->hs_code ?? '-' }}</td>
-                        <td class="text-center" style="font-size:9px;">{{ implode(' × ', $spec) ?: '-' }}</td>
-                        <td class="text-right">{{ number_format($item->prItem->weight_needed, 0, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($item->price_per_kg, 4) }}</td>
-                        <td class="text-right">{{ number_format($totalFx, 2, ',', '.') }}</td>
-                        <td class="text-right">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
-                    </tr>
+                            $spec = [];
+                            if ($item->prItem->thickness) $spec[] = 'T:' . rtrim(rtrim(number_format($item->prItem->thickness, 4), '0'), '.') . 'mm';
+                            if ($item->prItem->width) $spec[] = 'W:' . rtrim(rtrim(number_format($item->prItem->width, 1), '0'), '.') . 'mm';
+                            if ($item->prItem->length) $spec[] = 'L:' . rtrim(rtrim(number_format($item->prItem->length, 1), '0'), '.') . 'mm';
+                            if ($item->prItem->d_outer) $spec[] = 'OD:' . rtrim(rtrim(number_format($item->prItem->d_outer, 1), '0'), '.') . 'mm';
+                            if ($item->prItem->d_inner) $spec[] = 'ID:' . rtrim(rtrim(number_format($item->prItem->d_inner, 1), '0'), '.') . 'mm';
+                        @endphp
+                        <tr>
+                            <td class="text-center">{{ $globalNo++ }}</td>
+                            <td><strong>{{ $item->prItem->material_name }}</strong><br><small style="color:#64748b;">{{ $item->prItem->shape ?? '-' }}</small></td>
+                            <td class="text-center">{{ $item->prItem->hs_code ?? '-' }}</td>
+                            <td class="text-center" style="font-size:9px;">{{ implode(' × ', $spec) ?: '-' }}</td>
+                            <td class="text-right">{{ number_format($item->prItem->weight_needed, 0, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($item->price_per_kg, 4) }}</td>
+                            <td class="text-right">{{ number_format($totalFx, 2, ',', '.') }}</td>
+                            <td class="text-right">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
                 @endforeach
             </tbody>
         </table>
@@ -328,12 +346,8 @@
             <div class="totals-box">
                 <table class="totals-table">
                     <tr>
-                        <td>Total ({{ $po->quotation->currency ?? 'USD' }})</td>
+                        <td>Total ({{ $po->currency ?? 'USD' }})</td>
                         <td class="text-right"><strong>{{ number_format($grandTotalFx, 2, ',', '.') }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Kurs</td>
-                        <td class="text-right">Rp {{ $rate ? number_format($rate->rate_to_idr, 0, ',', '.') : '-' }}</td>
                     </tr>
                     <tr class="grand-total">
                         <td>GRAND TOTAL (IDR)</td>

@@ -65,7 +65,7 @@
                     @forelse($recentInspections as $insp)
                     <tr>
                         <td class="fw-bold">{{ $insp->purchaseOrder->po_number }}</td>
-                        <td>{{ $insp->purchaseOrder->quotation->supplier->name }}</td>
+                        <td>{{ $insp->purchaseOrder->supplier->name }}</td>
                         <td>{{ $insp->inspected_at->format('d M Y') }}</td>
                         <td class="text-center"><span class="badge bg-{{ $insp->status==='ok'?'success':'danger' }}">{{ strtoupper($insp->status) }}</span></td>
                         <td class="text-end"><a href="{{ route('qc.inspections.show', $insp->id) }}" class="btn btn-sm btn-outline-info">Detail</a></td>

@@ -20,10 +20,10 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         $query = PurchaseOrder::with([
-            'quotation.supplier',
-            'quotation.purchaseRequirement.period',
-            'quotation.exchange_rate',
-            'quotation.items.prItem',
+            'supplier',
+            'quotations.purchaseRequirement.period',
+            'quotations.exchange_rate',
+            'quotations.items.prItem',
             'documents',
             'qcInspections',
             'materialClaims',
@@ -51,19 +51,26 @@ class PurchaseOrderController extends Controller
         }
 
         if ($request->filled('supplier_id')) {
-            $query->whereHas('quotation', fn($q) => $q->where('supplier_id', $request->supplier_id));
+            $query->where('supplier_id', $request->supplier_id);
         }
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
                 ->addColumn('po_number_display', fn($po) => $po->po_number)
-                ->addColumn('supplier_name', fn($po) => $po->quotation->supplier->name ?? '-')
-                ->addColumn('period_name', fn($po) => $po->quotation->purchaseRequirement->period->name ?? '-')
+                ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
+                ->addColumn('period_name', function ($po) {
+                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequirement?->period?->name)->filter()->unique();
+                    return $periods->count() > 1
+                        ? $periods->first() . ' +' . ($periods->count() - 1)
+                        : ($periods->first() ?? '-');
+                })
                 ->addColumn('total_idr', function ($po) {
-                    $rate = $po->quotation->exchange_rate;
                     $totalIdr = 0;
-                    foreach ($po->quotation->items as $item) {
-                        $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                    foreach ($po->quotations as $quotation) {
+                        $rate = $quotation->exchange_rate;
+                        foreach ($quotation->items as $item) {
+                            $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                        }
                     }
                     return 'Rp ' . number_format($totalIdr, 0, ',', '.');
                 })
@@ -115,6 +122,7 @@ class PurchaseOrderController extends Controller
 
     /**
      * Form buat PO dari quotation terpilih.
+     * Sekarang mendukung konsolidasi: menampilkan quotation lain dari supplier & currency yang sama.
      */
     public function create($quotation_id)
     {
@@ -134,45 +142,89 @@ class PurchaseOrderController extends Controller
                 ->with('error', 'Masa berlaku penawaran sudah kadaluarsa. Minta supplier mengirim penawaran ulang sebelum membuat PO.');
         }
 
-        // Check if PO already exists for this quotation
-        if (PurchaseOrder::where('quotation_id', $quotation_id)->exists()) {
+        // Check if this quotation is already in a PO
+        if ($quotation->purchaseOrders()->exists()) {
             return redirect(PurchasingNavigation::backUrl('purchasing.purchase-orders.index'))
                 ->with('error', 'PO sudah pernah dibuat untuk quotation ini.');
         }
 
         $rate = $quotation->exchange_rate;
 
-        return view('purchasing.po.create', compact('quotation', 'rate'));
+        // Cari quotation lain dari supplier & currency yang sama yang bisa digabungkan
+        $otherQuotations = Quotation::with(['items.prItem', 'purchaseRequirement.period', 'exchange_rate'])
+            ->where('supplier_id', $quotation->supplier_id)
+            ->where('currency', $quotation->currency)
+            ->where('status', 'submitted')
+            ->where('id', '!=', $quotation->id)
+            ->whereDoesntHave('purchaseOrders') // belum punya PO
+            ->where(function ($q) {
+                $q->whereNull('validity_period')
+                    ->orWhereDate('validity_period', '>=', today());
+            })
+            ->get();
+
+        return view('purchasing.po.create', compact('quotation', 'rate', 'otherQuotations'));
     }
 
     /**
      * Simpan PO baru — atomic transaction.
+     * Mendukung multiple quotation_ids untuk konsolidasi.
      */
     public function store(Request $request)
     {
         $request->validate([
-            'quotation_id' => 'required|exists:quotations,id',
+            'quotation_ids' => 'required|array|min:1',
+            'quotation_ids.*' => 'required|exists:quotations,id',
             'estimated_arrival' => 'required|date',
             'notes' => 'nullable|string',
         ]);
 
-        $quotation = Quotation::with('purchaseRequirement')->findOrFail($request->quotation_id);
+        // Load semua quotation yang dipilih
+        $quotations = Quotation::with(['purchaseRequirement', 'exchange_rate'])
+            ->whereIn('id', $request->quotation_ids)
+            ->get();
 
-        if ($quotation->status !== 'submitted') {
-            return redirect()->back()->with('error', 'Quotation ini tidak valid.');
+        // Validasi: semua harus submitted
+        foreach ($quotations as $q) {
+            if ($q->status !== 'submitted') {
+                return redirect()->back()->with('error', "Quotation #{$q->id} tidak valid (status: {$q->status}).");
+            }
+            if ($q->isExpired()) {
+                return redirect()->back()->with('error', "Quotation #{$q->id} sudah kadaluarsa.");
+            }
+            if ($q->purchaseOrders()->exists()) {
+                return redirect()->back()->with('error', "Quotation #{$q->id} sudah memiliki PO.");
+            }
         }
 
-        if ($quotation->isExpired()) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
-                ->with('error', 'Masa berlaku penawaran sudah kadaluarsa. PO tidak dapat dibuat dari penawaran ini.');
+        // Validasi: semua harus dari supplier yang sama
+        $supplierIds = $quotations->pluck('supplier_id')->unique();
+        if ($supplierIds->count() !== 1) {
+            return back()->with('error', 'Semua quotation harus dari supplier yang sama.');
         }
+
+        // Validasi: semua harus currency yang sama
+        $currencies = $quotations->pluck('currency')->unique();
+        if ($currencies->count() !== 1) {
+            return back()->with('error', 'Semua quotation harus menggunakan mata uang yang sama.');
+        }
+
+        $supplierId = $supplierIds->first();
+        $currency = $currencies->first();
+
+        // Ambil kurs terbaru sebagai fallback
+        $latestRate = ExchangeRate::where('currency', $currency)
+            ->orderBy('valid_from', 'desc')
+            ->first();
 
         try {
             DB::beginTransaction();
 
             // 1. Create PO
             $po = PurchaseOrder::create([
-                'quotation_id' => $quotation->id,
+                'supplier_id' => $supplierId,
+                'currency' => $currency,
+                'exchange_rate_id' => $latestRate?->id,
                 'po_number' => PurchaseOrder::generatePoNumber(),
                 'status' => 'active',
                 'created_by' => auth()->id(),
@@ -180,7 +232,10 @@ class PurchaseOrderController extends Controller
                 'notes' => $request->notes,
             ]);
 
-            // 2. Create 4 default po_documents
+            // 2. Attach all quotations to PO via pivot
+            $po->quotations()->attach($quotations->pluck('id'));
+
+            // 3. Create 4 default po_documents
             $docTypes = ['invoice', 'bl', 'packing_list', 'form_e'];
             foreach ($docTypes as $type) {
                 PoDocument::create([
@@ -190,26 +245,30 @@ class PurchaseOrderController extends Controller
                 ]);
             }
 
-            // 3. Accept this quotation
-            $quotation->update(['status' => 'accepted']);
+            // 4. Accept all selected quotations
+            foreach ($quotations as $q) {
+                $q->update(['status' => 'accepted']);
 
-            // 4. Reject all other quotations for the same PR
-            Quotation::where('pr_id', $quotation->pr_id)
-                ->where('id', '!=', $quotation->id)
-                ->where('status', 'submitted')
-                ->update(['status' => 'rejected']);
+                // 5. Reject all other quotations for the same PR
+                Quotation::where('pr_id', $q->pr_id)
+                    ->where('id', '!=', $q->id)
+                    ->where('status', 'submitted')
+                    ->update(['status' => 'rejected']);
 
-            // 5. Mark the PR as completed
-            $quotation->purchaseRequirement->update(['status' => 'completed']);
+                // 6. Mark the PR as completed
+                $q->purchaseRequirement->update(['status' => 'completed']);
+            }
 
             DB::commit();
 
             // Notify supplier: PO diterbitkan
-            $supplierUser = $quotation->supplier;
+            $supplierUser = $quotations->first()->supplier;
             if ($supplierUser) {
+                $prCount = $quotations->count();
+                $prLabel = $prCount > 1 ? " (menggabungkan {$prCount} PR)" : '';
                 $supplierUser->notify(new \App\Notifications\SystemNotification(
                     'PO Baru Diterbitkan',
-                    "Purchase Order {$po->po_number} telah diterbitkan untuk penawaran Anda.",
+                    "Purchase Order {$po->po_number} telah diterbitkan untuk penawaran Anda{$prLabel}.",
                     route('supplier.purchase-orders.show', $po->id),
                     'bi-receipt text-primary'
                 ));
@@ -235,10 +294,11 @@ class PurchaseOrderController extends Controller
     public function show($id)
     {
         $po = PurchaseOrder::with([
-            'quotation.supplier',
-            'quotation.items.prItem',
-            'quotation.purchaseRequirement.period',
-            'quotation.exchange_rate',
+            'supplier',
+            'quotations.supplier',
+            'quotations.items.prItem',
+            'quotations.purchaseRequirement.period',
+            'quotations.exchange_rate',
             'documents',
             'creator',
             'qcInspections.inspector',
@@ -247,7 +307,10 @@ class PurchaseOrderController extends Controller
             'materialClaims',
         ])->findOrFail($id);
 
-        $rate = $po->quotation->exchange_rate;
+        // Collect rates per quotation for display
+        $quotationRates = $po->quotations->mapWithKeys(function ($q) {
+            return [$q->id => $q->exchange_rate];
+        });
 
         // Compute document completion
         $completedStatuses = ['received', 'verified', 'done'];
@@ -257,7 +320,7 @@ class PurchaseOrderController extends Controller
         $totalDocs = $po->documents->count();
         $allDocsComplete = ($completedDocs === $totalDocs && $totalDocs > 0);
 
-        return view('purchasing.po.show', compact('po', 'rate', 'completedDocs', 'totalDocs', 'allDocsComplete'));
+        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete'));
     }
 
     /**

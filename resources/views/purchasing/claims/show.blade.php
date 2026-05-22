@@ -34,7 +34,7 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-3 text-muted small">Supplier</div>
-                    <div class="col-md-9 fw-medium">{{ $claim->purchaseOrder->quotation->supplier->name }}</div>
+                    <div class="col-md-9 fw-medium">{{ $claim->purchaseOrder->supplier->name }}</div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-3 text-muted small">Diajukan Oleh</div>

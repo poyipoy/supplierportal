@@ -66,7 +66,7 @@
                     </div>
                     <div class="mb-2">
                         <div class="text-muted small">Supplier</div>
-                        <div class="fw-medium">{{ $inspection->purchaseOrder->quotation->supplier->name }}</div>
+                        <div class="fw-medium">{{ $inspection->purchaseOrder->supplier->name }}</div>
                     </div>
                     <div class="mb-3">
                         <div class="text-muted small">Tgl Inspeksi</div>

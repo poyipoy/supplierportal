@@ -101,8 +101,8 @@ class ConversationController extends Controller
      */
     public function startFromPo($po_id)
     {
-        $po = PurchaseOrder::with('quotation')->findOrFail($po_id);
-        $supplier_id = $po->quotation->supplier_id;
+        $po = PurchaseOrder::findOrFail($po_id);
+        $supplier_id = $po->supplier_id;
 
         // Cari conversation yang sudah ada
         $conversation = Conversation::where('conversable_type', PurchaseOrder::class)

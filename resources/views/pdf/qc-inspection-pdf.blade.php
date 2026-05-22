@@ -312,10 +312,10 @@
                 <div class="info-value"><strong>{{ $inspection->purchaseOrder->po_number ?? '-' }}</strong></div>
 
                 <div class="info-label">Periode</div>
-                <div class="info-value">{{ $inspection->purchaseOrder->quotation->purchaseRequirement->period->name ?? '-' }}</div>
+                <div class="info-value">{{ $inspection->purchaseOrder->quotations->first()?->purchaseRequirement->period->name ?? '-' }}</div>
 
                 <div class="info-label">Supplier</div>
-                <div class="info-value"><strong>{{ $inspection->purchaseOrder->quotation->supplier->name ?? '-' }}</strong></div>
+                <div class="info-value"><strong>{{ $inspection->purchaseOrder->supplier->name ?? '-' }}</strong></div>
             </div>
             <div class="info-box info-box-right">
                 <div class="info-label">Tanggal Inspeksi</div>

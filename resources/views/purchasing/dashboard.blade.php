@@ -134,7 +134,7 @@
                             @forelse($poTerdekat as $po)
                             <tr>
                                 <td class="fw-bold">{{ $po->po_number }}</td>
-                                <td>{{ $po->quotation->supplier->name }}</td>
+                                <td>{{ $po->supplier->name }}</td>
                                 <td>{{ \Carbon\Carbon::parse($po->estimated_arrival)->format('d M Y') }}</td>
                                 <td><span class="badge bg-primary text-uppercase" style="font-size:.65rem">{{ ucwords(str_replace('_', ' ', $po->status)) }}</span></td>
                                 <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>

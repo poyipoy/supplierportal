@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -50,7 +50,7 @@ class Quotation extends Model
     {
         return $this->status === self::STATUS_SUBMITTED
             && $this->isExpired()
-            && ! $this->purchaseOrder()->exists();
+            && $this->purchaseOrders()->count() === 0;
     }
 
     public function canBeRevisedBySupplier(): bool
@@ -112,9 +112,21 @@ class Quotation extends Model
         return $this->hasMany(QuotationItem::class);
     }
 
-    public function purchaseOrder(): HasOne
+    /**
+     * Semua PO yang mencakup quotation ini (Many-to-Many).
+     */
+    public function purchaseOrders(): BelongsToMany
     {
-        return $this->hasOne(PurchaseOrder::class);
+        return $this->belongsToMany(PurchaseOrder::class, 'po_quotations', 'quotation_id', 'po_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Backward-compatible: ambil PO pertama.
+     */
+    public function getFirstPurchaseOrderAttribute(): ?PurchaseOrder
+    {
+        return $this->purchaseOrders->first();
     }
 
     public function attachments(): MorphMany

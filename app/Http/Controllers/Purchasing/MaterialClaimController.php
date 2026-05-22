@@ -29,7 +29,7 @@ class MaterialClaimController extends Controller
 
     public function dataActionNeeded(Request $request)
     {
-        $query = PurchaseOrder::with(['quotation.supplier', 'qcInspections'])
+        $query = PurchaseOrder::with(['supplier', 'qcInspections'])
             ->where('status', 'claim_needed')
             ->whereDoesntHave('materialClaims', function($q) {
                 $q->whereIn('status', ['pending', 'responded', 'escalated']);
@@ -37,7 +37,7 @@ class MaterialClaimController extends Controller
 
         return DataTables::eloquent($query)
             ->addColumn('po_number_display', fn($po) => $po->po_number)
-            ->addColumn('supplier_name', fn($po) => $po->quotation->supplier->name ?? '-')
+            ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
             ->addColumn('inspection_date', fn($po) => $po->qcInspections->last()?->inspected_at?->format('d M Y') ?? '-')
             ->addColumn('status_badge', fn($po) => '<span class="badge bg-danger text-uppercase">' . str_replace('_', ' ', $po->status) . '</span>')
             ->addColumn('action', function ($po) {
@@ -53,13 +53,13 @@ class MaterialClaimController extends Controller
 
     public function dataHistory(Request $request)
     {
-        $query = MaterialClaim::with(['purchaseOrder.quotation.supplier', 'inspection'])
+        $query = MaterialClaim::with(['purchaseOrder.supplier', 'inspection'])
             ->orderBy('created_at', 'desc');
 
         return DataTables::eloquent($query)
             ->addColumn('claim_id', fn($c) => '#' . $c->id)
             ->addColumn('po_number', fn($c) => $c->purchaseOrder->po_number ?? '-')
-            ->addColumn('supplier_name', fn($c) => $c->purchaseOrder->quotation->supplier->name ?? '-')
+            ->addColumn('supplier_name', fn($c) => $c->purchaseOrder->supplier->name ?? '-')
             ->addColumn('created_date', fn($c) => $c->created_at->format('d M Y'))
             ->addColumn('status_badge', function ($c) {
                 $badgeClass = match($c->status) {
@@ -78,7 +78,7 @@ class MaterialClaimController extends Controller
 
     public function create($inspection_id)
     {
-        $inspection = QcInspection::with(['purchaseOrder.quotation.supplier', 'items.prItem', 'attachments'])
+        $inspection = QcInspection::with(['purchaseOrder.supplier', 'items.prItem', 'attachments'])
             ->findOrFail($inspection_id);
 
         if ($inspection->status !== 'ng') {
@@ -102,13 +102,13 @@ class MaterialClaimController extends Controller
             'deadline' => 'required|date|after:today',
         ]);
 
-        $inspection = QcInspection::with('purchaseOrder.quotation.supplier')->findOrFail($request->inspection_id);
+        $inspection = QcInspection::with('purchaseOrder.supplier')->findOrFail($request->inspection_id);
 
         $claim = MaterialClaim::create([
             'inspection_id' => $inspection->id,
             'po_id' => $inspection->po_id,
             'submitted_by' => auth()->id(),
-            'supplier_id' => $inspection->purchaseOrder->quotation->supplier_id,
+            'supplier_id' => $inspection->purchaseOrder->supplier_id,
             'status' => 'pending',
             'description' => $request->description,
             'resolution_expected' => $request->resolution_expected,
@@ -116,7 +116,7 @@ class MaterialClaimController extends Controller
         ]);
 
         // Beri notif ke Supplier
-        $supplierUser = $inspection->purchaseOrder->quotation->supplier;
+        $supplierUser = $inspection->purchaseOrder->supplier;
         if ($supplierUser) {
             $supplierUser->notify(new SystemNotification(
                 'Klaim Material Baru',

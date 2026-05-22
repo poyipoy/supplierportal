@@ -235,8 +235,8 @@
                         <i class="bi bi-hourglass-split me-1"></i>
                         Menunggu supplier mengirim ulang penawaran revisi.
                     </div>
-                @elseif($quotation->purchaseOrder)
-                    <div class="alert alert-success small mb-2"><i class="bi bi-check-circle me-1"></i>PO sudah dibuat: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->purchaseOrder->id) }}" class="fw-bold">{{ $quotation->purchaseOrder->po_number }}</a></div>
+                @elseif($quotation->first_purchase_order)
+                    <div class="alert alert-success small mb-2"><i class="bi bi-check-circle me-1"></i>PO sudah dibuat: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order->id) }}" class="fw-bold">{{ $quotation->first_purchase_order->po_number }}</a></div>
                 @endif
                 <a href="{{ $relatedPrUrl }}" class="btn btn-outline-secondary w-100 btn-sm">
                     <i class="bi bi-clipboard-data me-1"></i> Lihat PR Terkait

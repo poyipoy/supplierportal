@@ -4,16 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class PurchaseOrder extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'quotation_id',
+        'supplier_id',
+        'currency',
+        'exchange_rate_id',
         'po_number',
         'status',
         'created_by',
@@ -43,9 +47,47 @@ class PurchaseOrder extends Model
 
     // ─── Relationships ───
 
+    /**
+     * Supplier pemilik PO (langsung, bukan lewat quotation).
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supplier_id');
+    }
+
+    /**
+     * Kurs snapshot saat PO dibuat (opsional fallback).
+     */
+    public function exchangeRate(): BelongsTo
+    {
+        return $this->belongsTo(ExchangeRate::class, 'exchange_rate_id');
+    }
+
+    /**
+     * Semua quotation yang termasuk dalam PO ini (Many-to-Many via po_quotations).
+     */
+    public function quotations(): BelongsToMany
+    {
+        return $this->belongsToMany(Quotation::class, 'po_quotations', 'po_id', 'quotation_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Backward-compatible: ambil quotation pertama (untuk kode lama yang belum di-refactor).
+     */
     public function quotation(): BelongsTo
     {
-        return $this->belongsTo(Quotation::class);
+        // Fallback: return first quotation via pivot relationship
+        // This is a "virtual" BelongsTo for backward compat in edge cases
+        return $this->belongsTo(Quotation::class, 'id', 'id');
+    }
+
+    /**
+     * Ambil quotation pertama dari relasi many-to-many.
+     */
+    public function getFirstQuotationAttribute(): ?Quotation
+    {
+        return $this->quotations->first();
     }
 
     public function creator(): BelongsTo
@@ -74,6 +116,26 @@ class PurchaseOrder extends Model
     }
 
     // ─── Helpers ───
+
+    /**
+     * Ambil semua quotation items dari semua quotation di PO ini.
+     */
+    public function allQuotationItems(): Collection
+    {
+        return $this->quotations->flatMap(function ($quotation) {
+            return $quotation->items;
+        });
+    }
+
+    /**
+     * Ambil semua PR terkait PO ini.
+     */
+    public function purchaseRequirements(): Collection
+    {
+        return $this->quotations->map(function ($q) {
+            return $q->purchaseRequirement;
+        })->filter()->unique('id');
+    }
 
     /**
      * Generate the next PO number for the current month.

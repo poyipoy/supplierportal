@@ -20,7 +20,7 @@
             </div>
             <div class="col-md-4">
                 <div class="text-muted small">Supplier</div>
-                <div class="fw-bold">{{ $po->quotation->supplier->name }}</div>
+                <div class="fw-bold">{{ $po->supplier->name }}</div>
             </div>
             <div class="col-md-4">
                 <div class="text-muted small">Tanggal Material Tiba</div>
@@ -43,7 +43,8 @@
 <form action="{{ route('qc.inspections.store', $po->id) }}" method="POST" enctype="multipart/form-data" id="inspectionForm">
     @csrf
 
-    @foreach($po->quotation->items as $index => $item)
+    @php $allItems = $po->quotations->flatMap(fn($q) => $q->items); @endphp
+    @foreach($allItems as $index => $item)
         @php
             $prItem = $item->prItem;
         @endphp

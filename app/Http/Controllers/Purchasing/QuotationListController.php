@@ -89,7 +89,7 @@ class QuotationListController extends Controller
             'items.prItem',
             'exchange_rate',
             'attachments',
-            'purchaseOrder',
+            'purchaseOrders',
         ])->findOrFail($id);
 
         // Kurs penawaran dipakai untuk konversi agar konsisten dengan histori.
@@ -98,7 +98,7 @@ class QuotationListController extends Controller
 
         // Cek apakah bisa buat PO (quotation submitted, belum ada PO, PR belum completed)
         $canCreatePo = $quotation->status === 'submitted'
-            && !$quotation->purchaseOrder
+            && $quotation->purchaseOrders->isEmpty()
             && $quotation->purchaseRequirement->status !== 'completed'
             && !$quotation->isExpired();
 
@@ -132,7 +132,7 @@ class QuotationListController extends Controller
         $quotation = Quotation::with([
             'supplier.supplier',
             'purchaseRequirement',
-            'purchaseOrder',
+            'purchaseOrders',
         ])->findOrFail($id);
 
         if ($quotation->purchaseRequirement->status === 'completed') {

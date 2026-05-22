@@ -14,7 +14,7 @@ class InspectionsExport implements FromCollection, WithHeadings, ShouldAutoSize
 
     public function collection()
     {
-        $q = QcInspection::with(['purchaseOrder.quotation.supplier', 'items.prItem'])->orderBy('inspected_at', 'desc');
+        $q = QcInspection::with(['purchaseOrder.supplier', 'items.prItem'])->orderBy('inspected_at', 'desc');
         if ($this->startDate) $q->whereDate('inspected_at', '>=', $this->startDate);
         if ($this->endDate) $q->whereDate('inspected_at', '<=', $this->endDate);
         if ($this->status) $q->where('status', $this->status);
@@ -24,7 +24,7 @@ class InspectionsExport implements FromCollection, WithHeadings, ShouldAutoSize
                 $pi = $item->prItem;
                 $specD = collect([$pi && $pi->thickness ? "T:{$pi->thickness}" : null, $pi && $pi->width ? "W:{$pi->width}" : null, $pi && $pi->length ? "L:{$pi->length}" : null])->filter()->implode(' | ') ?: '-';
                 $dimA = collect([$item->actual_thickness ? "T:{$item->actual_thickness}" : null, $item->actual_width ? "W:{$item->actual_width}" : null, $item->actual_length ? "L:{$item->actual_length}" : null])->filter()->implode(' | ') ?: '-';
-                $rows->push([optional($insp->purchaseOrder)->po_number ?? '-', optional(optional(optional($insp->purchaseOrder)->quotation)->supplier)->name ?? '-', optional($pi)->material_name ?? '-', $specD, $dimA, strtoupper($item->status), strtoupper($insp->status), $insp->inspected_at ? $insp->inspected_at->format('d/m/Y H:i') : '-']);
+                $rows->push([optional($insp->purchaseOrder)->po_number ?? '-', optional(optional($insp->purchaseOrder)->supplier)->name ?? '-', optional($pi)->material_name ?? '-', $specD, $dimA, strtoupper($item->status), strtoupper($insp->status), $insp->inspected_at ? $insp->inspected_at->format('d/m/Y H:i') : '-']);
             }
         }
         return $rows;

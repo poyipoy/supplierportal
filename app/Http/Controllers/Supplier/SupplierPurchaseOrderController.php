@@ -16,23 +16,30 @@ class SupplierPurchaseOrderController extends Controller
     public function index(Request $request)
     {
         $query = PurchaseOrder::with([
-            'quotation.purchaseRequirement.period',
-            'quotation.exchange_rate',
-            'quotation.items',
+            'quotations.purchaseRequirement.period',
+            'quotations.exchange_rate',
+            'quotations.items',
             'materialClaims',
         ])
-            ->whereHas('quotation', fn($q) => $q->where('supplier_id', auth()->id()))
+            ->where('supplier_id', auth()->id())
             ->orderBy('created_at', 'desc');
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
                 ->addColumn('po_number_display', fn($po) => $po->po_number)
-                ->addColumn('period_name', fn($po) => $po->quotation->purchaseRequirement->period->name ?? '-')
+                ->addColumn('period_name', function ($po) {
+                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequirement?->period?->name)->filter()->unique();
+                    return $periods->count() > 1
+                        ? $periods->first() . ' +' . ($periods->count() - 1)
+                        : ($periods->first() ?? '-');
+                })
                 ->addColumn('total_idr', function ($po) {
-                    $rate = $po->quotation->exchange_rate;
                     $totalIdr = 0;
-                    foreach ($po->quotation->items as $item) {
-                        $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                    foreach ($po->quotations as $quotation) {
+                        $rate = $quotation->exchange_rate;
+                        foreach ($quotation->items as $item) {
+                            $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                        }
                     }
                     return 'Rp ' . number_format($totalIdr, 0, ',', '.');
                 })
@@ -84,21 +91,23 @@ class SupplierPurchaseOrderController extends Controller
         $supplierId = auth()->id();
 
         $po = PurchaseOrder::with([
-                'quotation.supplier',
-                'quotation.items.prItem',
-                'quotation.purchaseRequirement.period',
-                'quotation.exchange_rate',
+                'supplier',
+                'quotations.items.prItem',
+                'quotations.purchaseRequirement.period',
+                'quotations.exchange_rate',
                 'documents',
                 'materialClaims' => fn($q) => $q->where('supplier_id', $supplierId)->latest(),
             ])->findOrFail($id);
 
         // STRICT: only allow if this PO belongs to the logged-in supplier
-        if ($po->quotation->supplier_id !== $supplierId) {
+        if ($po->supplier_id !== $supplierId) {
             abort(403, 'Anda tidak memiliki akses ke Purchase Order ini.');
         }
 
-        $rate = $po->quotation->exchange_rate;
+        $quotationRates = $po->quotations->mapWithKeys(function ($q) {
+            return [$q->id => $q->exchange_rate];
+        });
 
-        return view('supplier.po.show', compact('po', 'rate'));
+        return view('supplier.po.show', compact('po', 'quotationRates'));
     }
 }

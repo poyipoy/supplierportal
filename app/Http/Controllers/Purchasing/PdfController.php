@@ -15,16 +15,19 @@ class PdfController extends Controller
     public function purchaseOrder($id)
     {
         $po = PurchaseOrder::with([
-            'quotation.supplier',
-            'quotation.items.prItem',
-            'quotation.purchaseRequirement.period',
-            'quotation.exchange_rate',
+            'supplier',
+            'quotations.supplier',
+            'quotations.items.prItem',
+            'quotations.purchaseRequirement.period',
+            'quotations.exchange_rate',
             'creator',
         ])->findOrFail($id);
 
-        $rate = $po->quotation->exchange_rate;
+        $quotationRates = $po->quotations->mapWithKeys(function ($q) {
+            return [$q->id => $q->exchange_rate];
+        });
 
-        $pdf = Pdf::loadView('pdf.po-pdf', compact('po', 'rate'))
+        $pdf = Pdf::loadView('pdf.po-pdf', compact('po', 'quotationRates'))
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('PO_' . str_replace('/', '-', $po->po_number) . '.pdf');

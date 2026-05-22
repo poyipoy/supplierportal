@@ -20,7 +20,7 @@ class SupplierController extends Controller
             ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))->count();
         $penawaranTerkirim = Quotation::where('supplier_id', $sid)->where('status', 'submitted')
             ->whereMonth('submitted_at', now()->month)->whereYear('submitted_at', now()->year)->count();
-        $poDiterima = PurchaseOrder::whereHas('quotation', fn($q) => $q->where('supplier_id', $sid))->count();
+        $poDiterima = PurchaseOrder::where('supplier_id', $sid)->count();
 
         $prBelumRespons = PurchaseRequirement::with('period', 'items')
             ->whereIn('status', ['submitted', 'bidding'])
@@ -29,10 +29,10 @@ class SupplierController extends Controller
             ->orderBy('created_at', 'desc')->take(5)->get();
 
         $poTerbaru = PurchaseOrder::with([
-                'quotation.purchaseRequirement.period',
+                'quotations.purchaseRequirement.period',
                 'materialClaims' => fn($q) => $q->where('supplier_id', $sid)->latest(),
             ])
-            ->whereHas('quotation', fn($q) => $q->where('supplier_id', $sid))
+            ->where('supplier_id', $sid)
             ->orderBy('created_at', 'desc')->take(5)->get();
 
         $announcements = Announcement::whereNotNull('published_at')

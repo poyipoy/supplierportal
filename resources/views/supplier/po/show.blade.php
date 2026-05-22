@@ -31,7 +31,15 @@
             <div class="card-body">
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">No. PR</div>
-                    <div class="col-md-8 fw-medium text-primary">{{ $po->quotation->purchaseRequirement->pr_number ?? '-' }}</div>
+                    <div class="col-md-8 fw-medium">
+                        @php $prs = $po->purchaseRequirements(); @endphp
+                        @foreach($prs as $pr)
+                            <span class="text-primary me-2">{{ $pr->pr_number ?? '-' }}</span>
+                        @endforeach
+                        @if($prs->count() > 1)
+                            <span class="badge bg-primary bg-opacity-10 text-primary ms-1">{{ $prs->count() }} PR</span>
+                        @endif
+                    </div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Tanggal Dibuat</div>
@@ -52,14 +60,8 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4 text-muted small">Kurs</div>
-                    <div class="col-md-8 fw-medium">
-                        @if($rate)
-                            1 {{ $po->quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
-                        @else
-                            -
-                        @endif
-                    </div>
+                    <div class="col-md-4 text-muted small">Mata Uang</div>
+                    <div class="col-md-8 fw-medium">{{ $po->currency }}</div>
                 </div>
             </div>
         </div>
@@ -83,21 +85,37 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php $totalAmount = 0; $totalIdr = 0; @endphp
-                            @foreach($po->quotation->items as $idx => $item)
-                                @php
-                                    $idr = $item->amount * ($rate ? $rate->rate_to_idr : 1);
-                                    $totalAmount += $item->amount;
-                                    $totalIdr += $idr;
-                                @endphp
-                                <tr>
-                                    <td class="text-center">{{ $idx + 1 }}</td>
-                                    <td class="fw-medium">{{ $item->prItem->material_name }}</td>
-                                    <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
-                                    <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
-                                    <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
-                                    <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
-                                </tr>
+                            @php $totalAmount = 0; $totalIdr = 0; $no = 1; @endphp
+                            @foreach($po->quotations as $quotation)
+                                @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
+                                @if($po->quotations->count() > 1)
+                                    <tr class="table-primary">
+                                        <td colspan="6" class="fw-bold small ps-3">
+                                            <i class="bi bi-folder2 me-1"></i>
+                                            {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
+                                            <span class="text-muted fw-normal ms-2">
+                                                @if($rate)
+                                                    • Kurs: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                                @endif
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endif
+                                @foreach($quotation->items as $item)
+                                    @php
+                                        $idr = $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                                        $totalAmount += $item->amount;
+                                        $totalIdr += $idr;
+                                    @endphp
+                                    <tr>
+                                        <td class="text-center">{{ $no++ }}</td>
+                                        <td class="fw-medium">{{ $item->prItem->material_name }}</td>
+                                        <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                                        <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
+                                        <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
+                                        <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
                             @endforeach
                         </tbody>
                         <tfoot class="table-light fw-bold">
