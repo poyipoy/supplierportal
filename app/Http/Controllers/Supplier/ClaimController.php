@@ -7,17 +7,45 @@ use App\Models\MaterialClaim;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
 
 class ClaimController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $claims = MaterialClaim::with(['purchaseOrder.quotation.purchaseRequirement.period', 'inspection'])
+        $query = MaterialClaim::with(['purchaseOrder.quotation.supplier'])
             ->where('supplier_id', auth()->id())
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('created_at', 'desc');
 
-        return view('supplier.claims.index', compact('claims'));
+        if ($request->ajax()) {
+            return DataTables::eloquent($query)
+                ->addColumn('claim_id', fn($c) => '#' . $c->id)
+                ->addColumn('po_number', fn($c) => $c->purchaseOrder->po_number ?? '-')
+                ->addColumn('created_date', fn($c) => $c->created_at->format('d M Y'))
+                ->addColumn('deadline_display', function ($c) {
+                    $isOverdue = $c->status === 'pending' && $c->deadline->isPast();
+                    $class = $isOverdue ? 'text-danger fw-bold' : '';
+                    return '<span class="' . $class . '">' . $c->deadline->format('d M Y') . '</span>';
+                })
+                ->addColumn('status_badge', function ($c) {
+                    $badgeClass = match($c->status) {
+                        'pending' => 'bg-warning text-dark',
+                        'responded' => 'bg-info',
+                        'resolved' => 'bg-success',
+                        'escalated' => 'bg-danger',
+                        default => 'bg-secondary'
+                    };
+                    return '<span class="badge ' . $badgeClass . ' text-uppercase">' . ucwords(str_replace('_', ' ', $c->status)) . '</span>';
+                })
+                ->addColumn('action', function ($c) {
+                    $label = $c->status === 'pending' ? 'Beri Respons' : 'Lihat Detail';
+                    return '<a href="' . route('supplier.claims.show', $c->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">' . $label . '</a>';
+                })
+                ->rawColumns(['deadline_display', 'status_badge', 'action'])
+                ->make(true);
+        }
+
+        return view('supplier.claims.index');
     }
 
     public function show($id)

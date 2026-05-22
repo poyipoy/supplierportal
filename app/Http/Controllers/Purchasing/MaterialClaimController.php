@@ -10,25 +10,70 @@ use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
 
 class MaterialClaimController extends Controller
 {
     public function index()
     {
-        // PO with claim_needed that DO NOT have an active claim yet
-        $actionNeeded = PurchaseOrder::with(['quotation.supplier', 'qcInspections'])
+        // Counts for tab badges
+        $actionCount = PurchaseOrder::where('status', 'claim_needed')
+            ->whereDoesntHave('materialClaims', function($q) {
+                $q->whereIn('status', ['pending', 'responded', 'escalated']);
+            })->count();
+
+        $historyCount = MaterialClaim::count();
+
+        return view('purchasing.claims.index', compact('actionCount', 'historyCount'));
+    }
+
+    public function dataActionNeeded(Request $request)
+    {
+        $query = PurchaseOrder::with(['quotation.supplier', 'qcInspections'])
             ->where('status', 'claim_needed')
             ->whereDoesntHave('materialClaims', function($q) {
                 $q->whereIn('status', ['pending', 'responded', 'escalated']);
+            });
+
+        return DataTables::eloquent($query)
+            ->addColumn('po_number_display', fn($po) => $po->po_number)
+            ->addColumn('supplier_name', fn($po) => $po->quotation->supplier->name ?? '-')
+            ->addColumn('inspection_date', fn($po) => $po->qcInspections->last()?->inspected_at?->format('d M Y') ?? '-')
+            ->addColumn('status_badge', fn($po) => '<span class="badge bg-danger text-uppercase">' . str_replace('_', ' ', $po->status) . '</span>')
+            ->addColumn('action', function ($po) {
+                $lastInspection = $po->qcInspections->last();
+                if ($lastInspection) {
+                    return '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Buat Klaim</a>';
+                }
+                return '-';
             })
-            ->get();
+            ->rawColumns(['status_badge', 'action'])
+            ->make(true);
+    }
 
-        // Riwayat Klaim
-        $claims = MaterialClaim::with(['purchaseOrder.quotation.supplier', 'inspection'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+    public function dataHistory(Request $request)
+    {
+        $query = MaterialClaim::with(['purchaseOrder.quotation.supplier', 'inspection'])
+            ->orderBy('created_at', 'desc');
 
-        return view('purchasing.claims.index', compact('actionNeeded', 'claims'));
+        return DataTables::eloquent($query)
+            ->addColumn('claim_id', fn($c) => '#' . $c->id)
+            ->addColumn('po_number', fn($c) => $c->purchaseOrder->po_number ?? '-')
+            ->addColumn('supplier_name', fn($c) => $c->purchaseOrder->quotation->supplier->name ?? '-')
+            ->addColumn('created_date', fn($c) => $c->created_at->format('d M Y'))
+            ->addColumn('status_badge', function ($c) {
+                $badgeClass = match($c->status) {
+                    'pending' => 'bg-warning text-dark',
+                    'responded' => 'bg-info',
+                    'resolved' => 'bg-success',
+                    'escalated' => 'bg-danger',
+                    default => 'bg-secondary'
+                };
+                return '<span class="badge ' . $badgeClass . ' text-uppercase">' . ucwords(str_replace('_', ' ', $c->status)) . '</span>';
+            })
+            ->addColumn('action', fn($c) => '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $c->id) . '" class="btn btn-sm btn-outline-primary">Detail</a>')
+            ->rawColumns(['status_badge', 'action'])
+            ->make(true);
     }
 
     public function create($inspection_id)

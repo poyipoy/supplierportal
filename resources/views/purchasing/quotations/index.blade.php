@@ -118,7 +118,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold">Daftar Penawaran Masuk</h5>
-            <span class="badge bg-primary">{{ $quotations->total() }} Penawaran</span>
+            <span class="badge bg-primary" id="quotationCountBadge">{{ $quotations->total() }} Penawaran</span>
         </div>
         <div class="card-body">
             {{-- Filter --}}
@@ -191,7 +191,7 @@
             </form>
 
             {{-- Tabel --}}
-            <div class="table-responsive">
+            <div class="table-responsive" id="quotationTableContainer">
                 <table class="table table-hover align-middle" style="font-size:.85rem">
                     <thead class="table-light">
                         <tr>
@@ -260,7 +260,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="quotation-pagination mt-3">
+            <div class="quotation-pagination mt-3" id="quotationPaginationContainer">
                 {{ $quotations->onEachSide(1)->links('pagination::bootstrap-5') }}
             </div>
         </div>
@@ -278,6 +278,7 @@
             const textFilters = filterForm.querySelectorAll('input[type="text"]');
             const instantFilters = filterForm.querySelectorAll('select, input[type="month"]');
             let filterTimer;
+            let filterRequest;
 
             const toggleDateError = (show) => {
                 dateRangeControl.classList.toggle('is-invalid', show);
@@ -287,35 +288,136 @@
 
             const hasInvalidDateRange = () => dateFrom.value && dateTo.value && dateTo.value < dateFrom.value;
 
-            const submitFilters = () => {
+            const buildFilterUrl = () => {
+                const url = new URL(filterForm.action, window.location.origin);
+                const formData = new FormData(filterForm);
+
+                formData.forEach((value, key) => {
+                    const normalized = String(value).trim();
+                    if (normalized !== '') {
+                        url.searchParams.set(key, normalized);
+                    }
+                });
+
+                return url;
+            };
+
+            const captureTextCursor = () => {
+                const element = document.activeElement;
+                if (!element || !filterForm.contains(element) || element.tagName !== 'INPUT' || element.type !== 'text') {
+                    return null;
+                }
+
+                return {
+                    name: element.name,
+                    value: element.value,
+                    start: element.selectionStart,
+                    end: element.selectionEnd,
+                };
+            };
+
+            const restoreTextCursor = (cursor) => {
+                if (!cursor) return;
+
+                const input = Array.from(filterForm.querySelectorAll('input[type="text"]'))
+                    .find((element) => element.name === cursor.name);
+
+                if (!input || input.value !== cursor.value) return;
+
+                input.focus({ preventScroll: true });
+                if (typeof input.setSelectionRange === 'function') {
+                    input.setSelectionRange(cursor.start, cursor.end);
+                }
+            };
+
+            const replaceFromResponse = (documentFragment) => {
+                ['quotationCountBadge', 'quotationTableContainer', 'quotationPaginationContainer'].forEach((id) => {
+                    const current = document.getElementById(id);
+                    const incoming = documentFragment.getElementById(id);
+                    if (current && incoming) {
+                        current.replaceWith(incoming);
+                    }
+                });
+            };
+
+            const submitFilters = async (targetUrl = null, preserveCursor = true) => {
                 if (hasInvalidDateRange()) {
                     toggleDateError(true);
                     return;
                 }
 
                 toggleDateError(false);
-                filterForm.requestSubmit();
+                const url = targetUrl || buildFilterUrl();
+                const cursor = preserveCursor ? captureTextCursor() : null;
+
+                if (filterRequest) {
+                    filterRequest.abort();
+                }
+
+                const currentRequest = new AbortController();
+                filterRequest = currentRequest;
+                filterForm.setAttribute('aria-busy', 'true');
+
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        signal: currentRequest.signal,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Gagal memuat data penawaran.');
+                    }
+
+                    const html = await response.text();
+                    const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                    replaceFromResponse(nextDocument);
+                    window.history.replaceState({}, '', url);
+                    restoreTextCursor(cursor);
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        window.location.href = url.toString();
+                    }
+                } finally {
+                    if (filterRequest === currentRequest) {
+                        filterForm.removeAttribute('aria-busy');
+                    }
+                }
             };
 
             textFilters.forEach((input) => {
                 input.addEventListener('input', () => {
                     clearTimeout(filterTimer);
-                    filterTimer = setTimeout(submitFilters, 500);
+                    filterTimer = setTimeout(() => submitFilters(), 500);
                 });
             });
 
             instantFilters.forEach((input) => {
-                input.addEventListener('change', submitFilters);
+                input.addEventListener('change', () => {
+                    clearTimeout(filterTimer);
+                    submitFilters();
+                });
             });
 
             filterForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                clearTimeout(filterTimer);
+
                 if (hasInvalidDateRange()) {
-                    event.preventDefault();
                     toggleDateError(true);
                     return;
                 }
 
                 toggleDateError(false);
+                submitFilters();
+            });
+
+            document.addEventListener('click', (event) => {
+                const target = event.target instanceof Element ? event.target : event.target.parentElement;
+                const link = target?.closest('#quotationPaginationContainer a.page-link');
+                if (!link || link.closest('.disabled')) return;
+
+                event.preventDefault();
+                submitFilters(new URL(link.href), false);
             });
         });
     </script>

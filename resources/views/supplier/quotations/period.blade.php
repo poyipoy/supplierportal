@@ -15,42 +15,30 @@
         <h5 class="mb-0 fw-semibold">Daftar Permintaan Pembelian</h5>
     </div>
     <div class="card-body">
-        <form method="GET" action="{{ route('supplier.quotations.period', $period->id) }}" class="row g-3 align-items-end mb-4" id="quotationFilterForm">
-            <div class="col-md-7">
+        <div class="row g-3 align-items-end mb-4">
+            <div class="col-md-5">
                 <label class="form-label small fw-bold">Nomor PR</label>
-                <div class="position-relative">
-                    <input type="text"
-                           name="pr_number"
-                           value="{{ request('pr_number') }}"
-                           class="form-control form-control-sm pe-5"
-                           id="prNumberFilter"
-                           placeholder="Cari nomor PR... (REQ/MM/YYYY/XXX)">
-                    <button type="button"
-                            class="btn btn-sm btn-link text-muted position-absolute top-50 end-0 translate-middle-y {{ request('pr_number') ? '' : 'd-none' }}"
-                            id="clearPrNumber"
-                            aria-label="Hapus filter nomor PR"
-                            style="text-decoration:none;">&times;</button>
-                </div>
+                <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="Cari nomor PR... (REQ/MM/YYYY/XXX)">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label small fw-bold">Status Penawaran</label>
-                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select id="filter_status" class="form-select form-select-sm">
                     <option value="">Semua Status</option>
-                    <option value="unresponded" {{ request('status') === 'unresponded' ? 'selected' : '' }}>Belum Direspons</option>
-                    <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Draft</option>
-                    <option value="revision_requested" {{ request('status') === 'revision_requested' ? 'selected' : '' }}>Perlu Revisi</option>
-                    <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>Terkirim</option>
-                    <option value="accepted" {{ request('status') === 'accepted' ? 'selected' : '' }}>Diterima</option>
-                    <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Ditolak</option>
+                    <option value="unresponded">Belum Direspons</option>
+                    <option value="draft">Draft</option>
+                    <option value="revision_requested">Perlu Revisi</option>
+                    <option value="submitted">Terkirim</option>
+                    <option value="accepted">Diterima</option>
+                    <option value="rejected">Ditolak</option>
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-sm btn-primary flex-fill" style="background-color: var(--adasi-blue);">
+            <div class="col-md-3 d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-primary flex-fill" style="background-color: var(--adasi-blue);" id="applyFilter">
                     <i class="bi bi-search"></i>
                 </button>
-                <a href="{{ route('supplier.quotations.period', $period->id) }}" class="btn btn-sm btn-light border flex-fill">Reset</a>
+                <button type="button" class="btn btn-sm btn-light border flex-fill" id="resetFilter">Reset</button>
             </div>
-        </form>
+        </div>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="prTable">
@@ -64,54 +52,7 @@
                         <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach($requirements as $index => $pr)
-                        @php
-                            $quotation = $pr->quotations->first();
-                            $status = $quotation ? $quotation->status : 'unresponded';
-                        @endphp
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td class="fw-medium">{{ $pr->pr_number ?? '-' }}</td>
-                            <td>{{ $pr->updated_at->format('d M Y, H:i') }}</td>
-                            <td>{{ $pr->items->count() }} Item</td>
-                            <td>
-                                @if($status === 'unresponded')
-                                    <span class="badge bg-danger">Belum Direspons</span>
-                                @elseif($status === 'draft')
-                                    <span class="badge bg-secondary">Draft</span>
-                                @elseif($status === 'revision_requested')
-                                    <span class="badge bg-warning text-dark">Perlu Revisi</span>
-                                @elseif($status === 'submitted')
-                                    <span class="badge bg-success">Terkirim ({{ $quotation->submitted_at->format('d M Y H:i') }})</span>
-                                @elseif($status === 'accepted')
-                                    <span class="badge bg-primary">Diterima</span>
-                                @elseif($status === 'rejected')
-                                    <span class="badge bg-dark">Ditolak</span>
-                                @endif
-                            </td>
-                            <td class="text-end">
-                                @if($status === 'unresponded')
-                                    <a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-pencil-square me-1"></i> Buat Penawaran
-                                    </a>
-                                @elseif($status === 'draft')
-                                    <a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-pencil me-1"></i> Lanjutkan
-                                    </a>
-                                @elseif($status === 'revision_requested')
-                                    <a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-warning text-dark">
-                                        <i class="bi bi-arrow-repeat me-1"></i> Revisi Penawaran
-                                    </a>
-                                @elseif(in_array($status, ['submitted', 'accepted', 'rejected']))
-                                    <a href="{{ route('supplier.quotations.show', $quotation->id) }}" class="btn btn-sm btn-outline-success">
-                                        <i class="bi bi-eye me-1"></i> Lihat
-                                    </a>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
@@ -121,27 +62,38 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        const filterForm = document.getElementById('quotationFilterForm');
-        const prNumberFilter = document.getElementById('prNumberFilter');
-        const clearPrNumber = document.getElementById('clearPrNumber');
-        let debounceTimer;
-
-        prNumberFilter.addEventListener('input', function() {
-            clearPrNumber.classList.toggle('d-none', this.value.length === 0);
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => filterForm.submit(), 400);
-        });
-
-        clearPrNumber.addEventListener('click', function() {
-            prNumberFilter.value = '';
-            clearPrNumber.classList.add('d-none');
-            filterForm.submit();
-        });
-
-        $('#prTable').DataTable({
+        var table = $('#prTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route("supplier.quotations.period", $period->id) }}',
+                data: function(d) {
+                    d.pr_number = $('#filter_pr_number').val();
+                    d.status = $('#filter_status').val();
+                }
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'pr_number_display', name: 'pr_number', className: 'fw-medium' },
+                { data: 'updated_date', name: 'updated_at' },
+                { data: 'item_count', name: 'item_count', orderable: false, searchable: false },
+                { data: 'status_badge', name: 'status', searchable: false },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+            ],
             language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
             pageLength: 25,
-            ordering: false
+            order: []
+        });
+
+        $('#filter_status').on('change', function() { table.ajax.reload(); });
+        $('#applyFilter').on('click', function() { table.ajax.reload(); });
+        $('#filter_pr_number').on('keypress', function(e) {
+            if (e.which === 13) table.ajax.reload();
+        });
+        $('#resetFilter').on('click', function() {
+            $('#filter_pr_number').val('');
+            $('#filter_status').val('');
+            table.ajax.reload();
         });
     });
 </script>

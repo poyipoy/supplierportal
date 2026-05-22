@@ -27,7 +27,12 @@
                         default => 'bg-secondary'
                     };
                 @endphp
-                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ $po->is_overdue ? 'Overdue' : str_replace('_', ' ', $po->status) }}</span>
+                <div>
+                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : str_replace('_', ' ', $po->status) }}</span>
+                    <a href="{{ route('purchasing.pdf.purchase-order', $po->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Purchase Order">
+                        <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-2">

@@ -9,12 +9,12 @@
         <ul class="nav nav-tabs border-bottom-0" id="inspectionTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-medium px-4 pb-3" id="waiting-tab" data-bs-toggle="tab" data-bs-target="#waiting" type="button" role="tab">
-                    Menunggu Inspeksi <span class="badge bg-warning text-dark ms-2">{{ $waitingPOs->count() }}</span>
+                    Menunggu Inspeksi <span class="badge bg-warning text-dark ms-2">{{ $waitingCount }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                    Riwayat Inspeksi <span class="badge bg-secondary ms-2">{{ $history->count() }}</span>
+                    Riwayat Inspeksi <span class="badge bg-secondary ms-2">{{ $historyCount }}</span>
                 </button>
             </li>
         </ul>
@@ -37,21 +37,7 @@
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($waitingPOs as $po)
-                            <tr>
-                                <td class="fw-bold">{{ $po->po_number }}</td>
-                                <td>{{ $po->quotation->supplier->name }}</td>
-                                <td>{{ $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-' }}</td>
-                                <td>{{ $po->quotation->items->count() }} Item</td>
-                                <td class="text-end">
-                                    <a href="{{ route('qc.inspections.create', $po->id) }}" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">
-                                        <i class="bi bi-clipboard-check me-1"></i> Mulai Inspeksi
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -70,28 +56,7 @@
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($history as $insp)
-                            <tr>
-                                <td class="fw-bold">{{ $insp->purchaseOrder->po_number }}</td>
-                                <td>{{ $insp->purchaseOrder->quotation->supplier->name }}</td>
-                                <td>{{ $insp->inspected_at->format('d M Y, H:i') }}</td>
-                                <td class="text-center">
-                                    @if($insp->status === 'ok')
-                                        <span class="badge bg-success">OK</span>
-                                    @else
-                                        <span class="badge bg-danger">NG</span>
-                                    @endif
-                                </td>
-                                <td>{{ $insp->inspector->name }}</td>
-                                <td class="text-end">
-                                    <a href="{{ route('qc.inspections.show', $insp->id) }}" class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-eye"></i> Detail
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -103,10 +68,42 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        $('#waitingTable, #historyTable').DataTable({
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
-            pageLength: 25,
-            ordering: false
+        var dtLang = { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' };
+        var dtOpts = { pageLength: 25, order: [] };
+
+        $('#waitingTable').DataTable(Object.assign({}, dtOpts, {
+            processing: true,
+            serverSide: true,
+            ajax: '{{ route("qc.inspections.data-waiting") }}',
+            columns: [
+                { data: 'po_number_display', name: 'po_number', className: 'fw-bold' },
+                { data: 'supplier_name', name: 'supplier_name', orderable: false },
+                { data: 'arrival_date', name: 'actual_arrival' },
+                { data: 'item_count', name: 'item_count', orderable: false, searchable: false },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+            ],
+            language: dtLang
+        }));
+
+        var historyInit = false;
+        $('button[data-bs-target="#history"]').on('shown.bs.tab', function() {
+            if (!historyInit) {
+                historyInit = true;
+                $('#historyTable').DataTable(Object.assign({}, dtOpts, {
+                    processing: true,
+                    serverSide: true,
+                    ajax: '{{ route("qc.inspections.data-history") }}',
+                    columns: [
+                        { data: 'po_number', name: 'po_number', className: 'fw-bold', orderable: false },
+                        { data: 'supplier_name', name: 'supplier_name', orderable: false },
+                        { data: 'inspected_date', name: 'inspected_at' },
+                        { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
+                        { data: 'inspector_name', name: 'inspector_name', orderable: false },
+                        { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                    ],
+                    language: dtLang
+                }));
+            }
         });
     });
 </script>

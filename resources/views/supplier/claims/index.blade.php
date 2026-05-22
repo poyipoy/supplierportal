@@ -25,37 +25,7 @@
                         <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach($claims as $claim)
-                    @php
-                        $badgeClass = match($claim->status) {
-                            'pending' => 'bg-warning text-dark',
-                            'responded' => 'bg-info',
-                            'resolved' => 'bg-success',
-                            'escalated' => 'bg-danger',
-                            default => 'bg-secondary'
-                        };
-                    @endphp
-                    <tr class="{{ $claim->status === 'pending' ? 'table-warning bg-opacity-10' : '' }}">
-                        <td class="fw-medium">#{{ $claim->id }}</td>
-                        <td class="fw-bold">{{ $claim->purchaseOrder->po_number }}</td>
-                        <td>{{ $claim->created_at->format('d M Y') }}</td>
-                        <td class="{{ $claim->status === 'pending' && $claim->deadline->isPast() ? 'text-danger fw-bold' : '' }}">
-                            {{ $claim->deadline->format('d M Y') }}
-                        </td>
-                        <td class="text-center"><span class="badge {{ $badgeClass }} text-uppercase">{{ ucwords(str_replace('_', ' ', $claim->status)) }}</span></td>
-                        <td class="text-end">
-                            <a href="{{ route('supplier.claims.show', $claim->id) }}" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">
-                                @if($claim->status === 'pending')
-                                    Beri Respons
-                                @else
-                                    Lihat Detail
-                                @endif
-                            </a>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
@@ -66,9 +36,20 @@
 <script>
     $(document).ready(function() {
         $('#claimTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: '{{ route("supplier.claims.index") }}',
+            columns: [
+                { data: 'claim_id', name: 'id', className: 'fw-medium' },
+                { data: 'po_number', name: 'po_number', className: 'fw-bold', orderable: false },
+                { data: 'created_date', name: 'created_at' },
+                { data: 'deadline_display', name: 'deadline' },
+                { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+            ],
             language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
             pageLength: 25,
-            ordering: false
+            order: []
         });
     });
 </script>

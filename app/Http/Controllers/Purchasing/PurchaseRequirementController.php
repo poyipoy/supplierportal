@@ -9,6 +9,7 @@ use App\Models\Period;
 use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseRequirementController extends Controller
 {
@@ -17,21 +18,59 @@ class PurchaseRequirementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PurchaseRequirement::with(['period', 'items', 'creator'])
-            ->orderBy('created_at', 'desc');
+        if ($request->ajax()) {
+            $query = PurchaseRequirement::with(['period', 'items', 'creator'])
+                ->orderBy('created_at', 'desc');
 
-        if ($request->filled('period_id')) {
-            $query->where('period_id', $request->period_id);
+            if ($request->filled('period_id')) {
+                $query->where('period_id', $request->period_id);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            return DataTables::eloquent($query)
+                ->addIndexColumn()
+                ->addColumn('pr_number_display', fn($pr) => $pr->pr_number ?? '-')
+                ->addColumn('period_name', fn($pr) => $pr->period->name ?? '-')
+                ->addColumn('creator_name', fn($pr) => $pr->creator->name ?? '-')
+                ->addColumn('item_count', fn($pr) => $pr->items->count() . ' Item')
+                ->addColumn('status_badge', function ($pr) {
+                    $badgeClass = match($pr->status) {
+                        'draft' => 'bg-secondary',
+                        'submitted' => 'bg-primary',
+                        'rejected' => 'bg-danger',
+                        'bidding' => 'bg-warning text-dark',
+                        'completed' => 'bg-success',
+                        default => 'bg-secondary'
+                    };
+                    $statusLabel = match($pr->status) {
+                        'draft' => 'Draft',
+                        'submitted' => 'Submitted',
+                        'rejected' => 'Rejected',
+                        'bidding' => 'Bidding',
+                        'completed' => 'Completed',
+                        default => ucwords(str_replace('_', ' ', $pr->status)),
+                    };
+                    return '<span class="badge ' . $badgeClass . ' text-uppercase" style="font-size: 0.7rem;">' . $statusLabel . '</span>';
+                })
+                ->addColumn('created_date', fn($pr) => $pr->created_at->format('d M Y, H:i'))
+                ->addColumn('action', function ($pr) {
+                    $html = '<a href="' . PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) . '" class="btn btn-sm btn-outline-info" title="Lihat Detail"><i class="bi bi-eye"></i></a>';
+                    if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
+                        $html .= ' <a href="' . PurchasingNavigation::toRoute('purchasing.requirements.edit', $pr->id) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
+                        $html .= ' <form action="' . route('purchasing.requirements.destroy', $pr->id) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button></form>';
+                    }
+                    return $html;
+                })
+                ->rawColumns(['status_badge', 'action'])
+                ->make(true);
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $requirements = $query->get();
         $periods = Period::orderBy('year', 'desc')->orderBy('month', 'desc')->get();
 
-        return view('purchasing.pr.index', compact('requirements', 'periods'));
+        return view('purchasing.pr.index', compact('periods'));
     }
 
     /**

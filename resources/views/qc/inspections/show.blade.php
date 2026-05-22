@@ -15,17 +15,20 @@
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="fw-bold mb-0">Inspeksi PO: {{ $inspection->purchaseOrder->po_number }}</h5>
-            @if($inspection->status === 'ok')
-                <span class="badge bg-success fs-6 px-3 py-2">STATUS: OK</span>
-            @else
-                <span class="badge bg-danger fs-6 px-3 py-2">STATUS: NG</span>
-            @endif
+            <div>
+                @if($inspection->status === 'ok')
+                    <span class="badge bg-success fs-6 px-3 py-2 me-2">STATUS: OK</span>
+                @else
+                    <span class="badge bg-danger fs-6 px-3 py-2 me-2">STATUS: NG</span>
+                @endif
+                <a href="{{ route('purchasing.pdf.qc-inspection', $inspection->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Laporan QC">
+                    <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
+                </a>
+            </div>
         </div>
         <div class="row">
             <div class="col-md-3">
                 <div class="text-muted small">Supplier</div>
-                <div class="fw-medium">{{ $inspection->purchaseOrder->quotation->supplier->name }}</div>
-            </div>
             <div class="col-md-3">
                 <div class="text-muted small">Diinspeksi Oleh</div>
                 <div class="fw-medium">{{ $inspection->inspector->name }}</div>

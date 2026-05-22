@@ -35,6 +35,7 @@
                             <option value="">-- Semua Status --</option>
                             <option value="draft">Draft</option>
                             <option value="submitted">Submitted</option>
+                            <option value="rejected">Rejected</option>
                             <option value="bidding">Bidding</option>
                             <option value="completed">Completed</option>
                         </select>

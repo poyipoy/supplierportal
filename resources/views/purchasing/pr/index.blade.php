@@ -19,13 +19,13 @@
     <div class="card-body">
         
         {{-- Filter Form --}}
-        <form method="GET" action="{{ route('purchasing.requirements.index') }}" class="row g-3 mb-4">
+        <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <label for="period_id" class="form-label small fw-medium">Filter Periode</label>
-                <select name="period_id" id="period_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="period_id" id="period_id" class="form-select form-select-sm">
                     <option value="">Semua Periode</option>
                     @foreach($periods as $period)
-                        <option value="{{ $period->id }}" {{ request('period_id') == $period->id ? 'selected' : '' }}>
+                        <option value="{{ $period->id }}">
                             {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
                         </option>
                     @endforeach
@@ -33,19 +33,19 @@
             </div>
             <div class="col-md-4">
                 <label for="status" class="form-label small fw-medium">Filter Status</label>
-                <select name="status" id="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="status" id="status" class="form-select form-select-sm">
                     <option value="">Semua Status</option>
-                    <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
-                    <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
-                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                    <option value="bidding" {{ request('status') == 'bidding' ? 'selected' : '' }}>Bidding</option>
-                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="draft">Draft</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="bidding">Bidding</option>
+                    <option value="completed">Completed</option>
                 </select>
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <a href="{{ route('purchasing.requirements.index') }}" class="btn btn-light btn-sm w-100">Reset Filter</a>
+                <button type="button" class="btn btn-light btn-sm w-100" id="resetFilter">Reset Filter</button>
             </div>
-        </form>
+        </div>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="prTable">
@@ -61,58 +61,7 @@
                         <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach($requirements as $index => $pr)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td class="fw-medium">{{ $pr->pr_number ?? '-' }}</td>
-                            <td>{{ $pr->period->name }}</td>
-                            <td>{{ $pr->creator->name ?? '-' }}</td>
-                            <td>{{ $pr->items->count() }} Item</td>
-                            <td>
-                                @php
-                                    $badgeClass = match($pr->status) {
-                                        'draft' => 'bg-secondary',
-                                        'submitted' => 'bg-primary',
-                                        'rejected' => 'bg-danger',
-                                        'bidding' => 'bg-warning text-dark',
-                                        'completed' => 'bg-success', // Can use dark green if preferred
-                                        default => 'bg-secondary'
-                                    };
-                                    $statusLabel = match($pr->status) {
-                                        'draft' => 'Draft',
-                                        'submitted' => 'Submitted',
-                                        'rejected' => 'Rejected',
-                                        'bidding' => 'Bidding',
-                                        'completed' => 'Completed',
-                                        default => ucwords(str_replace('_', ' ', $pr->status)),
-                                    };
-                                @endphp
-                                <span class="badge {{ $badgeClass }} text-uppercase" style="font-size: 0.7rem;">
-                                    {{ $statusLabel }}
-                                </span>
-                            </td>
-                            <td>{{ $pr->created_at->format('d M Y, H:i') }}</td>
-                            <td class="text-end">
-                                <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                @if($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected']))
-                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.edit', $pr->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <form action="{{ route('purchasing.requirements.destroy', $pr->id) }}" method="POST" class="d-inline delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Hapus">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
@@ -122,18 +71,46 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        // Initialize DataTable
-        $('#prTable').DataTable({
+        var table = $('#prTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route("purchasing.requirements.index") }}',
+                data: function(d) {
+                    d.period_id = $('#period_id').val();
+                    d.status = $('#status').val();
+                }
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'pr_number_display', name: 'pr_number', className: 'fw-medium' },
+                { data: 'period_name', name: 'period.name' },
+                { data: 'creator_name', name: 'creator.name' },
+                { data: 'item_count', name: 'item_count', searchable: false },
+                { data: 'status_badge', name: 'status', searchable: false },
+                { data: 'created_date', name: 'created_at' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+            ],
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json',
             },
-            stateSave: true,
             pageLength: 25,
-            ordering: false // Let backend handle ordering or enable if needed
+            order: []
         });
 
-        // SweetAlert Delete Confirmation
-        $('.btn-delete').on('click', function() {
+        // Filter handlers
+        $('#period_id, #status').on('change', function() {
+            table.ajax.reload();
+        });
+
+        $('#resetFilter').on('click', function() {
+            $('#period_id').val('');
+            $('#status').val('');
+            table.ajax.reload();
+        });
+
+        // SweetAlert Delete Confirmation (delegated for dynamic rows)
+        $(document).on('click', '.btn-delete', function() {
             const form = $(this).closest('form');
             Swal.fire({
                 title: @json('Yakin ingin menghapus?'),

@@ -670,6 +670,46 @@
             </script>
         @endif
     @endauth
+    {{-- Global: Pencegahan Double Submit --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('submit', function (e) {
+                const form = e.target;
+                if (!(form instanceof HTMLFormElement)) return;
+
+                // Skip jika form sudah di-tag submitting
+                if (form.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    return;
+                }
+
+                form.dataset.submitting = 'true';
+
+                // Disable semua tombol submit di dalam form
+                const buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                buttons.forEach(function (btn) {
+                    btn.disabled = true;
+
+                    // Simpan teks asli & ganti dengan spinner
+                    if (btn.tagName === 'BUTTON') {
+                        btn.dataset.originalHtml = btn.innerHTML;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Memproses...';
+                    }
+                });
+
+                // Safety reset setelah 10 detik (jika request gagal/timeout)
+                setTimeout(function () {
+                    form.dataset.submitting = 'false';
+                    buttons.forEach(function (btn) {
+                        btn.disabled = false;
+                        if (btn.tagName === 'BUTTON' && btn.dataset.originalHtml) {
+                            btn.innerHTML = btn.dataset.originalHtml;
+                        }
+                    });
+                }, 10000);
+            });
+        });
+    </script>
     @stack('scripts')
 </body>
 

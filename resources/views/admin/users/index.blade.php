@@ -12,7 +12,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover align-middle datatable" style="font-size: 0.9rem;">
+                <table class="table table-hover align-middle" id="usersTable" style="font-size: 0.9rem; width: 100%;">
                     <thead class="table-light">
                         <tr>
                             <th>No</th>
@@ -24,55 +24,52 @@
                             <th class="text-end">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach($users as $index => $user)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>
-                                    <div class="fw-medium">{{ $user->name }}</div>
-                                    @if($user->role === 'supplier' && $user->supplier)
-                                        <small class="text-muted"><i class="bi bi-building me-1"></i>{{ $user->supplier->company_name }}</small>
-                                    @endif
-                                </td>
-                                <td>{{ $user->email }}</td>
-                                <td>
-                                    @if($user->role === 'admin')
-                                        <span class="badge bg-danger text-uppercase">Admin</span>
-                                    @elseif($user->role === 'purchasing')
-                                        <span class="badge bg-primary text-uppercase">Purchasing</span>
-                                    @elseif($user->role === 'supplier')
-                                        <span class="badge bg-info text-dark text-uppercase">Supplier</span>
-                                    @elseif($user->role === 'qc')
-                                        <span class="badge bg-warning text-dark text-uppercase">QC</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($user->is_active)
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">Aktif</span>
-                                    @else
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Nonaktif</span>
-                                    @endif
-                                </td>
-                                <td>{{ $user->created_at->format('d M Y') }}</td>
-                                <td class="text-end">
-                                    <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    @if($user->id !== auth()->id())
-                                        <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="d-inline" onsubmit='return confirm(@json('Yakin ingin menghapus user ini?'));'>
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-sm btn-outline-danger" title="Hapus">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        var table = $('#usersTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: '{{ route("admin.users.index") }}',
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'name_display', name: 'name' },
+                { data: 'email', name: 'email' },
+                { data: 'role_badge', name: 'role', searchable: false },
+                { data: 'status_badge', name: 'is_active', searchable: false },
+                { data: 'created_date', name: 'created_at' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+            ],
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+            pageLength: 25,
+            order: []
+        });
+
+        // SweetAlert Delete Confirmation (delegated for dynamic rows)
+        $(document).on('click', '.btn-delete', function() {
+            const form = $(this).closest('form');
+            Swal.fire({
+                title: @json('Yakin ingin menghapus?'),
+                text: @json('User ini akan dihapus permanen!'),
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: @json('Ya, hapus!'),
+                cancelButtonText: @json('Batal')
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+@endpush

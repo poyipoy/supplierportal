@@ -166,7 +166,25 @@
 <script>
 new Chart(document.getElementById('prChart'),{type:'bar',data:{labels:{!! json_encode(array_column($prPerBulan,'label')) !!},datasets:[{label:@json('Jumlah PR'),data:{!! json_encode(array_column($prPerBulan,'count')) !!},backgroundColor:'rgba(31,95,166,0.7)',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
 @if(count($poStatusDist)>0)
-new Chart(document.getElementById('poDonut'),{type:'doughnut',data:{labels:{!! json_encode(array_map('ucfirst',array_keys($poStatusDist))) !!},datasets:[{data:{!! json_encode(array_values($poStatusDist)) !!},backgroundColor:['#1F5FA6','#ffc107','#198754','#dc3545','#0dcaf0','#6c757d'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}}});
+@php
+    $statusColors = [
+        'active' => '#0d6efd',
+        'waiting_qc' => '#ffc107',
+        'completed' => '#198754',
+        'overdue' => '#dc3545',
+        'claim_needed' => '#dc3545',
+        'cancelled' => '#6c757d',
+    ];
+    $chartLabels = [];
+    $chartData = [];
+    $chartColors = [];
+    foreach($poStatusDist as $status => $count) {
+        $chartLabels[] = ucwords(str_replace('_', ' ', $status));
+        $chartData[] = $count;
+        $chartColors[] = $statusColors[$status] ?? '#6c757d';
+    }
+@endphp
+new Chart(document.getElementById('poDonut'),{type:'doughnut',data:{labels:{!! json_encode($chartLabels) !!},datasets:[{data:{!! json_encode($chartData) !!},backgroundColor:{!! json_encode($chartColors) !!},borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}}});
 @endif
 </script>
 @endpush

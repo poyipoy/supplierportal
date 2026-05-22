@@ -12,6 +12,7 @@ use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Yajra\DataTables\Facades\DataTables;
 
 class QuotationController extends Controller
 {
@@ -106,9 +107,40 @@ class QuotationController extends Controller
             }
         }
 
-        $requirements = $query->orderByDesc('updated_at')->get();
+        if ($request->ajax()) {
+            return DataTables::eloquent($query->orderByDesc('updated_at'))
+                ->addIndexColumn()
+                ->addColumn('pr_number_display', fn($pr) => $pr->pr_number ?? '-')
+                ->addColumn('updated_date', fn($pr) => $pr->updated_at->format('d M Y, H:i'))
+                ->addColumn('item_count', fn($pr) => $pr->items->count() . ' Item')
+                ->addColumn('status_badge', function ($pr) {
+                    $quotation = $pr->quotations->first();
+                    $status = $quotation ? $quotation->status : 'unresponded';
+                    return match($status) {
+                        'unresponded' => '<span class="badge bg-danger">Belum Direspons</span>',
+                        'draft' => '<span class="badge bg-secondary">Draft</span>',
+                        'revision_requested' => '<span class="badge bg-warning text-dark">Perlu Revisi</span>',
+                        'submitted' => '<span class="badge bg-success">Terkirim (' . ($quotation->submitted_at?->format('d M Y H:i') ?? '-') . ')</span>',
+                        'accepted' => '<span class="badge bg-primary">Diterima</span>',
+                        'rejected' => '<span class="badge bg-dark">Ditolak</span>',
+                        default => '<span class="badge bg-secondary">' . ucwords($status) . '</span>',
+                    };
+                })
+                ->addColumn('action', function ($pr) {
+                    $quotation = $pr->quotations->first();
+                    $status = $quotation ? $quotation->status : 'unresponded';
+                    return match($status) {
+                        'unresponded' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Buat Penawaran</a>',
+                        'draft' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Lanjutkan</a>',
+                        'revision_requested' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revisi Penawaran</a>',
+                        default => $quotation ? '<a href="' . route('supplier.quotations.show', $quotation->id) . '" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> Lihat</a>' : '-',
+                    };
+                })
+                ->rawColumns(['status_badge', 'action'])
+                ->make(true);
+        }
 
-        return view('supplier.quotations.period', compact('period', 'requirements'));
+        return view('supplier.quotations.period', compact('period'));
     }
 
     /**

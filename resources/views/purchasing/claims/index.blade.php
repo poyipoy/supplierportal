@@ -9,7 +9,7 @@
         <ul class="nav nav-tabs border-bottom-0" id="claimTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-medium px-4 pb-3" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab">
-                    Perlu Tindakan <span class="badge bg-danger ms-2">{{ $actionNeeded->count() }}</span>
+                    Perlu Tindakan <span class="badge bg-danger ms-2">{{ $actionCount }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -37,21 +37,7 @@
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($actionNeeded as $po)
-                            <tr>
-                                <td class="fw-bold">{{ $po->po_number }}</td>
-                                <td>{{ $po->quotation->supplier->name }}</td>
-                                <td>{{ $po->qcInspections->last()->inspected_at->format('d M Y') }}</td>
-                                <td class="text-center"><span class="badge bg-danger text-uppercase">{{ str_replace('_', ' ', $po->status) }}</span></td>
-                                <td class="text-end">
-                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $po->qcInspections->last()->id) }}" class="btn btn-sm btn-danger">
-                                        <i class="bi bi-exclamation-octagon me-1"></i> Buat Klaim
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -70,31 +56,7 @@
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($claims as $claim)
-                            @php
-                                $badgeClass = match($claim->status) {
-                                    'pending' => 'bg-warning text-dark',
-                                    'responded' => 'bg-info',
-                                    'resolved' => 'bg-success',
-                                    'escalated' => 'bg-danger',
-                                    default => 'bg-secondary'
-                                };
-                            @endphp
-                            <tr>
-                                <td class="fw-medium">#{{ $claim->id }}</td>
-                                <td>{{ $claim->purchaseOrder->po_number }}</td>
-                                <td>{{ $claim->purchaseOrder->quotation->supplier->name }}</td>
-                                <td>{{ $claim->created_at->format('d M Y') }}</td>
-                                <td class="text-center"><span class="badge {{ $badgeClass }} text-uppercase">{{ ucwords(str_replace('_', ' ', $claim->status)) }}</span></td>
-                                <td class="text-end">
-                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $claim->id) }}" class="btn btn-sm btn-outline-primary">
-                                        Detail
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -106,11 +68,42 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        $('#actionTable, #historyTable').DataTable({
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
-            stateSave: true,
-            pageLength: 25,
-            ordering: false
+        var dtLang = { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' };
+        var dtOpts = { pageLength: 25, order: [] };
+
+        $('#actionTable').DataTable(Object.assign({}, dtOpts, {
+            processing: true,
+            serverSide: true,
+            ajax: '{{ route("purchasing.claims.data-action") }}',
+            columns: [
+                { data: 'po_number_display', name: 'po_number', className: 'fw-bold' },
+                { data: 'supplier_name', name: 'supplier_name', orderable: false },
+                { data: 'inspection_date', name: 'inspection_date', orderable: false, searchable: false },
+                { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+            ],
+            language: dtLang
+        }));
+
+        var historyInit = false;
+        $('button[data-bs-target="#history"]').on('shown.bs.tab', function() {
+            if (!historyInit) {
+                historyInit = true;
+                $('#historyTable').DataTable(Object.assign({}, dtOpts, {
+                    processing: true,
+                    serverSide: true,
+                    ajax: '{{ route("purchasing.claims.data-history") }}',
+                    columns: [
+                        { data: 'claim_id', name: 'id', className: 'fw-medium' },
+                        { data: 'po_number', name: 'po_number', orderable: false },
+                        { data: 'supplier_name', name: 'supplier_name', orderable: false },
+                        { data: 'created_date', name: 'created_at' },
+                        { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
+                        { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                    ],
+                    language: dtLang
+                }));
+            }
         });
     });
 </script>

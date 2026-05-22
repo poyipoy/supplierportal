@@ -76,6 +76,8 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/purchase-orders/{id}', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
     Route::post('/purchase-orders/{id}/confirm-arrival', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
     Route::put('/po-documents/{id}', [\App\Http\Controllers\Purchasing\PoDocumentController::class, 'update'])->name('po-documents.update');
+    Route::get('/claims/data-action', [\App\Http\Controllers\Purchasing\MaterialClaimController::class, 'dataActionNeeded'])->name('claims.data-action');
+    Route::get('/claims/data-history', [\App\Http\Controllers\Purchasing\MaterialClaimController::class, 'dataHistory'])->name('claims.data-history');
     Route::get('/claims/create/{inspection_id}', [\App\Http\Controllers\Purchasing\MaterialClaimController::class, 'create'])->name('claims.create');
     Route::resource('claims', \App\Http\Controllers\Purchasing\MaterialClaimController::class)->except(['create', 'edit', 'update', 'destroy']);
     Route::post('/claims/{id}/resolve', [\App\Http\Controllers\Purchasing\MaterialClaimController::class, 'resolve'])->name('claims.resolve');
@@ -100,6 +102,9 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     // Export
     Route::get('/export/requirements', [\App\Http\Controllers\Purchasing\ExportController::class, 'requirements'])->name('export.requirements');
     Route::get('/export/purchase-orders', [\App\Http\Controllers\Purchasing\ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
+    // PDF
+    Route::get('/pdf/purchase-order/{id}', [\App\Http\Controllers\Purchasing\PdfController::class, 'purchaseOrder'])->name('pdf.purchase-order');
+    Route::get('/pdf/qc-inspection/{id}', [\App\Http\Controllers\Purchasing\PdfController::class, 'qcInspection'])->name('pdf.qc-inspection');
 });
 
 /*
@@ -133,6 +138,8 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
 */
 Route::middleware(['auth', 'role:qc'])->prefix('qc')->name('qc.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Qc\DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/inspections/data-waiting', [\App\Http\Controllers\Qc\QcInspectionController::class, 'dataWaiting'])->name('inspections.data-waiting');
+    Route::get('/inspections/data-history', [\App\Http\Controllers\Qc\QcInspectionController::class, 'dataHistory'])->name('inspections.data-history');
     Route::get('/inspections/{po_id}/create', [\App\Http\Controllers\Qc\QcInspectionController::class, 'create'])->name('inspections.create');
     Route::post('/inspections/{po_id}', [\App\Http\Controllers\Qc\QcInspectionController::class, 'store'])->name('inspections.store');
     Route::post('/inspections/{id}/attachments', [\App\Http\Controllers\Qc\QcInspectionController::class, 'storeAttachments'])->name('inspections.attachments.store');

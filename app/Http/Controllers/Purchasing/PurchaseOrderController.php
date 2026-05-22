@@ -10,6 +10,7 @@ use App\Models\Quotation;
 use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseOrderController extends Controller
 {
@@ -53,11 +54,61 @@ class PurchaseOrderController extends Controller
             $query->whereHas('quotation', fn($q) => $q->where('supplier_id', $request->supplier_id));
         }
 
-        $purchaseOrders = $query->get();
+        if ($request->ajax()) {
+            return DataTables::eloquent($query)
+                ->addColumn('po_number_display', fn($po) => $po->po_number)
+                ->addColumn('supplier_name', fn($po) => $po->quotation->supplier->name ?? '-')
+                ->addColumn('period_name', fn($po) => $po->quotation->purchaseRequirement->period->name ?? '-')
+                ->addColumn('total_idr', function ($po) {
+                    $rate = $po->quotation->exchange_rate;
+                    $totalIdr = 0;
+                    foreach ($po->quotation->items as $item) {
+                        $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                    }
+                    return 'Rp ' . number_format($totalIdr, 0, ',', '.');
+                })
+                ->addColumn('status_badge', function ($po) {
+                    $badgeClass = match(true) {
+                        $po->is_overdue => 'bg-danger',
+                        $po->status === 'active' => 'bg-primary',
+                        $po->status === 'waiting_qc' => 'bg-warning text-dark',
+                        $po->status === 'claim_needed' => 'bg-danger',
+                        $po->status === 'completed' => 'bg-success',
+                        default => 'bg-secondary'
+                    };
+                    $statusLabel = match(true) {
+                        $po->is_overdue => 'Overdue',
+                        $po->status === 'active' => 'Active',
+                        $po->status === 'waiting_qc' => 'Waiting QC',
+                        $po->status === 'claim_needed' => 'Claim Needed',
+                        $po->status === 'completed' => 'Completed',
+                        default => ucwords(str_replace('_', ' ', $po->status))
+                    };
+                    return '<span class="badge ' . $badgeClass . ' text-uppercase" style="font-size: 0.7rem;">' . $statusLabel . '</span>';
+                })
+                ->addColumn('estimated_date', fn($po) => $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-')
+                ->addColumn('action', function ($po) {
+                    $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
+                    if ($po->status === 'claim_needed') {
+                        $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
+                        $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
+                        if ($activeClaim) {
+                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim->id) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Klaim</a>';
+                        } elseif ($latestNgInspection) {
+                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Buat Klaim</a>';
+                        }
+                    }
+                    $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
+                    $html .= '</div>';
+                    return $html;
+                })
+                ->rawColumns(['status_badge', 'action'])
+                ->make(true);
+        }
 
         $suppliers = \App\Models\User::where('role', 'supplier')->get();
 
-        return view('purchasing.po.index', compact('purchaseOrders', 'suppliers'));
+        return view('purchasing.po.index', compact('suppliers'));
     }
 
     

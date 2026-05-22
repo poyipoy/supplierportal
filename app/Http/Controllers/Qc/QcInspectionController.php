@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class QcInspectionController extends Controller
 {
@@ -19,18 +20,44 @@ class QcInspectionController extends Controller
      */
     public function index()
     {
-        // PO yang menunggu QC
-        $waitingPOs = PurchaseOrder::with(['quotation.supplier', 'quotation.items'])
+        $waitingCount = PurchaseOrder::where('status', 'waiting_qc')->count();
+        $historyCount = QcInspection::count();
+
+        return view('qc.inspections.index', compact('waitingCount', 'historyCount'));
+    }
+
+    public function dataWaiting(Request $request)
+    {
+        $query = PurchaseOrder::with(['quotation.supplier', 'quotation.items'])
             ->where('status', 'waiting_qc')
-            ->orderBy('actual_arrival', 'asc')
-            ->get();
+            ->orderBy('actual_arrival', 'asc');
 
-        // Riwayat inspeksi
-        $history = QcInspection::with(['purchaseOrder.quotation.supplier', 'inspector'])
-            ->orderBy('inspected_at', 'desc')
-            ->get();
+        return DataTables::eloquent($query)
+            ->addColumn('po_number_display', fn($po) => $po->po_number)
+            ->addColumn('supplier_name', fn($po) => $po->quotation->supplier->name ?? '-')
+            ->addColumn('arrival_date', fn($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
+            ->addColumn('item_count', fn($po) => $po->quotation->items->count() . ' Item')
+            ->addColumn('action', fn($po) => '<a href="' . route('qc.inspections.create', $po->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Mulai Inspeksi</a>')
+            ->rawColumns(['action'])
+            ->make(true);
+    }
 
-        return view('qc.inspections.index', compact('waitingPOs', 'history'));
+    public function dataHistory(Request $request)
+    {
+        $query = QcInspection::with(['purchaseOrder.quotation.supplier', 'inspector'])
+            ->orderBy('inspected_at', 'desc');
+
+        return DataTables::eloquent($query)
+            ->addColumn('po_number', fn($i) => $i->purchaseOrder->po_number ?? '-')
+            ->addColumn('supplier_name', fn($i) => $i->purchaseOrder->quotation->supplier->name ?? '-')
+            ->addColumn('inspected_date', fn($i) => $i->inspected_at->format('d M Y, H:i'))
+            ->addColumn('status_badge', fn($i) => $i->status === 'ok'
+                ? '<span class="badge bg-success">OK</span>'
+                : '<span class="badge bg-danger">NG</span>')
+            ->addColumn('inspector_name', fn($i) => $i->inspector->name ?? '-')
+            ->addColumn('action', fn($i) => '<a href="' . route('qc.inspections.show', $i->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>')
+            ->rawColumns(['status_badge', 'action'])
+            ->make(true);
     }
 
     /**
