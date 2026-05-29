@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 
+/**
+ * @property \Illuminate\Support\Carbon|null $estimated_arrival
+ * @property \Illuminate\Support\Carbon|null $actual_arrival
+ */
 class PurchaseOrder extends Model
 {
     use SoftDeletes;
@@ -73,16 +77,6 @@ class PurchaseOrder extends Model
     }
 
     /**
-     * Backward-compatible: ambil quotation pertama (untuk kode lama yang belum di-refactor).
-     */
-    public function quotation(): BelongsTo
-    {
-        // Fallback: return first quotation via pivot relationship
-        // This is a "virtual" BelongsTo for backward compat in edge cases
-        return $this->belongsTo(Quotation::class, 'id', 'id');
-    }
-
-    /**
      * Ambil quotation pertama dari relasi many-to-many.
      */
     public function getFirstQuotationAttribute(): ?Quotation
@@ -142,10 +136,35 @@ class PurchaseOrder extends Model
      */
     public static function generatePoNumber(): string
     {
-        $count = static::whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
-            ->count();
+        return \Illuminate\Support\Facades\DB::transaction(function () {
+            $year = (int) now()->year;
+            $month = (int) now()->month;
 
-        return 'PO/' . now()->format('m/Y') . '/' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+            $seq = \Illuminate\Support\Facades\DB::table('document_sequences')
+                ->where('type', 'PO')
+                ->where('year', $year)
+                ->where('month', $month)
+                ->lockForUpdate()
+                ->first();
+
+            if ($seq) {
+                $next = $seq->last_number + 1;
+                \Illuminate\Support\Facades\DB::table('document_sequences')
+                    ->where('id', $seq->id)
+                    ->update(['last_number' => $next, 'updated_at' => now()]);
+            } else {
+                $next = 1;
+                \Illuminate\Support\Facades\DB::table('document_sequences')->insert([
+                    'type' => 'PO',
+                    'year' => $year,
+                    'month' => $month,
+                    'last_number' => $next,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            return 'PO/' . now()->format('m/Y') . '/' . str_pad($next, 3, '0', STR_PAD_LEFT);
+        });
     }
 }

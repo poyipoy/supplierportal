@@ -180,12 +180,14 @@ class PurchaseOrderController extends Controller
         ]);
 
         // Load semua quotation yang dipilih
+        /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\Quotation> $quotations */
         $quotations = Quotation::with(['purchaseRequirement', 'exchange_rate'])
             ->whereIn('id', $request->quotation_ids)
             ->get();
 
         // Validasi: semua harus submitted
         foreach ($quotations as $q) {
+            /** @var \App\Models\Quotation $q */
             if ($q->status !== 'submitted') {
                 return redirect()->back()->with('error', "Quotation #{$q->id} tidak valid (status: {$q->status}).");
             }
@@ -247,6 +249,7 @@ class PurchaseOrderController extends Controller
 
             // 4. Accept all selected quotations
             foreach ($quotations as $q) {
+                /** @var \App\Models\Quotation $q */
                 $q->update(['status' => 'accepted']);
 
                 // 5. Reject all other quotations for the same PR

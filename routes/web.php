@@ -20,6 +20,16 @@ Route::get('/', function () { return redirect()->route('login'); });
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', function () {
+        return match (auth()->user()->role) {
+            'admin' => redirect()->route('admin.dashboard'),
+            'purchasing' => redirect()->route('purchasing.dashboard'),
+            'supplier' => redirect()->route('supplier.dashboard'),
+            'qc' => redirect()->route('qc.dashboard'),
+            default => redirect()->route('login'),
+        };
+    })->name('dashboard');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -27,7 +37,7 @@ Route::middleware('auth')->group(function () {
     // Notifications
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
-    Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     
     // Conversations (Shared)
@@ -93,7 +103,9 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     // Perbandingan Harga
     Route::get('/comparison/inter-supplier', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'interSupplier'])->name('comparison.inter-supplier');
     Route::get('/comparison/historical', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'historical'])->name('comparison.historical');
+    Route::get('/comparison/historical/materials', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'historicalMaterials'])->name('comparison.historical.materials');
     Route::get('/comparison/vs-best', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'vsBestPrice'])->name('comparison.vs-best');
+    Route::get('/comparison/vs-best/data', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'vsBestPriceData'])->name('comparison.vs-best.data');
     Route::get('/comparison/{pr_id}', function ($pr_id) {
         return redirect()->route('purchasing.comparison.inter-supplier', ['pr_id' => $pr_id]);
     })->whereNumber('pr_id')->name('comparison.show');

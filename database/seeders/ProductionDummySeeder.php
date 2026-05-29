@@ -52,9 +52,11 @@ class ProductionDummySeeder extends Seeder
             $supplier4 = $this->user('PT. Posco Indonesia', 'supplier4@test.com', 'supplier');
             $supplier5 = $this->user('PT. Krakatau Steel Intl', 'supplier5@test.com', 'supplier');
 
-            $this->supplierProfile($supplier3, 'PT. Nippon Steel Trading', 'Flat Steel, Cold Rolled', '01.234.567.8-901.000');
-            $this->supplierProfile($supplier4, 'PT. Posco Indonesia', 'Round Steel, Wire Rod', '02.345.678.9-012.000');
-            $this->supplierProfile($supplier5, 'PT. Krakatau Steel Intl', 'Flat Steel, Hot Rolled', '03.456.789.0-123.000');
+            $supplier1->supplier?->update(['currency' => ExchangeRate::CURRENCY_USD]);
+            $supplier2->supplier?->update(['currency' => ExchangeRate::CURRENCY_CNY]);
+            $this->supplierProfile($supplier3, 'PT. Nippon Steel Trading', 'Flat Steel, Cold Rolled', '01.234.567.8-901.000', ExchangeRate::CURRENCY_JPY);
+            $this->supplierProfile($supplier4, 'PT. Posco Indonesia', 'Round Steel, Wire Rod', '02.345.678.9-012.000', ExchangeRate::CURRENCY_USD);
+            $this->supplierProfile($supplier5, 'PT. Krakatau Steel Intl', 'Flat Steel, Hot Rolled', '03.456.789.0-123.000', ExchangeRate::CURRENCY_IDR);
 
             $this->seedExchangeRates($admin);
             $this->seedPeriods($admin);
@@ -105,7 +107,7 @@ class ProductionDummySeeder extends Seeder
         );
     }
 
-    private function supplierProfile(User $user, string $companyName, string $category, string $npwp): Supplier
+    private function supplierProfile(User $user, string $companyName, string $category, string $npwp, string $currency = ExchangeRate::CURRENCY_USD): Supplier
     {
         return Supplier::updateOrCreate(
             ['user_id' => $user->id],
@@ -115,6 +117,7 @@ class ProductionDummySeeder extends Seeder
                 'phone' => '021-555-' . str_pad((string) $user->id, 4, '0', STR_PAD_LEFT),
                 'npwp' => $npwp,
                 'category' => $category,
+                'currency' => $currency,
             ]
         );
     }
@@ -165,12 +168,42 @@ class ProductionDummySeeder extends Seeder
             now()->toDateString() => 110,
         ];
 
+        $cnyRates = [
+            '2023-01-01' => 2230,
+            '2023-04-01' => 2195,
+            '2023-07-01' => 2135,
+            '2023-10-01' => 2160,
+            '2024-01-01' => 2185,
+            '2024-04-01' => 2200,
+            '2024-07-01' => 2225,
+            '2024-10-01' => 2240,
+            '2025-01-01' => 2165,
+            '2025-02-01' => 2180,
+            '2025-03-01' => 2210,
+            '2025-04-01' => 2195,
+            '2025-05-01' => 2220,
+            '2025-06-01' => 2235,
+            '2025-07-01' => 2245,
+            '2025-10-01' => 2260,
+            '2026-01-01' => 2250,
+            '2026-04-01' => 2265,
+            now()->toDateString() => 2270,
+        ];
+
         foreach ($usdRates as $date => $rate) {
-            $this->rate('USD', $rate, $date, $admin);
+            $this->rate(ExchangeRate::CURRENCY_USD, $rate, $date, $admin);
         }
 
         foreach ($jpyRates as $date => $rate) {
-            $this->rate('JPY', $rate, $date, $admin);
+            $this->rate(ExchangeRate::CURRENCY_JPY, $rate, $date, $admin);
+        }
+
+        foreach (array_keys($usdRates) as $date) {
+            $this->rate(ExchangeRate::CURRENCY_IDR, 1, $date, $admin);
+        }
+
+        foreach ($cnyRates as $date => $rate) {
+            $this->rate(ExchangeRate::CURRENCY_CNY, $rate, $date, $admin);
         }
     }
 
@@ -666,13 +699,16 @@ class ProductionDummySeeder extends Seeder
     ): Quotation {
         $createdAt = Carbon::parse($requirement->created_at)->addDays(4);
         $submittedAt = $status === 'draft' ? null : $createdAt->copy()->addDay();
-        $rate = $this->rates['USD'][$rateKey];
+        $currency = $supplier->supplier->currency ?? ExchangeRate::CURRENCY_USD;
+        $rate = $this->rates[$currency][$rateKey]
+            ?? $this->rates[$currency]['today']
+            ?? $this->rates[ExchangeRate::CURRENCY_USD][$rateKey];
         $prNumber = $requirement->pr_number;
 
         $quotation = Quotation::create([
             'pr_id' => $requirement->id,
             'supplier_id' => $supplier->id,
-            'currency' => 'USD',
+            'currency' => $currency,
             'exchange_rate_id' => $rate->id,
             'status' => $status,
             'submitted_at' => $submittedAt,
@@ -685,7 +721,8 @@ class ProductionDummySeeder extends Seeder
         ]);
 
         foreach ($this->requirements[$prNumber]['items'] as $itemKey => $prItem) {
-            $price = $prices[$itemKey] ?? $this->defaultPriceForItem($prItem, $supplier);
+            $baseUsdPrice = $prices[$itemKey] ?? $this->defaultPriceForItem($prItem, $supplier);
+            $price = $this->convertUsdPriceToCurrency($baseUsdPrice, $currency, $rateKey);
 
             $quotation->items()->create([
                 'pr_item_id' => $prItem->id,
@@ -700,6 +737,26 @@ class ProductionDummySeeder extends Seeder
         $this->quotations[$prNumber][$supplier->email] = $quotation;
 
         return $quotation;
+    }
+
+    private function convertUsdPriceToCurrency(float $priceUsd, string $currency, string $rateKey): float
+    {
+        if ($currency === ExchangeRate::CURRENCY_USD) {
+            return round($priceUsd, 2);
+        }
+
+        $usdRate = $this->rates[ExchangeRate::CURRENCY_USD][$rateKey]
+            ?? $this->rates[ExchangeRate::CURRENCY_USD]['today']
+            ?? null;
+        $targetRate = $this->rates[$currency][$rateKey]
+            ?? $this->rates[$currency]['today']
+            ?? null;
+
+        if (! $usdRate || ! $targetRate || (float) $targetRate->rate_to_idr <= 0) {
+            return round($priceUsd, 2);
+        }
+
+        return round(($priceUsd * (float) $usdRate->rate_to_idr) / (float) $targetRate->rate_to_idr, 2);
     }
 
     private function flatItem(
@@ -858,7 +915,7 @@ class ProductionDummySeeder extends Seeder
         ];
 
         $requirements = PurchaseRequirement::with([
-            'quotations' => fn ($query) => $query->where('status', 'accepted')->with('purchaseOrder'),
+            'quotations' => fn ($query) => $query->where('status', 'accepted')->with('purchaseOrders'),
         ])
             ->where('status', 'completed')
             ->orderBy('created_at')
@@ -867,7 +924,7 @@ class ProductionDummySeeder extends Seeder
         foreach ($requirements as $requirement) {
             $quotation = $requirement->quotations->first();
 
-            if (! $quotation || $quotation->purchaseOrder) {
+            if (! $quotation || $quotation->purchaseOrders->isNotEmpty()) {
                 continue;
             }
 
@@ -876,7 +933,9 @@ class ProductionDummySeeder extends Seeder
             $actualArrival = $estimatedArrival->copy()->addDays(3);
 
             $purchaseOrder = PurchaseOrder::create([
-                'quotation_id' => $quotation->id,
+                'supplier_id' => $quotation->supplier_id,
+                'currency' => $quotation->currency,
+                'exchange_rate_id' => $quotation->exchange_rate_id,
                 'po_number' => $this->nextHistoricalPoNumber($createdAt),
                 'status' => 'completed',
                 'created_by' => $purchasing->id,
@@ -886,6 +945,8 @@ class ProductionDummySeeder extends Seeder
                 'created_at' => $createdAt,
                 'updated_at' => $actualArrival,
             ]);
+
+            $purchaseOrder->quotations()->syncWithoutDetaching([$quotation->id]);
 
             foreach ($doneDocuments as $type => $documentStatus) {
                 PoDocument::create([
@@ -930,7 +991,9 @@ class ProductionDummySeeder extends Seeder
         $date = Carbon::parse($createdAt);
 
         $purchaseOrder = PurchaseOrder::create([
-            'quotation_id' => $quotation->id,
+            'supplier_id' => $quotation->supplier_id,
+            'currency' => $quotation->currency,
+            'exchange_rate_id' => $quotation->exchange_rate_id,
             'po_number' => $poNumber,
             'status' => $status,
             'created_by' => $creator->id,
@@ -940,6 +1003,8 @@ class ProductionDummySeeder extends Seeder
             'created_at' => $date,
             'updated_at' => $actualArrival ? Carbon::parse($actualArrival) : $date,
         ]);
+
+        $purchaseOrder->quotations()->syncWithoutDetaching([$quotation->id]);
 
         foreach ($documentStatuses as $type => $documentStatus) {
             PoDocument::create([
@@ -1023,7 +1088,9 @@ class ProductionDummySeeder extends Seeder
             'updated_at' => $date,
         ]);
 
-        foreach ($purchaseOrder->quotation->items as $quotationItem) {
+        $purchaseOrder->loadMissing('quotations.items.prItem');
+
+        foreach ($purchaseOrder->allQuotationItems() as $quotationItem) {
             $prItem = $quotationItem->prItem;
             $actual = $this->actualInspectionValues($prItem);
             $override = $overrides[$prItem->material_name] ?? [];

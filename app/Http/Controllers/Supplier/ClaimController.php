@@ -13,7 +13,7 @@ class ClaimController extends Controller
 {
     public function index(Request $request)
     {
-        $query = MaterialClaim::with(['purchaseOrder.quotation.supplier'])
+        $query = MaterialClaim::with(['purchaseOrder.supplier'])
             ->where('supplier_id', auth()->id())
             ->orderBy('created_at', 'desc');
 
@@ -84,19 +84,33 @@ class ClaimController extends Controller
         // Upload lampiran respons supplier
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $path = $file->store('attachments/claims/' . now()->format('Y/m'), 'private');
-                $claim->attachments()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_type' => $file->getMimeType(),
-                    'uploaded_by' => auth()->id(),
-                ]);
+                if (! $file || ! $file->isValid()) {
+                    continue;
+                }
+                
+                // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
+                $fileName = $file->hashName();
+                $path = 'attachments/claims/' . now()->format('Y/m') . '/' . $fileName;
+                
+                $stream = fopen($file->getPathname(), 'r');
+                if ($stream) {
+                    \Illuminate\Support\Facades\Storage::disk('private')->put($path, $stream);
+                    fclose($stream);
+                    
+                    $claim->attachments()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getMimeType(),
+                        'uploaded_by' => auth()->id(),
+                    ]);
+                }
             }
         }
 
         // Notify purchasing
         $purchasingUsers = User::where('role', 'purchasing')->get();
         foreach ($purchasingUsers as $pUser) {
+            /** @var \App\Models\User $pUser */
             $pUser->notify(new SystemNotification(
                 'Respons Klaim Diterima',
                 'Supplier telah merespons klaim untuk PO ' . $claim->purchaseOrder->po_number . '.',

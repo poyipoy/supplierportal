@@ -20,7 +20,7 @@ class RequirementsExport implements FromCollection, WithHeadings, ShouldAutoSize
         $rows = collect();
         foreach ($q->get() as $pr) {
             foreach ($pr->items as $item) {
-                $spec = collect([$item->shape, $item->thickness ? "T:{$item->thickness}" : null, $item->width ? "W:{$item->width}" : null, $item->length ? "L:{$item->length}" : null])->filter()->implode(' | ');
+                $spec = collect([$item->shape, $item->dimension_label !== '-' ? $item->dimension_label : null])->filter()->implode(' | ');
                 $rows->push([$pr->pr_number ?? 'DRAFT', optional($pr->period)->name, $item->material_name, $spec ?: '-', $item->weight_needed, strtoupper($pr->status), $pr->created_at->format('d/m/Y H:i')]);
             }
         }

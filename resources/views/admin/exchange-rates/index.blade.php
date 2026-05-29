@@ -2,20 +2,108 @@
 @section('title', 'Manajemen Kurs — ADASI Portal')
 @section('page-title', 'Manajemen Kurs & Riwayat')
 
+@push('styles')
+    <style>
+        .exchange-rate-filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: .4rem;
+        }
+
+        .exchange-rate-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            padding: .7rem .85rem;
+            border: 1px solid #e9eef4;
+            border-radius: .5rem;
+            background-color: #f8fafc;
+        }
+
+        .exchange-rate-pagination .pagination {
+            align-items: center;
+            justify-content: flex-end;
+            gap: .25rem;
+            margin-bottom: 0;
+        }
+
+        .exchange-rate-pagination .pagination-links nav > div.d-none.flex-sm-fill > div:first-child {
+            display: none !important;
+        }
+
+        .exchange-rate-pagination .pagination-links nav > div.d-none.flex-sm-fill {
+            justify-content: flex-end !important;
+        }
+
+        .exchange-rate-pagination .page-link {
+            min-width: 2rem;
+            padding: .3rem .55rem;
+            border-radius: .375rem;
+            color: #1F5FA6;
+            font-size: .78rem;
+            font-weight: 600;
+            line-height: 1.2;
+            text-align: center;
+            box-shadow: none;
+        }
+
+        .exchange-rate-pagination .page-item:first-child .page-link,
+        .exchange-rate-pagination .page-item:last-child .page-link {
+            min-width: auto;
+            padding-inline: .65rem;
+        }
+
+        .exchange-rate-pagination .page-item.active .page-link {
+            border-color: #1F5FA6;
+            background-color: #1F5FA6;
+            color: #fff;
+        }
+
+        .exchange-rate-pagination .page-item.disabled .page-link {
+            color: #98a2b3;
+            background-color: #f1f4f8;
+        }
+
+        @media (max-width: 575.98px) {
+            .exchange-rate-filter-buttons {
+                justify-content: flex-start;
+                margin-top: .75rem;
+            }
+
+            .exchange-rate-pagination {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .exchange-rate-pagination .pagination {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .exchange-rate-pagination .pagination-summary {
+                text-align: center;
+            }
+        }
+    </style>
+@endpush
+
 @section('content')
     <div class="row g-4">
         {{-- Tabel Histori Kurs --}}
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
                         <h6 class="mb-0 fw-bold">Riwayat Pembaruan Kurs</h6>
                         <div class="small text-muted">Total {{ $totalRates }} record kurs tersimpan.</div>
                     </div>
-                    <div>
+                    <div class="exchange-rate-filter-buttons">
                         <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">Semua <span class="badge text-bg-light">{{ $totalRates }}</span></a>
-                        <a href="{{ route('admin.exchange-rates.index', ['currency' => 'USD']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'USD' ? 'active' : '' }}">USD <span class="badge text-bg-light">{{ $currencyCounts['USD'] ?? 0 }}</span></a>
-                        <a href="{{ route('admin.exchange-rates.index', ['currency' => 'JPY']) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == 'JPY' ? 'active' : '' }}">JPY <span class="badge text-bg-light">{{ $currencyCounts['JPY'] ?? 0 }}</span></a>
+                        @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                            <a href="{{ route('admin.exchange-rates.index', ['currency' => $currency]) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == $currency ? 'active' : '' }}">{{ $currency }} <span class="badge text-bg-light">{{ $currencyCounts[$currency] ?? 0 }}</span></a>
+                        @endforeach
                     </div>
                 </div>
                 <div class="card-body">
@@ -42,7 +130,7 @@
                                 @forelse($rates as $rate)
                                     <tr>
                                         <td>
-                                            <span class="badge {{ $rate->currency == 'USD' ? 'bg-success' : 'bg-primary' }} text-uppercase px-2 py-1">
+                                            <span class="badge bg-dark text-uppercase px-2 py-1">
                                                 {{ $rate->currency }}
                                             </span>
                                         </td>
@@ -60,9 +148,17 @@
                         </table>
                     </div>
                     
-                    <div class="mt-3">
-                        {{ $rates->links() }}
-                    </div>
+                    @if($rates->hasPages())
+                        <div class="exchange-rate-pagination mt-3">
+                            <div class="pagination-summary small text-muted">
+                                Halaman {{ $rates->currentPage() }} dari {{ $rates->lastPage() }}
+                                <span class="d-none d-sm-inline">- {{ $rates->firstItem() }} sampai {{ $rates->lastItem() }} dari {{ $rates->total() }} record</span>
+                            </div>
+                            <div class="pagination-links">
+                                {{ $rates->onEachSide(1)->links('pagination::bootstrap-5') }}
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -82,8 +178,9 @@
                         <div class="mb-3">
                             <label class="form-label small fw-medium text-muted">Mata Uang <span class="text-danger">*</span></label>
                             <select name="currency" class="form-select @error('currency') is-invalid @enderror" required>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="JPY">JPY - Japanese Yen</option>
+                                @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
+                                    <option value="{{ $code }}" {{ old('currency') === $code ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
                             </select>
                             @error('currency')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>

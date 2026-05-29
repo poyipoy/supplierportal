@@ -149,6 +149,7 @@ class QuotationController extends Controller
     public function create($pr_id)
     {
         $pr = PurchaseRequirement::with('items')->findOrFail($pr_id);
+        $supplierCurrency = auth()->user()->supplier->currency ?? ExchangeRate::CURRENCY_USD;
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
             return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
@@ -166,10 +167,9 @@ class QuotationController extends Controller
                 ->with('info', 'Anda sudah mengirim penawaran untuk permintaan ini.');
         }
 
-        $usdRate = ExchangeRate::where('currency', 'USD')->orderBy('valid_from', 'desc')->first();
-        $jpyRate = ExchangeRate::where('currency', 'JPY')->orderBy('valid_from', 'desc')->first();
+        $supplierRate = ExchangeRate::latestRate($supplierCurrency);
 
-        return view('supplier.quotations.create', compact('pr', 'quotation', 'usdRate', 'jpyRate'));
+        return view('supplier.quotations.create', compact('pr', 'quotation', 'supplierCurrency', 'supplierRate'));
     }
 
     /**
@@ -178,6 +178,7 @@ class QuotationController extends Controller
     public function store(Request $request, $pr_id)
     {
         $pr = PurchaseRequirement::findOrFail($pr_id);
+        $supplierCurrency = auth()->user()->supplier->currency ?? ExchangeRate::CURRENCY_USD;
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
             return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
@@ -185,7 +186,6 @@ class QuotationController extends Controller
 
         $request->validate([
             'action' => 'required|in:draft,submitted',
-            'currency' => 'required|in:USD,JPY',
             'estimated_delivery' => 'required|date',
             'payment_terms' => 'nullable|string',
             'validity_period' => $request->action === 'submitted'
@@ -220,19 +220,26 @@ class QuotationController extends Controller
                 : ($wasRevisionRequested ? Quotation::STATUS_REVISION_REQUESTED : Quotation::STATUS_DRAFT);
 
             // Hitung exchange rate jika disubmit
-            $exchangeRateId = $quotation?->exchange_rate_id;
+            $exchangeRateId = $quotation?->currency === $supplierCurrency
+                ? $quotation?->exchange_rate_id
+                : null;
             if ($request->action === 'submitted') {
-                $rate = ExchangeRate::where('currency', $request->currency)->orderBy('valid_from', 'desc')->first();
-                if ($rate) {
-                    $exchangeRateId = $rate->id;
+                $rate = ExchangeRate::latestRate($supplierCurrency);
+                if (! $rate) {
+                    DB::rollBack();
+                    return back()
+                        ->withInput()
+                        ->with('error', 'Kurs ' . $supplierCurrency . ' belum tersedia. Hubungi Admin sebelum mengirim penawaran final.');
                 }
+
+                $exchangeRateId = $rate->id;
             }
 
             if (!$quotation) {
                 $quotation = Quotation::create([
                     'pr_id' => $pr_id,
                     'supplier_id' => auth()->id(),
-                    'currency' => $request->currency,
+                    'currency' => $supplierCurrency,
                     'status' => $nextStatus,
                     'submitted_at' => $request->action === 'submitted' ? now() : null,
                     'exchange_rate_id' => $exchangeRateId,
@@ -243,7 +250,7 @@ class QuotationController extends Controller
                 ]);
             } else {
                 $quotation->update([
-                    'currency' => $request->currency,
+                    'currency' => $supplierCurrency,
                     'status' => $nextStatus,
                     'submitted_at' => $request->action === 'submitted' ? now() : $quotation->submitted_at,
                     'exchange_rate_id' => $exchangeRateId,

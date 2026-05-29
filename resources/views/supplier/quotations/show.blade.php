@@ -49,7 +49,11 @@
                                         <td>
                                             <div class="fw-bold">{{ $item->prItem->material_name }}</div>
                                             <div class="text-muted" style="font-size: 0.75rem;">
-                                                {{ $item->prItem->shape }}
+                                                @if($item->prItem->shape)
+                                                    {{ $item->prItem->shape }}: {{ $item->prItem->dimension_label }}
+                                                @else
+                                                    -
+                                                @endif
                                             </div>
                                         </td>
                                         <td class="text-center fw-medium text-primary">

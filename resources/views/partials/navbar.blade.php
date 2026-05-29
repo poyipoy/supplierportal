@@ -23,7 +23,7 @@
         @php
             $notificationCategories = \App\Support\NotificationCategory::options();
             $navbarUnreadNotifications = auth()->user()->unreadNotifications;
-            $navbarNotifications = auth()->user()->notifications()->latest()->get();
+            $navbarNotifications = auth()->user()->notifications()->latest()->take(30)->get();
             $navbarNotificationCounts = collect($notificationCategories)->mapWithKeys(function ($option, $key) use ($navbarUnreadNotifications) {
                 $items = $key === \App\Support\NotificationCategory::ALL
                     ? $navbarUnreadNotifications
@@ -102,11 +102,14 @@
                                             $notifCategoryKey = \App\Support\NotificationCategory::key($notif);
                                             $notifCategory = $notificationCategories[$notifCategoryKey] ?? $notificationCategories[\App\Support\NotificationCategory::OTHER];
                                         @endphp
-                                        <a href="{{ route('notifications.read', $notif->id) }}"
+                                        <div role="button"
                                             class="notification-item {{ $notif->read_at ? '' : 'bg-light' }}"
                                             data-notification-item
                                             data-notification-category="{{ $notifCategoryKey }}"
-                                            data-notification-unread="{{ $notif->read_at ? '0' : '1' }}">
+                                            data-notification-unread="{{ $notif->read_at ? '0' : '1' }}"
+                                            data-notification-read-url="{{ route('notifications.read', $notif->id) }}"
+                                            data-notification-id="{{ $notif->id }}"
+                                            style="cursor: pointer;">
                                             <div class="d-flex gap-3">
                                                 <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:34px;height:34px;">
                                                     <i class="bi {{ $notif->data['icon'] ?? $notifCategory['icon'] }} text-primary"></i>
@@ -127,7 +130,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </a>
+                                        </div>
                                     @empty
                                         <div class="text-center text-muted py-5 px-3">
                                             <i class="bi {{ $category['icon'] }}" style="font-size:2rem;opacity:.45"></i>
@@ -321,6 +324,57 @@
                         button.disabled = false;
                         button.textContent = originalLabel;
                     }
+                }
+            });
+
+            // Notification item click: POST mark-as-read, then redirect
+            document.addEventListener('click', async function (event) {
+                const item = event.target.closest('[data-notification-read-url]');
+                if (!item) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const readUrl = item.dataset.notificationReadUrl;
+                if (!readUrl) {
+                    return;
+                }
+
+                // Disable double-click
+                if (item.dataset.processing === 'true') {
+                    return;
+                }
+                item.dataset.processing = 'true';
+                item.style.opacity = '0.6';
+
+                try {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                    const response = await fetch(readUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                            return;
+                        }
+                    }
+
+                    // Fallback: reload current page
+                    window.location.reload();
+                } catch (error) {
+                    console.error('Gagal mark notification:', error);
+                    item.dataset.processing = 'false';
+                    item.style.opacity = '1';
                 }
             });
         </script>

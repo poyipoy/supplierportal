@@ -58,6 +58,7 @@ class DatabaseSeeder extends Seeder
             'phone'        => '021-12345678',
             'npwp'         => '01.234.567.8-012.000',
             'category'     => 'Steel',
+            'currency'     => ExchangeRate::CURRENCY_USD,
         ]);
 
         // ─── Supplier 2 ───
@@ -76,19 +77,34 @@ class DatabaseSeeder extends Seeder
             'phone'        => '021-87654321',
             'npwp'         => '09.876.543.2-098.000',
             'category'     => 'Steel',
+            'currency'     => ExchangeRate::CURRENCY_CNY,
         ]);
 
         // ─── Exchange Rates (valid_from: hari ini) ───
         ExchangeRate::create([
-            'currency'    => 'USD',
+            'currency'    => ExchangeRate::CURRENCY_USD,
             'rate_to_idr' => 16200.0000,
             'valid_from'  => now()->toDateString(),
             'created_by'  => $admin->id,
         ]);
 
         ExchangeRate::create([
-            'currency'    => 'JPY',
+            'currency'    => ExchangeRate::CURRENCY_JPY,
             'rate_to_idr' => 108.0000,
+            'valid_from'  => now()->toDateString(),
+            'created_by'  => $admin->id,
+        ]);
+
+        ExchangeRate::create([
+            'currency'    => ExchangeRate::CURRENCY_IDR,
+            'rate_to_idr' => 1.0000,
+            'valid_from'  => now()->toDateString(),
+            'created_by'  => $admin->id,
+        ]);
+
+        ExchangeRate::create([
+            'currency'    => ExchangeRate::CURRENCY_CNY,
+            'rate_to_idr' => 2250.0000,
             'valid_from'  => now()->toDateString(),
             'created_by'  => $admin->id,
         ]);

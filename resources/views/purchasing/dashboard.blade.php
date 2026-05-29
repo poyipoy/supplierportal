@@ -103,20 +103,24 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded text-center">
-                            <div class="text-muted small mb-1">USD → IDR</div>
-                            <h5 class="fw-bold mb-0">Rp {{ $kursUsd ? number_format($kursUsd->rate_to_idr, 0, ',', '.') : '-' }}</h5>
+                    @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                        @php
+                            $rate = $latestRates[$currency] ?? null;
+                        @endphp
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded text-center h-100">
+                                <div class="text-muted small mb-1">{{ $currency }} → IDR</div>
+                                <h5 class="fw-bold mb-0">Rp {{ $rate ? number_format($rate->rate_to_idr, 0, ',', '.') : '-' }}</h5>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 bg-light rounded text-center">
-                            <div class="text-muted small mb-1">JPY → IDR</div>
-                            <h5 class="fw-bold mb-0">Rp {{ $kursJpy ? number_format($kursJpy->rate_to_idr, 0, ',', '.') : '-' }}</h5>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
-                @if($kursUsd)<div class="text-muted text-center mt-2" style="font-size:.7rem">Terakhir update: {{ $kursUsd->valid_from->format('d M Y') }}</div>@endif
+                @php
+                    $lastRateUpdated = $latestRates->filter()->sortByDesc('valid_from')->first()?->valid_from;
+                @endphp
+                @if($lastRateUpdated)
+                    <div class="text-muted text-center mt-2" style="font-size:.7rem">Update kurs terbaru: {{ $lastRateUpdated->format('d M Y') }}</div>
+                @endif
             </div>
         </div>
     </div>
@@ -153,7 +157,14 @@
     <form action="{{ route('purchasing.kurs.update') }}" method="POST">@csrf
         <div class="modal-header"><h6 class="modal-title fw-bold">Update Kurs</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-            <div class="mb-3"><label class="form-label small fw-bold">Mata Uang</label><select name="currency" class="form-select form-select-sm" required><option value="USD">USD</option><option value="JPY">JPY</option></select></div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Mata Uang</label>
+                <select name="currency" class="form-select form-select-sm" required>
+                    @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
+                        <option value="{{ $code }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="mb-3"><label class="form-label small fw-bold">Rate ke IDR</label><input type="number" step="0.01" name="rate_to_idr" class="form-control form-control-sm" required placeholder="16500"></div>
         </div>
         <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Simpan</button></div>

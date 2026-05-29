@@ -546,6 +546,65 @@
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
 
+    <!-- Ngrok browser warning bypass for internal async requests -->
+    <script>
+        (() => {
+            const headerName = 'ngrok-skip-browser-warning';
+            const headerValue = 'true';
+
+            const isInternalUrl = (url) => {
+                try {
+                    return new URL(url, window.location.href).origin === window.location.origin;
+                } catch (error) {
+                    return false;
+                }
+            };
+
+            const mergeHeaders = (...headerSets) => {
+                const headers = new Headers();
+
+                headerSets
+                    .filter(Boolean)
+                    .forEach((headerSet) => {
+                        new Headers(headerSet).forEach((value, key) => {
+                            headers.set(key, value);
+                        });
+                    });
+
+                if (!headers.has(headerName)) {
+                    headers.set(headerName, headerValue);
+                }
+
+                return headers;
+            };
+
+            if (window.fetch) {
+                const originalFetch = window.fetch.bind(window);
+
+                window.fetch = (input, init = {}) => {
+                    const targetUrl = input instanceof Request ? input.url : input;
+
+                    if (!isInternalUrl(targetUrl)) {
+                        return originalFetch(input, init);
+                    }
+
+                    return originalFetch(input, {
+                        ...init,
+                        headers: mergeHeaders(input instanceof Request ? input.headers : null, init.headers),
+                    });
+                };
+            }
+
+            if (window.jQuery) {
+                $.ajaxPrefilter((options, originalOptions, jqXHR) => {
+                    if (isInternalUrl(options.url || window.location.href)) {
+                        jqXHR.setRequestHeader(headerName, headerValue);
+                    }
+                });
+            }
+        })();
+    </script>
+
     <!-- Custom JS -->
     <script>
         function toggleSidebar() {

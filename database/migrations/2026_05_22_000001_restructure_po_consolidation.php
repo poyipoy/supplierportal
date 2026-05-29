@@ -22,7 +22,7 @@ return new class extends Migration
         // 2. Add direct supplier_id, currency, exchange_rate_id to purchase_orders
         Schema::table('purchase_orders', function (Blueprint $table) {
             $table->foreignId('supplier_id')->nullable()->after('id')->constrained('users');
-            $table->enum('currency', ['USD', 'JPY'])->default('USD')->after('supplier_id');
+            $table->enum('currency', ['USD', 'JPY', 'IDR', 'CNY'])->default('USD')->after('supplier_id');
             $table->foreignId('exchange_rate_id')->nullable()->after('currency')->constrained('exchange_rates')->nullOnDelete();
         });
 

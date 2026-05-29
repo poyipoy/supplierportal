@@ -318,18 +318,13 @@
                             $grandTotalFx += $totalFx;
                             $grandTotalIdr += $totalIdr;
 
-                            $spec = [];
-                            if ($item->prItem->thickness) $spec[] = 'T:' . rtrim(rtrim(number_format($item->prItem->thickness, 4), '0'), '.') . 'mm';
-                            if ($item->prItem->width) $spec[] = 'W:' . rtrim(rtrim(number_format($item->prItem->width, 1), '0'), '.') . 'mm';
-                            if ($item->prItem->length) $spec[] = 'L:' . rtrim(rtrim(number_format($item->prItem->length, 1), '0'), '.') . 'mm';
-                            if ($item->prItem->d_outer) $spec[] = 'OD:' . rtrim(rtrim(number_format($item->prItem->d_outer, 1), '0'), '.') . 'mm';
-                            if ($item->prItem->d_inner) $spec[] = 'ID:' . rtrim(rtrim(number_format($item->prItem->d_inner, 1), '0'), '.') . 'mm';
+                            $spec = $item->prItem->dimension_label;
                         @endphp
                         <tr>
                             <td class="text-center">{{ $globalNo++ }}</td>
                             <td><strong>{{ $item->prItem->material_name }}</strong><br><small style="color:#64748b;">{{ $item->prItem->shape ?? '-' }}</small></td>
                             <td class="text-center">{{ $item->prItem->hs_code ?? '-' }}</td>
-                            <td class="text-center" style="font-size:9px;">{{ implode(' × ', $spec) ?: '-' }}</td>
+                            <td class="text-center" style="font-size:9px;">{{ $spec }}</td>
                             <td class="text-right">{{ number_format($item->prItem->weight_needed, 0, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($item->price_per_kg, 4) }}</td>
                             <td class="text-right">{{ number_format($totalFx, 2, ',', '.') }}</td>

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('phone', 30)->nullable();
             $table->string('npwp', 30)->nullable();
             $table->string('category')->nullable();
+            $table->enum('currency', ['USD', 'JPY', 'IDR', 'CNY'])->default('USD');
             $table->timestamps();
         });
     }

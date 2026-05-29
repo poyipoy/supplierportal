@@ -24,11 +24,36 @@ class PurchaseRequirement extends Model
 
     public static function generatePrNumber(): string
     {
-        $count = static::whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
-            ->count();
+        return \Illuminate\Support\Facades\DB::transaction(function () {
+            $year = (int) now()->year;
+            $month = (int) now()->month;
 
-        return 'REQ/' . now()->format('m/Y') . '/' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+            $seq = \Illuminate\Support\Facades\DB::table('document_sequences')
+                ->where('type', 'PR')
+                ->where('year', $year)
+                ->where('month', $month)
+                ->lockForUpdate()
+                ->first();
+
+            if ($seq) {
+                $next = $seq->last_number + 1;
+                \Illuminate\Support\Facades\DB::table('document_sequences')
+                    ->where('id', $seq->id)
+                    ->update(['last_number' => $next, 'updated_at' => now()]);
+            } else {
+                $next = 1;
+                \Illuminate\Support\Facades\DB::table('document_sequences')->insert([
+                    'type' => 'PR',
+                    'year' => $year,
+                    'month' => $month,
+                    'last_number' => $next,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            return 'REQ/' . now()->format('m/Y') . '/' . str_pad($next, 3, '0', STR_PAD_LEFT);
+        });
     }
 
     // ─── Relationships ───

@@ -16,7 +16,7 @@ class DashboardController extends Controller
         $totalOk = $allInspections->where('status', 'ok')->count();
         $totalNg = $allInspections->where('status', 'ng')->count();
         $waitingInspections = PurchaseOrder::where('status', 'waiting_qc')->count();
-        $recentInspections = QcInspection::with(['purchaseOrder.quotation.supplier', 'inspector'])
+        $recentInspections = QcInspection::with(['purchaseOrder.supplier', 'inspector'])
             ->orderBy('inspected_at', 'desc')->take(10)->get();
 
         $trendData = $allInspections

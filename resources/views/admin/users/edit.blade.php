@@ -94,6 +94,17 @@
                             <input type="text" name="category" class="form-control @error('category') is-invalid @enderror" value="{{ old('category', $user->supplier->category ?? '') }}" placeholder="Contoh: Baja, Plat Besi, dsb">
                             @error('category')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-medium text-muted">Mata Uang Penawaran <span class="text-danger">*</span></label>
+                            <select name="currency" class="form-select @error('currency') is-invalid @enderror">
+                                @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
+                                    <option value="{{ $code }}" {{ old('currency', $user->supplier->currency ?? \App\Models\ExchangeRate::CURRENCY_USD) === $code ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">Supplier akan otomatis memakai mata uang ini saat membuat penawaran.</div>
+                            @error('currency')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                     </div>
                 </div>
 
@@ -116,10 +127,10 @@
         function toggleSupplierFields() {
             if (roleSelect.value === 'supplier') {
                 supplierFields.style.display = 'block';
-                supplierFields.querySelectorAll('input, textarea').forEach(el => el.setAttribute('required', 'required'));
+                supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.setAttribute('required', 'required'));
             } else {
                 supplierFields.style.display = 'none';
-                supplierFields.querySelectorAll('input, textarea').forEach(el => el.removeAttribute('required'));
+                supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.removeAttribute('required'));
             }
         }
 

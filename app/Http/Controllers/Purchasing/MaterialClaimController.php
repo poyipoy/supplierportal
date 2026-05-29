@@ -137,7 +137,7 @@ class MaterialClaimController extends Controller
     public function show($id)
     {
         $claim = MaterialClaim::with([
-            'purchaseOrder.quotation.supplier',
+            'purchaseOrder.supplier',
             'inspection.items.prItem',
             'inspection.attachments',
             'submitter'

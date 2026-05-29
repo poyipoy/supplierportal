@@ -73,8 +73,17 @@
             </div>
             <div class="card-body">
                 <div class="row g-3 mb-3">
-                    <div class="col-6"><div class="p-3 bg-light rounded text-center"><div class="text-muted small mb-1">USD → IDR</div><h5 class="fw-bold mb-0">Rp {{ $kursUsd ? number_format($kursUsd->rate_to_idr, 0, ',', '.') : '-' }}</h5></div></div>
-                    <div class="col-6"><div class="p-3 bg-light rounded text-center"><div class="text-muted small mb-1">JPY → IDR</div><h5 class="fw-bold mb-0">Rp {{ $kursJpy ? number_format($kursJpy->rate_to_idr, 0, ',', '.') : '-' }}</h5></div></div>
+                    @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                        @php
+                            $rate = $latestRates[$currency] ?? null;
+                        @endphp
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded text-center h-100">
+                                <div class="text-muted small mb-1">{{ $currency }} → IDR</div>
+                                <h5 class="fw-bold mb-0">Rp {{ $rate ? number_format($rate->rate_to_idr, 0, ',', '.') : '-' }}</h5>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h6 class="fw-bold small mb-0">Riwayat Kurs Terbaru</h6>
@@ -107,7 +116,14 @@
     <form action="{{ route('admin.kurs.update') }}" method="POST">@csrf
         <div class="modal-header"><h6 class="modal-title fw-bold">Update Kurs</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-            <div class="mb-3"><label class="form-label small fw-bold">Mata Uang</label><select name="currency" class="form-select form-select-sm" required><option value="USD">USD</option><option value="JPY">JPY</option></select></div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Mata Uang</label>
+                <select name="currency" class="form-select form-select-sm" required>
+                    @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
+                        <option value="{{ $code }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="mb-3"><label class="form-label small fw-bold">Rate ke IDR</label><input type="number" step="0.01" name="rate_to_idr" class="form-control form-control-sm" required placeholder="16500"></div>
         </div>
         <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Simpan</button></div>

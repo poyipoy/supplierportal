@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pr_id')->constrained('purchase_requirements')->cascadeOnDelete();
             $table->foreignId('supplier_id')->constrained('users');
-            $table->enum('currency', ['USD', 'JPY'])->default('USD');
+            $table->enum('currency', ['USD', 'JPY', 'IDR', 'CNY'])->default('USD');
             $table->enum('status', ['draft', 'submitted', 'accepted', 'rejected'])->default('draft');
             $table->timestamp('submitted_at')->nullable();
             $table->timestamps();

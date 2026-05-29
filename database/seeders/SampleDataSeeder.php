@@ -19,17 +19,24 @@ class SampleDataSeeder extends Seeder
     public function run(): void
     {
         $purchasing = User::where('role', 'purchasing')->first();
-        $supplier1User = User::where('email', 'supplier1@test.com')->first();
-        $supplier2User = User::where('email', 'supplier2@test.com')->first();
+        $supplier1User = User::with('supplier')->where('email', 'supplier1@test.com')->first();
+        $supplier2User = User::with('supplier')->where('email', 'supplier2@test.com')->first();
         $rateUsd = ExchangeRate::where('currency', 'USD')->first();
-        $rateJpy = ExchangeRate::where('currency', 'JPY')->first();
 
         if (!$purchasing || !$supplier1User || !$supplier2User || !$rateUsd) {
             echo "Base users or exchange rates missing. Please run DatabaseSeeder first.\n";
             return;
         }
 
-        DB::transaction(function () use ($purchasing, $supplier1User, $supplier2User, $rateUsd, $rateJpy) {
+        DB::transaction(function () use ($purchasing, $supplier1User, $supplier2User, $rateUsd) {
+            $currency1 = $supplier1User->supplier->currency ?? ExchangeRate::CURRENCY_USD;
+            $currency2 = $supplier2User->supplier->currency ?? ExchangeRate::CURRENCY_USD;
+            $rate1 = ExchangeRate::latestRate($currency1) ?? $rateUsd;
+            $rate2 = ExchangeRate::latestRate($currency2) ?? $rateUsd;
+            $convertFromUsd = function (float $usdPrice, ExchangeRate $targetRate) use ($rateUsd): float {
+                return round(($usdPrice * (float) $rateUsd->rate_to_idr) / (float) $targetRate->rate_to_idr, 4);
+            };
+
             // 1. Create a Period
             $period = Period::create([
                 'name' => 'Kebutuhan Produksi Mei 2026',
@@ -74,59 +81,67 @@ class SampleDataSeeder extends Seeder
             $quotation1 = Quotation::create([
                 'pr_id' => $pr->id,
                 'supplier_id' => $supplier1User->id,
-                'currency' => 'USD',
-                'exchange_rate_id' => $rateUsd->id,
+                'currency' => $currency1,
+                'exchange_rate_id' => $rate1->id,
                 'status' => 'accepted',
                 'submitted_at' => now(),
             ]);
 
+            $item1Supplier1Price = $convertFromUsd(0.85, $rate1);
             QuotationItem::create([
                 'quotation_id' => $quotation1->id,
                 'pr_item_id' => $item1->id,
-                'price_per_kg' => 0.85,
-                'amount' => 0.85 * 5000,
+                'price_per_kg' => $item1Supplier1Price,
+                'amount' => $item1Supplier1Price * 5000,
             ]);
 
+            $item2Supplier1Price = $convertFromUsd(0.95, $rate1);
             QuotationItem::create([
                 'quotation_id' => $quotation1->id,
                 'pr_item_id' => $item2->id,
-                'price_per_kg' => 0.95,
-                'amount' => 0.95 * 3000,
+                'price_per_kg' => $item2Supplier1Price,
+                'amount' => $item2Supplier1Price * 3000,
             ]);
 
             // 5. Create Quotation from Supplier 2 (Rejected)
             $quotation2 = Quotation::create([
                 'pr_id' => $pr->id,
                 'supplier_id' => $supplier2User->id,
-                'currency' => 'JPY',
-                'exchange_rate_id' => $rateJpy->id,
+                'currency' => $currency2,
+                'exchange_rate_id' => $rate2->id,
                 'status' => 'rejected',
                 'submitted_at' => now()->subDay(),
             ]);
 
+            $item1Supplier2Price = $convertFromUsd(0.9, $rate2);
             QuotationItem::create([
                 'quotation_id' => $quotation2->id,
                 'pr_item_id' => $item1->id,
-                'price_per_kg' => 135,
-                'amount' => 135 * 5000,
+                'price_per_kg' => $item1Supplier2Price,
+                'amount' => $item1Supplier2Price * 5000,
             ]);
 
+            $item2Supplier2Price = $convertFromUsd(1.0, $rate2);
             QuotationItem::create([
                 'quotation_id' => $quotation2->id,
                 'pr_item_id' => $item2->id,
-                'price_per_kg' => 150,
-                'amount' => 150 * 3000,
+                'price_per_kg' => $item2Supplier2Price,
+                'amount' => $item2Supplier2Price * 3000,
             ]);
 
             // 6. Create Purchase Order for Quotation 1
             $po = PurchaseOrder::create([
-                'quotation_id' => $quotation1->id,
+                'supplier_id' => $quotation1->supplier_id,
+                'currency' => $quotation1->currency,
+                'exchange_rate_id' => $quotation1->exchange_rate_id,
                 'po_number' => PurchaseOrder::generatePoNumber(),
                 'status' => 'active',
                 'created_by' => $purchasing->id,
                 'estimated_arrival' => now()->addDays(14),
                 'notes' => 'Tolong pastikan packing rapi agar tidak berkarat saat pengiriman via laut.',
             ]);
+
+            $po->quotations()->syncWithoutDetaching([$quotation1->id]);
 
             // 7. Create PO Documents
             \App\Models\PoDocument::create(['po_id' => $po->id, 'doc_type' => 'invoice', 'status' => 'received']);
@@ -154,17 +169,18 @@ class SampleDataSeeder extends Seeder
             $quotation3 = Quotation::create([
                 'pr_id' => $pr2->id,
                 'supplier_id' => $supplier2User->id,
-                'currency' => 'USD',
-                'exchange_rate_id' => $rateUsd->id,
+                'currency' => $currency2,
+                'exchange_rate_id' => $rate2->id,
                 'status' => 'submitted',
                 'submitted_at' => now(),
             ]);
 
+            $item3Supplier2Price = $convertFromUsd(1.05, $rate2);
             QuotationItem::create([
                 'quotation_id' => $quotation3->id,
                 'pr_item_id' => $item3->id,
-                'price_per_kg' => 1.05,
-                'amount' => 1.05 * 10000,
+                'price_per_kg' => $item3Supplier2Price,
+                'amount' => $item3Supplier2Price * 10000,
             ]);
 
             echo "Sample data generated successfully!\n";

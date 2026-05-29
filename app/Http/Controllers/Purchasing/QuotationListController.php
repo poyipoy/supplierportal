@@ -14,6 +14,7 @@ use App\Support\PurchasingNavigation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class QuotationListController extends Controller
 {
@@ -25,6 +26,7 @@ class QuotationListController extends Controller
         $request->validate([
             'date_from' => 'nullable|date_format:Y-m',
             'date_to' => 'nullable|date_format:Y-m',
+            'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
         ]);
 
         if ($request->filled('date_from') && $request->filled('date_to') && $request->date_to < $request->date_from) {

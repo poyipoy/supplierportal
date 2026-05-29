@@ -179,8 +179,9 @@
                     <label class="form-label small fw-medium">Mata Uang</label>
                     <select name="currency" class="form-select form-select-sm">
                         <option value="">Semua</option>
-                        <option value="USD" {{ request('currency') == 'USD' ? 'selected' : '' }}>USD</option>
-                        <option value="JPY" {{ request('currency') == 'JPY' ? 'selected' : '' }}>JPY</option>
+                        @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                            <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ $currency }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="col-lg-2 col-md-6">

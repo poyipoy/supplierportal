@@ -30,12 +30,21 @@ class NotificationController extends Controller
         return response()->json(['count' => auth()->user()->unreadNotifications()->count()]);
     }
 
-    public function markRead($id)
+    public function markRead(Request $request, $id)
     {
         $notification = auth()->user()->notifications()->findOrFail($id);
         $notification->markAsRead();
 
-        return redirect()->to($this->targetUrlFor($notification));
+        $targetUrl = $this->targetUrlFor($notification);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'redirect' => $targetUrl,
+            ]);
+        }
+
+        return redirect()->to($targetUrl);
     }
 
     private function targetUrlFor(DatabaseNotification $notification): string
@@ -214,6 +223,7 @@ class NotificationController extends Controller
             $allNotifications = auth()->user()
                 ->notifications()
                 ->latest()
+                ->take(30)
                 ->get();
 
             $categoryCounts = collect(NotificationCategory::options())->mapWithKeys(function ($option, $key) use ($allNotifications) {

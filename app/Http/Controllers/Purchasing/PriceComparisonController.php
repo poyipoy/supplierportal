@@ -10,6 +10,8 @@ use App\Models\PrItem;
 use App\Models\User;
 use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class PriceComparisonController extends Controller
 {
@@ -158,20 +160,19 @@ class PriceComparisonController extends Controller
         $selectedSupplierId = $request->input('supplier_id', $request->input('supplier'));
         $selectedMaterialName = $request->input('material_name');
         $periodView = $request->input('period_view', 'monthly') === 'yearly' ? 'yearly' : 'monthly';
-        $range = $request->input('range', 'all');
+        $range = $this->normalizeHistoricalRange($periodView, $request->input('range'));
+        $monthlyRangeOptions = $this->historicalRangeOptions('monthly');
+        $yearlyRangeOptions = $this->historicalRangeOptions('yearly');
+        $rangeOptions = $this->historicalRangeOptions($periodView);
         $dateFrom = $this->dateFromRange($range);
         $selectedSupplier = $selectedSupplierId ? $suppliers->firstWhere('id', (int) $selectedSupplierId) : null;
 
-        $materialsQuery = PrItem::select('material_name')->distinct();
+        $materials = $this->historicalMaterialsForSupplier($selectedSupplierId);
 
-        if ($selectedSupplierId) {
-            $materialsQuery->whereHas('quotationItems.quotation', function ($q) use ($selectedSupplierId) {
-                $q->where('supplier_id', $selectedSupplierId)
-                    ->whereIn('status', ['submitted', 'accepted', 'rejected']);
-            });
+        if ($selectedSupplierId && $selectedMaterialName && ! $materials->contains($selectedMaterialName)) {
+            $selectedMaterialName = null;
         }
 
-        $materials = $materialsQuery->orderBy('material_name')->pluck('material_name');
         $chartData = null;
         $tableData = collect();
         $summary = [
@@ -196,6 +197,8 @@ class PriceComparisonController extends Controller
             'tableData' => $tableData->values(),
             'summary' => $summary,
             'periodView' => $periodView,
+            'range' => $range,
+            'rangeOptions' => $rangeOptions,
             'materialName' => $selectedMaterialName,
             'supplierName' => $selectedSupplier->name ?? '',
         ];
@@ -214,8 +217,20 @@ class PriceComparisonController extends Controller
             'selectedMaterialName',
             'periodView',
             'range',
+            'rangeOptions',
+            'monthlyRangeOptions',
+            'yearlyRangeOptions',
             'payload'
         ));
+    }
+
+    public function historicalMaterials(Request $request)
+    {
+        $supplierId = $request->input('supplier_id', $request->input('supplier'));
+
+        return response()->json([
+            'materials' => $this->historicalMaterialsForSupplier($supplierId)->values(),
+        ]);
     }
 
     /**
@@ -225,64 +240,361 @@ class PriceComparisonController extends Controller
     {
         $periods = \App\Models\Period::orderByDesc('year')->orderByDesc('month')->get();
         $selectedPeriodId = $request->input('period_id', $periods->first()?->id);
+        $competitiveThreshold = 2.0;
+        $summary = $this->emptyVsBestSummary();
 
-        $data = [];
+        return view('purchasing.comparison.vs-best', compact(
+            'periods',
+            'selectedPeriodId',
+            'summary',
+            'competitiveThreshold'
+        ));
+    }
 
-        if ($selectedPeriodId) {
-            $prs = PurchaseRequirement::where('period_id', $selectedPeriodId)
-                ->with(['items.quotationItems.quotation.supplier', 'items.quotationItems.quotation.exchange_rate'])
-                ->get();
+    public function vsBestPriceData(Request $request)
+    {
+        $selectedPeriodId = $request->input('period_id');
+        $competitiveThreshold = 2.0;
 
-            foreach ($prs as $pr) {
-                foreach ($pr->items as $item) {
-                    $currentQuotationItems = $item->quotationItems->filter(function ($quotationItem) {
-                        return in_array($quotationItem->quotation->status, ['submitted', 'accepted', 'rejected']);
-                    });
-
-                    foreach ($currentQuotationItems as $quotationItem) {
-                        $currentPrice = (float) $quotationItem->price_per_kg;
-                        $currentCurrency = $quotationItem->quotation->currency;
-                        $currentRate = $quotationItem->quotation->exchange_rate;
-                        $currentPriceIdr = $currentRate ? $currentPrice * (float) $currentRate->rate_to_idr : null;
-
-                        $bestItem = QuotationItem::whereHas('prItem', function ($q) use ($item) {
-                                $q->where('material_name', $item->material_name);
-                            })
-                            ->whereHas('quotation', function ($q) {
-                                $q->whereIn('status', ['submitted', 'accepted', 'rejected']);
-                            })
-                            ->orderBy('price_per_kg', 'asc')
-                            ->with(['quotation.supplier', 'quotation.exchange_rate'])
-                            ->first();
-
-                        $bestPrice = $bestItem ? (float) $bestItem->price_per_kg : null;
-                        $bestCurrency = $bestItem ? $bestItem->quotation->currency : null;
-                        $bestRate = $bestItem ? $bestItem->quotation->exchange_rate : null;
-                        $bestPriceIdr = ($bestPrice && $bestRate) ? $bestPrice * (float) $bestRate->rate_to_idr : null;
-                        $bestSupplier = $bestItem ? $bestItem->quotation->supplier->name : '-';
-
-                        $diffPercent = ($currentPriceIdr && $bestPriceIdr && $bestPriceIdr > 0)
-                            ? round((($currentPriceIdr - $bestPriceIdr) / $bestPriceIdr) * 100, 1)
-                            : null;
-
-                        $data[] = [
-                            'material_name' => $item->material_name,
-                            'supplier' => $quotationItem->quotation->supplier->name,
-                            'current_price' => $currentPrice,
-                            'current_currency' => $currentCurrency,
-                            'current_price_idr' => $currentPriceIdr,
-                            'best_price' => $bestPrice,
-                            'best_currency' => $bestCurrency,
-                            'best_price_idr' => $bestPriceIdr,
-                            'best_supplier' => $bestSupplier,
-                            'diff_percent' => $diffPercent,
-                        ];
-                    }
-                }
-            }
+        if (! $selectedPeriodId) {
+            return response()->json([
+                'draw' => (int) $request->input('draw', 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'summary' => $this->emptyVsBestSummary(),
+            ]);
         }
 
-        return view('purchasing.comparison.vs-best', compact('periods', 'selectedPeriodId', 'data'));
+        $keyword = trim((string) $request->input('search.value', ''));
+        $returnUrl = route('purchasing.comparison.vs-best', ['period_id' => $selectedPeriodId]);
+        $summaryQuery = $this->applyVsBestKeywordFilter(
+            $this->buildVsBestQuery($selectedPeriodId),
+            $keyword
+        );
+        $summary = $this->buildVsBestSummary($summaryQuery, $competitiveThreshold);
+
+        return DataTables::query($this->buildVsBestQuery($selectedPeriodId))
+            ->filter(function ($query) use ($keyword) {
+                $this->applyVsBestKeywordFilter($query, $keyword);
+            })
+            ->addColumn('material_display', function ($row) use ($returnUrl) {
+                $prUrl = $this->routeWithReturn('purchasing.requirements.show', $row->current_pr_id, $returnUrl);
+
+                return '<div class="fw-bold">' . e($row->material_name) . '</div>'
+                    . '<div class="text-muted small">Berat: ' . $this->formatNumber($row->weight_needed) . ' kg</div>'
+                    . '<a href="' . e($prUrl) . '" class="small text-primary text-decoration-none">'
+                    . e($row->current_pr_number ?: '-')
+                    . '<i class="bi bi-arrow-right-short ms-1"></i></a>';
+            })
+            ->addColumn('current_price_display', function ($row) {
+                return '<div class="fw-bold text-primary">' . $this->formatRupiah($row->current_price_idr) . '</div>'
+                    . '<div class="text-muted small">' . $this->formatNumber($row->current_price) . ' ' . e($row->current_currency) . '/kg</div>'
+                    . '<div class="text-muted small">' . e($row->current_supplier ?: '-') . '</div>'
+                    . '<div class="text-muted small">' . e($this->formatDate($row->current_submitted_at) ?? 'Draft') . '</div>';
+            })
+            ->addColumn('best_price_display', function ($row) use ($returnUrl) {
+                $html = '<div class="fw-bold text-success">' . $this->formatRupiah($row->best_price_idr) . '</div>'
+                    . '<div class="text-muted small">' . $this->formatNumber($row->best_price) . ' ' . e($row->best_currency) . '/kg</div>'
+                    . '<div class="text-muted small">' . e($row->best_supplier ?: '-') . '</div>';
+
+                if ($row->best_pr_id) {
+                    $bestPrUrl = $this->routeWithReturn('purchasing.requirements.show', $row->best_pr_id, $returnUrl);
+                    $html .= '<a href="' . e($bestPrUrl) . '" class="small text-primary text-decoration-none">'
+                        . e($row->best_pr_number ?: '-')
+                        . '<i class="bi bi-arrow-right-short ms-1"></i></a>';
+                } else {
+                    $html .= '<div class="text-muted small">PR: -</div>';
+                }
+
+                return $html . '<div class="text-muted small">' . e($this->formatDate($row->best_submitted_at) ?? '-') . '</div>';
+            })
+            ->addColumn('diff_display', function ($row) {
+                $diff = $row->diff_idr_per_kg !== null ? (float) $row->diff_idr_per_kg : null;
+                $class = $diff > 0 ? 'text-danger' : ($diff < 0 ? 'text-success' : 'text-muted');
+
+                return '<div class="fw-bold ' . $class . '">' . $this->formatSignedRupiah($diff) . '</div>'
+                    . '<div class="small ' . $class . '">' . $this->formatPercent($row->diff_percent) . '</div>';
+            })
+            ->addColumn('potential_difference_display', fn($row) => '<span class="fw-bold">' . $this->formatRupiah($row->potential_difference_idr) . '</span>')
+            ->addColumn('status_badge', function ($row) use ($competitiveThreshold) {
+                $status = $this->priceCompetitivenessStatus(
+                    $row->diff_percent !== null ? (float) $row->diff_percent : null,
+                    $competitiveThreshold
+                );
+
+                return '<span class="badge ' . $status['class'] . '">'
+                    . '<i class="bi ' . $status['icon'] . ' me-1"></i>' . e($status['label'])
+                    . '</span><div class="text-muted small mt-1">' . e($status['recommendation']) . '</div>';
+            })
+            ->addColumn('action', function ($row) use ($returnUrl) {
+                $currentQuotationUrl = $this->routeWithReturn('purchasing.quotations.show', $row->current_quotation_id, $returnUrl);
+                $html = '<div class="btn-group btn-group-sm" role="group">'
+                    . '<a href="' . e($currentQuotationUrl) . '" class="btn btn-outline-primary" title="Lihat penawaran saat ini">'
+                    . '<i class="bi bi-file-earmark-text"></i></a>';
+
+                if ($row->best_quotation_id) {
+                    $bestQuotationUrl = $this->routeWithReturn('purchasing.quotations.show', $row->best_quotation_id, $returnUrl);
+                    $html .= '<a href="' . e($bestQuotationUrl) . '" class="btn btn-outline-success" title="Lihat penawaran terbaik histori">'
+                        . '<i class="bi bi-trophy"></i></a>';
+                }
+
+                return $html . '</div>';
+            })
+            ->rawColumns([
+                'material_display',
+                'current_price_display',
+                'best_price_display',
+                'diff_display',
+                'potential_difference_display',
+                'status_badge',
+                'action',
+            ])
+            ->with('summary', $summary)
+            ->make(true);
+    }
+
+    private function buildVsBestQuery($periodId)
+    {
+        $statuses = ['submitted', 'accepted', 'rejected'];
+        $historyPriceIdr = '(history_items.price_per_kg * history_rate.rate_to_idr)';
+        $currentPriceIdr = '(current_items.price_per_kg * current_rate.rate_to_idr)';
+        $bestPriceIdr = '(best_items.price_per_kg * best_rate.rate_to_idr)';
+        $diffIdrPerKg = "($currentPriceIdr - $bestPriceIdr)";
+        $diffPercent = "CASE WHEN $bestPriceIdr > 0 AND $currentPriceIdr IS NOT NULL THEN (($diffIdrPerKg / $bestPriceIdr) * 100) ELSE NULL END";
+        $potentialDifference = "CASE WHEN $currentPriceIdr IS NOT NULL AND $bestPriceIdr IS NOT NULL THEN GREATEST(0, $diffIdrPerKg) * current_pr_items.weight_needed ELSE NULL END";
+
+        $bestPriceByMaterial = DB::table('quotation_items as history_items')
+            ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
+            ->join('exchange_rates as history_rate', 'history_quotes.exchange_rate_id', '=', 'history_rate.id')
+            ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
+            ->whereIn('history_quotes.status', $statuses)
+            ->whereNull('history_quotes.deleted_at')
+            ->selectRaw('history_pr_items.material_name, MIN(' . $historyPriceIdr . ') as best_price_idr')
+            ->groupBy('history_pr_items.material_name');
+
+        $bestItemByMaterial = DB::table('quotation_items as history_items')
+            ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
+            ->join('exchange_rates as history_rate', 'history_quotes.exchange_rate_id', '=', 'history_rate.id')
+            ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
+            ->joinSub($bestPriceByMaterial, 'best_price', function ($join) use ($historyPriceIdr) {
+                $join->on('best_price.material_name', '=', 'history_pr_items.material_name')
+                    ->whereRaw('ABS((' . $historyPriceIdr . ') - best_price.best_price_idr) < 0.0001');
+            })
+            ->whereIn('history_quotes.status', $statuses)
+            ->whereNull('history_quotes.deleted_at')
+            ->selectRaw('best_price.material_name, MIN(history_items.id) as best_item_id')
+            ->groupBy('best_price.material_name');
+
+        return DB::table('quotation_items as current_items')
+            ->join('quotations as current_quotes', 'current_items.quotation_id', '=', 'current_quotes.id')
+            ->join('pr_items as current_pr_items', 'current_items.pr_item_id', '=', 'current_pr_items.id')
+            ->join('purchase_requirements as current_pr', 'current_pr_items.pr_id', '=', 'current_pr.id')
+            ->leftJoin('users as current_supplier', 'current_quotes.supplier_id', '=', 'current_supplier.id')
+            ->leftJoin('exchange_rates as current_rate', 'current_quotes.exchange_rate_id', '=', 'current_rate.id')
+            ->leftJoinSub($bestItemByMaterial, 'best_choice', function ($join) {
+                $join->on('best_choice.material_name', '=', 'current_pr_items.material_name');
+            })
+            ->leftJoin('quotation_items as best_items', 'best_choice.best_item_id', '=', 'best_items.id')
+            ->leftJoin('quotations as best_quotes', 'best_items.quotation_id', '=', 'best_quotes.id')
+            ->leftJoin('users as best_supplier', 'best_quotes.supplier_id', '=', 'best_supplier.id')
+            ->leftJoin('exchange_rates as best_rate', 'best_quotes.exchange_rate_id', '=', 'best_rate.id')
+            ->leftJoin('pr_items as best_pr_items', 'best_items.pr_item_id', '=', 'best_pr_items.id')
+            ->leftJoin('purchase_requirements as best_pr', 'best_pr_items.pr_id', '=', 'best_pr.id')
+            ->where('current_pr.period_id', $periodId)
+            ->whereIn('current_quotes.status', $statuses)
+            ->whereNull('current_quotes.deleted_at')
+            ->select([
+                'current_items.id as current_item_id',
+                'current_items.quotation_id as current_quotation_id',
+                'current_items.price_per_kg as current_price',
+                'current_items.amount as current_amount',
+                'current_quotes.currency as current_currency',
+                'current_quotes.submitted_at as current_submitted_at',
+                'current_pr_items.material_name',
+                'current_pr_items.weight_needed',
+                'current_pr.id as current_pr_id',
+                'current_pr.pr_number as current_pr_number',
+                'current_supplier.name as current_supplier',
+                'best_items.id as best_item_id',
+                'best_items.quotation_id as best_quotation_id',
+                'best_items.price_per_kg as best_price',
+                'best_quotes.currency as best_currency',
+                'best_quotes.submitted_at as best_submitted_at',
+                'best_supplier.name as best_supplier',
+                'best_pr.id as best_pr_id',
+                'best_pr.pr_number as best_pr_number',
+            ])
+            ->selectRaw($currentPriceIdr . ' as current_price_idr')
+            ->selectRaw('(current_items.amount * current_rate.rate_to_idr) as current_total_idr')
+            ->selectRaw($bestPriceIdr . ' as best_price_idr')
+            ->selectRaw($diffIdrPerKg . ' as diff_idr_per_kg')
+            ->selectRaw($diffPercent . ' as diff_percent')
+            ->selectRaw($potentialDifference . ' as potential_difference_idr')
+            ->orderByRaw('potential_difference_idr DESC')
+            ->orderBy('current_pr_items.material_name');
+    }
+
+    private function applyVsBestKeywordFilter($query, string $keyword)
+    {
+        if ($keyword === '') {
+            return $query;
+        }
+
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $keyword) . '%';
+
+        return $query->where(function ($q) use ($like) {
+            $q->where('current_pr_items.material_name', 'like', $like)
+                ->orWhere('current_pr.pr_number', 'like', $like)
+                ->orWhere('current_supplier.name', 'like', $like)
+                ->orWhere('best_supplier.name', 'like', $like)
+                ->orWhere('best_pr.pr_number', 'like', $like);
+        });
+    }
+
+    private function buildVsBestSummary($query, float $competitiveThreshold): array
+    {
+        $row = DB::query()
+            ->fromSub($query, 'vs_best_rows')
+            ->selectRaw('COUNT(*) as total_rows')
+            ->selectRaw('SUM(CASE WHEN diff_percent IS NOT NULL AND diff_percent <= ? THEN 1 ELSE 0 END) as competitive_count', [$competitiveThreshold])
+            ->selectRaw('SUM(CASE WHEN diff_percent IS NOT NULL AND diff_percent > ? THEN 1 ELSE 0 END) as above_count', [$competitiveThreshold])
+            ->selectRaw('SUM(COALESCE(potential_difference_idr, 0)) as total_potential_difference_idr')
+            ->selectRaw('AVG(diff_idr_per_kg) as average_diff_idr_per_kg')
+            ->first();
+
+        if (! $row) {
+            return $this->emptyVsBestSummary();
+        }
+
+        return [
+            'total_rows' => (int) $row->total_rows,
+            'competitive_count' => (int) $row->competitive_count,
+            'above_count' => (int) $row->above_count,
+            'total_potential_difference_idr' => round((float) $row->total_potential_difference_idr, 0),
+            'average_diff_idr_per_kg' => $row->average_diff_idr_per_kg !== null
+                ? round((float) $row->average_diff_idr_per_kg, 0)
+                : null,
+        ];
+    }
+
+    private function emptyVsBestSummary(): array
+    {
+        return [
+            'total_rows' => 0,
+            'competitive_count' => 0,
+            'above_count' => 0,
+            'total_potential_difference_idr' => 0,
+            'average_diff_idr_per_kg' => null,
+        ];
+    }
+
+    private function priceCompetitivenessStatus(?float $diffPercent, float $competitiveThreshold): array
+    {
+        if ($diffPercent === null) {
+            return [
+                'label' => 'N/A',
+                'class' => 'bg-secondary',
+                'icon' => 'bi-dash-circle',
+                'recommendation' => 'Aman',
+            ];
+        }
+
+        if ($diffPercent <= 0) {
+            return [
+                'label' => 'Harga Terbaik',
+                'class' => 'bg-success',
+                'icon' => 'bi-check-circle',
+                'recommendation' => 'Aman',
+            ];
+        }
+
+        if ($diffPercent <= $competitiveThreshold) {
+            return [
+                'label' => 'Kompetitif',
+                'class' => 'bg-primary',
+                'icon' => 'bi-shield-check',
+                'recommendation' => 'Aman',
+            ];
+        }
+
+        return [
+            'label' => 'Di Atas Histori',
+            'class' => 'bg-warning text-dark',
+            'icon' => 'bi-info-circle',
+            'recommendation' => 'Aman, cek konteks',
+        ];
+    }
+
+    private function routeWithReturn(string $routeName, mixed $parameters, string $returnUrl): string
+    {
+        $parameters = is_array($parameters) ? $parameters : [$parameters];
+        $parameters[PurchasingNavigation::RETURN_URL_KEY] = $returnUrl;
+
+        return route($routeName, $parameters);
+    }
+
+    private function historicalMaterialsForSupplier($supplierId)
+    {
+        if (! $supplierId) {
+            return collect();
+        }
+
+        return PrItem::query()
+            ->select('material_name')
+            ->distinct()
+            ->whereNotNull('material_name')
+            ->where('material_name', '<>', '')
+            ->whereHas('quotationItems.quotation', function ($q) use ($supplierId) {
+                $q->where('supplier_id', $supplierId)
+                    ->whereIn('status', ['submitted', 'accepted', 'rejected']);
+            })
+            ->orderBy('material_name')
+            ->pluck('material_name');
+    }
+
+    private function formatRupiah($value): string
+    {
+        return $value !== null
+            ? 'Rp ' . number_format((float) $value, 0, ',', '.')
+            : '-';
+    }
+
+    private function formatSignedRupiah($value): string
+    {
+        if ($value === null) {
+            return '-';
+        }
+
+        $value = (float) $value;
+        $prefix = $value > 0 ? '+' : ($value < 0 ? '-' : '');
+
+        return $prefix . 'Rp ' . number_format(abs($value), 0, ',', '.');
+    }
+
+    private function formatNumber($value, int $decimals = 2): string
+    {
+        return $value !== null
+            ? number_format((float) $value, $decimals, ',', '.')
+            : '-';
+    }
+
+    private function formatPercent($value): string
+    {
+        if ($value === null) {
+            return '-';
+        }
+
+        $value = (float) $value;
+
+        return ($value > 0 ? '+' : '') . number_format($value, 2, ',', '.') . '%';
+    }
+
+    private function formatDate($value): ?string
+    {
+        return $value
+            ? \Illuminate\Support\Carbon::parse($value)->format('d M Y')
+            : null;
     }
 
     private function buildMonthlyHistoricalData($supplierId, string $materialName, $dateFrom): array
@@ -309,6 +621,8 @@ class PriceComparisonController extends Controller
         }
 
         $items = $items
+            ->orderByRaw('YEAR(quotations.submitted_at) ASC')
+            ->orderByRaw('MONTH(quotations.submitted_at) ASC')
             ->orderBy('quotations.submitted_at', 'asc')
             ->orderBy('quotation_items.id', 'asc')
             ->get();
@@ -320,9 +634,22 @@ class PriceComparisonController extends Controller
             $totalIdr = $rate ? round((float) $item->amount * (float) $rate->rate_to_idr, 0) : null;
             $purchaseRequirement = $item->prItem?->purchaseRequirement;
             $submittedAt = $item->quotation->submitted_at;
+            $periodYear = (int) ($period->year ?? 0);
+            $periodMonth = (int) ($period->month ?? 0);
+            $periodSort = $submittedAt
+                ? $submittedAt->format('Y-m-d H:i:s') . '-' . str_pad((string) $item->id, 10, '0', STR_PAD_LEFT)
+                : (
+                    $periodYear > 0 && $periodMonth > 0
+                        ? sprintf('%04d-%02d-00 00:00:00-%010d', $periodYear, $periodMonth, (int) $item->id)
+                        : sprintf('9999-99-99 99:99:99-%010d', (int) $item->id)
+                );
+            $periodLabel = $submittedAt
+                ? $submittedAt->format('M Y')
+                : ($period->name ?? 'Unknown');
 
             return [
-                'period' => $period->name ?? 'Unknown',
+                'period' => $periodLabel,
+                'period_sort' => $periodSort,
                 'pr_id' => $purchaseRequirement?->id,
                 'pr_number' => $purchaseRequirement?->pr_number ?? '-',
                 'pr_url' => $purchaseRequirement
@@ -338,7 +665,7 @@ class PriceComparisonController extends Controller
                 'submitted_at' => $submittedAt?->toIso8601String(),
                 'submitted_at_display' => $submittedAt?->format('d M Y'),
             ];
-        });
+        })->sortBy('period_sort', SORT_NATURAL)->values();
 
         $tableData = $this->appendChangePercent($tableData);
 
@@ -361,23 +688,25 @@ class PriceComparisonController extends Controller
             ->where('pr_items.material_name', $materialName);
 
         if ($dateFrom) {
-            $query->where('quotations.created_at', '>=', $dateFrom);
+            $query->where('quotations.submitted_at', '>=', $dateFrom);
         }
 
         $rows = $query
             ->selectRaw('
-                YEAR(quotations.created_at) as period_year,
+                YEAR(quotations.submitted_at) as period_year,
                 AVG(quotation_items.price_per_kg * exchange_rates.rate_to_idr) as avg_idr,
                 MIN(quotation_items.price_per_kg * exchange_rates.rate_to_idr) as min_idr,
                 MAX(quotation_items.price_per_kg * exchange_rates.rate_to_idr) as max_idr
             ')
-            ->groupByRaw('YEAR(quotations.created_at)')
-            ->orderByRaw('YEAR(quotations.created_at) ASC')
+            ->whereNotNull('quotations.submitted_at')
+            ->groupByRaw('YEAR(quotations.submitted_at)')
+            ->orderByRaw('YEAR(quotations.submitted_at) ASC')
             ->get();
 
         $tableData = $rows->map(function ($row) {
             return [
                 'period' => (string) $row->period_year,
+                'period_sort' => (int) $row->period_year,
                 'price_per_kg' => null,
                 'currency' => 'IDR',
                 'price_idr' => round((float) $row->avg_idr, 0),
@@ -385,7 +714,7 @@ class PriceComparisonController extends Controller
                 'max_idr' => round((float) $row->max_idr, 0),
                 'submitted_at' => null,
             ];
-        });
+        })->sortBy('period_sort')->values();
 
         $tableData = $this->appendChangePercent($tableData);
 
@@ -435,12 +764,57 @@ class PriceComparisonController extends Controller
         ];
     }
 
+    private function historicalRangeOptions(string $periodView): array
+    {
+        if ($periodView === 'yearly') {
+            return [
+                '1y' => '1 Tahun',
+                '2y' => '2 Tahun',
+                '5y' => '5 Tahun',
+                'all' => 'Semua Tahun',
+            ];
+        }
+
+        return [
+            '3m' => '3 Bulan',
+            '6m' => '6 Bulan',
+            '12m' => '12 Bulan',
+            '24m' => '24 Bulan',
+            'all' => 'Semua Bulan',
+        ];
+    }
+
+    private function normalizeHistoricalRange(string $periodView, ?string $range): string
+    {
+        $range = $range ?: 'all';
+
+        if ($periodView === 'monthly') {
+            $range = match ($range) {
+                '1y' => '12m',
+                '2y' => '24m',
+                default => $range,
+            };
+        } else {
+            $range = match ($range) {
+                '3m', '6m', '12m' => '1y',
+                '24m' => '2y',
+                default => $range,
+            };
+        }
+
+        return array_key_exists($range, $this->historicalRangeOptions($periodView))
+            ? $range
+            : 'all';
+    }
+
     private function dateFromRange(string $range)
     {
         return match ($range) {
+            '3m' => now()->subMonths(3),
             '6m' => now()->subMonths(6),
-            '1y' => now()->subYear(),
-            '2y' => now()->subYears(2),
+            '12m', '1y' => now()->subYear(),
+            '24m', '2y' => now()->subYears(2),
+            '5y' => now()->subYears(5),
             default => null,
         };
     }

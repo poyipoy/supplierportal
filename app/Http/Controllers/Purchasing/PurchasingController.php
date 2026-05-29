@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequirement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PurchasingController extends Controller
 {
@@ -42,19 +43,19 @@ class PurchasingController extends Controller
             ->orderBy('estimated_arrival', 'asc')->take(5)->get();
 
         // Kurs
-        $kursUsd = ExchangeRate::where('currency', 'USD')->orderBy('valid_from', 'desc')->first();
-        $kursJpy = ExchangeRate::where('currency', 'JPY')->orderBy('valid_from', 'desc')->first();
+        $latestRates = collect(ExchangeRate::CURRENCIES)
+            ->mapWithKeys(fn($currency) => [$currency => ExchangeRate::latestRate($currency)]);
 
         return view('purchasing.dashboard', compact(
             'prAktif', 'menungguPenawaran', 'poBerjalan', 'materialMingguIni',
-            'prPerBulan', 'poStatusDist', 'prTerbaru', 'poTerdekat', 'kursUsd', 'kursJpy'
+            'prPerBulan', 'poStatusDist', 'prTerbaru', 'poTerdekat', 'latestRates'
         ));
     }
 
     public function updateKurs(Request $request)
     {
         $request->validate([
-            'currency' => 'required|in:USD,JPY',
+            'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
             'rate_to_idr' => 'required|numeric|min:0.01',
         ]);
         ExchangeRate::create([

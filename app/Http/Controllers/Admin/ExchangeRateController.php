@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ExchangeRate;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ExchangeRateController extends Controller
 {
@@ -14,7 +15,7 @@ class ExchangeRateController extends Controller
     public function index(Request $request)
     {
         $request->validate([
-            'currency' => 'nullable|in:USD,JPY',
+            'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
         ]);
 
         $query = ExchangeRate::with('creator')->orderBy('valid_from', 'desc');
@@ -39,7 +40,7 @@ class ExchangeRateController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'currency' => 'required|in:USD,JPY',
+            'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
             'rate_to_idr' => 'required|numeric|min:1',
             'valid_from' => 'required|date',
         ]);

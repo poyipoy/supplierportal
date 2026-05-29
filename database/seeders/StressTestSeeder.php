@@ -32,14 +32,30 @@ class StressTestSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $rateId = DB::table('exchange_rates')->insertGetId([
-            'currency' => 'USD',
-            'rate_to_idr' => 16000,
-            'valid_from' => now(),
-            'created_by' => $admin->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $supplierCurrency = DB::table('suppliers')->where('user_id', $supplier->id)->value('currency') ?: 'USD';
+        $rateId = DB::table('exchange_rates')
+            ->where('currency', $supplierCurrency)
+            ->orderByDesc('valid_from')
+            ->value('id');
+
+        if (!$rateId) {
+            $rateId = DB::table('exchange_rates')->insertGetId([
+                'currency' => $supplierCurrency,
+                'rate_to_idr' => match ($supplierCurrency) {
+                    'IDR' => 1,
+                    'JPY' => 110,
+                    'CNY' => 2250,
+                    default => 16000,
+                },
+                'valid_from' => now(),
+                'created_by' => $admin->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $rateToIdr = (float) DB::table('exchange_rates')->where('id', $rateId)->value('rate_to_idr');
+        $currencyPriceMultiplier = $rateToIdr > 0 ? 16000 / $rateToIdr : 1;
 
         $totalPrs = 2000; // 2000 PR = 4000 PR Items = 2000 Quotations = 4000 Quotation Items = 2000 POs
         $chunkSize = 500;
@@ -99,6 +115,7 @@ class StressTestSeeder extends Seeder
         $quotationChunks = [];
         $quotationItemChunks = [];
         $poChunks = [];
+        $poQuotationChunks = [];
         
         $quotationIdStart = DB::table('quotations')->max('id') ?? 0;
         $quotationItemIdStart = DB::table('quotation_items')->max('id') ?? 0;
@@ -115,7 +132,7 @@ class StressTestSeeder extends Seeder
                 'id' => $currentQuotationId,
                 'pr_id' => $prId,
                 'supplier_id' => $supplier->id,
-                'currency' => 'USD',
+                'currency' => $supplierCurrency,
                 'exchange_rate_id' => $rateId,
                 'status' => 'accepted',
                 'submitted_at' => $now,
@@ -128,7 +145,7 @@ class StressTestSeeder extends Seeder
             ];
 
             foreach ($items as $item) {
-                $price = rand(10, 50) / 10;
+                $price = round((rand(10, 50) / 10) * $currencyPriceMultiplier, 4);
                 $quotationItemChunks[] = [
                     'id' => ++$quotationItemIdStart,
                     'quotation_id' => $currentQuotationId,
@@ -141,9 +158,13 @@ class StressTestSeeder extends Seeder
                 ];
             }
 
+            $currentPoId = ++$poIdStart;
+
             $poChunks[] = [
-                'id' => ++$poIdStart,
-                'quotation_id' => $currentQuotationId,
+                'id' => $currentPoId,
+                'supplier_id' => $supplier->id,
+                'currency' => $supplierCurrency,
+                'exchange_rate_id' => $rateId,
                 'po_number' => 'PO/STRESS/' . str_pad($qCount, 5, '0', STR_PAD_LEFT),
                 'status' => 'completed',
                 'estimated_arrival' => $now->copy()->addDays(30),
@@ -153,14 +174,30 @@ class StressTestSeeder extends Seeder
                 'updated_at' => $now,
             ];
 
+            $poQuotationChunks[] = [
+                'po_id' => $currentPoId,
+                'quotation_id' => $currentQuotationId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
             if ($qCount % $chunkSize === 0) {
                 DB::table('quotations')->insert($quotationChunks);
                 DB::table('quotation_items')->insert($quotationItemChunks);
                 DB::table('purchase_orders')->insert($poChunks);
+                DB::table('po_quotations')->insert($poQuotationChunks);
                 $quotationChunks = [];
                 $quotationItemChunks = [];
                 $poChunks = [];
+                $poQuotationChunks = [];
             }
+        }
+
+        if (!empty($quotationChunks)) {
+            DB::table('quotations')->insert($quotationChunks);
+            DB::table('quotation_items')->insert($quotationItemChunks);
+            DB::table('purchase_orders')->insert($poChunks);
+            DB::table('po_quotations')->insert($poQuotationChunks);
         }
 
         $this->command->info('Data stress test berhasil di-generate! (Ribuan baris data ditambahkan)');

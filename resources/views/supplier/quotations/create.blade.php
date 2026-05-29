@@ -42,14 +42,17 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-bold">Pengisian Harga Material</h6>
-            <div class="d-flex align-items-center">
-                <label for="currency" class="form-label mb-0 me-2 small fw-medium">Mata Uang:</label>
-                <select name="currency" id="currency" class="form-select form-select-sm" style="width: 100px;">
-                    <option value="USD" {{ old('currency', $quotation->currency ?? 'USD') == 'USD' ? 'selected' : '' }}>USD</option>
-                    <option value="JPY" {{ old('currency', $quotation->currency ?? 'JPY') == 'JPY' ? 'selected' : '' }}>JPY</option>
-                </select>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small fw-medium text-muted">Mata Uang:</span>
+                <span class="badge bg-dark px-3 py-2" id="currencyBadge">{{ $supplierCurrency }}</span>
             </div>
         </div>
+        @if(! $supplierRate)
+            <div class="alert alert-warning rounded-0 border-0 border-top border-bottom mb-0 small">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Kurs {{ $supplierCurrency }} belum tersedia. Hubungi Admin sebelum mengirim penawaran final.
+            </div>
+        @endif
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
@@ -58,8 +61,8 @@
                             <th width="5%">No</th>
                             <th width="20%">Material & Spesifikasi</th>
                             <th width="10%">Weight (Kg)</th>
-                            <th width="15%">Harga per-KG (<span class="currency-label">USD</span>) <span class="text-danger">*</span></th>
-                            <th width="15%">Amount (<span class="currency-label">USD</span>)</th>
+                            <th width="15%">Harga per-KG (<span class="currency-label">{{ $supplierCurrency }}</span>) <span class="text-danger">*</span></th>
+                            <th width="15%">Amount (<span class="currency-label">{{ $supplierCurrency }}</span>)</th>
                             <th width="15%">Est. IDR</th>
                             <th width="20%">Catatan Item</th>
                         </tr>
@@ -80,12 +83,11 @@
                                     <div class="fw-bold">{{ $item->material_name }}</div>
                                     <div class="text-muted" style="font-size: 0.75rem;">
                                         @if($item->hs_code) HS: {{ $item->hs_code }} | @endif
-                                        {{ $item->shape }}
-                                        @if($item->thickness) T:{{ $item->thickness }} @endif
-                                        @if($item->d_inner) ID:{{ $item->d_inner }} @endif
-                                        @if($item->d_outer) OD:{{ $item->d_outer }} @endif
-                                        @if($item->width) W:{{ $item->width }} @endif
-                                        @if($item->length) L:{{ $item->length }} @endif
+                                        @if($item->shape)
+                                            {{ $item->shape }}: {{ $item->dimension_label }}
+                                        @else
+                                            -
+                                        @endif
                                     </div>
                                     <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
                                     <input type="hidden" class="item-weight" value="{{ $item->weight_needed }}">
@@ -167,25 +169,24 @@
 </form>
 
 {{-- Info Kurs untuk JS --}}
-<div id="exchangeRates" data-usd="{{ $usdRate->rate_to_idr ?? 1 }}" data-jpy="{{ $jpyRate->rate_to_idr ?? 1 }}" class="d-none"></div>
+<div id="exchangeRates"
+     data-currency="{{ $supplierCurrency }}"
+     data-rate="{{ $supplierRate->rate_to_idr ?? 1 }}"
+     class="d-none"></div>
 
 @endsection
 
 @push('scripts')
 <script>
-    const rates = {
-        'USD': parseFloat($('#exchangeRates').data('usd')),
-        'JPY': parseFloat($('#exchangeRates').data('jpy'))
-    };
+    const fixedCurrency = $('#exchangeRates').data('currency');
+    const fixedRate = parseFloat($('#exchangeRates').data('rate')) || 1;
 
     function calculateRow(row) {
         const weight = parseFloat(row.find('.item-weight').val()) || 0;
         const price = parseFloat(row.find('.price-input').val()) || 0;
-        const currency = $('#currency').val();
-        const rate = rates[currency];
 
         const amount = weight * price;
-        const idr = amount * rate;
+        const idr = amount * fixedRate;
 
         row.find('.amount-display').val(amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
         row.find('.idr-display').val(Math.round(idr).toLocaleString('id-ID'));
@@ -207,16 +208,12 @@
         $('#totalIdr').text('Rp ' + Math.round(totalIdr).toLocaleString('id-ID'));
     }
 
-    $('#currency').change(function() {
-        $('.currency-label').text($(this).val());
-        calculateTotal();
-    });
-
     $('.price-input').on('input', function() {
         calculateTotal();
     });
 
     $(document).ready(function() {
+        $('.currency-label').text(fixedCurrency);
         calculateTotal(); // initial calculation if pre-filled
     });
 

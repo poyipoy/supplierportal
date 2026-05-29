@@ -44,7 +44,7 @@ class QcInspectionController extends Controller
 
     public function dataHistory(Request $request)
     {
-        $query = QcInspection::with(['purchaseOrder.quotation.supplier', 'inspector'])
+        $query = QcInspection::with(['purchaseOrder.supplier', 'inspector'])
             ->orderBy('inspected_at', 'desc');
 
         return DataTables::eloquent($query)
@@ -164,13 +164,22 @@ class QcInspectionController extends Controller
                             continue;
                         }
 
-                        $path = $file->store('attachments/' . now()->format('Y/m'), 'private');
-                        $inspection->attachments()->create([
-                            'file_path' => $path,
-                            'file_name' => $file->getClientOriginalName(),
-                            'file_type' => $file->getMimeType(),
-                            'uploaded_by' => auth()->id(),
-                        ]);
+                        // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
+                        $fileName = $file->hashName();
+                        $path = 'attachments/' . now()->format('Y/m') . '/' . $fileName;
+
+                        $stream = fopen($file->getPathname(), 'r');
+                        if ($stream) {
+                            \Illuminate\Support\Facades\Storage::disk('private')->put($path, $stream);
+                            fclose($stream);
+
+                            $inspection->attachments()->create([
+                                'file_path' => $path,
+                                'file_name' => $file->getClientOriginalName(),
+                                'file_type' => $file->getMimeType(),
+                                'uploaded_by' => auth()->id(),
+                            ]);
+                        }
                     }
                 }
             }
@@ -257,13 +266,22 @@ class QcInspectionController extends Controller
                 continue;
             }
 
-            $path = $file->store('attachments/' . now()->format('Y/m'), 'private');
-            $inspection->attachments()->create([
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName(),
-                'file_type' => $file->getMimeType(),
-                'uploaded_by' => auth()->id(),
-            ]);
+            // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
+            $fileName = $file->hashName();
+            $path = 'attachments/' . now()->format('Y/m') . '/' . $fileName;
+
+            $stream = fopen($file->getPathname(), 'r');
+            if ($stream) {
+                \Illuminate\Support\Facades\Storage::disk('private')->put($path, $stream);
+                fclose($stream);
+
+                $inspection->attachments()->create([
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_type' => $file->getMimeType(),
+                    'uploaded_by' => auth()->id(),
+                ]);
+            }
         }
 
         return back()->with('success', 'Foto bukti QC berhasil ditambahkan.');

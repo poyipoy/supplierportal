@@ -22,7 +22,7 @@ class InspectionsExport implements FromCollection, WithHeadings, ShouldAutoSize
         foreach ($q->get() as $insp) {
             foreach ($insp->items as $item) {
                 $pi = $item->prItem;
-                $specD = collect([$pi && $pi->thickness ? "T:{$pi->thickness}" : null, $pi && $pi->width ? "W:{$pi->width}" : null, $pi && $pi->length ? "L:{$pi->length}" : null])->filter()->implode(' | ') ?: '-';
+                $specD = $pi ? collect([$pi->shape, $pi->dimension_label !== '-' ? $pi->dimension_label : null])->filter()->implode(' | ') : '-';
                 $dimA = collect([$item->actual_thickness ? "T:{$item->actual_thickness}" : null, $item->actual_width ? "W:{$item->actual_width}" : null, $item->actual_length ? "L:{$item->actual_length}" : null])->filter()->implode(' | ') ?: '-';
                 $rows->push([optional($insp->purchaseOrder)->po_number ?? '-', optional(optional($insp->purchaseOrder)->supplier)->name ?? '-', optional($pi)->material_name ?? '-', $specD, $dimA, strtoupper($item->status), strtoupper($insp->status), $insp->inspected_at ? $insp->inspected_at->format('d/m/Y H:i') : '-']);
             }

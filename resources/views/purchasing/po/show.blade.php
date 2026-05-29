@@ -139,12 +139,12 @@
                                         <td class="text-center">{{ $globalNo++ }}</td>
                                         <td class="fw-medium">{{ $item->prItem->material_name }}</td>
                                         <td class="text-center" style="font-size: 0.8rem;">
-                                            {{ $item->prItem->shape }}
-                                            @if($item->prItem->thickness) T:{{ $item->prItem->thickness }} @endif
-                                            @if($item->prItem->d_inner) ID:{{ $item->prItem->d_inner }} @endif
-                                            @if($item->prItem->d_outer) OD:{{ $item->prItem->d_outer }} @endif
-                                            @if($item->prItem->width) W:{{ $item->prItem->width }} @endif
-                                            @if($item->prItem->length) L:{{ $item->prItem->length }} @endif
+                                            @if($item->prItem->shape)
+                                                <span class="badge bg-light text-dark border">{{ $item->prItem->shape }}</span><br>
+                                                <span class="text-muted">{{ $item->prItem->dimension_label }}</span>
+                                            @else
+                                                -
+                                            @endif
                                         </td>
                                         <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>

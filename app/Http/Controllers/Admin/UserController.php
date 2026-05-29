@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ExchangeRate;
 use App\Models\User;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class UserController extends Controller
                     $html = '<div class="fw-medium">' . e($user->name) . '</div>';
                     if ($user->role === 'supplier' && $user->supplier) {
                         $html .= '<small class="text-muted"><i class="bi bi-building me-1"></i>' . e($user->supplier->company_name) . '</small>';
+                        $html .= '<span class="badge bg-dark ms-2">' . e($user->supplier->currency ?? ExchangeRate::CURRENCY_USD) . '</span>';
                     }
                     return $html;
                 })
@@ -83,6 +85,7 @@ class UserController extends Controller
             'phone' => 'required_if:role,supplier|nullable|string|max:50',
             'npwp' => 'required_if:role,supplier|nullable|string|max:50',
             'category' => 'required_if:role,supplier|nullable|string|max:100',
+            'currency' => ['required_if:role,supplier', 'nullable', Rule::in(ExchangeRate::CURRENCIES)],
         ]);
 
         try {
@@ -104,6 +107,7 @@ class UserController extends Controller
                     'phone' => $request->phone,
                     'npwp' => $request->npwp,
                     'category' => $request->category,
+                    'currency' => $request->currency ?: ExchangeRate::CURRENCY_USD,
                 ]);
             }
 
@@ -144,6 +148,7 @@ class UserController extends Controller
             'phone' => 'required_if:role,supplier|nullable|string|max:50',
             'npwp' => 'required_if:role,supplier|nullable|string|max:50',
             'category' => 'required_if:role,supplier|nullable|string|max:100',
+            'currency' => ['required_if:role,supplier', 'nullable', Rule::in(ExchangeRate::CURRENCIES)],
         ]);
 
         try {
@@ -171,6 +176,7 @@ class UserController extends Controller
                         'phone' => $request->phone,
                         'npwp' => $request->npwp,
                         'category' => $request->category,
+                        'currency' => $request->currency ?: ExchangeRate::CURRENCY_USD,
                     ]
                 );
             } else {

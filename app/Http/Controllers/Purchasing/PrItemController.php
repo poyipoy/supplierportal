@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PrItem;
 use App\Models\PurchaseRequirement;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PrItemController extends Controller
 {
@@ -16,18 +17,18 @@ class PrItemController extends Controller
     {
         // Mostly handled en-masse via PurchaseRequirementController
         // But if needed for single AJAX adds:
-        $request->validate([
-            'pr_id' => 'required|exists:purchase_requirements,id',
-            'material_name' => 'required|string|max:255',
-            'weight_needed' => 'required|numeric|min:0.01',
-        ]);
+        $request->merge(PrItem::sanitizeMaterialData($request->all()));
 
-        $pr = PurchaseRequirement::findOrFail($request->pr_id);
+        $validated = $request->validate($this->materialValidationRules([
+            'pr_id' => 'required|exists:purchase_requirements,id',
+        ]));
+
+        $pr = PurchaseRequirement::findOrFail($validated['pr_id']);
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
             return response()->json(['error' => 'Tidak dapat menambah item pada PR ini.'], 403);
         }
 
-        $item = $pr->items()->create($request->all());
+        $item = $pr->items()->create(PrItem::sanitizeMaterialData($validated));
 
         return response()->json(['success' => true, 'item' => $item]);
     }
@@ -37,19 +38,17 @@ class PrItemController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $item = PrItem::with('purchase_requirement')->findOrFail($id);
-        $pr = $item->purchase_requirement;
+        $item = PrItem::with('purchaseRequirement')->findOrFail($id);
+        $pr = $item->purchaseRequirement;
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
             return response()->json(['error' => 'Tidak dapat mengedit item pada PR ini.'], 403);
         }
 
-        $request->validate([
-            'material_name' => 'required|string|max:255',
-            'weight_needed' => 'required|numeric|min:0.01',
-        ]);
+        $request->merge(PrItem::sanitizeMaterialData($request->all()));
+        $validated = $request->validate($this->materialValidationRules());
 
-        $item->update($request->all());
+        $item->update(PrItem::sanitizeMaterialData($validated));
 
         return response()->json(['success' => true, 'item' => $item]);
     }
@@ -59,8 +58,8 @@ class PrItemController extends Controller
      */
     public function destroy(string $id)
     {
-        $item = PrItem::with('purchase_requirement')->findOrFail($id);
-        $pr = $item->purchase_requirement;
+        $item = PrItem::with('purchaseRequirement')->findOrFail($id);
+        $pr = $item->purchaseRequirement;
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
             return response()->json(['error' => 'Tidak dapat menghapus item pada PR ini.'], 403);
@@ -69,5 +68,20 @@ class PrItemController extends Controller
         $item->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    private function materialValidationRules(array $extra = []): array
+    {
+        return $extra + [
+            'material_name' => 'required|string|max:255',
+            'weight_needed' => 'required|numeric|min:0.01',
+            'hs_code' => 'nullable|string|max:100',
+            'shape' => ['nullable', Rule::in(PrItem::SHAPES)],
+            'thickness' => 'nullable|numeric|min:0',
+            'd_inner' => 'nullable|numeric|min:0',
+            'd_outer' => 'nullable|numeric|min:0',
+            'width' => 'nullable|numeric|min:0',
+            'length' => 'nullable|numeric|min:0',
+        ];
     }
 }

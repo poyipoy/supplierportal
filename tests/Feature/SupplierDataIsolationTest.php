@@ -105,13 +105,18 @@ class SupplierDataIsolationTest extends TestCase
         ]);
 
         $po = PurchaseOrder::create([
-            'quotation_id' => $quotation->id,
+            'supplier_id' => $supplier->id,
+            'currency' => 'USD',
+            'exchange_rate_id' => $rate->id,
             'po_number' => 'PO/TEST/' . str_pad($supplier->id, 3, '0', STR_PAD_LEFT),
             'status' => 'completed',
             'created_by' => $this->purchasing->id,
             'estimated_arrival' => now()->addDays(30),
             'actual_arrival' => now()->addDays(35),
         ]);
+
+        // Attach quotation via pivot (new many-to-many schema)
+        $po->quotations()->attach($quotation->id);
 
         $inspection = QcInspection::create([
             'po_id' => $po->id,

@@ -93,10 +93,13 @@
 <script>
     let itemIndex = {{ old('items') ? count(old('items')) : 0 }};
 
+    @include('purchasing.pr._material_shape_script')
+
     function addRow() {
         const template = document.getElementById('rowTemplate').innerHTML;
         const html = template.replace(/{INDEX}/g, itemIndex);
         $('#itemsBody').append(html);
+        applyMaterialShapeRules($('#itemsBody tr.item-row').last(), true);
         itemIndex++;
         checkRowCount();
     }
@@ -166,6 +169,8 @@
         // Add one empty row initially if old input doesn't exist
         if ($('#itemsBody tr').length === 0) {
             addRow();
+        } else {
+            initializeMaterialShapeRows();
         }
     });
 </script>

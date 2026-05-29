@@ -7,6 +7,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExchangeRate extends Model
 {
+    public const CURRENCY_USD = 'USD';
+    public const CURRENCY_JPY = 'JPY';
+    public const CURRENCY_IDR = 'IDR';
+    public const CURRENCY_CNY = 'CNY';
+
+    public const CURRENCIES = [
+        self::CURRENCY_USD,
+        self::CURRENCY_JPY,
+        self::CURRENCY_IDR,
+        self::CURRENCY_CNY,
+    ];
+
+    public const CURRENCY_LABELS = [
+        self::CURRENCY_USD => 'USD - US Dollar',
+        self::CURRENCY_JPY => 'JPY - Japanese Yen',
+        self::CURRENCY_IDR => 'IDR - Indonesian Rupiah',
+        self::CURRENCY_CNY => 'CNY - Chinese Yuan',
+    ];
+
     protected $fillable = [
         'currency',
         'rate_to_idr',

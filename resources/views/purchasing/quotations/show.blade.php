@@ -111,7 +111,10 @@
                                     <td class="text-center">{{ $idx + 1 }}</td>
                                     <td>
                                         <div class="fw-medium">{{ $item->prItem->material_name ?? '-' }}</div>
-                                        @if($item->prItem && $item->prItem->shape)<span class="badge bg-light text-dark border" style="font-size:.65rem">{{ $item->prItem->shape }}</span>@endif
+                                        @if($item->prItem && $item->prItem->shape)
+                                            <span class="badge bg-light text-dark border" style="font-size:.65rem">{{ $item->prItem->shape }}</span>
+                                            <div class="text-muted small">{{ $item->prItem->dimension_label }}</div>
+                                        @endif
                                     </td>
                                     <td class="text-center">{{ number_format($weight, 2) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($pricePerKg, 2) }}</td>

@@ -10,6 +10,10 @@ class AttachmentController extends Controller
     public function show($id)
     {
         $attachment = Attachment::findOrFail($id);
+
+        $this->authorize('view', $attachment);
+
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk('private');
 
         if (! $disk->exists($attachment->file_path)) {
@@ -22,3 +26,4 @@ class AttachmentController extends Controller
         ]);
     }
 }
+

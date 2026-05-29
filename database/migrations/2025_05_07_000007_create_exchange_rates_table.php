@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('exchange_rates', function (Blueprint $table) {
             $table->id();
-            $table->enum('currency', ['USD', 'JPY']);
+            $table->enum('currency', ['USD', 'JPY', 'IDR', 'CNY']);
             $table->decimal('rate_to_idr', 15, 4);
             $table->date('valid_from');
             $table->foreignId('created_by')->constrained('users');

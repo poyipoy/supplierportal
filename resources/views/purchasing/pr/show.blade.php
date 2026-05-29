@@ -80,11 +80,7 @@
                                     <td class="text-center" style="font-size: 0.85rem;">
                                         @if($item->shape)
                                             <span class="badge bg-light text-dark border">{{ $item->shape }}</span><br>
-                                            @if($item->thickness) T: {{ $item->thickness }} @endif
-                                            @if($item->d_inner) ID: {{ $item->d_inner }} @endif
-                                            @if($item->d_outer) OD: {{ $item->d_outer }} @endif
-                                            @if($item->width) W: {{ $item->width }} @endif
-                                            @if($item->length) L: {{ $item->length }} @endif
+                                            <span class="text-muted">{{ $item->dimension_label }}</span>
                                         @else
                                             -
                                         @endif

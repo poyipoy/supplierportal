@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -24,21 +25,21 @@ class AdminController extends Controller
 
         $recentActivities = DatabaseNotification::orderBy('created_at', 'desc')->take(10)->get();
 
-        $kursUsd = ExchangeRate::where('currency', 'USD')->orderBy('valid_from', 'desc')->first();
-        $kursJpy = ExchangeRate::where('currency', 'JPY')->orderBy('valid_from', 'desc')->first();
+        $latestRates = collect(ExchangeRate::CURRENCIES)
+            ->mapWithKeys(fn($currency) => [$currency => ExchangeRate::latestRate($currency)]);
         $riwayatKurs = ExchangeRate::orderBy('valid_from', 'desc')->take(30)->get();
         $riwayatKursTotal = ExchangeRate::count();
 
         return view('admin.dashboard', compact(
             'usersByRole', 'totalUsersActive', 'transaksiBulanIni', 'supplierCount',
-            'klaimAktif', 'recentActivities', 'kursUsd', 'kursJpy', 'riwayatKurs', 'riwayatKursTotal'
+            'klaimAktif', 'recentActivities', 'latestRates', 'riwayatKurs', 'riwayatKursTotal'
         ));
     }
 
     public function updateKurs(Request $request)
     {
         $request->validate([
-            'currency' => 'required|in:USD,JPY',
+            'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
             'rate_to_idr' => 'required|numeric|min:0.01',
         ]);
         ExchangeRate::create([

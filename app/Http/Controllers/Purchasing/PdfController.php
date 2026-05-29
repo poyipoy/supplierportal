@@ -39,8 +39,8 @@ class PdfController extends Controller
     public function qcInspection($id)
     {
         $inspection = QcInspection::with([
-            'purchaseOrder.quotation.supplier',
-            'purchaseOrder.quotation.purchaseRequirement.period',
+            'purchaseOrder.supplier',
+            'purchaseOrder.quotations.purchaseRequirement.period',
             'inspector',
             'items.prItem',
         ])->findOrFail($id);

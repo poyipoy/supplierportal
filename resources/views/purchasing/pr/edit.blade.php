@@ -54,15 +54,15 @@
                     <thead class="table-light text-center" style="font-size: 0.8rem;">
                         <tr>
                             <th width="10%">HS Code</th>
-                            <th width="18%">Material Name <span class="text-danger">*</span></th>
-                            <th width="12%">Shape</th>
-                            <th width="8%">Thickness</th>
-                            <th width="8%">Inner Dia.</th>
-                            <th width="8%">Outer Dia.</th>
-                            <th width="8%">Width</th>
-                            <th width="8%">Length</th>
-                            <th width="12%">Weight (Kg) <span class="text-danger">*</span></th>
-                            <th width="8%">Action</th>
+                            <th width="18%">Nama Material <span class="text-danger">*</span></th>
+                            <th width="12%">Bentuk</th>
+                            <th width="8%">Ketebalan</th>
+                            <th width="8%">Diameter Dalam</th>
+                            <th width="8%">Diameter Luar</th>
+                            <th width="8%">Lebar</th>
+                            <th width="8%">Panjang</th>
+                            <th width="12%">Berat (Kg) <span class="text-danger">*</span></th>
+                            <th width="8%">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="itemsBody">
@@ -103,10 +103,13 @@
 <script>
     let itemIndex = {{ count($oldItems ?? []) }};
 
+    @include('purchasing.pr._material_shape_script')
+
     function addRow() {
         const template = document.getElementById('rowTemplate').innerHTML;
         const html = template.replace(/{INDEX}/g, itemIndex);
         $('#itemsBody').append(html);
+        applyMaterialShapeRules($('#itemsBody tr.item-row').last(), true);
         itemIndex++;
         checkRowCount();
     }
@@ -172,6 +175,7 @@
 
     $(document).ready(function() {
         $('#btnAddRow').click(addRow);
+        initializeMaterialShapeRows();
         checkRowCount();
     });
 </script>

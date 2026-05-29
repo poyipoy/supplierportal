@@ -6,27 +6,27 @@
         <input type="text" name="items[{{ $index }}][material_name]" class="form-control form-control-sm" required value="{{ $item['material_name'] ?? '' }}">
     </td>
     <td>
-        <select name="items[{{ $index }}][shape]" class="form-select form-select-sm">
-            <option value="">-</option>
+        <select name="items[{{ $index }}][shape]" class="form-select form-select-sm material-shape-select">
+            <option value="">Pilih</option>
             <option value="Flat" {{ ($item['shape'] ?? '') == 'Flat' ? 'selected' : '' }}>Flat</option>
             <option value="Round" {{ ($item['shape'] ?? '') == 'Round' ? 'selected' : '' }}>Round</option>
             <option value="Hollow" {{ ($item['shape'] ?? '') == 'Hollow' ? 'selected' : '' }}>Hollow</option>
         </select>
     </td>
-    <td>
-        <input type="number" step="0.01" name="items[{{ $index }}][thickness]" class="form-control form-control-sm" value="{{ $item['thickness'] ?? '' }}">
+    <td class="dimension-cell" data-dimension-cell="thickness">
+        <input type="number" step="0.01" min="0" name="items[{{ $index }}][thickness]" class="form-control form-control-sm dimension-input" data-dimension-field="thickness" value="{{ $item['thickness'] ?? '' }}">
     </td>
-    <td>
-        <input type="number" step="0.01" name="items[{{ $index }}][d_inner]" class="form-control form-control-sm" value="{{ $item['d_inner'] ?? '' }}">
+    <td class="dimension-cell" data-dimension-cell="d_inner">
+        <input type="number" step="0.01" min="0" name="items[{{ $index }}][d_inner]" class="form-control form-control-sm dimension-input" data-dimension-field="d_inner" value="{{ $item['d_inner'] ?? '' }}">
     </td>
-    <td>
-        <input type="number" step="0.01" name="items[{{ $index }}][d_outer]" class="form-control form-control-sm" value="{{ $item['d_outer'] ?? '' }}">
+    <td class="dimension-cell" data-dimension-cell="d_outer">
+        <input type="number" step="0.01" min="0" name="items[{{ $index }}][d_outer]" class="form-control form-control-sm dimension-input" data-dimension-field="d_outer" value="{{ $item['d_outer'] ?? '' }}">
     </td>
-    <td>
-        <input type="number" step="0.01" name="items[{{ $index }}][width]" class="form-control form-control-sm" value="{{ $item['width'] ?? '' }}">
+    <td class="dimension-cell" data-dimension-cell="width">
+        <input type="number" step="0.01" min="0" name="items[{{ $index }}][width]" class="form-control form-control-sm dimension-input" data-dimension-field="width" value="{{ $item['width'] ?? '' }}">
     </td>
-    <td>
-        <input type="number" step="0.01" name="items[{{ $index }}][length]" class="form-control form-control-sm" value="{{ $item['length'] ?? '' }}">
+    <td class="dimension-cell" data-dimension-cell="length">
+        <input type="number" step="0.01" min="0" name="items[{{ $index }}][length]" class="form-control form-control-sm dimension-input" data-dimension-field="length" value="{{ $item['length'] ?? '' }}">
     </td>
     <td>
         <input type="number" step="0.01" min="0.01" name="items[{{ $index }}][weight_needed]" class="form-control form-control-sm" required value="{{ $item['weight_needed'] ?? '' }}">
