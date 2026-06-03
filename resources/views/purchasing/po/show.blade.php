@@ -4,31 +4,42 @@
 @section('page-title', 'Detail Purchase Order')
 
 @section('content')
+<x-breadcrumb :items="[
+    'Dashboard' => route('purchasing.dashboard'),
+    'Purchase Orders' => route('purchasing.purchase-orders.index'),
+    $po->po_number => '#'
+]" />
 <div class="mb-3">
     <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar PO
     </a>
 </div>
 
+<div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 15px; z-index: 1020; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+    <div class="card-body p-2">
+        <ul class="nav nav-pills nav-fill small fw-medium" id="po-section-nav">
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-info">Info</a></li>
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-material">Material</a></li>
+            @if($po->qcInspections->isNotEmpty())
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-inspeksi">Inspeksi QC</a></li>
+            @endif
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-dokumen">Dokumen</a></li>
+            @if($po->status === 'claim_needed')
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-klaim">Klaim</a></li>
+            @endif
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-timeline">Timeline</a></li>
+        </ul>
+    </div>
+</div>
+
 {{-- ═══════════ SECTION A — Info PO ═══════════ --}}
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm" id="sec-info" style="scroll-margin-top: 80px;">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
-                @php
-                    $badgeClass = match(true) {
-                        $po->is_overdue => 'bg-danger',
-                        $po->status === 'active' => 'bg-primary',
-                        $po->status === 'waiting_qc' => 'bg-warning text-dark',
-                        $po->status === 'claim_needed' => 'bg-danger',
-                        $po->status === 'completed' => 'bg-success',
-                        $po->status === 'cancelled' => 'bg-danger',
-                        default => 'bg-secondary'
-                    };
-                @endphp
                 <div>
-                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : str_replace('_', ' ', $po->status) }}</span>
+                    <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
                     <a href="{{ route('purchasing.pdf.purchase-order', $po->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Purchase Order">
                         <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
                     </a>
@@ -66,7 +77,10 @@
                     <div class="col-md-8 fw-medium">{{ $po->created_at->format('d F Y, H:i') }}</div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">Est. Kedatangan</div>
+                    <div class="col-md-4 text-muted small">
+                        Est. Kedatangan
+                        <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Tanggal target material tiba yang dipantau oleh Purchasing."></i>
+                    </div>
                     <div class="col-md-8 fw-medium">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
                 </div>
                 <div class="row mb-2">
@@ -93,7 +107,7 @@
         </div>
 
         {{-- Material Table — Grouped per Quotation/PR --}}
-        <div class="card border-0 shadow-sm mt-4">
+        <div class="card border-0 shadow-sm mt-4" id="sec-material" style="scroll-margin-top: 80px;">
             <div class="card-header bg-white py-3">
                 <h6 class="mb-0 fw-bold">Detail Material</h6>
             </div>
@@ -105,7 +119,9 @@
                                 <th>No</th>
                                 <th>Material</th>
                                 <th>Spesifikasi</th>
-                                <th>Berat (Kg)</th>
+                                <th>Qty</th>
+                                <th>Berat/Unit (Kg)</th>
+                                <th>Total Berat (Kg)</th>
                                 <th>Harga/Kg</th>
                                 <th>Amount</th>
                                 <th>IDR</th>
@@ -117,7 +133,7 @@
                                 @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                                 @if($po->quotations->count() > 1)
                                     <tr class="table-primary">
-                                        <td colspan="7" class="fw-bold small ps-3">
+                                        <td colspan="9" class="fw-bold small ps-3">
                                             <i class="bi bi-folder2 me-1"></i>
                                             {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
@@ -146,7 +162,9 @@
                                                 -
                                             @endif
                                         </td>
+                                        <td class="text-center">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                                         <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                                        <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
                                         <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
                                         <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
@@ -156,7 +174,7 @@
                         </tbody>
                         <tfoot class="table-light fw-bold">
                             <tr>
-                                <td colspan="5" class="text-end">GRAND TOTAL</td>
+                                <td colspan="7" class="text-end">GRAND TOTAL</td>
                                 <td class="text-end">{{ number_format($grandTotalAmount, 2) }}</td>
                                 <td class="text-end text-primary">Rp {{ number_format($grandTotalIdr, 0, ',', '.') }}</td>
                             </tr>
@@ -179,7 +197,7 @@
         @endphp
 
         @if($latestInspection)
-            <div class="card border-0 shadow-sm mt-4">
+            <div class="card border-0 shadow-sm mt-4" id="sec-inspeksi" style="scroll-margin-top: 80px;">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">Laporan Inspeksi QC</h6>
                     <span class="badge {{ $latestInspection->status === 'ng' ? 'bg-danger' : 'bg-success' }} text-uppercase px-3 py-2">
@@ -261,7 +279,7 @@
         </div>
 
         @if($po->status === 'claim_needed')
-            <div class="card border-danger shadow-sm mb-4">
+            <div class="card border-danger shadow-sm mb-4" id="sec-klaim" style="scroll-margin-top: 80px;">
                 <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-danger">
                         <i class="bi bi-exclamation-octagon me-2"></i>Klaim Material
@@ -293,7 +311,7 @@
             </div>
         @endif
 
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4" id="sec-timeline" style="scroll-margin-top: 80px;">
             <div class="card-header bg-white py-3">
                 <h6 class="mb-0 fw-bold">Timeline</h6>
             </div>
@@ -360,10 +378,13 @@
 </div>
 
 {{-- ═══════════ SECTION B — Tracking Dokumen Impor ═══════════ --}}
-<div class="card border-0 shadow-sm mb-5">
+<div class="card border-0 shadow-sm mb-5" id="sec-dokumen" style="scroll-margin-top: 80px;">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">Tracking Dokumen Impor</h6>
-        <span class="badge bg-light text-dark border px-3 py-2" id="docProgressBadge">{{ $completedDocs }}/{{ $totalDocs }} Dokumen Selesai</span>
+        <h6 class="mb-0 fw-bold">
+            Tracking Dokumen Impor
+            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Progress dihitung dari 4 dokumen impor wajib: Invoice, Bill of Lading, Packing List, dan Form-E."></i>
+        </h6>
+        <span class="badge {{ $docProgress['class'] }} px-3 py-2" id="docProgressBadge" data-bs-toggle="tooltip" data-bs-title="{{ $docProgress['description'] }}">{{ $docProgress['label'] }}</span>
     </div>
     <div class="card-body">
         {{-- Progress Bar --}}
@@ -454,6 +475,59 @@
 
 @push('scripts')
 <script>
+    $(document).ready(function() {
+        // Scroll spy for section nav
+        const sections = $('div[id^="sec-"]');
+        const navLinks = $('#po-section-nav .nav-link');
+        let isScrolling = false;
+
+        $(window).on('scroll', function() {
+            if (isScrolling) return;
+            
+            let current = '';
+            const scrollPosition = $(window).scrollTop() + 100; // offset
+
+            let matching = [];
+            sections.each(function() {
+                const sectionTop = $(this).offset().top;
+                const sectionHeight = $(this).outerHeight();
+                if (scrollPosition >= sectionTop && scrollPosition < (sectionTop + sectionHeight)) {
+                    matching.push($(this));
+                }
+            });
+
+            if (matching.length > 0) {
+                // Prioritaskan elemen yang pertama di DOM (kiri) jika sejajar
+                current = matching[0].attr('id');
+            }
+
+            if(current) {
+                navLinks.removeClass('active bg-primary text-white').addClass('text-muted');
+                $(`#po-section-nav .nav-link[href="#${current}"]`).removeClass('text-muted').addClass('active bg-primary text-white');
+            }
+        });
+
+        // Smooth scroll for nav clicks
+        navLinks.on('click', function(e) {
+            e.preventDefault();
+            const targetId = $(this).attr('href');
+            
+            navLinks.removeClass('active bg-primary text-white').addClass('text-muted');
+            $(this).removeClass('text-muted').addClass('active bg-primary text-white');
+
+            const targetPosition = $(targetId).offset().top - 80; // adjust for sticky nav height
+            
+            isScrolling = true;
+            $('html, body').stop().animate({
+                scrollTop: targetPosition
+            }, 300);
+            
+            setTimeout(() => {
+                isScrolling = false;
+            }, 350);
+        });
+    });
+
     // Open modal
     $('.btn-update-doc').on('click', function() {
         const docId = $(this).data('doc-id');
@@ -517,9 +591,16 @@
 
                     const pct = total > 0 ? (completed / total * 100) : 0;
                     $('#docProgressBar').css('width', pct + '%');
-                    $('#docProgressBadge').text(completed + '/' + total + ' ' + @json('Dokumen Selesai'));
+                    const docsComplete = completed >= total;
+                    $('#docProgressBadge')
+                        .text(completed + '/' + total + ' lengkap')
+                        .attr('class', 'badge px-3 py-2 ' + (docsComplete ? 'bg-success' : 'bg-warning text-dark'))
+                        .attr('data-bs-title', docsComplete
+                            ? 'Semua dokumen impor sudah lengkap.'
+                            : 'Masih ada dokumen impor yang perlu dilengkapi atau diverifikasi.');
+                    window.initAdasiTooltips?.(document);
 
-                    if (completed === total) {
+                    if (docsComplete) {
                         if ($('#allDocsAlert').length === 0) {
                             $('.progress').after('<div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert"><i class="bi bi-check-circle-fill me-2 fs-5"></i><span class="fw-medium">Semua dokumen impor lengkap ✅</span></div>');
                         }

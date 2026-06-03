@@ -19,6 +19,15 @@
         ]);
 @endphp
 
+<x-breadcrumb :items="[
+    'Dashboard' => route('purchasing.dashboard'),
+    'Daftar Penawaran' => route('purchasing.quotations.index'),
+    'Detail Penawaran' => '#'
+]" />
+@php
+    $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($quotation->validity_period);
+@endphp
+
 <div class="mb-3"><a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Kembali ke Daftar Penawaran</a></div>
 
 <div class="row g-4">
@@ -40,16 +49,15 @@
                         <div class="mb-3"><span class="text-muted small d-block">Tanggal Diajukan</span><span class="fw-medium">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d F Y, H:i') : '-' }}</span></div>
                         <div class="mb-3"><span class="text-muted small d-block">Estimasi Pengiriman</span><span class="fw-medium">{{ $quotation->estimated_delivery ? $quotation->estimated_delivery->format('d F Y') : '-' }}</span></div>
                         <div class="mb-3">
-                            <span class="text-muted small d-block">Masa Berlaku Penawaran</span>
+                            <span class="text-muted small d-block">
+                                Masa Berlaku Penawaran
+                                <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Penawaran kadaluarsa tidak bisa dibuat PO sebelum supplier mengirim revisi."></i>
+                            </span>
                             @if($quotation->validity_period)
                                 <span class="fw-medium">{{ $quotation->validity_period->format('d F Y') }}</span>
-                                @if($quotation->isExpired())
-                                    <span class="badge bg-danger ms-1">Kadaluarsa</span>
-                                @else
-                                    <span class="badge bg-success ms-1">Berlaku</span>
-                                @endif
+                                {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'] . ' ms-1', $validityMeta['label'], $validityMeta['description']) !!}
                             @else
-                                <span class="badge bg-warning text-dark">Belum Diisi</span>
+                                {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                             @endif
                         </div>
                         <div class="mb-3"><span class="text-muted small d-block">Termin Pembayaran</span><span class="fw-medium">{{ $quotation->payment_terms ?? '-' }}</span></div>
@@ -69,6 +77,12 @@
                 @if($quotation->general_notes)
                     <div class="mt-2 p-3 bg-light rounded small"><i class="bi bi-chat-left-text me-1"></i> {{ $quotation->general_notes }}</div>
                 @endif
+                @if($quotation->reviewer_notes)
+                    <div class="mt-2 p-3 bg-warning bg-opacity-10 border border-warning rounded small">
+                        <div class="fw-semibold mb-1"><i class="bi bi-pencil-square me-1"></i> Catatan Review</div>
+                        {{ $quotation->reviewer_notes }}
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -84,11 +98,14 @@
                             <tr>
                                 <th>No</th>
                                 <th class="text-start">Material</th>
-                                <th>Berat (Kg)</th>
+                                <th>Qty</th>
+                                <th>Berat/Unit (Kg)</th>
+                                <th>Total Berat (Kg)</th>
                                 <th>Harga/Kg ({{ $quotation->currency }})</th>
                                 <th>Amount ({{ $quotation->currency }})</th>
                                 <th>Harga/Kg (IDR)</th>
                                 <th>Amount (IDR)</th>
+                                <th>MTC</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,7 +116,9 @@
                             @endphp
                             @foreach($quotation->items as $idx => $item)
                                 @php
+                                    $quantity = $item->prItem ? $item->prItem->quantity_value : 1;
                                     $weight = $item->prItem ? (float)$item->prItem->weight_needed : 0;
+                                    $totalWeight = $item->prItem ? (float)$item->prItem->total_weight : $weight;
                                     $pricePerKg = (float)$item->price_per_kg;
                                     $amount = (float)$item->amount;
                                     $priceIdr = $rateValue !== null ? $pricePerKg * $rateValue : null;
@@ -116,7 +135,9 @@
                                             <div class="text-muted small">{{ $item->prItem->dimension_label }}</div>
                                         @endif
                                     </td>
+                                    <td class="text-center fw-medium">{{ number_format($quantity, 0) }}</td>
                                     <td class="text-center">{{ number_format($weight, 2) }}</td>
+                                    <td class="text-center fw-medium text-primary">{{ number_format($totalWeight, 2) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($pricePerKg, 2) }}</td>
                                     <td class="text-end">{{ number_format($amount, 2) }}</td>
                                     <td class="text-end text-primary fw-bold">
@@ -125,15 +146,27 @@
                                     <td class="text-end text-primary">
                                         {{ $amountIdr !== null ? 'Rp ' . number_format($amountIdr, 0, ',', '.') : '-' }}
                                     </td>
+                                    <td class="text-center">
+                                        @if($item->attachments->isNotEmpty())
+                                            @foreach($item->attachments as $attachment)
+                                                <a href="{{ route('attachments.show', $attachment->id) }}" class="btn btn-sm btn-outline-primary mb-1" target="_blank" title="{{ $attachment->file_name }}">
+                                                    <i class="bi bi-paperclip"></i>
+                                                </a>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
                         <tfoot class="table-light">
                             <tr class="fw-bold">
-                                <td colspan="4" class="text-end">Total:</td>
+                                <td colspan="6" class="text-end">Total:</td>
                                 <td class="text-end">{{ number_format($totalOriginal, 2) }}</td>
                                 <td></td>
                                 <td class="text-end text-primary">{{ $rateValue !== null ? 'Rp ' . number_format($totalIdr, 0, ',', '.') : '-' }}</td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -185,7 +218,12 @@
 
         {{-- Kurs --}}
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold"><i class="bi bi-currency-exchange me-1"></i> Kurs Konversi</h6></div>
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-currency-exchange me-1"></i> Kurs Konversi
+                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Total histori memakai kurs snapshot penawaran ini, bukan kurs terbaru."></i>
+                </h6>
+            </div>
             <div class="card-body text-center">
                 @if($quotationRate)
                     <div class="p-3 bg-light rounded">
@@ -209,6 +247,34 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Aksi</h6></div>
             <div class="card-body">
+                @if($quotation->status === 'submitted' && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
+                    <form action="{{ route('purchasing.quotations.accept', $quotation->id) }}" method="POST" class="mb-2">
+                        @csrf
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-circle me-1"></i> Terima Penawaran
+                        </button>
+                    </form>
+
+                    <form action="{{ route('purchasing.quotations.request-revision', $quotation->id) }}" method="POST" class="mb-2" id="requestRevisionForm">
+                        @csrf
+                        <input type="hidden" name="return_url" value="{{ request('return_url') }}">
+                        <label for="revisionNote" class="form-label small fw-medium">Catatan Revisi</label>
+                        <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Contoh: Mohon revisi harga, lead time, MTC, atau syarat pembayaran.">{{ old('revision_note') }}</textarea>
+                        <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">
+                            <i class="bi bi-arrow-repeat me-1"></i> Minta Revisi
+                        </button>
+                    </form>
+
+                    <form action="{{ route('purchasing.quotations.reject', $quotation->id) }}" method="POST" class="mb-3">
+                        @csrf
+                        <label class="form-label small fw-medium">Catatan Penolakan</label>
+                        <textarea name="reviewer_notes" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Wajib diisi jika penawaran ditolak.">{{ old('reviewer_notes') }}</textarea>
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-x-circle me-1"></i> Tolak Penawaran
+                        </button>
+                    </form>
+                @endif
+
                 @if($canCreatePo)
                     <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation->id) }}" class="btn btn-primary w-100 mb-2" style="background-color: var(--adasi-blue);">
                         <i class="bi bi-receipt me-1"></i> Buat PO dari Penawaran Ini
@@ -254,7 +320,7 @@
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
                     @foreach($quotation->attachments as $att)
-                        <a href="{{ route('file.download', $att->id) }}" class="list-group-item list-group-item-action py-2 px-3 small d-flex justify-content-between align-items-center">
+                        <a href="{{ route('attachments.show', $att->id) }}" class="list-group-item list-group-item-action py-2 px-3 small d-flex justify-content-between align-items-center" target="_blank">
                             <span><i class="bi bi-file-earmark me-2"></i>{{ $att->file_name }}</span>
                             <i class="bi bi-download text-muted"></i>
                         </a>

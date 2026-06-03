@@ -3,6 +3,41 @@
 @section('page-title', 'Dashboard Supplier')
 
 @section('content')
+{{-- Greeting Card --}}
+<div class="card border-0 shadow-sm mb-4 text-white overflow-hidden position-relative animate-fade-in" style="background: linear-gradient(135deg, #1F5FA6 0%, #15457a 100%);">
+    <div class="position-absolute top-0 end-0 h-100 w-50 opacity-25" style="background: radial-gradient(circle at top right, #ffffff, transparent);"></div>
+    <div class="card-body p-4 position-relative z-1">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="fw-bold mb-2">Selamat datang, {{ auth()->user()->supplier->company_name ?? auth()->user()->name }}! 👋</h4>
+                <p class="mb-0 text-white-50">Berikut adalah ringkasan aktivitas dan performa penawaran material Anda saat ini.</p>
+            </div>
+            <div class="col-md-4 text-end d-none d-md-block">
+                <i class="bi bi-building fs-1 text-white opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Insight & Alerts --}}
+@if($belumDirespons > 0)
+<div class="row mb-4 animate-fade-in">
+    <div class="col-12">
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-3 mb-0" style="background-color: #eef2ff; border-left: 4px solid #4f46e5 !important;">
+            <div class="bg-primary bg-opacity-10 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold mb-1 text-dark">Peluang Penawaran</h6>
+                <p class="mb-0 text-muted small">
+                    Terdapat <span class="text-primary fw-semibold">{{ $belumDirespons }} permintaan (PR)</span> aktif yang belum Anda berikan penawaran. Segera ajukan harga terbaik Anda!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- Card Statistik --}}
 <div class="row g-4 mb-4">
     <div class="col-md-6 col-xl-3">
@@ -93,20 +128,20 @@
                             <tr>
                                 <td class="fw-bold">{{ $po->po_number }}</td>
                                 <td>{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequirement)->period)->name)->filter()->first() ?? '-' }}</td>
-                                <td>@php $c=match(true){$po->is_overdue=>'bg-danger',$po->status==='active'=>'bg-primary',$po->status==='waiting_qc'=>'bg-warning text-dark',$po->status==='completed'=>'bg-success',$po->status==='claim_needed'=>'bg-danger',default=>'bg-secondary'};@endphp<span class="badge {{ $c }} text-uppercase" style="font-size:.65rem">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span></td>
+                                <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" /></td>
                                 <td>{{ $po->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-1 justify-content-end flex-wrap">
                                         @if($pendingClaim)
-                                            <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-sm btn-danger py-0" title="Respons Klaim">
+                                            <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-sm btn-danger" title="Respons Klaim">
                                                 <i class="bi bi-reply"></i>
                                             </a>
                                         @elseif($latestClaim)
-                                            <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-sm btn-outline-danger py-0" title="Lihat Klaim">
+                                            <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-sm btn-outline-danger" title="Lihat Klaim">
                                                 <i class="bi bi-exclamation-octagon"></i>
                                             </a>
                                         @endif
-                                        <a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0" title="Detail PO"><i class="bi bi-eye"></i></a>
+                                        <a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info" title="Detail PO"><i class="bi bi-eye"></i></a>
                                     </div>
                                 </td>
                             </tr>

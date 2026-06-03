@@ -22,7 +22,7 @@
                         <form action="{{ route('admin.announcements.destroy', $ann->id) }}" method="POST" class="d-inline">@csrf @method('DELETE')<button type="submit" class="btn btn-sm btn-outline-danger" onclick='return confirm(@json('Yakin ingin menghapus?'))'><i class="bi bi-trash"></i></button></form>
                     </td>
                 </tr>
-                @empty<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada pengumuman.</td></tr>@endforelse
+                @empty<tr><td colspan="6" class="p-0"><x-empty-state icon="bi-megaphone" title="Belum ada pengumuman" class="py-4 border-0" /></td></tr>@endforelse
             </tbody>
         </table>
     </div><div class="mt-3">{{ $announcements->links() }}</div></div>

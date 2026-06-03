@@ -19,6 +19,7 @@ class RememberPurchasingListUrl
         if (
             $request->isMethod('GET')
             && ! $request->expectsJson()
+            && $request->input('view') !== 'json'
             && $request->user()?->role === 'purchasing'
         ) {
             $routeName = $request->route()?->getName();

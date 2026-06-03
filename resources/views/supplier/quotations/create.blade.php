@@ -3,6 +3,21 @@
 @section('title', 'Form Penawaran Harga — ADASI Portal')
 @section('page-title', 'Form Penawaran Harga')
 
+@push('styles')
+<style>
+    .quotation-items-table {
+        min-width: 1500px;
+    }
+
+    .quotation-item-notes {
+        min-width: 220px;
+        min-height: 76px;
+        line-height: 1.35;
+        resize: vertical;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="mb-3">
     <a href="{{ route('supplier.quotations.period', $pr->period_id) }}" class="text-decoration-none text-muted small">
@@ -35,36 +50,45 @@
     </div>
 @endif
 
-<form id="quotationForm" action="{{ route('supplier.quotations.store', $pr->id) }}" method="POST">
+<form id="quotationForm" action="{{ route('supplier.quotations.store', $pr->id) }}" method="POST" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="action" id="formAction" value="draft">
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">Pengisian Harga Material</h6>
+            <h6 class="mb-0 fw-bold">
+                Pengisian Harga Material
+                <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><i class="bi bi-cloud-check me-1"></i>Draft Auto-saved</span>
+            </h6>
             <div class="d-flex align-items-center gap-2">
-                <span class="small fw-medium text-muted">Mata Uang:</span>
-                <span class="badge bg-dark px-3 py-2" id="currencyBadge">{{ $supplierCurrency }}</span>
+                <label for="quotationCurrency" class="small fw-medium text-muted mb-0">Mata Uang:</label>
+                <select name="currency" id="quotationCurrency" class="form-select form-select-sm" style="width: 110px;" required>
+                    <option value="" disabled @selected($supplierCurrency === '')>Pilih</option>
+                    @foreach($currencyOptions as $currency)
+                        <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
-        @if(! $supplierRate)
-            <div class="alert alert-warning rounded-0 border-0 border-top border-bottom mb-0 small">
+        <div id="currencyRateWarning" class="alert alert-warning rounded-0 border-0 border-top border-bottom mb-0 small {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
                 <i class="bi bi-exclamation-triangle me-1"></i>
-                Kurs {{ $supplierCurrency }} belum tersedia. Hubungi Admin sebelum mengirim penawaran final.
-            </div>
-        @endif
+                Kurs <span id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</span> belum tersedia. Hubungi Admin sebelum mengirim penawaran final.
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                <table class="table table-bordered align-middle mb-0 quotation-items-table" style="font-size: 0.85rem;">
                     <thead class="table-light text-center">
                         <tr>
-                            <th width="5%">No</th>
-                            <th width="20%">Material & Spesifikasi</th>
-                            <th width="10%">Weight (Kg)</th>
-                            <th width="15%">Harga per-KG (<span class="currency-label">{{ $supplierCurrency }}</span>) <span class="text-danger">*</span></th>
-                            <th width="15%">Amount (<span class="currency-label">{{ $supplierCurrency }}</span>)</th>
-                            <th width="15%">Est. IDR</th>
-                            <th width="20%">Catatan Item</th>
+                            <th width="3%">No</th>
+                            <th width="15%" style="min-width: 150px;">Material & Spesifikasi</th>
+                            <th width="4%">Qty</th>
+                            <th width="7%">Berat/Unit (Kg)</th>
+                            <th width="8%">Total Berat (Kg)</th>
+                            <th width="12%" style="min-width: 130px;">Harga per-KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
+                            <th width="12%" style="min-width: 130px;">Amount (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
+                            <th width="12%" style="min-width: 130px;">Est. IDR</th>
+                            <th width="13%" style="min-width: 150px;">Catatan Item</th>
+                            <th width="14%" style="min-width: 220px;">MTC</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,6 +100,7 @@
                                 }
                                 $oldPrice = old("items.{$index}.price_per_kg", $qItem ? $qItem->price_per_kg : '');
                                 $oldNotes = old("items.{$index}.notes", $qItem ? $qItem->notes : '');
+                                $mtcAttachment = $qItem?->attachments?->first();
                             @endphp
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
@@ -90,9 +115,11 @@
                                         @endif
                                     </div>
                                     <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
-                                    <input type="hidden" class="item-weight" value="{{ $item->weight_needed }}">
+                                    <input type="hidden" class="item-weight" value="{{ $item->total_weight }}">
                                 </td>
-                                <td class="text-center fw-medium text-primary">{{ number_format($item->weight_needed, 2) }}</td>
+                                <td class="text-center fw-medium">{{ number_format($item->quantity_value, 0) }}</td>
+                                <td class="text-center">{{ number_format($item->weight_needed, 2) }}</td>
+                                <td class="text-center fw-medium text-primary">{{ number_format($item->total_weight, 2) }}</td>
                                 <td>
                                     <input type="number" step="0.0001" name="items[{{ $index }}][price_per_kg]" class="form-control form-control-sm price-input text-end" value="{{ $oldPrice }}" required>
                                 </td>
@@ -103,17 +130,33 @@
                                     <input type="text" class="form-control form-control-sm idr-display text-end bg-light" readonly>
                                 </td>
                                 <td>
-                                    <input type="text" name="items[{{ $index }}][notes]" class="form-control form-control-sm" value="{{ $oldNotes }}" placeholder="Opsional">
+                                    <textarea
+                                        name="items[{{ $index }}][notes]"
+                                        class="form-control form-control-sm quotation-item-notes"
+                                        rows="3"
+                                        placeholder="Opsional, mis. toleransi harga, MOQ, atau catatan material"
+                                    >{{ $oldNotes }}</textarea>
+                                </td>
+                                <td>
+                                    <input type="file" name="items[{{ $index }}][mtc_file]" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png">
+                                    @if($mtcAttachment)
+                                        <a href="{{ route('attachments.show', $mtcAttachment->id) }}" class="small d-inline-flex align-items-center gap-1 mt-1 text-decoration-none" target="_blank">
+                                            <i class="bi bi-paperclip"></i>
+                                            {{ $mtcAttachment->file_name }}
+                                        </a>
+                                    @else
+                                        <div class="form-text small">Opsional, PDF/JPG/PNG maks. 5MB.</div>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot class="table-light fw-bold">
                         <tr>
-                            <td colspan="4" class="text-end">TOTAL</td>
+                            <td colspan="6" class="text-end">TOTAL</td>
                             <td class="text-end" id="totalAmount">0.00</td>
                             <td class="text-end text-primary" id="totalIdr">0</td>
-                            <td></td>
+                            <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -148,7 +191,7 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label fw-medium">Syarat Pembayaran</label>
-                    <textarea name="payment_terms" class="form-control" rows="2" placeholder="Contoh: TT 30 Days">{{ old('payment_terms', $quotation->payment_terms ?? '') }}</textarea>
+                    <textarea name="payment_terms" class="form-control" rows="2" maxlength="100" required placeholder="Contoh: TT 30 Days">{{ old('payment_terms', $quotation->payment_terms ?? 'TT 30 Days') }}</textarea>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-medium">Catatan Umum</label>
@@ -169,24 +212,28 @@
 </form>
 
 {{-- Info Kurs untuk JS --}}
-<div id="exchangeRates"
-     data-currency="{{ $supplierCurrency }}"
-     data-rate="{{ $supplierRate->rate_to_idr ?? 1 }}"
-     class="d-none"></div>
+<div id="exchangeRates" class="d-none"></div>
 
 @endsection
 
 @push('scripts')
 <script>
-    const fixedCurrency = $('#exchangeRates').data('currency');
-    const fixedRate = parseFloat($('#exchangeRates').data('rate')) || 1;
+    const currencyRates = @json($currencyRates);
+
+    function selectedCurrency() {
+        return $('#quotationCurrency').val() || '';
+    }
+
+    function selectedRate() {
+        return parseFloat(currencyRates[selectedCurrency()]) || 0;
+    }
 
     function calculateRow(row) {
         const weight = parseFloat(row.find('.item-weight').val()) || 0;
         const price = parseFloat(row.find('.price-input').val()) || 0;
 
         const amount = weight * price;
-        const idr = amount * fixedRate;
+        const idr = amount * selectedRate();
 
         row.find('.amount-display').val(amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
         row.find('.idr-display').val(Math.round(idr).toLocaleString('id-ID'));
@@ -213,7 +260,16 @@
     });
 
     $(document).ready(function() {
-        $('.currency-label').text(fixedCurrency);
+        function refreshCurrencyState() {
+            const currency = selectedCurrency();
+            $('.currency-label').text(currency || '-');
+            $('#currencyWarningLabel').text(currency || '-');
+            $('#currencyRateWarning').toggleClass('d-none', !currency || selectedRate() > 0);
+            calculateTotal();
+        }
+
+        $('#quotationCurrency').on('change', refreshCurrencyState);
+        refreshCurrencyState();
         calculateTotal(); // initial calculation if pre-filled
     });
 
@@ -225,7 +281,7 @@
     function confirmSubmit() {
         // Validate required fields visually
         let isValid = true;
-        $('#quotationForm').find('input[required], #validityPeriod').each(function() {
+        $('#quotationForm').find('input[required], select[required], #validityPeriod').each(function() {
             if (!$(this).val()) {
                 isValid = false;
                 $(this).addClass('is-invalid');
@@ -235,13 +291,13 @@
         });
 
         if (!isValid) {
-            Swal.fire(@json('Error'), @json('Mohon lengkapi semua field yang wajib diisi (Harga, Estimasi Waktu, dan Masa Berlaku Penawaran).'), 'error');
+            Swal.fire('Error', 'Mohon lengkapi semua field yang wajib diisi (Mata Uang, Harga, Estimasi Waktu, dan Masa Berlaku Penawaran).', 'error');
             return;
         }
 
         Swal.fire({
-            title: @json($quotation?->status === 'revision_requested' ? 'Kirim Ulang Penawaran?' : 'Kirim Penawaran Final?'),
-            text: @json($quotation?->status === 'revision_requested' ? 'Penawaran revisi akan dikirim ulang ke Purchasing untuk dievaluasi.' : 'Penawaran yang sudah dikirim tidak dapat diubah lagi.'),
+            title: {!! json_encode($quotation?->status === 'revision_requested' ? 'Kirim Ulang Penawaran?' : 'Kirim Penawaran Final?') !!},
+            text: {!! json_encode($quotation?->status === 'revision_requested' ? 'Penawaran revisi akan dikirim ulang ke Purchasing untuk dievaluasi.' : 'Penawaran yang sudah dikirim tidak dapat diubah lagi.') !!},
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: 'var(--adasi-blue)',
@@ -250,10 +306,71 @@
             cancelButtonText: @json('Batal')
         }).then((result) => {
             if (result.isConfirmed) {
+                // Clear draft on submit
+                localStorage.removeItem(draftKey);
                 $('#formAction').val('submitted');
                 $('#quotationForm').submit();
             }
         });
     }
+
+    // Auto-save logic
+    const prId = '{{ $pr->id }}';
+    const draftKey = 'quotation_draft_' + prId;
+
+    function saveDraft() {
+        const formData = $('#quotationForm').serializeArray();
+        const data = {};
+        $(formData).each(function(index, obj) {
+            if(obj.name !== '_token' && obj.name !== 'action') {
+                data[obj.name] = obj.value;
+            }
+        });
+        localStorage.setItem(draftKey, JSON.stringify(data));
+        
+        $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<i class="bi bi-cloud-check me-1"></i>Draft Auto-saved');
+        setTimeout(() => {
+            $('#autoSaveBadge').removeClass('d-inline-block').addClass('d-none');
+        }, 2000);
+    }
+
+    function loadDraft() {
+        const saved = localStorage.getItem(draftKey);
+        if(saved) {
+            const data = JSON.parse(saved);
+            for(const key in data) {
+                const element = $(`[name="${key}"]`);
+                if(element.length > 0 && !element.val()) {
+                    element.val(data[key]);
+                }
+            }
+            calculateTotal();
+            
+            // Show badge permanently if draft loaded
+            $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<i class="bi bi-cloud-check me-1"></i>Draft Tersimpan');
+        }
+    }
+
+    $(document).ready(function() {
+        loadDraft();
+
+        let isDirty = false;
+        let autoSaveTimer;
+        $('#quotationForm input, #quotationForm select, #quotationForm textarea').on('input change', function() {
+            isDirty = true;
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(saveDraft, 1000);
+        });
+
+        $('#quotationForm').on('submit', function() {
+            isDirty = false;
+        });
+
+        $(window).on('beforeunload', function() {
+            if (isDirty) {
+                return 'Anda memiliki perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?';
+            }
+        });
+    });
 </script>
 @endpush

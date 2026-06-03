@@ -206,7 +206,10 @@ class NotificationController extends Controller
             $category = NotificationCategory::ALL;
         }
 
-        $unreadNotifications = auth()->user()->unreadNotifications;
+        $unreadNotifications = auth()->user()
+            ->unreadNotifications()
+            ->select(['id', 'type', 'notifiable_type', 'notifiable_id', 'data', 'read_at', 'created_at'])
+            ->get();
         $targetNotifications = $category === NotificationCategory::ALL
             ? $unreadNotifications
             : $unreadNotifications->filter(fn ($notification) => NotificationCategory::key($notification) === $category);

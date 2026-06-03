@@ -14,7 +14,6 @@ class Supplier extends Model
         'phone',
         'npwp',
         'category',
-        'currency',
     ];
 
     // ─── Relationships ───

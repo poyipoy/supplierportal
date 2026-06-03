@@ -49,6 +49,10 @@
             </div>
         </div>
 
+        <div id="filterChips" class="d-flex flex-wrap gap-2 mb-3 d-none">
+            {{-- Filter chips will be rendered here by JS --}}
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="poTable">
                 <thead class="table-light">
@@ -106,6 +110,7 @@
             var cursorEnd = shouldRestoreCursor ? input.selectionEnd : null;
 
             table.ajax.reload(function() {
+                updateFilterChips();
                 if (!shouldRestoreCursor) return;
 
                 input.focus({ preventScroll: true });
@@ -115,7 +120,30 @@
             });
         }
 
+        function updateFilterChips() {
+            const poText = $('#filter_po_number').val().trim();
+            const statusText = $('#filter_status option:selected').val() ? $('#filter_status option:selected').text().trim() : null;
+            const supplierText = $('#filter_supplier option:selected').val() ? $('#filter_supplier option:selected').text().trim() : null;
+            
+            const chips = [];
+            if (poText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">No. PO: ${poText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#filter_po_number').val(''); reloadPoTablePreservingCursor();"></i></span>`);
+            if (statusText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Status: ${statusText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#filter_status').val('').trigger('change')"></i></span>`);
+            if (supplierText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Supplier: ${supplierText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#filter_supplier').val('').trigger('change')"></i></span>`);
+            
+            const $container = $('#filterChips');
+            const $resetBtn = $('#resetFilter');
+            
+            if (chips.length > 0) {
+                $container.html(chips.join('')).removeClass('d-none');
+                $resetBtn.removeClass('btn-light').addClass('btn-danger text-white');
+            } else {
+                $container.empty().addClass('d-none');
+                $resetBtn.removeClass('btn-danger text-white').addClass('btn-light');
+            }
+        }
+
         $('#filter_status, #filter_supplier').on('change', function() {
+            updateFilterChips();
             table.ajax.reload();
         });
 
@@ -142,12 +170,14 @@
         });
 
         $('#resetFilter').on('click', function() {
-            clearTimeout(poSearchTimer);
             $('#filter_po_number').val('');
             $('#filter_status').val('');
             $('#filter_supplier').val('');
+            updateFilterChips();
             table.ajax.reload();
         });
+
+        updateFilterChips();
     });
 </script>
 @endpush

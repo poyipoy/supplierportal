@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('pr_id')->constrained('purchase_requirements')->cascadeOnDelete();
             $table->string('hs_code')->nullable();
             $table->string('material_name');
+            $table->unsignedInteger('quantity')->default(1);
             $table->string('shape')->nullable();
             $table->decimal('thickness', 10, 4)->nullable();
             $table->decimal('d_inner', 10, 4)->nullable();

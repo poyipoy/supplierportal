@@ -4,6 +4,11 @@
 @section('page-title', 'Detail Purchase Order')
 
 @section('content')
+<x-breadcrumb :items="[
+    'Dashboard' => route('supplier.dashboard'),
+    'Purchase Orders' => route('supplier.purchase-orders.index'),
+    $po->po_number => '#'
+]" />
 <div class="mb-3">
     <a href="{{ route('supplier.purchase-orders.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar PO
@@ -78,7 +83,9 @@
                             <tr>
                                 <th>No</th>
                                 <th>Material</th>
-                                <th>Weight (Kg)</th>
+                                <th>Qty</th>
+                                <th>Berat/Unit (Kg)</th>
+                                <th>Total Berat (Kg)</th>
                                 <th>Harga/Kg</th>
                                 <th>Amount</th>
                                 <th>IDR</th>
@@ -90,7 +97,7 @@
                                 @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                                 @if($po->quotations->count() > 1)
                                     <tr class="table-primary">
-                                        <td colspan="6" class="fw-bold small ps-3">
+                                        <td colspan="8" class="fw-bold small ps-3">
                                             <i class="bi bi-folder2 me-1"></i>
                                             {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
@@ -110,7 +117,9 @@
                                     <tr>
                                         <td class="text-center">{{ $no++ }}</td>
                                         <td class="fw-medium">{{ $item->prItem->material_name }}</td>
+                                        <td class="text-center">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                                         <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                                        <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
                                         <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
                                         <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
@@ -120,7 +129,7 @@
                         </tbody>
                         <tfoot class="table-light fw-bold">
                             <tr>
-                                <td colspan="4" class="text-end">TOTAL</td>
+                                <td colspan="6" class="text-end">TOTAL</td>
                                 <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
                                 <td class="text-end text-primary">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                             </tr>

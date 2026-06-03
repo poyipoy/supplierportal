@@ -18,7 +18,7 @@
                 </button>
             </li>
         </ul>
-        <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center">
+        <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center" id="inspectionExportLink">
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
     </div>
@@ -44,6 +44,27 @@
 
             {{-- Tab: Riwayat Inspeksi --}}
             <div class="tab-pane fade" id="history" role="tabpanel">
+                <div class="bg-light border rounded-3 p-3 mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="historyStatusFilter" class="form-label small fw-semibold text-muted mb-1">
+                                Cari Status Inspeksi
+                            </label>
+                            <select id="historyStatusFilter" class="form-select form-select-sm">
+                                <option value="">Semua Status</option>
+                                <option value="ok" @selected(request('status') === 'ok')>OK</option>
+                                <option value="ng" @selected(request('status') === 'ng')>NG (Not Good)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-auto">
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="resetHistoryStatusFilter">
+                                <i class="bi bi-x-circle me-1"></i> Reset
+                            </button>
+                        </div>
+                        <div class="col-12 col-md">
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle" id="historyTable" style="width: 100%;">
                         <thead class="table-light">
@@ -86,24 +107,59 @@
         }));
 
         var historyInit = false;
+        var historyTable = null;
         $('button[data-bs-target="#history"]').on('shown.bs.tab', function() {
             if (!historyInit) {
                 historyInit = true;
-                $('#historyTable').DataTable(Object.assign({}, dtOpts, {
+                historyTable = $('#historyTable').DataTable(Object.assign({}, dtOpts, {
                     processing: true,
                     serverSide: true,
-                    ajax: '{{ route("qc.inspections.data-history") }}',
+                    ajax: {
+                        url: '{{ route("qc.inspections.data-history") }}',
+                        data: function(d) {
+                            d.status = $('#historyStatusFilter').val();
+                        }
+                    },
                     columns: [
                         { data: 'po_number', name: 'po_number', className: 'fw-bold', orderable: false },
                         { data: 'supplier_name', name: 'supplier_name', orderable: false },
                         { data: 'inspected_date', name: 'inspected_at' },
-                        { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
+                        { data: 'status_badge', name: 'status', className: 'text-center' },
                         { data: 'inspector_name', name: 'inspector_name', orderable: false },
                         { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
                     ],
                     language: dtLang
                 }));
             }
+        });
+
+        const updateInspectionFilterState = function() {
+            const status = $('#historyStatusFilter').val();
+            const url = new URL(window.location.href);
+            const exportUrl = new URL(@json(route('qc.export.inspections')), window.location.origin);
+
+            if (status) {
+                url.searchParams.set('status', status);
+                exportUrl.searchParams.set('status', status);
+            } else {
+                url.searchParams.delete('status');
+            }
+
+            window.history.replaceState({}, '', url);
+            $('#inspectionExportLink').attr('href', exportUrl.toString());
+        };
+
+        updateInspectionFilterState();
+
+        $('#historyStatusFilter').on('change', function() {
+            updateInspectionFilterState();
+            if (historyTable) {
+                historyTable.ajax.reload(null, true);
+            }
+        });
+
+        $('#resetHistoryStatusFilter').on('click', function() {
+            $('#historyStatusFilter').val('').trigger('change');
         });
     });
 </script>

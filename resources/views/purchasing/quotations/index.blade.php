@@ -204,7 +204,10 @@
                             <th class="text-center">Jumlah Item</th>
                             <th class="text-center">Status</th>
                             <th>Tanggal Diajukan</th>
-                            <th>Masa Berlaku</th>
+                            <th>
+                                Masa Berlaku
+                                <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Penawaran kadaluarsa tidak bisa dibuat PO sebelum supplier mengirim revisi."></i>
+                            </th>
                             <th class="text-end">Aksi</th>
                         </tr>
                     </thead>
@@ -232,15 +235,14 @@
                                 </td>
                                 <td>{{ $q->submitted_at ? $q->submitted_at->format('d M Y, H:i') : '-' }}</td>
                                 <td>
+                                    @php
+                                        $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($q->validity_period);
+                                    @endphp
                                     @if($q->validity_period)
                                         <div class="fw-medium">{{ $q->validity_period->format('d M Y') }}</div>
-                                        @if($q->isExpired())
-                                            <span class="badge bg-danger">Kadaluarsa</span>
-                                        @else
-                                            <span class="badge bg-success">Berlaku</span>
-                                        @endif
+                                        {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                                     @else
-                                        <span class="badge bg-warning text-dark">Belum Diisi</span>
+                                        {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                                     @endif
                                 </td>
                                 <td class="text-end">
@@ -339,6 +341,7 @@
                         current.replaceWith(incoming);
                     }
                 });
+                window.initAdasiTooltips?.(document.getElementById('quotationTableContainer'));
             };
 
             const submitFilters = async (targetUrl = null, preserveCursor = true) => {

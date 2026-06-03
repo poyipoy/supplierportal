@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/conversations/drawer', [\App\Http\Controllers\ConversationMessageController::class, 'drawerIndex'])->name('conversations.drawer.index');
     Route::get('/conversations/{id}/drawer', [\App\Http\Controllers\ConversationMessageController::class, 'drawerShow'])->name('conversations.drawer.show');
     Route::post('/conversations/{id}/messages', [\App\Http\Controllers\ConversationMessageController::class, 'store'])->name('conversations.messages.store');
+    Route::post('/conversations/{id}/quick-action', [\App\Http\Controllers\ConversationMessageController::class, 'quickAction'])->name('conversations.quick-action');
     Route::post('/conversations/{id}/read', [\App\Http\Controllers\ConversationMessageController::class, 'markRead'])->name('conversations.read');
     Route::get('/conversations/{id}/messages/latest', [\App\Http\Controllers\ConversationMessageController::class, 'latest'])->name('conversations.messages.latest');
     Route::get('/conversations/unread-count', [\App\Http\Controllers\ConversationMessageController::class, 'unreadCount'])->name('conversations.unread-count');
@@ -98,6 +99,8 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::post('/conversations/start-po/{po_id}', [\App\Http\Controllers\Purchasing\ConversationController::class, 'startFromPo'])->name('conversations.start.po');
     // Penawaran (view-only dari sisi Purchasing)
     Route::get('/quotations', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'index'])->name('quotations.index');
+    Route::post('/quotations/{id}/accept', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'accept'])->name('quotations.accept');
+    Route::post('/quotations/{id}/reject', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'reject'])->name('quotations.reject');
     Route::post('/quotations/{id}/request-revision', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'requestRevision'])->name('quotations.request-revision');
     Route::get('/quotations/{id}', [\App\Http\Controllers\Purchasing\QuotationListController::class, 'show'])->name('quotations.show');
     // Perbandingan Harga

@@ -29,13 +29,14 @@ class PrItem extends Model
     public const RELEVANT_DIMENSIONS = [
         self::SHAPE_FLAT => ['thickness', 'width', 'length'],
         self::SHAPE_ROUND => ['d_outer', 'length'],
-        self::SHAPE_HOLLOW => ['thickness', 'd_inner', 'd_outer', 'length'],
+        self::SHAPE_HOLLOW => ['d_inner', 'd_outer', 'length'],
     ];
 
     protected $fillable = [
         'pr_id',
         'hs_code',
         'material_name',
+        'quantity',
         'shape',
         'thickness',
         'd_inner',
@@ -54,6 +55,7 @@ class PrItem extends Model
             'width' => 'decimal:4',
             'length' => 'decimal:4',
             'weight_needed' => 'decimal:4',
+            'quantity' => 'integer',
         ];
     }
 
@@ -73,6 +75,7 @@ class PrItem extends Model
         $data = [
             'hs_code' => self::nullableString($item['hs_code'] ?? null),
             'material_name' => $item['material_name'] ?? null,
+            'quantity' => self::positiveInteger($item['quantity'] ?? null),
             'shape' => $shape,
             'thickness' => self::nullableValue($item['thickness'] ?? null),
             'd_inner' => self::nullableValue($item['d_inner'] ?? null),
@@ -91,6 +94,16 @@ class PrItem extends Model
         return $data;
     }
 
+    public function getQuantityValueAttribute(): int
+    {
+        return max(1, (int) ($this->attributes['quantity'] ?? 1));
+    }
+
+    public function getTotalWeightAttribute(): float
+    {
+        return (float) $this->weight_needed * $this->quantity_value;
+    }
+
     public function getDimensionLabelAttribute(): string
     {
         return match ($this->shape) {
@@ -103,7 +116,6 @@ class PrItem extends Model
                 . ' × ' . $this->formatDimensionValue($this->length),
             self::SHAPE_HOLLOW => 'Ø ' . $this->formatDimensionValue($this->d_outer)
                 . ' × Ø ' . $this->formatDimensionValue($this->d_inner)
-                . ' × ' . $this->formatDimensionValue($this->thickness)
                 . ' × ' . $this->formatDimensionValue($this->length),
             default => '-',
         };
@@ -123,6 +135,19 @@ class PrItem extends Model
     private static function nullableValue(mixed $value): mixed
     {
         return $value === '' ? null : $value;
+    }
+
+    private static function positiveInteger(mixed $value): ?int
+    {
+        if ($value === null) {
+            return 1;
+        }
+
+        if ($value === '') {
+            return null;
+        }
+
+        return (int) $value;
     }
 
     private function formatDimensionValue(mixed $value): string

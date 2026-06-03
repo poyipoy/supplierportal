@@ -52,11 +52,9 @@ class ProductionDummySeeder extends Seeder
             $supplier4 = $this->user('PT. Posco Indonesia', 'supplier4@test.com', 'supplier');
             $supplier5 = $this->user('PT. Krakatau Steel Intl', 'supplier5@test.com', 'supplier');
 
-            $supplier1->supplier?->update(['currency' => ExchangeRate::CURRENCY_USD]);
-            $supplier2->supplier?->update(['currency' => ExchangeRate::CURRENCY_CNY]);
-            $this->supplierProfile($supplier3, 'PT. Nippon Steel Trading', 'Flat Steel, Cold Rolled', '01.234.567.8-901.000', ExchangeRate::CURRENCY_JPY);
-            $this->supplierProfile($supplier4, 'PT. Posco Indonesia', 'Round Steel, Wire Rod', '02.345.678.9-012.000', ExchangeRate::CURRENCY_USD);
-            $this->supplierProfile($supplier5, 'PT. Krakatau Steel Intl', 'Flat Steel, Hot Rolled', '03.456.789.0-123.000', ExchangeRate::CURRENCY_IDR);
+            $this->supplierProfile($supplier3, 'PT. Nippon Steel Trading', 'Flat Steel, Cold Rolled', '01.234.567.8-901.000');
+            $this->supplierProfile($supplier4, 'PT. Posco Indonesia', 'Round Steel, Wire Rod', '02.345.678.9-012.000');
+            $this->supplierProfile($supplier5, 'PT. Krakatau Steel Intl', 'Flat Steel, Hot Rolled', '03.456.789.0-123.000');
 
             $this->seedExchangeRates($admin);
             $this->seedPeriods($admin);
@@ -107,7 +105,7 @@ class ProductionDummySeeder extends Seeder
         );
     }
 
-    private function supplierProfile(User $user, string $companyName, string $category, string $npwp, string $currency = ExchangeRate::CURRENCY_USD): Supplier
+    private function supplierProfile(User $user, string $companyName, string $category, string $npwp): Supplier
     {
         return Supplier::updateOrCreate(
             ['user_id' => $user->id],
@@ -117,7 +115,6 @@ class ProductionDummySeeder extends Seeder
                 'phone' => '021-555-' . str_pad((string) $user->id, 4, '0', STR_PAD_LEFT),
                 'npwp' => $npwp,
                 'category' => $category,
-                'currency' => $currency,
             ]
         );
     }
@@ -699,7 +696,7 @@ class ProductionDummySeeder extends Seeder
     ): Quotation {
         $createdAt = Carbon::parse($requirement->created_at)->addDays(4);
         $submittedAt = $status === 'draft' ? null : $createdAt->copy()->addDay();
-        $currency = $supplier->supplier->currency ?? ExchangeRate::CURRENCY_USD;
+        $currency = $this->quotationCurrencyForSupplier($supplier);
         $rate = $this->rates[$currency][$rateKey]
             ?? $this->rates[$currency]['today']
             ?? $this->rates[ExchangeRate::CURRENCY_USD][$rateKey];
@@ -727,7 +724,7 @@ class ProductionDummySeeder extends Seeder
             $quotation->items()->create([
                 'pr_item_id' => $prItem->id,
                 'price_per_kg' => $price,
-                'amount' => $price * $prItem->weight_needed,
+                'amount' => $price * $prItem->total_weight,
                 'notes' => 'Harga dummy per KG.',
                 'created_at' => $createdAt,
                 'updated_at' => $submittedAt ?? $createdAt,
@@ -737,6 +734,16 @@ class ProductionDummySeeder extends Seeder
         $this->quotations[$prNumber][$supplier->email] = $quotation;
 
         return $quotation;
+    }
+
+    private function quotationCurrencyForSupplier(User $supplier): string
+    {
+        return match ($supplier->email) {
+            'supplier2@test.com' => ExchangeRate::CURRENCY_CNY,
+            'supplier3@test.com' => ExchangeRate::CURRENCY_JPY,
+            'supplier5@test.com' => ExchangeRate::CURRENCY_IDR,
+            default => ExchangeRate::CURRENCY_USD,
+        };
     }
 
     private function convertUsdPriceToCurrency(float $priceUsd, string $currency, string $rateKey): float

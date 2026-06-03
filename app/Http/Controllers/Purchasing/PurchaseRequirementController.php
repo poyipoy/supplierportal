@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseRequirement;
 use App\Models\PrItem;
 use App\Models\Period;
+use App\Models\User;
 use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class PurchaseRequirementController extends Controller
     {
         if ($request->ajax()) {
             $query = PurchaseRequirement::with(['period', 'items', 'creator'])
+                ->withCount('invitedSuppliers')
                 ->orderBy('created_at', 'desc');
 
             if ($request->filled('period_id')) {
@@ -37,6 +39,7 @@ class PurchaseRequirementController extends Controller
                 ->addColumn('period_name', fn($pr) => $pr->period->name ?? '-')
                 ->addColumn('creator_name', fn($pr) => $pr->creator->name ?? '-')
                 ->addColumn('item_count', fn($pr) => $pr->items->count() . ' Item')
+                ->addColumn('supplier_count', fn($pr) => $pr->invited_suppliers_count)
                 ->addColumn('status_badge', function ($pr) {
                     $badgeClass = match($pr->status) {
                         'draft' => 'bg-secondary',
@@ -80,13 +83,18 @@ class PurchaseRequirementController extends Controller
     public function create()
     {
         $periods = Period::where('status', 'open')->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+        $suppliers = User::where('role', 'supplier')
+            ->where('is_active', true)
+            ->with('supplier')
+            ->orderBy('name')
+            ->get();
 
         if ($periods->isEmpty()) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
                 ->with('error', 'Tidak ada periode aktif (open). Silakan hubungi Admin untuk membuka periode.');
         }
 
-        return view('purchasing.pr.create', compact('periods'));
+        return view('purchasing.pr.create', compact('periods', 'suppliers'));
     }
 
     /**
@@ -116,6 +124,8 @@ class PurchaseRequirementController extends Controller
             foreach ($items as $item) {
                 $pr->items()->create($item);
             }
+
+            $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
 
             DB::commit();
 
@@ -152,6 +162,7 @@ class PurchaseRequirementController extends Controller
         $pr = PurchaseRequirement::with([
             'period',
             'items',
+            'invitedSuppliers.supplier',
             'quotations.supplier',
             'quotations.items.prItem',
             'quotations.exchange_rate',
@@ -160,7 +171,7 @@ class PurchaseRequirementController extends Controller
 
         $quotations = $pr->quotations->map(function ($quotation) {
             $quotation->total_amount = $quotation->items->sum(function ($item) {
-                $weight = optional($item->prItem)->weight_needed ?? 0;
+                $weight = optional($item->prItem)->total_weight ?? 0;
 
                 return (float) $item->price_per_kg * (float) $weight;
             });
@@ -168,7 +179,7 @@ class PurchaseRequirementController extends Controller
             $rate = $quotation->exchange_rate;
             $quotation->total_idr = $rate
                 ? $quotation->items->sum(function ($item) use ($rate) {
-                    $weight = optional($item->prItem)->weight_needed ?? 0;
+                    $weight = optional($item->prItem)->total_weight ?? 0;
 
                     return (float) $item->price_per_kg * (float) $weight * (float) $rate->rate_to_idr;
                 })
@@ -197,7 +208,7 @@ class PurchaseRequirementController extends Controller
      */
     public function edit(string $id)
     {
-        $pr = PurchaseRequirement::with(['period', 'items'])->findOrFail($id);
+        $pr = PurchaseRequirement::with(['period', 'items', 'invitedSuppliers.supplier'])->findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
@@ -208,7 +219,13 @@ class PurchaseRequirementController extends Controller
             ->orWhere('id', $pr->period_id) // Allow keeping current period even if closed
             ->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
 
-        return view('purchasing.pr.edit', compact('pr', 'periods'));
+        $suppliers = User::where('role', 'supplier')
+            ->where('is_active', true)
+            ->with('supplier')
+            ->orderBy('name')
+            ->get();
+
+        return view('purchasing.pr.edit', compact('pr', 'periods', 'suppliers'));
     }
 
     /**
@@ -249,6 +266,10 @@ class PurchaseRequirementController extends Controller
                 $pr->items()->create($item);
             }
 
+            if ($request->boolean('supplier_selection_present') || $request->has('supplier_id') || $request->has('supplier_ids')) {
+                $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
+            }
+
             DB::commit();
 
             $message = $validated['action'] === 'submitted'
@@ -279,10 +300,27 @@ class PurchaseRequirementController extends Controller
         return [
             'period_id' => 'required|exists:periods,id',
             'action' => 'required|in:draft,submitted',
+            'supplier_selection_present' => 'nullable|boolean',
+            'supplier_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')
+                    ->where('role', 'supplier')
+                    ->where('is_active', true),
+            ],
+            'supplier_ids' => 'nullable|array',
+            'supplier_ids.*' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')
+                    ->where('role', 'supplier')
+                    ->where('is_active', true),
+            ],
             'items' => 'required|array|min:1',
             'items.*.material_name' => 'required|string|max:255',
+            'items.*.quantity' => 'required|integer|min:1',
             'items.*.weight_needed' => 'required|numeric|min:0.01',
-            'items.*.hs_code' => 'nullable|string|max:100',
+            'items.*.hs_code' => 'required|string|max:100',
             'items.*.shape' => ['nullable', Rule::in(PrItem::SHAPES)],
             'items.*.thickness' => 'nullable|numeric|min:0',
             'items.*.d_inner' => 'nullable|numeric|min:0',
@@ -297,8 +335,13 @@ class PurchaseRequirementController extends Controller
         return [
             'items.required' => 'Minimal 1 material wajib ditambahkan.',
             'items.*.material_name.required' => 'Nama material wajib diisi.',
-            'items.*.weight_needed.required' => 'Berat dibutuhkan wajib diisi.',
+            'items.*.hs_code.required' => 'HS Code wajib diisi.',
+            'items.*.quantity.required' => 'Quantity wajib diisi.',
+            'items.*.quantity.min' => 'Quantity minimal 1.',
+            'items.*.weight_needed.required' => 'Berat per unit wajib diisi.',
             'items.*.shape.in' => 'Bentuk material harus Flat, Round, atau Hollow.',
+            'supplier_id.exists' => 'Supplier yang dipilih harus supplier aktif.',
+            'supplier_ids.*.exists' => 'Supplier yang dipilih harus supplier aktif.',
         ];
     }
 
@@ -311,6 +354,31 @@ class PurchaseRequirementController extends Controller
         }
 
         return $sanitized;
+    }
+
+    private function supplierIdsFromValidated(array $validated): array
+    {
+        if (! empty($validated['supplier_id'])) {
+            return [(int) $validated['supplier_id']];
+        }
+
+        return collect($validated['supplier_ids'] ?? [])
+            ->filter()
+            ->map(fn ($supplierId) => (int) $supplierId)
+            ->all();
+    }
+
+    private function syncInvitedSuppliers(PurchaseRequirement $pr, array $supplierIds): void
+    {
+        $syncData = collect($supplierIds)
+            ->filter()
+            ->unique()
+            ->mapWithKeys(fn ($supplierId) => [
+                (int) $supplierId => ['invited_at' => now()],
+            ])
+            ->all();
+
+        $pr->invitedSuppliers()->sync($syncData);
     }
 
     /**

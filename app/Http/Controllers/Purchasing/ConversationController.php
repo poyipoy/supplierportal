@@ -8,7 +8,9 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequirement;
 use App\Models\Quotation;
 use App\Support\PurchasingNavigation;
+use App\Support\ConversationPresenter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ConversationController extends Controller
 {
@@ -18,11 +20,10 @@ class ConversationController extends Controller
     public function index()
     {
         $conversations = Conversation::with(['conversable', 'supplierUser', 'latestMessage.sender'])
+            ->withMax('messages', 'created_at')
             ->where('purchasing_user_id', auth()->id())
-            ->get()
-            ->sortByDesc(function ($conv) {
-                return $conv->latestMessage?->created_at ?? $conv->created_at;
-            });
+            ->orderByDesc(DB::raw('COALESCE(messages_max_created_at, conversations.updated_at, conversations.created_at)'))
+            ->paginate(25);
 
         return view('purchasing.conversations.index', compact('conversations'));
     }
@@ -43,7 +44,13 @@ class ConversationController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        return view('conversations.show', compact('conversation'));
+        $conversation->load(['messages.sender', 'messages.attachments', 'latestMessage.sender']);
+
+        $chatContext = ConversationPresenter::context($conversation, auth()->user());
+        $quickActions = ConversationPresenter::quickActions($conversation, auth()->user());
+        $messageTemplates = ConversationPresenter::templates($conversation, auth()->user());
+
+        return view('conversations.show', compact('conversation', 'chatContext', 'quickActions', 'messageTemplates'));
     }
 
     /**

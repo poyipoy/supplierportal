@@ -58,7 +58,7 @@
                 <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required {{ $selectedSupplierId ? '' : 'disabled' }}>
                     <option value="">{{ $selectedSupplierId ? 'Pilih Material' : 'Pilih Supplier terlebih dahulu' }}</option>
                     @foreach($materials as $material)
-                        <option value="{{ $material }}" {{ $selectedMaterialName === $material ? 'selected' : '' }}>{{ $material }}</option>
+                        <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" {{ $selectedMaterialName === $material['name'] ? 'selected' : '' }}>{{ $material['name'] }}</option>
                     @endforeach
                 </select>
             </div>
@@ -78,6 +78,39 @@
 
                     <input type="radio" class="btn-check" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
                     <label class="btn btn-outline-primary" for="periodViewYearly">Per Tahun</label>
+                </div>
+            </div>
+
+            <div class="col-12 mt-3 mb-1">
+                <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-bold">
+                    <i class="bi bi-funnel"></i> Filter Dimensi (Opsional)
+                </a>
+            </div>
+            <div class="collapse {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
+                <div class="row g-2">
+                    <div class="col-md-2 dimension-field" data-dim="thickness">
+                        <label class="form-label small text-muted">Thickness (mm)</label>
+                        <input type="number" step="0.01" name="thickness" class="form-control form-control-sm historical-filter-input" value="{{ request('thickness') }}">
+                    </div>
+                    <div class="col-md-2 dimension-field" data-dim="d_inner">
+                        <label class="form-label small text-muted">D-Inner (mm)</label>
+                        <input type="number" step="0.01" name="d_inner" class="form-control form-control-sm historical-filter-input" value="{{ request('d_inner') }}">
+                    </div>
+                    <div class="col-md-2 dimension-field" data-dim="d_outer">
+                        <label class="form-label small text-muted">D-Outer (mm)</label>
+                        <input type="number" step="0.01" name="d_outer" class="form-control form-control-sm historical-filter-input" value="{{ request('d_outer') }}">
+                    </div>
+                    <div class="col-md-2 dimension-field" data-dim="width">
+                        <label class="form-label small text-muted">Width (mm)</label>
+                        <input type="number" step="0.01" name="width" class="form-control form-control-sm historical-filter-input" value="{{ request('width') }}">
+                    </div>
+                    <div class="col-md-2 dimension-field" data-dim="length">
+                        <label class="form-label small text-muted">Length (mm)</label>
+                        <input type="number" step="0.01" name="length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end flex-grow-1">
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Terapkan</button>
+                    </div>
                 </div>
             </div>
         </form>
@@ -259,9 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         materialSelect.innerHTML = [
             `<option value="">${escapeOptionText(placeholder)}</option>`,
-            ...materials.map((material) => (
-                `<option value="${escapeOptionText(material)}"${material === selectedValue ? ' selected' : ''}>${escapeOptionText(material)}</option>`
-            )),
+            ...materials.map((material) => {
+                const name = typeof material === 'string' ? material : (material.name || '');
+                const shape = typeof material === 'string' ? '' : (material.shape || '');
+                const selected = name === selectedValue ? ' selected' : '';
+                return `<option value="${escapeOptionText(name)}" data-shape="${escapeOptionText(shape)}"${selected}>${escapeOptionText(name)}</option>`;
+            }),
         ].join('');
         materialSelect.disabled = !supplierSelect.value || materials.length === 0;
     }
@@ -358,8 +394,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    filterForm.addEventListener('submit', (e) => {
+        if (materialSelect.value && typeof window.loadHistoricalPayloadFromFilters === 'function') {
+            e.preventDefault();
+            window.loadHistoricalPayloadFromFilters();
+        }
+    });
+
     const activeView = document.querySelector('input[name="period_view"]:checked')?.value || 'monthly';
     renderRangeOptions(activeView, rangeSelect.value);
+
+    // Shape Validation Logic
+    const dimensionFields = document.querySelectorAll('.dimension-field');
+    const relevantDimensions = {
+        'Flat': ['thickness', 'width', 'length'],
+        'Round': ['d_outer', 'length'],
+        'Hollow': ['d_inner', 'd_outer', 'length']
+    };
+
+    function updateDimensionVisibility() {
+        if (!materialSelect || !materialSelect.selectedOptions.length) return;
+        const selectedOption = materialSelect.selectedOptions[0];
+        const shape = selectedOption.dataset.shape || '';
+        const allowed = relevantDimensions[shape] || ['thickness', 'd_inner', 'd_outer', 'width', 'length'];
+
+        dimensionFields.forEach(field => {
+            const dim = field.dataset.dim;
+            if (allowed.includes(dim)) {
+                field.style.display = '';
+            } else {
+                field.style.display = 'none';
+                const input = field.querySelector('input');
+                if (input) input.value = '';
+            }
+        });
+    }
+
+    if (materialSelect) {
+        materialSelect.addEventListener('change', updateDimensionVisibility);
+        updateDimensionVisibility();
+    }
 });
 </script>
 @if($chartData)
@@ -670,19 +744,19 @@ function renderPayload(payload) {
 window.loadHistoricalPayloadFromFilters = async function () {
     const supplierSelect = document.getElementById('historicalSupplierSelect');
     const materialSelect = document.getElementById('historicalMaterialSelect');
-    const rangeSelect = document.getElementById('historicalRangeSelect');
-    const periodView = document.querySelector('input[name="period_view"]:checked')?.value || 'monthly';
+    const filterForm = document.getElementById('historicalFilterForm');
 
-    if (!supplierSelect?.value || !materialSelect?.value) {
-        renderPayload({ chartData: null, materialName: null });
+    if (!supplierSelect.value || !materialSelect.value) {
         return;
     }
 
     const url = new URL(historicalDataUrl, window.location.origin);
-    url.searchParams.set('supplier_id', supplierSelect.value);
-    url.searchParams.set('material_name', materialSelect.value);
-    url.searchParams.set('range', rangeSelect.value);
-    url.searchParams.set('period_view', periodView);
+    const formData = new FormData(filterForm);
+    for (const [key, value] of formData.entries()) {
+        if (value.trim() !== '') {
+            url.searchParams.set(key, value.trim());
+        }
+    }
     url.searchParams.set('view', 'json');
 
     try {

@@ -41,6 +41,25 @@
             overflow-x: hidden;
         }
 
+        /* Micro-animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .card { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+        .card:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.08) !important; }
+
+        /* Action button consistency in tables */
+        .table .btn {
+            padding: 0.25rem 0.6rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+        }
+        .table .btn i { margin-right: 0.2rem; }
+
         /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
@@ -186,6 +205,11 @@
         .content-area {
             padding: 2rem;
             flex-grow: 1;
+            animation: fadeInContent 0.25s ease-out;
+        }
+        @keyframes fadeInContent {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* Role Badge */
@@ -246,6 +270,47 @@
             background-color: rgba(31, 95, 166, 0.05) !important;
         }
 
+        /* Sticky Table Header — keeps column context visible when scrolling */
+        .table-responsive {
+            max-height: none; /* allow natural scroll */
+        }
+        .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        /* When table is inside content-area (below sticky navbar), offset for navbar */
+        .content-area .card .table thead th {
+            top: 0; /* relative to card scroll container */
+        }
+
+        /* Action button sizing — consistent minimum touch target */
+        .table .btn-sm {
+            padding: 0.3rem 0.55rem;
+            font-size: 0.78rem;
+            min-width: 32px;
+            min-height: 30px;
+        }
+
+        /* Clickable KPI cards */
+        a.kpi-card {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        a.kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(31, 95, 166, 0.12) !important;
+        }
+        a.kpi-card .kpi-arrow {
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        a.kpi-card:hover .kpi-arrow {
+            opacity: 1;
+        }
+
         /* DataTables Adjustment */
         .dataTables_wrapper .dataTables_paginate .paginate_button.current {
             background: var(--adasi-blue) !important;
@@ -281,6 +346,10 @@
             overflow-y: auto;
         }
 
+        .chat-message-list {
+            min-height: 220px;
+        }
+
         .chat-thread-button {
             background: #fff;
             border: 0;
@@ -296,23 +365,251 @@
             background: rgba(31, 95, 166, 0.06);
         }
 
+        .chat-message-row {
+            display: flex;
+            margin-bottom: 0.85rem;
+            width: 100%;
+        }
+
+        .chat-message-stack {
+            display: flex;
+            flex-direction: column;
+            max-width: min(72%, 320px);
+            min-width: 0;
+        }
+
         .chat-message-bubble {
-            border-radius: 0.9rem;
-            max-width: 82%;
-            padding: 0.75rem 0.9rem;
-            white-space: pre-wrap;
+            border-radius: 0.72rem;
+            display: inline-block;
+            padding: 0.52rem 0.68rem;
             word-break: break-word;
+            width: fit-content;
+            max-width: 100%;
+            line-height: 1.35;
+            font-size: 0.92rem;
+        }
+
+        .chat-message-text {
+            white-space: pre-wrap;
         }
 
         .chat-message-bubble.is-me {
             background: var(--adasi-blue);
             color: #fff;
+            border-bottom-right-radius: 0.28rem;
         }
 
         .chat-message-bubble.is-partner {
             background: #fff;
             border: 1px solid #e2e8f0;
             color: #1e293b;
+            border-bottom-left-radius: 0.28rem;
+        }
+
+        .chat-message-meta {
+            align-items: center;
+            color: #64748b;
+            display: flex;
+            font-size: 0.72rem;
+            gap: 0.25rem;
+            line-height: 1.2;
+            margin-top: 0.25rem;
+            padding-inline: 0.2rem;
+        }
+
+        .chat-message-meta.text-end {
+            justify-content: flex-end;
+        }
+
+        .chat-message-meta.text-start {
+            justify-content: flex-start;
+        }
+
+        .chat-context-panel {
+            flex: 0 0 auto;
+            padding: 0.75rem 1rem !important;
+        }
+
+        .chat-context-grid {
+            display: grid;
+            gap: 0.4rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            max-height: 145px;
+            overflow-y: auto;
+            font-size: 0.78rem;
+        }
+
+        .chat-context-field {
+            min-width: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.45rem;
+            background: #f8fafc;
+            padding: 0.35rem 0.5rem;
+        }
+
+        .chat-action-panel,
+        .chat-template-strip {
+            gap: 0.4rem;
+        }
+
+        .chat-action-panel {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 0.4rem !important;
+            white-space: nowrap;
+        }
+
+        .chat-action-panel .btn {
+            flex: 0 0 auto;
+        }
+
+        .chat-template-menu {
+            max-height: 220px;
+            max-width: 340px;
+            min-width: 280px;
+            overflow-y: auto;
+        }
+
+        .chat-composer-tools {
+            min-height: 32px;
+        }
+
+        #chatDrawerInput {
+            min-height: 58px;
+        }
+
+        .chat-attachment-stack {
+            display: grid;
+            gap: 0.4rem;
+        }
+
+        .chat-attachment-link {
+            align-items: center;
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 0.45rem;
+            color: inherit;
+            display: flex;
+            max-width: 100%;
+            padding: 0.42rem 0.55rem;
+            text-decoration: none;
+        }
+
+        .chat-message-bubble.is-partner .chat-attachment-link {
+            background: #f8fafc;
+            border-color: #dbe3ec;
+            color: var(--adasi-blue);
+        }
+
+        .chat-read-receipt {
+            color: #94a3b8;
+            display: inline-flex;
+            font-size: 0.82rem;
+            line-height: 1;
+            vertical-align: -0.08rem;
+        }
+
+        .chat-read-receipt.is-read {
+            color: #3b82f6;
+        }
+
+        .chat-fullpage-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            height: calc(100vh - 105px);
+            min-height: 620px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .chat-fullpage-back,
+        .chat-fullpage-context {
+            flex: 0 0 auto;
+        }
+
+        .chat-fullpage-context .card-body {
+            padding: 0.65rem 1rem;
+        }
+
+        .chat-fullpage-context-details summary {
+            cursor: pointer;
+            list-style: none;
+            width: fit-content;
+        }
+
+        .chat-fullpage-context-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .chat-fullpage-context-details summary::after {
+            content: " ▾";
+            font-size: 0.75rem;
+        }
+
+        .chat-fullpage-context-details[open] summary::after {
+            content: " ▴";
+        }
+
+        .chat-fullpage-context-details .row.g-2 {
+            max-height: 96px;
+            overflow-y: auto;
+        }
+
+        .chat-fullpage-context:not(:has(.chat-fullpage-context-details[open])) {
+            overflow: visible;
+        }
+
+        .chat-fullpage-card {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .chat-fullpage-card .card-header,
+        .chat-fullpage-card .card-footer {
+            flex: 0 0 auto;
+        }
+
+        .chat-fullpage-card .card-header {
+            min-height: 58px;
+            padding: 0.55rem 1rem !important;
+        }
+
+        .chat-fullpage-card .card-footer {
+            padding: 0.6rem 1rem !important;
+        }
+
+        .chat-fullpage-card #chat-messages {
+            flex: 1 1 auto !important;
+            min-height: 0;
+            padding: 1.25rem 1.5rem !important;
+        }
+
+        .chat-fullpage-avatar {
+            height: 36px;
+            width: 36px;
+        }
+
+        .chat-fullpage-avatar i {
+            font-size: 1.1rem !important;
+        }
+
+        .chat-fullpage-card .chat-message-stack {
+            max-width: min(88%, 1180px);
+        }
+
+        .chat-fullpage-card .chat-message-bubble {
+            font-size: 0.96rem;
+            line-height: 1.42;
+        }
+
+        .chat-fullpage-card #message-body {
+            min-height: 46px;
+            max-height: 92px;
+            flex: 1 1 auto;
         }
 
         .notification-dropdown {
@@ -502,7 +799,7 @@
         $initNotifCount = 0;
         $initChatCount = 0;
         if(auth()->check()) {
-            $initNotifCount = auth()->user()->unreadNotifications->count();
+            $initNotifCount = auth()->user()->unreadNotifications()->count();
             if(in_array(auth()->user()->role, ['purchasing', 'supplier'])) {
                 $initChatCount = \App\Models\Conversation::forUser(auth()->id())
                     ->withCount(['messages' => function($q) {
@@ -536,6 +833,20 @@
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+    <script>
+        window.initAdasiTooltips = function(root = document) {
+            if (!window.bootstrap?.Tooltip) {
+                return;
+            }
+
+            root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+                bootstrap.Tooltip.getOrCreateInstance(element);
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => window.initAdasiTooltips());
+    </script>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
@@ -545,6 +856,16 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <script>
+        // SweetAlert2 global defaults: keyboard-friendly confirmations
+        if (window.Swal) {
+            const SwalDefault = Swal.mixin({
+                focusConfirm: true,
+                reverseButtons: true,
+            });
+            window.Swal = SwalDefault;
+        }
+    </script>
 
     <!-- Ngrok browser warning bypass for internal async requests -->
     <script>
@@ -769,6 +1090,83 @@
             });
         });
     </script>
+
+    {{-- Global Script untuk Export Preview --}}
+    <script>
+        document.addEventListener('click', function(e) {
+            const exportBtn = e.target.closest('a[href*="/export/"]');
+            if (exportBtn) {
+                e.preventDefault();
+                
+                let recordsTotal = 'seluruh';
+                if (typeof $ !== 'undefined' && $.fn.dataTable) {
+                    const tables = $.fn.dataTable.tables(true);
+                    if (tables.length > 0) {
+                        const info = $(tables[0]).DataTable().page.info();
+                        recordsTotal = info.recordsTotal;
+                    }
+                }
+                
+                Swal.fire({
+                    title: 'Konfirmasi Export',
+                    html: `Anda akan mengekspor <strong>${recordsTotal}</strong> baris data ke Excel.<br>Proses ini mungkin memakan waktu. Lanjutkan?`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="bi bi-file-earmark-excel me-1"></i> Ya, Export',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    confirmButtonColor: '#198754'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.isExporting = true;
+                        window.location.href = exportBtn.href;
+                        setTimeout(() => window.isExporting = false, 3000);
+                    }
+                });
+            }
+        });
+    </script>
+
+    {{-- Keyboard Shortcuts --}}
+    <script>
+        document.addEventListener('keydown', function(e) {
+            // Abaikan jika fokus ada pada input/textarea
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                return;
+            }
+
+            // Alt + D -> Dashboard
+            if (e.altKey && e.key.toLowerCase() === 'd') {
+                e.preventDefault();
+                window.location.href = '{{ auth()->check() ? route(auth()->user()->role . ".dashboard") : "/" }}';
+            }
+
+            // ? -> Modal Shortcut
+            if (e.key === '?') {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Keyboard Shortcuts',
+                    html: `
+                        <div class="text-start">
+                            <table class="table table-borderless table-sm mb-0">
+                                <tr>
+                                    <td width="40%"><kbd>Alt + D</kbd></td>
+                                    <td>Kembali ke Dashboard</td>
+                                </tr>
+                                <tr>
+                                    <td><kbd>?</kbd></td>
+                                    <td>Buka Bantuan Ini</td>
+                                </tr>
+                            </table>
+                        </div>
+                    `,
+                    icon: 'info',
+                    confirmButtonText: 'Tutup'
+                });
+            }
+        });
+    </script>
+
     @stack('scripts')
 </body>
 

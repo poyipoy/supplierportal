@@ -9,7 +9,6 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequirement;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
-use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -29,8 +28,8 @@ class SampleDataSeeder extends Seeder
         }
 
         DB::transaction(function () use ($purchasing, $supplier1User, $supplier2User, $rateUsd) {
-            $currency1 = $supplier1User->supplier->currency ?? ExchangeRate::CURRENCY_USD;
-            $currency2 = $supplier2User->supplier->currency ?? ExchangeRate::CURRENCY_USD;
+            $currency1 = ExchangeRate::CURRENCY_USD;
+            $currency2 = ExchangeRate::CURRENCY_CNY;
             $rate1 = ExchangeRate::latestRate($currency1) ?? $rateUsd;
             $rate2 = ExchangeRate::latestRate($currency2) ?? $rateUsd;
             $convertFromUsd = function (float $usdPrice, ExchangeRate $targetRate) use ($rateUsd): float {
@@ -92,7 +91,7 @@ class SampleDataSeeder extends Seeder
                 'quotation_id' => $quotation1->id,
                 'pr_item_id' => $item1->id,
                 'price_per_kg' => $item1Supplier1Price,
-                'amount' => $item1Supplier1Price * 5000,
+                'amount' => $item1Supplier1Price * $item1->total_weight,
             ]);
 
             $item2Supplier1Price = $convertFromUsd(0.95, $rate1);
@@ -100,7 +99,7 @@ class SampleDataSeeder extends Seeder
                 'quotation_id' => $quotation1->id,
                 'pr_item_id' => $item2->id,
                 'price_per_kg' => $item2Supplier1Price,
-                'amount' => $item2Supplier1Price * 3000,
+                'amount' => $item2Supplier1Price * $item2->total_weight,
             ]);
 
             // 5. Create Quotation from Supplier 2 (Rejected)
@@ -118,7 +117,7 @@ class SampleDataSeeder extends Seeder
                 'quotation_id' => $quotation2->id,
                 'pr_item_id' => $item1->id,
                 'price_per_kg' => $item1Supplier2Price,
-                'amount' => $item1Supplier2Price * 5000,
+                'amount' => $item1Supplier2Price * $item1->total_weight,
             ]);
 
             $item2Supplier2Price = $convertFromUsd(1.0, $rate2);
@@ -126,7 +125,7 @@ class SampleDataSeeder extends Seeder
                 'quotation_id' => $quotation2->id,
                 'pr_item_id' => $item2->id,
                 'price_per_kg' => $item2Supplier2Price,
-                'amount' => $item2Supplier2Price * 3000,
+                'amount' => $item2Supplier2Price * $item2->total_weight,
             ]);
 
             // 6. Create Purchase Order for Quotation 1
@@ -180,7 +179,7 @@ class SampleDataSeeder extends Seeder
                 'quotation_id' => $quotation3->id,
                 'pr_item_id' => $item3->id,
                 'price_per_kg' => $item3Supplier2Price,
-                'amount' => $item3Supplier2Price * 10000,
+                'amount' => $item3Supplier2Price * $item3->total_weight,
             ]);
 
             echo "Sample data generated successfully!\n";

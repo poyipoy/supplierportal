@@ -37,9 +37,7 @@ class QuotationPolicy
      */
     public function update(User $user, Quotation $quotation): bool
     {
-        return $user->role === 'supplier' 
-            && $user->id === $quotation->supplier_id 
-            && $quotation->canBeRevisedBySupplier();
+        return $quotation->canEditBy($user);
     }
 
     /**

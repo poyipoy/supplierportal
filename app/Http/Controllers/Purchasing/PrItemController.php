@@ -74,8 +74,9 @@ class PrItemController extends Controller
     {
         return $extra + [
             'material_name' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:1',
             'weight_needed' => 'required|numeric|min:0.01',
-            'hs_code' => 'nullable|string|max:100',
+            'hs_code' => 'required|string|max:100',
             'shape' => ['nullable', Rule::in(PrItem::SHAPES)],
             'thickness' => 'nullable|numeric|min:0',
             'd_inner' => 'nullable|numeric|min:0',

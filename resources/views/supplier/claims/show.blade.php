@@ -4,6 +4,11 @@
 @section('page-title', 'Klaim Material PO: ' . $claim->purchaseOrder->po_number)
 
 @section('content')
+<x-breadcrumb :items="[
+    'Dashboard' => route('supplier.dashboard'),
+    'Klaim Material' => route('supplier.claims.index'),
+    'Klaim #' . $claim->id => '#'
+]" />
 <div class="mb-3">
     <a href="{{ route('supplier.claims.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Klaim
@@ -17,16 +22,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-octagon me-2"></i>Tuntutan Klaim</h5>
-                    @php
-                        $badgeClass = match($claim->status) {
-                            'pending' => 'bg-warning text-dark',
-                            'responded' => 'bg-info',
-                            'resolved' => 'bg-success',
-                            'escalated' => 'bg-danger',
-                            default => 'bg-secondary'
-                        };
-                    @endphp
-                    <span class="badge {{ $badgeClass }} text-uppercase fs-6 px-3 py-2">{{ $claim->status }}</span>
+                    <x-status-badge type="claim" :status="$claim->status" size="lg" />
                 </div>
                 
                 <div class="row mb-3">

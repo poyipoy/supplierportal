@@ -67,10 +67,14 @@
                         <td class="fw-bold">{{ $insp->purchaseOrder->po_number }}</td>
                         <td>{{ $insp->purchaseOrder->supplier->name }}</td>
                         <td>{{ $insp->inspected_at->format('d M Y') }}</td>
-                        <td class="text-center"><span class="badge bg-{{ $insp->status==='ok'?'success':'danger' }}">{{ strtoupper($insp->status) }}</span></td>
+                        <td class="text-center"><x-status-badge type="qc" :status="$insp->status" /></td>
                         <td class="text-end"><a href="{{ route('qc.inspections.show', $insp->id) }}" class="btn btn-sm btn-outline-info">Detail</a></td>
                     </tr>
                     @empty<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada data.</td></tr>@endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
                 </tbody>
             </table>
         </div>
@@ -81,9 +85,81 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-@if($totalInspections > 0)
-new Chart(document.getElementById('qualityChart'),{type:'doughnut',data:{labels:['OK','NG'],datasets:[{data:[{{ $totalOk }},{{ $totalNg }}],backgroundColor:['#198754','#dc3545'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},cutout:'70%'}});
-@endif
-new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:{!! json_encode(array_column($trendData,'label')) !!},datasets:[{label:'OK',data:{!! json_encode(array_column($trendData,'ok')) !!},borderColor:'#198754',backgroundColor:'rgba(25,135,84,0.1)',fill:true,tension:.3,pointRadius:5,pointBackgroundColor:'#198754'},{label:'NG',data:{!! json_encode(array_column($trendData,'ng')) !!},borderColor:'#dc3545',backgroundColor:'rgba(220,53,69,0.1)',fill:true,tension:.3,pointRadius:5,pointBackgroundColor:'#dc3545'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{stepSize:1}}},plugins:{legend:{position:'bottom'}}}});
+    const commonTooltip = {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#333',
+        bodyColor: '#555',
+        borderColor: 'rgba(0,0,0,0.1)',
+        borderWidth: 1,
+        titleFont: { size: 14, family: 'Inter', weight: 'bold' },
+        bodyFont: { size: 13, family: 'Inter' },
+        padding: 12,
+        cornerRadius: 8,
+        boxPadding: 6,
+        displayColors: true,
+    };
+
+    @if($totalInspections > 0)
+    new Chart(document.getElementById('qualityChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['OK', 'NG'],
+            datasets: [{
+                data: [{{ $totalOk }}, {{ $totalNg }}],
+                backgroundColor: ['#198754', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { family: 'Inter' } } },
+                tooltip: commonTooltip
+            },
+            cutout: '70%'
+        }
+    });
+    @endif
+
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: {!! json_encode(array_column($trendData, 'label')) !!},
+            datasets: [
+                {
+                    label: 'OK',
+                    data: {!! json_encode(array_column($trendData, 'ok')) !!},
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25,135,84,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#198754'
+                },
+                {
+                    label: 'NG',
+                    data: {!! json_encode(array_column($trendData, 'ng')) !!},
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220,53,69,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#dc3545'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { family: 'Inter' } } },
+                tooltip: commonTooltip
+            }
+        }
+    });
 </script>
 @endpush

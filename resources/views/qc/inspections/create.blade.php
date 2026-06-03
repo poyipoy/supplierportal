@@ -3,6 +3,32 @@
 @section('title', 'Mulai Inspeksi QC: ' . $po->po_number . ' — ADASI Portal')
 @section('page-title', 'Inspeksi QC Material')
 
+@push('styles')
+<style>
+    .qc-spec-grid,
+    .qc-dimension-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: .75rem;
+    }
+
+    @media (min-width: 992px) {
+        .qc-spec-grid,
+        .qc-dimension-grid {
+            grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+        }
+    }
+
+    .qc-spec-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .5rem;
+        padding: .65rem .75rem;
+        background: #f8fafc;
+        min-height: 64px;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="mb-3">
     <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
@@ -44,9 +70,37 @@
     @csrf
 
     @php $allItems = $po->quotations->flatMap(fn($q) => $q->items); @endphp
+    @php
+        $qcDimensionLabels = [
+            'thickness' => 'Thickness (mm)',
+            'd_inner' => 'Inner Dia. (mm)',
+            'd_outer' => 'Outer Dia. (mm)',
+            'width' => 'Width (mm)',
+            'length' => 'Length (mm)',
+            'weight' => 'Berat/Unit (Kg)',
+        ];
+        $qcSpecFields = [
+            'thickness' => 'thickness',
+            'd_inner' => 'd_inner',
+            'd_outer' => 'd_outer',
+            'width' => 'width',
+            'length' => 'length',
+            'weight' => 'weight_needed',
+        ];
+        $qcActualFields = [
+            'thickness' => 'actual_thickness',
+            'd_inner' => 'actual_d_inner',
+            'd_outer' => 'actual_d_outer',
+            'width' => 'actual_width',
+            'length' => 'actual_length',
+            'weight' => 'actual_weight',
+        ];
+    @endphp
     @foreach($allItems as $index => $item)
         @php
             $prItem = $item->prItem;
+            $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($prItem?->shape);
+            $visibleDimensions = array_merge($relevantDimensions, ['weight']);
         @endphp
         <div class="card border-0 shadow-sm mb-4 item-card">
             <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
@@ -55,82 +109,60 @@
             </div>
             <div class="card-body">
                 <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $prItem->id }}">
-                <input type="hidden" name="items[{{ $index }}][status]" value="ok" class="item-status-input" id="input-status-{{ $index }}">
 
                 <div class="row g-4">
                     {{-- Read Only Specs --}}
-                    <div class="col-md-5 border-end pe-4">
+                    <div class="col-md-5 border-md-end border-bottom border-md-bottom-0 pb-4 pb-md-0 mb-2 mb-md-0 pe-md-4">
                         <h6 class="fw-bold mb-3 small text-muted text-uppercase">Spesifikasi Diminta</h6>
-                        <table class="table table-sm table-borderless small mb-0">
-                            <tbody>
-                                <tr>
-                                    <td class="text-muted" width="40%">Shape</td>
-                                    <td class="fw-medium">{{ $prItem->shape ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Thickness (mm)</td>
-                                    <td class="fw-medium spec-val" data-spec-type="thickness" data-val="{{ $prItem->thickness }}">{{ $prItem->thickness ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Inner Dia. (mm)</td>
-                                    <td class="fw-medium spec-val" data-spec-type="d_inner" data-val="{{ $prItem->d_inner }}">{{ $prItem->d_inner ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Outer Dia. (mm)</td>
-                                    <td class="fw-medium spec-val" data-spec-type="d_outer" data-val="{{ $prItem->d_outer }}">{{ $prItem->d_outer ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Width (mm)</td>
-                                    <td class="fw-medium spec-val" data-spec-type="width" data-val="{{ $prItem->width }}">{{ $prItem->width ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Length (mm)</td>
-                                    <td class="fw-medium spec-val" data-spec-type="length" data-val="{{ $prItem->length }}">{{ $prItem->length ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Weight (Kg)</td>
-                                    <td class="fw-medium spec-val" data-spec-type="weight" data-val="{{ $prItem->weight_needed }}">{{ $prItem->weight_needed ?? '-' }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="qc-spec-grid">
+                            <div class="qc-spec-box">
+                                <div class="small text-muted">Shape</div>
+                                <div class="fw-semibold">{{ $prItem->shape ?? '-' }}</div>
+                            </div>
+                            <div class="qc-spec-box">
+                                <div class="small text-muted">Quantity</div>
+                                <div class="fw-semibold">{{ number_format($prItem->quantity_value, 0) }}</div>
+                            </div>
+                            @foreach($visibleDimensions as $dimension)
+                                @php
+                                    $specField = $qcSpecFields[$dimension];
+                                    $specValue = $prItem?->{$specField};
+                                @endphp
+                                <div class="qc-spec-box">
+                                    <div class="small text-muted">{{ $qcDimensionLabels[$dimension] }}</div>
+                                    <div class="fw-semibold spec-val" data-spec-type="{{ $dimension }}" data-val="{{ $specValue }}">{{ $specValue ?? '-' }}</div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
 
                     {{-- Actual Inputs --}}
                     <div class="col-md-7 ps-md-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold small text-primary text-uppercase mb-0">Input Aktual</h6>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input manual-override-switch" type="checkbox" role="switch" id="override-{{ $index }}" data-index="{{ $index }}">
-                                <label class="form-check-label small" for="override-{{ $index }}">Set Manual NG</label>
+                            <div class="text-end" style="min-width: 150px;">
+                                @php $itemStatus = old('items.' . $index . '.status', 'ok'); @endphp
+                                <div class="small text-muted mb-1">Status</div>
+                                <div class="form-check form-switch d-inline-flex align-items-center gap-2 mb-0">
+                                    <input type="hidden" name="items[{{ $index }}][status]" id="input-status-{{ $index }}" class="item-status-value" value="{{ $itemStatus === 'ng' ? 'ng' : 'ok' }}">
+                                    <input class="form-check-input item-status-switch m-0" type="checkbox" role="switch" id="switch-status-{{ $index }}" data-index="{{ $index }}" @checked($itemStatus === 'ng')>
+                                    <label class="form-check-label small fw-semibold {{ $itemStatus === 'ng' ? 'text-danger' : 'text-success' }}" for="switch-status-{{ $index }}" id="status-label-{{ $index }}">
+                                        {{ $itemStatus === 'ng' ? 'NG' : 'OK' }}
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="row g-3 input-row" data-index="{{ $index }}">
-                            <div class="col-md-4">
-                                <label class="form-label small">Thickness (mm)</label>
-                                <input type="number" step="any" name="items[{{ $index }}][actual_thickness]" class="form-control form-control-sm actual-input" data-spec-type="thickness">
+                        <div class="input-row" data-index="{{ $index }}">
+                            <div class="qc-dimension-grid">
+                            @foreach($visibleDimensions as $dimension)
+                                <div>
+                                    <label class="form-label small">{{ $qcDimensionLabels[$dimension] }}</label>
+                                    <input type="number" step="any" name="items[{{ $index }}][{{ $qcActualFields[$dimension] }}]" class="form-control form-control-sm actual-input" data-spec-type="{{ $dimension }}" value="{{ old('items.' . $index . '.' . $qcActualFields[$dimension]) }}">
+                                </div>
+                            @endforeach
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label small">Inner Dia. (mm)</label>
-                                <input type="number" step="any" name="items[{{ $index }}][actual_d_inner]" class="form-control form-control-sm actual-input" data-spec-type="d_inner">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small">Outer Dia. (mm)</label>
-                                <input type="number" step="any" name="items[{{ $index }}][actual_d_outer]" class="form-control form-control-sm actual-input" data-spec-type="d_outer">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small">Width (mm)</label>
-                                <input type="number" step="any" name="items[{{ $index }}][actual_width]" class="form-control form-control-sm actual-input" data-spec-type="width">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small">Length (mm)</label>
-                                <input type="number" step="any" name="items[{{ $index }}][actual_length]" class="form-control form-control-sm actual-input" data-spec-type="length">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small">Weight (Kg)</label>
-                                <input type="number" step="any" name="items[{{ $index }}][actual_weight]" class="form-control form-control-sm actual-input" data-spec-type="weight">
-                            </div>
-                            <div class="col-12 mt-3">
+                            <div class="mt-3">
                                 <label class="form-label small">Catatan Item</label>
                                 <textarea name="items[{{ $index }}][notes]" class="form-control form-control-sm" rows="1" placeholder="Opsional..."></textarea>
                             </div>
@@ -163,8 +195,7 @@
         
         function evaluateItem(index) {
             const row = $(`.input-row[data-index="${index}"]`);
-            const isManualNg = $(`#override-${index}`).is(':checked');
-            let isNg = false;
+            const selectedStatus = $(`#input-status-${index}`).val();
 
             row.find('.actual-input').each(function() {
                 const specType = $(this).data('spec-type');
@@ -184,31 +215,28 @@
                         
                         if (ratio > 0.05) { // Lebih dari 5%
                             $(this).addClass('is-invalid');
-                            isNg = true;
                         }
                     }
                 }
             });
 
-            if (isManualNg) {
-                isNg = true;
-            }
+            const isNg = selectedStatus === 'ng';
 
             // Update UI for this item
             const badge = $(`#badge-status-${index}`);
-            const input = $(`#input-status-${index}`);
+            const statusLabel = $(`#status-label-${index}`);
             const photoSection = $(`#photo-section-${index}`);
             const photoInput = photoSection.find('.photo-input');
 
             if (isNg) {
                 badge.removeClass('bg-success').addClass('bg-danger').text('NG');
-                input.val('ng');
+                statusLabel.removeClass('text-success').addClass('text-danger').text('NG');
                 photoSection.removeClass('d-none');
                 photoInput.prop('disabled', false);
                 photoInput.prop('required', true);
             } else {
                 badge.removeClass('bg-danger').addClass('bg-success').text('OK');
-                input.val('ok');
+                statusLabel.removeClass('text-danger').addClass('text-success').text('OK');
                 photoSection.addClass('d-none');
                 photoInput.prop('required', false);
                 photoInput.prop('disabled', true);
@@ -230,8 +258,8 @@
             });
 
             if (!hasInspectionInput) {
-                $('.manual-override-switch').each(function() {
-                    if ($(this).is(':checked')) {
+                $('.item-status-value').each(function() {
+                    if ($(this).val() === 'ng') {
                         hasInspectionInput = true;
                         return false;
                     }
@@ -244,7 +272,7 @@
                 return;
             }
 
-            $('.item-status-input').each(function() {
+            $('.item-status-value').each(function() {
                 if ($(this).val() === 'ng') {
                     overallNg = true;
                 }
@@ -265,12 +293,17 @@
             evaluateItem(index);
         });
 
-        $('.manual-override-switch').on('change', function() {
+        $('.item-status-switch').on('change', function() {
             const index = $(this).data('index');
+            const status = $(this).is(':checked') ? 'ng' : 'ok';
+            $(`#input-status-${index}`).val(status);
             evaluateItem(index);
         });
 
         // Initial evaluation
+        $('.input-row').each(function() {
+            evaluateItem($(this).data('index'));
+        });
         evaluateOverall();
 
         // Submit Action

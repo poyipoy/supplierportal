@@ -12,6 +12,7 @@ use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
 class QuotationController extends Controller
@@ -24,6 +25,9 @@ class QuotationController extends Controller
         $supplierId = auth()->id();
 
         $periods = Period::where('status', 'open')
+            ->whereHas('purchaseRequirements', function ($query) use ($supplierId) {
+                $query->visibleToSupplier($supplierId);
+            })
             ->orWhereHas('purchaseRequirements.quotations', function ($query) use ($supplierId) {
                 $query->where('supplier_id', $supplierId);
             })
@@ -35,6 +39,7 @@ class QuotationController extends Controller
         foreach ($periods as $period) {
             $activePrs = PurchaseRequirement::where('period_id', $period->id)
                 ->whereIn('status', ['submitted', 'bidding'])
+                ->visibleToSupplier($supplierId)
                 ->get();
 
             $quotedPrIds = Quotation::where('supplier_id', $supplierId)
@@ -82,6 +87,7 @@ class QuotationController extends Controller
                 $query->where('supplier_id', $supplierId);
             }])
             ->where('period_id', $period_id)
+            ->visibleToSupplier($supplierId)
             ->where(function ($query) use ($supplierId) {
                 $query->whereIn('status', ['submitted', 'bidding'])
                     ->orWhereHas('quotations', function ($q) use ($supplierId) {
@@ -148,15 +154,18 @@ class QuotationController extends Controller
      */
     public function create($pr_id)
     {
-        $pr = PurchaseRequirement::with('items')->findOrFail($pr_id);
-        $supplierCurrency = auth()->user()->supplier->currency ?? ExchangeRate::CURRENCY_USD;
+        $pr = PurchaseRequirement::with(['items', 'invitedSuppliers'])->findOrFail($pr_id);
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
             return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
         }
 
+        if (! $pr->isVisibleToSupplier(auth()->id())) {
+            abort(403, 'Anda tidak diundang untuk mengirim penawaran pada permintaan ini.');
+        }
+
         // Cari quotation yang sudah ada
-        $quotation = Quotation::with('items')
+        $quotation = Quotation::with('items.attachments')
             ->where('pr_id', $pr_id)
             ->where('supplier_id', auth()->id())
             ->first();
@@ -167,9 +176,22 @@ class QuotationController extends Controller
                 ->with('info', 'Anda sudah mengirim penawaran untuk permintaan ini.');
         }
 
-        $supplierRate = ExchangeRate::latestRate($supplierCurrency);
+        $currencyOptions = ExchangeRate::CURRENCIES;
+        $supplierCurrency = old('currency', $quotation?->currency);
+        if (! in_array($supplierCurrency, $currencyOptions, true)) {
+            $supplierCurrency = '';
+        }
 
-        return view('supplier.quotations.create', compact('pr', 'quotation', 'supplierCurrency', 'supplierRate'));
+        $supplierRate = $supplierCurrency ? ExchangeRate::latestRate($supplierCurrency) : null;
+        $currencyRates = ExchangeRate::query()
+            ->whereIn('currency', $currencyOptions)
+            ->orderByDesc('valid_from')
+            ->get()
+            ->unique('currency')
+            ->mapWithKeys(fn ($rate) => [$rate->currency => (float) $rate->rate_to_idr])
+            ->all();
+
+        return view('supplier.quotations.create', compact('pr', 'quotation', 'supplierCurrency', 'supplierRate', 'currencyOptions', 'currencyRates'));
     }
 
     /**
@@ -177,17 +199,21 @@ class QuotationController extends Controller
      */
     public function store(Request $request, $pr_id)
     {
-        $pr = PurchaseRequirement::findOrFail($pr_id);
-        $supplierCurrency = auth()->user()->supplier->currency ?? ExchangeRate::CURRENCY_USD;
+        $pr = PurchaseRequirement::with('invitedSuppliers', 'items')->findOrFail($pr_id);
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
             return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
         }
 
-        $request->validate([
+        if (! $pr->isVisibleToSupplier(auth()->id())) {
+            abort(403, 'Anda tidak diundang untuk mengirim penawaran pada permintaan ini.');
+        }
+
+        $validated = $request->validate([
             'action' => 'required|in:draft,submitted',
+            'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
             'estimated_delivery' => 'required|date',
-            'payment_terms' => 'nullable|string',
+            'payment_terms' => 'required|string|max:100',
             'validity_period' => $request->action === 'submitted'
                 ? 'required|date|after_or_equal:today'
                 : 'nullable|date',
@@ -195,11 +221,18 @@ class QuotationController extends Controller
             'items' => 'required|array',
             'items.*.pr_item_id' => 'required|exists:pr_items,id',
             'items.*.price_per_kg' => 'required|numeric|min:0.01',
-            'items.*.notes' => 'nullable|string'
+            'items.*.notes' => 'nullable|string',
+            'items.*.mtc_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ], [
+            'currency.required' => 'Mata uang wajib dipilih.',
+            'currency.in' => 'Mata uang tidak valid.',
+            'payment_terms.required' => 'Syarat pembayaran wajib diisi.',
             'validity_period.required' => 'Masa berlaku penawaran wajib diisi saat mengirim penawaran final.',
             'validity_period.after_or_equal' => 'Masa berlaku penawaran tidak boleh kurang dari hari ini.',
+            'items.*.mtc_file.mimes' => 'File MTC harus berupa PDF, JPG, JPEG, atau PNG.',
+            'items.*.mtc_file.max' => 'Ukuran file MTC maksimal 5MB.',
         ]);
+        $supplierCurrency = $validated['currency'];
 
         $quotation = Quotation::where('pr_id', $pr_id)
             ->where('supplier_id', auth()->id())
@@ -244,7 +277,7 @@ class QuotationController extends Controller
                     'submitted_at' => $request->action === 'submitted' ? now() : null,
                     'exchange_rate_id' => $exchangeRateId,
                     'estimated_delivery' => $request->estimated_delivery,
-                    'payment_terms' => $request->payment_terms,
+                    'payment_terms' => $validated['payment_terms'],
                     'validity_period' => $request->validity_period,
                     'general_notes' => $request->general_notes,
                 ]);
@@ -255,25 +288,43 @@ class QuotationController extends Controller
                     'submitted_at' => $request->action === 'submitted' ? now() : $quotation->submitted_at,
                     'exchange_rate_id' => $exchangeRateId,
                     'estimated_delivery' => $request->estimated_delivery,
-                    'payment_terms' => $request->payment_terms,
+                    'payment_terms' => $validated['payment_terms'],
                     'validity_period' => $request->validity_period,
                     'general_notes' => $request->general_notes,
                 ]);
-                $quotation->items()->delete(); // Hapus yang lama
             }
 
+            $existingItemAttachments = $quotation->items()
+                ->with('attachments')
+                ->get()
+                ->keyBy('pr_item_id')
+                ->map(fn ($item) => $item->attachments);
+
+            $quotation->items()->delete(); // Hapus yang lama
+
             // Simpan items
-            foreach ($request->items as $itemData) {
-                $prItem = $pr->items()->where('id', $itemData['pr_item_id'])->first();
+            foreach ($request->items as $index => $itemData) {
+                $prItem = $pr->items->firstWhere('id', (int) $itemData['pr_item_id']);
                 if ($prItem) {
-                    $amount = $itemData['price_per_kg'] * $prItem->weight_needed;
+                    $amount = $itemData['price_per_kg'] * $prItem->total_weight;
                     
-                    $quotation->items()->create([
+                    $quotationItem = $quotation->items()->create([
                         'pr_item_id' => $prItem->id,
                         'price_per_kg' => $itemData['price_per_kg'],
                         'amount' => $amount,
                         'notes' => $itemData['notes'] ?? null,
                     ]);
+
+                    $mtcFile = $request->file("items.{$index}.mtc_file");
+                    if ($mtcFile && $mtcFile->isValid()) {
+                        $this->storeMtcAttachment($quotationItem, $mtcFile);
+                    } elseif ($existingItemAttachments->has($prItem->id)) {
+                        foreach ($existingItemAttachments->get($prItem->id) as $attachment) {
+                            $attachment->update([
+                                'attachable_id' => $quotationItem->id,
+                            ]);
+                        }
+                    }
                 }
             }
 
@@ -321,7 +372,7 @@ class QuotationController extends Controller
      */
     public function show($id)
     {
-        $quotation = Quotation::with(['items.prItem', 'purchaseRequirement.period', 'exchange_rate'])
+        $quotation = Quotation::with(['items.prItem', 'items.attachments', 'purchaseRequirement.period', 'exchange_rate'])
             ->findOrFail($id);
 
         Gate::authorize('view', $quotation);
@@ -332,5 +383,25 @@ class QuotationController extends Controller
             ->first();
 
         return view('supplier.quotations.show', compact('quotation', 'conversation'));
+    }
+
+    private function storeMtcAttachment(\App\Models\QuotationItem $quotationItem, \Illuminate\Http\UploadedFile $file): void
+    {
+        // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
+        $fileName = $file->hashName();
+        $path = 'attachments/' . now()->format('Y/m') . '/' . $fileName;
+
+        $stream = fopen($file->getPathname(), 'r');
+        if ($stream) {
+            \Illuminate\Support\Facades\Storage::disk('private')->put($path, $stream);
+            fclose($stream);
+
+            $quotationItem->attachments()->create([
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $file->getMimeType(),
+                'uploaded_by' => auth()->id(),
+            ]);
+        }
     }
 }

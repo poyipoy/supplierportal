@@ -4,11 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\Quotation;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Support\ConversationPresenter;
 use App\Support\NotificationCategory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ConversationMessageController extends Controller
 {
@@ -23,11 +28,23 @@ class ConversationMessageController extends Controller
                 'supplierUser.supplier',
                 'latestMessage.sender',
             ])
+            ->withMax('messages', 'created_at')
             ->forUser(auth()->id())
-            ->get()
-            ->sortByDesc(function ($conversation) {
-                return $conversation->latestMessage?->created_at ?? $conversation->created_at;
+            ->when(request()->filled('q'), function ($query) {
+                $keyword = trim((string) request('q'));
+
+                $query->where(function ($q) use ($keyword) {
+                    $q->whereHas('purchasingUser', fn ($user) => $user->where('name', 'like', "%{$keyword}%"))
+                        ->orWhereHas('supplierUser', fn ($user) => $user
+                            ->where('name', 'like', "%{$keyword}%")
+                            ->orWhereHas('supplier', fn ($supplier) => $supplier->where('company_name', 'like', "%{$keyword}%")))
+                        ->orWhereHasMorph('conversable', [\App\Models\PurchaseRequirement::class], fn ($pr) => $pr->where('pr_number', 'like', "%{$keyword}%"))
+                        ->orWhereHasMorph('conversable', [\App\Models\PurchaseOrder::class], fn ($po) => $po->where('po_number', 'like', "%{$keyword}%"));
+                });
             })
+            ->orderByDesc(DB::raw('COALESCE(messages_max_created_at, conversations.updated_at, conversations.created_at)'))
+            ->limit(50)
+            ->get()
             ->values()
             ->map(fn (Conversation $conversation) => $this->formatConversation($conversation));
 
@@ -57,8 +74,13 @@ class ConversationMessageController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
+        $conversation->load(['messages.sender', 'messages.attachments']);
+
         return response()->json([
             'conversation' => $this->formatConversation($conversation),
+            'context' => ConversationPresenter::context($conversation, auth()->user()),
+            'quick_actions' => ConversationPresenter::quickActions($conversation, auth()->user()),
+            'templates' => ConversationPresenter::templates($conversation, auth()->user()),
             'messages' => $conversation->messages->map(fn (Message $message) => $this->formatMessage($message)),
         ]);
     }
@@ -68,17 +90,35 @@ class ConversationMessageController extends Controller
      */
     public function store(Request $request, $id)
     {
-        $request->validate([
-            'body' => 'required|string|max:2000',
+        $validated = $request->validate([
+            'body' => 'nullable|string|max:2000',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,xlsx,xls,doc,docx|max:10240',
         ]);
+
+        $body = trim((string) ($validated['body'] ?? ''));
+        $hasAttachments = $request->hasFile('attachments');
+
+        if ($body === '' && ! $hasAttachments) {
+            throw ValidationException::withMessages([
+                'body' => 'Isi pesan atau lampirkan minimal satu file.',
+            ]);
+        }
 
         $conversation = Conversation::findOrFail($id);
         $this->authorize('message', $conversation);
 
-        $message = $conversation->messages()->create([
-            'sender_id' => auth()->id(),
-            'body' => $request->body,
-        ]);
+        $message = DB::transaction(function () use ($conversation, $body, $request) {
+            $message = $conversation->messages()->create([
+                'sender_id' => auth()->id(),
+                'body' => $body,
+            ]);
+
+            $this->storeAttachments($message, $request);
+            $conversation->markWaitingForPartner(auth()->user());
+
+            return $message->load(['sender', 'attachments']);
+        });
 
         // Kirim notifikasi ke lawan bicara jika dia tidak sedang membuka chat
         $partner = $conversation->getPartner(auth()->id());
@@ -87,7 +127,9 @@ class ConversationMessageController extends Controller
         // Atau asumsikan partner offline dan kirim notifikasi selalu (simplifikasi)
         if ($partner) {
             $senderName = auth()->user()->name;
-            $preview = Str::limit($message->body, 50);
+            $preview = $message->body !== ''
+                ? Str::limit($message->body, 50)
+                : 'Mengirim lampiran pada chat.';
             
             // Determine the correct route for the notification URL based on partner's role
             $routePrefix = $partner->role === 'purchasing' ? 'purchasing' : 'supplier';
@@ -105,7 +147,8 @@ class ConversationMessageController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => $message->load('sender'),
+                'message' => $this->formatMessage($message),
+                'conversation' => $this->formatConversation($conversation->fresh(['latestMessage.sender'])),
             ]);
         }
 
@@ -126,6 +169,67 @@ class ConversationMessageController extends Controller
             ->update(['read_at' => now()]);
 
         return response()->json(['success' => true]);
+    }
+
+    public function quickAction(Request $request, $id): JsonResponse
+    {
+        $conversation = Conversation::with(['supplierUser.supplier', 'purchasingUser'])->findOrFail($id);
+        $this->authorize('message', $conversation);
+
+        if (auth()->user()->role !== 'purchasing') {
+            abort(403, 'Hanya purchasing yang dapat menjalankan aksi negosiasi.');
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|string|in:request_price_revision,request_validity_extension,request_delivery_confirmation,accept_quotation,reject_quotation',
+            'note' => 'nullable|string|max:1000',
+        ]);
+
+        $quotation = ConversationPresenter::relatedQuotation($conversation);
+
+        if (! $quotation) {
+            throw ValidationException::withMessages([
+                'action' => 'Quotation terkait tidak ditemukan untuk conversation ini.',
+            ]);
+        }
+
+        $note = trim((string) ($validated['note'] ?? ''));
+
+        if (in_array($validated['action'], ['request_price_revision', 'reject_quotation'], true) && $note === '') {
+            throw ValidationException::withMessages([
+                'note' => 'Catatan wajib diisi untuk aksi ini.',
+            ]);
+        }
+
+        $message = DB::transaction(function () use ($conversation, $quotation, $validated, $note) {
+            return match ($validated['action']) {
+                'request_price_revision' => $this->requestPriceRevision($conversation, $quotation, $note),
+                'request_validity_extension' => $this->sendActionMessage(
+                    $conversation,
+                    $quotation,
+                    'Mohon perpanjang masa berlaku penawaran untuk PR '
+                        . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id) . '.',
+                    $note
+                ),
+                'request_delivery_confirmation' => $this->sendActionMessage(
+                    $conversation,
+                    $quotation,
+                    'Mohon konfirmasi estimasi pengiriman terbaru untuk PR '
+                        . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id) . '.',
+                    $note
+                ),
+                'accept_quotation' => $this->acceptQuotation($conversation, $quotation),
+                'reject_quotation' => $this->rejectQuotation($conversation, $quotation, $note),
+            };
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => $this->formatMessage($message->load(['sender', 'attachments'])),
+            'conversation' => $this->formatConversation($conversation->fresh(['latestMessage.sender'])),
+            'context' => ConversationPresenter::context($conversation->fresh(['conversable', 'supplierUser.supplier', 'purchasingUser']), auth()->user()),
+            'quick_actions' => ConversationPresenter::quickActions($conversation, auth()->user()),
+        ]);
     }
 
     /**
@@ -153,6 +257,17 @@ class ConversationMessageController extends Controller
 
         return response()->json([
             'messages' => $messages->map(fn (Message $message) => $this->formatMessage($message)),
+            'read_receipts' => $conversation->messages()
+                ->where('sender_id', auth()->id())
+                ->whereNotNull('read_at')
+                ->latest('read_at')
+                ->limit(100)
+                ->get(['id', 'read_at'])
+                ->map(fn (Message $message) => [
+                    'id' => $message->id,
+                    'read_at' => $message->read_at?->toIso8601String(),
+                    'read_at_display' => $message->read_at?->format('H:i'),
+                ]),
         ]);
     }
 
@@ -186,6 +301,10 @@ class ConversationMessageController extends Controller
             'latest_time' => $latestMessage?->created_at?->diffForHumans(),
             'latest_at' => $latestMessage?->created_at?->toIso8601String(),
             'unread_count' => $conversation->unreadCountFor(auth()->id()),
+            'status' => $conversation->status ?? Conversation::STATUS_OPEN,
+            'status_label' => $conversation->statusLabelFor(auth()->user()),
+            'status_badge_class' => $conversation->statusBadgeClassFor(auth()->user()),
+            'sla' => ConversationPresenter::slaMeta($conversation, auth()->user()),
         ];
     }
 
@@ -203,7 +322,171 @@ class ConversationMessageController extends Controller
             'created_at' => $message->created_at?->toIso8601String(),
             'time' => $message->created_at?->format('H:i'),
             'is_me' => $message->sender_id === auth()->id(),
+            'is_read' => $message->sender_id === auth()->id() && $message->read_at !== null,
+            'read_at' => $message->read_at?->toIso8601String(),
+            'read_at_display' => $message->read_at?->format('H:i'),
+            'attachments' => $message->attachments->map(fn ($attachment) => [
+                'id' => $attachment->id,
+                'name' => $attachment->file_name,
+                'type' => $attachment->file_type,
+                'url' => route('attachments.show', $attachment->id),
+            ])->values(),
         ];
+    }
+
+    private function storeAttachments(Message $message, Request $request): void
+    {
+        foreach ($request->file('attachments', []) as $file) {
+            $path = $file->store('attachments/' . now()->format('Y/m'), 'private');
+
+            $message->attachments()->create([
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $file->getMimeType(),
+                'uploaded_by' => auth()->id(),
+            ]);
+        }
+    }
+
+    private function requestPriceRevision(Conversation $conversation, Quotation $quotation, string $note): Message
+    {
+        if ($quotation->purchaseRequirement->status === 'completed') {
+            throw ValidationException::withMessages([
+                'action' => 'PR sudah selesai. Penawaran tidak bisa diminta revisi.',
+            ]);
+        }
+
+        if (! $quotation->canRequestRevision()) {
+            throw ValidationException::withMessages([
+                'action' => 'Revisi hanya bisa diminta untuk penawaran submitted yang belum dibuat PO.',
+            ]);
+        }
+
+        $quotation->update([
+            'status' => Quotation::STATUS_REVISION_REQUESTED,
+            'reviewed_at' => now(),
+            'reviewed_by' => auth()->id(),
+            'reviewer_notes' => $note,
+        ]);
+
+        $message = $conversation->messages()->create([
+            'sender_id' => auth()->id(),
+            'body' => 'Mohon revisi harga penawaran untuk PR '
+                . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id)
+                . ".\n\nCatatan revisi: " . $note,
+        ]);
+
+        $conversation->forceFill([
+            'status' => Conversation::STATUS_WAITING_SUPPLIER,
+            'resolved_at' => null,
+        ])->save();
+
+        $this->notifySupplier($quotation, 'Revisi Penawaran Diminta', 'Purchasing meminta revisi penawaran untuk PR :pr_number.');
+
+        return $message;
+    }
+
+    private function acceptQuotation(Conversation $conversation, Quotation $quotation): Message
+    {
+        if (! $quotation->canApproveBy(auth()->user())) {
+            throw ValidationException::withMessages([
+                'action' => 'Penawaran ini tidak bisa diterima.',
+            ]);
+        }
+
+        if ($quotation->isExpired()) {
+            throw ValidationException::withMessages([
+                'action' => 'Penawaran sudah kadaluarsa. Minta supplier mengirim revisi sebelum menerima penawaran.',
+            ]);
+        }
+
+        $quotation->update([
+            'status' => Quotation::STATUS_ACCEPTED,
+            'reviewed_at' => now(),
+            'reviewed_by' => auth()->id(),
+        ]);
+
+        $message = $conversation->messages()->create([
+            'sender_id' => auth()->id(),
+            'body' => 'Penawaran untuk PR '
+                . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id)
+                . ' sudah diterima oleh Purchasing.',
+        ]);
+
+        $conversation->markResolved();
+        $this->notifySupplier($quotation, 'Penawaran Diterima', 'Penawaran untuk PR :pr_number sudah diterima oleh Purchasing.');
+
+        return $message;
+    }
+
+    private function rejectQuotation(Conversation $conversation, Quotation $quotation, string $note): Message
+    {
+        if (! $quotation->canApproveBy(auth()->user())) {
+            throw ValidationException::withMessages([
+                'action' => 'Penawaran ini tidak bisa ditolak.',
+            ]);
+        }
+
+        $quotation->update([
+            'status' => Quotation::STATUS_REJECTED,
+            'reviewed_at' => now(),
+            'reviewed_by' => auth()->id(),
+            'reviewer_notes' => $note,
+        ]);
+
+        $message = $conversation->messages()->create([
+            'sender_id' => auth()->id(),
+            'body' => 'Penawaran untuk PR '
+                . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id)
+                . " ditolak oleh Purchasing.\n\nCatatan: " . $note,
+        ]);
+
+        $conversation->markResolved();
+        $this->notifySupplier($quotation, 'Penawaran Ditolak', 'Penawaran untuk PR :pr_number ditolak oleh Purchasing.');
+
+        return $message;
+    }
+
+    private function sendActionMessage(Conversation $conversation, Quotation $quotation, string $body, string $note = ''): Message
+    {
+        if ($note !== '') {
+            $body .= "\n\nCatatan: " . $note;
+        }
+
+        $message = $conversation->messages()->create([
+            'sender_id' => auth()->id(),
+            'body' => $body,
+        ]);
+
+        $conversation->forceFill([
+            'status' => Conversation::STATUS_WAITING_SUPPLIER,
+            'resolved_at' => null,
+        ])->save();
+
+        $this->notifySupplier($quotation, 'Pesan Negosiasi Baru', 'Purchasing mengirim pesan negosiasi untuk PR :pr_number.');
+
+        return $message;
+    }
+
+    private function notifySupplier(Quotation $quotation, string $title, string $message): void
+    {
+        $quotation->loadMissing(['supplier', 'purchaseRequirement']);
+
+        $quotation->supplier?->notify(new SystemNotification(
+            $title,
+            $message,
+            route('supplier.quotations.show', $quotation->id),
+            'bi-chat-dots text-primary',
+            [
+                'category' => NotificationCategory::CHAT,
+                'quotation_id' => $quotation->id,
+                'pr_id' => $quotation->pr_id,
+                'pr_number' => $quotation->purchaseRequirement->pr_number ?? '-',
+            ],
+            [
+                'pr_number' => $quotation->purchaseRequirement->pr_number ?? '-',
+            ]
+        ));
     }
 
     private function displayName(?User $user): string

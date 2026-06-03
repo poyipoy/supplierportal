@@ -22,12 +22,17 @@
         {{-- Notification Icon --}}
         @php
             $notificationCategories = \App\Support\NotificationCategory::options();
-            $navbarUnreadNotifications = auth()->user()->unreadNotifications;
             $navbarNotifications = auth()->user()->notifications()->latest()->take(30)->get();
-            $navbarNotificationCounts = collect($notificationCategories)->mapWithKeys(function ($option, $key) use ($navbarUnreadNotifications) {
+            $navbarUnreadCount = auth()->user()->unreadNotifications()->count();
+            $navbarVisibleUnreadNotifications = $navbarNotifications->whereNull('read_at');
+            $navbarNotificationCounts = collect($notificationCategories)->mapWithKeys(function ($option, $key) use ($navbarVisibleUnreadNotifications, $navbarUnreadCount) {
+                if ($key === \App\Support\NotificationCategory::ALL) {
+                    return [$key => $navbarUnreadCount];
+                }
+
                 $items = $key === \App\Support\NotificationCategory::ALL
-                    ? $navbarUnreadNotifications
-                    : $navbarUnreadNotifications->filter(fn ($notification) => \App\Support\NotificationCategory::key($notification) === $key);
+                    ? $navbarVisibleUnreadNotifications
+                    : $navbarVisibleUnreadNotifications->filter(fn ($notification) => \App\Support\NotificationCategory::key($notification) === $key);
 
                 return [$key => $items->count()];
             });

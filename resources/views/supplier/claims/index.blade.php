@@ -20,7 +20,10 @@
                         <th>ID Klaim</th>
                         <th>Nomor PO</th>
                         <th>Tanggal Diajukan</th>
-                        <th>Deadline</th>
+                        <th>
+                            Deadline
+                            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Batas waktu supplier merespons klaim material."></i>
+                        </th>
                         <th class="text-center">Status</th>
                         <th class="text-end">Aksi</th>
                     </tr>
@@ -49,7 +52,10 @@
             ],
             language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
             pageLength: 25,
-            order: []
+            order: [],
+            drawCallback: function() {
+                window.initAdasiTooltips?.(document.getElementById('claimTable'));
+            }
         });
     });
 </script>

@@ -9,6 +9,7 @@ use App\Models\QcInspection;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Support\PurchasingNavigation;
+use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -61,18 +62,23 @@ class MaterialClaimController extends Controller
             ->addColumn('po_number', fn($c) => $c->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn($c) => $c->purchaseOrder->supplier->name ?? '-')
             ->addColumn('created_date', fn($c) => $c->created_at->format('d M Y'))
+            ->addColumn('deadline_display', function ($c) {
+                $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
+                $date = $c->deadline ? $c->deadline->format('d M Y') : '-';
+
+                return '<div class="d-flex flex-column align-items-start gap-1">'
+                    . '<span>' . e($date) . '</span>'
+                    . StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
+                    . '</div>';
+            })
             ->addColumn('status_badge', function ($c) {
-                $badgeClass = match($c->status) {
-                    'pending' => 'bg-warning text-dark',
-                    'responded' => 'bg-info',
-                    'resolved' => 'bg-success',
-                    'escalated' => 'bg-danger',
-                    default => 'bg-secondary'
-                };
-                return '<span class="badge ' . $badgeClass . ' text-uppercase">' . ucwords(str_replace('_', ' ', $c->status)) . '</span>';
+                return StatusHelper::badge(
+                    StatusHelper::claimBadge($c->status),
+                    StatusHelper::claimLabel($c->status)
+                );
             })
             ->addColumn('action', fn($c) => '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $c->id) . '" class="btn btn-sm btn-outline-primary">Detail</a>')
-            ->rawColumns(['status_badge', 'action'])
+            ->rawColumns(['deadline_display', 'status_badge', 'action'])
             ->make(true);
     }
 

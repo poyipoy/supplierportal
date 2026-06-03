@@ -19,15 +19,21 @@
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
                 <h6 class="mb-1 fw-bold"><i class="bi bi-trophy me-1"></i> Harga Saat Ini vs Harga Terbaik Histori</h6>
-                <div class="text-muted small">Data tabel diproses server-side. Pembanding memakai harga IDR/kg setelah konversi kurs. Status kompetitif aman jika selisih maksimal {{ $formatNumber($competitiveThreshold) }}%.</div>
+                <div class="text-muted small">Pembanding memakai harga IDR/kg setelah konversi kurs. Status kompetitif aman jika selisih maksimal {{ $formatNumber($competitiveThreshold) }}%.</div>
             </div>
-            <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex gap-2 align-items-center">
-                <label class="form-label small fw-medium mb-0 text-nowrap">Periode:</label>
-                <select name="period_id" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-                    @foreach($periods as $period)
-                        <option value="{{ $period->id }}" {{ $selectedPeriodId == $period->id ? 'selected' : '' }}>{{ $period->name }}</option>
-                    @endforeach
-                </select>
+            <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap gap-3 align-items-end">
+                <div>
+                    <label class="form-label small fw-medium mb-1">Dari Bulan</label>
+                    <input type="month" name="date_from" value="{{ $dateFromInput }}" class="form-control form-control-sm" style="width: auto;">
+                </div>
+                <div>
+                    <label class="form-label small fw-medium mb-1">Sampai Bulan</label>
+                    <input type="month" name="date_to" value="{{ $dateToInput }}" class="form-control form-control-sm" style="width: auto;">
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-filter me-1"></i>Terapkan Filter</button>
+                    <a href="{{ route('purchasing.comparison.vs-best') }}" class="btn btn-sm btn-light"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</a>
+                </div>
             </form>
         </div>
     </div>
@@ -86,6 +92,10 @@
 <script>
 $(document).ready(function() {
     const summaryFallback = @json($summary);
+    const filterParams = {!! json_encode([
+        'date_from' => $dateFromInput,
+        'date_to' => $dateToInput,
+    ]) !!};
 
     function formatRupiah(value) {
         if (value === null || value === undefined || value === '') return '-';
@@ -110,7 +120,7 @@ $(document).ready(function() {
         ajax: {
             url: '{{ route("purchasing.comparison.vs-best.data") }}',
             data: function(d) {
-                d.period_id = '{{ $selectedPeriodId }}';
+                Object.assign(d, filterParams);
             },
             dataSrc: function(json) {
                 updateSummary(json.summary);

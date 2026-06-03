@@ -87,9 +87,8 @@
                             </div>
                         </a>
                     @empty
-                        <div class="p-5 text-center text-muted">
-                            <i class="bi {{ $selectedOption['icon'] }}" style="font-size:3rem;opacity:.45"></i>
-                            <p class="mt-3 mb-0">Belum ada notifikasi pada kategori ini.</p>
+                        <div class="py-4">
+                            <x-empty-state :icon="$selectedOption['icon']" title="Belum ada notifikasi pada kategori ini." />
                         </div>
                     @endforelse
                 </div>

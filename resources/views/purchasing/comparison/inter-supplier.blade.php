@@ -13,7 +13,7 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
         <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="row g-3 align-items-end" id="interSupplierFilterForm">
-            <div class="col-md-8">
+            <div class="col-md-9">
                 <label class="form-label small fw-bold">Pilih Permintaan Material (PR dengan minimal 2 penawaran)</label>
                 <div class="position-relative">
                     <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
@@ -38,7 +38,7 @@
                 </div>
                 <div class="form-text">Ketik untuk menampilkan beberapa opsi PR, lalu pilih salah satu opsi.</div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:var(--adasi-blue)"><i class="bi bi-search me-1"></i>Bandingkan</button>
             </div>
         </form>
@@ -46,6 +46,74 @@
 </div>
 
 @if($comparison)
+    @php
+        $supplierTotals = [];
+        $supplierWins = [];
+        foreach($comparison['suppliers'] as $sup) {
+            $supplierTotals[$sup['quotation_id']] = ['name' => $sup['name'], 'total' => 0];
+            $supplierWins[$sup['quotation_id']] = 0;
+        }
+        
+        foreach($comparison['matrix'] as &$row) {
+            $idrPrices = collect($row['prices'])->pluck('price_idr')->filter()->values();
+            $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
+            $maxIdr = $idrPrices->count() > 0 ? $idrPrices->max() : null;
+            
+            $row['spread_pct'] = 0;
+            if($minIdr && $minIdr > 0 && $maxIdr) {
+                $row['spread_pct'] = (($maxIdr - $minIdr) / $minIdr) * 100;
+            }
+
+            foreach($comparison['suppliers'] as $sup) {
+                $p = $row['prices'][$sup['quotation_id']] ?? null;
+                if($p && $p['price_idr']) {
+                    $supplierTotals[$sup['quotation_id']]['total'] += $p['price_idr'] * $row['item']->total_weight;
+                    if($minIdr && $p['price_idr'] <= $minIdr) {
+                        $supplierWins[$sup['quotation_id']]++;
+                    }
+                }
+            }
+        }
+        unset($row);
+        
+        $validTotals = array_filter($supplierTotals, fn($v) => $v['total'] > 0);
+        $recommendedSupId = null;
+        if(count($validTotals) > 0) {
+            $minTotal = min(array_column($validTotals, 'total'));
+            foreach($validTotals as $qid => $data) {
+                if($data['total'] == $minTotal) {
+                    $recommendedSupId = $qid;
+                    break;
+                }
+            }
+        }
+    @endphp
+
+    {{-- Summary Card --}}
+    @if(count($validTotals) > 0)
+    <div class="row mb-4">
+        @foreach($validTotals as $qid => $data)
+            <div class="col-md-{{ max(3, floor(12/count($validTotals))) }}">
+                <div class="card border-{{ $recommendedSupId === $qid ? 'success' : '0' }} shadow-sm h-100 {{ $recommendedSupId === $qid ? 'bg-success bg-opacity-10' : '' }}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="fw-bold mb-1">{{ $data['name'] }}</h6>
+                            @if($recommendedSupId === $qid)
+                                <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Termurah</span>
+                            @endif
+                        </div>
+                        <div class="text-muted small mb-2">Total Estimasi Harga</div>
+                        <h5 class="fw-bold {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">Rp {{ number_format($data['total'], 0, ',', '.') }}</h5>
+                        <div class="small mt-2">
+                            <span class="badge bg-light text-dark border">{{ $supplierWins[$qid] }} Material Termurah</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+    @endif
+
     {{-- Grafik Batang --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center">
@@ -76,7 +144,9 @@
                     <thead class="table-light text-center">
                         <tr>
                             <th rowspan="2" class="align-middle">Material</th>
-                            <th rowspan="2" class="align-middle">Berat (Kg)</th>
+                            <th rowspan="2" class="align-middle">Qty</th>
+                            <th rowspan="2" class="align-middle">Berat/Unit (Kg)</th>
+                            <th rowspan="2" class="align-middle">Total Berat (Kg)</th>
                             @foreach($comparison['suppliers'] as $sup)
                                 <th colspan="2" class="text-center">
                                     {{ $sup['name'] }}
@@ -97,9 +167,18 @@
                                 $idrPrices = collect($row['prices'])->pluck('price_idr')->filter()->values();
                                 $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
                             @endphp
-                            <tr data-comparison-row data-material-id="{{ $row['item']->id }}">
-                                <td class="fw-medium">{{ $row['item']->material_name }}</td>
+                            <tr data-comparison-row data-material-id="{{ $row['item']->id }}" class="{{ ($row['spread_pct'] ?? 0) > 15 ? 'bg-warning bg-opacity-10' : '' }}">
+                                <td class="fw-medium">
+                                    {{ $row['item']->material_name }}
+                                    @if(($row['spread_pct'] ?? 0) > 15)
+                                        <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="Spread harga tinggi (>15%)">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Spread {{ number_format($row['spread_pct'], 1) }}%
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="text-center">{{ number_format($row['item']->quantity_value, 0) }}</td>
                                 <td class="text-center">{{ number_format($row['item']->weight_needed, 2) }}</td>
+                                <td class="text-center fw-medium text-primary">{{ number_format($row['item']->total_weight, 2) }}</td>
                                 @foreach($comparison['suppliers'] as $sup)
                                     @php $p = $row['prices'][$sup['quotation_id']] ?? null; @endphp
                                     @if($p && $p['price_per_kg'])
@@ -108,6 +187,11 @@
                                             Rp {{ number_format($p['price_idr'], 0, ',', '.') }}
                                             @if($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr)
                                                 <i class="bi bi-check-circle-fill ms-1"></i>
+                                            @endif
+                                            @if($p['detail_url'])
+                                                <a href="{{ $p['detail_url'] }}" class="btn btn-sm btn-link p-0 ms-1" title="Lihat detail penawaran">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
                                             @endif
                                         </td>
                                     @else
@@ -193,8 +277,14 @@ const renderComparisonPrSuggestions = () => {
         meta.style.fontSize = '.75rem';
         meta.textContent = `${option.period} - ${option.quotationCount} penawaran`;
 
+        const preview = document.createElement('div');
+        preview.className = 'text-secondary mt-1';
+        preview.style.fontSize = '.7rem';
+        preview.innerHTML = `<i class="bi bi-box-seam me-1"></i>${option.previewMaterials}`;
+
         button.appendChild(title);
         button.appendChild(meta);
+        button.appendChild(preview);
         button.addEventListener('mousedown', (event) => {
             event.preventDefault();
             selectComparisonPr(option);

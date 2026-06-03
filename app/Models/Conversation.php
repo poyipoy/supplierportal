@@ -9,12 +9,26 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Conversation extends Model
 {
+    public const STATUS_OPEN = 'open';
+    public const STATUS_WAITING_SUPPLIER = 'waiting_supplier';
+    public const STATUS_WAITING_PURCHASING = 'waiting_purchasing';
+    public const STATUS_RESOLVED = 'resolved';
+
     protected $fillable = [
         'conversable_type',
         'conversable_id',
         'purchasing_user_id',
         'supplier_user_id',
+        'status',
+        'resolved_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'resolved_at' => 'datetime',
+        ];
+    }
 
     // ─── Relationships ───
 
@@ -73,6 +87,63 @@ class Conversation extends Model
             return $this->supplierUser;
         }
         return $this->purchasingUser;
+    }
+
+    public function markWaitingForPartner(User $sender): void
+    {
+        if ($sender->id === $this->purchasing_user_id) {
+            $this->forceFill([
+                'status' => self::STATUS_WAITING_SUPPLIER,
+                'resolved_at' => null,
+            ])->save();
+
+            return;
+        }
+
+        if ($sender->id === $this->supplier_user_id) {
+            $this->forceFill([
+                'status' => self::STATUS_WAITING_PURCHASING,
+                'resolved_at' => null,
+            ])->save();
+        }
+    }
+
+    public function markResolved(): void
+    {
+        $this->forceFill([
+            'status' => self::STATUS_RESOLVED,
+            'resolved_at' => now(),
+        ])->save();
+    }
+
+    public function statusLabelFor(User $viewer): string
+    {
+        return match ($this->status) {
+            self::STATUS_WAITING_SUPPLIER => $viewer->id === $this->supplier_user_id
+                ? 'Perlu Dibalas'
+                : 'Menunggu Supplier',
+            self::STATUS_WAITING_PURCHASING => $viewer->id === $this->purchasing_user_id
+                ? 'Perlu Dibalas'
+                : 'Menunggu Purchasing',
+            self::STATUS_RESOLVED => 'Selesai',
+            default => 'Aktif',
+        };
+    }
+
+    public function statusBadgeClassFor(User $viewer): string
+    {
+        if ($this->status === self::STATUS_RESOLVED) {
+            return 'bg-success';
+        }
+
+        if (
+            ($this->status === self::STATUS_WAITING_SUPPLIER && $viewer->id === $this->supplier_user_id)
+            || ($this->status === self::STATUS_WAITING_PURCHASING && $viewer->id === $this->purchasing_user_id)
+        ) {
+            return 'bg-warning text-dark';
+        }
+
+        return $this->status === self::STATUS_OPEN ? 'bg-secondary' : 'bg-primary';
     }
 
     /**

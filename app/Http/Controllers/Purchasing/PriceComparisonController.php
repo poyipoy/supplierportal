@@ -9,6 +9,7 @@ use App\Models\QuotationItem;
 use App\Models\PrItem;
 use App\Models\User;
 use App\Support\PurchasingNavigation;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -16,7 +17,11 @@ use Yajra\DataTables\Facades\DataTables;
 class PriceComparisonController extends Controller
 {
     /**
-     * View 1: Antar Supplier - side-by-side per PR + grafik batang.
+     * View 1: Antar Supplier - menampilkan semua penawaran (quotation items) 
+     * dalam satu PR secara side-by-side.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function interSupplier(Request $request)
     {
@@ -44,12 +49,18 @@ class PriceComparisonController extends Controller
                 . $pr->quotations->count()
                 . ' penawaran)';
 
+            $previewMaterials = $pr->items->take(3)->pluck('material_name')->implode(', ');
+            if ($pr->items->count() > 3) {
+                $previewMaterials .= ' (+' . ($pr->items->count() - 3) . ' lainnya)';
+            }
+
             return [
                 'id' => (string) $pr->id,
                 'label' => $label,
                 'prNumber' => $pr->pr_number ?? 'DRAFT',
                 'period' => $pr->period->name ?? '-',
                 'quotationCount' => $pr->quotations->count(),
+                'previewMaterials' => $previewMaterials,
                 'search' => strtolower($label),
             ];
         })->values();
@@ -63,7 +74,8 @@ class PriceComparisonController extends Controller
                     'id' => (string) $selectedPr->id,
                     'label' => ($selectedPr->pr_number ?? 'DRAFT') . ' - ' . ($selectedPr->period->name ?? '-'),
                 ];
-                $materialOptions = $selectedPr->items;
+                $comparisonItems = $selectedPr->items->values();
+                $materialOptions = $comparisonItems;
                 $quotations = Quotation::with(['supplier', 'items.prItem', 'exchange_rate'])
                     ->where('pr_id', $selectedPr->id)
                     ->whereIn('status', ['submitted', 'accepted', 'rejected'])
@@ -78,7 +90,7 @@ class PriceComparisonController extends Controller
                 ]);
 
                 $matrix = [];
-                foreach ($selectedPr->items as $item) {
+                foreach ($comparisonItems as $item) {
                     $row = [
                         'item' => $item,
                         'prices' => [],
@@ -93,10 +105,15 @@ class PriceComparisonController extends Controller
                             : null;
 
                         $row['prices'][$quotation->id] = [
+                            'quotation_id' => $quotation->id,
+                            'quotation_item_id' => $quotationItem?->id,
                             'price_per_kg' => $pricePerKg,
                             'price_idr' => $priceIdr,
                             'amount' => $quotationItem ? (float) $quotationItem->amount : null,
                             'currency' => $quotation->currency,
+                            'detail_url' => $quotationItem
+                                ? PurchasingNavigation::toRoute('purchasing.quotations.show', $quotation->id)
+                                : null,
                         ];
                     }
 
@@ -109,15 +126,15 @@ class PriceComparisonController extends Controller
                     'quotations' => $quotations,
                 ];
 
-                $chartLabels = $selectedPr->items->pluck('material_name')->toArray();
-                $chartMaterialIds = $selectedPr->items->pluck('id')->map(fn($id) => (string) $id)->toArray();
+                $chartLabels = $comparisonItems->pluck('material_name')->toArray();
+                $chartMaterialIds = $comparisonItems->pluck('id')->map(fn($id) => (string) $id)->toArray();
                 $chartDatasets = [];
                 $colors = ['#1F5FA6', '#C0392B', '#27AE60', '#F39C12', '#8E44AD', '#16A085'];
 
                 foreach ($quotations as $idx => $quotation) {
                     $data = [];
 
-                    foreach ($selectedPr->items as $item) {
+                    foreach ($comparisonItems as $item) {
                         $quotationItem = $quotation->items->where('pr_item_id', $item->id)->first();
                         $rate = $quotation->exchange_rate;
                         $data[] = ($quotationItem && $rate)
@@ -169,7 +186,7 @@ class PriceComparisonController extends Controller
 
         $materials = $this->historicalMaterialsForSupplier($selectedSupplierId);
 
-        if ($selectedSupplierId && $selectedMaterialName && ! $materials->contains($selectedMaterialName)) {
+        if ($selectedSupplierId && $selectedMaterialName && ! $materials->pluck('name')->contains($selectedMaterialName)) {
             $selectedMaterialName = null;
         }
 
@@ -179,11 +196,18 @@ class PriceComparisonController extends Controller
             'average_change_pct' => null,
             'total_change_pct' => null,
         ];
+        $dimensionFilters = [];
+        foreach (['thickness', 'd_inner', 'd_outer', 'width', 'length'] as $field) {
+            $val = $request->input($field);
+            if ($val !== null && trim((string)$val) !== '') {
+                $dimensionFilters[$field] = trim((string)$val);
+            }
+        }
 
         if ($selectedSupplierId && $selectedMaterialName) {
             [$chartData, $tableData] = $periodView === 'yearly'
-                ? $this->buildYearlyHistoricalData($selectedSupplierId, $selectedMaterialName, $dateFrom)
-                : $this->buildMonthlyHistoricalData($selectedSupplierId, $selectedMaterialName, $dateFrom);
+                ? $this->buildYearlyHistoricalData($selectedSupplierId, $selectedMaterialName, $dateFrom, $dimensionFilters)
+                : $this->buildMonthlyHistoricalData($selectedSupplierId, $selectedMaterialName, $dateFrom, $dimensionFilters);
 
             if ($tableData->isEmpty()) {
                 $chartData = null;
@@ -203,7 +227,7 @@ class PriceComparisonController extends Controller
             'supplierName' => $selectedSupplier->name ?? '',
         ];
 
-        if ($request->wantsJson() || $request->input('view') === 'json') {
+        if ($request->ajax() && ($request->wantsJson() || $request->input('view') === 'json')) {
             return response()->json($payload);
         }
 
@@ -238,14 +262,15 @@ class PriceComparisonController extends Controller
      */
     public function vsBestPrice(Request $request)
     {
-        $periods = \App\Models\Period::orderByDesc('year')->orderByDesc('month')->get();
-        $selectedPeriodId = $request->input('period_id', $periods->first()?->id);
+        [$dateFrom, $dateTo] = $this->vsBestDateRange($request);
+        $dateFromInput = $request->input('date_from');
+        $dateToInput = $request->input('date_to');
         $competitiveThreshold = 2.0;
         $summary = $this->emptyVsBestSummary();
 
         return view('purchasing.comparison.vs-best', compact(
-            'periods',
-            'selectedPeriodId',
+            'dateFromInput',
+            'dateToInput',
             'summary',
             'competitiveThreshold'
         ));
@@ -253,10 +278,10 @@ class PriceComparisonController extends Controller
 
     public function vsBestPriceData(Request $request)
     {
-        $selectedPeriodId = $request->input('period_id');
+        [$dateFrom, $dateTo] = $this->vsBestDateRange($request);
         $competitiveThreshold = 2.0;
 
-        if (! $selectedPeriodId) {
+        if (! ($dateFrom && $dateTo)) {
             return response()->json([
                 'draw' => (int) $request->input('draw', 0),
                 'recordsTotal' => 0,
@@ -267,14 +292,17 @@ class PriceComparisonController extends Controller
         }
 
         $keyword = trim((string) $request->input('search.value', ''));
-        $returnUrl = route('purchasing.comparison.vs-best', ['period_id' => $selectedPeriodId]);
+        $returnUrl = route('purchasing.comparison.vs-best', $request->only([
+            'date_from',
+            'date_to',
+        ]));
         $summaryQuery = $this->applyVsBestKeywordFilter(
-            $this->buildVsBestQuery($selectedPeriodId),
+            $this->buildVsBestQuery($dateFrom, $dateTo),
             $keyword
         );
         $summary = $this->buildVsBestSummary($summaryQuery, $competitiveThreshold);
 
-        return DataTables::query($this->buildVsBestQuery($selectedPeriodId))
+        return DataTables::query($this->buildVsBestQuery($dateFrom, $dateTo))
             ->filter(function ($query) use ($keyword) {
                 $this->applyVsBestKeywordFilter($query, $keyword);
             })
@@ -282,7 +310,9 @@ class PriceComparisonController extends Controller
                 $prUrl = $this->routeWithReturn('purchasing.requirements.show', $row->current_pr_id, $returnUrl);
 
                 return '<div class="fw-bold">' . e($row->material_name) . '</div>'
-                    . '<div class="text-muted small">Berat: ' . $this->formatNumber($row->weight_needed) . ' kg</div>'
+                    . '<div class="text-muted small">Qty: ' . number_format((int) ($row->quantity ?? 1), 0, ',', '.') . '</div>'
+                    . '<div class="text-muted small">Berat/unit: ' . $this->formatNumber($row->weight_needed) . ' kg</div>'
+                    . '<div class="text-muted small">Total berat: ' . $this->formatNumber($row->total_weight) . ' kg</div>'
                     . '<a href="' . e($prUrl) . '" class="small text-primary text-decoration-none">'
                     . e($row->current_pr_number ?: '-')
                     . '<i class="bi bi-arrow-right-short ms-1"></i></a>';
@@ -354,21 +384,23 @@ class PriceComparisonController extends Controller
             ->make(true);
     }
 
-    private function buildVsBestQuery($periodId)
+    private function buildVsBestQuery(?Carbon $dateFrom = null, ?Carbon $dateTo = null)
     {
-        $statuses = ['submitted', 'accepted', 'rejected'];
+        $historyStatuses = ['submitted', 'accepted', 'rejected'];
+        $currentStatuses = ['submitted', 'accepted'];
         $historyPriceIdr = '(history_items.price_per_kg * history_rate.rate_to_idr)';
         $currentPriceIdr = '(current_items.price_per_kg * current_rate.rate_to_idr)';
         $bestPriceIdr = '(best_items.price_per_kg * best_rate.rate_to_idr)';
         $diffIdrPerKg = "($currentPriceIdr - $bestPriceIdr)";
         $diffPercent = "CASE WHEN $bestPriceIdr > 0 AND $currentPriceIdr IS NOT NULL THEN (($diffIdrPerKg / $bestPriceIdr) * 100) ELSE NULL END";
-        $potentialDifference = "CASE WHEN $currentPriceIdr IS NOT NULL AND $bestPriceIdr IS NOT NULL THEN GREATEST(0, $diffIdrPerKg) * current_pr_items.weight_needed ELSE NULL END";
+        $currentTotalWeight = '(current_pr_items.weight_needed * COALESCE(current_pr_items.quantity, 1))';
+        $potentialDifference = "CASE WHEN $currentPriceIdr IS NOT NULL AND $bestPriceIdr IS NOT NULL THEN GREATEST(0, $diffIdrPerKg) * $currentTotalWeight ELSE NULL END";
 
         $bestPriceByMaterial = DB::table('quotation_items as history_items')
             ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
             ->join('exchange_rates as history_rate', 'history_quotes.exchange_rate_id', '=', 'history_rate.id')
             ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
-            ->whereIn('history_quotes.status', $statuses)
+            ->whereIn('history_quotes.status', $historyStatuses)
             ->whereNull('history_quotes.deleted_at')
             ->selectRaw('history_pr_items.material_name, MIN(' . $historyPriceIdr . ') as best_price_idr')
             ->groupBy('history_pr_items.material_name');
@@ -381,12 +413,12 @@ class PriceComparisonController extends Controller
                 $join->on('best_price.material_name', '=', 'history_pr_items.material_name')
                     ->whereRaw('ABS((' . $historyPriceIdr . ') - best_price.best_price_idr) < 0.0001');
             })
-            ->whereIn('history_quotes.status', $statuses)
+            ->whereIn('history_quotes.status', $historyStatuses)
             ->whereNull('history_quotes.deleted_at')
             ->selectRaw('best_price.material_name, MIN(history_items.id) as best_item_id')
             ->groupBy('best_price.material_name');
 
-        return DB::table('quotation_items as current_items')
+        $query = DB::table('quotation_items as current_items')
             ->join('quotations as current_quotes', 'current_items.quotation_id', '=', 'current_quotes.id')
             ->join('pr_items as current_pr_items', 'current_items.pr_item_id', '=', 'current_pr_items.id')
             ->join('purchase_requirements as current_pr', 'current_pr_items.pr_id', '=', 'current_pr.id')
@@ -401,8 +433,7 @@ class PriceComparisonController extends Controller
             ->leftJoin('exchange_rates as best_rate', 'best_quotes.exchange_rate_id', '=', 'best_rate.id')
             ->leftJoin('pr_items as best_pr_items', 'best_items.pr_item_id', '=', 'best_pr_items.id')
             ->leftJoin('purchase_requirements as best_pr', 'best_pr_items.pr_id', '=', 'best_pr.id')
-            ->where('current_pr.period_id', $periodId)
-            ->whereIn('current_quotes.status', $statuses)
+            ->whereIn('current_quotes.status', $currentStatuses)
             ->whereNull('current_quotes.deleted_at')
             ->select([
                 'current_items.id as current_item_id',
@@ -412,6 +443,7 @@ class PriceComparisonController extends Controller
                 'current_quotes.currency as current_currency',
                 'current_quotes.submitted_at as current_submitted_at',
                 'current_pr_items.material_name',
+                'current_pr_items.quantity',
                 'current_pr_items.weight_needed',
                 'current_pr.id as current_pr_id',
                 'current_pr.pr_number as current_pr_number',
@@ -427,11 +459,17 @@ class PriceComparisonController extends Controller
             ])
             ->selectRaw($currentPriceIdr . ' as current_price_idr')
             ->selectRaw('(current_items.amount * current_rate.rate_to_idr) as current_total_idr')
+            ->selectRaw($currentTotalWeight . ' as total_weight')
             ->selectRaw($bestPriceIdr . ' as best_price_idr')
             ->selectRaw($diffIdrPerKg . ' as diff_idr_per_kg')
             ->selectRaw($diffPercent . ' as diff_percent')
-            ->selectRaw($potentialDifference . ' as potential_difference_idr')
-            ->orderByRaw('potential_difference_idr DESC')
+            ->selectRaw($potentialDifference . ' as potential_difference_idr');
+
+        if ($dateFrom && $dateTo) {
+            $query->whereBetween('current_quotes.submitted_at', [$dateFrom, $dateTo]);
+        }
+
+        return $query->orderByRaw('potential_difference_idr DESC')
             ->orderBy('current_pr_items.material_name');
     }
 
@@ -450,6 +488,63 @@ class PriceComparisonController extends Controller
                 ->orWhere('best_supplier.name', 'like', $like)
                 ->orWhere('best_pr.pr_number', 'like', $like);
         });
+    }
+
+    private function extractDimensionFilters(Request $request): array
+    {
+        $filters = [];
+
+        foreach (array_merge(['shape'], PrItem::DIMENSION_FIELDS, ['weight_needed']) as $field) {
+            $value = $request->input($field);
+            if ($value !== null && trim((string) $value) !== '') {
+                $filters[$field] = trim((string) $value);
+            }
+        }
+
+        return $filters;
+    }
+
+    private function matchesDimensionFilters(PrItem $item, array $filters): bool
+    {
+        foreach ($filters as $field => $value) {
+            if ($field === 'shape') {
+                if ((string) $item->shape !== $value) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            $actual = $item->{$field};
+            if ($actual === null || (float) $actual !== (float) $value) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function vsBestDateRange(Request $request): array
+    {
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        if (! $dateFrom || ! $dateTo) {
+            return [null, null];
+        }
+
+        try {
+            $startDate = Carbon::createFromFormat('Y-m', $dateFrom)->startOfMonth();
+            $endDate = Carbon::createFromFormat('Y-m', $dateTo)->endOfMonth();
+            
+            if ($startDate->greaterThan($endDate)) {
+                return [null, null];
+            }
+            
+            return [$startDate, $endDate];
+        } catch (\Exception $e) {
+            return [null, null];
+        }
     }
 
     private function buildVsBestSummary($query, float $competitiveThreshold): array
@@ -541,7 +636,7 @@ class PriceComparisonController extends Controller
         }
 
         return PrItem::query()
-            ->select('material_name')
+            ->select('material_name', 'shape')
             ->distinct()
             ->whereNotNull('material_name')
             ->where('material_name', '<>', '')
@@ -550,7 +645,15 @@ class PriceComparisonController extends Controller
                     ->whereIn('status', ['submitted', 'accepted', 'rejected']);
             })
             ->orderBy('material_name')
-            ->pluck('material_name');
+            ->get()
+            ->unique('material_name')
+            ->map(function ($item) {
+                return [
+                    'name' => $item->material_name,
+                    'shape' => $item->shape,
+                ];
+            })
+            ->values();
     }
 
     private function formatRupiah($value): string
@@ -597,15 +700,18 @@ class PriceComparisonController extends Controller
             : null;
     }
 
-    private function buildMonthlyHistoricalData($supplierId, string $materialName, $dateFrom): array
+    private function buildMonthlyHistoricalData($supplierId, string $materialName, $dateFrom, array $dimensionFilters = []): array
     {
         $items = QuotationItem::query()
             ->select('quotation_items.*')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
             ->where('quotations.supplier_id', $supplierId)
             ->whereIn('quotations.status', ['submitted', 'accepted', 'rejected'])
-            ->whereHas('prItem', function ($q) use ($materialName) {
+            ->whereHas('prItem', function ($q) use ($materialName, $dimensionFilters) {
                 $q->where('material_name', $materialName);
+                foreach ($dimensionFilters as $field => $val) {
+                    $q->where($field, $val);
+                }
             })
             ->with([
                 'quotation.supplier',
@@ -677,7 +783,7 @@ class PriceComparisonController extends Controller
         ], $tableData];
     }
 
-    private function buildYearlyHistoricalData($supplierId, string $materialName, $dateFrom): array
+    private function buildYearlyHistoricalData($supplierId, string $materialName, $dateFrom, array $dimensionFilters = []): array
     {
         $query = QuotationItem::query()
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
@@ -686,6 +792,10 @@ class PriceComparisonController extends Controller
             ->where('quotations.supplier_id', $supplierId)
             ->whereIn('quotations.status', ['submitted', 'accepted', 'rejected'])
             ->where('pr_items.material_name', $materialName);
+
+        foreach ($dimensionFilters as $field => $val) {
+            $query->where("pr_items.{$field}", $val);
+        }
 
         if ($dateFrom) {
             $query->where('quotations.submitted_at', '>=', $dateFrom);

@@ -289,7 +289,9 @@
                     <th>Material</th>
                     <th class="text-center">HS Code</th>
                     <th class="text-center">Spesifikasi</th>
-                    <th class="text-right">Berat (kg)</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-right">Berat/Unit</th>
+                    <th class="text-right">Total Berat</th>
                     <th class="text-right">Harga/kg</th>
                     <th class="text-right">Total ({{ $po->currency ?? 'USD' }})</th>
                     <th class="text-right">Total (IDR)</th>
@@ -301,7 +303,7 @@
                     @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                     @if($po->quotations->count() > 1)
                         <tr>
-                            <td colspan="8" style="background-color: #eef2f7; font-weight: 700; font-size: 10px; padding: 6px;">
+                            <td colspan="10" style="background-color: #eef2f7; font-weight: 700; font-size: 10px; padding: 6px;">
                                 {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
                                 @if($rate)
                                     <span style="color: #64748b; font-weight: 400; margin-left: 8px;">
@@ -325,7 +327,9 @@
                             <td><strong>{{ $item->prItem->material_name }}</strong><br><small style="color:#64748b;">{{ $item->prItem->shape ?? '-' }}</small></td>
                             <td class="text-center">{{ $item->prItem->hs_code ?? '-' }}</td>
                             <td class="text-center" style="font-size:9px;">{{ $spec }}</td>
+                            <td class="text-center">{{ number_format($item->prItem->quantity_value, 0, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($item->prItem->weight_needed, 0, ',', '.') }}</td>
+                            <td class="text-right">{{ number_format($item->prItem->total_weight, 0, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($item->price_per_kg, 4) }}</td>
                             <td class="text-right">{{ number_format($totalFx, 2, ',', '.') }}</td>
                             <td class="text-right">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>

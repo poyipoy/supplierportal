@@ -31,6 +31,9 @@ class Quotation extends Model
         'currency',
         'status',
         'submitted_at',
+        'reviewed_at',
+        'reviewed_by',
+        'reviewer_notes',
         'estimated_delivery',
         'payment_terms',
         'validity_period',
@@ -41,6 +44,7 @@ class Quotation extends Model
     {
         return [
             'submitted_at' => 'datetime',
+            'reviewed_at' => 'datetime',
             'estimated_delivery' => 'date',
             'validity_period' => 'date',
         ];
@@ -54,8 +58,20 @@ class Quotation extends Model
     public function canRequestRevision(): bool
     {
         return $this->status === self::STATUS_SUBMITTED
-            && $this->isExpired()
             && $this->purchaseOrders()->count() === 0;
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function isLocked(): bool
+    {
+        return ! in_array($this->status, [
+            self::STATUS_DRAFT,
+            self::STATUS_REVISION_REQUESTED,
+        ], true);
     }
 
     public function canBeRevisedBySupplier(): bool
@@ -64,6 +80,20 @@ class Quotation extends Model
             self::STATUS_DRAFT,
             self::STATUS_REVISION_REQUESTED,
         ], true);
+    }
+
+    public function canEditBy(User $user): bool
+    {
+        return $user->role === 'supplier'
+            && $user->id === $this->supplier_id
+            && $this->canBeRevisedBySupplier();
+    }
+
+    public function canApproveBy(User $user): bool
+    {
+        return $user->role === 'purchasing'
+            && $this->status === self::STATUS_SUBMITTED
+            && $this->purchaseOrders()->count() === 0;
     }
 
     public function statusLabel(): string
@@ -100,6 +130,11 @@ class Quotation extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supplier_id');
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function exchange_rate(): BelongsTo

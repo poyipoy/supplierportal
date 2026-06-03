@@ -52,6 +52,10 @@
                                 <th>Nomor PO</th>
                                 <th>Supplier</th>
                                 <th>Tanggal Diajukan</th>
+                                <th>
+                                    Deadline
+                                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Batas waktu supplier merespons klaim material."></i>
+                                </th>
                                 <th class="text-center">Status Klaim</th>
                                 <th class="text-end">Aksi</th>
                             </tr>
@@ -98,10 +102,14 @@
                         { data: 'po_number', name: 'po_number', orderable: false },
                         { data: 'supplier_name', name: 'supplier_name', orderable: false },
                         { data: 'created_date', name: 'created_at' },
+                        { data: 'deadline_display', name: 'deadline' },
                         { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
                         { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
                     ],
-                    language: dtLang
+                    language: dtLang,
+                    drawCallback: function() {
+                        window.initAdasiTooltips?.(document.getElementById('historyTable'));
+                    }
                 }));
             }
         });

@@ -364,7 +364,8 @@
                     <th>Lebar<br>Aktual</th>
                     <th>Panjang<br>Diminta</th>
                     <th>Panjang<br>Aktual</th>
-                    <th>Berat<br>Diminta</th>
+                    <th>Qty</th>
+                    <th>Berat/Unit<br>Diminta</th>
                     <th>Berat<br>Aktual</th>
                     <th>Status</th>
                 </tr>
@@ -380,6 +381,7 @@
                         <td>{{ $item->actual_width ? number_format($item->actual_width, 1) : '-' }}</td>
                         <td>{{ $item->prItem->length ? number_format($item->prItem->length, 1) : '-' }}</td>
                         <td>{{ $item->actual_length ? number_format($item->actual_length, 1) : '-' }}</td>
+                        <td>{{ number_format($item->prItem->quantity_value, 0) }}</td>
                         <td>{{ number_format($item->prItem->weight_needed, 0) }}</td>
                         <td>{{ $item->actual_weight ? number_format($item->actual_weight, 0) : '-' }}</td>
                         <td class="cell-{{ $item->status }}">{{ strtoupper($item->status) }}</td>

@@ -15,8 +15,10 @@
             
             <input type="hidden" name="action" id="formAction" value="draft">
 
+            <input type="hidden" name="supplier_selection_present" value="1">
+
             <div class="row mb-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="period_id" class="form-label fw-medium">Periode Penawaran<span class="text-danger">*</span></label>
                     <select name="period_id" id="period_id" class="form-select @error('period_id') is-invalid @enderror" required>
                         <option value="">-- Pilih Periode --</option>
@@ -28,7 +30,23 @@
                     </select>
                     @error('period_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    @php
+                        $selectedSupplierIds = collect(old('supplier_ids', []));
+                        if (old('supplier_id')) {
+                            $selectedSupplierIds->push(old('supplier_id'));
+                        }
+                    @endphp
+                    @include('purchasing.pr._supplier_picker_modal', [
+                        'modalId' => 'createSupplierPickerModal',
+                        'suppliers' => $suppliers,
+                        'selectedSupplierIds' => $selectedSupplierIds,
+                    ])
+                    {{--
+                    <div class="form-text">Pilih satu supplier, atau biarkan “Semua Supplier Terdaftar” agar PR bisa dilihat semua supplier.</div>
+                    --}}
+                </div>
+                <div class="col-md-4">
                     <label for="notes" class="form-label fw-medium">Catatan / Keterangan Tambahan</label>
                     <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="Opsional...">{{ old('notes') }}</textarea>
                 </div>
@@ -47,15 +65,11 @@
                 <table class="table table-bordered table-sm align-middle" id="itemsTable">
                     <thead class="table-light text-center" style="font-size: 0.8rem;">
                         <tr>
-                            <th width="10%">HS Code</th>
-                            <th width="18%">Nama Material <span class="text-danger">*</span></th>
+                            <th width="28%">Material & HS Code <span class="text-danger">*</span></th>
                             <th width="12%">Bentuk</th>
-                            <th width="8%">Ketebalan</th>
-                            <th width="8%">Diameter dalam</th>
-                            <th width="8%">Diameter luar</th>
-                            <th width="8%">Lebar</th>
-                            <th width="8%">Panjang</th>
-                            <th width="12%">Berat (Kg) <span class="text-danger">*</span></th>
+                            <th width="8%">Qty <span class="text-danger">*</span></th>
+                            <th width="34%">Dimensi (mm)</th>
+                            <th width="10%">Berat/Unit (Kg) <span class="text-danger">*</span></th>
                             <th width="8%">Aksi</th>
                         </tr>
                     </thead>
@@ -172,6 +186,19 @@
         } else {
             initializeMaterialShapeRows();
         }
+
+        let isDirty = false;
+        $('#prForm').on('input change', 'input, select, textarea', function() {
+            isDirty = true;
+        });
+        $('#prForm').on('submit', function() {
+            isDirty = false;
+        });
+        $(window).on('beforeunload', function() {
+            if (isDirty) {
+                return 'Anda memiliki perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?';
+            }
+        });
     });
 </script>
 @endpush

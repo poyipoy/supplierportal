@@ -16,11 +16,13 @@
                             <th>Supplier</th>
                             <th>Pesan Terakhir</th>
                             <th>Waktu Terakhir</th>
+                            <th>Status</th>
                             <th class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($conversations as $conv)
+                            @php $sla = \App\Support\ConversationPresenter::slaMeta($conv, auth()->user()); @endphp
                             <tr>
                                 <td>
                                     @if($conv->conversable_type === 'App\Models\PurchaseRequirement')
@@ -48,9 +50,13 @@
                                         -
                                     @endif
                                 </td>
+                                <td>
+                                    <span class="badge {{ $conv->statusBadgeClassFor(auth()->user()) }}">{{ $conv->statusLabelFor(auth()->user()) }}</span>
+                                    <span class="badge {{ $sla['class'] }} mt-1">{{ $sla['label'] }}</span>
+                                </td>
                                 <td class="text-end">
                                     @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
-                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv->id) }}" class="btn btn-sm btn-outline-primary position-relative" data-open-chat-conversation="{{ $conv->id }}">
+                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv->id) }}" class="btn btn-sm btn-outline-primary position-relative">
                                         <i class="bi bi-chat-text"></i> Buka Chat
                                         @if($unreadCount > 0)
                                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -62,12 +68,17 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">Belum ada riwayat percakapan/negosiasi.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">Belum ada riwayat percakapan/negosiasi.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+            @if($conversations instanceof \Illuminate\Contracts\Pagination\Paginator && $conversations->hasPages())
+                <div class="mt-3">
+                    {{ $conversations->links('pagination::bootstrap-5') }}
+                </div>
+            @endif
         </div>
     </div>
 @endsection

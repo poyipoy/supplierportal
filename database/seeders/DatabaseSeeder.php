@@ -58,7 +58,6 @@ class DatabaseSeeder extends Seeder
             'phone'        => '021-12345678',
             'npwp'         => '01.234.567.8-012.000',
             'category'     => 'Steel',
-            'currency'     => ExchangeRate::CURRENCY_USD,
         ]);
 
         // ─── Supplier 2 ───
@@ -77,7 +76,6 @@ class DatabaseSeeder extends Seeder
             'phone'        => '021-87654321',
             'npwp'         => '09.876.543.2-098.000',
             'category'     => 'Steel',
-            'currency'     => ExchangeRate::CURRENCY_CNY,
         ]);
 
         // ─── Exchange Rates (valid_from: hari ini) ───

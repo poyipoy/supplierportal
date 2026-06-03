@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Qc;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
+use App\Models\PrItem;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\QcItem;
@@ -11,10 +12,20 @@ use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
 class QcInspectionController extends Controller
 {
+    private const ACTUAL_FIELD_BY_DIMENSION = [
+        'thickness' => 'actual_thickness',
+        'd_inner' => 'actual_d_inner',
+        'd_outer' => 'actual_d_outer',
+        'width' => 'actual_width',
+        'length' => 'actual_length',
+        'weight' => 'actual_weight',
+    ];
+
     /**
      * Tampilkan daftar inspeksi (Menunggu vs Riwayat)
      */
@@ -46,6 +57,10 @@ class QcInspectionController extends Controller
     {
         $query = QcInspection::with(['purchaseOrder.supplier', 'inspector'])
             ->orderBy('inspected_at', 'desc');
+
+        if ($request->filled('status') && in_array($request->status, ['ok', 'ng'], true)) {
+            $query->where('status', $request->status);
+        }
 
         return DataTables::eloquent($query)
             ->addColumn('po_number', fn($i) => $i->purchaseOrder->po_number ?? '-')
@@ -85,14 +100,20 @@ class QcInspectionController extends Controller
     public function store(Request $request, $po_id)
     {
         $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem'])->findOrFail($po_id);
+        $poPrItems = $po->quotations
+            ->flatMap(fn($quotation) => $quotation->items->pluck('prItem'))
+            ->filter()
+            ->keyBy('id');
 
         if ($po->status !== 'waiting_qc') {
             return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak valid untuk diinspeksi.');
         }
 
+        $this->prepareInspectionInput($request, $poPrItems);
+
         $rules = [
             'items' => 'required|array',
-            'items.*.pr_item_id' => 'required|exists:pr_items,id',
+            'items.*.pr_item_id' => ['required', Rule::in($poPrItems->keys()->all())],
             'items.*.actual_thickness' => 'nullable|numeric',
             'items.*.actual_d_inner' => 'nullable|numeric',
             'items.*.actual_d_outer' => 'nullable|numeric',
@@ -113,7 +134,8 @@ class QcInspectionController extends Controller
             }
         }
 
-        $request->validate($rules, [
+        $validated = $request->validate($rules, [
+            'items.*.pr_item_id.in' => 'Material inspeksi tidak sesuai dengan PO ini.',
             'attachments.*.required' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
             'attachments.*.min' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
             'attachments.*.*.required' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
@@ -126,7 +148,7 @@ class QcInspectionController extends Controller
 
             // Cek status keseluruhan
             $overallStatus = 'ok';
-            foreach ($request->items as $itemData) {
+            foreach ($validated['items'] as $itemData) {
                 if ($itemData['status'] === 'ng') {
                     $overallStatus = 'ng';
                     break;
@@ -144,16 +166,15 @@ class QcInspectionController extends Controller
             $uploadedFiles = $request->file('attachments', []);
 
             // Simpan QC Items
-            foreach ($request->items as $index => $itemData) {
-                $qcItem = QcItem::create([
+            foreach ($validated['items'] as $index => $itemData) {
+                $measurements = $this->sanitizeActualMeasurements(
+                    $itemData,
+                    $poPrItems->get((int) $itemData['pr_item_id'])
+                );
+
+                $qcItem = QcItem::create($measurements + [
                     'inspection_id' => $inspection->id,
                     'pr_item_id' => $itemData['pr_item_id'],
-                    'actual_thickness' => $itemData['actual_thickness'] ?? null,
-                    'actual_d_inner' => $itemData['actual_d_inner'] ?? null,
-                    'actual_d_outer' => $itemData['actual_d_outer'] ?? null,
-                    'actual_width' => $itemData['actual_width'] ?? null,
-                    'actual_length' => $itemData['actual_length'] ?? null,
-                    'actual_weight' => $itemData['actual_weight'] ?? null,
                     'status' => $itemData['status'],
                     'notes' => $itemData['notes'] ?? null,
                 ]);
@@ -223,6 +244,47 @@ class QcInspectionController extends Controller
             DB::rollBack();
             return back()->withInput()->with('error', 'Gagal menyimpan inspeksi: ' . $e->getMessage());
         }
+    }
+
+    private function prepareInspectionInput(Request $request, $poPrItems): void
+    {
+        $items = $request->input('items');
+
+        if (! is_array($items)) {
+            return;
+        }
+
+        $prepared = [];
+        foreach ($items as $index => $itemData) {
+            if (! is_array($itemData)) {
+                continue;
+            }
+
+            $prItem = $poPrItems->get((int) ($itemData['pr_item_id'] ?? 0));
+            $prepared[$index] = array_merge(
+                $itemData,
+                $this->sanitizeActualMeasurements($itemData, $prItem)
+            );
+        }
+
+        $request->merge(['items' => $prepared]);
+    }
+
+    private function sanitizeActualMeasurements(array $itemData, ?PrItem $prItem): array
+    {
+        $relevantDimensions = $prItem
+            ? PrItem::relevantDimensionFields($prItem->shape)
+            : [];
+        $relevantDimensions[] = 'weight';
+
+        $measurements = [];
+        foreach (self::ACTUAL_FIELD_BY_DIMENSION as $dimension => $field) {
+            $measurements[$field] = in_array($dimension, $relevantDimensions, true)
+                ? ($itemData[$field] ?? null)
+                : null;
+        }
+
+        return $measurements;
     }
 
     /**

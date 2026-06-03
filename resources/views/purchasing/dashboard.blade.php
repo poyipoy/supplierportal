@@ -2,47 +2,167 @@
 @section('title', 'Dashboard Purchasing — ADASI Portal')
 @section('page-title', 'Dashboard Purchasing')
 
+@push('styles')
+<style>
+    .operational-check-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .75rem;
+    }
+
+    .operational-check-item {
+        border: 1px solid #e9ecef;
+        border-radius: .5rem;
+        color: inherit;
+        display: flex;
+        gap: .75rem;
+        padding: .9rem;
+        text-decoration: none;
+        transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .operational-check-item:hover {
+        border-color: rgba(31, 95, 166, .28);
+        box-shadow: 0 .35rem 1rem rgba(31, 95, 166, .08);
+        transform: translateY(-1px);
+    }
+
+    .operational-check-icon {
+        align-items: center;
+        border-radius: 50%;
+        display: flex;
+        flex: 0 0 38px;
+        height: 38px;
+        justify-content: center;
+        width: 38px;
+    }
+
+    @media (max-width: 991.98px) {
+        .operational-check-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .operational-check-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>
+@endpush
+
 @section('content')
-{{-- Card Statistik --}}
-<div class="row g-4 mb-4">
+
+{{-- Insight & Anomaly Alerts --}}
+@php
+    $hasInsights = ($poStatusDist['overdue'] ?? 0) > 0 || $menungguPenawaran > 0 || ($poStatusDist['waiting_qc'] ?? 0) > 0;
+@endphp
+@if($hasInsights)
+<div class="row mb-4 animate-fade-in">
+    <div class="col-12">
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-3 mb-0" style="background-color: #fff9e6; border-left: 4px solid #ffc107 !important;">
+            <div class="bg-warning bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-lightbulb-fill fs-4 text-warning"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold mb-1 text-dark">Action Required</h6>
+                <p class="mb-0 text-muted small">
+                    @if(($poStatusDist['overdue'] ?? 0) > 0) <span class="text-danger fw-semibold"><i class="bi bi-exclamation-circle"></i> Terdapat {{ $poStatusDist['overdue'] }} PO Overdue</span> yang melewati estimasi. @endif
+                    @if($menungguPenawaran > 0) <span class="text-warning fw-semibold ms-1"><i class="bi bi-clock"></i> {{ $menungguPenawaran }} PR</span> belum mendapat satupun penawaran. @endif
+                    @if(($poStatusDist['waiting_qc'] ?? 0) > 0) <span class="text-primary fw-semibold ms-1"><i class="bi bi-box-seam"></i> {{ $poStatusDist['waiting_qc'] }} PO</span> sedang menunggu inspeksi QC. @endif
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Card Statistik (Clickable) --}}
+<div class="row g-4 mb-4 animate-fade-in">
     <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+        <a href="{{ route('purchasing.requirements.index', ['status' => 'submitted']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-primary">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><div class="text-muted small fw-medium mb-1">PERMINTAAN AKTIF</div><h3 class="fw-bold mb-0">{{ $prAktif }}</h3></div>
-                    <div class="bg-primary bg-opacity-10 rounded-circle p-3"><i class="bi bi-clipboard-data text-primary fs-4"></i></div>
+                    <div class="position-relative">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3"><i class="bi bi-clipboard-data text-primary fs-4"></i></div>
+                        <i class="bi bi-arrow-right kpi-arrow text-primary position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+        <a href="{{ route('purchasing.requirements.index', ['status' => 'bidding']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-warning">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><div class="text-muted small fw-medium mb-1">MENUNGGU PENAWARAN</div><h3 class="fw-bold mb-0 text-warning">{{ $menungguPenawaran }}</h3></div>
-                    <div class="bg-warning bg-opacity-10 rounded-circle p-3"><i class="bi bi-hourglass-split text-warning fs-4"></i></div>
+                    <div class="position-relative">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3"><i class="bi bi-hourglass-split text-warning fs-4"></i></div>
+                        <i class="bi bi-arrow-right kpi-arrow text-warning position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+        <a href="{{ route('purchasing.purchase-orders.index', ['status' => 'active']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><div class="text-muted small fw-medium mb-1">PO BERJALAN</div><h3 class="fw-bold mb-0 text-success">{{ $poBerjalan }}</h3></div>
-                    <div class="bg-success bg-opacity-10 rounded-circle p-3"><i class="bi bi-receipt text-success fs-4"></i></div>
+                    <div class="position-relative">
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3"><i class="bi bi-receipt text-success fs-4"></i></div>
+                        <i class="bi bi-arrow-right kpi-arrow text-success position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+        <a href="{{ route('purchasing.purchase-orders.index', ['arrival' => 'this_week']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-info">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div><div class="text-muted small fw-medium mb-1">TIBA MINGGU INI</div><h3 class="fw-bold mb-0 text-info">{{ $materialMingguIni }}</h3></div>
-                    <div class="bg-info bg-opacity-10 rounded-circle p-3"><i class="bi bi-truck text-info fs-4"></i></div>
+                    <div class="position-relative">
+                        <div class="bg-info bg-opacity-10 rounded-circle p-3"><i class="bi bi-truck text-info fs-4"></i></div>
+                        <i class="bi bi-arrow-right kpi-arrow text-info position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
+                    </div>
                 </div>
             </div>
+        </a>
+    </div>
+</div>
+
+{{-- Quick operational checks --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h6 class="mb-0 fw-bold">Perlu Dicek</h6>
+            <div class="text-muted small">Ringkasan data operasional yang perlu perhatian purchasing.</div>
+        </div>
+        <span class="badge bg-light text-muted border">Quick Wins</span>
+    </div>
+    <div class="card-body">
+        <div class="operational-check-grid">
+            @foreach($operationalChecks as $check)
+                <a href="{{ $check['url'] }}" class="operational-check-item">
+                    <span class="operational-check-icon bg-{{ $check['class'] }} bg-opacity-10 text-{{ $check['class'] }}">
+                        <i class="bi {{ $check['icon'] }}"></i>
+                    </span>
+                    <span class="min-w-0">
+                        <span class="d-flex align-items-center gap-2">
+                            <span class="fw-bold fs-5 lh-1">{{ $check['count'] }}</span>
+                            @if($check['count'] > 0)
+                                <span class="badge bg-{{ $check['class'] }}">Perlu aksi</span>
+                            @else
+                                <span class="badge bg-success">Aman</span>
+                            @endif
+                        </span>
+                        <span class="d-block fw-semibold mt-1">{{ $check['label'] }}</span>
+                        <span class="d-block text-muted small">{{ $check['description'] }}</span>
+                    </span>
+                </a>
+            @endforeach
         </div>
     </div>
 </div>
@@ -86,8 +206,8 @@
                             <tr>
                                 <td class="fw-bold">{{ $pr->pr_number ?? 'DRAFT' }}</td>
                                 <td>{{ $pr->period->name }}</td>
-                                <td>@php $c=match($pr->status){'draft'=>'bg-secondary','submitted'=>'bg-primary','bidding'=>'bg-warning text-dark','completed'=>'bg-success',default=>'bg-secondary'};@endphp<span class="badge {{ $c }} text-uppercase" style="font-size:.65rem">{{ ucwords(str_replace('_', ' ', $pr->status)) }}</span></td>
-                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
+                                <td><x-status-badge type="pr" :status="$pr->status" /></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
                             </tr>
                             @empty<tr><td colspan="4" class="text-center text-muted py-3">Belum ada data.</td></tr>@endforelse
                         </tbody>
@@ -98,7 +218,10 @@
         {{-- Kurs --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold"><i class="bi bi-currency-exchange me-1"></i> Kurs Hari Ini</h6>
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-currency-exchange me-1"></i> Kurs Hari Ini
+                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Kurs terbaru dipakai untuk input baru. Histori penawaran dan PO tetap memakai kurs snapshot masing-masing."></i>
+                </h6>
                 <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#kursModal"><i class="bi bi-pencil-square"></i> Update</button>
             </div>
             <div class="card-body">
@@ -140,8 +263,8 @@
                                 <td class="fw-bold">{{ $po->po_number }}</td>
                                 <td>{{ $po->supplier->name }}</td>
                                 <td>{{ \Carbon\Carbon::parse($po->estimated_arrival)->format('d M Y') }}</td>
-                                <td><span class="badge bg-primary text-uppercase" style="font-size:.65rem">{{ ucwords(str_replace('_', ' ', $po->status)) }}</span></td>
-                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info py-0"><i class="bi bi-eye"></i></a></td>
+                                <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
                             </tr>
                             @empty<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada PO aktif.</td></tr>@endforelse
                         </tbody>
@@ -165,7 +288,16 @@
                     @endforeach
                 </select>
             </div>
-            <div class="mb-3"><label class="form-label small fw-bold">Rate ke IDR</label><input type="number" step="0.01" name="rate_to_idr" class="form-control form-control-sm" required placeholder="16500"></div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">
+                    Rate ke IDR
+                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Kurs baru disimpan sebagai histori baru, bukan menimpa kurs lama."></i>
+                </label>
+                <input type="number" step="0.01" name="rate_to_idr" class="form-control form-control-sm" required placeholder="16500">
+            </div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Simpan</button></div>
+    </form>
         </div>
         <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Simpan</button></div>
     </form>
@@ -175,27 +307,83 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-new Chart(document.getElementById('prChart'),{type:'bar',data:{labels:{!! json_encode(array_column($prPerBulan,'label')) !!},datasets:[{label:@json('Jumlah PR'),data:{!! json_encode(array_column($prPerBulan,'count')) !!},backgroundColor:'rgba(31,95,166,0.7)',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
-@if(count($poStatusDist)>0)
-@php
-    $statusColors = [
-        'active' => '#0d6efd',
-        'waiting_qc' => '#ffc107',
-        'completed' => '#198754',
-        'overdue' => '#dc3545',
-        'claim_needed' => '#dc3545',
-        'cancelled' => '#6c757d',
-    ];
-    $chartLabels = [];
-    $chartData = [];
-    $chartColors = [];
-    foreach($poStatusDist as $status => $count) {
-        $chartLabels[] = ucwords(str_replace('_', ' ', $status));
-        $chartData[] = $count;
-        $chartColors[] = $statusColors[$status] ?? '#6c757d';
-    }
-@endphp
-new Chart(document.getElementById('poDonut'),{type:'doughnut',data:{labels:{!! json_encode($chartLabels) !!},datasets:[{data:{!! json_encode($chartData) !!},backgroundColor:{!! json_encode($chartColors) !!},borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}}});
-@endif
+        const commonTooltip = {
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            titleColor: '#333',
+            bodyColor: '#555',
+            borderColor: 'rgba(0,0,0,0.1)',
+            borderWidth: 1,
+            titleFont: { size: 14, family: 'Inter', weight: 'bold' },
+            bodyFont: { size: 13, family: 'Inter' },
+            padding: 12,
+            cornerRadius: 8,
+            boxPadding: 6,
+            displayColors: true,
+        };
+
+        new Chart(document.getElementById('prChart'), {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode(array_column($prPerBulan, 'label')) !!},
+                datasets: [{
+                    label: 'Jumlah PR',
+                    data: {!! json_encode(array_column($prPerBulan, 'count')) !!},
+                    backgroundColor: 'rgba(31,95,166,0.7)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: commonTooltip
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+
+        @if(count($poStatusDist)>0)
+        @php
+            $statusColors = [
+                'active' => '#0d6efd',
+                'waiting_qc' => '#ffc107',
+                'completed' => '#198754',
+                'overdue' => '#dc3545',
+                'claim_needed' => '#dc3545',
+                'cancelled' => '#6c757d',
+            ];
+            $chartLabels = [];
+            $chartData = [];
+            $chartColors = [];
+            foreach($poStatusDist as $status => $count) {
+                $chartLabels[] = ucwords(str_replace('_', ' ', $status));
+                $chartData[] = $count;
+                $chartColors[] = $statusColors[$status] ?? '#6c757d';
+            }
+        @endphp
+        new Chart(document.getElementById('poDonut'), {
+            type: 'doughnut',
+            data: {
+                labels: {!! json_encode($chartLabels) !!},
+                datasets: [{
+                    data: {!! json_encode($chartData) !!},
+                    backgroundColor: {!! json_encode($chartColors) !!},
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Inter' } } },
+                    tooltip: commonTooltip
+                }
+            }
+        });
+        @endif
 </script>
 @endpush

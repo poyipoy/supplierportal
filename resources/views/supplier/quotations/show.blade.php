@@ -4,6 +4,11 @@
 @section('page-title', 'Detail Penawaran')
 
 @section('content')
+<x-breadcrumb :items="[
+    'Dashboard' => route('supplier.dashboard'),
+    'Daftar Penawaran' => route('supplier.quotations.index'),
+    'Detail Penawaran' => '#'
+]" />
     <div class="mb-3">
         <a href="{{ route('supplier.quotations.period', $quotation->purchaseRequirement->period_id) }}"
             class="text-decoration-none text-muted small">
@@ -24,12 +29,15 @@
                             <thead class="table-light text-center">
                                 <tr>
                                     <th width="5%">No</th>
-                                    <th width="25%">Material</th>
-                                    <th width="10%">Berat (Kg)</th>
+                                    <th width="22%">Material</th>
+                                    <th width="8%">Qty</th>
+                                    <th width="10%">Berat/Unit (Kg)</th>
+                                    <th width="10%">Total Berat (Kg)</th>
                                     <th width="15%">Harga ({{ $quotation->currency }})</th>
                                     <th width="15%">Amount ({{ $quotation->currency }})</th>
                                     <th width="15%">Est. IDR</th>
-                                    <th width="15%">Catatan</th>
+                                    <th width="10%">Catatan</th>
+                                    <th width="10%">MTC</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -56,21 +64,33 @@
                                                 @endif
                                             </div>
                                         </td>
-                                        <td class="text-center fw-medium text-primary">
-                                            {{ number_format($item->prItem->weight_needed, 2) }}</td>
+                                        <td class="text-center fw-medium">{{ number_format($item->prItem->quantity_value, 0) }}</td>
+                                        <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                                        <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
                                         <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
                                         <td class="text-end text-muted">{{ number_format($idr, 0, ',', '.') }}</td>
                                         <td>{{ $item->notes ?? '-' }}</td>
+                                        <td class="text-center">
+                                            @if($item->attachments->isNotEmpty())
+                                                @foreach($item->attachments as $attachment)
+                                                    <a href="{{ route('attachments.show', $attachment->id) }}" class="btn btn-sm btn-outline-primary mb-1" target="_blank">
+                                                        <i class="bi bi-paperclip"></i>
+                                                    </a>
+                                                @endforeach
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot class="table-light fw-bold">
                                 <tr>
-                                    <td colspan="4" class="text-end">TOTAL</td>
+                                    <td colspan="6" class="text-end">TOTAL</td>
                                     <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
                                     <td class="text-end text-primary">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
-                                    <td></td>
+                                    <td colspan="2"></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -124,6 +144,14 @@
                         <div class="col-12 fw-medium p-2 bg-light rounded">
                             {{ $quotation->general_notes ?: 'Tidak ada catatan' }}</div>
                     </div>
+                    @if($quotation->reviewer_notes)
+                        <div class="row mt-3">
+                            <div class="col-12 text-muted small mb-1">Catatan Purchasing</div>
+                            <div class="col-12 fw-medium p-2 bg-warning bg-opacity-10 border border-warning rounded">
+                                {{ $quotation->reviewer_notes }}
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 

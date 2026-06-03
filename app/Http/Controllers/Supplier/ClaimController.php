@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -23,19 +24,19 @@ class ClaimController extends Controller
                 ->addColumn('po_number', fn($c) => $c->purchaseOrder->po_number ?? '-')
                 ->addColumn('created_date', fn($c) => $c->created_at->format('d M Y'))
                 ->addColumn('deadline_display', function ($c) {
-                    $isOverdue = $c->status === 'pending' && $c->deadline->isPast();
-                    $class = $isOverdue ? 'text-danger fw-bold' : '';
-                    return '<span class="' . $class . '">' . $c->deadline->format('d M Y') . '</span>';
+                    $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
+                    $date = $c->deadline ? $c->deadline->format('d M Y') : '-';
+
+                    return '<div class="d-flex flex-column align-items-start gap-1">'
+                        . '<span>' . e($date) . '</span>'
+                        . StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
+                        . '</div>';
                 })
                 ->addColumn('status_badge', function ($c) {
-                    $badgeClass = match($c->status) {
-                        'pending' => 'bg-warning text-dark',
-                        'responded' => 'bg-info',
-                        'resolved' => 'bg-success',
-                        'escalated' => 'bg-danger',
-                        default => 'bg-secondary'
-                    };
-                    return '<span class="badge ' . $badgeClass . ' text-uppercase">' . ucwords(str_replace('_', ' ', $c->status)) . '</span>';
+                    return StatusHelper::badge(
+                        StatusHelper::claimBadge($c->status),
+                        StatusHelper::claimLabel($c->status)
+                    );
                 })
                 ->addColumn('action', function ($c) {
                     $label = $c->status === 'pending' ? 'Beri Respons' : 'Lihat Detail';

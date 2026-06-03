@@ -16,6 +16,7 @@ class SupplierController extends Controller
         $sid = auth()->id();
         $periodeAktif = Period::where('status', 'open')->count();
         $belumDirespons = PurchaseRequirement::whereIn('status', ['submitted', 'bidding'])
+            ->visibleToSupplier($sid)
             ->whereHas('period', fn($q) => $q->where('status', 'open'))
             ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))->count();
         $penawaranTerkirim = Quotation::where('supplier_id', $sid)->where('status', 'submitted')
@@ -24,6 +25,7 @@ class SupplierController extends Controller
 
         $prBelumRespons = PurchaseRequirement::with('period', 'items')
             ->whereIn('status', ['submitted', 'bidding'])
+            ->visibleToSupplier($sid)
             ->whereHas('period', fn($q) => $q->where('status', 'open'))
             ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))
             ->orderBy('created_at', 'desc')->take(5)->get();

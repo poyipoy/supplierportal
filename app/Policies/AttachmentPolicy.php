@@ -4,9 +4,11 @@ namespace App\Policies;
 
 use App\Models\Attachment;
 use App\Models\MaterialClaim;
+use App\Models\Message;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\Quotation;
+use App\Models\QuotationItem;
 use App\Models\User;
 
 class AttachmentPolicy
@@ -45,12 +47,18 @@ class AttachmentPolicy
             return match ($type) {
                 Quotation::class => $attachable->supplier_id === $user->id,
 
+                QuotationItem::class => $attachable->quotation
+                    && $attachable->quotation->supplier_id === $user->id,
+
                 PurchaseOrder::class => $attachable->supplier_id === $user->id,
 
                 QcInspection::class => $attachable->purchaseOrder
                     && $attachable->purchaseOrder->supplier_id === $user->id,
 
                 MaterialClaim::class => $attachable->supplier_id === $user->id,
+
+                Message::class => $attachable->conversation
+                    && $attachable->conversation->isMember($user->id),
 
                 default => false,
             };

@@ -4,6 +4,11 @@
 @section('page-title', 'Detail Inspeksi QC')
 
 @section('content')
+<x-breadcrumb :items="[
+    'Dashboard' => route('qc.dashboard'),
+    'Inspeksi QC' => route('qc.inspections.index'),
+    'Inspeksi PO ' . $inspection->purchaseOrder->po_number => '#'
+]" />
 <div class="mb-3">
     <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
         <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Inspeksi
@@ -26,9 +31,11 @@
                 </a>
             </div>
         </div>
-        <div class="row">
+        <div class="row g-3">
             <div class="col-md-3">
                 <div class="text-muted small">Supplier</div>
+                <div class="fw-medium">{{ $inspection->purchaseOrder->supplier->company_name ?? $inspection->purchaseOrder->supplier->name ?? '-' }}</div>
+            </div>
             <div class="col-md-3">
                 <div class="text-muted small">Diinspeksi Oleh</div>
                 <div class="fw-medium">{{ $inspection->inspector->name }}</div>
@@ -74,13 +81,13 @@
         $weight = compareValues($item->actual_weight, $prItem->weight_needed);
     @endphp
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">Item #{{ $index + 1 }}: {{ $prItem->material_name }}</h6>
+    <div class="card border-{{ $item->status === 'ng' ? 'danger' : 'success' }} shadow-sm mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center {{ $item->status === 'ng' ? 'bg-danger bg-opacity-10' : 'bg-success bg-opacity-10' }}">
+            <h6 class="mb-0 fw-bold {{ $item->status === 'ng' ? 'text-danger' : 'text-success' }}">Item #{{ $index + 1 }}: {{ $prItem->material_name }}</h6>
             @if($item->status === 'ok')
-                <span class="badge bg-success">Item OK</span>
+                <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>OK</span>
             @else
-                <span class="badge bg-danger">Item NG</span>
+                <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>NG</span>
             @endif
         </div>
         <div class="card-body p-0">
@@ -95,7 +102,8 @@
                             <th>Outer Dia. (mm)</th>
                             <th>Width (mm)</th>
                             <th>Length (mm)</th>
-                            <th>Weight (Kg)</th>
+                            <th>Qty</th>
+                            <th>Berat/Unit (Kg)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -108,6 +116,7 @@
                             <td>{{ $prItem->d_outer ?? '-' }}</td>
                             <td>{{ $prItem->width ?? '-' }}</td>
                             <td>{{ $prItem->length ?? '-' }}</td>
+                            <td>{{ number_format($prItem->quantity_value, 0) }}</td>
                             <td>{{ $prItem->weight_needed ?? '-' }}</td>
                         </tr>
                         {{-- Actual --}}
@@ -119,6 +128,7 @@
                             <td class="{{ $dOuter['class'] }}">{{ $dOuter['val'] }}</td>
                             <td class="{{ $width['class'] }}">{{ $width['val'] }}</td>
                             <td class="{{ $length['class'] }}">{{ $length['val'] }}</td>
+                            <td>{{ number_format($prItem->quantity_value, 0) }}</td>
                             <td class="{{ $weight['class'] }}">{{ $weight['val'] }}</td>
                         </tr>
                     </tbody>

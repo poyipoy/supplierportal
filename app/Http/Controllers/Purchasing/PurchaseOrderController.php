@@ -8,6 +8,7 @@ use App\Models\PoDocument;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
 use App\Support\PurchasingNavigation;
+use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -75,25 +76,25 @@ class PurchaseOrderController extends Controller
                     return 'Rp ' . number_format($totalIdr, 0, ',', '.');
                 })
                 ->addColumn('status_badge', function ($po) {
-                    $badgeClass = match(true) {
-                        $po->is_overdue => 'bg-danger',
-                        $po->status === 'active' => 'bg-primary',
-                        $po->status === 'waiting_qc' => 'bg-warning text-dark',
-                        $po->status === 'claim_needed' => 'bg-danger',
-                        $po->status === 'completed' => 'bg-success',
-                        default => 'bg-secondary'
-                    };
-                    $statusLabel = match(true) {
-                        $po->is_overdue => 'Overdue',
-                        $po->status === 'active' => 'Active',
-                        $po->status === 'waiting_qc' => 'Waiting QC',
-                        $po->status === 'claim_needed' => 'Claim Needed',
-                        $po->status === 'completed' => 'Completed',
-                        default => ucwords(str_replace('_', ' ', $po->status))
-                    };
-                    return '<span class="badge ' . $badgeClass . ' text-uppercase" style="font-size: 0.7rem;">' . $statusLabel . '</span>';
+                    return StatusHelper::badge(
+                        StatusHelper::poBadge($po->status, $po->is_overdue),
+                        StatusHelper::poLabel($po->status, $po->is_overdue)
+                    );
                 })
-                ->addColumn('estimated_date', fn($po) => $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-')
+                ->addColumn('estimated_date', function ($po) {
+                    $meta = StatusHelper::poArrivalMeta(
+                        $po->estimated_arrival,
+                        $po->is_overdue,
+                        $po->status,
+                        $po->actual_arrival
+                    );
+                    $date = $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-';
+
+                    return '<div class="d-flex flex-column align-items-start gap-1">'
+                        . '<span>' . e($date) . '</span>'
+                        . StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
+                        . '</div>';
+                })
                 ->addColumn('action', function ($po) {
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
                     if ($po->status === 'claim_needed') {
@@ -109,7 +110,7 @@ class PurchaseOrderController extends Controller
                     $html .= '</div>';
                     return $html;
                 })
-                ->rawColumns(['status_badge', 'action'])
+                ->rawColumns(['status_badge', 'estimated_date', 'action'])
                 ->make(true);
         }
 
@@ -133,7 +134,7 @@ class PurchaseOrderController extends Controller
             'exchange_rate'
         ])->findOrFail($quotation_id);
 
-        if ($quotation->status !== 'submitted') {
+        if (! in_array($quotation->status, ['submitted', 'accepted'], true)) {
             return redirect()->back()->with('error', 'Quotation ini tidak valid untuk pembuatan PO.');
         }
 
@@ -154,7 +155,7 @@ class PurchaseOrderController extends Controller
         $otherQuotations = Quotation::with(['items.prItem', 'purchaseRequirement.period', 'exchange_rate'])
             ->where('supplier_id', $quotation->supplier_id)
             ->where('currency', $quotation->currency)
-            ->where('status', 'submitted')
+            ->whereIn('status', ['submitted', 'accepted'])
             ->where('id', '!=', $quotation->id)
             ->whereDoesntHave('purchaseOrders') // belum punya PO
             ->where(function ($q) {
@@ -188,7 +189,7 @@ class PurchaseOrderController extends Controller
         // Validasi: semua harus submitted
         foreach ($quotations as $q) {
             /** @var \App\Models\Quotation $q */
-            if ($q->status !== 'submitted') {
+            if (! in_array($q->status, ['submitted', 'accepted'], true)) {
                 return redirect()->back()->with('error', "Quotation #{$q->id} tidak valid (status: {$q->status}).");
             }
             if ($q->isExpired()) {
@@ -255,7 +256,7 @@ class PurchaseOrderController extends Controller
                 // 5. Reject all other quotations for the same PR
                 Quotation::where('pr_id', $q->pr_id)
                     ->where('id', '!=', $q->id)
-                    ->where('status', 'submitted')
+                    ->whereIn('status', ['submitted', 'accepted'])
                     ->update(['status' => 'rejected']);
 
                 // 6. Mark the PR as completed
@@ -320,10 +321,11 @@ class PurchaseOrderController extends Controller
         $completedDocs = $po->documents->filter(function ($doc) use ($completedStatuses) {
             return in_array($doc->status, $completedStatuses);
         })->count();
-        $totalDocs = $po->documents->count();
-        $allDocsComplete = ($completedDocs === $totalDocs && $totalDocs > 0);
+        $totalDocs = max($po->documents->count(), 4);
+        $allDocsComplete = ($completedDocs >= 4);
+        $docProgress = StatusHelper::documentProgressMeta($completedDocs, $totalDocs);
 
-        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete'));
+        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete', 'docProgress'));
     }
 
     /**

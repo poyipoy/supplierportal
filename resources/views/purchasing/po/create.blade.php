@@ -65,7 +65,9 @@
                     foreach ($oq->items as $i) {
                         $oqItems[] = [
                             'material' => $i->prItem->material_name,
-                            'weight' => (float)$i->prItem->weight_needed,
+                            'quantity' => (int)$i->prItem->quantity_value,
+                            'weight_unit' => (float)$i->prItem->weight_needed,
+                            'weight' => (float)$i->prItem->total_weight,
                             'price' => (float)$i->price_per_kg,
                             'amount' => (float)$i->amount,
                             'rate' => (float)($oq->exchange_rate?->rate_to_idr ?? 0),
@@ -113,7 +115,9 @@
                         <th>No</th>
                         <th>No. PR</th>
                         <th>Material</th>
-                        <th>Berat (Kg)</th>
+                        <th>Qty</th>
+                        <th>Berat/Unit (Kg)</th>
+                        <th>Total Berat (Kg)</th>
                         <th>Harga/Kg ({{ $quotation->currency }})</th>
                         <th>Amount ({{ $quotation->currency }})</th>
                         <th>Est. IDR</th>
@@ -131,7 +135,9 @@
                             <td class="text-center">{{ $no++ }}</td>
                             <td class="fw-medium text-primary">{{ $quotation->purchaseRequirement->pr_number ?? '-' }}</td>
                             <td>{{ $item->prItem->material_name }}</td>
+                            <td class="text-center">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                             <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                            <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                             <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
                             <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
                             <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
@@ -140,7 +146,7 @@
                 </tbody>
                 <tfoot class="table-light fw-bold">
                     <tr>
-                        <td colspan="5" class="text-end">GRAND TOTAL</td>
+                        <td colspan="7" class="text-end">GRAND TOTAL</td>
                         <td class="text-end" id="grandTotalAmount">{{ number_format($totalAmount, 2) }} {{ $quotation->currency }}</td>
                         <td class="text-end text-primary" id="grandTotalIdr">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                     </tr>
@@ -196,7 +202,9 @@
         $primaryItemsData[] = [
             'pr_number' => $quotation->purchaseRequirement->pr_number ?? '-',
             'material' => $i->prItem->material_name,
-            'weight' => (float)$i->prItem->weight_needed,
+            'quantity' => (int)$i->prItem->quantity_value,
+            'weight_unit' => (float)$i->prItem->weight_needed,
+            'weight' => (float)$i->prItem->total_weight,
             'price' => (float)$i->price_per_kg,
             'amount' => (float)$i->amount,
             'rate' => (float)($rate?->rate_to_idr ?? 0),
@@ -228,6 +236,8 @@
                 allItems.push({
                     pr_number: prLabel,
                     material: item.material,
+                    quantity: item.quantity,
+                    weight_unit: item.weight_unit,
                     weight: item.weight,
                     price: item.price,
                     amount: item.amount,
@@ -248,7 +258,9 @@
                 <td class="text-center">${i + 1}</td>
                 <td class="fw-medium text-primary">${item.pr_number}</td>
                 <td>${item.material}</td>
-                <td class="text-center">${formatNumber(item.weight, 2)}</td>
+                <td class="text-center">${formatNumber(item.quantity, 0)}</td>
+                <td class="text-center">${formatNumber(item.weight_unit, 2)}</td>
+                <td class="text-center fw-medium text-primary">${formatNumber(item.weight, 2)}</td>
                 <td class="text-end">${formatNumber(item.price, 4)}</td>
                 <td class="text-end fw-medium">${formatNumber(item.amount, 2)}</td>
                 <td class="text-end">Rp ${formatNumber(idr, 0)}</td>

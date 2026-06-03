@@ -32,7 +32,7 @@ class StressTestSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $supplierCurrency = DB::table('suppliers')->where('user_id', $supplier->id)->value('currency') ?: 'USD';
+        $supplierCurrency = 'USD';
         $rateId = DB::table('exchange_rates')
             ->where('currency', $supplierCurrency)
             ->orderByDesc('valid_from')
@@ -151,7 +151,7 @@ class StressTestSeeder extends Seeder
                     'quotation_id' => $currentQuotationId,
                     'pr_item_id' => $item->id,
                     'price_per_kg' => $price,
-                    'amount' => $price * $item->weight_needed,
+                    'amount' => $price * $item->total_weight,
                     'notes' => 'Stress test item',
                     'created_at' => $now,
                     'updated_at' => $now,

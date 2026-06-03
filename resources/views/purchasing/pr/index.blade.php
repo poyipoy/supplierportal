@@ -47,6 +47,10 @@
             </div>
         </div>
 
+        <div id="filterChips" class="d-flex flex-wrap gap-2 mb-3 d-none">
+            {{-- Filter chips will be rendered here by JS --}}
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="prTable">
                 <thead class="table-light">
@@ -55,6 +59,7 @@
                         <th>No. PR</th>
                         <th>Periode</th>
                         <th>Dibuat Oleh</th>
+                        <th>Jumlah Supplier</th>
                         <th>Jumlah Item</th>
                         <th>Status</th>
                         <th>Tanggal Dibuat</th>
@@ -86,6 +91,7 @@
                 { data: 'pr_number_display', name: 'pr_number', className: 'fw-medium' },
                 { data: 'period_name', name: 'period.name' },
                 { data: 'creator_name', name: 'creator.name' },
+                { data: 'supplier_count', name: 'invited_suppliers_count', searchable: false, className: 'text-center' },
                 { data: 'item_count', name: 'item_count', searchable: false },
                 { data: 'status_badge', name: 'status', searchable: false },
                 { data: 'created_date', name: 'created_at' },
@@ -98,16 +104,40 @@
             order: []
         });
 
+        function updateFilterChips() {
+            const periodText = $('#period_id option:selected').val() ? $('#period_id option:selected').text().trim() : null;
+            const statusText = $('#status option:selected').val() ? $('#status option:selected').text().trim() : null;
+            
+            const chips = [];
+            if (periodText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Periode: ${periodText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#period_id').val('').trigger('change')"></i></span>`);
+            if (statusText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Status: ${statusText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#status').val('').trigger('change')"></i></span>`);
+            
+            const $container = $('#filterChips');
+            const $resetBtn = $('#resetFilter');
+            
+            if (chips.length > 0) {
+                $container.html(chips.join('')).removeClass('d-none');
+                $resetBtn.removeClass('btn-light').addClass('btn-danger text-white');
+            } else {
+                $container.empty().addClass('d-none');
+                $resetBtn.removeClass('btn-danger text-white').addClass('btn-light');
+            }
+        }
+
         // Filter handlers
         $('#period_id, #status').on('change', function() {
+            updateFilterChips();
             table.ajax.reload();
         });
 
         $('#resetFilter').on('click', function() {
             $('#period_id').val('');
             $('#status').val('');
+            updateFilterChips();
             table.ajax.reload();
         });
+
+        updateFilterChips();
 
         // SweetAlert Delete Confirmation (delegated for dynamic rows)
         $(document).on('click', '.btn-delete', function() {

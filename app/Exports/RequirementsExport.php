@@ -21,11 +21,21 @@ class RequirementsExport implements FromCollection, WithHeadings, ShouldAutoSize
         foreach ($q->get() as $pr) {
             foreach ($pr->items as $item) {
                 $spec = collect([$item->shape, $item->dimension_label !== '-' ? $item->dimension_label : null])->filter()->implode(' | ');
-                $rows->push([$pr->pr_number ?? 'DRAFT', optional($pr->period)->name, $item->material_name, $spec ?: '-', $item->weight_needed, strtoupper($pr->status), $pr->created_at->format('d/m/Y H:i')]);
+                $rows->push([
+                    $pr->pr_number ?? 'DRAFT',
+                    optional($pr->period)->name,
+                    $item->material_name,
+                    $spec ?: '-',
+                    $item->quantity_value,
+                    $item->weight_needed,
+                    $item->total_weight,
+                    strtoupper($pr->status),
+                    $pr->created_at->format('d/m/Y H:i'),
+                ]);
             }
         }
         return $rows;
     }
 
-    public function headings(): array { return ['Nomor PR', 'Periode', 'Nama Material', 'Spesifikasi', 'Berat Diminta', 'Status', 'Tanggal Dibuat']; }
+    public function headings(): array { return ['Nomor PR', 'Periode', 'Nama Material', 'Spesifikasi', 'Qty', 'Berat/Unit', 'Total Berat', 'Status', 'Tanggal Dibuat']; }
 }

@@ -4,30 +4,17 @@
 @section('page-title', 'Detail Permintaan Material')
 
 @section('content')
+<x-breadcrumb :items="[
+    'Dashboard' => route('purchasing.dashboard'),
+    'Permintaan Material' => route('purchasing.requirements.index'),
+    ($pr->pr_number ?? 'Draft') => '#'
+]" />
 <div class="row g-4">
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">{{ $pr->pr_number ?? 'Draft Permintaan' }}</h6>
-                @php
-                    $badgeClass = match($pr->status) {
-                        'draft' => 'bg-secondary',
-                        'submitted' => 'bg-primary',
-                        'rejected' => 'bg-danger',
-                        'bidding' => 'bg-warning text-dark',
-                        'completed' => 'bg-success',
-                        default => 'bg-secondary'
-                    };
-                    $statusLabel = match($pr->status) {
-                        'draft' => 'Draft',
-                        'submitted' => 'Submitted',
-                        'rejected' => 'Rejected',
-                        'bidding' => 'Bidding',
-                        'completed' => 'Completed',
-                        default => ucwords(str_replace('_', ' ', $pr->status)),
-                    };
-                @endphp
-                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ $statusLabel }}</span>
+                <x-status-badge type="pr" :status="$pr->status" size="lg" />
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -41,6 +28,22 @@
                 <div class="row mb-3">
                     <div class="col-md-4 text-muted small">Dibuat Oleh</div>
                     <div class="col-md-8 fw-medium">{{ $pr->creator->name ?? '-' }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 text-muted small">Supplier Diundang</div>
+                    <div class="col-md-8">
+                        @if($pr->invitedSuppliers->isEmpty())
+                            <span class="badge bg-light text-dark border">Semua Supplier</span>
+                        @else
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach($pr->invitedSuppliers as $supplier)
+                                    <span class="badge bg-primary">
+                                        {{ $supplier->supplier->company_name ?? $supplier->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                 </div>
                 <div class="row">
                     <div class="col-md-4 text-muted small">Catatan Tambahan</div>
@@ -68,7 +71,9 @@
                                 <th>HS Code</th>
                                 <th>Material Name</th>
                                 <th>Shape & Dimension (mm)</th>
-                                <th>Weight (Kg)</th>
+                                <th>Qty</th>
+                                <th>Berat/Unit (Kg)</th>
+                                <th>Total Berat (Kg)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -85,7 +90,9 @@
                                             -
                                         @endif
                                     </td>
-                                    <td class="text-center fw-bold text-primary">{{ number_format($item->weight_needed, 2) }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->quantity_value, 0) }}</td>
+                                    <td class="text-center">{{ number_format($item->weight_needed, 2) }}</td>
+                                    <td class="text-center fw-bold text-primary">{{ number_format($item->total_weight, 2) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -122,22 +129,6 @@
                             <tbody>
                                 @foreach($quotations as $quotation)
                                     @php
-                                        $statusBadge = match($quotation->status) {
-                                            'draft' => 'bg-secondary',
-                                            'submitted' => 'bg-primary',
-                                            'revision_requested' => 'bg-warning text-dark',
-                                            'accepted' => 'bg-success',
-                                            'rejected' => 'bg-danger',
-                                            default => 'bg-secondary',
-                                        };
-                                        $statusLabel = match($quotation->status) {
-                                            'draft' => 'Draft',
-                                            'submitted' => 'Terkirim',
-                                            'revision_requested' => 'Perlu Revisi',
-                                            'accepted' => 'Diterima',
-                                            'rejected' => 'Ditolak',
-                                            default => ucwords(str_replace('_', ' ', $quotation->status)),
-                                        };
                                         $isLowest = $lowestTotalIdr !== null
                                             && $quotation->total_idr !== null
                                             && abs((float) $quotation->total_idr - (float) $lowestTotalIdr) < 0.01;
@@ -162,7 +153,7 @@
                                             {{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge {{ $statusBadge }} text-uppercase">{{ $statusLabel }}</span>
+                                            <x-status-badge type="quotation" :status="$quotation->status" />
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group btn-group-sm" role="group">
@@ -213,6 +204,7 @@
                             @foreach($pr->items as $index => $item)
                                 <input type="hidden" name="items[{{ $index }}][hs_code]" value="{{ $item->hs_code }}">
                                 <input type="hidden" name="items[{{ $index }}][material_name]" value="{{ $item->material_name }}">
+                                <input type="hidden" name="items[{{ $index }}][quantity]" value="{{ $item->quantity_value }}">
                                 <input type="hidden" name="items[{{ $index }}][shape]" value="{{ $item->shape }}">
                                 <input type="hidden" name="items[{{ $index }}][thickness]" value="{{ $item->thickness }}">
                                 <input type="hidden" name="items[{{ $index }}][d_inner]" value="{{ $item->d_inner }}">
