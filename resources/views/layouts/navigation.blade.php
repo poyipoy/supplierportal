@@ -28,22 +28,22 @@
                         <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                             Dashboard Admin
                         </x-nav-link>
-                        <x-nav-link href="#">Manajemen User</x-nav-link>
+                        <x-nav-link href="#">User Management</x-nav-link>
                     @elseif($role === 'purchasing')
                         <x-nav-link :href="route('purchasing.dashboard')" :active="request()->routeIs('purchasing.dashboard')">
                             Dashboard Purchasing
                         </x-nav-link>
-                        <x-nav-link href="#">Permintaan Material</x-nav-link>
+                        <x-nav-link href="#">Purchase Requisition</x-nav-link>
                     @elseif($role === 'supplier')
                         <x-nav-link :href="route('supplier.dashboard')" :active="request()->routeIs('supplier.dashboard')">
                             Dashboard Supplier
                         </x-nav-link>
-                        <x-nav-link href="#">Penawaran</x-nav-link>
+                        <x-nav-link href="#">Quotation</x-nav-link>
                     @elseif($role === 'qc')
                         <x-nav-link :href="route('qc.dashboard')" :active="request()->routeIs('qc.dashboard')">
                             Dashboard QC
                         </x-nav-link>
-                        <x-nav-link href="#">Inspeksi</x-nav-link>
+                        <x-nav-link href="#">Inspection</x-nav-link>
                     @endif
                 </div>
             </div>
@@ -65,7 +65,7 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
-                            Profile
+                            Profileee
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -127,7 +127,7 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    Profile
+                    Profileee
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->

@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Manajemen Kurs — ADASI Portal')
-@section('page-title', 'Manajemen Kurs & Riwayat')
+@section('title', 'Exchange Rate Management - ADASI Portal')
+@section('page-title', 'Exchange Rate Management & History')
 
 @push('styles')
     <style>
@@ -91,16 +91,16 @@
 
 @section('content')
     <div class="row g-4">
-        {{-- Tabel Histori Kurs --}}
+        {{-- Exchange Rate History Table --}}
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
-                        <h6 class="mb-0 fw-bold">Riwayat Pembaruan Kurs</h6>
-                        <div class="small text-muted">Total {{ $totalRates }} record kurs tersimpan.</div>
+                        <h6 class="mb-0 fw-bold">Exchange Rate Update History</h6>
+                        <div class="small text-muted">Total {{ $totalRates }} exchange rate records saved.</div>
                     </div>
                     <div class="exchange-rate-filter-buttons">
-                        <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">Semua <span class="badge text-bg-light">{{ $totalRates }}</span></a>
+                        <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">All <span class="badge text-bg-light">{{ $totalRates }}</span></a>
                         @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                             <a href="{{ route('admin.exchange-rates.index', ['currency' => $currency]) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == $currency ? 'active' : '' }}">{{ $currency }} <span class="badge text-bg-light">{{ $currencyCounts[$currency] ?? 0 }}</span></a>
                         @endforeach
@@ -109,9 +109,9 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="small text-muted">
-                            Menampilkan {{ $rates->count() }} dari {{ $rates->total() }} record
+                            Showing {{ $rates->count() }} of {{ $rates->total() }} records
                             @if(request('currency'))
-                                untuk mata uang {{ request('currency') }}
+                                for currency {{ request('currency') }}
                             @endif
                         </div>
                     </div>
@@ -119,11 +119,11 @@
                         <table class="table table-hover align-middle" style="font-size: 0.9rem;">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Mata Uang</th>
-                                    <th>Nilai ke IDR</th>
-                                    <th>Berlaku Sejak</th>
-                                    <th>Diperbarui Oleh</th>
-                                    <th>Waktu Update</th>
+                                    <th>Currency</th>
+                                    <th>Value to IDR</th>
+                                    <th>Valid From</th>
+                                    <th>Updated By</th>
+                                    <th>Update Time</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -141,7 +141,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center py-4 text-muted">Belum ada riwayat kurs yang dimasukkan.</td>
+                                        <td colspan="5" class="text-center py-4 text-muted">No exchange rate history entered.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -151,8 +151,8 @@
                     @if($rates->hasPages())
                         <div class="exchange-rate-pagination mt-3">
                             <div class="pagination-summary small text-muted">
-                                Halaman {{ $rates->currentPage() }} dari {{ $rates->lastPage() }}
-                                <span class="d-none d-sm-inline">- {{ $rates->firstItem() }} sampai {{ $rates->lastItem() }} dari {{ $rates->total() }} record</span>
+                                Page {{ $rates->currentPage() }} of {{ $rates->lastPage() }}
+                                <span class="d-none d-sm-inline">- {{ $rates->firstItem() }} to {{ $rates->lastItem() }} of {{ $rates->total() }} records</span>
                             </div>
                             <div class="pagination-links">
                                 {{ $rates->onEachSide(1)->links('pagination::bootstrap-5') }}
@@ -163,20 +163,20 @@
             </div>
         </div>
 
-        {{-- Form Tambah Kurs Baru --}}
+        {{-- New Exchange Rate Form --}}
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-plus-circle me-1"></i> Input Kurs Baru</h6>
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-plus-circle me-1"></i> Input New Exchange Rate</h6>
                 </div>
                 <div class="card-body bg-light">
                     <p class="small text-muted mb-3">
-                        <i class="bi bi-info-circle"></i> Memasukkan kurs baru <strong>tidak akan menghapus</strong> kurs lama, melainkan menambah histori baru yang akan digunakan mulai tanggal berlaku.
+                        <i class="bi bi-info-circle"></i> Entering a new exchange rate <strong>will not delete</strong> the old rate. It adds a new history record that will be used from the valid date.
                     </p>
                     <form action="{{ route('admin.exchange-rates.store') }}" method="POST">
                         @csrf
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Mata Uang <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted">Currency <span class="text-danger">*</span></label>
                             <select name="currency" class="form-select @error('currency') is-invalid @enderror" required>
                                 @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
                                     <option value="{{ $code }}" {{ old('currency') === $code ? 'selected' : '' }}>{{ $label }}</option>
@@ -186,22 +186,22 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Nilai ke Rupiah (IDR) <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted">Value to Rupiah (IDR) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
-                                <input type="number" step="0.01" name="rate_to_idr" class="form-control @error('rate_to_idr') is-invalid @enderror" required placeholder="Misal: 15500">
+                                <input type="number" step="0.01" name="rate_to_idr" class="form-control @error('rate_to_idr') is-invalid @enderror" required placeholder="Example: 15500">
                             </div>
                             @error('rate_to_idr')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label small fw-medium text-muted">Berlaku Sejak <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted">Valid From <span class="text-danger">*</span></label>
                             <input type="date" name="valid_from" class="form-control @error('valid_from') is-invalid @enderror" value="{{ date('Y-m-d') }}" required>
                             @error('valid_from')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 fw-medium">
-                            <i class="bi bi-save me-1"></i> Simpan Histori Kurs
+                            <i class="bi bi-save me-1"></i> Save Exchange Rate History
                         </button>
                     </form>
                 </div>

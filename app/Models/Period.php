@@ -23,8 +23,8 @@ class Period extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function purchaseRequirements(): HasMany
+    public function purchaseRequisitions(): HasMany
     {
-        return $this->hasMany(PurchaseRequirement::class, 'period_id');
+        return $this->hasMany(PurchaseRequisition::class, 'period_id');
     }
 }

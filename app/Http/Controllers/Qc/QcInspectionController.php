@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Qc;
 
 use App\Http\Controllers\Controller;
-use App\Models\Attachment;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\QcItem;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Support\StatusHelper;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -27,7 +31,7 @@ class QcInspectionController extends Controller
     ];
 
     /**
-     * Tampilkan daftar inspeksi (Menunggu vs Riwayat)
+     * Display inspection lists for waiting and history tabs.
      */
     public function index()
     {
@@ -39,7 +43,10 @@ class QcInspectionController extends Controller
 
     public function dataWaiting(Request $request)
     {
-        $query = PurchaseOrder::with(['supplier', 'quotations.items'])
+        $query = PurchaseOrder::with([
+            'supplier',
+            'quotations' => fn($query) => $query->withCount('items'),
+        ])
             ->where('status', 'waiting_qc')
             ->orderBy('actual_arrival', 'asc');
 
@@ -47,8 +54,8 @@ class QcInspectionController extends Controller
             ->addColumn('po_number_display', fn($po) => $po->po_number)
             ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
             ->addColumn('arrival_date', fn($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
-            ->addColumn('item_count', fn($po) => $po->quotations->sum(fn($q) => $q->items->count()) . ' Item')
-            ->addColumn('action', fn($po) => '<a href="' . route('qc.inspections.create', $po->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Mulai Inspeksi</a>')
+            ->addColumn('item_count', fn($po) => $po->quotations->sum('items_count') . ' Item')
+            ->addColumn('action', fn($po) => '<a href="' . route('qc.inspections.create', $po->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Start Inspection</a>')
             ->rawColumns(['action'])
             ->make(true);
     }
@@ -65,49 +72,46 @@ class QcInspectionController extends Controller
         return DataTables::eloquent($query)
             ->addColumn('po_number', fn($i) => $i->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn($i) => $i->purchaseOrder->supplier->name ?? '-')
-            ->addColumn('inspected_date', fn($i) => $i->inspected_at->format('d M Y, H:i'))
-            ->addColumn('status_badge', fn($i) => $i->status === 'ok'
-                ? '<span class="badge bg-success">OK</span>'
-                : '<span class="badge bg-danger">NG</span>')
+            ->addColumn('inspected_date', fn($i) => $i->inspected_at?->format('d M Y, H:i') ?? '-')
+            ->addColumn('status_badge', fn($i) => StatusHelper::badge(
+                StatusHelper::qcBadge($i->status),
+                StatusHelper::qcLabel($i->status)
+            ))
             ->addColumn('inspector_name', fn($i) => $i->inspector->name ?? '-')
-            ->addColumn('action', fn($i) => '<a href="' . route('qc.inspections.show', $i->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>')
+            ->addColumn('action', fn($i) => '<a href="' . route('qc.inspections.show', $i->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Details</a>')
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
 
     /**
-     * Form mulai inspeksi
+     * Start inspection form.
      */
     public function create($po_id)
     {
         $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem'])->findOrFail($po_id);
 
         if ($po->status !== 'waiting_qc') {
-            return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak dalam status Menunggu QC.');
+            return redirect()->route('qc.inspections.index')->with('error', 'This PO is not in Waiting QC status.');
         }
 
-        // Cek apakah sudah pernah diinspeksi
+        // Prevent duplicate inspections.
         if (QcInspection::where('po_id', $po->id)->exists()) {
-            return redirect()->route('qc.inspections.index')->with('error', 'PO ini sudah pernah diinspeksi.');
+            return redirect()->route('qc.inspections.index')->with('error', 'This PO has already been inspected.');
         }
 
         return view('qc.inspections.create', compact('po'));
     }
 
     /**
-     * Simpan hasil inspeksi
+     * Save inspection results.
      */
     public function store(Request $request, $po_id)
     {
-        $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem'])->findOrFail($po_id);
+        $po = PurchaseOrder::with(['quotations.items.prItem'])->findOrFail($po_id);
         $poPrItems = $po->quotations
             ->flatMap(fn($quotation) => $quotation->items->pluck('prItem'))
             ->filter()
             ->keyBy('id');
-
-        if ($po->status !== 'waiting_qc') {
-            return redirect()->route('qc.inspections.index')->with('error', 'PO ini tidak valid untuk diinspeksi.');
-        }
 
         $this->prepareInspectionInput($request, $poPrItems);
 
@@ -135,18 +139,31 @@ class QcInspectionController extends Controller
         }
 
         $validated = $request->validate($rules, [
-            'items.*.pr_item_id.in' => 'Material inspeksi tidak sesuai dengan PO ini.',
-            'attachments.*.required' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
-            'attachments.*.min' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
-            'attachments.*.*.required' => 'Foto bukti wajib diunggah untuk setiap item berstatus NG.',
-            'attachments.*.*.mimes' => 'Foto bukti NG harus berupa file JPG, JPEG, atau PNG.',
-            'attachments.*.*.max' => 'Ukuran foto bukti NG maksimal 10MB per file.',
+            'items.*.pr_item_id.in' => 'The inspected material does not match this PO.',
+            'attachments.*.required' => 'Evidence photos are required for every NG item.',
+            'attachments.*.min' => 'Evidence photos are required for every NG item.',
+            'attachments.*.*.required' => 'Evidence photos are required for every NG item.',
+            'attachments.*.*.mimes' => 'NG evidence photos must be JPG, JPEG, or PNG files.',
+            'attachments.*.*.max' => 'Each NG evidence photo must not exceed 10MB.',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Cek status keseluruhan
+            $po = PurchaseOrder::whereKey($po_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $po->load(['supplier', 'quotations.items.prItem']);
+
+            if ($po->status !== 'waiting_qc') {
+                throw new \RuntimeException('This PO is not valid for inspection.');
+            }
+
+            if (QcInspection::where('po_id', $po->id)->exists()) {
+                throw new \RuntimeException('This PO has already been inspected.');
+            }
+
+            // Determine the overall inspection status.
             $overallStatus = 'ok';
             foreach ($validated['items'] as $itemData) {
                 if ($itemData['status'] === 'ng') {
@@ -155,7 +172,7 @@ class QcInspectionController extends Controller
                 }
             }
 
-            // Buat Inspeksi
+            // Create Inspection
             $inspection = QcInspection::create([
                 'po_id' => $po->id,
                 'inspected_by' => auth()->id(),
@@ -165,7 +182,7 @@ class QcInspectionController extends Controller
 
             $uploadedFiles = $request->file('attachments', []);
 
-            // Simpan QC Items
+            // Save QC Items
             foreach ($validated['items'] as $index => $itemData) {
                 $measurements = $this->sanitizeActualMeasurements(
                     $itemData,
@@ -181,35 +198,20 @@ class QcInspectionController extends Controller
 
                 if (($itemData['status'] ?? null) === 'ng') {
                     foreach ($uploadedFiles[$index] ?? [] as $file) {
-                        if (! $file || ! $file->isValid()) {
+                        if (! $file instanceof UploadedFile || ! $file->isValid()) {
                             continue;
                         }
 
-                        // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
-                        $fileName = $file->hashName();
-                        $path = 'attachments/' . now()->format('Y/m') . '/' . $fileName;
-
-                        $stream = fopen($file->getPathname(), 'r');
-                        if ($stream) {
-                            \Illuminate\Support\Facades\Storage::disk('private')->put($path, $stream);
-                            fclose($stream);
-
-                            $inspection->attachments()->create([
-                                'file_path' => $path,
-                                'file_name' => $file->getClientOriginalName(),
-                                'file_type' => $file->getMimeType(),
-                                'uploaded_by' => auth()->id(),
-                            ]);
-                        }
+                        $this->saveAttachment($file, $inspection);
                     }
                 }
             }
 
             if ($overallStatus === 'ng' && ! $inspection->attachments()->exists()) {
-                throw new \RuntimeException('Foto bukti NG tidak terkirim. Silakan unggah ulang foto bukti sebelum menyimpan inspeksi.');
+                throw new \RuntimeException('NG evidence photos were not uploaded. Please upload the evidence photos again before saving the inspection.');
             }
 
-            // Update PO Status & Kirim Notifikasi
+            // Update PO Status & Send Notification
             $purchasingUsers = User::where('role', 'purchasing')->get();
 
             if ($overallStatus === 'ok') {
@@ -217,8 +219,8 @@ class QcInspectionController extends Controller
                 foreach ($purchasingUsers as $pUser) {
                     /** @var User $pUser */
                     $pUser->notify(new SystemNotification(
-                        'Inspeksi QC Selesai',
-                        'Material dari ' . $po->po_number . ' telah lulus inspeksi QC',
+                        'QC Inspection Completed',
+                        'Material from ' . $po->po_number . ' has passed QC inspection.',
                         route('purchasing.purchase-orders.show', $po->id),
                         'bi-check-circle text-success'
                     ));
@@ -228,8 +230,8 @@ class QcInspectionController extends Controller
                 foreach ($purchasingUsers as $pUser) {
                     /** @var User $pUser */
                     $pUser->notify(new SystemNotification(
-                        'Material NG Ditemukan',
-                        'Material dari ' . $po->po_number . ' dinyatakan NG oleh QC. Silakan ajukan klaim ke supplier.',
+                        'NG Material Found',
+                        'Material from ' . $po->po_number . ' was marked NG by QC. Please submit a claim to the supplier.',
                         route('purchasing.claims.create', $inspection->id),
                         'bi-exclamation-triangle text-danger'
                     ));
@@ -238,11 +240,21 @@ class QcInspectionController extends Controller
 
             DB::commit();
 
-            return redirect()->route('qc.inspections.show', $inspection->id)->with('success', 'Hasil inspeksi berhasil disimpan.');
+            return redirect()->route('qc.inspections.show', $inspection->id)->with('success', 'Inspection result successfully saved.');
 
+        } catch (\RuntimeException $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Gagal menyimpan inspeksi: ' . $e->getMessage());
+            Log::error('QC Inspection store failed', [
+                'po_id' => $po_id,
+                'user_id' => auth()->id(),
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withInput()->with('error', 'An error occurred while saving the inspection. Please try again.');
         }
     }
 
@@ -288,7 +300,7 @@ class QcInspectionController extends Controller
     }
 
     /**
-     * Tampilkan detail inspeksi
+     * Display inspection details.
      */
     public function show($id)
     {
@@ -303,49 +315,57 @@ class QcInspectionController extends Controller
     }
 
     /**
-     * Tambah foto bukti untuk inspeksi NG yang sudah tersimpan.
+     * Add evidence photos for a saved NG inspection.
      */
     public function storeAttachments(Request $request, $id)
     {
         $inspection = QcInspection::findOrFail($id);
 
         if ($inspection->status !== 'ng') {
-            return back()->with('error', 'Foto bukti hanya dapat ditambahkan untuk inspeksi berstatus NG.');
+            return back()->with('error', 'Evidence photos can only be added for NG inspections.');
         }
 
         $request->validate([
             'attachments' => 'required|array|min:1',
             'attachments.*' => 'required|file|mimes:jpg,jpeg,png|max:10240',
         ], [
-            'attachments.required' => 'Pilih minimal 1 foto bukti NG.',
-            'attachments.min' => 'Pilih minimal 1 foto bukti NG.',
-            'attachments.*.mimes' => 'Foto bukti NG harus berupa file JPG, JPEG, atau PNG.',
-            'attachments.*.max' => 'Ukuran foto bukti NG maksimal 10MB per file.',
+            'attachments.required' => 'Select at least 1 NG evidence photo.',
+            'attachments.min' => 'Select at least 1 NG evidence photo.',
+            'attachments.*.mimes' => 'NG evidence photos must be JPG, JPEG, or PNG files.',
+            'attachments.*.max' => 'Each NG evidence photo must not exceed 10MB.',
         ]);
 
         foreach ($request->file('attachments', []) as $file) {
-            if (! $file || ! $file->isValid()) {
+            if (! $file instanceof UploadedFile || ! $file->isValid()) {
                 continue;
             }
 
-            // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
-            $fileName = $file->hashName();
-            $path = 'attachments/' . now()->format('Y/m') . '/' . $fileName;
-
-            $stream = fopen($file->getPathname(), 'r');
-            if ($stream) {
-                \Illuminate\Support\Facades\Storage::disk('private')->put($path, $stream);
-                fclose($stream);
-
-                $inspection->attachments()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_type' => $file->getMimeType(),
-                    'uploaded_by' => auth()->id(),
-                ]);
-            }
+            $this->saveAttachment($file, $inspection);
         }
 
-        return back()->with('success', 'Foto bukti QC berhasil ditambahkan.');
+        return back()->with('success', 'QC evidence photos successfully added.');
+    }
+
+    private function saveAttachment(UploadedFile $file, Model $attachable): void
+    {
+        $path = 'attachments/' . now()->format('Y/m') . '/' . $file->hashName();
+        $stream = fopen($file->getPathname(), 'r');
+
+        if (! $stream) {
+            throw new \RuntimeException('File cannot be read. Please upload the file again.');
+        }
+
+        try {
+            Storage::disk('private')->put($path, $stream);
+        } finally {
+            fclose($stream);
+        }
+
+        $attachable->attachments()->create([
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'file_type' => $file->getMimeType(),
+            'uploaded_by' => auth()->id(),
+        ]);
     }
 }

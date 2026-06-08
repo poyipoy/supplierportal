@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Chat: ' . $conversation->context_label . ' — ADASI Portal')
-@section('page-title', 'Negosiasi: ' . $conversation->context_label)
+@section('title', 'Chat: ' . $conversation->context_label . ' - ADASI Portal')
+@section('page-title', 'Negotiation: ' . $conversation->context_label)
 
 @section('content')
     <div class="chat-fullpage-shell">
@@ -11,7 +11,7 @@
                 : route('supplier.conversations.index');
         @endphp
         <a href="{{ $backRoute }}" class="text-decoration-none text-muted small">
-            <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Chat
+            <i class="bi bi-arrow-left me-1"></i> Back to Chat List
         </a>
     </div>
 
@@ -28,13 +28,13 @@
                     </div>
                     @if($chatContext['url'])
                         <a href="{{ $chatContext['url'] }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-box-arrow-up-right me-1"></i> Buka Detail
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Open Details
                         </a>
                     @endif
                 </div>
                 @if(!empty($chatContext['fields']))
                     <details class="chat-fullpage-context-details mt-2">
-                        <summary class="small fw-semibold text-primary">Detail konteks</summary>
+                        <summary class="small fw-semibold text-primary">Context Details</summary>
                         <div class="row g-2 mt-2">
                             @foreach($chatContext['fields'] as $field)
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
@@ -91,7 +91,7 @@
                 </div>
             </div>
             <div>
-                @if($conversation->conversable_type === 'App\Models\PurchaseRequirement')
+                @if($conversation->conversable_type === 'App\Models\PurchaseRequisition')
                     <span class="badge bg-primary text-uppercase px-3 py-2">PR</span>
                 @else
                     <span class="badge bg-success text-uppercase px-3 py-2">PO</span>
@@ -128,7 +128,7 @@
                             @if($isMe)
                                 <span class="chat-read-receipt {{ $msg->read_at ? 'is-read' : '' }}"
                                       data-read-receipt-id="{{ $msg->id }}"
-                                      title="{{ $msg->read_at ? 'Dibaca ' . $msg->read_at->format('H:i') : 'Terkirim, belum dibaca' }}">
+                                      title="{{ $msg->read_at ? 'Read ' . $msg->read_at->format('H:i') : 'Sent, unread' }}">
                                     <i class="bi bi-check2-all"></i>
                                 </span>
                             @endif
@@ -138,7 +138,7 @@
             @empty
                 <div class="text-center text-muted py-5" id="empty-state">
                     <i class="bi bi-chat-dots" style="font-size: 2.5rem;"></i>
-                    <p class="mt-2">Mulai percakapan dengan {{ $partnerName }}</p>
+                    <p class="mt-2">Start a conversation with {{ $partnerName }}</p>
                 </div>
             @endforelse
         </div>
@@ -149,7 +149,7 @@
                 @if(!empty($messageTemplates))
                     <div class="dropdown mb-2">
                         <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-lightning-charge me-1"></i>Template Pesan
+                            <i class="bi bi-lightning-charge me-1"></i>Message Template
                         </button>
                         <div class="dropdown-menu p-2 chat-template-menu">
                             @foreach($messageTemplates as $template)
@@ -162,8 +162,8 @@
                 @endif
                 <div class="small text-muted mb-2 d-none" id="message-attachments-preview"></div>
                 <div class="d-flex gap-2 align-items-end">
-                    <textarea id="message-body" class="form-control" rows="2" placeholder="Ketik pesan di sini... (Tekan Enter untuk kirim, Shift+Enter untuk baris baru)" style="resize: none;"></textarea>
-                    <label for="message-attachments" class="btn btn-outline-secondary mb-0" title="Lampirkan file">
+                    <textarea id="message-body" class="form-control" rows="2" placeholder="Type a message here... (Press Enter to send, Shift+Enter for a new line)" style="resize: none;"></textarea>
+                    <label for="message-attachments" class="btn btn-outline-secondary mb-0" title="Attach file">
                         <i class="bi bi-paperclip"></i>
                     </label>
                     <input type="file" id="message-attachments" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
@@ -221,8 +221,8 @@
 
         const read = Boolean(msg.is_read || msg.read_at);
         const title = read
-            ? `Dibaca${msg.read_at_display ? ' ' + msg.read_at_display : ''}`
-            : 'Terkirim, belum dibaca';
+            ? `Read${msg.read_at_display ? ' ' + msg.read_at_display : ''}`
+            : 'Sent, unread';
 
         return `<span class="chat-read-receipt ${read ? 'is-read' : ''}" data-read-receipt-id="${msg.id}" title="${escapeHtml(title)}">
             <i class="bi bi-check2-all"></i>
@@ -247,7 +247,7 @@
             if (!receiptEl) return;
 
             receiptEl.classList.add('is-read');
-            receiptEl.setAttribute('title', `Dibaca${receipt.read_at_display ? ' ' + receipt.read_at_display : ''}`);
+            receiptEl.setAttribute('title', `Read${receipt.read_at_display ? ' ' + receipt.read_at_display : ''}`);
         });
     }
 
@@ -312,7 +312,7 @@
     // Append single message to DOM
     function appendMessage(msg, isMe) {
         const time = new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const name = isMe ? 'Anda' : (msg.sender_name || msg.sender?.name || 'User');
+        const name = isMe ? 'You' : (msg.sender_name || msg.sender?.name || 'User');
         const alignClass = isMe ? 'justify-content-end' : 'justify-content-start';
         const colAlignClass = isMe ? 'align-items-end' : 'align-items-start';
         const bubbleClass = isMe ? 'is-me' : 'is-partner';
@@ -353,14 +353,14 @@
     document.querySelectorAll('[data-chat-action]').forEach((button) => {
         button.addEventListener('click', () => {
             const action = button.dataset.chatAction;
-            const label = button.dataset.chatActionLabel || 'Aksi Negosiasi';
+            const label = button.dataset.chatActionLabel || 'Negotiation Action';
             const requiresNote = button.dataset.chatActionNote === '1';
             const actionType = button.dataset.chatActionType || 'prompt';
 
             const execute = (note = '') => {
                 const originalHtml = button.innerHTML;
                 button.disabled = true;
-                button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Memproses`;
+                button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Processing`;
 
                 fetch(quickActionUrl, {
                     method: 'POST',
@@ -376,7 +376,7 @@
                             return response.json().then((payload) => {
                                 const messages = payload.errors
                                     ? Object.values(payload.errors).flat().join('\n')
-                                    : (payload.message || 'Aksi belum bisa diproses.');
+                                    : (payload.message || 'The action cannot be processed yet.');
                                 throw new Error(messages);
                             });
                         }
@@ -391,13 +391,13 @@
 
                         Swal.fire({
                             icon: 'success',
-                            title: 'Berhasil',
-                            text: `${label} berhasil diproses.`,
+                            title: 'Success',
+                            text: `${label} processed successfully.`,
                             timer: 1400,
                             showConfirmButton: false
                         });
                     })
-                    .catch((error) => Swal.fire('Error', error.message || 'Aksi belum bisa diproses.', 'error'))
+                    .catch((error) => Swal.fire('Error', error.message || 'The action cannot be processed yet.', 'error'))
                     .finally(() => {
                         button.disabled = false;
                         button.innerHTML = originalHtml;
@@ -408,15 +408,15 @@
                 Swal.fire({
                     title: label,
                     input: 'textarea',
-                    inputLabel: requiresNote ? 'Catatan wajib diisi' : 'Catatan tambahan',
-                    inputPlaceholder: 'Tulis catatan untuk supplier...',
+                    inputLabel: requiresNote ? 'Notes are required' : 'Additional notes',
+                    inputPlaceholder: 'Write a note for the supplier...',
                     inputAttributes: { maxlength: 1000 },
                     showCancelButton: true,
-                    confirmButtonText: 'Kirim',
-                    cancelButtonText: 'Batal',
+                    confirmButtonText: 'Send',
+                    cancelButtonText: 'Cancel',
                     inputValidator: (value) => {
                         if (requiresNote && !String(value || '').trim()) {
-                            return 'Catatan wajib diisi.';
+                            return 'Notes are required.';
                         }
                         return null;
                     }
@@ -430,11 +430,11 @@
 
             Swal.fire({
                 title: label,
-                text: 'Lanjutkan aksi ini?',
+                text: 'Continue with this action?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Ya, lanjut',
-                cancelButtonText: 'Batal'
+                confirmButtonText: 'Yes, continue',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) execute();
             });

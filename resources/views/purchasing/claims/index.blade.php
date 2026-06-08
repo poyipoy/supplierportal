@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Klaim Material — ADASI Portal')
-@section('page-title', 'Klaim Material')
+@section('title', 'Material Claim - ADASI Portal')
+@section('page-title', 'Material Claim')
 
 @section('content')
 <div class="card border-0 shadow-sm">
@@ -14,7 +14,7 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                    Riwayat Klaim
+                    History Claim
                 </button>
             </li>
         </ul>
@@ -24,17 +24,17 @@
             {{-- Tab: Perlu Tindakan --}}
             <div class="tab-pane fade show active" id="action" role="tabpanel">
                 <div class="alert alert-info small mb-4">
-                    <i class="bi bi-info-circle-fill me-1"></i> Daftar PO di bawah ini telah diinspeksi oleh QC dan berstatus NG (Not Good). Silakan ajukan klaim kepada supplier terkait.
+                    <i class="bi bi-info-circle-fill me-1"></i> The PO list below has been inspected by QC and has an NG (Not Good) status. Please submit a claim to the relevant supplier.
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle" id="actionTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>Nomor PO</th>
+                                <th>Number PO</th>
                                 <th>Supplier</th>
-                                <th>Tanggal Inspeksi</th>
+                                <th>Inspection Date</th>
                                 <th class="text-center">Status PO</th>
-                                <th class="text-end">Aksi</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -42,22 +42,22 @@
                 </div>
             </div>
 
-            {{-- Tab: Riwayat Klaim --}}
+            {{-- Tab: History Claim --}}
             <div class="tab-pane fade" id="history" role="tabpanel">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle" id="historyTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>ID Klaim</th>
-                                <th>Nomor PO</th>
+                                <th>Claim ID</th>
+                                <th>Number PO</th>
                                 <th>Supplier</th>
-                                <th>Tanggal Diajukan</th>
+                                <th>Date Submitted</th>
                                 <th>
                                     Deadline
-                                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Batas waktu supplier merespons klaim material."></i>
+                                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Deadline for supplier to respond to material claims."></i>
                                 </th>
-                                <th class="text-center">Status Klaim</th>
-                                <th class="text-end">Aksi</th>
+                                <th class="text-center">Claim Status</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -72,7 +72,7 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        var dtLang = { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' };
+        var dtLang = {};
         var dtOpts = { pageLength: 25, order: [] };
 
         $('#actionTable').DataTable(Object.assign({}, dtOpts, {

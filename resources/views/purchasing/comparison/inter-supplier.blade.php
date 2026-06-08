@@ -1,20 +1,20 @@
 @extends('layouts.app')
-@section('title', 'Perbandingan Antar Supplier - ADASI Portal')
-@section('page-title', 'Perbandingan Harga')
+@section('title', 'Inter-Supplier Comparison - ADASI Portal')
+@section('page-title', 'Price Comparison')
 
 @section('content')
 {{-- Tabs --}}
 <ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Antar Supplier</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historis</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Harga Terbaik</a></li>
+    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Inter-Supplier</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historical</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Best Price</a></li>
 </ul>
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
         <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="row g-3 align-items-end" id="interSupplierFilterForm">
             <div class="col-md-9">
-                <label class="form-label small fw-bold">Pilih Permintaan Material (PR dengan minimal 2 penawaran)</label>
+                <label class="form-label small fw-bold">Select Purchase Requisition (PR with minimum 2 quotations)</label>
                 <div class="position-relative">
                     <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
                     <div class="input-group input-group-sm">
@@ -23,12 +23,12 @@
                                class="form-control"
                                id="comparisonPrSearch"
                                value="{{ $selectedPrOption['label'] ?? '' }}"
-                               placeholder="Ketik nomor PR atau periode..."
+                               placeholder="Type a PR number or period..."
                                autocomplete="off">
                         <button type="button"
                                 class="btn btn-outline-secondary {{ $selectedPrOption ? '' : 'd-none' }}"
                                 id="comparisonPrClear"
-                                title="Hapus pilihan">
+                                title="Delete">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
@@ -36,10 +36,10 @@
                          id="comparisonPrSuggestions"
                          style="z-index: 1050; max-height: 260px; overflow-y: auto;"></div>
                 </div>
-                <div class="form-text">Ketik untuk menampilkan beberapa opsi PR, lalu pilih salah satu opsi.</div>
+                <div class="form-text">Type to display PR options, then select one option.</div>
             </div>
             <div class="col-md-3">
-                <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:var(--adasi-blue)"><i class="bi bi-search me-1"></i>Bandingkan</button>
+                <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:var(--adasi-blue)"><i class="bi bi-search me-1"></i>Compare</button>
             </div>
         </form>
     </div>
@@ -99,13 +99,13 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <h6 class="fw-bold mb-1">{{ $data['name'] }}</h6>
                             @if($recommendedSupId === $qid)
-                                <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Termurah</span>
+                                <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Cheapest</span>
                             @endif
                         </div>
-                        <div class="text-muted small mb-2">Total Estimasi Harga</div>
+                        <div class="text-muted small mb-2">Total Estimated Price</div>
                         <h5 class="fw-bold {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">Rp {{ number_format($data['total'], 0, ',', '.') }}</h5>
                         <div class="small mt-2">
-                            <span class="badge bg-light text-dark border">{{ $supplierWins[$qid] }} Material Termurah</span>
+                            <span class="badge bg-light text-dark border">{{ $supplierWins[$qid] }} Cheapest Materials</span>
                         </div>
                     </div>
                 </div>
@@ -117,11 +117,11 @@
     {{-- Grafik Batang --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart me-1"></i> Grafik Perbandingan Harga per Material (IDR/Kg)</h6>
+            <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart me-1"></i> Price Comparison Chart per Material (IDR/Kg)</h6>
             <div style="min-width: 240px;">
                 <label class="form-label small fw-bold mb-1">Material</label>
                 <select class="form-select form-select-sm" id="comparisonMaterialFilter">
-                    <option value="">Semua Material</option>
+                    <option value="">All Material</option>
                     @foreach($materialOptions as $material)
                         <option value="{{ $material->id }}">{{ $material->material_name }}</option>
                     @endforeach
@@ -136,7 +136,7 @@
     {{-- Tabel Side-by-Side --}}
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-table me-1"></i> Tabel Perbandingan - {{ $selectedPr->pr_number }}</h6>
+            <h6 class="mb-0 fw-bold"><i class="bi bi-table me-1"></i> Comparison Table - {{ $selectedPr->pr_number }}</h6>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -145,8 +145,8 @@
                         <tr>
                             <th rowspan="2" class="align-middle">Material</th>
                             <th rowspan="2" class="align-middle">Qty</th>
-                            <th rowspan="2" class="align-middle">Berat/Unit (Kg)</th>
-                            <th rowspan="2" class="align-middle">Total Berat (Kg)</th>
+                            <th rowspan="2" class="align-middle">Weight/Unit (Kg)</th>
+                            <th rowspan="2" class="align-middle">Total Weight (Kg)</th>
                             @foreach($comparison['suppliers'] as $sup)
                                 <th colspan="2" class="text-center">
                                     {{ $sup['name'] }}
@@ -156,8 +156,8 @@
                         </tr>
                         <tr>
                             @foreach($comparison['suppliers'] as $sup)
-                                <th class="text-center small">Harga/Kg ({{ $sup['currency'] }})</th>
-                                <th class="text-center small">Harga/Kg (IDR)</th>
+                                <th class="text-center small">Price/Kg ({{ $sup['currency'] }})</th>
+                                <th class="text-center small">Price/Kg (IDR)</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -189,13 +189,13 @@
                                                 <i class="bi bi-check-circle-fill ms-1"></i>
                                             @endif
                                             @if($p['detail_url'])
-                                                <a href="{{ $p['detail_url'] }}" class="btn btn-sm btn-link p-0 ms-1" title="Lihat detail penawaran">
+                                                <a href="{{ $p['detail_url'] }}" class="btn btn-sm btn-link p-0 ms-1" title="Details">
                                                     <i class="bi bi-box-arrow-up-right"></i>
                                                 </a>
                                             @endif
                                         </td>
                                     @else
-                                        <td class="text-center text-muted" colspan="2">- tidak menawar -</td>
+                                        <td class="text-center text-muted" colspan="2">- no quotation -</td>
                                     @endif
                                 @endforeach
                             </tr>
@@ -206,12 +206,12 @@
         </div>
     </div>
 @elseif(request('pr_id'))
-    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> Data tidak ditemukan untuk PR yang dipilih.</div>
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> No data found for the selected PR.</div>
 @else
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center py-5 text-muted">
             <i class="bi bi-bar-chart-line" style="font-size:3rem;opacity:.5"></i>
-            <p class="mt-3 mb-0">Pilih PR di atas untuk melihat perbandingan harga antar supplier.</p>
+            <p class="mt-3 mb-0">Select a PR above to view the price comparison between suppliers.</p>
         </div>
     </div>
 @endif

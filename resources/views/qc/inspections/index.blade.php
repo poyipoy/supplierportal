@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'QC Inspections — ADASI Portal')
+@section('title', 'QC Inspections - ADASI Portal')
 @section('page-title', 'QC Inspections')
 
 @section('content')
@@ -9,32 +9,32 @@
         <ul class="nav nav-tabs border-bottom-0" id="inspectionTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-medium px-4 pb-3" id="waiting-tab" data-bs-toggle="tab" data-bs-target="#waiting" type="button" role="tab">
-                    Menunggu Inspeksi <span class="badge bg-warning text-dark ms-2">{{ $waitingCount }}</span>
+                    Waiting for Inspection <span class="badge bg-warning text-dark ms-2">{{ $waitingCount }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                    Riwayat Inspeksi <span class="badge bg-secondary ms-2">{{ $historyCount }}</span>
+                    Inspection History <span class="badge bg-secondary ms-2">{{ $historyCount }}</span>
                 </button>
             </li>
         </ul>
-        <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center" id="inspectionExportLink">
+        <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center d-none" id="inspectionExportLink">
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
     </div>
     <div class="card-body border-top">
         <div class="tab-content" id="inspectionTabsContent">
-            {{-- Tab: Menunggu Inspeksi --}}
+            {{-- Tab: Waiting for Inspection --}}
             <div class="tab-pane fade show active" id="waiting" role="tabpanel">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle" id="waitingTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>No. PO</th>
+                                <th>PO No.</th>
                                 <th>Supplier</th>
-                                <th>Tanggal Material Tiba</th>
-                                <th>Jumlah Item</th>
-                                <th class="text-end">Aksi</th>
+                                <th>Date Material Arrived</th>
+                                <th>Amount Item</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -42,16 +42,16 @@
                 </div>
             </div>
 
-            {{-- Tab: Riwayat Inspeksi --}}
+            {{-- Tab: Inspection History --}}
             <div class="tab-pane fade" id="history" role="tabpanel">
                 <div class="bg-light border rounded-3 p-3 mb-3">
                     <div class="row g-2 align-items-end">
                         <div class="col-12 col-md-4 col-lg-3">
                             <label for="historyStatusFilter" class="form-label small fw-semibold text-muted mb-1">
-                                Cari Status Inspeksi
+                                Search Inspection Status
                             </label>
                             <select id="historyStatusFilter" class="form-select form-select-sm">
-                                <option value="">Semua Status</option>
+                                <option value="">All Status</option>
                                 <option value="ok" @selected(request('status') === 'ok')>OK</option>
                                 <option value="ng" @selected(request('status') === 'ng')>NG (Not Good)</option>
                             </select>
@@ -69,12 +69,12 @@
                     <table class="table table-hover align-middle" id="historyTable" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
-                                <th>No. PO</th>
+                                <th>PO No.</th>
                                 <th>Supplier</th>
-                                <th>Tanggal Inspeksi</th>
+                                <th>Inspection Date</th>
                                 <th class="text-center">Status</th>
-                                <th>Diinspeksi Oleh</th>
-                                <th class="text-end">Aksi</th>
+                                <th>Inspected By</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -89,7 +89,7 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        var dtLang = { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' };
+        var dtLang = {};
         var dtOpts = { pageLength: 25, order: [] };
 
         $('#waitingTable').DataTable(Object.assign({}, dtOpts, {
@@ -109,6 +109,8 @@
         var historyInit = false;
         var historyTable = null;
         $('button[data-bs-target="#history"]').on('shown.bs.tab', function() {
+            $('#inspectionExportLink').removeClass('d-none');
+
             if (!historyInit) {
                 historyInit = true;
                 historyTable = $('#historyTable').DataTable(Object.assign({}, dtOpts, {
@@ -131,6 +133,10 @@
                     language: dtLang
                 }));
             }
+        });
+
+        $('button[data-bs-target="#waiting"]').on('shown.bs.tab', function() {
+            $('#inspectionExportLink').addClass('d-none');
         });
 
         const updateInspectionFilterState = function() {

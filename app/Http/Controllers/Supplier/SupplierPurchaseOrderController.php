@@ -11,12 +11,12 @@ use Yajra\DataTables\Facades\DataTables;
 class SupplierPurchaseOrderController extends Controller
 {
     /**
-     * Supplier: Lihat daftar PO yang diterima (read-only).
+     * Supplier: View accepted POs (read-only).
      */
     public function index(Request $request)
     {
         $query = PurchaseOrder::with([
-            'quotations.purchaseRequirement.period',
+            'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
             'quotations.items',
             'materialClaims',
@@ -28,7 +28,7 @@ class SupplierPurchaseOrderController extends Controller
             return DataTables::eloquent($query)
                 ->addColumn('po_number_display', fn($po) => $po->po_number)
                 ->addColumn('period_name', function ($po) {
-                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequirement?->period?->name)->filter()->unique();
+                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequisition?->period?->name)->filter()->unique();
                     return $periods->count() > 1
                         ? $periods->first() . ' +' . ($periods->count() - 1)
                         : ($periods->first() ?? '-');
@@ -68,9 +68,9 @@ class SupplierPurchaseOrderController extends Controller
                     $pendingClaim = $po->materialClaims->where('status', 'pending')->sortByDesc('created_at')->first();
                     $latestClaim = $po->materialClaims->sortByDesc('created_at')->first();
                     if ($pendingClaim) {
-                        $html .= '<a href="' . route('supplier.claims.show', $pendingClaim->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-reply me-1"></i> Respons Klaim</a>';
+                        $html .= '<a href="' . route('supplier.claims.show', $pendingClaim->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-reply me-1"></i> Claim Response</a>';
                     } elseif ($latestClaim) {
-                        $html .= '<a href="' . route('supplier.claims.show', $latestClaim->id) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Lihat Klaim</a>';
+                        $html .= '<a href="' . route('supplier.claims.show', $latestClaim->id) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> View Claim</a>';
                     }
                     $html .= '<a href="' . route('supplier.purchase-orders.show', $po->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
                     $html .= '</div>';
@@ -84,7 +84,7 @@ class SupplierPurchaseOrderController extends Controller
     }
 
     /**
-     * Supplier: Lihat detail PO (read-only).
+     * Supplier: View detail PO (read-only).
      */
     public function show($id)
     {
@@ -93,7 +93,7 @@ class SupplierPurchaseOrderController extends Controller
         $po = PurchaseOrder::with([
                 'supplier',
                 'quotations.items.prItem',
-                'quotations.purchaseRequirement.period',
+                'quotations.purchaseRequisition.period',
                 'quotations.exchange_rate',
                 'documents',
                 'materialClaims' => fn($q) => $q->where('supplier_id', $supplierId)->latest(),
@@ -101,7 +101,7 @@ class SupplierPurchaseOrderController extends Controller
 
         // STRICT: only allow if this PO belongs to the logged-in supplier
         if ($po->supplier_id !== $supplierId) {
-            abort(403, 'Anda tidak memiliki akses ke Purchase Order ini.');
+            abort(403, 'You do not have access to this Purchase Order.');
         }
 
         $quotationRates = $po->quotations->mapWithKeys(function ($q) {

@@ -120,13 +120,13 @@ class Conversation extends Model
     {
         return match ($this->status) {
             self::STATUS_WAITING_SUPPLIER => $viewer->id === $this->supplier_user_id
-                ? 'Perlu Dibalas'
-                : 'Menunggu Supplier',
+                ? 'Needs Reply'
+                : 'Waiting for Supplier',
             self::STATUS_WAITING_PURCHASING => $viewer->id === $this->purchasing_user_id
-                ? 'Perlu Dibalas'
-                : 'Menunggu Purchasing',
-            self::STATUS_RESOLVED => 'Selesai',
-            default => 'Aktif',
+                ? 'Needs Reply'
+                : 'Waiting for Purchasing',
+            self::STATUS_RESOLVED => 'Completed',
+            default => 'Active',
         };
     }
 
@@ -170,7 +170,7 @@ class Conversation extends Model
      */
     public function getContextLabelAttribute(): string
     {
-        if ($this->conversable_type === PurchaseRequirement::class) {
+        if ($this->conversable_type === PurchaseRequisition::class) {
             return 'PR: ' . ($this->conversable->pr_number ?? '#' . $this->conversable_id);
         }
         if ($this->conversable_type === PurchaseOrder::class) {

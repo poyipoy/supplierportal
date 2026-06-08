@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\PrItem;
@@ -25,7 +25,7 @@ class PriceComparisonController extends Controller
      */
     public function interSupplier(Request $request)
     {
-        $eligiblePrs = PurchaseRequirement::with(['period', 'quotations' => function ($q) {
+        $eligiblePrs = PurchaseRequisition::with(['period', 'quotations' => function ($q) {
                 $q->whereIn('status', ['submitted', 'accepted', 'rejected']);
             }])
             ->whereHas('quotations', function ($q) {
@@ -66,7 +66,7 @@ class PriceComparisonController extends Controller
         })->values();
 
         if ($request->filled('pr_id')) {
-            $selectedPr = PurchaseRequirement::with(['items', 'period'])->find($request->pr_id);
+            $selectedPr = PurchaseRequisition::with(['items', 'period'])->find($request->pr_id);
 
             if ($selectedPr) {
                 $selectedPrOption = $eligiblePrOptions->firstWhere('id', (string) $selectedPr->id);
@@ -591,33 +591,33 @@ class PriceComparisonController extends Controller
                 'label' => 'N/A',
                 'class' => 'bg-secondary',
                 'icon' => 'bi-dash-circle',
-                'recommendation' => 'Aman',
+                'recommendation' => 'Safe',
             ];
         }
 
         if ($diffPercent <= 0) {
             return [
-                'label' => 'Harga Terbaik',
+                'label' => 'Best Price',
                 'class' => 'bg-success',
                 'icon' => 'bi-check-circle',
-                'recommendation' => 'Aman',
+                'recommendation' => 'Safe',
             ];
         }
 
         if ($diffPercent <= $competitiveThreshold) {
             return [
-                'label' => 'Kompetitif',
+                'label' => 'Competitive',
                 'class' => 'bg-primary',
                 'icon' => 'bi-shield-check',
-                'recommendation' => 'Aman',
+                'recommendation' => 'Safe',
             ];
         }
 
         return [
-            'label' => 'Di Atas Histori',
+            'label' => 'Above History',
             'class' => 'bg-warning text-dark',
             'icon' => 'bi-info-circle',
-            'recommendation' => 'Aman, cek konteks',
+            'recommendation' => 'Safe, check context',
         ];
     }
 
@@ -715,9 +715,9 @@ class PriceComparisonController extends Controller
             })
             ->with([
                 'quotation.supplier',
-                'quotation.purchaseRequirement.period',
+                'quotation.purchaseRequisition.period',
                 'quotation.exchange_rate',
-                'prItem.purchaseRequirement' => function ($q) {
+                'prItem.purchaseRequisition' => function ($q) {
                     $q->select('id', 'pr_number');
                 },
             ]);
@@ -734,11 +734,11 @@ class PriceComparisonController extends Controller
             ->get();
 
         $tableData = $items->map(function ($item) {
-            $period = optional(optional($item->quotation->purchaseRequirement)->period);
+            $period = optional(optional($item->quotation->purchaseRequisition)->period);
             $rate = $item->quotation->exchange_rate;
             $priceIdr = $rate ? round((float) $item->price_per_kg * (float) $rate->rate_to_idr, 0) : null;
             $totalIdr = $rate ? round((float) $item->amount * (float) $rate->rate_to_idr, 0) : null;
-            $purchaseRequirement = $item->prItem?->purchaseRequirement;
+            $purchaseRequisition = $item->prItem?->purchaseRequisition;
             $submittedAt = $item->quotation->submitted_at;
             $periodYear = (int) ($period->year ?? 0);
             $periodMonth = (int) ($period->month ?? 0);
@@ -756,10 +756,10 @@ class PriceComparisonController extends Controller
             return [
                 'period' => $periodLabel,
                 'period_sort' => $periodSort,
-                'pr_id' => $purchaseRequirement?->id,
-                'pr_number' => $purchaseRequirement?->pr_number ?? '-',
-                'pr_url' => $purchaseRequirement
-                    ? PurchasingNavigation::toRoute('purchasing.requirements.show', $purchaseRequirement->id)
+                'pr_id' => $purchaseRequisition?->id,
+                'pr_number' => $purchaseRequisition?->pr_number ?? '-',
+                'pr_url' => $purchaseRequisition
+                    ? PurchasingNavigation::toRoute('purchasing.requirements.show', $purchaseRequisition->id)
                     : null,
                 'supplier' => $item->quotation->supplier->name ?? '-',
                 'price_per_kg' => (float) $item->price_per_kg,

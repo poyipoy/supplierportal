@@ -56,10 +56,10 @@ class NewPasswordController extends Controller
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
         $message = match ($status) {
-            Password::PASSWORD_RESET => 'Password berhasil direset.',
-            Password::INVALID_TOKEN => 'Token reset password tidak valid.',
-            Password::INVALID_USER => 'Kami tidak menemukan pengguna dengan alamat email tersebut.',
-            default => 'Gagal mereset password.',
+            Password::PASSWORD_RESET => 'Password has been reset successfully.',
+            Password::INVALID_TOKEN => 'Password reset token is invalid.',
+            Password::INVALID_USER => 'We could not find a user with that email address.',
+            default => 'Failed to reset password.',
         };
 
         return $status == Password::PASSWORD_RESET

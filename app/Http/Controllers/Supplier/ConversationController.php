@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class ConversationController extends Controller
 {
     /**
-     * Daftar semua conversation milik supplier yang login.
+     * List all conversations owned by the logged-in supplier.
      * WAJIB: filter supplier_user_id = auth()->id()
      */
     public function index()

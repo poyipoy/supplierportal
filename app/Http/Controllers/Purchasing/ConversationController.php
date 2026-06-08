@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Support\PurchasingNavigation;
 use App\Support\ConversationPresenter;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 class ConversationController extends Controller
 {
     /**
-     * Daftar semua conversation milik purchasing user yang login.
+     * List all conversations owned by the logged-in purchasing user.
      */
     public function index()
     {
@@ -54,25 +54,25 @@ class ConversationController extends Controller
     }
 
     /**
-     * Mulai conversation baru atau redirect ke yang sudah ada.
-     * Konteks: PR (Purchase Requirement).
+     * Mulai conversation baru atau redirect ke yang already exists.
+     * Konteks: PR (Purchase Requisition).
      */
     public function startFromPr($pr_id, $supplier_id)
     {
-        $pr = PurchaseRequirement::findOrFail($pr_id);
+        $pr = PurchaseRequisition::findOrFail($pr_id);
 
-        // Validasi: supplier harus punya quotation pada PR ini
+        // The supplier must have a quotation for this PR.
         $hasQuotation = Quotation::where('pr_id', $pr_id)
             ->where('supplier_id', $supplier_id)
             ->whereIn('status', ['submitted', 'revision_requested', 'accepted'])
             ->exists();
 
         if (!$hasQuotation) {
-            return back()->with('error', 'Supplier ini belum memiliki penawaran pada permintaan ini.');
+            return back()->with('error', 'This supplier does not have a quotation for this requisition yet.');
         }
 
-        // Cari conversation yang sudah ada
-        $conversation = Conversation::where('conversable_type', PurchaseRequirement::class)
+        // Search conversation yang already exists
+        $conversation = Conversation::where('conversable_type', PurchaseRequisition::class)
             ->where('conversable_id', $pr_id)
             ->where('purchasing_user_id', auth()->id())
             ->where('supplier_user_id', $supplier_id)
@@ -80,7 +80,7 @@ class ConversationController extends Controller
 
         if (!$conversation) {
             $conversation = Conversation::create([
-                'conversable_type' => PurchaseRequirement::class,
+                'conversable_type' => PurchaseRequisition::class,
                 'conversable_id' => $pr_id,
                 'purchasing_user_id' => auth()->id(),
                 'supplier_user_id' => $supplier_id,
@@ -103,7 +103,7 @@ class ConversationController extends Controller
     }
 
     /**
-     * Mulai conversation baru atau redirect ke yang sudah ada.
+     * Mulai conversation baru atau redirect ke yang already exists.
      * Konteks: PO (Purchase Order).
      */
     public function startFromPo($po_id)
@@ -111,7 +111,7 @@ class ConversationController extends Controller
         $po = PurchaseOrder::findOrFail($po_id);
         $supplier_id = $po->supplier_id;
 
-        // Cari conversation yang sudah ada
+        // Search conversation yang already exists
         $conversation = Conversation::where('conversable_type', PurchaseOrder::class)
             ->where('conversable_id', $po_id)
             ->where('purchasing_user_id', auth()->id())

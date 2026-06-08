@@ -12,7 +12,7 @@ class PurchasingNavigation
     public const LIST_ROUTES = [
         'purchasing.dashboard',
         'purchasing.periods.index',
-        'purchasing.requirements.index',
+        'purchasing.requisitions.index',
         'purchasing.quotations.index',
         'purchasing.comparison.inter-supplier',
         'purchasing.comparison.historical',

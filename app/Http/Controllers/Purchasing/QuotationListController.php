@@ -7,7 +7,7 @@ use App\Models\Conversation;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Models\ExchangeRate;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Notifications\SystemNotification;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
@@ -19,7 +19,7 @@ use Illuminate\Validation\Rule;
 class QuotationListController extends Controller
 {
     /**
-     * Daftar semua penawaran masuk untuk Purchasing.
+     * List all incoming quotations for Purchasing.
      */
     public function index(Request $request)
     {
@@ -32,20 +32,20 @@ class QuotationListController extends Controller
         if ($request->filled('date_from') && $request->filled('date_to') && $request->date_to < $request->date_from) {
             return back()
                 ->withInput()
-                ->withErrors(['date_to' => 'Tanggal akhir tidak boleh sebelum tanggal awal']);
+                ->withErrors(['date_to' => 'End date cannot be before start date']);
         }
 
-        $query = Quotation::with(['supplier', 'purchaseRequirement.period', 'items'])
+        $query = Quotation::with(['supplier', 'purchaseRequisition.period', 'items'])
             ->whereIn('status', ['submitted', 'revision_requested', 'accepted', 'rejected']);
 
-        // Filter: Nomor PR
+        // Filter: Number PR
         if ($request->filled('pr_number')) {
-            $query->whereHas('purchaseRequirement', function ($q) use ($request) {
+            $query->whereHas('purchaseRequisition', function ($q) use ($request) {
                 $q->where('pr_number', 'like', '%' . trim($request->pr_number) . '%');
             });
         }
 
-        // Filter: Range tanggal penawaran diajukan
+        // Filter: quotation submitted date range.
         if ($request->filled('date_from')) {
             $from = Carbon::createFromFormat('Y-m', $request->date_from)->startOfMonth();
             $query->where('submitted_at', '>=', $from);
@@ -66,7 +66,7 @@ class QuotationListController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Filter: Mata uang
+        // Filter: currency.
         if ($request->filled('currency')) {
             $query->where('currency', $request->currency);
         }
@@ -81,13 +81,13 @@ class QuotationListController extends Controller
     }
 
     /**
-     * Detail satu penawaran.
+     * Show quotation details.
      */
     public function show($id)
     {
         $quotation = Quotation::with([
             'supplier.supplier',
-            'purchaseRequirement.period',
+            'purchaseRequisition.period',
             'items.prItem',
             'items.attachments',
             'exchange_rate',
@@ -96,18 +96,18 @@ class QuotationListController extends Controller
             'reviewer',
         ])->findOrFail($id);
 
-        // Kurs penawaran dipakai untuk konversi agar konsisten dengan histori.
+        // Use the quotation exchange-rate snapshot for consistent history conversion.
         $quotationRate = $quotation->exchange_rate;
         $latestRate = ExchangeRate::latestRate($quotation->currency);
 
-        // Cek apakah bisa buat PO (quotation submitted, belum ada PO, PR belum completed)
+        // Check whether a PO can be created.
         $canCreatePo = in_array($quotation->status, [Quotation::STATUS_SUBMITTED, Quotation::STATUS_ACCEPTED], true)
             && $quotation->purchaseOrders->isEmpty()
-            && $quotation->purchaseRequirement->status !== 'completed'
+            && $quotation->purchaseRequisition->status !== 'completed'
             && !$quotation->isExpired();
 
         $canRequestRevision = $quotation->canRequestRevision()
-            && $quotation->purchaseRequirement->status !== 'completed';
+            && $quotation->purchaseRequisition->status !== 'completed';
         $chatAvailable = in_array($quotation->status, ['submitted', 'revision_requested', 'accepted'], true);
         $supplierDisplayName = $quotation->supplier->supplier->company_name
             ?? $quotation->supplier->name
@@ -126,14 +126,14 @@ class QuotationListController extends Controller
 
     public function accept(Request $request, $id)
     {
-        $quotation = Quotation::with(['purchaseRequirement', 'purchaseOrders'])->findOrFail($id);
+        $quotation = Quotation::with(['purchaseRequisition', 'purchaseOrders'])->findOrFail($id);
 
         if (! $quotation->canApproveBy(auth()->user())) {
-            return back()->with('error', 'Penawaran ini tidak bisa diterima.');
+            return back()->with('error', 'This quotation cannot be accepted.');
         }
 
         if ($quotation->isExpired()) {
-            return back()->with('error', 'Penawaran sudah kadaluarsa. Minta supplier mengirim revisi sebelum menerima penawaran.');
+            return back()->with('error', 'This quotation has expired. Ask the supplier to submit a revision before accepting it.');
         }
 
         $quotation->update([
@@ -143,7 +143,7 @@ class QuotationListController extends Controller
             'reviewer_notes' => $request->input('reviewer_notes'),
         ]);
 
-        return back()->with('success', 'Penawaran berhasil diterima.');
+        return back()->with('success', 'Quotation successfully accepted.');
     }
 
     public function reject(Request $request, $id)
@@ -151,13 +151,13 @@ class QuotationListController extends Controller
         $request->validate([
             'reviewer_notes' => 'required|string|max:1000',
         ], [
-            'reviewer_notes.required' => 'Catatan penolakan wajib diisi.',
+            'reviewer_notes.required' => 'Rejection notes are required.',
         ]);
 
         $quotation = Quotation::with('purchaseOrders')->findOrFail($id);
 
         if (! $quotation->canApproveBy(auth()->user())) {
-            return back()->with('error', 'Penawaran ini tidak bisa ditolak.');
+            return back()->with('error', 'This quotation cannot be rejected.');
         }
 
         $quotation->update([
@@ -167,32 +167,32 @@ class QuotationListController extends Controller
             'reviewer_notes' => $request->reviewer_notes,
         ]);
 
-        return back()->with('success', 'Penawaran berhasil ditolak.');
+        return back()->with('success', 'Quotation successfully rejected.');
     }
 
     /**
-     * Minta supplier merevisi penawaran yang masa berlakunya sudah lewat.
+     * Ask the supplier to revise an expired quotation.
      */
     public function requestRevision(Request $request, $id)
     {
         $request->validate([
             'revision_note' => 'required|string|max:1000',
         ], [
-            'revision_note.required' => 'Catatan revisi wajib diisi.',
+            'revision_note.required' => 'Revision notes are required.',
         ]);
 
         $quotation = Quotation::with([
             'supplier.supplier',
-            'purchaseRequirement',
+            'purchaseRequisition',
             'purchaseOrders',
         ])->findOrFail($id);
 
-        if ($quotation->purchaseRequirement->status === 'completed') {
-            return back()->with('error', 'PR sudah selesai. Penawaran tidak bisa diminta revisi.');
+        if ($quotation->purchaseRequisition->status === 'completed') {
+            return back()->with('error', 'The PR is completed. A quotation revision cannot be requested.');
         }
 
         if (!$quotation->canRequestRevision()) {
-            return back()->with('error', 'Revisi hanya bisa diminta untuk penawaran submitted yang sudah melewati masa berlaku dan belum dibuat PO.');
+            return back()->with('error', 'A revision can only be requested for submitted quotations that have expired and have not been used to create a PO.');
         }
 
         $revisionNote = trim((string) $request->input('revision_note', ''));
@@ -209,18 +209,18 @@ class QuotationListController extends Controller
             ]);
 
             $conversation = Conversation::firstOrCreate([
-                'conversable_type' => PurchaseRequirement::class,
+                'conversable_type' => PurchaseRequisition::class,
                 'conversable_id' => $quotation->pr_id,
                 'purchasing_user_id' => auth()->id(),
                 'supplier_user_id' => $quotation->supplier_id,
             ]);
 
-            $message = 'Mohon revisi penawaran untuk PR '
-                . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id)
-                . ' karena masa berlaku penawaran sudah lewat.';
+            $message = 'Please revise the quotation for PR '
+                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
+                . ' because the quotation validity has expired.';
 
             if ($revisionNote !== '') {
-                $message .= "\n\nCatatan revisi: " . $revisionNote;
+                $message .= "\n\nRevision notes: " . $revisionNote;
             }
 
             $conversation->messages()->create([
@@ -229,19 +229,19 @@ class QuotationListController extends Controller
             ]);
 
             $quotation->supplier->notify(new SystemNotification(
-                'Revisi Penawaran Diminta',
-                'Purchasing meminta revisi penawaran untuk PR :pr_number.',
+                'Quotation Revision Requested',
+                'Purchasing requested a quotation revision for PR :pr_number.',
                 route('supplier.quotations.show', $quotation->id),
                 'bi-arrow-repeat text-warning',
                 [
                     'category' => NotificationCategory::QUOTATION,
                     'quotation_id' => $quotation->id,
                     'pr_id' => $quotation->pr_id,
-                    'pr_number' => $quotation->purchaseRequirement->pr_number,
+                    'pr_number' => $quotation->purchaseRequisition->pr_number,
                     'revision_note' => $revisionNote,
                 ],
                 [
-                    'pr_number' => $quotation->purchaseRequirement->pr_number ?? '-',
+                    'pr_number' => $quotation->purchaseRequisition->pr_number ?? '-',
                     'supplier' => $supplierName,
                 ]
             ));
@@ -253,6 +253,6 @@ class QuotationListController extends Controller
         }
 
         return redirect()->route('purchasing.quotations.show', $showParameters)
-            ->with('success', 'Permintaan revisi penawaran sudah dikirim ke supplier.');
+            ->with('success', 'Quotation revision request has been sent to the supplier.');
     }
 }

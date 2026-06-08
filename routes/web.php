@@ -79,7 +79,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     // Manajemen Periode
     Route::resource('periods', \App\Http\Controllers\Purchasing\PeriodController::class)->only(['index', 'store', 'update']);
     
-    Route::resource('requirements', \App\Http\Controllers\Purchasing\PurchaseRequirementController::class);
+    Route::resource('requisitions', \App\Http\Controllers\Purchasing\PurchaseRequisitionController::class);
     Route::resource('pr-items', \App\Http\Controllers\Purchasing\PrItemController::class)->only(['store', 'update', 'destroy']);
     Route::get('/purchase-orders/create/{quotation_id}', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
     Route::post('/purchase-orders', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
@@ -115,7 +115,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     // Laporan
     Route::get('/reports', [\App\Http\Controllers\Purchasing\ReportController::class, 'index'])->name('reports.index');
     // Export
-    Route::get('/export/requirements', [\App\Http\Controllers\Purchasing\ExportController::class, 'requirements'])->name('export.requirements');
+    Route::get('/export/requisitions', [\App\Http\Controllers\Purchasing\ExportController::class, 'requisitions'])->name('export.requisitions');
     Route::get('/export/purchase-orders', [\App\Http\Controllers\Purchasing\ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
     // PDF
     Route::get('/pdf/purchase-order/{id}', [\App\Http\Controllers\Purchasing\PdfController::class, 'purchaseOrder'])->name('pdf.purchase-order');
@@ -141,6 +141,11 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     // Conversations
     Route::get('/conversations', [\App\Http\Controllers\Supplier\ConversationController::class, 'index'])->name('conversations.index');
     Route::get('/conversations/{id}', [\App\Http\Controllers\Supplier\ConversationController::class, 'show'])->name('conversations.show');
+    // Riwayat Harga
+    Route::get('/price-history', [\App\Http\Controllers\Supplier\SupplierPriceHistoryController::class, 'index'])->name('price-history.index');
+    Route::get('/price-history/historical', [\App\Http\Controllers\Supplier\SupplierPriceHistoryController::class, 'historical'])->name('price-history.historical');
+    Route::get('/price-history/materials', [\App\Http\Controllers\Supplier\SupplierPriceHistoryController::class, 'materials'])->name('price-history.materials');
+    Route::get('/price-history/export', [\App\Http\Controllers\Supplier\SupplierPriceHistoryController::class, 'export'])->name('price-history.export');
     // Announcements
     Route::get('/announcements', [\App\Http\Controllers\Supplier\AnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/announcements/{announcement}', [\App\Http\Controllers\Supplier\AnnouncementController::class, 'show'])->name('announcements.show');

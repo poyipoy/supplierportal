@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Form Penawaran Harga — ADASI Portal')
-@section('page-title', 'Form Penawaran Harga')
+@section('title', 'Quotation Price Form - ADASI Portal')
+@section('page-title', 'Form Quotation Price')
 
 @push('styles')
 <style>
@@ -21,21 +21,21 @@
 @section('content')
 <div class="mb-3">
     <a href="{{ route('supplier.quotations.period', $pr->period_id) }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Permintaan
+        <i class="bi bi-arrow-left me-1"></i> Back to Requisition List
     </a>
 </div>
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">Detail Permintaan Pembelian</h6>
+        <h6 class="mb-0 fw-bold">Purchase Requisition Details</h6>
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-2 text-muted small">Periode</div>
+            <div class="col-md-2 text-muted small">Period</div>
             <div class="col-md-10 fw-medium">{{ $pr->period->name }} ({{ str_pad($pr->period->month, 2, '0', STR_PAD_LEFT) }}/{{ $pr->period->year }})</div>
         </div>
         <div class="row mt-2">
-            <div class="col-md-2 text-muted small">Catatan PR</div>
+            <div class="col-md-2 text-muted small">Notes PR</div>
             <div class="col-md-10">{{ $pr->notes ?? '-' }}</div>
         </div>
     </div>
@@ -43,9 +43,9 @@
 
 @if($quotation?->status === 'revision_requested')
     <div class="alert alert-warning border-0 shadow-sm">
-        <div class="fw-semibold mb-1"><i class="bi bi-arrow-repeat me-1"></i> Revisi Penawaran Diminta</div>
+        <div class="fw-semibold mb-1"><i class="bi bi-arrow-repeat me-1"></i> Quotation Revision Requested</div>
         <div class="small mb-0">
-            Purchasing meminta penawaran ini dikirim ulang. Perbarui harga, estimasi pengiriman, masa berlaku, dan catatan bila diperlukan.
+            Purchasing asked this quotation to be resubmitted. Update the price, estimated delivery, validity date, and notes if needed.
         </div>
     </div>
 @endif
@@ -57,13 +57,13 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-bold">
-                Pengisian Harga Material
+                Material Price Entry
                 <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><i class="bi bi-cloud-check me-1"></i>Draft Auto-saved</span>
             </h6>
             <div class="d-flex align-items-center gap-2">
-                <label for="quotationCurrency" class="small fw-medium text-muted mb-0">Mata Uang:</label>
+                <label for="quotationCurrency" class="small fw-medium text-muted mb-0">Currency:</label>
                 <select name="currency" id="quotationCurrency" class="form-select form-select-sm" style="width: 110px;" required>
-                    <option value="" disabled @selected($supplierCurrency === '')>Pilih</option>
+                    <option value="" disabled @selected($supplierCurrency === '')>Select</option>
                     @foreach($currencyOptions as $currency)
                         <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
                     @endforeach
@@ -72,7 +72,7 @@
         </div>
         <div id="currencyRateWarning" class="alert alert-warning rounded-0 border-0 border-top border-bottom mb-0 small {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
                 <i class="bi bi-exclamation-triangle me-1"></i>
-                Kurs <span id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</span> belum tersedia. Hubungi Admin sebelum mengirim penawaran final.
+                Exchange rate for <span id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</span> is not available yet. Contact Admin before submitting the final quotation.
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -80,14 +80,14 @@
                     <thead class="table-light text-center">
                         <tr>
                             <th width="3%">No</th>
-                            <th width="15%" style="min-width: 150px;">Material & Spesifikasi</th>
+                            <th width="15%" style="min-width: 150px;">Material & Specification</th>
                             <th width="4%">Qty</th>
-                            <th width="7%">Berat/Unit (Kg)</th>
-                            <th width="8%">Total Berat (Kg)</th>
-                            <th width="12%" style="min-width: 130px;">Harga per-KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
+                            <th width="7%">Weight/Unit (Kg)</th>
+                            <th width="8%">Total Weight (Kg)</th>
+                            <th width="12%" style="min-width: 130px;">Price per-KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
                             <th width="12%" style="min-width: 130px;">Amount (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
                             <th width="12%" style="min-width: 130px;">Est. IDR</th>
-                            <th width="13%" style="min-width: 150px;">Catatan Item</th>
+                            <th width="13%" style="min-width: 150px;">Notes Item</th>
                             <th width="14%" style="min-width: 220px;">MTC</th>
                         </tr>
                     </thead>
@@ -134,7 +134,7 @@
                                         name="items[{{ $index }}][notes]"
                                         class="form-control form-control-sm quotation-item-notes"
                                         rows="3"
-                                        placeholder="Opsional, mis. toleransi harga, MOQ, atau catatan material"
+                                        placeholder="Optional, e.g. price tolerance, MOQ, or material notes"
                                     >{{ $oldNotes }}</textarea>
                                 </td>
                                 <td>
@@ -145,7 +145,7 @@
                                             {{ $mtcAttachment->file_name }}
                                         </a>
                                     @else
-                                        <div class="form-text small">Opsional, PDF/JPG/PNG maks. 5MB.</div>
+                                        <div class="form-text small">Optional, PDF/JPG/PNG max. 5MB.</div>
                                     @endif
                                 </td>
                             </tr>
@@ -166,23 +166,23 @@
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold">Informasi Tambahan</h6>
+            <h6 class="mb-0 fw-bold">Additional Information</h6>
         </div>
         <div class="card-body">
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">Estimasi Waktu Pengiriman <span class="text-danger">*</span></label>
+                    <label class="form-label fw-medium">Estimated Delivery Time <span class="text-danger">*</span></label>
                     <input type="date" name="estimated_delivery" class="form-control" value="{{ old('estimated_delivery', optional($quotation?->estimated_delivery)->format('Y-m-d')) }}" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">Masa Berlaku Penawaran <span class="text-danger">*</span></label>
+                    <label class="form-label fw-medium">Quotation Valid Until <span class="text-danger">*</span></label>
                     <input type="date"
                            name="validity_period"
                            id="validityPeriod"
                            class="form-control @error('validity_period') is-invalid @enderror"
                            value="{{ old('validity_period', optional($quotation?->validity_period)->format('Y-m-d')) }}"
                            min="{{ now()->toDateString() }}">
-                    <div class="form-text">Wajib saat mengirim penawaran final. Harga dan syarat berlaku sampai tanggal ini.</div>
+                    <div class="form-text">Required when submitting the final quotation. Prices and terms are valid until this date.</div>
                     @error('validity_period')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -190,12 +190,12 @@
             </div>
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">Syarat Pembayaran</label>
+                    <label class="form-label fw-medium">Payment Terms</label>
                     <textarea name="payment_terms" class="form-control" rows="2" maxlength="100" required placeholder="Contoh: TT 30 Days">{{ old('payment_terms', $quotation->payment_terms ?? 'TT 30 Days') }}</textarea>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">Catatan Umum</label>
-                    <textarea name="general_notes" class="form-control" rows="2" placeholder="Opsional...">{{ old('general_notes', $quotation->general_notes ?? '') }}</textarea>
+                    <label class="form-label fw-medium">Notes Umum</label>
+                    <textarea name="general_notes" class="form-control" rows="2" placeholder="Optional...">{{ old('general_notes', $quotation->general_notes ?? '') }}</textarea>
                 </div>
             </div>
         </div>
@@ -203,15 +203,15 @@
 
     <div class="d-flex justify-content-end gap-2 mb-5">
         <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">
-            {{ $quotation?->status === 'revision_requested' ? 'Simpan Revisi Sementara' : 'Simpan Draft' }}
+            {{ $quotation?->status === 'revision_requested' ? 'Save Revision' : 'Save Draft' }}
         </button>
         <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">
-            {{ $quotation?->status === 'revision_requested' ? 'Kirim Ulang Penawaran' : 'Kirim Penawaran Final' }}
+            {{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}
         </button>
     </div>
 </form>
 
-{{-- Info Kurs untuk JS --}}
+{{-- Exchange rate data for JS --}}
 <div id="exchangeRates" class="d-none"></div>
 
 @endsection
@@ -291,19 +291,19 @@
         });
 
         if (!isValid) {
-            Swal.fire('Error', 'Mohon lengkapi semua field yang wajib diisi (Mata Uang, Harga, Estimasi Waktu, dan Masa Berlaku Penawaran).', 'error');
+            Swal.fire('Error', 'Please complete all required fields: Currency, Price, Estimated Delivery Time, and Quotation Valid Until.', 'error');
             return;
         }
 
         Swal.fire({
-            title: {!! json_encode($quotation?->status === 'revision_requested' ? 'Kirim Ulang Penawaran?' : 'Kirim Penawaran Final?') !!},
-            text: {!! json_encode($quotation?->status === 'revision_requested' ? 'Penawaran revisi akan dikirim ulang ke Purchasing untuk dievaluasi.' : 'Penawaran yang sudah dikirim tidak dapat diubah lagi.') !!},
+            title: {!! json_encode($quotation?->status === 'revision_requested' ? 'Resubmit Quotation?' : 'Send Final Quotation?') !!},
+            text: {!! json_encode($quotation?->status === 'revision_requested' ? 'The revised quotation will be sent back to Purchasing for evaluation.' : 'Submitted quotations cannot be changed anymore.') !!},
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: 'var(--adasi-blue)',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: @json($quotation?->status === 'revision_requested' ? 'Ya, Kirim Ulang!' : 'Ya, Kirim!'),
-            cancelButtonText: @json('Batal')
+            confirmButtonText: @json($quotation?->status === 'revision_requested' ? 'Yes, Resubmit!' : 'Yes, Send!'),
+            cancelButtonText: @json('Cancel')
         }).then((result) => {
             if (result.isConfirmed) {
                 // Clear draft on submit
@@ -347,7 +347,7 @@
             calculateTotal();
             
             // Show badge permanently if draft loaded
-            $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<i class="bi bi-cloud-check me-1"></i>Draft Tersimpan');
+            $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<i class="bi bi-cloud-check me-1"></i>Draft Saved');
         }
     }
 
@@ -368,7 +368,7 @@
 
         $(window).on('beforeunload', function() {
             if (isDirty) {
-                return 'Anda memiliki perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?';
+                return 'You have unsaved changes. Are you sure you want to leave this page?';
             }
         });
     });

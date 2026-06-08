@@ -6,7 +6,7 @@ use App\Models\ExchangeRate;
 use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
@@ -46,10 +46,10 @@ class SampleDataSeeder extends Seeder
             ]);
 
             // 2. Create a PR
-            $pr = PurchaseRequirement::create([
+            $pr = PurchaseRequisition::create([
                 'period_id' => $period->id,
                 'created_by' => $purchasing->id,
-                'pr_number' => PurchaseRequirement::generatePrNumber(),
+                'pr_number' => PurchaseRequisition::generatePrNumber(),
                 'status' => 'completed', // we will simulate a completed PR
                 'notes' => 'Tolong segera diproses untuk line produksi 1',
             ]);
@@ -149,10 +149,10 @@ class SampleDataSeeder extends Seeder
             \App\Models\PoDocument::create(['po_id' => $po->id, 'doc_type' => 'form_e', 'status' => 'processing']);
 
             // 8. Create a pending PR (bidding state)
-            $pr2 = PurchaseRequirement::create([
+            $pr2 = PurchaseRequisition::create([
                 'period_id' => $period->id,
                 'created_by' => $purchasing->id,
-                'pr_number' => PurchaseRequirement::generatePrNumber(),
+                'pr_number' => PurchaseRequisition::generatePrNumber(),
                 'status' => 'bidding',
             ]);
 

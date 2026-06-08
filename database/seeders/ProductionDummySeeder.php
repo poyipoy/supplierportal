@@ -9,7 +9,7 @@ use App\Models\Period;
 use App\Models\PoDocument;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\Supplier;
@@ -83,7 +83,7 @@ class ProductionDummySeeder extends Seeder
             'quotation_items',
             'quotations',
             'pr_items',
-            'purchase_requirements',
+            'purchase_requisitions',
             'periods',
             'announcements',
             'exchange_rates',
@@ -581,7 +581,7 @@ class ProductionDummySeeder extends Seeder
         return 'completed';
     }
 
-    private function seedExtendedQuotations(PurchaseRequirement $requirement, array $suppliers): void
+    private function seedExtendedQuotations(PurchaseRequisition $requirement, array $suppliers): void
     {
         if ($requirement->status === 'draft' || $requirement->status === 'submitted') {
             return;
@@ -639,7 +639,7 @@ class ProductionDummySeeder extends Seeder
         array $items,
         array $quotationRows,
         string $rateKey
-    ): PurchaseRequirement {
+    ): PurchaseRequisition {
         $requirement = $this->requirement($prNumber, $periodKey, $creator, $status, $createdAt, $items);
 
         foreach ($quotationRows as [$supplier, $quotationStatus, $prices]) {
@@ -656,11 +656,11 @@ class ProductionDummySeeder extends Seeder
         string $status,
         string $createdAt,
         array $items
-    ): PurchaseRequirement {
+    ): PurchaseRequisition {
         $date = Carbon::parse($createdAt);
         $items = $this->normalizeRequirementItems($items);
 
-        $requirement = PurchaseRequirement::create([
+        $requirement = PurchaseRequisition::create([
             'period_id' => $this->periods[$periodKey]->id,
             'created_by' => $creator->id,
             'pr_number' => $prNumber,
@@ -688,7 +688,7 @@ class ProductionDummySeeder extends Seeder
     }
 
     private function quotation(
-        PurchaseRequirement $requirement,
+        PurchaseRequisition $requirement,
         User $supplier,
         string $status,
         array $prices,
@@ -921,7 +921,7 @@ class ProductionDummySeeder extends Seeder
             'form_e' => 'done',
         ];
 
-        $requirements = PurchaseRequirement::with([
+        $requirements = PurchaseRequisition::with([
             'quotations' => fn ($query) => $query->where('status', 'accepted')->with('purchaseOrders'),
         ])
             ->where('status', 'completed')

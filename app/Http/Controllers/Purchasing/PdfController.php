@@ -10,7 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class PdfController extends Controller
 {
     /**
-     * Generate PDF dokumen Purchase Order.
+     * Generate PDF document Purchase Order.
      */
     public function purchaseOrder($id)
     {
@@ -18,7 +18,7 @@ class PdfController extends Controller
             'supplier',
             'quotations.supplier',
             'quotations.items.prItem',
-            'quotations.purchaseRequirement.period',
+            'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
             'creator',
         ])->findOrFail($id);
@@ -34,13 +34,13 @@ class PdfController extends Controller
     }
 
     /**
-     * Generate PDF Berita Acara Inspeksi QC.
+     * Generate PDF QC Inspection Report.
      */
     public function qcInspection($id)
     {
         $inspection = QcInspection::with([
             'purchaseOrder.supplier',
-            'purchaseOrder.quotations.purchaseRequirement.period',
+            'purchaseOrder.quotations.purchaseRequisition.period',
             'inspector',
             'items.prItem',
         ])->findOrFail($id);

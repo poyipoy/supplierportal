@@ -39,7 +39,7 @@ class ClaimController extends Controller
                     );
                 })
                 ->addColumn('action', function ($c) {
-                    $label = $c->status === 'pending' ? 'Beri Respons' : 'Lihat Detail';
+                    $label = $c->status === 'pending' ? 'Give Response' : 'View Details';
                     return '<a href="' . route('supplier.claims.show', $c->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">' . $label . '</a>';
                 })
                 ->rawColumns(['deadline_display', 'status_badge', 'action'])
@@ -58,7 +58,7 @@ class ClaimController extends Controller
         ])->findOrFail($id);
 
         if ($claim->supplier_id !== auth()->id()) {
-            abort(403, 'Akses ditolak.');
+            abort(403, 'Access denied.');
         }
 
         return view('supplier.claims.show', compact('claim'));
@@ -69,7 +69,7 @@ class ClaimController extends Controller
         $claim = MaterialClaim::findOrFail($id);
 
         if ($claim->supplier_id !== auth()->id()) {
-            abort(403, 'Akses ditolak.');
+            abort(403, 'Access denied.');
         }
 
         $request->validate([
@@ -82,14 +82,14 @@ class ClaimController extends Controller
             'status' => 'responded',
         ]);
 
-        // Upload lampiran respons supplier
+        // Upload supplier response attachments
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
                 if (! $file || ! $file->isValid()) {
                     continue;
                 }
                 
-                // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
+                // Use getPathname() to avoid getRealPath() returning false on Windows.
                 $fileName = $file->hashName();
                 $path = 'attachments/claims/' . now()->format('Y/m') . '/' . $fileName;
                 
@@ -113,13 +113,13 @@ class ClaimController extends Controller
         foreach ($purchasingUsers as $pUser) {
             /** @var \App\Models\User $pUser */
             $pUser->notify(new SystemNotification(
-                'Respons Klaim Diterima',
-                'Supplier telah merespons klaim untuk PO ' . $claim->purchaseOrder->po_number . '.',
+                'Claim Response Accepted',
+                'The supplier has responded to the claim for PO ' . $claim->purchaseOrder->po_number . '.',
                 route('purchasing.claims.show', $claim->id),
                 'bi-reply text-primary'
             ));
         }
 
-        return redirect()->route('supplier.claims.show', $claim->id)->with('success', 'Respons berhasil dikirim.');
+        return redirect()->route('supplier.claims.show', $claim->id)->with('success', 'Response successfully sent.');
     }
 }

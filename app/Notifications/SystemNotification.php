@@ -3,10 +3,12 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Notifications\Notification;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 
 
-class SystemNotification extends Notification
+class SystemNotification extends Notification implements ShouldBroadcast
 {
     use Queueable;
 
@@ -35,7 +37,7 @@ class SystemNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database']; // only store in database
+        return ['database', 'broadcast'];
     }
 
     /**
@@ -51,5 +53,18 @@ class SystemNotification extends Notification
             'url' => $this->url,
             'icon' => $this->icon,
         ], $this->data);
+    }
+
+    /**
+     * Get the broadcastable representation of the notification.
+     */
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage(array_merge([
+            'title' => $this->title,
+            'message' => $this->message,
+            'url' => $this->url,
+            'icon' => $this->icon,
+        ], $this->data));
     }
 }

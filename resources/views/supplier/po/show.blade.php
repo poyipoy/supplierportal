@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Detail PO: ' . $po->po_number . ' — ADASI Portal')
-@section('page-title', 'Detail Purchase Order')
+@section('title', 'PO Details: ' . $po->po_number . ' - ADASI Portal')
+@section('page-title', 'Purchase Order Details')
 
 @section('content')
 <x-breadcrumb :items="[
@@ -11,7 +11,7 @@
 ]" />
 <div class="mb-3">
     <a href="{{ route('supplier.purchase-orders.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar PO
+        <i class="bi bi-arrow-left me-1"></i> Back to PO List
     </a>
 </div>
 
@@ -35,9 +35,9 @@
             </div>
             <div class="card-body">
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">No. PR</div>
+                    <div class="col-md-4 text-muted small">PR No.</div>
                     <div class="col-md-8 fw-medium">
-                        @php $prs = $po->purchaseRequirements(); @endphp
+                        @php $prs = $po->purchaseRequisitions(); @endphp
                         @foreach($prs as $pr)
                             <span class="text-primary me-2">{{ $pr->pr_number ?? '-' }}</span>
                         @endforeach
@@ -47,11 +47,11 @@
                     </div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">Tanggal Dibuat</div>
+                    <div class="col-md-4 text-muted small">Date Created</div>
                     <div class="col-md-8 fw-medium">{{ $po->created_at->format('d F Y, H:i') }}</div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">Estimasi Kedatangan</div>
+                    <div class="col-md-4 text-muted small">Estimated Arrival</div>
                     <div class="col-md-8 fw-medium">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
                 </div>
                 <div class="row mb-2">
@@ -60,12 +60,12 @@
                         @if($po->actual_arrival)
                             <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ $po->actual_arrival->format('d F Y') }}</span>
                         @else
-                            <span class="text-muted">Belum tiba</span>
+                            <span class="text-muted">Not arrived yet</span>
                         @endif
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4 text-muted small">Mata Uang</div>
+                    <div class="col-md-4 text-muted small">Currency</div>
                     <div class="col-md-8 fw-medium">{{ $po->currency }}</div>
                 </div>
             </div>
@@ -74,7 +74,7 @@
         {{-- Material Table --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Detail Material</h6>
+                <h6 class="mb-0 fw-bold">Material Details</h6>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -84,9 +84,9 @@
                                 <th>No</th>
                                 <th>Material</th>
                                 <th>Qty</th>
-                                <th>Berat/Unit (Kg)</th>
-                                <th>Total Berat (Kg)</th>
-                                <th>Harga/Kg</th>
+                                <th>Weight/Unit (Kg)</th>
+                                <th>Total Weight (Kg)</th>
+                                <th>Price/Kg</th>
                                 <th>Amount</th>
                                 <th>IDR</th>
                             </tr>
@@ -99,10 +99,10 @@
                                     <tr class="table-primary">
                                         <td colspan="8" class="fw-bold small ps-3">
                                             <i class="bi bi-folder2 me-1"></i>
-                                            {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
+                                            {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
                                                 @if($rate)
-                                                    • Kurs: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                                    &bull; Exchange rate: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
                                                 @endif
                                             </span>
                                         </td>
@@ -155,27 +155,27 @@
             <div class="card border-danger shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-danger">
-                        <i class="bi bi-exclamation-octagon me-2"></i>Klaim Material
+                        <i class="bi bi-exclamation-octagon me-2"></i>Material Claim
                     </h6>
                     <span class="badge {{ $pendingClaim ? 'bg-warning text-dark' : 'bg-danger' }}">
-                        {{ $pendingClaim ? 'Perlu Respons' : 'Ada Klaim' }}
+                        {{ $pendingClaim ? 'Needs Response' : 'Has Claim' }}
                     </span>
                 </div>
                 <div class="card-body">
                     @if($pendingClaim)
                         <p class="small text-muted mb-3">
-                            ADASI mengajukan klaim untuk PO ini. Silakan berikan tanggapan dan lampiran pendukung.
+                            ADASI submitted a claim for this PO. Please provide a response and supporting attachments.
                         </p>
                         <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-reply me-2"></i> Respons Klaim</span>
+                            <span><i class="bi bi-reply me-2"></i> Claim Response</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     @else
                         <p class="small text-muted mb-3">
-                            PO ini memiliki riwayat klaim material. Buka detail klaim untuk melihat status dan respons.
+                            This PO has a material claim history. Open claim details to view status and response.
                         </p>
                         <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-octagon me-2"></i> Lihat Klaim Material</span>
+                            <span><i class="bi bi-exclamation-octagon me-2"></i> View Claim Material</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     @endif
@@ -186,7 +186,7 @@
         {{-- Document Status (read-only for supplier) --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Status Dokumen Impor</h6>
+                <h6 class="mb-0 fw-bold">Import Document Status</h6>
             </div>
             <div class="card-body">
                 @php
@@ -197,12 +197,12 @@
                         'form_e' => 'Form-E',
                     ];
                     $statusLabels = [
-                        'pending' => 'Belum Ada',
-                        'received' => 'Diterima',
-                        'verified' => 'Diverifikasi',
-                        'issued' => 'Sudah Diterbitkan',
-                        'processing' => 'Sedang Diproses',
-                        'done' => 'Selesai'
+                        'pending' => 'Not Available',
+                        'received' => 'Accepted',
+                        'verified' => 'Verified',
+                        'issued' => 'Issued',
+                        'processing' => 'Processing',
+                        'done' => 'Completed'
                     ];
                 @endphp
                 @foreach($po->documents as $doc)

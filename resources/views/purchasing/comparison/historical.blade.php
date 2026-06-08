@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Harga Historis - ADASI Portal')
-@section('page-title', 'Perbandingan Harga')
+@section('title', 'Price History - ADASI Portal')
+@section('page-title', 'Price Comparison')
 
 @section('content')
 @php
@@ -23,7 +23,7 @@
             return '<span class="text-success fw-bold">▼ ' . number_format(abs($value), 2, ',', '.') . '%</span>';
         }
 
-        return '<span class="text-muted fw-bold">— 0%</span>';
+        return '<span class="text-muted fw-bold">- 0%</span>';
     };
 @endphp
 
@@ -36,9 +36,9 @@
 @endpush
 
 <ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Antar Supplier</a></li>
-    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historis</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Harga Terbaik</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Inter-Supplier</a></li>
+    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historical</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Best Price</a></li>
 </ul>
 
 <div class="card border-0 shadow-sm mb-4">
@@ -47,7 +47,7 @@
             <div class="col-md-4">
                 <label class="form-label small fw-bold">Supplier</label>
                 <select name="supplier_id" class="form-select form-select-sm" id="historicalSupplierSelect" required>
-                    <option value="">Pilih Supplier</option>
+                    <option value="">Select Supplier</option>
                     @foreach($suppliers as $supplier)
                         <option value="{{ $supplier->id }}" {{ (string) $selectedSupplierId === (string) $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
                     @endforeach
@@ -56,14 +56,14 @@
             <div class="col-md-4">
                 <label class="form-label small fw-bold">Material</label>
                 <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required {{ $selectedSupplierId ? '' : 'disabled' }}>
-                    <option value="">{{ $selectedSupplierId ? 'Pilih Material' : 'Pilih Supplier terlebih dahulu' }}</option>
+                    <option value="">{{ $selectedSupplierId ? 'Select Material' : 'Select Supplier first' }}</option>
                     @foreach($materials as $material)
                         <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" {{ $selectedMaterialName === $material['name'] ? 'selected' : '' }}>{{ $material['name'] }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label small fw-bold">Periode Waktu</label>
+                <label class="form-label small fw-bold">Time Period</label>
                 <select name="range" class="form-select form-select-sm" id="historicalRangeSelect">
                     @foreach($rangeOptions as $value => $label)
                         <option value="{{ $value }}" {{ $range === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -71,19 +71,19 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label small fw-bold">Tampilan</label>
+                <label class="form-label small fw-bold">View</label>
                 <div class="btn-group btn-group-sm w-100" role="group">
                     <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
-                    <label class="btn btn-outline-primary" for="periodViewMonthly">Per Bulan</label>
+                    <label class="btn btn-outline-primary" for="periodViewMonthly">Monthly</label>
 
                     <input type="radio" class="btn-check" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
-                    <label class="btn btn-outline-primary" for="periodViewYearly">Per Tahun</label>
+                    <label class="btn btn-outline-primary" for="periodViewYearly">Yearly</label>
                 </div>
             </div>
 
             <div class="col-12 mt-3 mb-1">
                 <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-bold">
-                    <i class="bi bi-funnel"></i> Filter Dimensi (Opsional)
+                    <i class="bi bi-funnel"></i> Dimension Filter (Optional)
                 </a>
             </div>
             <div class="collapse {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
@@ -109,7 +109,7 @@
                         <input type="number" step="0.01" name="length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
                     </div>
                     <div class="col-md-2 d-flex align-items-end flex-grow-1">
-                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Terapkan</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Apply</button>
                     </div>
                 </div>
             </div>
@@ -122,7 +122,7 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3">
             <h6 class="mb-0 fw-bold" id="historicalChartTitle">
-                <i class="bi bi-graph-up me-1"></i> Tren Harga "{{ $selectedMaterialName }}" - {{ $suppliers->firstWhere('id', (int) $selectedSupplierId)->name ?? '' }}
+                <i class="bi bi-graph-up me-1"></i> Price Trend "{{ $selectedMaterialName }}" - {{ $suppliers->firstWhere('id', (int) $selectedSupplierId)->name ?? '' }}
             </h6>
         </div>
         <div class="card-body">
@@ -134,7 +134,7 @@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <div class="text-muted small">Rata-rata kenaikan per periode</div>
+                    <div class="text-muted small">Average change per period</div>
                     <div class="fs-4 fw-bold {{ ($summary['average_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['average_change_pct'] ?? null) < 0) ? 'text-success' : 'text-muted') }}" id="averageChangeValue">
                         {{ $formatPct($summary['average_change_pct'] ?? null) }}
                     </div>
@@ -144,7 +144,7 @@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <div class="text-muted small">Total perubahan (awal → terbaru)</div>
+                    <div class="text-muted small">Total change (initial → latest)</div>
                     <div class="fs-4 fw-bold {{ ($summary['total_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['total_change_pct'] ?? null) < 0) ? 'text-success' : 'text-muted') }}" id="totalChangeValue">
                         {{ $formatPct($summary['total_change_pct'] ?? null) }}
                     </div>
@@ -154,27 +154,27 @@
     </div>
 
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Data Pendukung</h6></div>
+        <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
                     <thead class="table-light text-center" id="historicalTableHead">
                         @if($periodView === 'yearly')
                             <tr>
-                                <th>Tahun</th>
-                                <th>Rata-rata IDR/Kg</th>
-                                <th>Harga Terendah</th>
-                                <th>Harga Tertinggi</th>
-                                <th>Perubahan dari Periode Sebelumnya</th>
+                                <th>Year</th>
+                                <th>Average IDR/Kg</th>
+                                <th>Lowest Price</th>
+                                <th>Highest Price</th>
+                                <th>Change from Previous Period</th>
                             </tr>
                         @else
                             <tr>
-                                <th>No. PR</th>
+                                <th>PR No.</th>
                                 <th>Supplier</th>
-                                <th>Harga/Kg</th>
-                                <th>Total Material IDR</th>
-                                <th>Tgl Diajukan</th>
-                                <th>% Perubahan</th>
+                                <th>Price/Kg</th>
+                                <th>Total Price IDR</th>
+                                <th>Date Submitted</th>
+                                <th>% Change</th>
                             </tr>
                         @endif
                     </thead>
@@ -225,12 +225,12 @@
         </div>
     </div>
 @elseif($selectedSupplierId && $selectedMaterialName)
-    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> Tidak ditemukan data penawaran untuk kombinasi supplier dan material ini.</div>
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> No quotation data found for this supplier and material combination.</div>
 @else
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center py-5 text-muted">
             <i class="bi bi-graph-up" style="font-size:3rem;opacity:.5"></i>
-            <p class="mt-3 mb-0">Pilih supplier dan material di atas untuk melihat tren harga historis.</p>
+            <p class="mt-3 mb-0">Select a supplier and material above to view the historical price trend.</p>
         </div>
     </div>
 @endif
@@ -287,8 +287,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderMaterialOptions(materials, selectedValue = '') {
         const placeholder = !supplierSelect.value
-            ? 'Pilih Supplier terlebih dahulu'
-            : (materials.length > 0 ? 'Pilih Material' : 'Tidak ada material historis');
+            ? 'Select Supplier first'
+            : (materials.length > 0 ? 'Select Material' : 'No historical material');
 
         materialSelect.innerHTML = [
             `<option value="">${escapeOptionText(placeholder)}</option>`,
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         materialSelect.disabled = !supplierSelect.value || materials.length === 0;
     }
 
-    function clearHistoricalResults(message) {
+    function clearHistorycalResults(message) {
         if (!resultsContainer) return;
 
         resultsContainer.innerHTML = `
@@ -322,13 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMaterialOptions([], '');
 
         if (!supplierId) {
-            clearHistoricalResults('Pilih supplier dan material di atas untuk melihat tren harga historis.');
+            clearHistorycalResults('Select a supplier and material above to view the historical price trend.');
             return;
         }
 
-        materialSelect.innerHTML = '<option value="">Memuat material...</option>';
+        materialSelect.innerHTML = '<option value="">Loading materials...</option>';
         materialSelect.disabled = true;
-        clearHistoricalResults('Pilih material dari supplier yang dipilih untuk melihat tren harga historis.');
+        clearHistorycalResults('Select a material from the selected supplier to view the historical price trend.');
 
         try {
             const url = new URL(materialsUrl, window.location.origin);
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error('Gagal memuat material');
+                throw new Error('Failed to load material');
             }
 
             const data = await response.json();
@@ -350,22 +350,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedMaterial = materials.includes(previousMaterial) ? previousMaterial : '';
             renderMaterialOptions(materials, selectedMaterial);
 
-            if (selectedMaterial && typeof window.loadHistoricalPayloadFromFilters === 'function') {
-                window.loadHistoricalPayloadFromFilters();
+            if (selectedMaterial && typeof window.loadHistorycalPayloadFromFilters === 'function') {
+                window.loadHistorycalPayloadFromFilters();
             } else if (selectedMaterial) {
                 filterForm.submit();
             }
         } catch (error) {
             renderMaterialOptions([], '');
-            clearHistoricalResults('Gagal memuat daftar material. Coba pilih supplier kembali.');
+            clearHistorycalResults('Failed to load material list. Try selecting a supplier again.');
         }
     }
 
     periodViewInputs.forEach((input) => {
         input.addEventListener('change', () => {
             renderRangeOptions(input.value, rangeSelect.value);
-            if (materialSelect.value && typeof window.loadHistoricalPayloadFromFilters === 'function') {
-                window.loadHistoricalPayloadFromFilters();
+            if (materialSelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
+                window.loadHistorycalPayloadFromFilters();
             } else {
                 filterForm.submit();
             }
@@ -376,28 +376,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     materialSelect.addEventListener('change', () => {
         if (materialSelect.value) {
-            if (typeof window.loadHistoricalPayloadFromFilters === 'function') {
-                window.loadHistoricalPayloadFromFilters();
+            if (typeof window.loadHistorycalPayloadFromFilters === 'function') {
+                window.loadHistorycalPayloadFromFilters();
             } else {
                 filterForm.submit();
             }
         } else {
-            clearHistoricalResults('Pilih material dari supplier yang dipilih untuk melihat tren harga historis.');
+            clearHistorycalResults('Select a material from the selected supplier to view the historical price trend.');
         }
     });
 
     rangeSelect.addEventListener('change', () => {
-        if (materialSelect.value && typeof window.loadHistoricalPayloadFromFilters === 'function') {
-            window.loadHistoricalPayloadFromFilters();
+        if (materialSelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
+            window.loadHistorycalPayloadFromFilters();
         } else {
             filterForm.submit();
         }
     });
 
     filterForm.addEventListener('submit', (e) => {
-        if (materialSelect.value && typeof window.loadHistoricalPayloadFromFilters === 'function') {
+        if (materialSelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
             e.preventDefault();
-            window.loadHistoricalPayloadFromFilters();
+            window.loadHistorycalPayloadFromFilters();
         }
     });
 
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
 @if($chartData)
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const initialHistoricalPayload = @json($payload);
+const initialHistorycalPayload = @json($payload);
 let historicalChart = null;
 const historicalDataUrl = @json(route('purchasing.comparison.historical'));
 
@@ -476,7 +476,7 @@ function changeHtml(value) {
         return `<span class="text-success fw-bold">▼ ${formatNumber(Math.abs(numberValue))}%</span>`;
     }
 
-    return '<span class="text-muted fw-bold">— 0%</span>';
+    return '<span class="text-muted fw-bold">- 0%</span>';
 }
 
 function escapeHtml(value) {
@@ -489,7 +489,7 @@ function escapeHtml(value) {
     }[char]));
 }
 
-function emptyHistoricalResultHtml(message, alertClass = 'card') {
+function emptyHistorycalResultHtml(message, alertClass = 'card') {
     if (alertClass === 'warning') {
         return `<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> ${escapeHtml(message)}</div>`;
     }
@@ -519,7 +519,7 @@ function historicalResultShellHtml() {
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
-                        <div class="text-muted small">Rata-rata kenaikan per periode</div>
+                        <div class="text-muted small">Average change per period</div>
                         <div class="fs-4 fw-bold text-muted" id="averageChangeValue">-</div>
                     </div>
                 </div>
@@ -527,7 +527,7 @@ function historicalResultShellHtml() {
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
-                        <div class="text-muted small">Total perubahan (awal â†’ terbaru)</div>
+                        <div class="text-muted small">Total change (first to latest)</div>
                         <div class="fs-4 fw-bold text-muted" id="totalChangeValue">-</div>
                     </div>
                 </div>
@@ -535,7 +535,7 @@ function historicalResultShellHtml() {
         </div>
 
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Data Pendukung</h6></div>
+            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
@@ -557,7 +557,7 @@ function historicalChartConfig(payload) {
             data: {
                 labels: chartData.labels || [],
                 datasets: [{
-                    label: 'Rata-rata Harga/Kg (IDR)',
+                    label: 'Average Price/Kg (IDR)',
                     data: chartData.pricesIdr || [],
                     borderColor: '#1F5FA6',
                     backgroundColor: 'rgba(31,95,166,0.1)',
@@ -575,12 +575,12 @@ function historicalChartConfig(payload) {
                     legend: { position: 'bottom' },
                     tooltip: {
                         callbacks: {
-                            label: (context) => 'Rata-rata: ' + formatRupiah(context.parsed.y),
+                            label: (context) => 'Average: ' + formatRupiah(context.parsed.y),
                             afterLabel: (context) => {
                                 const index = context.dataIndex;
                                 return [
-                                    'Tertinggi: ' + formatRupiah(chartData.maxIdr?.[index]),
-                                    'Terendah: ' + formatRupiah(chartData.minIdr?.[index]),
+                                    'Highest: ' + formatRupiah(chartData.maxIdr?.[index]),
+                                    'Lowest: ' + formatRupiah(chartData.minIdr?.[index]),
                                 ];
                             },
                         },
@@ -599,7 +599,7 @@ function historicalChartConfig(payload) {
             labels: chartData.labels || [],
             datasets: [
                 {
-                    label: 'Harga/Kg (Original)',
+                    label: 'Price/Kg (Original)',
                     data: chartData.prices || [],
                     borderColor: '#1F5FA6',
                     backgroundColor: 'rgba(31,95,166,0.1)',
@@ -610,7 +610,7 @@ function historicalChartConfig(payload) {
                     yAxisID: 'y',
                 },
                 {
-                    label: 'Harga/Kg (IDR)',
+                    label: 'Price/Kg (IDR)',
                     data: chartData.pricesIdr || [],
                     borderColor: '#C0392B',
                     backgroundColor: 'rgba(192,57,43,0.1)',
@@ -635,7 +635,7 @@ function historicalChartConfig(payload) {
     };
 }
 
-function renderHistoricalChart(payload) {
+function renderHistorycalChart(payload) {
     if (historicalChart) {
         historicalChart.destroy();
     }
@@ -665,11 +665,11 @@ function renderTable(payload) {
     if (payload.periodView === 'yearly') {
         head.innerHTML = `
             <tr>
-                <th>Tahun</th>
-                <th>Rata-rata IDR/Kg</th>
-                <th>Harga Terendah</th>
-                <th>Harga Tertinggi</th>
-                <th>Perubahan dari Periode Sebelumnya</th>
+                <th>Year</th>
+                <th>Average IDR/Kg</th>
+                <th>Lowest Price</th>
+                <th>Highest Price</th>
+                <th>Change from Previous Period</th>
             </tr>
         `;
         body.innerHTML = rows.map((row) => `
@@ -686,12 +686,12 @@ function renderTable(payload) {
 
     head.innerHTML = `
         <tr>
-            <th>No. PR</th>
+            <th>PR No.</th>
             <th>Supplier</th>
-            <th>Harga/Kg</th>
-            <th>Total Material IDR</th>
-            <th>Tgl Diajukan</th>
-            <th>% Perubahan</th>
+            <th>Price/Kg</th>
+            <th>Total Price IDR</th>
+            <th>Date Submitted</th>
+            <th>% Change</th>
         </tr>
     `;
     body.innerHTML = rows.map((row) => `
@@ -720,10 +720,10 @@ function renderPayload(payload) {
         }
 
         if (resultsContainer) {
-            resultsContainer.innerHTML = emptyHistoricalResultHtml(
+            resultsContainer.innerHTML = emptyHistorycalResultHtml(
                 payload.materialName
-                    ? 'Tidak ditemukan data penawaran untuk kombinasi supplier dan material ini.'
-                    : 'Pilih supplier dan material di atas untuk melihat tren harga historis.',
+                    ? 'No quotation data found for this supplier and material combination.'
+                    : 'Select a supplier and material above to view the historical price trend.',
                 payload.materialName ? 'warning' : 'card'
             );
         }
@@ -734,14 +734,14 @@ function renderPayload(payload) {
         resultsContainer.innerHTML = historicalResultShellHtml();
     }
 
-    renderHistoricalChart(payload);
+    renderHistorycalChart(payload);
     renderSummary(payload.summary || {});
     renderTable(payload);
     document.getElementById('historicalChartTitle').innerHTML =
-        `<i class="bi bi-graph-up me-1"></i> Tren Harga "${escapeHtml(payload.materialName)}" - ${escapeHtml(payload.supplierName)}`;
+        `<i class="bi bi-graph-up me-1"></i> Price Trend "${escapeHtml(payload.materialName)}" - ${escapeHtml(payload.supplierName)}`;
 }
 
-window.loadHistoricalPayloadFromFilters = async function () {
+window.loadHistorycalPayloadFromFilters = async function () {
     const supplierSelect = document.getElementById('historicalSupplierSelect');
     const materialSelect = document.getElementById('historicalMaterialSelect');
     const filterForm = document.getElementById('historicalFilterForm');
@@ -768,7 +768,7 @@ window.loadHistoricalPayloadFromFilters = async function () {
         });
 
         if (!response.ok) {
-            throw new Error('Gagal memuat data historis');
+            throw new Error('Failed to load historical data');
         }
 
         const payload = await response.json();
@@ -779,12 +779,12 @@ window.loadHistoricalPayloadFromFilters = async function () {
     } catch (error) {
         const resultsContainer = document.getElementById('historicalResults');
         if (resultsContainer) {
-            resultsContainer.innerHTML = emptyHistoricalResultHtml('Gagal memuat data historis. Coba pilih filter kembali.', 'warning');
+            resultsContainer.innerHTML = emptyHistorycalResultHtml('Failed to load historical data. Try selecting filters again.', 'warning');
         }
     }
 };
 
-renderHistoricalChart(initialHistoricalPayload);
+renderHistorycalChart(initialHistorycalPayload);
 </script>
 @endif
 @endpush

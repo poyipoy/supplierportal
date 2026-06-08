@@ -161,9 +161,9 @@ class PrItem extends Model
         return $formatted === '' ? '0' : $formatted;
     }
 
-    public function purchaseRequirement(): BelongsTo
+    public function purchaseRequisition(): BelongsTo
     {
-        return $this->belongsTo(PurchaseRequirement::class, 'pr_id');
+        return $this->belongsTo(PurchaseRequisition::class, 'pr_id');
     }
 
     public function quotationItems(): HasMany

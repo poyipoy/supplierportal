@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Detail PO: ' . $po->po_number . ' — ADASI Portal')
-@section('page-title', 'Detail Purchase Order')
+@section('title', 'PO Details: ' . $po->po_number . ' - ADASI Portal')
+@section('page-title', 'Purchase Order Details')
 
 @section('content')
 <x-breadcrumb :items="[
@@ -11,7 +11,7 @@
 ]" />
 <div class="mb-3">
     <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar PO
+        <i class="bi bi-arrow-left me-1"></i> Back to PO List
     </a>
 </div>
 
@@ -21,18 +21,18 @@
             <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-info">Info</a></li>
             <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-material">Material</a></li>
             @if($po->qcInspections->isNotEmpty())
-            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-inspeksi">Inspeksi QC</a></li>
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-inspection">QC Inspection</a></li>
             @endif
-            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-dokumen">Dokumen</a></li>
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-document">Document</a></li>
             @if($po->status === 'claim_needed')
-            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-klaim">Klaim</a></li>
+            <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-claim">Claim</a></li>
             @endif
             <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-timeline">Timeline</a></li>
         </ul>
     </div>
 </div>
 
-{{-- ═══════════ SECTION A — Info PO ═══════════ --}}
+{{-- SECTION A - PO Info --}}
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm" id="sec-info" style="scroll-margin-top: 80px;">
@@ -40,8 +40,8 @@
                 <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
                 <div>
                     <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
-                    <a href="{{ route('purchasing.pdf.purchase-order', $po->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Purchase Order">
-                        <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
+                    <a href="{{ route('purchasing.pdf.purchase-order', $po->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order">
+                        <i class="bi bi-file-earmark-pdf"></i> Print PDF
                     </a>
                 </div>
             </div>
@@ -51,35 +51,35 @@
                     <div class="col-md-8 fw-medium">{{ $po->supplier->name }}</div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">No. PR</div>
+                    <div class="col-md-4 text-muted small">PR No.</div>
                     <div class="col-md-8 fw-medium">
-                        @php $prs = $po->purchaseRequirements(); @endphp
+                        @php $prs = $po->purchaseRequisitions(); @endphp
                         @foreach($prs as $pr)
-                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) }}" class="text-primary text-decoration-none me-2">
+                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr->id) }}" class="text-primary text-decoration-none me-2">
                                 {{ $pr->pr_number ?? '-' }}
                                 <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
                             </a>
                         @endforeach
                         @if($prs->count() > 1)
-                            <span class="badge bg-primary bg-opacity-10 text-primary ms-1">{{ $prs->count() }} PR digabung</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary ms-1">{{ $prs->count() }} combined PRs</span>
                         @endif
                     </div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">Periode</div>
+                    <div class="col-md-4 text-muted small">Period</div>
                     <div class="col-md-8 fw-medium">
                         @php $periods = $prs->map(fn($pr) => $pr->period->name ?? '-')->unique(); @endphp
                         {{ $periods->implode(', ') }}
                     </div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">Tanggal Dibuat</div>
+                    <div class="col-md-4 text-muted small">Date Created</div>
                     <div class="col-md-8 fw-medium">{{ $po->created_at->format('d F Y, H:i') }}</div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">
-                        Est. Kedatangan
-                        <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Tanggal target material tiba yang dipantau oleh Purchasing."></i>
+                        Est. Arrival
+                        <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Target material arrival date monitored by Purchasing."></i>
                     </div>
                     <div class="col-md-8 fw-medium">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
                 </div>
@@ -89,27 +89,27 @@
                         @if($po->actual_arrival)
                             <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ $po->actual_arrival->format('d F Y') }}</span>
                         @else
-                            <span class="text-muted">Belum tiba</span>
+                            <span class="text-muted">Not arrived yet</span>
                         @endif
                     </div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">Mata Uang</div>
+                    <div class="col-md-4 text-muted small">Currency</div>
                     <div class="col-md-8 fw-medium">{{ $po->currency }}</div>
                 </div>
                 @if($po->notes)
                 <div class="row">
-                    <div class="col-md-4 text-muted small">Catatan</div>
+                    <div class="col-md-4 text-muted small">Notes</div>
                     <div class="col-md-8">{{ $po->notes }}</div>
                 </div>
                 @endif
             </div>
         </div>
 
-        {{-- Material Table — Grouped per Quotation/PR --}}
+        {{-- Material Table - Grouped per Quotation/PR --}}
         <div class="card border-0 shadow-sm mt-4" id="sec-material" style="scroll-margin-top: 80px;">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Detail Material</h6>
+                <h6 class="mb-0 fw-bold">Material Details</h6>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -118,11 +118,11 @@
                             <tr>
                                 <th>No</th>
                                 <th>Material</th>
-                                <th>Spesifikasi</th>
+                                <th>Specification</th>
                                 <th>Qty</th>
-                                <th>Berat/Unit (Kg)</th>
-                                <th>Total Berat (Kg)</th>
-                                <th>Harga/Kg</th>
+                                <th>Weight/Unit (Kg)</th>
+                                <th>Total Weight (Kg)</th>
+                                <th>Price/Kg</th>
                                 <th>Amount</th>
                                 <th>IDR</th>
                             </tr>
@@ -135,11 +135,11 @@
                                     <tr class="table-primary">
                                         <td colspan="9" class="fw-bold small ps-3">
                                             <i class="bi bi-folder2 me-1"></i>
-                                            {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
+                                            {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
-                                                ({{ $quotation->purchaseRequirement->period->name ?? '-' }})
+                                                ({{ $quotation->purchaseRequisition->period->name ?? '-' }})
                                                 @if($rate)
-                                                    • Kurs: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                                    &bull; Exchange rate: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
                                                 @endif
                                             </span>
                                         </td>
@@ -197,9 +197,9 @@
         @endphp
 
         @if($latestInspection)
-            <div class="card border-0 shadow-sm mt-4" id="sec-inspeksi" style="scroll-margin-top: 80px;">
+            <div class="card border-0 shadow-sm mt-4" id="sec-inspection" style="scroll-margin-top: 80px;">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Laporan Inspeksi QC</h6>
+                    <h6 class="mb-0 fw-bold">QC Inspection Report</h6>
                     <span class="badge {{ $latestInspection->status === 'ng' ? 'bg-danger' : 'bg-success' }} text-uppercase px-3 py-2">
                         {{ $latestInspection->status }}
                     </span>
@@ -207,11 +207,11 @@
                 <div class="card-body">
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <div class="text-muted small">Tanggal Inspeksi</div>
+                            <div class="text-muted small">Inspection Date</div>
                             <div class="fw-medium">{{ $latestInspection->inspected_at?->format('d M Y, H:i') ?? '-' }}</div>
                         </div>
                         <div class="col-md-4">
-                            <div class="text-muted small">Diinspeksi Oleh</div>
+                            <div class="text-muted small">Inspected By</div>
                             <div class="fw-medium">{{ $latestInspection->inspector->name ?? '-' }}</div>
                         </div>
                         <div class="col-md-4">
@@ -227,7 +227,7 @@
                                 <li class="list-group-item py-2 px-3 small">
                                     <span class="fw-bold d-block">{{ $item->prItem->material_name }}</span>
                                     @if($item->notes)
-                                        <span class="text-muted fst-italic">Catatan QC: {{ $item->notes }}</span>
+                                        <span class="text-muted fst-italic">QC Notes: {{ $item->notes }}</span>
                                     @endif
                                 </li>
                             @endforeach
@@ -235,7 +235,7 @@
                     @endif
 
                     @if($latestInspection->attachments->count() > 0)
-                        <h6 class="fw-bold small text-muted text-uppercase mb-2">Foto Bukti QC</h6>
+                        <h6 class="fw-bold small text-muted text-uppercase mb-2">QC Evidence Photos</h6>
                         <div class="row g-2">
                             @foreach($latestInspection->attachments as $att)
                                 <div class="col-6 col-md-4 col-lg-3">
@@ -248,7 +248,7 @@
                     @elseif($latestInspection->status === 'ng')
                         <div class="alert alert-warning small mb-0">
                             <i class="bi bi-exclamation-triangle me-1"></i>
-                            Inspeksi berstatus NG, tetapi foto bukti QC belum tersedia.
+                            Inspection status is NG, but QC evidence photos are not yet available.
                         </div>
                     @endif
                 </div>
@@ -256,54 +256,54 @@
         @endif
     </div>
 
-    {{-- ═══════════ SECTION C — Timeline ═══════════ --}}
+    {{-- SECTION C - Timeline --}}
     <div class="col-lg-4">
         {{-- Chat & Action Card --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Negosiasi & Chat</h6>
+                <h6 class="mb-0 fw-bold">Negotiation & Chat</h6>
             </div>
             <div class="card-body">
                 <form action="{{ route('purchasing.conversations.start.po', $po->id) }}" method="POST" data-chat-start-form>
                     @csrf
                     <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                     <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-chat-dots me-2"></i> Chat dengan Supplier</span>
+                        <span><i class="bi bi-chat-dots me-2"></i> Chat with Supplier</span>
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </form>
                 <div class="mt-3 text-muted small text-center">
-                    Gunakan fitur ini untuk komunikasi terkait pengiriman atau komplain PO ini.
+                    Use this feature to discuss delivery or PO complaints.
                 </div>
             </div>
         </div>
 
         @if($po->status === 'claim_needed')
-            <div class="card border-danger shadow-sm mb-4" id="sec-klaim" style="scroll-margin-top: 80px;">
+            <div class="card border-danger shadow-sm mb-4" id="sec-claim" style="scroll-margin-top: 80px;">
                 <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-danger">
-                        <i class="bi bi-exclamation-octagon me-2"></i>Klaim Material
+                        <i class="bi bi-exclamation-octagon me-2"></i>Material Claim
                     </h6>
                     <span class="badge bg-danger">NG</span>
                 </div>
                 <div class="card-body">
                     <p class="small text-muted mb-3">
-                        PO ini membutuhkan tindak lanjut klaim karena hasil inspeksi QC berstatus NG.
+                        This PO requires claim follow-up because the QC inspection result is NG.
                     </p>
 
                     @if($activeClaim)
                         <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-octagon me-2"></i> Lihat Klaim Material</span>
+                            <span><i class="bi bi-exclamation-octagon me-2"></i> View Claim Material</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     @elseif($latestNgInspection)
                         <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-plus-circle me-2"></i> Ajukan Klaim Material</span>
+                            <span><i class="bi bi-plus-circle me-2"></i> Submit Material Claim</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     @else
                         <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.index') }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-folder2-open me-2"></i> Buka Menu Klaim</span>
+                            <span><i class="bi bi-folder2-open me-2"></i> Open Claim Menu</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     @endif
@@ -322,7 +322,7 @@
                     {{-- PO Created --}}
                     <div class="position-relative mb-4 ps-4">
                         <div class="position-absolute bg-primary rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 text-primary fw-bold" style="font-size: 0.85rem;">PO Dibuat</h6>
+                        <h6 class="mb-1 text-primary fw-bold" style="font-size: 0.85rem;">PO Created</h6>
                         <div class="small text-muted">{{ $po->created_at->format('d M Y, H:i') }}</div>
                     </div>
 
@@ -350,14 +350,14 @@
                     {{-- Est. Arrival --}}
                     <div class="position-relative mb-4 ps-4">
                         <div class="position-absolute {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'bg-warning' : 'bg-secondary' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Estimasi Kedatangan</h6>
+                        <h6 class="mb-1 {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Estimated Arrival</h6>
                         <div class="small text-muted">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}</div>
                     </div>
 
                     {{-- Actual Arrival --}}
                     <div class="position-relative ps-4">
                         <div class="position-absolute {{ $po->actual_arrival ? 'bg-success' : 'bg-light border' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 {{ $po->actual_arrival ? 'text-success fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Material Tiba</h6>
+                        <h6 class="mb-1 {{ $po->actual_arrival ? 'text-success fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Material Arrived</h6>
                         @if($po->actual_arrival)
                             <div class="small text-muted">{{ $po->actual_arrival->format('d M Y') }}</div>
                         @endif
@@ -370,19 +370,19 @@
         @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival)
             <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po->id) }}" method="POST" id="arrivalForm">
                 @csrf
-                <button type="button" class="btn btn-success w-100 mb-3 py-2 fw-semibold shadow-sm" id="btnConfirmArrival">               <i class="bi bi-box-seam me-1"></i> Konfirmasi Material Tiba
+                <button type="button" class="btn btn-success w-100 mb-3 py-2 fw-semibold shadow-sm" id="btnConfirmArrival">               <i class="bi bi-box-seam me-1"></i> Confirm Material Arrival
                 </button>
             </form>
         @endif
     </div>
 </div>
 
-{{-- ═══════════ SECTION B — Tracking Dokumen Impor ═══════════ --}}
-<div class="card border-0 shadow-sm mb-5" id="sec-dokumen" style="scroll-margin-top: 80px;">
+{{-- SECTION B - Import Document Tracking --}}
+<div class="card border-0 shadow-sm mb-5" id="sec-document" style="scroll-margin-top: 80px;">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold">
-            Tracking Dokumen Impor
-            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Progress dihitung dari 4 dokumen impor wajib: Invoice, Bill of Lading, Packing List, dan Form-E."></i>
+            Import Document Tracking
+            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Progress is calculated from 4 required import documents: Invoice, Bill of Lading, Packing List, and Form-E."></i>
         </h6>
         <span class="badge {{ $docProgress['class'] }} px-3 py-2" id="docProgressBadge" data-bs-toggle="tooltip" data-bs-title="{{ $docProgress['description'] }}">{{ $docProgress['label'] }}</span>
     </div>
@@ -396,17 +396,17 @@
         @if($allDocsComplete)
             <div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert">
                 <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-                <span class="fw-medium">Semua dokumen impor lengkap ✅</span>
+                <span class="fw-medium">All import documents are complete ✅</span>
             </div>
         @endif
 
         <div class="row g-3">
             @php
                 $docConfig = [
-                    'invoice' => ['label' => 'Invoice', 'icon' => 'bi-receipt', 'statuses' => ['pending' => 'Belum Ada', 'received' => 'Diterima', 'verified' => 'Diverifikasi']],
-                    'bl' => ['label' => 'Bill of Lading', 'icon' => 'bi-truck', 'statuses' => ['pending' => 'Belum Ada', 'issued' => 'Sudah Diterbitkan', 'done' => 'Diterima']],
-                    'packing_list' => ['label' => 'Packing List', 'icon' => 'bi-list-check', 'statuses' => ['pending' => 'Belum Ada', 'received' => 'Diterima', 'verified' => 'Diverifikasi']],
-                    'form_e' => ['label' => 'Form-E', 'icon' => 'bi-file-earmark-text', 'statuses' => ['pending' => 'Belum Ada', 'processing' => 'Sedang Diproses', 'done' => 'Selesai']],
+                    'invoice' => ['label' => 'Invoice', 'icon' => 'bi-receipt', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
+                    'bl' => ['label' => 'Bill of Lading', 'icon' => 'bi-truck', 'statuses' => ['pending' => 'Not Available', 'issued' => 'Issued', 'done' => 'Accepted']],
+                    'packing_list' => ['label' => 'Packing List', 'icon' => 'bi-list-check', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
+                    'form_e' => ['label' => 'Form-E', 'icon' => 'bi-file-earmark-text', 'statuses' => ['pending' => 'Not Available', 'processing' => 'Processing', 'done' => 'Completed']],
                 ];
             @endphp
 
@@ -451,21 +451,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="modalDocTitle">Update Status Dokumen</h5>
+                <h5 class="modal-title fw-bold" id="modalDocTitle">Update Document Status</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modalDocId">
                 <div class="mb-3">
-                    <label class="form-label fw-medium">Status Baru</label>
+                    <label class="form-label fw-medium">New Status</label>
                     <select class="form-select" id="modalDocStatus"></select>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSaveDocStatus">
                     <span class="spinner-border spinner-border-sm d-none me-1" id="docSpinner"></span>
-                    Simpan
+                    Save
                 </button>
             </div>
         </div>
@@ -566,8 +566,8 @@
             success: function(res) {
                 if (res.success) {
                     const statusLabels = {
-                        'pending': @json('Belum Ada'), 'received': @json('Diterima'), 'verified': @json('Diverifikasi'),
-                        'issued': @json('Sudah Diterbitkan'), 'processing': @json('Sedang Diproses'), 'done': @json('Selesai')
+                        'pending': @json('Not Available'), 'received': @json('Accepted'), 'verified': @json('Verified'),
+                        'issued': @json('Issued'), 'processing': @json('Processing'), 'done': @json('Completed')
                     };
                     const statusClasses = {
                         'pending': 'bg-secondary', 'received': 'bg-info', 'verified': 'bg-success',
@@ -593,16 +593,16 @@
                     $('#docProgressBar').css('width', pct + '%');
                     const docsComplete = completed >= total;
                     $('#docProgressBadge')
-                        .text(completed + '/' + total + ' lengkap')
+                        .text(completed + '/' + total + ' complete')
                         .attr('class', 'badge px-3 py-2 ' + (docsComplete ? 'bg-success' : 'bg-warning text-dark'))
                         .attr('data-bs-title', docsComplete
-                            ? 'Semua dokumen impor sudah lengkap.'
-                            : 'Masih ada dokumen impor yang perlu dilengkapi atau diverifikasi.');
+                            ? 'All import documents are complete.'
+                            : 'Some import documents still need to be completed or verified.');
                     window.initAdasiTooltips?.(document);
 
                     if (docsComplete) {
                         if ($('#allDocsAlert').length === 0) {
-                            $('.progress').after('<div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert"><i class="bi bi-check-circle-fill me-2 fs-5"></i><span class="fw-medium">Semua dokumen impor lengkap ✅</span></div>');
+                            $('.progress').after('<div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert"><i class="bi bi-check-circle-fill me-2 fs-5"></i><span class="fw-medium">All import documents are complete ✅</span></div>');
                         }
                     }
 
@@ -610,7 +610,7 @@
 
                     Swal.fire({
                         icon: 'success',
-                        title: @json('Berhasil!'),
+                        title: @json('Success!'),
                         text: res.message,
                         timer: 1500,
                         showConfirmButton: false
@@ -618,7 +618,7 @@
                 }
             },
             error: function(xhr) {
-                Swal.fire(@json('Error'), @json('Gagal memperbarui status dokumen.'), 'error');
+                Swal.fire(@json('Error'), @json('Failed to update document status.'), 'error');
             },
             complete: function() {
                 $('#docSpinner').addClass('d-none');
@@ -630,14 +630,14 @@
     // Confirm Arrival
     $('#btnConfirmArrival').on('click', function() {
         Swal.fire({
-            title: @json('Konfirmasi Material Tiba?'),
-            text: @json('Tanggal kedatangan akan diset hari ini dan QC akan dinotifikasi.'),
+            title: @json('Confirm Material Arrival?'),
+            text: @json('The arrival date will be set to today and QC will be notified.'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#198754',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: @json('Ya, Konfirmasi!'),
-            cancelButtonText: @json('Batal')
+            confirmButtonText: @json('Yes, Confirm!'),
+            cancelButtonText: @json('Cancel')
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#arrivalForm').submit();

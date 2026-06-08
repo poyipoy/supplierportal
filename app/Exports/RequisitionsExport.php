@@ -2,19 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class RequirementsExport implements FromCollection, WithHeadings, ShouldAutoSize
+class RequisitionsExport implements FromCollection, WithHeadings, ShouldAutoSize
 {
     protected $periodId, $status;
     public function __construct($periodId = null, $status = null) { $this->periodId = $periodId; $this->status = $status; }
 
     public function collection()
     {
-        $q = PurchaseRequirement::with(['period', 'items'])->orderBy('created_at', 'desc');
+        $q = PurchaseRequisition::with(['period', 'items'])->orderBy('created_at', 'desc');
         if ($this->periodId) $q->where('period_id', $this->periodId);
         if ($this->status) $q->where('status', $this->status);
         $rows = collect();
@@ -37,5 +37,5 @@ class RequirementsExport implements FromCollection, WithHeadings, ShouldAutoSize
         return $rows;
     }
 
-    public function headings(): array { return ['Nomor PR', 'Periode', 'Nama Material', 'Spesifikasi', 'Qty', 'Berat/Unit', 'Total Berat', 'Status', 'Tanggal Dibuat']; }
+    public function headings(): array { return ['PR Number', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'Status', 'Date Created']; }
 }

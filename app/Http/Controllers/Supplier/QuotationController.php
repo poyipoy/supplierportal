@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Supplier;
 use App\Http\Controllers\Controller;
 use App\Models\ExchangeRate;
 use App\Models\Period;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\Conversation;
 use App\Support\NotificationCategory;
@@ -18,17 +18,17 @@ use Yajra\DataTables\Facades\DataTables;
 class QuotationController extends Controller
 {
     /**
-     * Tampilkan daftar periode yang open.
+     * Display open quotation periods.
      */
     public function index(Request $request)
     {
         $supplierId = auth()->id();
 
         $periods = Period::where('status', 'open')
-            ->whereHas('purchaseRequirements', function ($query) use ($supplierId) {
+            ->whereHas('purchaseRequisitions', function ($query) use ($supplierId) {
                 $query->visibleToSupplier($supplierId);
             })
-            ->orWhereHas('purchaseRequirements.quotations', function ($query) use ($supplierId) {
+            ->orWhereHas('purchaseRequisitions.quotations', function ($query) use ($supplierId) {
                 $query->where('supplier_id', $supplierId);
             })
             ->orderBy('year', 'desc')
@@ -37,13 +37,13 @@ class QuotationController extends Controller
 
         // Count PRs for each period
         foreach ($periods as $period) {
-            $activePrs = PurchaseRequirement::where('period_id', $period->id)
+            $activePrs = PurchaseRequisition::where('period_id', $period->id)
                 ->whereIn('status', ['submitted', 'bidding'])
                 ->visibleToSupplier($supplierId)
                 ->get();
 
             $quotedPrIds = Quotation::where('supplier_id', $supplierId)
-                ->whereHas('purchaseRequirement', function ($query) use ($period) {
+                ->whereHas('purchaseRequisition', function ($query) use ($period) {
                     $query->where('period_id', $period->id);
                 })
                 ->pluck('pr_id');
@@ -53,7 +53,7 @@ class QuotationController extends Controller
                 ->unique()
                 ->count();
             
-            // Berapa PR yang sudah dikirim penawaran oleh user ini (termasuk draft/submitted/rejected/accepted)
+            // PRs that already have quotations from this supplier, including draft/submitted/rejected/accepted.
             $respondedCount = Quotation::where('supplier_id', auth()->id())
                 ->whereIn('pr_id', $quotedPrIds)
                 ->count();
@@ -76,14 +76,14 @@ class QuotationController extends Controller
     }
 
     /**
-     * Tampilkan daftar PR pada periode tertentu.
+     * Display PRs for a selected period.
      */
     public function period(Request $request, $period_id)
     {
         $period = Period::findOrFail($period_id);
         $supplierId = auth()->id();
         
-        $query = PurchaseRequirement::with(['items', 'quotations' => function($query) use ($supplierId) {
+        $query = PurchaseRequisition::with(['items', 'quotations' => function($query) use ($supplierId) {
                 $query->where('supplier_id', $supplierId);
             }])
             ->where('period_id', $period_id)
@@ -123,12 +123,12 @@ class QuotationController extends Controller
                     $quotation = $pr->quotations->first();
                     $status = $quotation ? $quotation->status : 'unresponded';
                     return match($status) {
-                        'unresponded' => '<span class="badge bg-danger">Belum Direspons</span>',
+                        'unresponded' => '<span class="badge bg-danger">Not Responded</span>',
                         'draft' => '<span class="badge bg-secondary">Draft</span>',
-                        'revision_requested' => '<span class="badge bg-warning text-dark">Perlu Revisi</span>',
-                        'submitted' => '<span class="badge bg-success">Terkirim (' . ($quotation->submitted_at?->format('d M Y H:i') ?? '-') . ')</span>',
-                        'accepted' => '<span class="badge bg-primary">Diterima</span>',
-                        'rejected' => '<span class="badge bg-dark">Ditolak</span>',
+                        'revision_requested' => '<span class="badge bg-warning text-dark">Revision Requested</span>',
+                        'submitted' => '<span class="badge bg-success">Submitted (' . ($quotation->submitted_at?->format('d M Y H:i') ?? '-') . ')</span>',
+                        'accepted' => '<span class="badge bg-primary">Accepted</span>',
+                        'rejected' => '<span class="badge bg-dark">Rejected</span>',
                         default => '<span class="badge bg-secondary">' . ucwords($status) . '</span>',
                     };
                 })
@@ -136,10 +136,10 @@ class QuotationController extends Controller
                     $quotation = $pr->quotations->first();
                     $status = $quotation ? $quotation->status : 'unresponded';
                     return match($status) {
-                        'unresponded' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Buat Penawaran</a>',
-                        'draft' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Lanjutkan</a>',
-                        'revision_requested' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revisi Penawaran</a>',
-                        default => $quotation ? '<a href="' . route('supplier.quotations.show', $quotation->id) . '" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> Lihat</a>' : '-',
+                        'unresponded' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Create Quotation</a>',
+                        'draft' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Continue</a>',
+                        'revision_requested' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revise Quotation</a>',
+                        default => $quotation ? '<a href="' . route('supplier.quotations.show', $quotation->id) . '" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> View</a>' : '-',
                     };
                 })
                 ->rawColumns(['status_badge', 'action'])
@@ -150,30 +150,30 @@ class QuotationController extends Controller
     }
 
     /**
-     * Tampilkan form untuk membuat/edit penawaran untuk PR tertentu.
+     * Display the quotation create/edit form for a selected PR.
      */
     public function create($pr_id)
     {
-        $pr = PurchaseRequirement::with(['items', 'invitedSuppliers'])->findOrFail($pr_id);
+        $pr = PurchaseRequisition::with(['items', 'invitedSuppliers'])->findOrFail($pr_id);
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
-            return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
+            return redirect()->route('supplier.quotations.index')->with('error', 'This requisition is not available for quotation.');
         }
 
         if (! $pr->isVisibleToSupplier(auth()->id())) {
-            abort(403, 'Anda tidak diundang untuk mengirim penawaran pada permintaan ini.');
+            abort(403, 'You are not invited to submit a quotation for this requisition.');
         }
 
-        // Cari quotation yang sudah ada
+        // Find an existing quotation.
         $quotation = Quotation::with('items.attachments')
             ->where('pr_id', $pr_id)
             ->where('supplier_id', auth()->id())
             ->first();
 
-        // Jika sudah final, redirect ke show. Draft dan revision_requested boleh diedit.
+        // Final quotations are read-only; drafts and revision_requested quotations can be edited.
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation->id)
-                ->with('info', 'Anda sudah mengirim penawaran untuk permintaan ini.');
+                ->with('info', 'You have already submitted a quotation for this requisition.');
         }
 
         $currencyOptions = ExchangeRate::CURRENCIES;
@@ -195,18 +195,18 @@ class QuotationController extends Controller
     }
 
     /**
-     * Simpan penawaran (Draft atau Submit).
+     * Save quotation as draft or submitted.
      */
     public function store(Request $request, $pr_id)
     {
-        $pr = PurchaseRequirement::with('invitedSuppliers', 'items')->findOrFail($pr_id);
+        $pr = PurchaseRequisition::with('invitedSuppliers', 'items')->findOrFail($pr_id);
 
         if (!in_array($pr->status, ['submitted', 'bidding'])) {
-            return redirect()->route('supplier.quotations.index')->with('error', 'Permintaan ini tidak tersedia untuk penawaran.');
+            return redirect()->route('supplier.quotations.index')->with('error', 'This requisition is not available for quotation.');
         }
 
         if (! $pr->isVisibleToSupplier(auth()->id())) {
-            abort(403, 'Anda tidak diundang untuk mengirim penawaran pada permintaan ini.');
+            abort(403, 'You are not invited to submit a quotation for this requisition.');
         }
 
         $validated = $request->validate([
@@ -224,13 +224,13 @@ class QuotationController extends Controller
             'items.*.notes' => 'nullable|string',
             'items.*.mtc_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ], [
-            'currency.required' => 'Mata uang wajib dipilih.',
-            'currency.in' => 'Mata uang tidak valid.',
-            'payment_terms.required' => 'Syarat pembayaran wajib diisi.',
-            'validity_period.required' => 'Masa berlaku penawaran wajib diisi saat mengirim penawaran final.',
-            'validity_period.after_or_equal' => 'Masa berlaku penawaran tidak boleh kurang dari hari ini.',
-            'items.*.mtc_file.mimes' => 'File MTC harus berupa PDF, JPG, JPEG, atau PNG.',
-            'items.*.mtc_file.max' => 'Ukuran file MTC maksimal 5MB.',
+            'currency.required' => 'Currency is required.',
+            'currency.in' => 'Currency is invalid.',
+            'payment_terms.required' => 'Payment terms are required.',
+            'validity_period.required' => 'Quotation validity is required when submitting the final quotation.',
+            'validity_period.after_or_equal' => 'Quotation validity cannot be earlier than today.',
+            'items.*.mtc_file.mimes' => 'The MTC file must be PDF, JPG, JPEG, or PNG.',
+            'items.*.mtc_file.max' => 'The MTC file size must not exceed 5MB.',
         ]);
         $supplierCurrency = $validated['currency'];
 
@@ -242,7 +242,7 @@ class QuotationController extends Controller
 
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation->id)
-                ->with('error', 'Penawaran ini sudah diajukan dan tidak bisa diubah.');
+                ->with('error', 'This quotation has already been submitted and cannot be changed.');
         }
 
         try {
@@ -252,7 +252,7 @@ class QuotationController extends Controller
                 ? Quotation::STATUS_SUBMITTED
                 : ($wasRevisionRequested ? Quotation::STATUS_REVISION_REQUESTED : Quotation::STATUS_DRAFT);
 
-            // Hitung exchange rate jika disubmit
+            // Calculate the exchange rate snapshot when submitted.
             $exchangeRateId = $quotation?->currency === $supplierCurrency
                 ? $quotation?->exchange_rate_id
                 : null;
@@ -262,7 +262,7 @@ class QuotationController extends Controller
                     DB::rollBack();
                     return back()
                         ->withInput()
-                        ->with('error', 'Kurs ' . $supplierCurrency . ' belum tersedia. Hubungi Admin sebelum mengirim penawaran final.');
+                        ->with('error', 'Exchange rate for ' . $supplierCurrency . ' is not available yet. Contact Admin before submitting the final quotation.');
                 }
 
                 $exchangeRateId = $rate->id;
@@ -300,9 +300,9 @@ class QuotationController extends Controller
                 ->keyBy('pr_item_id')
                 ->map(fn ($item) => $item->attachments);
 
-            $quotation->items()->delete(); // Hapus yang lama
+            $quotation->items()->delete();
 
-            // Simpan items
+            // Save items.
             foreach ($request->items as $index => $itemData) {
                 $prItem = $pr->items->firstWhere('id', (int) $itemData['pr_item_id']);
                 if ($prItem) {
@@ -328,7 +328,7 @@ class QuotationController extends Controller
                 }
             }
 
-            // Jika ada penawaran disubmit, pastikan status PR = bidding jika tadinya submitted
+            // Move the PR to bidding when a quotation is submitted.
             if ($request->action === 'submitted' && $pr->status === 'submitted') {
                 $pr->update(['status' => 'bidding']);
             }
@@ -338,17 +338,17 @@ class QuotationController extends Controller
             // Notify purchasing when quotation submitted
             if ($request->action === 'submitted') {
                 $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
-                $title = $wasRevisionRequested ? 'Revisi Penawaran Masuk' : 'Penawaran Baru Masuk';
+                $title = $wasRevisionRequested ? 'Revised Quotation Received' : 'New Quotation Received';
                 $message = $wasRevisionRequested
-                    ? 'Supplier :name mengirim ulang penawaran revisi untuk PR :pr_number'
-                    : 'Supplier :name mengirim penawaran untuk PR :pr_number';
+                    ? 'Supplier :name resubmitted a revised quotation for PR :pr_number'
+                    : 'Supplier :name submitted a quotation for PR :pr_number';
 
                 foreach ($purchasingUsers as $pUser) {
                     /** @var \App\Models\User $pUser */
                     $pUser->notify(new \App\Notifications\SystemNotification(
                         $title,
                         $message,
-                        route('purchasing.requirements.show', $pr->id),
+                        route('purchasing.requisitions.show', $pr->id),
                         'bi-envelope-check text-success',
                         ['category' => NotificationCategory::QUOTATION],
                         ['name' => auth()->user()->name, 'pr_number' => $pr->pr_number]
@@ -357,27 +357,27 @@ class QuotationController extends Controller
             }
 
             $msg = $request->action === 'submitted'
-                ? ($wasRevisionRequested ? 'Revisi penawaran berhasil dikirim ulang.' : 'Penawaran berhasil dikirim.')
-                : ($wasRevisionRequested ? 'Revisi penawaran sementara berhasil disimpan.' : 'Draft penawaran berhasil disimpan.');
+                ? ($wasRevisionRequested ? 'Revised quotation has been resubmitted.' : 'Quotation successfully sent.')
+                : ($wasRevisionRequested ? 'Revised quotation draft successfully saved.' : 'Draft quotation successfully saved.');
             return redirect()->route('supplier.quotations.period', $pr->period_id)->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Gagal menyimpan penawaran: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Failed to save quotation: ' . $e->getMessage());
         }
     }
 
     /**
-     * Tampilkan detail penawaran.
+     * Display quotation details.
      */
     public function show($id)
     {
-        $quotation = Quotation::with(['items.prItem', 'items.attachments', 'purchaseRequirement.period', 'exchange_rate'])
+        $quotation = Quotation::with(['items.prItem', 'items.attachments', 'purchaseRequisition.period', 'exchange_rate'])
             ->findOrFail($id);
 
         Gate::authorize('view', $quotation);
 
-        $conversation = Conversation::where('conversable_type', PurchaseRequirement::class)
+        $conversation = Conversation::where('conversable_type', PurchaseRequisition::class)
             ->where('conversable_id', $quotation->pr_id)
             ->where('supplier_user_id', auth()->id())
             ->first();
@@ -387,7 +387,7 @@ class QuotationController extends Controller
 
     private function storeMtcAttachment(\App\Models\QuotationItem $quotationItem, \Illuminate\Http\UploadedFile $file): void
     {
-        // Gunakan getPathname() untuk menghindari getRealPath() yang bernilai false di Windows
+        // Use getPathname() to avoid getRealPath() returning false on Windows.
         $fileName = $file->hashName();
         $path = 'attachments/' . now()->format('Y/m') . '/' . $fileName;
 

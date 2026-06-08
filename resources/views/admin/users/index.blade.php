@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'Manajemen User — ADASI Portal')
-@section('page-title', 'Manajemen User')
+@section('title', 'User Management - ADASI Portal')
+@section('page-title', 'User Management')
 
 @section('content')
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">Daftar Pengguna</h6>
+            <h6 class="mb-0 fw-bold">User List</h6>
             <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm fw-medium">
-                <i class="bi bi-plus-lg me-1"></i> Tambah User
+                <i class="bi bi-plus-lg me-1"></i> Add User
             </a>
         </div>
         <div class="card-body">
@@ -16,12 +16,12 @@
                     <thead class="table-light">
                         <tr>
                             <th>No</th>
-                            <th>Nama</th>
+                            <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
                             <th>Status</th>
-                            <th>Terdaftar Sejak</th>
-                            <th class="text-end">Aksi</th>
+                            <th>Registered Since</th>
+                            <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -47,7 +47,7 @@
                 { data: 'created_date', name: 'created_at' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+            language: {},
             pageLength: 25,
             order: []
         });
@@ -56,14 +56,14 @@
         $(document).on('click', '.btn-delete', function() {
             const form = $(this).closest('form');
             Swal.fire({
-                title: @json('Yakin ingin menghapus?'),
-                text: @json('User ini akan dihapus permanen!'),
+                title: @json('Are you sure you want to delete?'),
+                text: @json('This user will be permanently deleted!'),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: @json('Ya, hapus!'),
-                cancelButtonText: @json('Batal')
+                confirmButtonText: @json('Yes, delete!'),
+                cancelButtonText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

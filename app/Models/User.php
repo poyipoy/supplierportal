@@ -64,9 +64,9 @@ class User extends Authenticatable
         return $this->hasMany(Quotation::class, 'supplier_id');
     }
 
-    public function purchaseRequirements(): HasMany
+    public function purchaseRequisitions(): HasMany
     {
-        return $this->hasMany(PurchaseRequirement::class, 'created_by');
+        return $this->hasMany(PurchaseRequisition::class, 'created_by');
     }
 
     public function purchaseOrders(): HasMany

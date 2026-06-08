@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
@@ -51,6 +51,12 @@ class NotificationController extends Controller
     {
         $url = trim((string) ($notification->data['url'] ?? ''));
 
+        // If this is a quotation notification, ignore the hardcoded URL and resolve dynamically.
+        $category = \App\Support\NotificationCategory::key($notification);
+        if ($category === \App\Support\NotificationCategory::QUOTATION) {
+            $url = '';
+        }
+
         if ($this->isUsableNotificationUrl($url, $notification->id)) {
             return $url;
         }
@@ -95,11 +101,11 @@ class NotificationController extends Controller
         if (! empty($data['po_id'])) {
             $po = PurchaseOrder::find($data['po_id']);
         }
-        if (! $po && preg_match('/PO\/\d{2}\/\d{4}\/\d{3}/', $text, $matches)) {
-            $po = PurchaseOrder::where('po_number', $matches[0])->first();
+        if (! $po && preg_match('/po\/\d{2}\/\d{4}\/\d{3}/i', $text, $matches)) {
+            $po = PurchaseOrder::where('po_number', strtoupper($matches[0]))->first();
         }
 
-        if ($po && Str::contains(Str::lower($text), 'klaim')) {
+        if ($po && Str::contains(Str::lower($text), 'claim')) {
             $claim = MaterialClaim::where('po_id', $po->id)->latest()->first();
             if ($claimUrl = $this->claimUrl($claim?->id)) {
                 return $claimUrl;
@@ -112,13 +118,13 @@ class NotificationController extends Controller
 
         $pr = null;
         if (! empty($data['pr_id'])) {
-            $pr = PurchaseRequirement::find($data['pr_id']);
+            $pr = PurchaseRequisition::find($data['pr_id']);
         }
-        if (! $pr && preg_match('/REQ\/\d{2}\/\d{4}\/\d{3}/', $text, $matches)) {
-            $pr = PurchaseRequirement::where('pr_number', $matches[0])->first();
+        if (! $pr && preg_match('/req\/\d{2}\/\d{4}\/\d{3}/i', $text, $matches)) {
+            $pr = PurchaseRequisition::where('pr_number', strtoupper($matches[0]))->first();
         }
 
-        return $this->purchaseRequirementUrl($pr);
+        return $this->purchaseRequisitionUrl($pr);
     }
 
     private function purchaseOrderUrl(?PurchaseOrder $po): ?string
@@ -138,14 +144,14 @@ class NotificationController extends Controller
         };
     }
 
-    private function purchaseRequirementUrl(?PurchaseRequirement $pr): ?string
+    private function purchaseRequisitionUrl(?PurchaseRequisition $pr): ?string
     {
         if (! $pr) {
             return null;
         }
 
-        if (auth()->user()->role === 'purchasing' && Route::has('purchasing.requirements.show')) {
-            return route('purchasing.requirements.show', $pr->id);
+        if (auth()->user()->role === 'purchasing' && Route::has('purchasing.requisitions.show')) {
+            return route('purchasing.requisitions.show', $pr->id);
         }
 
         if (auth()->user()->role === 'supplier' && Route::has('supplier.quotations.create')) {
@@ -217,10 +223,10 @@ class NotificationController extends Controller
         $markedCount = $targetNotifications->count();
         $targetNotifications->each->markAsRead();
 
-        $categoryLabel = NotificationCategory::options()[$category]['label'] ?? 'Notifikasi';
+        $categoryLabel = NotificationCategory::options()[$category]['label'] ?? 'Notification';
         $message = $category === NotificationCategory::ALL
-            ? 'Semua notifikasi telah ditandai dibaca.'
-            : "Notifikasi {$categoryLabel} telah ditandai dibaca.";
+            ? 'All notifications have been marked as read.'
+            : "{$categoryLabel} notifications have been marked as read.";
 
         if ($request->expectsJson()) {
             $allNotifications = auth()->user()

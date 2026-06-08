@@ -27,7 +27,7 @@ class AuthenticatedSessionController extends Controller
 
         if (! $user->is_active) {
             Auth::guard('web')->logout();
-            return back()->withErrors(['email' => 'Akun Anda telah dinonaktifkan. Hubungi admin.']);
+            return back()->withErrors(['email' => 'Your account has been deactivated. Contact Admin.']);
         }
 
         $request->session()->regenerate();

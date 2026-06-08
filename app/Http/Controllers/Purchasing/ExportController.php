@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
-use App\Exports\RequirementsExport;
+use App\Exports\RequisitionsExport;
 use App\Exports\PurchaseOrdersExport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ExportController extends Controller
 {
-    public function requirements(Request $request)
+    public function requisitions(Request $request)
     {
-        return Excel::download(new RequirementsExport($request->period_id, $request->status),
-            'rekap_permintaan_' . now()->format('Ymd_His') . '.xlsx');
+        return Excel::download(new RequisitionsExport($request->period_id, $request->status),
+            'rekap_requisitions_' . now()->format('Ymd_His') . '.xlsx');
     }
 
     public function purchaseOrders(Request $request)

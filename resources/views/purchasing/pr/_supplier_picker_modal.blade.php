@@ -8,13 +8,13 @@
 @endphp
 
 <div class="supplier-picker" data-supplier-picker>
-    <label class="form-label fw-medium">Pilih Supplier</label>
+    <label class="form-label fw-medium">Select Supplier</label>
     <button type="button" class="btn btn-outline-primary w-100 d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}">
-        <span><i class="bi bi-people me-1"></i> Pilih Supplier</span>
-        <span class="badge bg-primary supplier-selected-count">{{ $selectedSupplierCount > 0 ? $selectedSupplierCount : 'Semua' }}</span>
+        <span><i class="bi bi-people me-1"></i> Select Supplier</span>
+        <span class="badge bg-primary supplier-selected-count">{{ $selectedSupplierCount > 0 ? $selectedSupplierCount : 'All' }}</span>
     </button>
-    <div class="form-text supplier-selected-summary" data-empty-text="Semua Supplier Terdaftar">
-        Semua Supplier Terdaftar
+    <div class="form-text supplier-selected-summary" data-empty-text="All Registered Suppliers">
+        All Registered Suppliers
     </div>
     @error('supplier_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
     @error('supplier_ids.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
@@ -24,8 +24,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title fw-semibold" id="{{ $modalId }}Label">Pilih Supplier</h5>
-                        <div class="small text-muted">Checklist supplier yang akan menerima penawaran PR ini.</div>
+                        <h5 class="modal-title fw-semibold" id="{{ $modalId }}Label">Select Supplier</h5>
+                        <div class="small text-muted">Check the suppliers that will receive this PR quotation invitation.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
@@ -34,17 +34,17 @@
                         <div class="col">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control supplier-search-input" placeholder="Cari nama, email, atau perusahaan supplier...">
+                                <input type="text" class="form-control supplier-search-input" placeholder="Search supplier name, email, or company...">
                             </div>
                         </div>
                         <div class="col-auto">
                             <button type="button" class="btn btn-sm btn-outline-primary supplier-select-all">
-                                Centang Semua
+                                Select All
                             </button>
                         </div>
                         <div class="col-auto">
                             <button type="button" class="btn btn-sm btn-outline-secondary supplier-clear-all">
-                                Hapus Pilihan
+                                Delete Selection
                             </button>
                         </div>
                     </div>
@@ -66,19 +66,19 @@
                                 </label>
                             @empty
                                 <div class="p-4 text-center text-muted">
-                                    Belum ada supplier terdaftar.
+                                    No supplier terdaftar.
                                 </div>
                             @endforelse
                         </div>
                     </div>
                     <div class="form-text mt-2">
-                        Jika tidak ada supplier yang dicentang, PR akan dibuka untuk semua supplier terdaftar.
+                        If no supplier is checked, the PR will be opened to all registered suppliers.
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" data-bs-dismiss="modal">
-                        Simpan Pilihan
+                        Save Selection
                     </button>
                 </div>
             </div>
@@ -92,9 +92,9 @@
             function updateSupplierPickerState($picker) {
                 const checked = $picker.find('.supplier-checkbox:checked');
                 const count = checked.length;
-                const emptyText = $picker.find('.supplier-selected-summary').data('empty-text') || 'Semua Supplier Terdaftar';
+                const emptyText = $picker.find('.supplier-selected-summary').data('empty-text') || 'All Registered Suppliers';
 
-                $picker.find('.supplier-selected-count').text(count > 0 ? count : 'Semua');
+                $picker.find('.supplier-selected-count').text(count > 0 ? count : 'All');
 
                 if (count === 0) {
                     $picker.find('.supplier-selected-summary').text(emptyText);

@@ -100,10 +100,10 @@ class Quotation extends Model
     {
         return match ($this->status) {
             self::STATUS_DRAFT => 'Draft',
-            self::STATUS_SUBMITTED => 'Terkirim',
-            self::STATUS_REVISION_REQUESTED => 'Perlu Revisi',
-            self::STATUS_ACCEPTED => 'Diterima',
-            self::STATUS_REJECTED => 'Ditolak',
+            self::STATUS_SUBMITTED => 'Submitted',
+            self::STATUS_REVISION_REQUESTED => 'Needs Revision',
+            self::STATUS_ACCEPTED => 'Accepted',
+            self::STATUS_REJECTED => 'Rejected',
             default => ucwords(str_replace('_', ' ', (string) $this->status)),
         };
     }
@@ -122,9 +122,9 @@ class Quotation extends Model
 
     // ─── Relationships ───
 
-    public function purchaseRequirement(): BelongsTo
+    public function purchaseRequisition(): BelongsTo
     {
-        return $this->belongsTo(PurchaseRequirement::class, 'pr_id');
+        return $this->belongsTo(PurchaseRequisition::class, 'pr_id');
     }
 
     public function supplier(): BelongsTo

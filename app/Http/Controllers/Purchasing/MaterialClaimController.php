@@ -11,6 +11,8 @@ use App\Notifications\SystemNotification;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class MaterialClaimController extends Controller
@@ -30,7 +32,12 @@ class MaterialClaimController extends Controller
 
     public function dataActionNeeded(Request $request)
     {
-        $query = PurchaseOrder::with(['supplier', 'qcInspections'])
+        $query = PurchaseOrder::with([
+            'supplier',
+            'qcInspections' => fn($query) => $query
+                ->orderByDesc('inspected_at')
+                ->orderByDesc('id'),
+        ])
             ->where('status', 'claim_needed')
             ->whereDoesntHave('materialClaims', function($q) {
                 $q->whereIn('status', ['pending', 'responded', 'escalated']);
@@ -39,12 +46,15 @@ class MaterialClaimController extends Controller
         return DataTables::eloquent($query)
             ->addColumn('po_number_display', fn($po) => $po->po_number)
             ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
-            ->addColumn('inspection_date', fn($po) => $po->qcInspections->last()?->inspected_at?->format('d M Y') ?? '-')
-            ->addColumn('status_badge', fn($po) => '<span class="badge bg-danger text-uppercase">' . str_replace('_', ' ', $po->status) . '</span>')
+            ->addColumn('inspection_date', fn($po) => $po->qcInspections->first()?->inspected_at?->format('d M Y') ?? '-')
+            ->addColumn('status_badge', fn($po) => StatusHelper::badge(
+                StatusHelper::poBadge($po->status),
+                StatusHelper::poLabel($po->status)
+            ))
             ->addColumn('action', function ($po) {
-                $lastInspection = $po->qcInspections->last();
+                $lastInspection = $po->qcInspections->first();
                 if ($lastInspection) {
-                    return '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Buat Klaim</a>';
+                    return '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Create Claim</a>';
                 }
                 return '-';
             })
@@ -77,7 +87,7 @@ class MaterialClaimController extends Controller
                     StatusHelper::claimLabel($c->status)
                 );
             })
-            ->addColumn('action', fn($c) => '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $c->id) . '" class="btn btn-sm btn-outline-primary">Detail</a>')
+            ->addColumn('action', fn($c) => '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $c->id) . '" class="btn btn-sm btn-outline-primary">Details</a>')
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
             ->make(true);
     }
@@ -88,12 +98,12 @@ class MaterialClaimController extends Controller
             ->findOrFail($inspection_id);
 
         if ($inspection->status !== 'ng') {
-            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'Inspeksi ini bukan NG, tidak perlu diklaim.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'This inspection is not NG and does not require a claim.');
         }
 
-        // Pastikan belum ada klaim aktif
+        // Ensure there is no active claim.
         if (MaterialClaim::where('inspection_id', $inspection_id)->whereIn('status', ['pending', 'responded', 'escalated'])->exists()) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'Klaim sudah dibuat untuk inspeksi ini.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'A claim has already been created for this inspection.');
         }
 
         return view('purchasing.claims.create', compact('inspection'));
@@ -108,25 +118,52 @@ class MaterialClaimController extends Controller
             'deadline' => 'required|date|after:today',
         ]);
 
-        $inspection = QcInspection::with('purchaseOrder.supplier')->findOrFail($request->inspection_id);
+        [$claim, $inspection] = DB::transaction(function () use ($request) {
+            $inspection = QcInspection::whereKey($request->inspection_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $inspection->load('purchaseOrder.supplier');
 
-        $claim = MaterialClaim::create([
-            'inspection_id' => $inspection->id,
-            'po_id' => $inspection->po_id,
-            'submitted_by' => auth()->id(),
-            'supplier_id' => $inspection->purchaseOrder->supplier_id,
-            'status' => 'pending',
-            'description' => $request->description,
-            'resolution_expected' => $request->resolution_expected,
-            'deadline' => $request->deadline,
-        ]);
+            if ($inspection->status !== 'ng') {
+                throw ValidationException::withMessages([
+                    'inspection_id' => 'Only NG inspections can be claimed.',
+                ]);
+            }
 
-        // Beri notif ke Supplier
+            if (! $inspection->purchaseOrder) {
+                throw ValidationException::withMessages([
+                    'inspection_id' => 'Inspection PO was not found.',
+                ]);
+            }
+
+            if (MaterialClaim::where('inspection_id', $inspection->id)
+                ->whereIn('status', ['pending', 'responded', 'escalated'])
+                ->exists()) {
+                throw ValidationException::withMessages([
+                    'inspection_id' => 'An active claim already exists for this inspection.',
+                ]);
+            }
+
+            $claim = MaterialClaim::create([
+                'inspection_id' => $inspection->id,
+                'po_id' => $inspection->po_id,
+                'submitted_by' => auth()->id(),
+                'supplier_id' => $inspection->purchaseOrder->supplier_id,
+                'status' => 'pending',
+                'description' => $request->description,
+                'resolution_expected' => $request->resolution_expected,
+                'deadline' => $request->deadline,
+            ]);
+
+            return [$claim, $inspection];
+        });
+
+        // Notify the supplier.
         $supplierUser = $inspection->purchaseOrder->supplier;
         if ($supplierUser) {
             $supplierUser->notify(new SystemNotification(
-                'Klaim Material Baru',
-                'Anda menerima klaim baru untuk PO ' . $inspection->purchaseOrder->po_number . '. Harap direspons sebelum ' . \Carbon\Carbon::parse($claim->deadline)->format('d M Y') . '.',
+                'New Material Claim',
+                'You received a new claim for PO ' . $inspection->purchaseOrder->po_number . '. Please respond before ' . \Carbon\Carbon::parse($claim->deadline)->format('d M Y') . '.',
                 route('supplier.claims.show', $claim->id),
                 'bi-exclamation-octagon text-danger'
             ));
@@ -137,7 +174,7 @@ class MaterialClaimController extends Controller
             $showParameters['return_url'] = $request->input('return_url');
         }
 
-        return redirect()->route('purchasing.claims.show', $showParameters)->with('success', 'Klaim berhasil dikirim ke supplier.');
+        return redirect()->route('purchasing.claims.show', $showParameters)->with('success', 'Claim successfully sent to the supplier.');
     }
 
     public function show($id)
@@ -154,31 +191,37 @@ class MaterialClaimController extends Controller
 
     public function resolve($id)
     {
-        $claim = MaterialClaim::findOrFail($id);
+        $claim = MaterialClaim::with('purchaseOrder')->findOrFail($id);
         
         if ($claim->status !== 'responded') {
-            return back()->with('error', 'Hanya klaim yang sudah direspons yang dapat diselesaikan.');
+            return back()->with('error', 'Only responded claims can be resolved.');
         }
 
         $claim->update(['status' => 'resolved']);
 
-        // Update status PO menjadi completed karena masalah klaim sudah selesai
         if ($claim->purchaseOrder) {
-            $claim->purchaseOrder->update(['status' => 'completed']);
+            $hasActiveClaims = MaterialClaim::where('po_id', $claim->po_id)
+                ->where('id', '!=', $claim->id)
+                ->whereIn('status', ['pending', 'responded', 'escalated'])
+                ->exists();
+
+            if (! $hasActiveClaims) {
+                $claim->purchaseOrder->update(['status' => 'completed']);
+            }
         }
 
-        // Notify supplier: klaim selesai
+        // Notify supplier: claim completed
         /** @var User $supplierUser */
         $supplierUser = User::find($claim->supplier_id);
         if ($supplierUser) {
             $supplierUser->notify(new SystemNotification(
-                'Klaim Material Selesai',
-                'Klaim untuk PO ' . $claim->purchaseOrder->po_number . ' telah ditandai selesai oleh Purchasing.',
+                'Material Claim Completed',
+                'Claim for PO ' . ($claim->purchaseOrder->po_number ?? '-') . ' has been marked completed by Purchasing.',
                 route('supplier.claims.show', $claim->id),
                 'bi-check-circle text-success'
             ));
         }
 
-        return back()->with('success', 'Klaim telah ditandai selesai.');
+        return back()->with('success', 'Claim has been marked completed.');
     }
 }

@@ -1,31 +1,31 @@
 @extends('layouts.app')
 
-@section('title', 'Klaim Material — ADASI Portal')
-@section('page-title', 'Klaim Material')
+@section('title', 'Material Claim - ADASI Portal')
+@section('page-title', 'Material Claim')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-semibold">Daftar Klaim Material dari ADASI</h5>
+        <h5 class="mb-0 fw-semibold">Material Claim List from ADASI</h5>
     </div>
     <div class="card-body">
         <div class="alert alert-warning small mb-4">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> Daftar di bawah adalah klaim material NG (Not Good) yang diajukan oleh tim Purchasing ADASI. Harap segera merespons klaim yang berstatus <strong>PENDING</strong> sebelum batas waktu (deadline).
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> The list below contains NG (Not Good) material claims submitted by the ADASI Purchasing team. Please immediately respond to claims with status <strong>PENDING</strong> before the deadline.
         </div>
         
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="claimTable" style="width: 100%;">
                 <thead class="table-light">
                     <tr>
-                        <th>ID Klaim</th>
-                        <th>Nomor PO</th>
-                        <th>Tanggal Diajukan</th>
+                        <th>Claim ID</th>
+                        <th>Number PO</th>
+                        <th>Date Submitted</th>
                         <th>
                             Deadline
-                            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Batas waktu supplier merespons klaim material."></i>
+                            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Deadline for supplier to respond to material claims."></i>
                         </th>
                         <th class="text-center">Status</th>
-                        <th class="text-end">Aksi</th>
+                        <th class="text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -50,7 +50,7 @@
                 { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+            language: {},
             pageLength: 25,
             order: [],
             drawCallback: function() {

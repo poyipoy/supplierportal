@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Daftar Permintaan Material — ADASI Portal')
-@section('page-title', 'Permintaan Material')
+@section('title', 'Material Requisition List - ADASI Portal')
+@section('page-title', 'Purchase Requisition')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">Daftar Permintaan Material</h5>
+        <h5 class="mb-0 fw-semibold">Requisition List Material</h5>
         <div class="d-flex gap-2">
-            <a href="{{ route('purchasing.export.requirements', request()->all()) }}" class="btn btn-success btn-sm">
+            <a href="{{ route('purchasing.export.requisitions', request()->all()) }}" class="btn btn-success btn-sm">
                 <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
             </a>
-            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.create') }}" class="btn btn-primary btn-sm" style="background-color: var(--adasi-blue); border-color: var(--adasi-blue);">
-                <i class="bi bi-plus-circle me-1"></i> Buat Permintaan Baru
+            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create') }}" class="btn btn-primary btn-sm" style="background-color: var(--adasi-blue); border-color: var(--adasi-blue);">
+                <i class="bi bi-plus-circle me-1"></i> Create New Requisition
             </a>
         </div>
     </div>
@@ -21,9 +21,9 @@
         {{-- Filter Form --}}
         <div class="row g-3 mb-4">
             <div class="col-md-4">
-                <label for="period_id" class="form-label small fw-medium">Filter Periode</label>
+                <label for="period_id" class="form-label small fw-medium">Filter Period</label>
                 <select name="period_id" id="period_id" class="form-select form-select-sm">
-                    <option value="">Semua Periode</option>
+                    <option value="">All Period</option>
                     @foreach($periods as $period)
                         <option value="{{ $period->id }}">
                             {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
@@ -34,7 +34,7 @@
             <div class="col-md-4">
                 <label for="status" class="form-label small fw-medium">Filter Status</label>
                 <select name="status" id="status" class="form-select form-select-sm">
-                    <option value="">Semua Status</option>
+                    <option value="">All Status</option>
                     <option value="draft">Draft</option>
                     <option value="submitted">Submitted</option>
                     <option value="rejected">Rejected</option>
@@ -56,14 +56,14 @@
                 <thead class="table-light">
                     <tr>
                         <th>No</th>
-                        <th>No. PR</th>
-                        <th>Periode</th>
-                        <th>Dibuat Oleh</th>
-                        <th>Jumlah Supplier</th>
-                        <th>Jumlah Item</th>
+                        <th>PR No.</th>
+                        <th>Period</th>
+                        <th>Created By</th>
+                        <th>Amount Supplier</th>
+                        <th>Amount Item</th>
                         <th>Status</th>
-                        <th>Tanggal Dibuat</th>
-                        <th class="text-end">Aksi</th>
+                        <th>Date Created</th>
+                        <th class="text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -80,7 +80,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: '{{ route("purchasing.requirements.index") }}',
+                url: '{{ route("purchasing.requisitions.index") }}',
                 data: function(d) {
                     d.period_id = $('#period_id').val();
                     d.status = $('#status').val();
@@ -97,9 +97,7 @@
                 { data: 'created_date', name: 'created_at' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json',
-            },
+            language: {},
             pageLength: 25,
             order: []
         });
@@ -109,7 +107,7 @@
             const statusText = $('#status option:selected').val() ? $('#status option:selected').text().trim() : null;
             
             const chips = [];
-            if (periodText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Periode: ${periodText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#period_id').val('').trigger('change')"></i></span>`);
+            if (periodText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Period: ${periodText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#period_id').val('').trigger('change')"></i></span>`);
             if (statusText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Status: ${statusText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#status').val('').trigger('change')"></i></span>`);
             
             const $container = $('#filterChips');
@@ -143,14 +141,14 @@
         $(document).on('click', '.btn-delete', function() {
             const form = $(this).closest('form');
             Swal.fire({
-                title: @json('Yakin ingin menghapus?'),
-                text: @json('Permintaan material ini akan dihapus permanen!'),
+                title: @json('Are you sure you want to delete?'),
+                text: @json('This material requisition will be permanently deleted!'),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: @json('Ya, hapus!'),
-                cancelButtonText: @json('Batal')
+                confirmButtonText: @json('Yes, delete!'),
+                cancelButtonText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

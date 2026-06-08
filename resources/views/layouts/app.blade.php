@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth
+    <meta name="user-id" content="{{ auth()->id() }}">
+    @endauth
     <title>@yield('title', 'ADASI Supplier Portal')</title>
 
     <!-- Google Fonts: Inter -->
@@ -24,6 +27,9 @@
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
 
+    <!-- NProgress CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" />
+
     <!-- Custom CSS -->
     <style>
         :root {
@@ -39,6 +45,133 @@
             background-color: var(--bg-light);
             color: #333;
             overflow-x: hidden;
+        }
+
+        /* NProgress Override */
+        #nprogress .bar {
+            background: var(--adasi-red) !important;
+            height: 3px !important;
+        }
+        #nprogress .peg {
+            box-shadow: 0 0 10px var(--adasi-red), 0 0 5px var(--adasi-red) !important;
+        }
+        #nprogress .spinner-icon {
+            border-top-color: var(--adasi-red) !important;
+            border-left-color: var(--adasi-red) !important;
+        }
+
+        /* Skeleton Loading */
+        .skeleton {
+            background: #e2e5e7;
+            background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+            border-radius: 4px;
+            display: inline-block;
+            color: transparent !important;
+            min-height: 1em;
+            pointer-events: none;
+        }
+        .skeleton * {
+            visibility: hidden;
+        }
+        .skeleton-text { width: 100%; height: 1.1em; margin-bottom: 0.25rem; }
+        .skeleton-text.short { width: 60%; }
+        .skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+        .skeleton-button { width: 100px; height: 36px; border-radius: 4px; }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* ── ADASI Full-Screen Loader Overlay ── */
+        .adasi-loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(244, 246, 248, 0.6);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            display: none; /* Tersembunyi secara default */
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.2s ease;
+        }
+        .adasi-loader-overlay.active {
+            display: flex;
+        }
+
+        .adasi-loader-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 32px;
+            box-shadow: 0 12px 40px rgba(31, 95, 166, 0.18),
+                        0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(31, 95, 166, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            animation: loaderFadeIn 0.25s ease-out;
+        }
+
+        @keyframes loaderFadeIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        /* Logo ring container */
+        .adasi-loader-ring {
+            width: 72px;
+            height: 72px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Shimmer ring */
+        .adasi-loader-ring::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 3px solid #e8ecf1;
+            border-top-color: #94a3b8; /* Silver */
+            border-right-color: var(--adasi-red);
+            animation: adasiSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        /* Logo ADASI di tengah */
+        .adasi-loader-logo {
+            width: 36px;
+            height: 36px;
+            background-image: url("data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/logo-adasi.png'))) }}");
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            z-index: 2;
+        }
+
+        .adasi-loader-text {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--adasi-blue);
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes adasiSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Sembunyikan DataTables default processing sepenuhnya */
+        div.dataTables_wrapper div.dataTables_processing {
+            display: none !important;
         }
 
         /* Micro-animations */
@@ -270,7 +403,7 @@
             background-color: rgba(31, 95, 166, 0.05) !important;
         }
 
-        /* Sticky Table Header — keeps column context visible when scrolling */
+        /* Sticky Table Header - keeps column context visible when scrolling */
         .table-responsive {
             max-height: none; /* allow natural scroll */
         }
@@ -284,7 +417,7 @@
             top: 0; /* relative to card scroll container */
         }
 
-        /* Action button sizing — consistent minimum touch target */
+        /* Action button sizing - consistent minimum touch target */
         .table .btn-sm {
             padding: 0.3rem 0.55rem;
             font-size: 0.78rem;
@@ -798,7 +931,14 @@
     @php
         $initNotifCount = 0;
         $initChatCount = 0;
+        $dashboardUrl = url('/');
         if(auth()->check()) {
+            $roleDashboardRoute = auth()->user()->role
+                ? auth()->user()->role . '.dashboard'
+                : 'dashboard';
+            $dashboardUrl = \Illuminate\Support\Facades\Route::has($roleDashboardRoute)
+                ? route($roleDashboardRoute)
+                : route('dashboard');
             $initNotifCount = auth()->user()->unreadNotifications()->count();
             if(in_array(auth()->user()->role, ['purchasing', 'supplier'])) {
                 $initChatCount = \App\Models\Conversation::forUser(auth()->id())
@@ -853,6 +993,32 @@
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        // ADASI Loader — Inject overlay ke body
+        $(function() {
+            // Buat overlay loader sekali saja
+            $('body').append(
+                '<div class="adasi-loader-overlay" id="adasiLoader">' +
+                    '<div class="adasi-loader-card">' +
+                        '<div class="adasi-loader-ring">' +
+                            '<div class="adasi-loader-logo"></div>' +
+                        '</div>' +
+                        '<span class="adasi-loader-text">Loading...</span>' +
+                    '</div>' +
+                '</div>'
+            );
+
+            // Tampilkan saat AJAX mulai (termasuk DataTables)
+            $(document).ajaxStart(function() {
+                $('#adasiLoader').addClass('active');
+            });
+
+            // Sembunyikan saat AJAX selesai
+            $(document).ajaxStop(function() {
+                $('#adasiLoader').removeClass('active');
+            });
+        });
+    </script>
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
@@ -1057,7 +1223,7 @@
                 const form = e.target;
                 if (!(form instanceof HTMLFormElement)) return;
 
-                // Skip jika form sudah di-tag submitting
+                // Skip jika form already di-tag submitting
                 if (form.dataset.submitting === 'true') {
                     e.preventDefault();
                     return;
@@ -1065,15 +1231,15 @@
 
                 form.dataset.submitting = 'true';
 
-                // Disable semua tombol submit di dalam form
+                // Disable all tombol submit di dalam form
                 const buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
                 buttons.forEach(function (btn) {
                     btn.disabled = true;
 
-                    // Simpan teks asli & ganti dengan spinner
+                    // Save teks asli & ganti dengan spinner
                     if (btn.tagName === 'BUTTON') {
                         btn.dataset.originalHtml = btn.innerHTML;
-                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Memproses...';
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Loading...';
                     }
                 });
 
@@ -1108,12 +1274,12 @@
                 }
                 
                 Swal.fire({
-                    title: 'Konfirmasi Export',
-                    html: `Anda akan mengekspor <strong>${recordsTotal}</strong> baris data ke Excel.<br>Proses ini mungkin memakan waktu. Lanjutkan?`,
+                    title: 'Confirm Export',
+                    html: `You will export <strong>${recordsTotal}</strong> rows of data to Excel.<br>This process may take some time. Continue?`,
                     icon: 'info',
                     showCancelButton: true,
-                    confirmButtonText: '<i class="bi bi-file-earmark-excel me-1"></i> Ya, Export',
-                    cancelButtonText: 'Batal',
+                    confirmButtonText: '<i class="bi bi-file-earmark-excel me-1"></i> Yes, Export',
+                    cancelButtonText: 'Cancel',
                     reverseButtons: true,
                     confirmButtonColor: '#198754'
                 }).then((result) => {
@@ -1138,7 +1304,7 @@
             // Alt + D -> Dashboard
             if (e.altKey && e.key.toLowerCase() === 'd') {
                 e.preventDefault();
-                window.location.href = '{{ auth()->check() ? route(auth()->user()->role . ".dashboard") : "/" }}';
+                window.location.href = @json($dashboardUrl);
             }
 
             // ? -> Modal Shortcut
@@ -1151,7 +1317,7 @@
                             <table class="table table-borderless table-sm mb-0">
                                 <tr>
                                     <td width="40%"><kbd>Alt + D</kbd></td>
-                                    <td>Kembali ke Dashboard</td>
+                                    <td>Back to Dashboard</td>
                                 </tr>
                                 <tr>
                                     <td><kbd>?</kbd></td>
@@ -1166,6 +1332,117 @@
             }
         });
     </script>
+
+    <!-- NProgress JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+    <script>
+        // Konfigurasi NProgress
+        NProgress.configure({ showSpinner: true, minimum: 0.1, speed: 400 });
+
+        // Mulai loading saat pindah halaman
+        window.addEventListener('beforeunload', function () {
+            NProgress.start();
+        });
+
+        // Selesai loading saat halaman termuat
+        window.addEventListener('load', function () {
+            NProgress.done();
+        });
+
+        // Integrasi dengan jQuery AJAX (seperti DataTables)
+        if (typeof jQuery !== 'undefined') {
+            $(document).ajaxStart(function() {
+                NProgress.start();
+            });
+            $(document).ajaxStop(function() {
+                NProgress.done();
+            });
+        }
+    </script>
+
+    <!-- Laravel Echo + Pusher JS (untuk Reverb WebSocket) -->
+    <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js"></script>
+    @auth
+    <script>
+        // Inisialisasi Laravel Echo dengan Reverb
+        window.Echo = new Echo({
+            broadcaster: 'reverb',
+            key: '{{ env("REVERB_APP_KEY") }}',
+            wsHost: '{{ env("REVERB_HOST", "127.0.0.1") }}',
+            wsPort: {{ env("REVERB_PORT", 8080) }},
+            wssPort: {{ env("REVERB_PORT", 8080) }},
+            forceTLS: {{ env("REVERB_SCHEME", "http") === "https" ? "true" : "false" }},
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: '/broadcasting/auth',
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                }
+            }
+        });
+
+        // Dengarkan notifikasi real-time di private channel user
+        var userId = document.querySelector('meta[name="user-id"]')?.content;
+        if (userId) {
+            Echo.private('App.Models.User.' + userId)
+                .notification((notification) => {
+                    console.log('[Reverb] Notifikasi diterima:', notification);
+
+                    // 1. Update badge count di ikon lonceng
+                    var badge = document.querySelector('.notification-badge');
+                    if (badge) {
+                        var currentCount = parseInt(badge.textContent) || 0;
+                        badge.textContent = currentCount + 1;
+                        badge.style.display = 'inline-block';
+                    }
+
+                    // 2. Tampilkan SweetAlert2 Toast
+                    if (window.Swal) {
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            showCloseButton: true,
+                            timer: 5000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.addEventListener('mouseenter', Swal.stopTimer);
+                                toast.addEventListener('mouseleave', Swal.resumeTimer);
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: 'info',
+                            title: notification.title || 'Notifikasi Baru',
+                            text: notification.message || '',
+                        });
+                    }
+
+                    // 3. Prepend notifikasi baru ke daftar dropdown (jika ada)
+                    var notifList = document.querySelector('.notification-list .tab-pane.active');
+                    if (notifList) {
+                        var newItem = document.createElement('a');
+                        newItem.href = notification.url || '#';
+                        newItem.className = 'notification-item bg-light';
+                        newItem.innerHTML =
+                            '<div class="d-flex align-items-start gap-2 w-100">' +
+                                '<i class="bi ' + (notification.icon || 'bi-bell') + ' fs-5 text-primary mt-1"></i>' +
+                                '<div class="flex-grow-1 overflow-hidden">' +
+                                    '<div class="d-flex align-items-center gap-1">' +
+                                        '<div class="fw-semibold small text-truncate">' + (notification.title || 'Notifikasi') + '</div>' +
+                                        '<span class="badge bg-danger flex-shrink-0" style="font-size:.55rem">New</span>' +
+                                    '</div>' +
+                                    '<div class="text-muted small text-truncate">' + (notification.message || '') + '</div>' +
+                                    '<div class="text-muted" style="font-size:.7rem">Baru saja</div>' +
+                                '</div>' +
+                            '</div>';
+                        notifList.prepend(newItem);
+                    }
+                });
+        }
+    </script>
+    @endauth
 
     @stack('scripts')
 </body>

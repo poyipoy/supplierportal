@@ -8,12 +8,12 @@ use Illuminate\Support\Carbon;
 /**
  * Centralized status badge & label helper.
  *
- * Menggantikan match() yang berulang di banyak controller dan view.
- * Panggil: StatusHelper::prBadge($status), StatusHelper::prLabel($status), dst.
+ * Replaces repeated match() blocks across controllers and views.
+ * Usage: StatusHelper::prBadge($status), StatusHelper::prLabel($status), etc.
  */
 class StatusHelper
 {
-    // ─── Purchase Requirement ───
+    // ─── Purchase Requisition ───
 
     private static array $prBadges = [
         'draft' => 'bg-secondary',
@@ -52,9 +52,9 @@ class StatusHelper
     private static array $quotationLabels = [
         'draft' => 'Draft',
         'submitted' => 'Submitted',
-        'accepted' => 'Diterima',
-        'rejected' => 'Ditolak',
-        'revision_requested' => 'Revisi Diminta',
+        'accepted' => 'Accepted',
+        'rejected' => 'Rejected',
+        'revision_requested' => 'Revision Requested',
     ];
 
     public static function quotationBadge(string $status): string
@@ -73,9 +73,9 @@ class StatusHelper
 
         if (! $date) {
             return [
-                'label' => 'Masa Berlaku Kosong',
+                'label' => 'Valid Until Missing',
                 'class' => 'bg-warning text-dark',
-                'description' => 'Supplier belum mengisi masa berlaku penawaran.',
+                'description' => 'The supplier has not filled in the quotation validity date.',
             ];
         }
 
@@ -84,24 +84,24 @@ class StatusHelper
 
         if ($date->lt($today)) {
             return [
-                'label' => 'Kadaluarsa',
+                'label' => 'Expired',
                 'class' => 'bg-danger',
-                'description' => 'Penawaran kadaluarsa dan tidak bisa dibuat PO sebelum supplier mengirim revisi.',
+                'description' => 'The quotation has expired and cannot be used to create a PO until the supplier submits a revision.',
             ];
         }
 
         if ($days <= 7) {
             return [
-                'label' => 'Akan Kadaluarsa',
+                'label' => 'Expiring Soon',
                 'class' => 'bg-warning text-dark',
-                'description' => "Masa berlaku tersisa {$days} hari.",
+                'description' => "The quotation validity expires in {$days} days.",
             ];
         }
 
         return [
-            'label' => 'Berlaku',
+            'label' => 'Valid',
             'class' => 'bg-success',
-            'description' => 'Penawaran masih berlaku.',
+            'description' => 'The quotation is still valid.',
         ];
     }
 
@@ -126,7 +126,7 @@ class StatusHelper
     ];
 
     /**
-     * PO badge — otomatis return 'bg-danger' jika $isOverdue true.
+     * PO badge - automatically returns 'bg-danger' when $isOverdue is true.
      */
     public static function poBadge(string $status, bool $isOverdue = false): string
     {
@@ -138,7 +138,7 @@ class StatusHelper
     }
 
     /**
-     * PO label — otomatis return 'Overdue' jika $isOverdue true.
+     * PO label - automatically returns 'Overdue' when $isOverdue is true.
      */
     public static function poLabel(string $status, bool $isOverdue = false): string
     {
@@ -155,7 +155,7 @@ class StatusHelper
             return [
                 'label' => 'Overdue',
                 'class' => 'bg-danger',
-                'description' => 'Estimasi kedatangan sudah lewat dan material belum dikonfirmasi tiba.',
+                'description' => 'The estimated arrival date has passed and the material has not been confirmed as arrived.',
             ];
         }
 
@@ -165,41 +165,41 @@ class StatusHelper
 
             if ($daysWaiting > 2) {
                 return [
-                    'label' => 'Menunggu QC > 2 hari',
+                    'label' => 'Waiting QC > 2 days',
                     'class' => 'bg-warning text-dark',
-                    'description' => "Material sudah tiba {$daysWaiting} hari dan masih menunggu QC.",
+                    'description' => "The material arrived {$daysWaiting} days ago and is still waiting for QC.",
                 ];
             }
 
             return [
-                'label' => 'Menunggu QC',
+                'label' => 'Waiting QC',
                 'class' => 'bg-info text-dark',
-                'description' => 'Material sudah tiba dan sedang menunggu inspeksi QC.',
+                'description' => 'The material has arrived and is waiting for QC inspection.',
             ];
         }
 
         $date = self::asDate($estimatedArrival);
         if (! $date) {
             return [
-                'label' => 'Estimasi Kosong',
+                'label' => 'Estimated Date Missing',
                 'class' => 'bg-secondary',
-                'description' => 'Estimasi kedatangan belum tersedia.',
+                'description' => 'Estimated arrival is not available yet.',
             ];
         }
 
         $days = (int) today()->diffInDays($date, false);
         if ($status === 'active' && $days >= 0 && $days <= 7) {
             return [
-                'label' => 'Tiba <= 7 hari',
+                'label' => 'Arrives <= 7 days',
                 'class' => 'bg-info text-dark',
-                'description' => "Estimasi material tiba dalam {$days} hari.",
+                'description' => "The material is estimated to arrive in {$days} days.",
             ];
         }
 
         return [
-            'label' => 'Terjadwal',
+            'label' => 'On Schedule',
             'class' => 'bg-light text-muted border',
-            'description' => 'Estimasi kedatangan masih sesuai jadwal.',
+            'description' => 'The estimated arrival is still on schedule.',
         ];
     }
 
@@ -218,10 +218,10 @@ class StatusHelper
     private static array $claimLabels = [
         'pending' => 'Pending',
         'in_progress' => 'In Progress',
-        'responded' => 'Direspon',
+        'responded' => 'Responded',
         'resolved' => 'Resolved',
         'escalated' => 'Escalated',
-        'rejected' => 'Ditolak',
+        'rejected' => 'Rejected',
         'closed' => 'Closed',
     ];
 
@@ -241,17 +241,17 @@ class StatusHelper
 
         if (! $date) {
             return [
-                'label' => 'Deadline Kosong',
+                'label' => 'Deadline Missing',
                 'class' => 'bg-secondary',
-                'description' => 'Deadline respons klaim belum tersedia.',
+                'description' => 'Deadline response claim is not available yet.',
             ];
         }
 
         if ($status !== 'pending') {
             return [
-                'label' => 'Sudah Diproses',
+                'label' => 'Processed',
                 'class' => 'bg-light text-muted border',
-                'description' => 'Klaim tidak lagi menunggu respons supplier.',
+                'description' => 'The claim is no longer waiting for a supplier response.',
             ];
         }
 
@@ -259,24 +259,24 @@ class StatusHelper
 
         if ($date->lt(today())) {
             return [
-                'label' => 'Lewat Deadline',
+                'label' => 'Past Deadline',
                 'class' => 'bg-danger',
-                'description' => 'Supplier sudah melewati batas waktu respons klaim.',
+                'description' => 'The supplier has passed the claim response deadline.',
             ];
         }
 
         if ($days <= 3) {
             return [
-                'label' => 'Deadline <= 3 hari',
+                'label' => 'Deadline <= 3 days',
                 'class' => 'bg-warning text-dark',
-                'description' => "Deadline respons tersisa {$days} hari.",
+                'description' => "The response deadline is in {$days} days.",
             ];
         }
 
         return [
-            'label' => 'Masih Aman',
+            'label' => 'Safe',
             'class' => 'bg-success',
-            'description' => 'Deadline respons klaim masih aman.',
+            'description' => 'The claim response deadline is still safe.',
         ];
     }
 
@@ -292,12 +292,12 @@ class StatusHelper
     ];
 
     private static array $docLabels = [
-        'pending' => 'Belum Upload',
+        'pending' => 'Not Uploaded',
         'uploaded' => 'Uploaded',
-        'received' => 'Diterima',
-        'done' => 'Selesai',
-        'verified' => 'Terverifikasi',
-        'rejected' => 'Ditolak',
+        'received' => 'Accepted',
+        'done' => 'Completed',
+        'verified' => 'Verified',
+        'rejected' => 'Rejected',
     ];
 
     public static function docBadge(string $status): string
@@ -316,11 +316,11 @@ class StatusHelper
         $isComplete = $completed >= $total;
 
         return [
-            'label' => "{$completed}/{$total} lengkap",
+            'label' => "{$completed}/{$total} complete",
             'class' => $isComplete ? 'bg-success' : 'bg-warning text-dark',
             'description' => $isComplete
-                ? 'Semua dokumen impor sudah lengkap.'
-                : 'Masih ada dokumen impor yang perlu dilengkapi atau diverifikasi.',
+                ? 'All import documents are complete.'
+                : 'Some import documents still need to be completed or verified.',
             'complete' => $isComplete,
         ];
     }

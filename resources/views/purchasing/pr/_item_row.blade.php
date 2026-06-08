@@ -1,11 +1,11 @@
 <tr class="item-row">
     <td>
-        <input type="text" name="items[{{ $index }}][material_name]" class="form-control form-control-sm mb-1" required placeholder="Nama Material" value="{{ $item['material_name'] ?? '' }}">
+        <input type="text" name="items[{{ $index }}][material_name]" class="form-control form-control-sm mb-1" required placeholder="Material Name" value="{{ $item['material_name'] ?? '' }}">
         <input type="text" name="items[{{ $index }}][hs_code]" class="form-control form-control-sm" required placeholder="HS Code" style="font-size: 0.75rem" value="{{ $item['hs_code'] ?? '' }}">
     </td>
     <td>
         <select name="items[{{ $index }}][shape]" class="form-select form-select-sm material-shape-select">
-            <option value="">Pilih</option>
+            <option value="">Select</option>
             <option value="Flat" {{ ($item['shape'] ?? '') == 'Flat' ? 'selected' : '' }}>Flat</option>
             <option value="Round" {{ ($item['shape'] ?? '') == 'Round' ? 'selected' : '' }}>Round</option>
             <option value="Hollow" {{ ($item['shape'] ?? '') == 'Hollow' ? 'selected' : '' }}>Hollow</option>
@@ -17,23 +17,23 @@
     <td>
         <div class="dimension-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: .5rem;">
             <div class="dimension-cell" data-dimension-cell="thickness">
-                <div class="small text-muted" style="font-size: 0.7rem">Ketebalan</div>
+                <div class="small text-muted" style="font-size: 0.7rem">Thickness</div>
                 <input type="number" step="0.01" min="0" name="items[{{ $index }}][thickness]" class="form-control form-control-sm dimension-input" data-dimension-field="thickness" value="{{ $item['thickness'] ?? '' }}">
             </div>
             <div class="dimension-cell" data-dimension-cell="d_inner">
-                <div class="small text-muted" style="font-size: 0.7rem">D.Dalam</div>
+                <div class="small text-muted" style="font-size: 0.7rem">Inner D.</div>
                 <input type="number" step="0.01" min="0" name="items[{{ $index }}][d_inner]" class="form-control form-control-sm dimension-input" data-dimension-field="d_inner" value="{{ $item['d_inner'] ?? '' }}">
             </div>
             <div class="dimension-cell" data-dimension-cell="d_outer">
-                <div class="small text-muted" style="font-size: 0.7rem">D.Luar</div>
+                <div class="small text-muted" style="font-size: 0.7rem">Outer D.</div>
                 <input type="number" step="0.01" min="0" name="items[{{ $index }}][d_outer]" class="form-control form-control-sm dimension-input" data-dimension-field="d_outer" value="{{ $item['d_outer'] ?? '' }}">
             </div>
             <div class="dimension-cell" data-dimension-cell="width">
-                <div class="small text-muted" style="font-size: 0.7rem">Lebar</div>
+                <div class="small text-muted" style="font-size: 0.7rem">Width</div>
                 <input type="number" step="0.01" min="0" name="items[{{ $index }}][width]" class="form-control form-control-sm dimension-input" data-dimension-field="width" value="{{ $item['width'] ?? '' }}">
             </div>
             <div class="dimension-cell" data-dimension-cell="length">
-                <div class="small text-muted" style="font-size: 0.7rem">Panjang</div>
+                <div class="small text-muted" style="font-size: 0.7rem">Length</div>
                 <input type="number" step="0.01" min="0" name="items[{{ $index }}][length]" class="form-control form-control-sm dimension-input" data-dimension-field="length" value="{{ $item['length'] ?? '' }}">
             </div>
         </div>

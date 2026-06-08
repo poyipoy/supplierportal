@@ -1,24 +1,24 @@
 @extends('layouts.app')
 
-@section('title', 'Daftar Purchase Order — ADASI Portal')
+@section('title', 'Purchase Order List - ADASI Portal')
 @section('page-title', 'Purchase Order Saya')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-semibold">Daftar Purchase Order yang Diterima</h5>
+        <h5 class="mb-0 fw-semibold">Received Purchase Order List</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="poTable">
                 <thead class="table-light">
                     <tr>
-                        <th>Nomor PO</th>
-                        <th>Periode</th>
+                        <th>Number PO</th>
+                        <th>Period</th>
                         <th class="text-end">Total</th>
                         <th class="text-center">Status</th>
-                        <th>Estimasi Kedatangan</th>
-                        <th class="text-end">Aksi</th>
+                        <th>Estimated Arrival</th>
+                        <th class="text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -43,7 +43,7 @@
                 { data: 'estimated_date', name: 'estimated_arrival' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+            language: {},
             pageLength: 25,
             order: []
         });

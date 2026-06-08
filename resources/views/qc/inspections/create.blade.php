@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Mulai Inspeksi QC: ' . $po->po_number . ' — ADASI Portal')
-@section('page-title', 'Inspeksi QC Material')
+@section('title', 'Start QC Inspection: ' . $po->po_number . ' - ADASI Portal')
+@section('page-title', 'QC Inspection Material')
 
 @push('styles')
 <style>
@@ -32,7 +32,7 @@
 @section('content')
 <div class="mb-3">
     <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Inspeksi
+        <i class="bi bi-arrow-left me-1"></i> Back to Inspection List
     </a>
 </div>
 
@@ -41,7 +41,7 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-4">
-                <div class="text-muted small">Nomor PO</div>
+                <div class="text-muted small">Number PO</div>
                 <div class="fw-bold fs-6">{{ $po->po_number }}</div>
             </div>
             <div class="col-md-4">
@@ -49,7 +49,7 @@
                 <div class="fw-bold">{{ $po->supplier->name }}</div>
             </div>
             <div class="col-md-4">
-                <div class="text-muted small">Tanggal Material Tiba</div>
+                <div class="text-muted small">Date Material Arrived</div>
                 <div class="fw-bold">{{ $po->actual_arrival ? $po->actual_arrival->format('d F Y') : '-' }}</div>
             </div>
         </div>
@@ -58,12 +58,12 @@
 
 <div class="alert alert-success d-none mb-4" id="bannerOk">
     <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-    <span class="fw-bold">Status Inspeksi: OK</span> - Semua material sesuai spesifikasi.
+    <span class="fw-bold">Inspection Status: OK</span> - All materials meet specifications.
 </div>
 
 <div class="alert alert-danger d-none mb-4" id="bannerNg">
     <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-    <span class="fw-bold">Status Inspeksi: NG (Not Good)</span> - Terdapat material yang tidak sesuai spesifikasi. Harap unggah foto bukti.
+    <span class="fw-bold">Inspection Status: NG (Not Good)</span> - There are materials that do not meet specifications. Please upload evidence photos.
 </div>
 
 <form action="{{ route('qc.inspections.store', $po->id) }}" method="POST" enctype="multipart/form-data" id="inspectionForm">
@@ -77,7 +77,7 @@
             'd_outer' => 'Outer Dia. (mm)',
             'width' => 'Width (mm)',
             'length' => 'Length (mm)',
-            'weight' => 'Berat/Unit (Kg)',
+            'weight' => 'Weight/Unit (Kg)',
         ];
         $qcSpecFields = [
             'thickness' => 'thickness',
@@ -113,7 +113,7 @@
                 <div class="row g-4">
                     {{-- Read Only Specs --}}
                     <div class="col-md-5 border-md-end border-bottom border-md-bottom-0 pb-4 pb-md-0 mb-2 mb-md-0 pe-md-4">
-                        <h6 class="fw-bold mb-3 small text-muted text-uppercase">Spesifikasi Diminta</h6>
+                        <h6 class="fw-bold mb-3 small text-muted text-uppercase">Requested Specification</h6>
                         <div class="qc-spec-grid">
                             <div class="qc-spec-box">
                                 <div class="small text-muted">Shape</div>
@@ -163,16 +163,16 @@
                             @endforeach
                             </div>
                             <div class="mt-3">
-                                <label class="form-label small">Catatan Item</label>
-                                <textarea name="items[{{ $index }}][notes]" class="form-control form-control-sm" rows="1" placeholder="Opsional..."></textarea>
+                                <label class="form-label small">Notes Item</label>
+                                <textarea name="items[{{ $index }}][notes]" class="form-control form-control-sm" rows="1" placeholder="Optional..."></textarea>
                             </div>
                         </div>
 
                         {{-- NG Photo Upload (Hidden by default) --}}
                         <div class="ng-photo-section mt-3 p-3 bg-danger bg-opacity-10 border border-danger rounded d-none" id="photo-section-{{ $index }}">
-                            <label class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>Foto Bukti NG (Wajib)</label>
+                            <label class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>NG Evidence Photos (Required)</label>
                             <input type="file" name="attachments[{{ $index }}][]" class="form-control form-control-sm photo-input" accept=".jpg,.jpeg,.png" multiple disabled>
-                            <div class="form-text text-danger small">Maks 10MB per file. Pilih minimal 1 foto karena status item ini NG.</div>
+                            <div class="form-text text-danger small">Max 10MB per file. Select at least 1 photo because this item status is NG.</div>
                         </div>
                     </div>
                 </div>
@@ -181,9 +181,9 @@
     @endforeach
 
     <div class="d-flex justify-content-end gap-2 mb-5">
-        <a href="javascript:history.back()" class="btn btn-light">Batal</a>
+        <a href="javascript:history.back()" class="btn btn-light">Cancel</a>
         <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSubmit">
-            <i class="bi bi-save me-1"></i> Simpan Hasil Inspeksi
+            <i class="bi bi-save me-1"></i> Save Inspection Results
         </button>
     </div>
 </form>
@@ -319,14 +319,14 @@
             }
 
             Swal.fire({
-                title: @json('Simpan Hasil Inspeksi?'),
-                html: @json('Hasil inspeksi tidak dapat diubah setelah disimpan.<br>PO status akan diperbarui otomatis.'),
+                title: @json('Save Inspection Results?'),
+                html: @json('Inspection results cannot be changed after saving.<br>PO status will be updated automatically.'),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: 'var(--adasi-blue)',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: @json('Ya, Simpan!'),
-                cancelButtonText: @json('Batal')
+                confirmButtonText: @json('Yes, Save!'),
+                cancelButtonText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('#inspectionForm').submit();

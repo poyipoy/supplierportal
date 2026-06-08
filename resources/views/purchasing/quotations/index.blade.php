@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Daftar Penawaran — ADASI Portal')
-@section('page-title', 'Penawaran Supplier')
+@section('title', 'Quotation List - ADASI Portal')
+@section('page-title', 'Quotation Supplier')
 
 @push('styles')
     <style>
@@ -117,8 +117,8 @@
 @section('content')
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold">Daftar Penawaran Masuk</h5>
-            <span class="badge bg-primary" id="quotationCountBadge">{{ $quotations->total() }} Penawaran</span>
+            <h5 class="mb-0 fw-semibold">Quotation List</h5>
+            <span class="badge bg-primary" id="quotationCountBadge">{{ $quotations->total() }} Quotation</span>
         </div>
         <div class="card-body">
             {{-- Filter --}}
@@ -131,32 +131,32 @@
             <form method="GET" action="{{ route('purchasing.quotations.index') }}"
                 class="quotation-filter row g-3 mb-4 align-items-end" id="quotationFilterForm">
                 <div class="col-lg-2 col-md-6">
-                    <label class="form-label small fw-medium">No. PR</label>
+                    <label class="form-label small fw-medium">PR No.</label>
                     <input type="text" name="pr_number" class="form-control form-control-sm"
                         value="{{ request('pr_number') }}" placeholder="REQ/MM/YYYY/XXX">
                 </div>
                 <div class="col-lg-4 col-md-12">
-                    <label class="form-label small fw-medium">Rentang Tanggal</label>
+                    <label class="form-label small fw-medium">Rentang Date</label>
                     <div class="date-range-control" id="quotationDateRangeControl">
                         <div class="date-range-segment">
                             <span class="date-range-label">Dari</span>
                             <input type="month" name="date_from" id="quotationDateFrom" value="{{ request('date_from') }}"
-                                placeholder="MM/YYYY" aria-label="Dari tanggal">
+                                placeholder="MM/YYYY" aria-label="Dari date">
                         </div>
                         <span class="date-range-divider">-</span>
                         <div class="date-range-segment">
                             <span class="date-range-label">Sampai</span>
                             <input type="month" name="date_to" id="quotationDateTo" value="{{ request('date_to') }}"
-                                placeholder="MM/YYYY" aria-label="Sampai tanggal" aria-describedby="quotationDateError">
+                                placeholder="MM/YYYY" aria-label="Sampai date" aria-describedby="quotationDateError">
                         </div>
                     </div>
-                    <div class="form-text text-danger d-none" id="quotationDateError" aria-live="polite">Tanggal akhir tidak
-                        boleh sebelum tanggal awal</div>
+                    <div class="form-text text-danger d-none" id="quotationDateError" aria-live="polite">Date akhir not
+                        End date cannot be before start date.</div>
                 </div>
                 <div class="col-lg-2 col-md-6">
                     <label class="form-label small fw-medium">Supplier</label>
                     <select name="supplier_id" class="form-select form-select-sm">
-                        <option value="">Semua Supplier</option>
+                        <option value="">All Supplier</option>
                         @foreach($suppliers as $supplier)
                             <option value="{{ $supplier->id }}" {{ request('supplier_id') == $supplier->id ? 'selected' : '' }}>
                                 {{ $supplier->name }}
@@ -167,18 +167,18 @@
                 <div class="col-lg-1 col-md-6">
                     <label class="form-label small fw-medium">Status</label>
                     <select name="status" class="form-select form-select-sm">
-                        <option value="">Semua Status</option>
+                        <option value="">All Status</option>
                         <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
                         <option value="revision_requested" {{ request('status') == 'revision_requested' ? 'selected' : '' }}>
-                            Perlu Revisi</option>
+                            Needs Revision</option>
                         <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>Accepted</option>
                         <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     </select>
                 </div>
                 <div class="col-lg-1 col-md-6">
-                    <label class="form-label small fw-medium">Mata Uang</label>
+                    <label class="form-label small fw-medium">Currency</label>
                     <select name="currency" class="form-select form-select-sm">
-                        <option value="">Semua</option>
+                        <option value="">All</option>
                         @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                             <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ $currency }}</option>
                         @endforeach
@@ -198,17 +198,17 @@
                         <tr>
                             <th width="4%">No</th>
                             <th>Supplier</th>
-                            <th>No. PR</th>
-                            <th>Periode</th>
-                            <th class="text-center">Mata Uang</th>
-                            <th class="text-center">Jumlah Item</th>
+                            <th>PR No.</th>
+                            <th>Period</th>
+                            <th class="text-center">Currency</th>
+                            <th class="text-center">Amount Item</th>
                             <th class="text-center">Status</th>
-                            <th>Tanggal Diajukan</th>
+                            <th>Date Submitted</th>
                             <th>
-                                Masa Berlaku
-                                <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Penawaran kadaluarsa tidak bisa dibuat PO sebelum supplier mengirim revisi."></i>
+                                Valid Until
+                                <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Expired quotations cannot be used to create a PO until the supplier submits a revision."></i>
                             </th>
-                            <th class="text-end">Aksi</th>
+                            <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -224,9 +224,9 @@
                                         {{ $q->supplier->name }}
                                     </div>
                                 </td>
-                                <td><span class="fw-bold text-primary">{{ $q->purchaseRequirement->pr_number ?? '-' }}</span>
+                                <td><span class="fw-bold text-primary">{{ $q->purchaseRequisition->pr_number ?? '-' }}</span>
                                 </td>
-                                <td>{{ $q->purchaseRequirement->period->name ?? '-' }}</td>
+                                <td>{{ $q->purchaseRequisition->period->name ?? '-' }}</td>
                                 <td class="text-center"><span class="badge bg-dark">{{ $q->currency }}</span></td>
                                 <td class="text-center">{{ $q->items->count() }}</td>
                                 <td class="text-center">
@@ -256,7 +256,7 @@
                             <tr>
                                 <td colspan="10" class="text-center text-muted py-4"><i class="bi bi-inbox"
                                         style="font-size:2rem"></i>
-                                    <p class="mt-2 mb-0">Belum ada penawaran masuk.</p>
+                                    <p class="mt-2 mb-0">No quotations received yet.</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -369,7 +369,7 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error('Gagal memuat data penawaran.');
+                        throw new Error('Failed to load quotation data.');
                     }
 
                     const html = await response.text();

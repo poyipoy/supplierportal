@@ -63,7 +63,7 @@ class StressTestSeeder extends Seeder
         
         $this->command->info("Generating $totalPrs Purchase Requirements & Items...");
 
-        $prIdStart = DB::table('purchase_requirements')->max('id') ?? 0;
+        $prIdStart = DB::table('purchase_requisitions')->max('id') ?? 0;
         $prItemIdStart = DB::table('pr_items')->max('id') ?? 0;
 
         $prChunks = [];
@@ -103,7 +103,7 @@ class StressTestSeeder extends Seeder
             }
 
             if ($i % $chunkSize === 0) {
-                DB::table('purchase_requirements')->insert($prChunks);
+                DB::table('purchase_requisitions')->insert($prChunks);
                 DB::table('pr_items')->insert($prItemChunks);
                 $prChunks = [];
                 $prItemChunks = [];

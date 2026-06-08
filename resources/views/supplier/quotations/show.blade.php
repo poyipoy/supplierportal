@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Penawaran — ADASI Portal')
-@section('page-title', 'Detail Penawaran')
+@section('title', 'Quotation Details - ADASI Portal')
+@section('page-title', 'Quotation Details')
 
 @section('content')
 <x-breadcrumb :items="[
     'Dashboard' => route('supplier.dashboard'),
-    'Daftar Penawaran' => route('supplier.quotations.index'),
-    'Detail Penawaran' => '#'
+    'Quotation List' => route('supplier.quotations.index'),
+    'Quotation Details' => '#'
 ]" />
     <div class="mb-3">
-        <a href="{{ route('supplier.quotations.period', $quotation->purchaseRequirement->period_id) }}"
+        <a href="{{ route('supplier.quotations.period', $quotation->purchaseRequisition->period_id) }}"
             class="text-decoration-none text-muted small">
-            <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Permintaan
+            <i class="bi bi-arrow-left me-1"></i> Back to Requisition List
         </a>
     </div>
 
@@ -20,7 +20,7 @@
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Detail Harga Material</h6>
+                    <h6 class="mb-0 fw-bold">Material Price Details</h6>
                     <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
                 </div>
                 <div class="card-body p-0">
@@ -31,12 +31,12 @@
                                     <th width="5%">No</th>
                                     <th width="22%">Material</th>
                                     <th width="8%">Qty</th>
-                                    <th width="10%">Berat/Unit (Kg)</th>
-                                    <th width="10%">Total Berat (Kg)</th>
-                                    <th width="15%">Harga ({{ $quotation->currency }})</th>
+                                    <th width="10%">Weight/Unit (Kg)</th>
+                                    <th width="10%">Total Weight (Kg)</th>
+                                    <th width="15%">Price ({{ $quotation->currency }})</th>
                                     <th width="15%">Amount ({{ $quotation->currency }})</th>
                                     <th width="15%">Est. IDR</th>
-                                    <th width="10%">Catatan</th>
+                                    <th width="10%">Notes</th>
                                     <th width="10%">MTC</th>
                                 </tr>
                             </thead>
@@ -102,16 +102,16 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">Informasi Penawaran</h6>
+                    <h6 class="mb-0 fw-bold">Quotation Information</h6>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-5 text-muted small">Waktu Submit</div>
+                        <div class="col-5 text-muted small">Submit Time</div>
                         <div class="col-7 fw-medium">
                             {{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}</div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-5 text-muted small">Kurs Dipakai</div>
+                        <div class="col-5 text-muted small">Exchange Rate Used</div>
                         <div class="col-7 fw-medium">
                             @if($quotation->exchange_rate)
                                 1 {{ $quotation->currency }} = Rp
@@ -123,30 +123,30 @@
                     </div>
                     <hr>
                     <div class="row mb-3">
-                        <div class="col-5 text-muted small">Est. Pengiriman</div>
+                        <div class="col-5 text-muted small">Est. Delivery</div>
                         <div class="col-7 fw-medium">
                             {{ $quotation->estimated_delivery ? \Carbon\Carbon::parse($quotation->estimated_delivery)->format('d F Y') : '-' }}
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-5 text-muted small">Masa Berlaku</div>
+                        <div class="col-5 text-muted small">Valid Until</div>
                         <div class="col-7 fw-medium">
                             {{ $quotation->validity_period ? \Carbon\Carbon::parse($quotation->validity_period)->format('d F Y') : '-' }}
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-12 text-muted small mb-1">Syarat Pembayaran</div>
+                        <div class="col-12 text-muted small mb-1">Payment Terms</div>
                         <div class="col-12 fw-medium p-2 bg-light rounded">
-                            {{ $quotation->payment_terms ?: 'Tidak ada syarat khusus' }}</div>
+                            {{ $quotation->payment_terms ?: 'No special terms' }}</div>
                     </div>
                     <div class="row">
-                        <div class="col-12 text-muted small mb-1">Catatan Umum</div>
+                        <div class="col-12 text-muted small mb-1">General Notes</div>
                         <div class="col-12 fw-medium p-2 bg-light rounded">
-                            {{ $quotation->general_notes ?: 'Tidak ada catatan' }}</div>
+                            {{ $quotation->general_notes ?: 'No notes' }}</div>
                     </div>
                     @if($quotation->reviewer_notes)
                         <div class="row mt-3">
-                            <div class="col-12 text-muted small mb-1">Catatan Purchasing</div>
+                            <div class="col-12 text-muted small mb-1">Notes Purchasing</div>
                             <div class="col-12 fw-medium p-2 bg-warning bg-opacity-10 border border-warning rounded">
                                 {{ $quotation->reviewer_notes }}
                             </div>
@@ -158,30 +158,29 @@
             @if($quotation->status === 'revision_requested')
                 <div class="alert alert-warning small">
                     <i class="bi bi-arrow-repeat me-1"></i>
-                    Purchasing meminta revisi penawaran ini. Perbarui harga, estimasi pengiriman, dan masa berlaku sebelum mengirim ulang.
+                    Purchasing requested a revision for this quotation. Update the price, estimated delivery, and validity date before resubmitting.
                 </div>
                 <div class="d-grid gap-2">
-                    <a href="{{ route('supplier.quotations.create', $quotation->purchaseRequirement->id) }}" class="btn btn-warning text-dark fw-semibold">
-                        <i class="bi bi-pencil-square me-1"></i> Revisi Penawaran
+                    <a href="{{ route('supplier.quotations.create', $quotation->purchaseRequisition->id) }}" class="btn btn-warning text-dark fw-semibold">
+                        <i class="bi bi-pencil-square me-1"></i> Revise Quotation
                     </a>
                     @if($conversation)
                         <a href="{{ route('supplier.conversations.show', $conversation->id) }}" class="btn btn-outline-primary" data-open-chat-conversation="{{ $conversation->id }}">
-                            <i class="bi bi-chat-dots me-1"></i> Buka Chat Revisi
+                            <i class="bi bi-chat-dots me-1"></i> Open Revision Chat
                         </a>
                     @endif
                 </div>
             @elseif($quotation->status === 'rejected')
                 <div class="alert alert-dark small">
-                    <i class="bi bi-x-circle-fill me-1"></i> Penawaran ini tidak dipilih oleh tim Purchasing ADASI.
+                    <i class="bi bi-x-circle-fill me-1"></i> This quotation was not selected by the ADASI Purchasing team.
                 </div>
             @elseif($quotation->status === 'accepted')
                 <div class="alert alert-success small">
-                    <i class="bi bi-check-circle-fill me-1"></i> Penawaran ini dipilih oleh tim Purchasing ADASI.
+                    <i class="bi bi-check-circle-fill me-1"></i> This quotation was selected by the ADASI Purchasing team.
                 </div>
             @else
                 <div class="alert alert-info small">
-                    <i class="bi bi-info-circle-fill me-1"></i> Penawaran Anda sudah terekam dan sedang menunggu evaluasi dari
-                    tim Purchasing ADASI.
+                    <i class="bi bi-info-circle-fill me-1"></i> Your quotation has been recorded and is waiting for evaluation by the ADASI Purchasing team.
                 </div>
             @endif
         </div>

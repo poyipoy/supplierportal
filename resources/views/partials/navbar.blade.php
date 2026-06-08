@@ -11,7 +11,7 @@
     <div class="d-flex align-items-center gap-3">
         {{-- Chat Icon (Only for Purchasing and Supplier) --}}
         @if(in_array(auth()->user()->role, ['purchasing', 'supplier']))
-            <a href="{{ route(auth()->user()->role . '.conversations.index') }}" class="btn btn-sm btn-light position-relative" title="Chat & Negosiasi" data-chat-drawer>
+            <a href="{{ route(auth()->user()->role . '.conversations.index') }}" class="btn btn-sm btn-light position-relative" title="Chat & Negotiation" data-chat-drawer>
                 <i class="bi bi-chat-dots" style="font-size:1.2rem;"></i>
                 <span class="chat-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $initChatCount > 0 ? '' : 'd-none' }}" style="font-size:0.6rem;">
                     {{ $initChatCount }}
@@ -52,7 +52,7 @@
             });
         @endphp
         <div class="dropdown">
-            <button class="btn btn-sm btn-light position-relative" type="button" title="Notifikasi"
+            <button class="btn btn-sm btn-light position-relative" type="button" title="Notifications"
                 data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                 <i class="bi bi-bell" style="font-size:1.2rem;"></i>
                 <span class="notif-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $initNotifCount > 0 ? '' : 'd-none' }}" style="font-size:0.6rem;">
@@ -61,7 +61,7 @@
             </button>
             <div class="dropdown-menu dropdown-menu-end notification-dropdown">
                 <div class="notification-panel">
-                    <div class="notification-menu nav nav-pills" role="tablist" aria-label="Kategori notifikasi">
+                    <div class="notification-menu nav nav-pills" role="tablist" aria-label="Kategori notification">
                         <div class="notification-menu-heading">
                             <i class="bi bi-layers me-1"></i>Kategori
                         </div>
@@ -71,7 +71,7 @@
                                 data-bs-toggle="pill"
                                 data-bs-target="#notif-pane-{{ $key }}"
                                 data-notification-category="{{ $key }}"
-                                data-notification-mark-label="{{ $key === \App\Support\NotificationCategory::ALL ? 'Tandai Semua Dibaca' : 'Tandai Semua ' . $category['short_label'] . ' Dibaca' }}"
+                                data-notification-mark-label="{{ $key === \App\Support\NotificationCategory::ALL ? 'Mark All as Read' : 'Mark All ' . $category['short_label'] . ' Read' }}"
                                 type="button"
                                 role="tab"
                                 aria-controls="notif-pane-{{ $key }}"
@@ -91,10 +91,10 @@
                     <div class="notification-list-pane">
                         <div class="px-3 py-2 border-bottom bg-white d-flex align-items-center justify-content-between">
                             <div>
-                                <div class="fw-bold small">Notifikasi</div>
+                                <div class="fw-bold small">Notifications</div>
                                 <div class="text-muted" style="font-size:.72rem">Dipisah berdasarkan jenis aktivitas</div>
                             </div>
-                            <span class="badge bg-light text-muted border">{{ $navbarNotifications->count() }} notifikasi</span>
+                            <span class="badge bg-light text-muted border">{{ $navbarNotifications->count() }} notification</span>
                         </div>
                         <div class="tab-content notification-list">
                             @foreach($notificationCategories as $key => $category)
@@ -121,9 +121,9 @@
                                                 </div>
                                                 <div class="min-w-0 flex-grow-1">
                                                     <div class="d-flex justify-content-between gap-2">
-                                                        <div class="fw-semibold small text-truncate">{{ $notif->data['title'] ?? 'Notifikasi' }}</div>
+                                                        <div class="fw-semibold small text-truncate">{{ $notif->data['title'] ?? 'Notifications' }}</div>
                                                         @if(!$notif->read_at)
-                                                            <span class="badge bg-danger flex-shrink-0" style="font-size:.55rem" data-notification-new-badge>Baru</span>
+                                                            <span class="badge bg-danger flex-shrink-0" style="font-size:.55rem" data-notification-new-badge>New</span>
                                                         @endif
                                                     </div>
                                                     <div class="text-muted" style="font-size:.76rem">{{ \Illuminate\Support\Str::limit($notif->data['message'] ?? '-', 92) }}</div>
@@ -139,7 +139,7 @@
                                     @empty
                                         <div class="text-center text-muted py-5 px-3">
                                             <i class="bi {{ $category['icon'] }}" style="font-size:2rem;opacity:.45"></i>
-                                            <div class="fw-semibold mt-2">Tidak ada {{ strtolower($category['label']) }}</div>
+                                            <div class="fw-semibold mt-2">No {{ strtolower($category['label']) }}</div>
                                             <div style="font-size:.75rem">{{ $category['description'] }}</div>
                                         </div>
                                     @endforelse
@@ -151,7 +151,7 @@
                                 @csrf
                                 <input type="hidden" name="category" value="{{ \App\Support\NotificationCategory::ALL }}" data-notification-category-input>
                                 <button type="submit" class="btn btn-sm btn-primary w-100" style="background-color: var(--adasi-blue);" data-notification-mark-button>
-                                    Tandai Semua Dibaca
+                                    Mark All as Read
                                 </button>
                             </form>
                         </div>
@@ -267,7 +267,7 @@
                 }
 
                 if (markButton) {
-                    markButton.textContent = tab.dataset.notificationMarkLabel || 'Tandai Semua Dibaca';
+                    markButton.textContent = tab.dataset.notificationMarkLabel || 'Mark All as Read';
                 }
             });
 
@@ -286,7 +286,7 @@
                     const scrollTop = scrollPane?.scrollTop || 0;
                     const category = activeTab?.dataset.notificationCategory || categoryInput?.value || 'all';
                     const button = form.querySelector('[data-notification-mark-button]');
-                const originalLabel = button?.textContent || 'Tandai Semua Dibaca';
+                const originalLabel = button?.textContent || 'Mark All as Read';
                 const formData = new FormData(form);
                 formData.set('category', category);
 
@@ -310,7 +310,7 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error('Gagal menandai notifikasi.');
+                        throw new Error('Failed to mark notification.');
                     }
 
                     const data = await response.json();
@@ -377,7 +377,7 @@
                     // Fallback: reload current page
                     window.location.reload();
                 } catch (error) {
-                    console.error('Gagal mark notification:', error);
+                    console.error('Failed to mark notification:', error);
                     item.dataset.processing = 'false';
                     item.style.opacity = '1';
                 }

@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'QC Dashboard — ADASI Portal')
+@section('title', 'QC Dashboard - ADASI Portal')
 @section('page-title', 'Dashboard Quality Control')
 
 @section('content')
 <div class="row g-4 mb-4">
     <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-            <div class="card-body"><div class="text-muted small fw-medium mb-1">TOTAL INSPEKSI</div><h3 class="fw-bold mb-0">{{ $totalInspections }}</h3></div>
+            <div class="card-body"><div class="text-muted small fw-medium mb-1">TOTAL INSPECTIONS</div><h3 class="fw-bold mb-0">{{ $totalInspections }}</h3></div>
         </div>
     </div>
     <div class="col-md-3">
@@ -22,7 +22,7 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
             <div class="card-body d-flex justify-content-between align-items-center">
-                <div><div class="text-muted small fw-medium mb-1">MENUNGGU INSPEKSI</div><h3 class="fw-bold mb-0 text-warning">{{ $waitingInspections }}</h3></div>
+                <div><div class="text-muted small fw-medium mb-1">WAITING FOR INSPECTION</div><h3 class="fw-bold mb-0 text-warning">{{ $waitingInspections }}</h3></div>
                 @if($firstWaitingPo)
                 <a href="{{ route('qc.inspections.create', $firstWaitingPo->id) }}" class="btn btn-warning btn-sm text-dark"><i class="bi bi-play-fill"></i> Mulai</a>
                 @endif
@@ -39,14 +39,14 @@
                 @if($totalInspections > 0)
                     <div style="width:220px;height:220px;"><canvas id="qualityChart"></canvas></div>
                 @else
-                    <div class="text-muted text-center">Belum ada data inspeksi.</div>
+                    <div class="text-muted text-center">No inspection data available.</div>
                 @endif
             </div>
         </div>
     </div>
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Tren OK vs NG (Histori)</h6></div>
+            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">OK vs NG Trend (History)</h6></div>
             <div class="card-body"><canvas id="trendChart" height="200"></canvas></div>
         </div>
     </div>
@@ -54,13 +54,13 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">10 Inspeksi Terbaru</h6>
-        <a href="{{ route('qc.inspections.index') }}" class="btn btn-sm btn-light">Lihat Semua</a>
+        <h6 class="mb-0 fw-bold">10 Latest Inspections</h6>
+        <a href="{{ route('qc.inspections.index') }}" class="btn btn-sm btn-light">View All</a>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>No. PO</th><th>Supplier</th><th>Tanggal Inspeksi</th><th class="text-center">Status</th><th class="text-end">Aksi</th></tr></thead>
+                <thead class="table-light"><tr><th>PO No.</th><th>Supplier</th><th>Inspection Date</th><th class="text-center">Status</th><th class="text-end">Action</th></tr></thead>
                 <tbody>
                     @forelse($recentInspections as $insp)
                     <tr>
@@ -68,9 +68,9 @@
                         <td>{{ $insp->purchaseOrder->supplier->name }}</td>
                         <td>{{ $insp->inspected_at->format('d M Y') }}</td>
                         <td class="text-center"><x-status-badge type="qc" :status="$insp->status" /></td>
-                        <td class="text-end"><a href="{{ route('qc.inspections.show', $insp->id) }}" class="btn btn-sm btn-outline-info">Detail</a></td>
+                        <td class="text-end"><a href="{{ route('qc.inspections.show', $insp->id) }}" class="btn btn-sm btn-outline-info">Details</a></td>
                     </tr>
-                    @empty<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada data.</td></tr>@endforelse
+                    @empty<tr><td colspan="5" class="text-center text-muted py-3">No data.</td></tr>@endforelse
                 </tbody>
             </table>
         </div>

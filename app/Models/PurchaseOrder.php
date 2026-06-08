@@ -124,10 +124,10 @@ class PurchaseOrder extends Model
     /**
      * Ambil semua PR terkait PO ini.
      */
-    public function purchaseRequirements(): Collection
+    public function purchaseRequisitions(): Collection
     {
         return $this->quotations->map(function ($q) {
-            return $q->purchaseRequirement;
+            return $q->purchaseRequisition;
         })->filter()->unique('id');
     }
 

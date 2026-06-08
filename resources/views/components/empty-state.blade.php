@@ -1,12 +1,25 @@
 @props([
+    'id' => null,
+    'testId' => null,
     'icon' => 'bi-clipboard-data',
-    'title' => 'Belum ada data',
+    'title' => 'No data available',
     'text' => '',
     'actionUrl' => null,
     'actionText' => null,
     'actionIcon' => 'bi-plus-circle'
 ])
-<div {{ $attributes->merge(['class' => 'text-center py-5']) }}>
+@php
+    $baseAttributes = ['class' => 'text-center py-5'];
+
+    if ($id) {
+        $baseAttributes['id'] = $id;
+    }
+
+    if ($testId) {
+        $baseAttributes['data-testid'] = $testId;
+    }
+@endphp
+<div {{ $attributes->merge($baseAttributes) }}>
     <i class="bi {{ $icon }} text-secondary" style="font-size: 3rem; opacity: 0.4;"></i>
     <h6 class="mt-3 fw-bold">{{ $title }}</h6>
     @if($text)

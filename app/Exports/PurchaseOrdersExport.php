@@ -15,13 +15,13 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings, ShouldAutoSi
 
     public function collection()
     {
-        $q = PurchaseOrder::with(['supplier', 'quotations.purchaseRequirement', 'quotations.items.prItem', 'quotations.exchange_rate'])->orderBy('created_at', 'desc');
+        $q = PurchaseOrder::with(['supplier', 'quotations.purchaseRequisition', 'quotations.items.prItem', 'quotations.exchange_rate'])->orderBy('created_at', 'desc');
         if ($this->supplierId) $q->where('supplier_id', $this->supplierId);
         if ($this->startDate) $q->whereDate('created_at', '>=', $this->startDate);
         if ($this->endDate) $q->whereDate('created_at', '<=', $this->endDate);
         $rows = collect();
         foreach ($q->get() as $po) {
-            $prNumbers = $po->quotations->map(fn($qt) => optional($qt->purchaseRequirement)->pr_number)->filter()->implode(', ') ?: '-';
+            $prNumbers = $po->quotations->map(fn($qt) => optional($qt->purchaseRequisition)->pr_number)->filter()->implode(', ') ?: '-';
             $materials = $po->quotations->flatMap(fn($qt) => $qt->items->map(fn($i) => optional($i->prItem)->material_name))->filter()->implode(', ') ?: '-';
             $totalAmount = $po->quotations->sum(fn($qt) => $qt->items->sum('amount'));
             $currency = $po->currency ?? '-';
@@ -40,5 +40,5 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings, ShouldAutoSi
         return $rows;
     }
 
-    public function headings(): array { return ['Nomor PO', 'Nomor PR', 'Supplier', 'Material', 'Harga (Mata Uang)', 'Total IDR', 'Est. Kedatangan', 'Status']; }
+    public function headings(): array { return ['PO Number', 'PR Number', 'Supplier', 'Material', 'Price (Currency)', 'Total IDR', 'Est. Arrival', 'Status']; }
 }

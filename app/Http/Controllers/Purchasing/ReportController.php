@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class ReportController extends Controller
 {
     /**
-     * Tampilkan halaman utama Laporan (Dashboard Export).
+     * Tampilkan halaman utama Report (Dashboard Export).
      */
     public function index()
     {

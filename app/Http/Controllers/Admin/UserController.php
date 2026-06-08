@@ -40,13 +40,13 @@ class UserController extends Controller
                     };
                 })
                 ->addColumn('status_badge', fn($user) => $user->is_active
-                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success">Aktif</span>'
-                    : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Nonaktif</span>')
+                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success">Active</span>'
+                    : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Inactive</span>')
                 ->addColumn('created_date', fn($user) => $user->created_at->format('d M Y'))
                 ->addColumn('action', function ($user) {
                     $html = '<a href="' . route('admin.users.edit', $user->id) . '" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>';
                     if ($user->id !== auth()->id()) {
-                        $html .= ' <form action="' . route('admin.users.destroy', $user->id) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button></form>';
+                        $html .= ' <form action="' . route('admin.users.destroy', $user->id) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
                     }
                     return $html;
                 })
@@ -109,11 +109,11 @@ class UserController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', "User berhasil ditambahkan.");
+            return redirect()->route('admin.users.index')->with('success', "User successfully added.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', "Terjadi kesalahan: {$e->getMessage()}");
+            return back()->withInput()->with('error', "An error occurred: {$e->getMessage()}");
         }
     }
 
@@ -184,11 +184,11 @@ class UserController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', "Data user berhasil diperbarui.");
+            return redirect()->route('admin.users.index')->with('success', "Data user successfully updated.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', "Terjadi kesalahan: {$e->getMessage()}");
+            return back()->withInput()->with('error', "An error occurred: {$e->getMessage()}");
         }
     }
 
@@ -198,7 +198,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', "Anda tidak dapat menghapus akun Anda sendiri.");
+            return back()->with('error', "You cannot delete your own account.");
         }
 
         try {
@@ -209,10 +209,10 @@ class UserController extends Controller
             $user->delete();
             DB::commit();
             
-            return redirect()->route('admin.users.index')->with('success', "User berhasil dihapus.");
+            return redirect()->route('admin.users.index')->with('success', "User successfully deleted.");
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', "Gagal menghapus user, pastikan tidak ada data yang terkait erat.");
+            return back()->with('error', "Failed to delete user. Make sure there is no tightly related data.");
         }
     }
 }

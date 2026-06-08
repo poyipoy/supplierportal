@@ -1,10 +1,10 @@
 @extends('layouts.app')
-@section('title', 'Detail Penawaran — ADASI Portal')
-@section('page-title', 'Detail Penawaran')
+@section('title', 'Quotation Details - ADASI Portal')
+@section('page-title', 'Quotation Details')
 
 @section('content')
 @php
-    $relatedPrBaseUrl = route('purchasing.requirements.show', $quotation->purchaseRequirement->id);
+    $relatedPrBaseUrl = route('purchasing.requisitions.show', $quotation->purchaseRequisition->id);
     $relatedPrPath = parse_url($relatedPrBaseUrl, PHP_URL_PATH);
     $returnUrl = request(\App\Support\PurchasingNavigation::RETURN_URL_KEY);
     $returnPath = is_string($returnUrl) ? parse_url($returnUrl, PHP_URL_PATH) : null;
@@ -13,45 +13,45 @@
         && \App\Support\PurchasingNavigation::isSafeUrl($returnUrl)
     )
         ? $returnUrl
-        : route('purchasing.requirements.show', [
-            $quotation->purchaseRequirement->id,
+        : route('purchasing.requisitions.show', [
+            $quotation->purchaseRequisition->id,
             \App\Support\PurchasingNavigation::RETURN_URL_KEY => \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index'),
         ]);
 @endphp
 
 <x-breadcrumb :items="[
     'Dashboard' => route('purchasing.dashboard'),
-    'Daftar Penawaran' => route('purchasing.quotations.index'),
-    'Detail Penawaran' => '#'
+    'Quotation List' => route('purchasing.quotations.index'),
+    'Quotation Details' => '#'
 ]" />
 @php
     $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($quotation->validity_period);
 @endphp
 
-<div class="mb-3"><a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Kembali ke Daftar Penawaran</a></div>
+<div class="mb-3"><a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Back to Quotation List</a></div>
 
 <div class="row g-4">
     <div class="col-lg-8">
-        {{-- Info Penawaran --}}
+        {{-- Info Quotation --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">Informasi Penawaran</h6>
+                <h6 class="mb-0 fw-bold">Quotation Information</h6>
                 <span class="badge {{ $quotation->statusBadgeClass() }} text-uppercase px-3 py-2">{{ $quotation->statusLabel() }}</span>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="mb-3"><span class="text-muted small d-block">No. PR</span><span class="fw-bold text-primary">{{ $quotation->purchaseRequirement->pr_number ?? '-' }}</span></div>
-                        <div class="mb-3"><span class="text-muted small d-block">Periode</span><span class="fw-medium">{{ $quotation->purchaseRequirement->period->name ?? '-' }}</span></div>
-                        <div class="mb-3"><span class="text-muted small d-block">Mata Uang</span><span class="badge bg-dark">{{ $quotation->currency }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">PR No.</span><span class="fw-bold text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">Period</span><span class="fw-medium">{{ $quotation->purchaseRequisition->period->name ?? '-' }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">Currency</span><span class="badge bg-dark">{{ $quotation->currency }}</span></div>
                     </div>
                     <div class="col-md-6">
-                        <div class="mb-3"><span class="text-muted small d-block">Tanggal Diajukan</span><span class="fw-medium">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d F Y, H:i') : '-' }}</span></div>
-                        <div class="mb-3"><span class="text-muted small d-block">Estimasi Pengiriman</span><span class="fw-medium">{{ $quotation->estimated_delivery ? $quotation->estimated_delivery->format('d F Y') : '-' }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">Date Submitted</span><span class="fw-medium">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d F Y, H:i') : '-' }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">Estimated Delivery</span><span class="fw-medium">{{ $quotation->estimated_delivery ? $quotation->estimated_delivery->format('d F Y') : '-' }}</span></div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">
-                                Masa Berlaku Penawaran
-                                <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Penawaran kadaluarsa tidak bisa dibuat PO sebelum supplier mengirim revisi."></i>
+                                Quotation Valid Until
+                                <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Expired quotations cannot be used to create a PO until the supplier submits a revision."></i>
                             </span>
                             @if($quotation->validity_period)
                                 <span class="fw-medium">{{ $quotation->validity_period->format('d F Y') }}</span>
@@ -60,18 +60,18 @@
                                 {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                             @endif
                         </div>
-                        <div class="mb-3"><span class="text-muted small d-block">Termin Pembayaran</span><span class="fw-medium">{{ $quotation->payment_terms ?? '-' }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">Payment Terms</span><span class="fw-medium">{{ $quotation->payment_terms ?? '-' }}</span></div>
                     </div>
                 </div>
                 @if($quotation->status === 'revision_requested')
                     <div class="alert alert-warning small mb-0">
                         <i class="bi bi-arrow-repeat me-1"></i>
-                        Revisi sudah diminta. Supplier perlu mengirim ulang penawaran dengan masa berlaku baru.
+                        Revision has already been requested. The supplier needs to resubmit the quotation with a new validity date.
                     </div>
                 @elseif($quotation->isExpired())
                     <div class="alert alert-danger small mb-0">
                         <i class="bi bi-exclamation-triangle me-1"></i>
-                        Masa berlaku penawaran sudah kadaluarsa. Minta supplier mengirim penawaran ulang sebelum membuat PO.
+                        The quotation validity has expired. Ask the supplier to resubmit the quotation before creating a PO.
                     </div>
                 @endif
                 @if($quotation->general_notes)
@@ -79,17 +79,17 @@
                 @endif
                 @if($quotation->reviewer_notes)
                     <div class="mt-2 p-3 bg-warning bg-opacity-10 border border-warning rounded small">
-                        <div class="fw-semibold mb-1"><i class="bi bi-pencil-square me-1"></i> Catatan Review</div>
+                        <div class="fw-semibold mb-1"><i class="bi bi-pencil-square me-1"></i> Review Notes</div>
                         {{ $quotation->reviewer_notes }}
                     </div>
                 @endif
             </div>
         </div>
 
-        {{-- Tabel Item + Harga --}}
+        {{-- Item + Price Table --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Detail Harga Material ({{ $quotation->items->count() }} Item)</h6>
+                <h6 class="mb-0 fw-bold">Material Price Details ({{ $quotation->items->count() }} Item)</h6>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -99,11 +99,11 @@
                                 <th>No</th>
                                 <th class="text-start">Material</th>
                                 <th>Qty</th>
-                                <th>Berat/Unit (Kg)</th>
-                                <th>Total Berat (Kg)</th>
-                                <th>Harga/Kg ({{ $quotation->currency }})</th>
+                                <th>Weight/Unit (Kg)</th>
+                                <th>Total Weight (Kg)</th>
+                                <th>Price/Kg ({{ $quotation->currency }})</th>
                                 <th>Amount ({{ $quotation->currency }})</th>
-                                <th>Harga/Kg (IDR)</th>
+                                <th>Price/Kg (IDR)</th>
                                 <th>Amount (IDR)</th>
                                 <th>MTC</th>
                             </tr>
@@ -189,39 +189,39 @@
             </div>
         </div>
 
-        {{-- Negosiasi & Chat --}}
+        {{-- Negotiation & Chat --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-1"></i> Negosiasi & Chat</h6>
+                <h6 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-1"></i> Negotiation & Chat</h6>
             </div>
             <div class="card-body">
                 @if($chatAvailable)
-                    <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $quotation->purchaseRequirement->id, 'supplier_id' => $quotation->supplier_id]) }}" method="POST" data-chat-start-form>
+                    <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $quotation->purchaseRequisition->id, 'supplier_id' => $quotation->supplier_id]) }}" method="POST" data-chat-start-form>
                         @csrf
                         <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                         <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center gap-2" style="background-color: var(--adasi-blue);">
-                            <span class="text-truncate"><i class="bi bi-chat-dots me-2"></i> Chat dengan {{ $supplierDisplayName }}</span>
+                            <span class="text-truncate"><i class="bi bi-chat-dots me-2"></i> Chat with {{ $supplierDisplayName }}</span>
                             <i class="bi bi-chevron-right flex-shrink-0"></i>
                         </button>
                     </form>
                     <div class="mt-3 text-muted small">
-                        Gunakan chat ini untuk klarifikasi harga, lead time, masa berlaku penawaran, atau dokumen pendukung sebelum membuat PO.
+                        Use this chat to clarify price, lead time, quotation validity, or supporting documents before creating a PO.
                     </div>
                 @else
                     <div class="alert alert-secondary small mb-0">
                         <i class="bi bi-info-circle me-1"></i>
-                        Chat tersedia setelah penawaran dikirim supplier atau sudah diterima.
+                        Chat is available after the quotation is submitted by the supplier or accepted.
                     </div>
                 @endif
             </div>
         </div>
 
-        {{-- Kurs --}}
+        {{-- Exchange Rate --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
                 <h6 class="mb-0 fw-bold">
-                    <i class="bi bi-currency-exchange me-1"></i> Kurs Konversi
-                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Total histori memakai kurs snapshot penawaran ini, bukan kurs terbaru."></i>
+                    <i class="bi bi-currency-exchange me-1"></i> Conversion Rate
+                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Historycal total uses the exchange rate snapshot of this quotation, not the latest rate."></i>
                 </h6>
             </div>
             <div class="card-body text-center">
@@ -229,55 +229,55 @@
                     <div class="p-3 bg-light rounded">
                         <div class="text-muted small mb-1">{{ $quotation->currency }} → IDR</div>
                         <h4 class="fw-bold text-primary mb-0">Rp {{ number_format($quotationRate->rate_to_idr, 0, ',', '.') }}</h4>
-                        <div class="text-muted mt-1" style="font-size:.7rem">Kurs penawaran: {{ $quotationRate->valid_from->format('d M Y') }}</div>
+                        <div class="text-muted mt-1" style="font-size:.7rem">quotation exchange rate: {{ $quotationRate->valid_from->format('d M Y') }}</div>
                         @if($latestRate && $latestRate->id !== $quotationRate->id)
                             <div class="text-muted mt-2 pt-2 border-top" style="font-size:.7rem">
-                                Kurs terbaru: Rp {{ number_format($latestRate->rate_to_idr, 0, ',', '.') }}<br>
-                                <span>Tidak dipakai untuk total histori.</span>
+                                Latest exchange rate: Rp {{ number_format($latestRate->rate_to_idr, 0, ',', '.') }}<br>
+                                <span>Not used for historical totals.</span>
                             </div>
                         @endif
                     </div>
                 @else
-                    <div class="alert alert-warning small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Kurs penawaran {{ $quotation->currency }} belum tersedia.</div>
+                    <div class="alert alert-warning small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>quotation exchange rate {{ $quotation->currency }} is not available yet.</div>
                 @endif
             </div>
         </div>
 
-        {{-- Aksi --}}
+        {{-- Action --}}
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Aksi</h6></div>
+            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Action</h6></div>
             <div class="card-body">
                 @if($quotation->status === 'submitted' && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
                     <form action="{{ route('purchasing.quotations.accept', $quotation->id) }}" method="POST" class="mb-2">
                         @csrf
                         <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-check-circle me-1"></i> Terima Penawaran
+                            <i class="bi bi-check-circle me-1"></i> Accept Quotation
                         </button>
                     </form>
 
                     <form action="{{ route('purchasing.quotations.request-revision', $quotation->id) }}" method="POST" class="mb-2" id="requestRevisionForm">
                         @csrf
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                        <label for="revisionNote" class="form-label small fw-medium">Catatan Revisi</label>
-                        <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Contoh: Mohon revisi harga, lead time, MTC, atau syarat pembayaran.">{{ old('revision_note') }}</textarea>
+                        <label for="revisionNote" class="form-label small fw-medium">Revision Notes</label>
+                        <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Example: Please revise the price, lead time, MTC, or payment terms.">{{ old('revision_note') }}</textarea>
                         <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">
-                            <i class="bi bi-arrow-repeat me-1"></i> Minta Revisi
+                            <i class="bi bi-arrow-repeat me-1"></i> Request Revision
                         </button>
                     </form>
 
                     <form action="{{ route('purchasing.quotations.reject', $quotation->id) }}" method="POST" class="mb-3">
                         @csrf
-                        <label class="form-label small fw-medium">Catatan Penolakan</label>
-                        <textarea name="reviewer_notes" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Wajib diisi jika penawaran ditolak.">{{ old('reviewer_notes') }}</textarea>
+                        <label class="form-label small fw-medium">Rejection Notes</label>
+                        <textarea name="reviewer_notes" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Required if the quotation is rejected.">{{ old('reviewer_notes') }}</textarea>
                         <button type="submit" class="btn btn-outline-danger w-100">
-                            <i class="bi bi-x-circle me-1"></i> Tolak Penawaran
+                            <i class="bi bi-x-circle me-1"></i> Reject Quotation
                         </button>
                     </form>
                 @endif
 
                 @if($canCreatePo)
                     <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation->id) }}" class="btn btn-primary w-100 mb-2" style="background-color: var(--adasi-blue);">
-                        <i class="bi bi-receipt me-1"></i> Buat PO dari Penawaran Ini
+                        <i class="bi bi-receipt me-1"></i> Create PO from This Quotation
                     </a>
                 @elseif($quotation->status === 'submitted' && $quotation->isExpired())
                     @if($canRequestRevision)
@@ -286,37 +286,37 @@
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                             <div class="alert alert-warning small mb-2">
                                 <i class="bi bi-clock-history me-1"></i>
-                                Masa berlaku sudah lewat. Minta supplier mengirim ulang penawaran sebelum membuat PO.
+                                The validity date has passed. Ask the supplier to resubmit the quotation before creating a PO.
                             </div>
-                            <label for="revisionNote" class="form-label small fw-medium">Catatan Revisi</label>
-                            <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" placeholder="Contoh: Mohon update masa berlaku, lead time, dan harga terbaru.">{{ old('revision_note') }}</textarea>
+                            <label for="revisionNote" class="form-label small fw-medium">Revision Notes</label>
+                            <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" placeholder="Example: Please update the validity date, lead time, and latest price.">{{ old('revision_note') }}</textarea>
                             <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">
-                                <i class="bi bi-arrow-repeat me-1"></i> Minta Revisi Penawaran
+                                <i class="bi bi-arrow-repeat me-1"></i> Request Quotation Revision
                             </button>
                         </form>
                     @else
                         <button type="button" class="btn btn-outline-danger w-100 mb-2" disabled>
-                            <i class="bi bi-lock me-1"></i> Penawaran Kadaluarsa
+                            <i class="bi bi-lock me-1"></i> Quotation Expired
                         </button>
                     @endif
                 @elseif($quotation->status === 'revision_requested')
                     <div class="alert alert-warning small mb-2">
                         <i class="bi bi-hourglass-split me-1"></i>
-                        Menunggu supplier mengirim ulang penawaran revisi.
+                        Waiting for the supplier to resubmit the revised quotation.
                     </div>
                 @elseif($quotation->first_purchase_order)
-                    <div class="alert alert-success small mb-2"><i class="bi bi-check-circle me-1"></i>PO sudah dibuat: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order->id) }}" class="fw-bold">{{ $quotation->first_purchase_order->po_number }}</a></div>
+                    <div class="alert alert-success small mb-2"><i class="bi bi-check-circle me-1"></i>PO already created: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order->id) }}" class="fw-bold">{{ $quotation->first_purchase_order->po_number }}</a></div>
                 @endif
                 <a href="{{ $relatedPrUrl }}" class="btn btn-outline-secondary w-100 btn-sm">
-                    <i class="bi bi-clipboard-data me-1"></i> Lihat PR Terkait
+                    <i class="bi bi-clipboard-data me-1"></i> View Related PR
                 </a>
             </div>
         </div>
 
-        {{-- Attachment --}}
+        {{-- Attachments --}}
         @if($quotation->attachments->count() > 0)
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold"><i class="bi bi-paperclip me-1"></i> Lampiran ({{ $quotation->attachments->count() }})</h6></div>
+            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold"><i class="bi bi-paperclip me-1"></i> Attachments ({{ $quotation->attachments->count() }})</h6></div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
                     @foreach($quotation->attachments as $att)
@@ -343,14 +343,14 @@
             event.preventDefault();
 
             Swal.fire({
-                title: @json('Minta Revisi Penawaran?'),
-                text: @json('Supplier akan mendapat notifikasi dan penawaran dibuka kembali untuk submit ulang.'),
+                title: @json('Request Quotation Revision?'),
+                text: @json('The supplier will be notified and the quotation will be reopened for resubmission.'),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: 'var(--adasi-blue)',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: @json('Ya, Minta Revisi'),
-                cancelButtonText: @json('Batal')
+                confirmButtonText: @json('Yes, Request Revision'),
+                cancelButtonText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

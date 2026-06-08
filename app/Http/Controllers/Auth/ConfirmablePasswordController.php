@@ -29,7 +29,7 @@ class ConfirmablePasswordController extends Controller
             'password' => $request->password,
         ])) {
             throw ValidationException::withMessages([
-                'password' => 'Password yang dimasukkan salah.',
+                'password' => 'The entered password is incorrect.',
             ]);
         }
 

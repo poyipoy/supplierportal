@@ -16,13 +16,13 @@ use Yajra\DataTables\Facades\DataTables;
 class PurchaseOrderController extends Controller
 {
     /**
-     * Daftar semua PO.
+     * List all POs.
      */
     public function index(Request $request)
     {
         $query = PurchaseOrder::with([
             'supplier',
-            'quotations.purchaseRequirement.period',
+            'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
             'quotations.items.prItem',
             'documents',
@@ -60,7 +60,7 @@ class PurchaseOrderController extends Controller
                 ->addColumn('po_number_display', fn($po) => $po->po_number)
                 ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
                 ->addColumn('period_name', function ($po) {
-                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequirement?->period?->name)->filter()->unique();
+                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequisition?->period?->name)->filter()->unique();
                     return $periods->count() > 1
                         ? $periods->first() . ' +' . ($periods->count() - 1)
                         : ($periods->first() ?? '-');
@@ -101,9 +101,9 @@ class PurchaseOrderController extends Controller
                         $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
                         $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
                         if ($activeClaim) {
-                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim->id) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Klaim</a>';
+                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim->id) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Claim</a>';
                         } elseif ($latestNgInspection) {
-                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Buat Klaim</a>';
+                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Create Claim</a>';
                         }
                     }
                     $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
@@ -130,34 +130,34 @@ class PurchaseOrderController extends Controller
         $quotation = Quotation::with([
             'supplier',
             'items.prItem',
-            'purchaseRequirement.period',
+            'purchaseRequisition.period',
             'exchange_rate'
         ])->findOrFail($quotation_id);
 
         if (! in_array($quotation->status, ['submitted', 'accepted'], true)) {
-            return redirect()->back()->with('error', 'Quotation ini tidak valid untuk pembuatan PO.');
+            return redirect()->back()->with('error', 'This quotation is not valid for PO creation.');
         }
 
         if ($quotation->isExpired()) {
             return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
-                ->with('error', 'Masa berlaku penawaran sudah kadaluarsa. Minta supplier mengirim penawaran ulang sebelum membuat PO.');
+                ->with('error', 'The quotation validity has expired. Ask the supplier to resubmit the quotation before creating a PO.');
         }
 
         // Check if this quotation is already in a PO
         if ($quotation->purchaseOrders()->exists()) {
             return redirect(PurchasingNavigation::backUrl('purchasing.purchase-orders.index'))
-                ->with('error', 'PO sudah pernah dibuat untuk quotation ini.');
+                ->with('error', 'A PO has already been created for this quotation.');
         }
 
         $rate = $quotation->exchange_rate;
 
-        // Cari quotation lain dari supplier & currency yang sama yang bisa digabungkan
-        $otherQuotations = Quotation::with(['items.prItem', 'purchaseRequirement.period', 'exchange_rate'])
+        // Search other quotations from the same supplier and currency that can be combined.
+        $otherQuotations = Quotation::with(['items.prItem', 'purchaseRequisition.period', 'exchange_rate'])
             ->where('supplier_id', $quotation->supplier_id)
             ->where('currency', $quotation->currency)
             ->whereIn('status', ['submitted', 'accepted'])
             ->where('id', '!=', $quotation->id)
-            ->whereDoesntHave('purchaseOrders') // belum punya PO
+            ->whereDoesntHave('purchaseOrders') // Does not have a PO yet.
             ->where(function ($q) {
                 $q->whereNull('validity_period')
                     ->orWhereDate('validity_period', '>=', today());
@@ -168,7 +168,7 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * Simpan PO baru — atomic transaction.
+     * Save a new PO in an atomic transaction.
      * Mendukung multiple quotation_ids untuk konsolidasi.
      */
     public function store(Request $request)
@@ -180,36 +180,36 @@ class PurchaseOrderController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Load semua quotation yang dipilih
+        // Load all quotation yang dipilih
         /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\Quotation> $quotations */
-        $quotations = Quotation::with(['purchaseRequirement', 'exchange_rate'])
+        $quotations = Quotation::with(['purchaseRequisition', 'exchange_rate'])
             ->whereIn('id', $request->quotation_ids)
             ->get();
 
-        // Validasi: semua harus submitted
+        // Validate that all quotations are submitted.
         foreach ($quotations as $q) {
             /** @var \App\Models\Quotation $q */
             if (! in_array($q->status, ['submitted', 'accepted'], true)) {
-                return redirect()->back()->with('error', "Quotation #{$q->id} tidak valid (status: {$q->status}).");
+                return redirect()->back()->with('error', "Quotation #{$q->id} not valid (status: {$q->status}).");
             }
             if ($q->isExpired()) {
-                return redirect()->back()->with('error', "Quotation #{$q->id} sudah kadaluarsa.");
+                return redirect()->back()->with('error', "Quotation #{$q->id} already expired.");
             }
             if ($q->purchaseOrders()->exists()) {
-                return redirect()->back()->with('error', "Quotation #{$q->id} sudah memiliki PO.");
+                return redirect()->back()->with('error', "Quotation #{$q->id} already has a PO.");
             }
         }
 
-        // Validasi: semua harus dari supplier yang sama
+        // Validate that all quotations are from the same supplier.
         $supplierIds = $quotations->pluck('supplier_id')->unique();
         if ($supplierIds->count() !== 1) {
-            return back()->with('error', 'Semua quotation harus dari supplier yang sama.');
+            return back()->with('error', 'All quotations must come from the same supplier.');
         }
 
-        // Validasi: semua harus currency yang sama
+        // Validate that all quotations use the same currency.
         $currencies = $quotations->pluck('currency')->unique();
         if ($currencies->count() !== 1) {
-            return back()->with('error', 'Semua quotation harus menggunakan mata uang yang sama.');
+            return back()->with('error', 'All quotations must use the same currency.');
         }
 
         $supplierId = $supplierIds->first();
@@ -260,7 +260,7 @@ class PurchaseOrderController extends Controller
                     ->update(['status' => 'rejected']);
 
                 // 6. Mark the PR as completed
-                $q->purchaseRequirement->update(['status' => 'completed']);
+                $q->purchaseRequisition->update(['status' => 'completed']);
             }
 
             DB::commit();
@@ -269,10 +269,10 @@ class PurchaseOrderController extends Controller
             $supplierUser = $quotations->first()->supplier;
             if ($supplierUser) {
                 $prCount = $quotations->count();
-                $prLabel = $prCount > 1 ? " (menggabungkan {$prCount} PR)" : '';
+                $prLabel = $prCount > 1 ? " (combining {$prCount} PR)" : '';
                 $supplierUser->notify(new \App\Notifications\SystemNotification(
-                    'PO Baru Diterbitkan',
-                    "Purchase Order {$po->po_number} telah diterbitkan untuk penawaran Anda{$prLabel}.",
+                    'New PO Issued',
+                    "Purchase Order {$po->po_number} has been issued for your quotation{$prLabel}.",
                     route('supplier.purchase-orders.show', $po->id),
                     'bi-receipt text-primary'
                 ));
@@ -284,16 +284,16 @@ class PurchaseOrderController extends Controller
             }
 
             return redirect()->route('purchasing.purchase-orders.show', $showParameters)
-                ->with('success', 'Purchase Order ' . $po->po_number . ' berhasil dibuat!');
+                ->with('success', 'Purchase Order ' . $po->po_number . ' successfully created!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Gagal membuat PO: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Failed to create PO: ' . $e->getMessage());
         }
     }
 
     /**
-     * Detail PO: Info, Documents, Timeline.
+     * PO details: Info, Documents, Timeline.
      */
     public function show($id)
     {
@@ -301,7 +301,7 @@ class PurchaseOrderController extends Controller
             'supplier',
             'quotations.supplier',
             'quotations.items.prItem',
-            'quotations.purchaseRequirement.period',
+            'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
             'documents',
             'creator',
@@ -329,7 +329,7 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * Konfirmasi material tiba.
+     * Confirm material arrived.
      */
     public function confirmArrival(Request $request, $id)
     {
@@ -337,7 +337,7 @@ class PurchaseOrderController extends Controller
 
         if (!in_array($po->status, ['active', 'overdue'])) {
             return redirect()->route('purchasing.purchase-orders.show', $po->id)
-                ->with('error', 'Material hanya bisa dikonfirmasi tiba untuk PO berstatus Active atau Overdue.');
+                ->with('error', 'Material arrival can only be confirmed for Active or Overdue PO records.');
         }
 
         $po->update([
@@ -345,19 +345,19 @@ class PurchaseOrderController extends Controller
             'status' => 'waiting_qc',
         ]);
 
-        // Notify all QC users: material tiba
+        // Notify all QC users: material arrived
         $qcUsers = \App\Models\User::where('role', 'qc')->get();
         foreach ($qcUsers as $qcUser) {
             /** @var \App\Models\User $qcUser */
             $qcUser->notify(new \App\Notifications\SystemNotification(
-                'Material Tiba - Siap Inspeksi',
-                "Material dari PO {$po->po_number} telah tiba. Silakan lakukan inspeksi QC.",
+                'Material Arrived - Ready for Inspection',
+                "Material from PO {$po->po_number} has arrived. Please perform QC inspection.",
                 route('qc.inspections.create', $po->id),
                 'bi-box-seam text-warning'
             ));
         }
 
         return redirect()->route('purchasing.purchase-orders.show', $po->id)
-            ->with('success', 'Material dikonfirmasi tiba. QC akan dinotifikasi untuk inspeksi.');
+            ->with('success', 'Material arrival confirmed. QC will be notified for inspection.');
     }
 }

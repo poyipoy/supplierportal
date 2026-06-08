@@ -38,9 +38,9 @@ class PasswordResetLinkController extends Controller
         );
 
         $message = match ($status) {
-            Password::RESET_LINK_SENT => 'Link reset password telah dikirim ke email Anda.',
-            Password::INVALID_USER => 'Kami tidak menemukan pengguna dengan alamat email tersebut.',
-            default => 'Gagal mengirim link reset password.',
+            Password::RESET_LINK_SENT => 'Password reset link has been sent to your email.',
+            Password::INVALID_USER => 'We could not find a user with that email address.',
+            default => 'Failed to send password reset link.',
         };
 
         return $status == Password::RESET_LINK_SENT

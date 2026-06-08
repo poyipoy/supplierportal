@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Inspeksi QC: ' . $inspection->purchaseOrder->po_number . ' — ADASI Portal')
-@section('page-title', 'Detail Inspeksi QC')
+@section('title', 'QC Inspection Details: ' . $inspection->purchaseOrder->po_number . ' - ADASI Portal')
+@section('page-title', 'QC Inspection Details')
 
 @section('content')
 <x-breadcrumb :items="[
     'Dashboard' => route('qc.dashboard'),
-    'Inspeksi QC' => route('qc.inspections.index'),
-    'Inspeksi PO ' . $inspection->purchaseOrder->po_number => '#'
+    'QC Inspection' => route('qc.inspections.index'),
+    'PO Inspection ' . $inspection->purchaseOrder->po_number => '#'
 ]" />
 <div class="mb-3">
     <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Inspeksi
+        <i class="bi bi-arrow-left me-1"></i> Back to Inspection List
     </a>
 </div>
 
@@ -19,14 +19,14 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0">Inspeksi PO: {{ $inspection->purchaseOrder->po_number }}</h5>
+            <h5 class="fw-bold mb-0">PO Inspection: {{ $inspection->purchaseOrder->po_number }}</h5>
             <div>
                 @if($inspection->status === 'ok')
                     <span class="badge bg-success fs-6 px-3 py-2 me-2">STATUS: OK</span>
                 @else
                     <span class="badge bg-danger fs-6 px-3 py-2 me-2">STATUS: NG</span>
                 @endif
-                <a href="{{ route('purchasing.pdf.qc-inspection', $inspection->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Laporan QC">
+                <a href="{{ route('purchasing.pdf.qc-inspection', $inspection->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Report QC">
                     <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
                 </a>
             </div>
@@ -37,15 +37,15 @@
                 <div class="fw-medium">{{ $inspection->purchaseOrder->supplier->company_name ?? $inspection->purchaseOrder->supplier->name ?? '-' }}</div>
             </div>
             <div class="col-md-3">
-                <div class="text-muted small">Diinspeksi Oleh</div>
+                <div class="text-muted small">Inspected By</div>
                 <div class="fw-medium">{{ $inspection->inspector->name }}</div>
             </div>
             <div class="col-md-3">
-                <div class="text-muted small">Waktu Inspeksi</div>
+                <div class="text-muted small">Inspection Time</div>
                 <div class="fw-medium">{{ $inspection->inspected_at->format('d M Y, H:i') }}</div>
             </div>
             <div class="col-md-3">
-                <div class="text-muted small">Tanggal Material Tiba</div>
+                <div class="text-muted small">Date Material Arrived</div>
                 <div class="fw-medium">{{ $inspection->purchaseOrder->actual_arrival ? $inspection->purchaseOrder->actual_arrival->format('d M Y') : '-' }}</div>
             </div>
         </div>
@@ -103,13 +103,13 @@
                             <th>Width (mm)</th>
                             <th>Length (mm)</th>
                             <th>Qty</th>
-                            <th>Berat/Unit (Kg)</th>
+                            <th>Weight/Unit (Kg)</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{-- Requested --}}
                         <tr class="text-center">
-                            <td class="text-start text-muted fw-medium bg-light">Diminta</td>
+                            <td class="text-start text-muted fw-medium bg-light">Requested</td>
                             <td>{{ $prItem->shape ?? '-' }}</td>
                             <td>{{ $prItem->thickness ?? '-' }}</td>
                             <td>{{ $prItem->d_inner ?? '-' }}</td>
@@ -121,7 +121,7 @@
                         </tr>
                         {{-- Actual --}}
                         <tr class="text-center">
-                            <td class="text-start fw-bold text-primary bg-light">Aktual</td>
+                            <td class="text-start fw-bold text-primary bg-light">Actual</td>
                             <td>{{ $prItem->shape ?? '-' }}</td>
                             <td class="{{ $thick['class'] }}">{{ $thick['val'] }}</td>
                             <td class="{{ $dInner['class'] }}">{{ $dInner['val'] }}</td>
@@ -137,7 +137,7 @@
             
             @if($item->notes)
             <div class="p-3 border-top bg-light">
-                <div class="small text-muted fw-medium mb-1">Catatan:</div>
+                <div class="small text-muted fw-medium mb-1">Notes:</div>
                 <p class="mb-0 small">{{ $item->notes }}</p>
             </div>
             @endif
@@ -149,7 +149,7 @@
 @if($inspection->status === 'ng')
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">Foto Bukti NG</h6>
+        <h6 class="mb-0 fw-bold">NG Evidence Photos</h6>
     </div>
     <div class="card-body">
         @if($inspection->attachments->count() > 0)
@@ -165,16 +165,16 @@
         @else
             <div class="alert alert-warning small">
                 <i class="bi bi-exclamation-triangle me-1"></i>
-                Belum ada foto bukti NG pada inspeksi ini.
+                No NG evidence photos for this inspection yet.
             </div>
         @endif
 
         @if(auth()->user()->role === 'qc')
             <form action="{{ route('qc.inspections.attachments.store', $inspection->id) }}" method="POST" enctype="multipart/form-data" class="border-top mt-3 pt-3">
                 @csrf
-                <label class="form-label fw-medium small">Tambah Foto Bukti NG</label>
+                <label class="form-label fw-medium small">Add NG Evidence Photo</label>
                 <input type="file" name="attachments[]" class="form-control @error('attachments') is-invalid @enderror @error('attachments.*') is-invalid @enderror" accept=".jpg,.jpeg,.png" multiple required>
-                <div class="form-text">Format JPG, JPEG, atau PNG. Maksimal 10MB per file.</div>
+                <div class="form-text">JPG, JPEG, or PNG format. Maximum 10MB per file.</div>
                 @error('attachments')
                     <div class="text-danger small mt-1">{{ $message }}</div>
                 @enderror
@@ -183,7 +183,7 @@
                 @enderror
                 <div class="text-end mt-3">
                     <button type="submit" class="btn btn-sm btn-danger">
-                        <i class="bi bi-upload me-1"></i>Upload Foto
+                        <i class="bi bi-upload me-1"></i>Upload Photo
                     </button>
                 </div>
             </form>

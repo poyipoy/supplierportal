@@ -3,15 +3,15 @@
         <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
             <div class="offcanvas-header border-bottom bg-white">
                 <div class="d-flex align-items-center gap-2 min-w-0">
-                    <button type="button" class="btn btn-sm btn-light d-none" id="chatDrawerBack" title="Kembali ke Daftar Chat">
+                    <button type="button" class="btn btn-sm btn-light d-none" id="chatDrawerBack" title="Back to Chat List">
                         <i class="bi bi-arrow-left"></i>
                     </button>
                     <div class="min-w-0">
-                        <h6 class="offcanvas-title fw-bold mb-0 text-truncate" id="chatDrawerTitle">Negosiasi & Chat</h6>
-                        <small class="text-muted text-truncate d-block" id="chatDrawerSubtitle">Daftar percakapan aktif</small>
+                        <h6 class="offcanvas-title fw-bold mb-0 text-truncate" id="chatDrawerTitle">Negotiation & Chat</h6>
+                        <small class="text-muted text-truncate d-block" id="chatDrawerSubtitle">Active conversation list</small>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
 
             <div class="offcanvas-body">
@@ -19,13 +19,13 @@
                     <div class="p-3 bg-white border-bottom">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                            <input type="search" class="form-control" id="chatDrawerSearch" placeholder="Cari partner, PO, atau PR">
+                            <input type="search" class="form-control" id="chatDrawerSearch" placeholder="Search partner, PO, or PR">
                         </div>
                     </div>
                     <div class="chat-thread-list" id="chatDrawerList">
                         <div class="text-center text-muted py-5">
                             <div class="spinner-border spinner-border-sm me-1"></div>
-                            Memuat chat...
+                            Loading chats...
                         </div>
                     </div>
                 </div>
@@ -46,8 +46,8 @@
                                 <div class="small text-muted flex-grow-1 text-end d-none" id="chatDrawerAttachmentList"></div>
                             </div>
                             <div class="d-flex gap-2 align-items-end">
-                                <textarea class="form-control" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="Ketik pesan..." style="resize: none;"></textarea>
-                                <label class="btn btn-outline-secondary mb-0" for="chatDrawerAttachments" title="Lampirkan file">
+                                <textarea class="form-control" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="Type a message..." style="resize: none;"></textarea>
+                                <label class="btn btn-outline-secondary mb-0" for="chatDrawerAttachments" title="Attach file">
                                     <i class="bi bi-paperclip"></i>
                                 </label>
                                 <input type="file" class="d-none" id="chatDrawerAttachments" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
@@ -55,7 +55,7 @@
                                     <i class="bi bi-send-fill"></i>
                                 </button>
                             </div>
-                            <div class="form-text small">Enter untuk kirim, Shift+Enter untuk baris baru.</div>
+                            <div class="form-text small">Enter to send, Shift+Enter for a new line.</div>
                         </form>
                     </div>
                 </div>
@@ -133,8 +133,8 @@
                         lastMessageId = 0;
                         clearInterval(pollTimer);
                         backButton.classList.add('d-none');
-                        titleEl.textContent = 'Negosiasi & Chat';
-                        subtitleEl.textContent = 'Daftar percakapan aktif';
+                        titleEl.textContent = 'Negotiation & Chat';
+                        subtitleEl.textContent = 'Active conversation list';
                         listPane.classList.remove('d-none');
                         conversationPane.classList.add('d-none');
                         contextEl.classList.add('d-none');
@@ -168,8 +168,8 @@
                             listEl.innerHTML = `
                                 <div class="text-center text-muted py-5 px-4">
                                     <i class="bi bi-chat-square-text" style="font-size:2.2rem;"></i>
-                                    <div class="fw-medium mt-2">Belum ada chat</div>
-                                    <div class="small">Percakapan akan muncul setelah dibuat dari PR atau PO.</div>
+                                    <div class="fw-medium mt-2">No chats yet</div>
+                                    <div class="small">Conversations will appear after they are created from a PR or PO.</div>
                                 </div>
                             `;
                             return;
@@ -186,7 +186,7 @@
                                     <small class="text-muted text-truncate">${escapeHtml(conversation.context_label)}</small>
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 mb-1">
-                                    <span class="badge ${escapeHtml(conversation.status_badge_class || 'bg-secondary')}">${escapeHtml(conversation.status_label || 'Aktif')}</span>
+                                    <span class="badge ${escapeHtml(conversation.status_badge_class || 'bg-secondary')}">${escapeHtml(conversation.status_label || 'Active')}</span>
                                     ${conversation.sla ? `<span class="badge ${escapeHtml(conversation.sla.class || 'bg-secondary')}">${escapeHtml(conversation.sla.label || '')}</span>` : ''}
                                 </div>
                                 <div class="small text-muted text-truncate">${escapeHtml(conversation.latest_preview)}</div>
@@ -199,7 +199,7 @@
                         listEl.innerHTML = `
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm me-1"></div>
-                                <span>Memuat chat...</span>
+                                <span>Loading chats...</span>
                             </div>
                         `;
 
@@ -208,7 +208,7 @@
 
                         return fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Gagal memuat daftar chat.');
+                                if (!response.ok) throw new Error('Failed to load chat list.');
                                 return response.json();
                             })
                             .then((data) => {
@@ -218,7 +218,7 @@
                             .catch(() => {
                                 listEl.innerHTML = `
                                     <div class="alert alert-danger m-3 small">
-                                        Gagal memuat daftar chat. Coba buka kembali beberapa saat lagi.
+                                        Failed to load chat list. Please try again later.
                                     </div>
                                 `;
                             });
@@ -248,10 +248,10 @@
                                     <div class="small text-muted text-truncate mt-1">${escapeHtml(context.subtitle || '')}</div>
                                 </div>
                                 <div class="d-flex gap-1 flex-shrink-0">
-                                    <button type="button" class="btn btn-sm btn-light border" data-chat-context-toggle title="Tampilkan detail konteks">
+                                    <button type="button" class="btn btn-sm btn-light border" data-chat-context-toggle title="Details">
                                         <i class="bi bi-chevron-down"></i>
                                     </button>
-                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="btn btn-sm btn-outline-primary" title="Buka Detail"><i class="bi bi-box-arrow-up-right"></i></a>` : ''}
+                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="btn btn-sm btn-outline-primary" title="Details"><i class="bi bi-box-arrow-up-right"></i></a>` : ''}
                                 </div>
                             </div>
                             <div class="chat-context-grid d-none mt-2" id="chatContextDetail">${fields}</div>
@@ -316,8 +316,8 @@
 
                         const read = Boolean(message.is_read);
                         const title = read
-                            ? `Dibaca${message.read_at_display ? ' ' + message.read_at_display : ''}`
-                            : 'Terkirim, belum dibaca';
+                            ? `Read${message.read_at_display ? ' ' + message.read_at_display : ''}`
+                            : 'Sent, unread';
 
                         return `<span class="chat-read-receipt ${read ? 'is-read' : ''}" data-read-receipt-id="${message.id}" title="${escapeHtml(title)}">
                             <i class="bi bi-check2-all"></i>
@@ -343,7 +343,7 @@
                             if (!receiptEl) return;
 
                             receiptEl.classList.add('is-read');
-                            receiptEl.setAttribute('title', `Dibaca${receipt.read_at_display ? ' ' + receipt.read_at_display : ''}`);
+                            receiptEl.setAttribute('title', `Read${receipt.read_at_display ? ' ' + receipt.read_at_display : ''}`);
                         });
                     };
 
@@ -352,7 +352,7 @@
                         const wrapperClass = normalized.isMe ? 'justify-content-end' : 'justify-content-start';
                         const alignClass = normalized.isMe ? 'align-items-end' : 'align-items-start';
                         const bubbleClass = normalized.isMe ? 'is-me' : 'is-partner';
-                        const senderLabel = normalized.isMe ? 'Anda' : normalized.senderName;
+                        const senderLabel = normalized.isMe ? 'You' : normalized.senderName;
                        
                         messagesEl.insertAdjacentHTML('beforeend', `
                             <div class="chat-message-row ${normalized.isMe ? 'is-me' : 'is-partner'} ${wrapperClass}" data-message-id="${normalized.id}">
@@ -381,7 +381,7 @@
                         messagesEl.innerHTML = `
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm me-1"></div>
-                                Memuat pesan...
+                                Loading messages...
                             </div>
                         `;
 
@@ -389,7 +389,7 @@
                             headers: { 'Accept': 'application/json' }
                         })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Gagal membuka chat.');
+                                if (!response.ok) throw new Error('Failed to open chat.');
                                 return response.json();
                             })
                             .then((data) => {
@@ -404,8 +404,8 @@
                                     messagesEl.innerHTML = `
                                         <div class="text-center text-muted py-5" id="chatDrawerEmpty">
                                             <i class="bi bi-chat-dots" style="font-size:2.2rem;"></i>
-                                            <div class="fw-medium mt-2">Belum ada pesan</div>
-                                            <div class="small">Mulai percakapan dari kolom di bawah.</div>
+                                            <div class="fw-medium mt-2">No messages yet</div>
+                                            <div class="small">Start the conversation from the composer below.</div>
                                         </div>
                                     `;
                                 } else {
@@ -420,7 +420,7 @@
                             .catch(() => {
                                 messagesEl.innerHTML = `
                                     <div class="alert alert-danger m-3 small">
-                                        Gagal memuat detail chat. Coba buka kembali beberapa saat lagi.
+                                        Failed to load chat details. Please try again later.
                                     </div>
                                 `;
                             });
@@ -474,14 +474,14 @@
                         if (!activeConversationId || button.disabled) return;
 
                         const action = button.dataset.chatAction;
-                        const label = button.dataset.chatActionLabel || 'Aksi Negosiasi';
+                        const label = button.dataset.chatActionLabel || 'Negotiation Action';
                         const requiresNote = button.dataset.chatActionNote === '1';
                         const actionType = button.dataset.chatActionType || 'prompt';
 
                         const execute = (note = '') => {
                             button.disabled = true;
                             const originalHtml = button.innerHTML;
-                            button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Memproses`;
+                            button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Processing`;
 
                             return fetch(buildUrl(config.quickActionUrlTemplate, activeConversationId), {
                                 method: 'POST',
@@ -498,7 +498,7 @@
                                             .then((payload) => {
                                                 const messages = payload.errors
                                                     ? Object.values(payload.errors).flat().join('\n')
-                                                    : (payload.message || 'Aksi belum bisa diproses.');
+                                                    : (payload.message || 'The action cannot be processed yet.');
                                                 throw new Error(messages);
                                             });
                                     }
@@ -520,14 +520,14 @@
 
                                     Swal.fire({
                                         icon: 'success',
-                                        title: 'Berhasil',
-                                        text: `${label} berhasil diproses.`,
+                                        title: 'Success',
+                                        text: `${label} processed successfully.`,
                                         timer: 1400,
                                         showConfirmButton: false
                                     });
                                 })
                                 .catch((error) => {
-                                    Swal.fire('Error', error.message || 'Aksi belum bisa diproses.', 'error');
+                                    Swal.fire('Error', error.message || 'The action cannot be processed yet.', 'error');
                                 })
                                 .finally(() => {
                                     button.disabled = false;
@@ -539,15 +539,15 @@
                             Swal.fire({
                                 title: label,
                                 input: 'textarea',
-                                inputLabel: requiresNote ? 'Catatan wajib diisi' : 'Catatan tambahan',
-                                inputPlaceholder: 'Tulis catatan untuk supplier...',
+                                inputLabel: requiresNote ? 'Notes are required' : 'Additional notes',
+                                inputPlaceholder: 'Write a note for the supplier...',
                                 inputAttributes: { maxlength: 1000 },
                                 showCancelButton: true,
-                                confirmButtonText: 'Kirim',
-                                cancelButtonText: 'Batal',
+                                confirmButtonText: 'Send',
+                                cancelButtonText: 'Cancel',
                                 inputValidator: (value) => {
                                     if (requiresNote && !String(value || '').trim()) {
-                                        return 'Catatan wajib diisi.';
+                                        return 'Notes are required.';
                                     }
                                     return null;
                                 }
@@ -561,11 +561,11 @@
 
                         Swal.fire({
                             title: label,
-                            text: 'Lanjutkan aksi ini?',
+                            text: 'Continue with this action?',
                             icon: 'question',
                             showCancelButton: true,
-                            confirmButtonText: 'Ya, lanjut',
-                            cancelButtonText: 'Batal'
+                            confirmButtonText: 'Yes, continue',
+                            cancelButtonText: 'Cancel'
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 execute();
@@ -634,7 +634,7 @@
 
                         if (submitButton) {
                             submitButton.disabled = true;
-                            submitButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Membuka...`;
+                            submitButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Opening...`;
                         }
 
                         fetch(form.action, {
@@ -647,7 +647,7 @@
                             body: new FormData(form)
                         })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Gagal membuat chat.');
+                                if (!response.ok) throw new Error('Failed to create chat.');
                                 return response.json();
                             })
                             .then((data) => {
@@ -657,7 +657,7 @@
                                 }
                             })
                             .catch(() => {
-                                Swal.fire('Error', 'Chat belum bisa dibuka. Coba beberapa saat lagi.', 'error');
+                                Swal.fire('Error', 'Chat cannot be opened yet. Please try again later.', 'error');
                             })
                             .finally(() => {
                                 if (submitButton) {
@@ -690,7 +690,7 @@
                             body: payload
                         })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Gagal mengirim pesan.');
+                                if (!response.ok) throw new Error('Failed to send message.');
                                 return response.json();
                             })
                             .then((data) => {
@@ -705,7 +705,7 @@
                                 loadConversations();
                             })
                             .catch(() => {
-                                Swal.fire('Error', 'Pesan belum terkirim. Coba lagi.', 'error');
+                                Swal.fire('Error', 'Message was not sent. Please try again.', 'error');
                            })
                             .finally(() => {
                                 isSending = false;

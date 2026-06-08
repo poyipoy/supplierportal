@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Berita Acara Inspeksi QC - {{ $inspection->purchaseOrder->po_number ?? 'N/A' }}</title>
+    <title>QC Inspection Report - {{ $inspection->purchaseOrder->po_number ?? 'N/A' }}</title>
     <style>
         * {
             margin: 0;
@@ -300,7 +300,7 @@
                 </div>
                 <div class="header-right">
                     <div class="doc-title">BERITA ACARA</div>
-                    <div class="doc-subtitle">Inspeksi Quality Control</div>
+                    <div class="doc-subtitle">Quality Control Inspection</div>
                 </div>
             </div>
         </div>
@@ -311,20 +311,20 @@
                 <div class="info-label">No. Purchase Order</div>
                 <div class="info-value"><strong>{{ $inspection->purchaseOrder->po_number ?? '-' }}</strong></div>
 
-                <div class="info-label">Periode</div>
-                <div class="info-value">{{ $inspection->purchaseOrder->quotations->first()?->purchaseRequirement->period->name ?? '-' }}</div>
+                <div class="info-label">Period</div>
+                <div class="info-value">{{ $inspection->purchaseOrder->quotations->first()?->purchaseRequisition->period->name ?? '-' }}</div>
 
                 <div class="info-label">Supplier</div>
                 <div class="info-value"><strong>{{ $inspection->purchaseOrder->supplier->name ?? '-' }}</strong></div>
             </div>
             <div class="info-box info-box-right">
-                <div class="info-label">Tanggal Inspeksi</div>
+                <div class="info-label">Inspection Date</div>
                 <div class="info-value"><strong>{{ $inspection->inspected_at ? $inspection->inspected_at->format('d F Y, H:i') : '-' }}</strong></div>
 
                 <div class="info-label">Inspektur</div>
                 <div class="info-value">{{ $inspection->inspector->name ?? '-' }}</div>
 
-                <div class="info-label">Hasil Inspeksi</div>
+                <div class="info-label">Inspection Result</div>
                 <div class="info-value">
                     <span class="status-{{ $inspection->status }}">{{ strtoupper($inspection->status) }}</span>
                 </div>
@@ -358,15 +358,15 @@
                 <tr>
                     <th style="width:25px;">No</th>
                     <th>Material</th>
-                    <th>Tebal<br>Diminta</th>
-                    <th>Tebal<br>Aktual</th>
-                    <th>Lebar<br>Diminta</th>
-                    <th>Lebar<br>Aktual</th>
-                    <th>Panjang<br>Diminta</th>
-                    <th>Panjang<br>Aktual</th>
+                    <th>Thickness<br>Requested</th>
+                    <th>Thickness<br>Actual</th>
+                    <th>Width<br>Requested</th>
+                    <th>Width<br>Actual</th>
+                    <th>Length<br>Requested</th>
+                    <th>Length<br>Actual</th>
                     <th>Qty</th>
-                    <th>Berat/Unit<br>Diminta</th>
-                    <th>Berat<br>Aktual</th>
+                    <th>Weight/Unit<br>Requested</th>
+                    <th>Weight<br>Actual</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -395,7 +395,7 @@
             @if($inspection->status === 'ok')
                 ✓ KESIMPULAN: Seluruh material telah diperiksa dan dinyatakan SESUAI SPESIFIKASI (OK).
             @else
-                ✗ KESIMPULAN: Ditemukan {{ $ngItems }} item TIDAK SESUAI SPESIFIKASI (NG). Material memerlukan tindak lanjut klaim.
+                ✗ CONCLUSION: Found {{ $ngItems }} items DO NOT MEET SPECIFICATION (NG). Material requires claim follow-up.
             @endif
         </div>
 
@@ -413,7 +413,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            Dokumen ini digenerate secara otomatis oleh ADASI Supplier Portal pada {{ now()->format('d F Y, H:i') }} WIB.
+            This document was generated automatically oleh ADASI Supplier Portal pada {{ now()->format('d F Y, H:i') }} WIB.
         </div>
     </div>
 </body>

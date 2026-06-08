@@ -251,32 +251,32 @@
         <!-- Info Section -->
         <div class="info-section">
             <div class="info-box">
-                <div class="info-label">Tanggal PO</div>
+                <div class="info-label">Date PO</div>
                 <div class="info-value"><strong>{{ $po->created_at->format('d F Y') }}</strong></div>
 
-                <div class="info-label">No. PR</div>
+                <div class="info-label">PR No.</div>
                 <div class="info-value">
-                    @php $prs = $po->purchaseRequirements(); @endphp
+                    @php $prs = $po->purchaseRequisitions(); @endphp
                     {{ $prs->map(fn($pr) => $pr->pr_number ?? '-')->implode(', ') }}
                     @if($prs->count() > 1)
                         ({{ $prs->count() }} PR digabung)
                     @endif
                 </div>
 
-                <div class="info-label">Periode</div>
+                <div class="info-label">Period</div>
                 <div class="info-value">{{ $prs->map(fn($pr) => $pr->period->name ?? '-')->unique()->implode(', ') }}</div>
 
-                <div class="info-label">Dibuat Oleh</div>
+                <div class="info-label">Created By</div>
                 <div class="info-value">{{ $po->creator->name ?? '-' }}</div>
             </div>
             <div class="info-box info-box-right">
                 <div class="info-label">Supplier</div>
                 <div class="info-value"><strong>{{ $po->supplier->name ?? '-' }}</strong></div>
 
-                <div class="info-label">Mata Uang</div>
+                <div class="info-label">Currency</div>
                 <div class="info-value">{{ $po->currency ?? 'USD' }}</div>
 
-                <div class="info-label">Estimasi Kedatangan</div>
+                <div class="info-label">Estimated Arrival</div>
                 <div class="info-value">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
             </div>
         </div>
@@ -288,11 +288,11 @@
                     <th class="text-center" style="width: 30px;">No</th>
                     <th>Material</th>
                     <th class="text-center">HS Code</th>
-                    <th class="text-center">Spesifikasi</th>
+                    <th class="text-center">Specification</th>
                     <th class="text-center">Qty</th>
-                    <th class="text-right">Berat/Unit</th>
-                    <th class="text-right">Total Berat</th>
-                    <th class="text-right">Harga/kg</th>
+                    <th class="text-right">Weight/Unit</th>
+                    <th class="text-right">Total Weight</th>
+                    <th class="text-right">Price/kg</th>
                     <th class="text-right">Total ({{ $po->currency ?? 'USD' }})</th>
                     <th class="text-right">Total (IDR)</th>
                 </tr>
@@ -304,10 +304,10 @@
                     @if($po->quotations->count() > 1)
                         <tr>
                             <td colspan="10" style="background-color: #eef2f7; font-weight: 700; font-size: 10px; padding: 6px;">
-                                {{ $quotation->purchaseRequirement->pr_number ?? 'PR -' }}
+                                {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                 @if($rate)
                                     <span style="color: #64748b; font-weight: 400; margin-left: 8px;">
-                                        Kurs: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                        Exchange rate: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
                                     </span>
                                 @endif
                             </td>
@@ -359,7 +359,7 @@
         <!-- Signatures -->
         <div class="signature-section">
             <div class="signature-box">
-                <div class="signature-title">Dibuat Oleh</div>
+                <div class="signature-title">Created By</div>
                 <div class="signature-line">{{ $po->creator->name ?? '_______________' }}<br>Purchasing</div>
             </div>
             <div class="signature-box">
@@ -367,14 +367,14 @@
                 <div class="signature-line">_______________<br>Manager Purchasing</div>
             </div>
             <div class="signature-box">
-                <div class="signature-title">Diterima Oleh</div>
+                <div class="signature-title">Received By</div>
                 <div class="signature-line">_______________<br>Supplier</div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            Dokumen ini digenerate secara otomatis oleh ADASI Supplier Portal pada {{ now()->format('d F Y, H:i') }} WIB.
+            This document was generated automatically oleh ADASI Supplier Portal pada {{ now()->format('d F Y, H:i') }} WIB.
         </div>
     </div>
 </body>

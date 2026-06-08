@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Dashboard Supplier — ADASI Portal')
+@section('title', 'Supplier Dashboard - ADASI Portal')
 @section('page-title', 'Dashboard Supplier')
 
 @section('content')
@@ -10,7 +10,7 @@
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h4 class="fw-bold mb-2">Selamat datang, {{ auth()->user()->supplier->company_name ?? auth()->user()->name }}! 👋</h4>
-                <p class="mb-0 text-white-50">Berikut adalah ringkasan aktivitas dan performa penawaran material Anda saat ini.</p>
+                <p class="mb-0 text-white-50">Here is a summary of your current material quotation activity and performance.</p>
             </div>
             <div class="col-md-4 text-end d-none d-md-block">
                 <i class="bi bi-building fs-1 text-white opacity-50"></i>
@@ -28,9 +28,9 @@
                 <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
             </div>
             <div>
-                <h6 class="fw-bold mb-1 text-dark">Peluang Penawaran</h6>
+                <h6 class="fw-bold mb-1 text-dark">Peluang Quotation</h6>
                 <p class="mb-0 text-muted small">
-                    Terdapat <span class="text-primary fw-semibold">{{ $belumDirespons }} permintaan (PR)</span> aktif yang belum Anda berikan penawaran. Segera ajukan harga terbaik Anda!
+                    There are <span class="text-primary fw-semibold">{{ $belumDirespons }} active requisitions (PR)</span> that you have not quoted yet. Submit your best price soon!
                 </p>
             </div>
         </div>
@@ -43,7 +43,7 @@
     <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
             <div class="card-body"><div class="d-flex justify-content-between align-items-center">
-                <div><div class="text-muted small fw-medium mb-1">PERIODE AKTIF</div><h3 class="fw-bold mb-0">{{ $periodeAktif }}</h3></div>
+                <div><div class="text-muted small fw-medium mb-1">ACTIVE PERIODS</div><h3 class="fw-bold mb-0">{{ $periodeAktif }}</h3></div>
                 <div class="bg-primary bg-opacity-10 rounded-circle p-3"><i class="bi bi-calendar-event text-primary fs-4"></i></div>
             </div></div>
         </div>
@@ -51,7 +51,7 @@
     <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
             <div class="card-body"><div class="d-flex justify-content-between align-items-center">
-                <div><div class="text-muted small fw-medium mb-1">BELUM DIRESPONS</div><h3 class="fw-bold mb-0 text-danger">{{ $belumDirespons }}</h3></div>
+                <div><div class="text-muted small fw-medium mb-1">NOT RESPONDED</div><h3 class="fw-bold mb-0 text-danger">{{ $belumDirespons }}</h3></div>
                 <div class="bg-danger bg-opacity-10 rounded-circle p-3"><i class="bi bi-exclamation-circle text-danger fs-4"></i></div>
             </div></div>
         </div>
@@ -59,7 +59,7 @@
     <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
             <div class="card-body"><div class="d-flex justify-content-between align-items-center">
-                <div><div class="text-muted small fw-medium mb-1">PENAWARAN TERKIRIM</div><h3 class="fw-bold mb-0 text-success">{{ $penawaranTerkirim }}</h3></div>
+                <div><div class="text-muted small fw-medium mb-1">SUBMITTED QUOTATIONS</div><h3 class="fw-bold mb-0 text-success">{{ $penawaranTerkirim }}</h3></div>
                 <div class="bg-success bg-opacity-10 rounded-circle p-3"><i class="bi bi-send-check text-success fs-4"></i></div>
             </div></div>
         </div>
@@ -67,26 +67,26 @@
     <div class="col-md-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
             <div class="card-body"><div class="d-flex justify-content-between align-items-center">
-                <div><div class="text-muted small fw-medium mb-1">PO DITERIMA</div><h3 class="fw-bold mb-0 text-info">{{ $poDiterima }}</h3></div>
+                <div><div class="text-muted small fw-medium mb-1">RECEIVED PO</div><h3 class="fw-bold mb-0 text-info">{{ $poDiterima }}</h3></div>
                 <div class="bg-info bg-opacity-10 rounded-circle p-3"><i class="bi bi-receipt text-info fs-4"></i></div>
             </div></div>
         </div>
     </div>
 </div>
 
-{{-- Tabel + Pengumuman --}}
+{{-- Tabel + Announcement --}}
 <div class="row g-4">
     <div class="col-lg-8">
-        {{-- PR Belum Direspons --}}
+        {{-- PR Not Responded --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle text-danger me-1"></i> Permintaan Belum Direspons</h6>
-                <a href="{{ route('supplier.quotations.index') }}" class="btn btn-sm btn-light">Lihat Semua</a>
+                <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle text-danger me-1"></i> Unresponsive Requisitions</h6>
+                <a href="{{ route('supplier.quotations.index') }}" class="btn btn-sm btn-light">View All</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
-                        <thead class="table-light"><tr><th>No. PR</th><th>Periode</th><th>Jumlah Item</th><th>Tanggal</th><th></th></tr></thead>
+                        <thead class="table-light"><tr><th>PR No.</th><th>Period</th><th>Amount Item</th><th>Date</th><th></th></tr></thead>
                         <tbody>
                             @forelse($prBelumRespons as $pr)
                             <tr>
@@ -94,10 +94,10 @@
                                 <td>{{ $pr->period->name }}</td>
                                 <td>{{ $pr->items->count() }} Item</td>
                                 <td>{{ $pr->created_at->format('d M Y') }}</td>
-                                <td class="text-end"><a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-primary py-0"><i class="bi bi-pencil-square me-1"></i>Buat Penawaran</a></td>
+                                <td class="text-end"><a href="{{ route('supplier.quotations.create', $pr->id) }}" class="btn btn-sm btn-primary py-0"><i class="bi bi-pencil-square me-1"></i>Create Quotation</a></td>
                             </tr>
                             @empty
-                            <tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-check-circle text-success fs-4 d-block mb-2"></i>Semua permintaan sudah direspons!</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-check-circle text-success fs-4 d-block mb-2"></i>All requisitions have been responded to!</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -107,13 +107,13 @@
         {{-- PO Terbaru --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">Purchase Order Terbaru</h6>
-                <a href="{{ route('supplier.purchase-orders.index') }}" class="btn btn-sm btn-light">Semua PO</a>
+                <h6 class="mb-0 fw-bold">Latest Purchase Orders</h6>
+                <a href="{{ route('supplier.purchase-orders.index') }}" class="btn btn-sm btn-light">All PO</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
-                        <thead class="table-light"><tr><th>No. PO</th><th>Periode</th><th>Status</th><th>Tanggal</th><th></th></tr></thead>
+                        <thead class="table-light"><tr><th>PO No.</th><th>Period</th><th>Status</th><th>Date</th><th></th></tr></thead>
                         <tbody>
                             @forelse($poTerbaru as $po)
                             @php
@@ -127,35 +127,35 @@
                             @endphp
                             <tr>
                                 <td class="fw-bold">{{ $po->po_number }}</td>
-                                <td>{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequirement)->period)->name)->filter()->first() ?? '-' }}</td>
+                                <td>{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequisition)->period)->name)->filter()->first() ?? '-' }}</td>
                                 <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" /></td>
                                 <td>{{ $po->created_at->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-1 justify-content-end flex-wrap">
                                         @if($pendingClaim)
-                                            <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-sm btn-danger" title="Respons Klaim">
+                                            <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-sm btn-danger" title="Claim Response">
                                                 <i class="bi bi-reply"></i>
                                             </a>
                                         @elseif($latestClaim)
-                                            <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-sm btn-outline-danger" title="Lihat Klaim">
+                                            <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-sm btn-outline-danger" title="View Claim">
                                                 <i class="bi bi-exclamation-octagon"></i>
                                             </a>
                                         @endif
-                                        <a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info" title="Detail PO"><i class="bi bi-eye"></i></a>
+                                        <a href="{{ route('supplier.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info" title="Details"><i class="bi bi-eye"></i></a>
                                     </div>
                                 </td>
                             </tr>
-                            @empty<tr><td colspan="5" class="text-center text-muted py-3">Belum ada PO.</td></tr>@endforelse
+                            @empty<tr><td colspan="5" class="text-center text-muted py-3">No PO.</td></tr>@endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
-    {{-- Pengumuman --}}
+    {{-- Announcement --}}
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold"><i class="bi bi-megaphone text-primary me-1"></i> Pengumuman ADASI</h6></div>
+            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold"><i class="bi bi-megaphone text-primary me-1"></i> Announcement ADASI</h6></div>
             <div class="card-body p-0">
                 @forelse($announcements as $ann)
                     <div class="p-3 border-bottom">
@@ -164,11 +164,11 @@
                         <small class="text-muted" style="font-size:.7rem"><i class="bi bi-clock me-1"></i>{{ $ann->published_at->diffForHumans() }}</small>
                     </div>
                 @empty
-                    <div class="p-4 text-center text-muted small">Belum ada pengumuman baru.</div>
+                    <div class="p-4 text-center text-muted small">No new announcements.</div>
                 @endforelse
             </div>
             @if($announcements->count() > 0)
-            <div class="card-footer bg-white text-center"><a href="{{ route('supplier.announcements.index') }}" class="small text-decoration-none fw-bold">Lihat Semua Pengumuman</a></div>
+            <div class="card-footer bg-white text-center"><a href="{{ route('supplier.announcements.index') }}" class="small text-decoration-none fw-bold">View All Announcement</a></div>
             @endif
         </div>
         <div class="card border-0 shadow-sm bg-primary text-white">

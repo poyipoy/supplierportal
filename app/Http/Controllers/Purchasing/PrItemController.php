@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Models\PrItem;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -15,17 +15,17 @@ class PrItemController extends Controller
      */
     public function store(Request $request)
     {
-        // Mostly handled en-masse via PurchaseRequirementController
+        // Mostly handled en-masse via PurchaseRequisitionController
         // But if needed for single AJAX adds:
         $request->merge(PrItem::sanitizeMaterialData($request->all()));
 
         $validated = $request->validate($this->materialValidationRules([
-            'pr_id' => 'required|exists:purchase_requirements,id',
+            'pr_id' => 'required|exists:purchase_requisitions,id',
         ]));
 
-        $pr = PurchaseRequirement::findOrFail($validated['pr_id']);
+        $pr = PurchaseRequisition::findOrFail($validated['pr_id']);
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return response()->json(['error' => 'Tidak dapat menambah item pada PR ini.'], 403);
+            return response()->json(['error' => 'Cannot add items to this PR.'], 403);
         }
 
         $item = $pr->items()->create(PrItem::sanitizeMaterialData($validated));
@@ -38,11 +38,11 @@ class PrItemController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $item = PrItem::with('purchaseRequirement')->findOrFail($id);
-        $pr = $item->purchaseRequirement;
+        $item = PrItem::with('purchaseRequisition')->findOrFail($id);
+        $pr = $item->purchaseRequisition;
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return response()->json(['error' => 'Tidak dapat mengedit item pada PR ini.'], 403);
+            return response()->json(['error' => 'Cannot mengedit item pada PR ini.'], 403);
         }
 
         $request->merge(PrItem::sanitizeMaterialData($request->all()));
@@ -58,11 +58,11 @@ class PrItemController extends Controller
      */
     public function destroy(string $id)
     {
-        $item = PrItem::with('purchaseRequirement')->findOrFail($id);
-        $pr = $item->purchaseRequirement;
+        $item = PrItem::with('purchaseRequisition')->findOrFail($id);
+        $pr = $item->purchaseRequisition;
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return response()->json(['error' => 'Tidak dapat menghapus item pada PR ini.'], 403);
+            return response()->json(['error' => 'Cannot menghapus item pada PR ini.'], 403);
         }
 
         $item->delete();

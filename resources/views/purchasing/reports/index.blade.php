@@ -1,10 +1,10 @@
 @extends('layouts.app')
-@section('title', 'Laporan — ADASI Portal')
-@section('page-title', 'Laporan & Export')
+@section('title', 'Report - ADASI Portal')
+@section('page-title', 'Report & Export')
 
 @section('content')
 <div class="row g-4">
-    {{-- Card 1: Laporan Permintaan Material --}}
+    {{-- Card 1: Report Purchase Requisition --}}
     <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-3 border-bottom-0">
@@ -13,17 +13,17 @@
                         <i class="bi bi-clipboard-data text-primary fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0 fw-bold">Permintaan Material</h6>
+                        <h6 class="mb-0 fw-bold">Purchase Requisition</h6>
                         <small class="text-muted">Export rekap PR beserta status dan item</small>
                     </div>
                 </div>
             </div>
             <div class="card-body">
-                <form action="{{ route('purchasing.export.requirements') }}" method="GET">
+                <form action="{{ route('purchasing.export.requisitions') }}" method="GET">
                     <div class="mb-3">
-                        <label class="form-label small fw-medium text-muted">Filter Periode</label>
+                        <label class="form-label small fw-medium text-muted">Filter Period</label>
                         <select name="period_id" class="form-select">
-                            <option value="">-- Semua Periode --</option>
+                            <option value="">-- All Period --</option>
                             @foreach($periods as $period)
                                 <option value="{{ $period->id }}">{{ $period->name }}</option>
                             @endforeach
@@ -32,7 +32,7 @@
                     <div class="mb-4">
                         <label class="form-label small fw-medium text-muted">Filter Status</label>
                         <select name="status" class="form-select">
-                            <option value="">-- Semua Status --</option>
+                            <option value="">-- All Status --</option>
                             <option value="draft">Draft</option>
                             <option value="submitted">Submitted</option>
                             <option value="rejected">Rejected</option>
@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    {{-- Card 2: Laporan Purchase Order --}}
+    {{-- Card 2: Report Purchase Order --}}
     <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-3 border-bottom-0">
@@ -58,7 +58,7 @@
                     </div>
                     <div>
                         <h6 class="mb-0 fw-bold">Purchase Order (PO)</h6>
-                        <small class="text-muted">Export data PO dan status kedatangan</small>
+                        <small class="text-muted">Export data PO dan status arrival</small>
                     </div>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                     <div class="mb-3">
                         <label class="form-label small fw-medium text-muted">Filter Supplier</label>
                         <select name="supplier_id" class="form-select">
-                            <option value="">-- Semua Supplier --</option>
+                            <option value="">-- All Supplier --</option>
                             @foreach($suppliers as $supplier)
                                 <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
                             @endforeach
@@ -75,11 +75,11 @@
                     </div>
                     <div class="row g-2 mb-4">
                         <div class="col-6">
-                            <label class="form-label small fw-medium text-muted">Tanggal Mulai</label>
+                            <label class="form-label small fw-medium text-muted">Date Mulai</label>
                             <input type="date" name="start_date" class="form-control">
                         </div>
                         <div class="col-6">
-                            <label class="form-label small fw-medium text-muted">Tanggal Selesai</label>
+                            <label class="form-label small fw-medium text-muted">Date Completed</label>
                             <input type="date" name="end_date" class="form-control">
                         </div>
                     </div>

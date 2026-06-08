@@ -1,19 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Buat Purchase Order — ADASI Portal')
-@section('page-title', 'Buat Purchase Order')
+@section('title', 'Create Purchase Order - ADASI Portal')
+@section('page-title', 'Create Purchase Order')
 
 @section('content')
 <div class="mb-3">
     <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Kembali
+        <i class="bi bi-arrow-left me-1"></i> Back
     </a>
 </div>
 
 {{-- Summary Card --}}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">Ringkasan Penawaran Utama</h6>
+        <h6 class="mb-0 fw-bold">Primary Quotation Summary</h6>
     </div>
     <div class="card-body">
         <div class="row mb-3">
@@ -21,42 +21,42 @@
             <div class="col-md-9 fw-medium">{{ $quotation->supplier->name }}</div>
         </div>
         <div class="row mb-3">
-            <div class="col-md-3 text-muted small">No. PR</div>
-            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequirement->pr_number ?? '-' }}</div>
+            <div class="col-md-3 text-muted small">PR No.</div>
+            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
         </div>
         <div class="row mb-3">
-            <div class="col-md-3 text-muted small">Periode</div>
-            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequirement->period->name }}</div>
+            <div class="col-md-3 text-muted small">Period</div>
+            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequisition->period->name }}</div>
         </div>
         <div class="row mb-3">
-            <div class="col-md-3 text-muted small">Mata Uang</div>
+            <div class="col-md-3 text-muted small">Currency</div>
             <div class="col-md-9 fw-medium">{{ $quotation->currency }}</div>
         </div>
         <div class="row mb-3">
-            <div class="col-md-3 text-muted small">Kurs Dipakai</div>
+            <div class="col-md-3 text-muted small">Exchange Rate Used</div>
             <div class="col-md-9 fw-medium">
                 @if($rate)
                     1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
                 @else
-                    <span class="text-danger">Kurs tidak tersedia</span>
+                    <span class="text-danger">Exchange rate is not available</span>
                 @endif
             </div>
         </div>
     </div>
 </div>
 
-{{-- Konsolidasi: Quotation Tambahan --}}
+{{-- Consolidation: Additional Quotations --}}
 @if($otherQuotations->count() > 0)
 <div class="card border-0 shadow-sm mb-4 border-start border-4 border-primary">
     <div class="card-header bg-white py-3">
         <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-layers me-2 text-primary"></i>Gabungkan PR Lain ke PO Ini</h6>
-            <span class="badge bg-primary rounded-pill">{{ $otherQuotations->count() }} tersedia</span>
+            <h6 class="mb-0 fw-bold"><i class="bi bi-layers me-2 text-primary"></i>Combine Other PRs into This PO</h6>
+            <span class="badge bg-primary rounded-pill">{{ $otherQuotations->count() }} available</span>
         </div>
     </div>
     <div class="card-body">
         <p class="text-muted small mb-3">
-            Centang penawaran lain dari <strong>{{ $quotation->supplier->name }}</strong> ({{ $quotation->currency }}) yang ingin digabungkan ke dalam satu Purchase Order.
+            Check other quotations from <strong>{{ $quotation->supplier->name }}</strong> ({{ $quotation->currency }}) that should be combined into one Purchase Order.
         </p>
         <div class="list-group list-group-flush">
             @foreach($otherQuotations as $oq)
@@ -77,11 +77,11 @@
                 <label class="list-group-item d-flex align-items-center gap-3 py-3 consolidate-item" for="oq_{{ $oq->id }}" style="cursor: pointer;">
                     <input type="checkbox" class="form-check-input consolidate-check" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)'>
                     <div class="flex-grow-1">
-                        <div class="fw-medium">{{ $oq->purchaseRequirement->pr_number ?? '-' }}</div>
+                        <div class="fw-medium">{{ $oq->purchaseRequisition->pr_number ?? '-' }}</div>
                         <div class="text-muted small">
-                            {{ $oq->purchaseRequirement->period->name ?? '-' }} • {{ $oq->items->count() }} item
+                            {{ $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ $oq->items->count() }} item
                             @if($oq->exchange_rate)
-                                • Kurs: Rp {{ number_format($oq->exchange_rate->rate_to_idr, 0, ',', '.') }}
+                                &bull; Exchange rate: Rp {{ number_format($oq->exchange_rate->rate_to_idr, 0, ',', '.') }}
                             @endif
                         </div>
                     </div>
@@ -113,12 +113,12 @@
                 <thead class="table-light text-center">
                     <tr>
                         <th>No</th>
-                        <th>No. PR</th>
+                        <th>PR No.</th>
                         <th>Material</th>
                         <th>Qty</th>
-                        <th>Berat/Unit (Kg)</th>
-                        <th>Total Berat (Kg)</th>
-                        <th>Harga/Kg ({{ $quotation->currency }})</th>
+                        <th>Weight/Unit (Kg)</th>
+                        <th>Total Weight (Kg)</th>
+                        <th>Price/Kg ({{ $quotation->currency }})</th>
                         <th>Amount ({{ $quotation->currency }})</th>
                         <th>Est. IDR</th>
                     </tr>
@@ -133,7 +133,7 @@
                         @endphp
                         <tr>
                             <td class="text-center">{{ $no++ }}</td>
-                            <td class="fw-medium text-primary">{{ $quotation->purchaseRequirement->pr_number ?? '-' }}</td>
+                            <td class="fw-medium text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</td>
                             <td>{{ $item->prItem->material_name }}</td>
                             <td class="text-center">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                             <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
@@ -167,29 +167,29 @@
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold">Informasi Purchase Order</h6>
+            <h6 class="mb-0 fw-bold">Purchase Order Information</h6>
         </div>
         <div class="card-body">
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-medium">Estimasi Kedatangan Material <span class="text-danger">*</span></label>
+                    <label class="form-label fw-medium">Estimated Arrival Material <span class="text-danger">*</span></label>
                     <input type="date" name="estimated_arrival" class="form-control @error('estimated_arrival') is-invalid @enderror" value="{{ old('estimated_arrival') }}" required>
                     @error('estimated_arrival') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </div>
             <div class="row mb-3">
                 <div class="col-md-12">
-                    <label class="form-label fw-medium">Catatan PO</label>
-                    <textarea name="notes" class="form-control" rows="2" placeholder="Opsional...">{{ old('notes') }}</textarea>
+                    <label class="form-label fw-medium">Notes PO</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="Optional...">{{ old('notes') }}</textarea>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="d-flex justify-content-end gap-2 mb-5">
-        <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="btn btn-light">Batal</a>
+        <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="btn btn-light">Cancel</a>
         <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnCreatePo">
-            <i class="bi bi-check-circle me-1"></i> Buat Purchase Order
+            <i class="bi bi-check-circle me-1"></i> Create Purchase Order
         </button>
     </div>
 </form>
@@ -200,7 +200,7 @@
     $primaryItemsData = [];
     foreach ($quotation->items as $i) {
         $primaryItemsData[] = [
-            'pr_number' => $quotation->purchaseRequirement->pr_number ?? '-',
+            'pr_number' => $quotation->purchaseRequisition->pr_number ?? '-',
             'material' => $i->prItem->material_name,
             'quantity' => (int)$i->prItem->quantity_value,
             'weight_unit' => (float)$i->prItem->weight_needed,
@@ -291,18 +291,18 @@
         const checkedCount = $('.consolidate-check:checked').length;
         const totalPr = 1 + checkedCount;
         const prMsg = totalPr > 1
-            ? `PO akan dibuat dengan menggabungkan <strong>${totalPr} PR</strong>. `
+            ? `The PO will be created by combining <strong>${totalPr} PRs</strong>. `
             : '';
 
         Swal.fire({
-            title: 'Buat Purchase Order?',
-            html: prMsg + 'Penawaran supplier lain pada PR yang sama akan otomatis <strong>ditolak</strong>.',
+            title: 'Create Purchase Order?',
+            html: prMsg + 'Quotations from other suppliers on the same PR will automatically be <strong>rejected</strong>.',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: 'var(--adasi-blue)',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Buat PO!',
-            cancelButtonText: 'Batal'
+            confirmButtonText: 'Yes, Create PO!',
+            cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#poForm').submit();

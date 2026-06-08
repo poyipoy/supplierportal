@@ -17,34 +17,34 @@ class NotificationCategory
     {
         return [
             self::ALL => [
-                'label' => 'Semua',
-                'short_label' => 'Semua',
+                'label' => 'All',
+                'short_label' => 'All',
                 'icon' => 'bi-bell',
-                'description' => 'Seluruh notifikasi',
+                'description' => 'All notifications',
             ],
             self::CHAT => [
                 'label' => 'Chat',
                 'short_label' => 'Chat',
                 'icon' => 'bi-chat-dots',
-                'description' => 'Pesan negosiasi',
+                'description' => 'Negotiation messages',
             ],
             self::QUOTATION => [
-                'label' => 'Penawaran',
-                'short_label' => 'Penawaran',
+                'label' => 'Quotation',
+                'short_label' => 'Quotation',
                 'icon' => 'bi-tags',
-                'description' => 'PR dan quotation',
+                'description' => 'PR and quotations',
             ],
             self::DOCUMENT => [
-                'label' => 'Dokumen PO',
-                'short_label' => 'Dokumen',
+                'label' => 'PO Documents',
+                'short_label' => 'Document',
                 'icon' => 'bi-file-earmark-check',
-                'description' => 'Status dokumen impor',
+                'description' => 'Import document status',
             ],
             self::OTHER => [
-                'label' => 'Lainnya',
-                'short_label' => 'Lainnya',
+                'label' => 'Other',
+                'short_label' => 'Other',
                 'icon' => 'bi-grid',
-                'description' => 'Info sistem lain',
+                'description' => 'Other system information',
             ],
         ];
     }
@@ -64,24 +64,24 @@ class NotificationCategory
         $icon = Str::lower((string) ($data['icon'] ?? ''));
         $type = Str::lower((string) ($data['type'] ?? ''));
 
-        if (Str::contains($type, ['chat', 'message']) || Str::contains($url, '/conversations') || Str::contains($icon, 'chat') || Str::contains($title, ['pesan', 'chat'])) {
+        if (Str::contains($type, ['chat', 'message']) || Str::contains($url, '/conversations') || Str::contains($icon, 'chat') || Str::contains($title, ['message', 'chat'])) {
             return self::CHAT;
         }
 
         if (
             Str::contains($type, ['po_document', 'document'])
             ||
-            Str::contains($title . ' ' . $message, ['dokumen', 'invoice', 'bill of lading', 'packing list', 'form-e'])
+            Str::contains($title . ' ' . $message, ['document', 'invoice', 'bill of lading', 'packing list', 'form-e'])
             || Str::contains($icon, ['file-earmark-check', 'check2-circle'])
         ) {
             return self::DOCUMENT;
         }
 
         if (
-            Str::contains($type, ['quotation', 'penawaran'])
+            Str::contains($type, ['quotation'])
             ||
-            Str::contains($url, ['/quotations', '/requirements'])
-            || Str::contains($title . ' ' . $message, ['penawaran', 'quotation', 'permintaan material', 'pr ', 'revisi'])
+            Str::contains($url, ['/quotations', '/requisitions'])
+            || Str::contains($title . ' ' . $message, ['quotation', 'purchase requisition', 'pr ', 'revision', 'revisi'])
         ) {
             return self::QUOTATION;
         }

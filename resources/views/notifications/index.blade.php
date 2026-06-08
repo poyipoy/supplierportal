@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Notifikasi - ADASI Portal')
-@section('page-title', 'Notifikasi')
+@section('title', 'Notifications - ADASI Portal')
+@section('page-title', 'Notifications')
 
 @section('content')
 @php
@@ -11,8 +11,8 @@
     <div class="col-lg-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-1 fw-bold">Kategori Notifikasi</h6>
-                <div class="text-muted small">Pilih jenis aktivitas yang ingin dilihat.</div>
+                <h6 class="mb-1 fw-bold">Kategori Notifications</h6>
+                <div class="text-muted small">Select the activity type you want to view.</div>
             </div>
             <div class="card-body notification-page-menu">
                 <div class="list-group list-group-flush">
@@ -53,7 +53,7 @@
                 <form action="{{ route('notifications.mark-all-read') }}" method="POST">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-check2-all me-1"></i>Tandai Semua Dibaca
+                        <i class="bi bi-check2-all me-1"></i>Mark All as Read
                     </button>
                 </form>
             </div>
@@ -71,9 +71,9 @@
                                 </div>
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex justify-content-between gap-2">
-                                        <span class="fw-bold small text-truncate">{{ $notif->data['title'] ?? 'Notifikasi' }}</span>
+                                        <span class="fw-bold small text-truncate">{{ $notif->data['title'] ?? 'Notifications' }}</span>
                                         @if(!$notif->read_at)
-                                            <span class="badge bg-danger flex-shrink-0" style="font-size:.55rem">Baru</span>
+                                            <span class="badge bg-danger flex-shrink-0" style="font-size:.55rem">New</span>
                                         @endif
                                     </div>
                                     <div class="text-muted mt-1" style="font-size:.82rem">{{ $notif->data['message'] ?? '-' }}</div>
@@ -88,7 +88,7 @@
                         </a>
                     @empty
                         <div class="py-4">
-                            <x-empty-state :icon="$selectedOption['icon']" title="Belum ada notifikasi pada kategori ini." />
+                            <x-empty-state :icon="$selectedOption['icon']" title="No notifications in this category yet." />
                         </div>
                     @endforelse
                 </div>

@@ -30,7 +30,7 @@
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <div class="d-flex align-items-center gap-2 mb-2">
             <i class="bi bi-x-circle-fill"></i>
-            <strong>Terjadi kesalahan:</strong>
+            <strong>An error occurred:</strong>
         </div>
         <ul class="mb-0 ps-3">
             @foreach($errors->all() as $error)

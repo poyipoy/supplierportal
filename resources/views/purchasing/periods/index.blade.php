@@ -1,15 +1,15 @@
 @extends('layouts.app')
-@section('title', 'Manajemen Periode — ADASI Portal')
-@section('page-title', 'Manajemen Periode')
+@section('title', 'Period Management - ADASI Portal')
+@section('page-title', 'Period Management')
 
 @section('content')
     <div class="row">
         <div class="col-lg-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Daftar Periode Penawaran</h6>
+                    <h6 class="mb-0 fw-bold">Quotation Period List</h6>
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
-                        <i class="bi bi-plus-lg"></i> Tambah Periode
+                        <i class="bi bi-plus-lg"></i> Add Period
                     </button>
                 </div>
                 <div class="card-body">
@@ -17,12 +17,12 @@
                         <table class="table table-hover align-middle" id="periodsTable" style="font-size: 0.9rem; width: 100%;">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Nama Periode</th>
-                                    <th>Bulan</th>
-                                    <th>Tahun</th>
+                                    <th>Name Period</th>
+                                    <th>Month</th>
+                                    <th>Year</th>
                                     <th>Status</th>
-                                    <th>Dibuat Oleh</th>
-                                    <th class="text-end">Aksi</th>
+                                    <th>Created By</th>
+                                    <th class="text-end">Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -40,17 +40,17 @@
                 <form action="{{ route('purchasing.periods.store') }}" method="POST">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title fw-bold">Tambah Periode Baru</h5>
+                        <h5 class="modal-title fw-bold">Add New Period</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nama Periode</label>
-                            <input type="text" name="name" class="form-control" placeholder="Contoh: Periode Mei 2026" required>
+                            <label class="form-label">Name Period</label>
+                            <input type="text" name="name" class="form-control" placeholder="Contoh: Period Mei 2026" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Bulan</label>
+                                <label class="form-label">Month</label>
                                 <select name="month" class="form-select" required>
                                     @for($m=1; $m<=12; $m++)
                                         <option value="{{ $m }}" {{ now()->month == $m ? 'selected' : '' }}>
@@ -60,22 +60,22 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Tahun</label>
+                                <label class="form-label">Year</label>
                                 <input type="number" name="year" class="form-control" value="{{ now()->year }}" min="2000" required>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Status</label>
                             <select name="status" class="form-select" required>
-                                <option value="open">Open (Menerima Penawaran)</option>
-                                <option value="closed">Closed (Selesai)</option>
+                                <option value="open">Open (Menerima Quotation)</option>
+                                <option value="closed">Closed (Completed)</option>
                             </select>
-                            <div class="form-text">PR hanya bisa dibuat pada periode berstatus Open.</div>
+                            <div class="form-text">PR can only be created in a period with Open status.</div>
                         </div>
                     </div>
                     <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan Periode</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Period</button>
                     </div>
                 </form>
             </div>
@@ -90,17 +90,17 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
-                        <h5 class="modal-title fw-bold">Edit Periode</h5>
+                        <h5 class="modal-title fw-bold">Edit Period</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nama Periode</label>
+                            <label class="form-label">Name Period</label>
                             <input type="text" name="name" id="editName" class="form-control" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Bulan</label>
+                                <label class="form-label">Month</label>
                                 <select name="month" id="editMonth" class="form-select" required>
                                     @for($m=1; $m<=12; $m++)
                                         <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
@@ -108,21 +108,21 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Tahun</label>
+                                <label class="form-label">Year</label>
                                 <input type="number" name="year" id="editYear" class="form-control" min="2000" required>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Status</label>
                             <select name="status" id="editStatus" class="form-select" required>
-                                <option value="open">Open (Menerima Penawaran)</option>
-                                <option value="closed">Closed (Selesai)</option>
+                                <option value="open">Open (Menerima Quotation)</option>
+                                <option value="closed">Closed (Completed)</option>
                             </select>
                         </div>
                     </div>
                     <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
                     </div>
                 </form>
             </div>
@@ -145,7 +145,7 @@
                 { data: 'creator_name', name: 'creator_name', orderable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+            language: {},
             pageLength: 25,
             order: []
         });

@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Models\Conversation;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -14,14 +14,14 @@ class ConversationPresenter
 {
     public static function relatedQuotation(Conversation $conversation): ?Quotation
     {
-        if ($conversation->conversable_type !== PurchaseRequirement::class) {
+        if ($conversation->conversable_type !== PurchaseRequisition::class) {
             return null;
         }
 
         return Quotation::with([
                 'exchange_rate',
                 'items.prItem',
-                'purchaseRequirement.period',
+                'purchaseRequisition.period',
                 'purchaseOrders',
             ])
             ->where('pr_id', $conversation->conversable_id)
@@ -36,7 +36,7 @@ class ConversationPresenter
         $quotation = self::relatedQuotation($conversation);
         $conversable = $conversation->conversable;
 
-        if ($conversable instanceof PurchaseRequirement) {
+        if ($conversable instanceof PurchaseRequisition) {
             $conversable->loadMissing(['period', 'items']);
 
             return [
@@ -48,11 +48,11 @@ class ConversationPresenter
                 'fields' => array_values(array_filter([
                     ['label' => 'Supplier', 'value' => self::supplierName($conversation->supplierUser)],
                     ['label' => 'Material', 'value' => $conversable->items->count() . ' item'],
-                    ['label' => 'Status Penawaran', 'value' => $quotation?->statusLabel() ?? 'Belum ada'],
-                    ['label' => 'Mata Uang', 'value' => $quotation?->currency],
-                    ['label' => 'Total Penawaran', 'value' => $quotation ? self::quotationTotal($quotation) : null],
-                    ['label' => 'Estimasi Kirim', 'value' => self::formatDate($quotation?->estimated_delivery)],
-                    ['label' => 'Masa Berlaku', 'value' => self::formatDate($quotation?->validity_period)],
+                    ['label' => 'Quotation Status', 'value' => $quotation?->statusLabel() ?? 'None'],
+                    ['label' => 'Currency', 'value' => $quotation?->currency],
+                    ['label' => 'Total Quotation', 'value' => $quotation ? self::quotationTotal($quotation) : null],
+                    ['label' => 'Estimated Delivery', 'value' => self::formatDate($quotation?->estimated_delivery)],
+                    ['label' => 'Valid Until', 'value' => self::formatDate($quotation?->validity_period)],
                 ], fn ($field) => filled($field['value'] ?? null))),
                 'quotation' => $quotation ? [
                     'id' => $quotation->id,
@@ -69,8 +69,8 @@ class ConversationPresenter
         }
 
         if ($conversable instanceof PurchaseOrder) {
-            $conversable->loadMissing(['supplier.supplier', 'quotations.purchaseRequirement']);
-            $prNumbers = $conversable->purchaseRequirements()
+            $conversable->loadMissing(['supplier.supplier', 'quotations.purchaseRequisition']);
+            $prNumbers = $conversable->purchaseRequisitions()
                 ->pluck('pr_number')
                 ->filter()
                 ->implode(', ');
@@ -84,9 +84,9 @@ class ConversationPresenter
                 'fields' => array_values(array_filter([
                     ['label' => 'Supplier', 'value' => self::supplierName($conversation->supplierUser)],
                     ['label' => 'No. PR', 'value' => $prNumbers],
-                    ['label' => 'Mata Uang', 'value' => $conversable->currency],
-                    ['label' => 'Estimasi Tiba', 'value' => self::formatDate($conversable->estimated_arrival)],
-                    ['label' => 'Aktual Tiba', 'value' => self::formatDate($conversable->actual_arrival)],
+                    ['label' => 'Currency', 'value' => $conversable->currency],
+                    ['label' => 'Estimated Arrival', 'value' => self::formatDate($conversable->estimated_arrival)],
+                    ['label' => 'Actual Arrival', 'value' => self::formatDate($conversable->actual_arrival)],
                 ], fn ($field) => filled($field['value'] ?? null))),
                 'quotation' => null,
             ];
@@ -95,7 +95,7 @@ class ConversationPresenter
         return [
             'type' => 'DOC',
             'title' => $conversation->context_label,
-            'subtitle' => 'Konteks chat',
+            'subtitle' => 'Chat context',
             'status' => null,
             'url' => null,
             'fields' => [],
@@ -114,7 +114,7 @@ class ConversationPresenter
         if ($viewer->role === 'supplier' && $quotation->status === Quotation::STATUS_REVISION_REQUESTED) {
             return [[
                 'key' => 'open_revision',
-                'label' => 'Buka Form Revisi',
+                'label' => 'Open Revision Form',
                 'icon' => 'bi-arrow-repeat',
                 'type' => 'link',
                 'url' => route('supplier.quotations.create', $quotation->pr_id),
@@ -132,7 +132,7 @@ class ConversationPresenter
             if ($quotation->status === Quotation::STATUS_SUBMITTED) {
                 $actions[] = [
                     'key' => 'request_price_revision',
-                    'label' => 'Minta Revisi Harga',
+                    'label' => 'Request Price Revision',
                     'icon' => 'bi-cash-coin',
                     'type' => 'prompt',
                     'requires_note' => true,
@@ -143,7 +143,7 @@ class ConversationPresenter
             $actions = array_merge($actions, [
                 [
                     'key' => 'request_validity_extension',
-                    'label' => 'Perpanjang Masa Berlaku',
+                    'label' => 'Extend Validity',
                     'icon' => 'bi-calendar2-plus',
                     'type' => 'prompt',
                     'requires_note' => false,
@@ -151,7 +151,7 @@ class ConversationPresenter
                 ],
                 [
                     'key' => 'request_delivery_confirmation',
-                    'label' => 'Konfirmasi Estimasi Kirim',
+                    'label' => 'Confirm Estimated Delivery',
                     'icon' => 'bi-truck',
                     'type' => 'prompt',
                     'requires_note' => false,
@@ -163,7 +163,7 @@ class ConversationPresenter
         if ($quotation->canApproveBy($viewer) && ! $quotation->isExpired()) {
             $actions[] = [
                 'key' => 'accept_quotation',
-                'label' => 'Terima Penawaran',
+                'label' => 'Accept Quotation',
                 'icon' => 'bi-check2-circle',
                 'type' => 'confirm',
                 'requires_note' => false,
@@ -174,7 +174,7 @@ class ConversationPresenter
         if ($quotation->canApproveBy($viewer)) {
             $actions[] = [
                 'key' => 'reject_quotation',
-                'label' => 'Tolak Penawaran',
+                'label' => 'Reject Quotation',
                 'icon' => 'bi-x-circle',
                 'type' => 'prompt',
                 'requires_note' => true,
@@ -189,17 +189,17 @@ class ConversationPresenter
     {
         if ($viewer->role === 'supplier') {
             return [
-                'Baik, kami akan cek kembali harga dan dokumen pendukungnya.',
-                'Kami akan kirim revisi penawaran setelah data diperbarui.',
-                'Mohon konfirmasi bagian mana yang perlu kami revisi terlebih dahulu.',
+                'Understood, we will review the price and supporting documents again.',
+                'We will send the revised quotation after the data is updated.',
+                'Please confirm which part needs to be revised first.',
             ];
         }
 
         return [
-            'Mohon revisi harga untuk material yang sudah diajukan.',
-            'Masa berlaku penawaran perlu diperpanjang sebelum proses PO.',
-            'Mohon konfirmasi estimasi pengiriman terbaru.',
-            'Mohon lampirkan dokumen pendukung penawaran terbaru.',
+            'Please revise the price for the submitted material.',
+            'The quotation validity needs to be extended before PO processing.',
+            'Please confirm the latest estimated delivery date.',
+            'Please attach the latest supporting quotation documents.',
         ];
     }
 
@@ -209,20 +209,20 @@ class ConversationPresenter
 
         if ($conversation->status === Conversation::STATUS_RESOLVED) {
             return [
-                'label' => 'Selesai',
+                'label' => 'Completed',
                 'class' => 'bg-success',
                 'description' => $conversation->resolved_at
-                    ? 'Diselesaikan ' . $conversation->resolved_at->diffForHumans()
-                    : 'Percakapan sudah selesai.',
+                    ? 'Resolved ' . $conversation->resolved_at->diffForHumans()
+                    : 'The conversation is completed.',
                 'is_overdue' => false,
             ];
         }
 
         if (! $latest) {
             return [
-                'label' => 'Belum ada pesan',
+                'label' => 'No messages yet',
                 'class' => 'bg-secondary',
-                'description' => 'Percakapan sudah dibuat tetapi belum ada pesan.',
+                'description' => 'The conversation has been created but has no messages yet.',
                 'is_overdue' => false,
             ];
         }
@@ -234,18 +234,18 @@ class ConversationPresenter
 
         if ($needsViewerResponse && $hours >= 24) {
             return [
-                'label' => 'Belum dibalas > 1 hari',
+                'label' => 'No reply for > 1 day',
                 'class' => 'bg-danger',
-                'description' => 'Pesan terakhir menunggu balasan Anda sejak ' . $latest->created_at->diffForHumans() . '.',
+                'description' => 'The latest message has been waiting for your reply since ' . $latest->created_at->diffForHumans() . '.',
                 'is_overdue' => true,
             ];
         }
 
         if ($needsViewerResponse) {
             return [
-                'label' => 'Perlu dibalas',
+                'label' => 'Needs Reply',
                 'class' => 'bg-warning text-dark',
-                'description' => 'Pesan terakhir berasal dari lawan bicara.',
+                'description' => 'The latest message is from the other party.',
                 'is_overdue' => false,
             ];
         }
@@ -253,16 +253,16 @@ class ConversationPresenter
         return [
             'label' => $conversation->statusLabelFor($viewer),
             'class' => $conversation->statusBadgeClassFor($viewer),
-            'description' => 'Pesan terakhir sudah dikirim dan menunggu respons lawan bicara.',
+            'description' => 'The latest message has been sent and is waiting for the other party response.',
             'is_overdue' => false,
         ];
     }
 
     private static function contextUrl(User $viewer, Conversation $conversation, ?Quotation $quotation): ?string
     {
-        if ($conversation->conversable_type === PurchaseRequirement::class) {
-            if ($viewer->role === 'purchasing' && Route::has('purchasing.requirements.show')) {
-                return route('purchasing.requirements.show', $conversation->conversable_id);
+        if ($conversation->conversable_type === PurchaseRequisition::class) {
+            if ($viewer->role === 'purchasing' && Route::has('purchasing.requisitions.show')) {
+                return route('purchasing.requisitions.show', $conversation->conversable_id);
             }
 
             if ($viewer->role === 'supplier' && $quotation && Route::has('supplier.quotations.show')) {

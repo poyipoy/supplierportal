@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class PoDocumentController extends Controller
 {
     /**
-     * Update status dokumen via AJAX.
+     * Update status document via AJAX.
      */
     public function update(Request $request, $id)
     {
@@ -37,18 +37,18 @@ class PoDocumentController extends Controller
             'form_e' => 'Form-E',
         ][$doc->doc_type] ?? $doc->doc_type;
         $statusLabel = [
-            'pending' => 'Belum Ada',
-            'received' => 'Diterima',
-            'verified' => 'Diverifikasi',
-            'issued' => 'Sudah Diterbitkan',
-            'processing' => 'Sedang Diproses',
-            'done' => 'Selesai',
+            'pending' => 'Not Available',
+            'received' => 'Accepted',
+            'verified' => 'Verified',
+            'issued' => 'Issued',
+            'processing' => 'Processing',
+            'done' => 'Completed',
         ][$doc->status] ?? $doc->status;
 
         if ($po?->creator) {
             $po->creator->notify(new SystemNotification(
-                'Status Dokumen Diperbarui',
-                "Dokumen {$docLabel} pada PO {$po->po_number} telah diperbarui menjadi \"{$statusLabel}\".",
+                'Document Status Updated',
+                "Document {$docLabel} on PO {$po->po_number} has been updated to \"{$statusLabel}\".",
                 route('purchasing.purchase-orders.show', $po->id),
                 'bi-file-earmark-check text-primary',
                 ['category' => NotificationCategory::DOCUMENT]
@@ -61,8 +61,8 @@ class PoDocumentController extends Controller
 
         if ($allDone && !$wasAllDone && $po?->creator) {
             $po->creator->notify(new SystemNotification(
-                'Semua Dokumen Impor Lengkap',
-                "Semua dokumen impor untuk PO {$po->po_number} telah lengkap. Konfirmasi kedatangan material jika sudah tiba.",
+                'All Import Documents Complete',
+                "All import documents for PO {$po->po_number} are complete. Confirm material arrival if it has arrived.",
                 route('purchasing.purchase-orders.show', $po->id),
                 'bi-check2-circle text-success',
                 ['category' => NotificationCategory::DOCUMENT]
@@ -71,7 +71,7 @@ class PoDocumentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Status dokumen berhasil diperbarui.',
+            'message' => 'Status document successfully updated.',
             'all_docs_complete' => $allDone,
             'doc' => [
                 'id' => $doc->id,

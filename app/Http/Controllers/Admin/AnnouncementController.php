@@ -20,11 +20,11 @@ class AnnouncementController extends Controller
     {
         $request->validate(['title' => 'required|string|max:255', 'content' => 'required|string']);
         Announcement::create([
-            'title' => $request->title, 'content' => $request->content,
+            'title' => $request->input('title'), 'content' => $request->input('content'),
             'created_by' => auth()->id(),
             'published_at' => $request->has('is_published') ? now() : null,
         ]);
-        return redirect()->route('admin.announcements.index')->with('success', "Pengumuman berhasil dibuat.");
+        return redirect()->route('admin.announcements.index')->with('success', "Announcement successfully created.");
     }
 
     public function edit(Announcement $announcement) { return view('admin.announcements.edit', compact('announcement')); }
@@ -33,21 +33,21 @@ class AnnouncementController extends Controller
     {
         $request->validate(['title' => 'required|string|max:255', 'content' => 'required|string']);
         $announcement->update([
-            'title' => $request->title, 'content' => $request->content,
+            'title' => $request->input('title'), 'content' => $request->input('content'),
             'published_at' => $request->has('is_published') ? ($announcement->published_at ?? now()) : null,
         ]);
-        return redirect()->route('admin.announcements.index')->with('success', "Pengumuman berhasil diperbarui.");
+        return redirect()->route('admin.announcements.index')->with('success', "Announcement successfully updated.");
     }
 
     public function destroy(Announcement $announcement)
     {
         $announcement->delete();
-        return redirect()->route('admin.announcements.index')->with('success', "Pengumuman berhasil dihapus.");
+        return redirect()->route('admin.announcements.index')->with('success', "Announcement successfully deleted.");
     }
 
     public function togglePublish(Announcement $announcement)
     {
         $announcement->update(['published_at' => $announcement->published_at ? null : now()]);
-        return back()->with('success', $announcement->published_at ? "Pengumuman dipublish." : "Pengumuman ditarik.");
+        return back()->with('success', $announcement->published_at ? "Announcement published." : "Announcement withdrawn.");
     }
 }

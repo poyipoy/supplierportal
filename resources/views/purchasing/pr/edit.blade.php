@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Permintaan Material — ADASI Portal')
-@section('page-title', 'Edit Permintaan Material')
+@section('title', 'Edit Purchase Requisition - ADASI Portal')
+@section('page-title', 'Edit Purchase Requisition')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">Edit Formulir Permintaan Material</h5>
+        <h5 class="mb-0 fw-semibold">Edit Purchase Requisition Form</h5>
         @if($pr->status === 'rejected')
-            <span class="badge bg-danger">Status Saat Ini: Rejected (Mohon Direvisi)</span>
+            <span class="badge bg-danger">Current Status: Rejected (Revision Required)</span>
         @else
-            <span class="badge bg-secondary">Status Saat Ini: Draft</span>
+            <span class="badge bg-secondary">Current Status: Draft</span>
         @endif
     </div>
     <div class="card-body">
-        <form id="prForm" action="{{ route('purchasing.requirements.update', $pr->id) }}" method="POST">
+        <form id="prForm" action="{{ route('purchasing.requisitions.update', $pr->id) }}" method="POST">
             @csrf
             @method('PUT')
             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
@@ -25,9 +25,9 @@
 
             <div class="row mb-4">
                 <div class="col-md-4">
-                    <label for="period_id" class="form-label fw-medium">Periode Penawaran <span class="text-danger">*</span></label>
+                    <label for="period_id" class="form-label fw-medium">Quotation Period <span class="text-danger">*</span></label>
                     <select name="period_id" id="period_id" class="form-select @error('period_id') is-invalid @enderror" required>
-                        <option value="">-- Pilih Periode --</option>
+                        <option value="">-- Select Period --</option>
                         @foreach($periods as $period)
                             <option value="{{ $period->id }}" {{ (old('period_id', $pr->period_id) == $period->id) ? 'selected' : '' }}>
                                 {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
@@ -49,23 +49,23 @@
                         'selectedSupplierIds' => $selectedSupplierIds,
                     ])
                     {{--
-                    <div class="form-text">Pilih satu supplier, atau biarkan “Semua Supplier Terdaftar” agar PR bisa dilihat semua supplier.</div>
+                    <div class="form-text">Select one supplier, or leave “All Registered Suppliers” so the PR can be viewed by all suppliers.</div>
                     @error('supplier_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     @error('supplier_ids') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     --}}
                 </div>
                 <div class="col-md-4">
-                    <label for="notes" class="form-label fw-medium">Catatan / Keterangan Tambahan</label>
-                    <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="Opsional...">{{ old('notes', $pr->notes) }}</textarea>
+                    <label for="notes" class="form-label fw-medium">Additional Notes / Remarks</label>
+                    <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="Optional...">{{ old('notes', $pr->notes) }}</textarea>
                 </div>
             </div>
 
             <hr>
 
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold mb-0">Daftar Material yang Dibutuhkan</h6>
+                <h6 class="fw-bold mb-0">Required Material List</h6>
                 <button type="button" class="btn btn-sm btn-success" id="btnAddRow">
-                    <i class="bi bi-plus"></i> Tambah Material
+                    <i class="bi bi-plus"></i> Add Material
                 </button>
             </div>
 
@@ -74,11 +74,11 @@
                     <thead class="table-light text-center" style="font-size: 0.8rem;">
                         <tr>
                             <th width="28%">Material & HS Code <span class="text-danger">*</span></th>
-                            <th width="12%">Bentuk</th>
+                            <th width="12%">Shape</th>
                             <th width="8%">Qty <span class="text-danger">*</span></th>
-                            <th width="34%">Dimensi (mm)</th>
-                            <th width="10%">Berat/Unit (Kg) <span class="text-danger">*</span></th>
-                            <th width="8%">Aksi</th>
+                            <th width="34%">Dimensions (mm)</th>
+                            <th width="10%">Weight/Unit (Kg) <span class="text-danger">*</span></th>
+                            <th width="8%">Action</th>
                         </tr>
                     </thead>
                     <tbody id="itemsBody">
@@ -94,14 +94,14 @@
                     </tbody>
                 </table>
                 @error('items') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                <div id="noItemAlert" class="text-danger small mt-1 d-none">Minimal harus ada 1 material.</div>
+                <div id="noItemAlert" class="text-danger small mt-1 d-none">At least 1 material is required.</div>
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.requirements.index') }}" class="btn btn-light">Batal</a>
-                <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">Simpan Draft  </button>
+                <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index') }}" class="btn btn-light">Cancel</a>
+                <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">Save Draft  </button>
                 <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">
-                    {{ $pr->status === 'rejected' ? 'Revisi & Ajukan Ulang' : 'Ajukan Sekarang' }}
+                    {{ $pr->status === 'rejected' ? 'Revise & Resubmit' : 'Submit Now' }}
                 </button>
             </div>
         </form>
@@ -132,13 +132,13 @@
 
     function removeRow(btn) {
         Swal.fire({
-            title: 'Hapus baris ini?',
+            title: 'Delete this row?',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya',
-            cancelButtonText: 'Batal'
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 $(btn).closest('tr').remove();
@@ -158,7 +158,7 @@
     function submitForm(action) {
         if ($('#itemsBody tr').length === 0) {
             $('#noItemAlert').removeClass('d-none');
-            Swal.fire('Error', 'Minimal 1 material wajib ditambahkan.', 'error');
+            Swal.fire('Error', 'At least 1 material must be added.', 'error');
             return;
         }
         $('#formAction').val(action);
@@ -168,19 +168,19 @@
     function confirmSubmit() {
         if ($('#itemsBody tr').length === 0) {
             $('#noItemAlert').removeClass('d-none');
-            Swal.fire('Error', 'Minimal 1 material wajib ditambahkan.', 'error');
+            Swal.fire('Error', 'At least 1 material must be added.', 'error');
             return;
         }
 
         Swal.fire({
-            title: 'Ajukan Permintaan?',
-            text: 'Status akan berubah menjadi Submitted dan tidak bisa diedit lagi.',
+            title: 'Submit Requisition?',
+            text: 'Status will change to Submitted and cannot be edited anymore.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: 'var(--adasi-blue)',
+            confirmButtonColor: '#1F5FA6',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Ajukan!',
-            cancelButtonText: 'Batal'
+            confirmButtonText: 'Yes, Submit!',
+            cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#formAction').val('submitted');
@@ -203,7 +203,7 @@
         });
         $(window).on('beforeunload', function() {
             if (isDirty) {
-                return 'Anda memiliki perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?';
+                return 'You have unsaved changes. Are you sure you want to leave this page?';
             }
         });
     });

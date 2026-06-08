@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'vs Harga Terbaik - ADASI Portal')
-@section('page-title', 'Perbandingan Harga')
+@section('title', 'vs Best Price - ADASI Portal')
+@section('page-title', 'Price Comparison')
 
 @php
     $formatRupiah = fn ($value) => $value !== null ? 'Rp ' . number_format($value, 0, ',', '.') : '-';
@@ -9,29 +9,29 @@
 
 @section('content')
 <ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Antar Supplier</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historis</a></li>
-    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Harga Terbaik</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Inter-Supplier</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historical</a></li>
+    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Best Price</a></li>
 </ul>
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
-                <h6 class="mb-1 fw-bold"><i class="bi bi-trophy me-1"></i> Harga Saat Ini vs Harga Terbaik Histori</h6>
-                <div class="text-muted small">Pembanding memakai harga IDR/kg setelah konversi kurs. Status kompetitif aman jika selisih maksimal {{ $formatNumber($competitiveThreshold) }}%.</div>
+                <h6 class="mb-1 fw-bold"><i class="bi bi-trophy me-1"></i> Current Price vs Historical Best Price</h6>
+                <div class="text-muted small">Comparison uses IDR/kg price after exchange rate conversion. Competitive status is safe if maximum difference is {{ $formatNumber($competitiveThreshold) }}%.</div>
             </div>
             <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap gap-3 align-items-end">
                 <div>
-                    <label class="form-label small fw-medium mb-1">Dari Bulan</label>
+                    <label class="form-label small fw-medium mb-1">From Month</label>
                     <input type="month" name="date_from" value="{{ $dateFromInput }}" class="form-control form-control-sm" style="width: auto;">
                 </div>
                 <div>
-                    <label class="form-label small fw-medium mb-1">Sampai Bulan</label>
+                    <label class="form-label small fw-medium mb-1">To Month</label>
                     <input type="month" name="date_to" value="{{ $dateToInput }}" class="form-control form-control-sm" style="width: auto;">
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-filter me-1"></i>Terapkan Filter</button>
+                    <button type="submit" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-filter me-1"></i>Apply Filter</button>
                     <a href="{{ route('purchasing.comparison.vs-best') }}" class="btn btn-sm btn-light"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</a>
                 </div>
             </form>
@@ -42,25 +42,25 @@
         <div class="row g-3">
             <div class="col-md-3">
                 <div class="p-3 rounded bg-light h-100">
-                    <div class="text-muted small">Total Data Dibandingkan</div>
+                    <div class="text-muted small">Total Compared Data</div>
                     <div class="fs-4 fw-bold text-dark" id="vsBestTotalRows">{{ $summary['total_rows'] }}</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="p-3 rounded bg-success bg-opacity-10 h-100">
-                    <div class="text-muted small">Kompetitif / Aman</div>
+                    <div class="text-muted small">Competitive / Safe</div>
                     <div class="fs-4 fw-bold text-success" id="vsBestCompetitiveCount">{{ $summary['competitive_count'] }}</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="p-3 rounded bg-warning bg-opacity-10 h-100">
-                    <div class="text-muted small">Di Atas Histori</div>
+                    <div class="text-muted small">Above History</div>
                     <div class="fs-4 fw-bold text-warning" id="vsBestAboveCount">{{ $summary['above_count'] }}</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="p-3 rounded bg-primary bg-opacity-10 h-100">
-                    <div class="text-muted small">Potensi Selisih Total</div>
+                    <div class="text-muted small">Potential Total Difference</div>
                     <div class="fs-4 fw-bold text-primary" id="vsBestPotentialTotal">{{ $formatRupiah($summary['total_potential_difference_idr']) }}</div>
                 </div>
             </div>
@@ -73,12 +73,12 @@
                 <thead class="table-light text-center">
                     <tr>
                         <th class="text-start">Material</th>
-                        <th>Harga Saat Ini</th>
-                        <th>Harga Terbaik Histori</th>
-                        <th>Selisih IDR/kg</th>
-                        <th>Potensi Selisih Total</th>
+                        <th>Current Price</th>
+                        <th>Historical Best Price</th>
+                        <th>Difference IDR/kg</th>
+                        <th>Potential Total Difference</th>
                         <th>Status</th>
-                        <th>Aksi</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -136,7 +136,7 @@ $(document).ready(function() {
             { data: 'status_badge', name: 'diff_percent', className: 'text-center', searchable: false },
             { data: 'action', name: 'action', className: 'text-center', orderable: false, searchable: false }
         ],
-        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
+        language: {},
         pageLength: 25,
         order: [[4, 'desc']]
     });

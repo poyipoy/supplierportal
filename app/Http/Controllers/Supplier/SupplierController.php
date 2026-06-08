@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Period;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 
 class SupplierController extends Controller
@@ -15,7 +15,7 @@ class SupplierController extends Controller
     {
         $sid = auth()->id();
         $periodeAktif = Period::where('status', 'open')->count();
-        $belumDirespons = PurchaseRequirement::whereIn('status', ['submitted', 'bidding'])
+        $belumDirespons = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])
             ->visibleToSupplier($sid)
             ->whereHas('period', fn($q) => $q->where('status', 'open'))
             ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))->count();
@@ -23,7 +23,7 @@ class SupplierController extends Controller
             ->whereMonth('submitted_at', now()->month)->whereYear('submitted_at', now()->year)->count();
         $poDiterima = PurchaseOrder::where('supplier_id', $sid)->count();
 
-        $prBelumRespons = PurchaseRequirement::with('period', 'items')
+        $prBelumRespons = PurchaseRequisition::with('period', 'items')
             ->whereIn('status', ['submitted', 'bidding'])
             ->visibleToSupplier($sid)
             ->whereHas('period', fn($q) => $q->where('status', 'open'))
@@ -31,7 +31,7 @@ class SupplierController extends Controller
             ->orderBy('created_at', 'desc')->take(5)->get();
 
         $poTerbaru = PurchaseOrder::with([
-                'quotations.purchaseRequirement.period',
+                'quotations.purchaseRequisition.period',
                 'materialClaims' => fn($q) => $q->where('supplier_id', $sid)->latest(),
             ])
             ->where('supplier_id', $sid)

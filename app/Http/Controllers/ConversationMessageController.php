@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 class ConversationMessageController extends Controller
 {
     /**
-     * Daftar conversation untuk chat drawer.
+     * Conversation list for the chat drawer.
      */
     public function drawerIndex()
     {
@@ -38,7 +38,7 @@ class ConversationMessageController extends Controller
                         ->orWhereHas('supplierUser', fn ($user) => $user
                             ->where('name', 'like', "%{$keyword}%")
                             ->orWhereHas('supplier', fn ($supplier) => $supplier->where('company_name', 'like', "%{$keyword}%")))
-                        ->orWhereHasMorph('conversable', [\App\Models\PurchaseRequirement::class], fn ($pr) => $pr->where('pr_number', 'like', "%{$keyword}%"))
+                        ->orWhereHasMorph('conversable', [\App\Models\PurchaseRequisition::class], fn ($pr) => $pr->where('pr_number', 'like', "%{$keyword}%"))
                         ->orWhereHasMorph('conversable', [\App\Models\PurchaseOrder::class], fn ($po) => $po->where('po_number', 'like', "%{$keyword}%"));
                 });
             })
@@ -54,7 +54,7 @@ class ConversationMessageController extends Controller
     }
 
     /**
-     * Detail conversation + pesan untuk chat drawer.
+     * Conversation details and messages for the chat drawer.
      */
     public function drawerShow($id)
     {
@@ -86,7 +86,7 @@ class ConversationMessageController extends Controller
     }
 
     /**
-     * Kirim pesan baru ke conversation.
+     * Send a new message to the conversation.
      */
     public function store(Request $request, $id)
     {
@@ -101,7 +101,7 @@ class ConversationMessageController extends Controller
 
         if ($body === '' && ! $hasAttachments) {
             throw ValidationException::withMessages([
-                'body' => 'Isi pesan atau lampirkan minimal satu file.',
+                'body' => 'Enter a message or attach at least one file.',
             ]);
         }
 
@@ -120,23 +120,22 @@ class ConversationMessageController extends Controller
             return $message->load(['sender', 'attachments']);
         });
 
-        // Kirim notifikasi ke lawan bicara jika dia tidak sedang membuka chat
+        // Send a notification to the other party.
         $partner = $conversation->getPartner(auth()->id());
         
-        // Cek apakah pesan terakhir dari partner sudah dibaca dalam 30 detik terakhir
-        // Atau asumsikan partner offline dan kirim notifikasi selalu (simplifikasi)
+        // Keep the notification behavior simple and always notify the partner.
         if ($partner) {
             $senderName = auth()->user()->name;
             $preview = $message->body !== ''
                 ? Str::limit($message->body, 50)
-                : 'Mengirim lampiran pada chat.';
+                : 'Sent an attachment in the chat.';
             
             // Determine the correct route for the notification URL based on partner's role
             $routePrefix = $partner->role === 'purchasing' ? 'purchasing' : 'supplier';
             $url = route("{$routePrefix}.conversations.show", $conversation->id);
 
             $partner->notify(new SystemNotification(
-                'Pesan baru dari ' . $senderName,
+                'New message from ' . $senderName,
                 $preview,
                 $url,
                 'bi-chat-dots',
@@ -156,7 +155,7 @@ class ConversationMessageController extends Controller
     }
 
     /**
-     * Tandai semua pesan di conversation sebagai sudah dibaca (untuk event scroll dsb).
+     * Mark all messages in the conversation as read.
      */
     public function markRead($id)
     {
@@ -177,7 +176,7 @@ class ConversationMessageController extends Controller
         $this->authorize('message', $conversation);
 
         if (auth()->user()->role !== 'purchasing') {
-            abort(403, 'Hanya purchasing yang dapat menjalankan aksi negosiasi.');
+            abort(403, 'Only Purchasing can run negotiation actions.');
         }
 
         $validated = $request->validate([
@@ -189,7 +188,7 @@ class ConversationMessageController extends Controller
 
         if (! $quotation) {
             throw ValidationException::withMessages([
-                'action' => 'Quotation terkait tidak ditemukan untuk conversation ini.',
+                'action' => 'No related quotation was found for this conversation.',
             ]);
         }
 
@@ -197,7 +196,7 @@ class ConversationMessageController extends Controller
 
         if (in_array($validated['action'], ['request_price_revision', 'reject_quotation'], true) && $note === '') {
             throw ValidationException::withMessages([
-                'note' => 'Catatan wajib diisi untuk aksi ini.',
+                'note' => 'Notes are required for this action.',
             ]);
         }
 
@@ -207,15 +206,15 @@ class ConversationMessageController extends Controller
                 'request_validity_extension' => $this->sendActionMessage(
                     $conversation,
                     $quotation,
-                    'Mohon perpanjang masa berlaku penawaran untuk PR '
-                        . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id) . '.',
+                    'Please extend the quotation validity for PR '
+                        . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id) . '.',
                     $note
                 ),
                 'request_delivery_confirmation' => $this->sendActionMessage(
                     $conversation,
                     $quotation,
-                    'Mohon konfirmasi estimasi pengiriman terbaru untuk PR '
-                        . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id) . '.',
+                    'Please confirm the latest estimated delivery for PR '
+                        . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id) . '.',
                     $note
                 ),
                 'accept_quotation' => $this->acceptQuotation($conversation, $quotation),
@@ -233,7 +232,7 @@ class ConversationMessageController extends Controller
     }
 
     /**
-     * Endpoint AJAX untuk polling pesan baru.
+     * AJAX endpoint for polling new messages.
      */
     public function latest(Request $request, $id)
     {
@@ -247,7 +246,7 @@ class ConversationMessageController extends Controller
             ->where('id', '>', $afterId)
             ->get();
 
-        // Tandai sebagai sudah dibaca jika ada pesan baru dari lawan bicara
+        // Mark new messages from the other party as read.
         if ($messages->where('sender_id', '!=', auth()->id())->count() > 0) {
             $conversation->messages()
                 ->where('sender_id', '!=', auth()->id())
@@ -294,10 +293,10 @@ class ConversationMessageController extends Controller
         return [
             'id' => $conversation->id,
             'context_label' => $conversation->context_label,
-            'context_type' => $conversation->conversable_type === \App\Models\PurchaseRequirement::class ? 'PR' : 'PO',
+            'context_type' => $conversation->conversable_type === \App\Models\PurchaseRequisition::class ? 'PR' : 'PO',
             'partner_name' => $this->displayName($partner),
             'partner_role' => $partner?->role,
-            'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : 'Belum ada pesan',
+            'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : 'No messages yet',
             'latest_time' => $latestMessage?->created_at?->diffForHumans(),
             'latest_at' => $latestMessage?->created_at?->toIso8601String(),
             'unread_count' => $conversation->unreadCountFor(auth()->id()),
@@ -350,15 +349,15 @@ class ConversationMessageController extends Controller
 
     private function requestPriceRevision(Conversation $conversation, Quotation $quotation, string $note): Message
     {
-        if ($quotation->purchaseRequirement->status === 'completed') {
+        if ($quotation->purchaseRequisition->status === 'completed') {
             throw ValidationException::withMessages([
-                'action' => 'PR sudah selesai. Penawaran tidak bisa diminta revisi.',
+                'action' => 'The PR is completed. A quotation revision cannot be requested.',
             ]);
         }
 
         if (! $quotation->canRequestRevision()) {
             throw ValidationException::withMessages([
-                'action' => 'Revisi hanya bisa diminta untuk penawaran submitted yang belum dibuat PO.',
+                'action' => 'A revision can only be requested for submitted quotations that have not been used to create a PO.',
             ]);
         }
 
@@ -371,9 +370,9 @@ class ConversationMessageController extends Controller
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
-            'body' => 'Mohon revisi harga penawaran untuk PR '
-                . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id)
-                . ".\n\nCatatan revisi: " . $note,
+            'body' => 'Please revise the quotation price for PR '
+                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
+                . ".\n\nRevision notes: " . $note,
         ]);
 
         $conversation->forceFill([
@@ -381,7 +380,7 @@ class ConversationMessageController extends Controller
             'resolved_at' => null,
         ])->save();
 
-        $this->notifySupplier($quotation, 'Revisi Penawaran Diminta', 'Purchasing meminta revisi penawaran untuk PR :pr_number.');
+        $this->notifySupplier($quotation, 'Quotation Revision Requested', 'Purchasing requested a quotation revision for PR :pr_number.');
 
         return $message;
     }
@@ -390,13 +389,13 @@ class ConversationMessageController extends Controller
     {
         if (! $quotation->canApproveBy(auth()->user())) {
             throw ValidationException::withMessages([
-                'action' => 'Penawaran ini tidak bisa diterima.',
+                'action' => 'This quotation cannot be accepted.',
             ]);
         }
 
         if ($quotation->isExpired()) {
             throw ValidationException::withMessages([
-                'action' => 'Penawaran sudah kadaluarsa. Minta supplier mengirim revisi sebelum menerima penawaran.',
+                'action' => 'This quotation has expired. Ask the supplier to submit a revision before accepting it.',
             ]);
         }
 
@@ -408,13 +407,13 @@ class ConversationMessageController extends Controller
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
-            'body' => 'Penawaran untuk PR '
-                . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id)
-                . ' sudah diterima oleh Purchasing.',
+            'body' => 'Quotation for PR '
+                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
+                . ' has been accepted by Purchasing.',
         ]);
 
         $conversation->markResolved();
-        $this->notifySupplier($quotation, 'Penawaran Diterima', 'Penawaran untuk PR :pr_number sudah diterima oleh Purchasing.');
+        $this->notifySupplier($quotation, 'Quotation Accepted', 'Quotation for PR :pr_number has been accepted by Purchasing.');
 
         return $message;
     }
@@ -423,7 +422,7 @@ class ConversationMessageController extends Controller
     {
         if (! $quotation->canApproveBy(auth()->user())) {
             throw ValidationException::withMessages([
-                'action' => 'Penawaran ini tidak bisa ditolak.',
+                'action' => 'This quotation cannot be rejected.',
             ]);
         }
 
@@ -436,13 +435,13 @@ class ConversationMessageController extends Controller
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
-            'body' => 'Penawaran untuk PR '
-                . ($quotation->purchaseRequirement->pr_number ?? '#' . $quotation->pr_id)
-                . " ditolak oleh Purchasing.\n\nCatatan: " . $note,
+            'body' => 'Quotation for PR '
+                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
+                . " was rejected by Purchasing.\n\nNotes: " . $note,
         ]);
 
         $conversation->markResolved();
-        $this->notifySupplier($quotation, 'Penawaran Ditolak', 'Penawaran untuk PR :pr_number ditolak oleh Purchasing.');
+        $this->notifySupplier($quotation, 'Quotation Rejected', 'Quotation for PR :pr_number was rejected by Purchasing.');
 
         return $message;
     }
@@ -450,7 +449,7 @@ class ConversationMessageController extends Controller
     private function sendActionMessage(Conversation $conversation, Quotation $quotation, string $body, string $note = ''): Message
     {
         if ($note !== '') {
-            $body .= "\n\nCatatan: " . $note;
+            $body .= "\n\nNotes: " . $note;
         }
 
         $message = $conversation->messages()->create([
@@ -463,14 +462,14 @@ class ConversationMessageController extends Controller
             'resolved_at' => null,
         ])->save();
 
-        $this->notifySupplier($quotation, 'Pesan Negosiasi Baru', 'Purchasing mengirim pesan negosiasi untuk PR :pr_number.');
+        $this->notifySupplier($quotation, 'New Negotiation Message', 'Purchasing sent a negotiation message for PR :pr_number.');
 
         return $message;
     }
 
     private function notifySupplier(Quotation $quotation, string $title, string $message): void
     {
-        $quotation->loadMissing(['supplier', 'purchaseRequirement']);
+        $quotation->loadMissing(['supplier', 'purchaseRequisition']);
 
         $quotation->supplier?->notify(new SystemNotification(
             $title,
@@ -481,10 +480,10 @@ class ConversationMessageController extends Controller
                 'category' => NotificationCategory::CHAT,
                 'quotation_id' => $quotation->id,
                 'pr_id' => $quotation->pr_id,
-                'pr_number' => $quotation->purchaseRequirement->pr_number ?? '-',
+                'pr_number' => $quotation->purchaseRequisition->pr_number ?? '-',
             ],
             [
-                'pr_number' => $quotation->purchaseRequirement->pr_number ?? '-',
+                'pr_number' => $quotation->purchaseRequisition->pr_number ?? '-',
             ]
         ));
     }

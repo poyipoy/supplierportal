@@ -1,24 +1,24 @@
 @extends('layouts.app')
 
-@section('title', 'Daftar Periode Penawaran — ADASI Portal')
-@section('page-title', 'Periode Penawaran')
+@section('title', 'Quotation Period List - ADASI Portal')
+@section('page-title', 'Quotation Period')
 
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-semibold">Pilih Periode</h5>
+        <h5 class="mb-0 fw-semibold">Select Period</h5>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Periode</th>
+                        <th>Period</th>
                         <th class="text-center">Status</th>
-                        <th class="text-center">Belum Direspons</th>
-                        <th class="text-center">Sudah Dikirim</th>
-                        <th class="text-center">Ditolak</th>
-                        <th class="text-end pe-4">Aksi</th>
+                        <th class="text-center">Not Responded</th>
+                        <th class="text-center">Submitted</th>
+                        <th class="text-center">Rejected</th>
+                        <th class="text-end pe-4">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,13 +53,13 @@
                             </td>
                             <td class="text-end pe-4">
                                 <a href="{{ route('supplier.quotations.period', $period->id) }}" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">
-                                    Lihat Permintaan <i class="bi bi-arrow-right ms-1"></i>
+                                    View Requisition <i class="bi bi-arrow-right ms-1"></i>
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">Belum ada periode penawaran atau riwayat penawaran.</td>
+                        <td colspan="6" class="text-center py-4 text-muted">No quotation periods or quotation history.</td>
                         </tr>
                     @endforelse
                 </tbody>

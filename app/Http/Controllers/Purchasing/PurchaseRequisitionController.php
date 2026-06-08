@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\PrItem;
 use App\Models\Period;
 use App\Models\User;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
-class PurchaseRequirementController extends Controller
+class PurchaseRequisitionController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -21,7 +21,7 @@ class PurchaseRequirementController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = PurchaseRequirement::with(['period', 'items', 'creator'])
+            $query = PurchaseRequisition::with(['period', 'items', 'creator'])
                 ->withCount('invitedSuppliers')
                 ->orderBy('created_at', 'desc');
 
@@ -61,10 +61,10 @@ class PurchaseRequirementController extends Controller
                 })
                 ->addColumn('created_date', fn($pr) => $pr->created_at->format('d M Y, H:i'))
                 ->addColumn('action', function ($pr) {
-                    $html = '<a href="' . PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) . '" class="btn btn-sm btn-outline-info" title="Lihat Detail"><i class="bi bi-eye"></i></a>';
+                    $html = '<a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr->id) . '" class="btn btn-sm btn-outline-info" title="Details"><i class="bi bi-eye"></i></a>';
                     if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
-                        $html .= ' <a href="' . PurchasingNavigation::toRoute('purchasing.requirements.edit', $pr->id) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
-                        $html .= ' <form action="' . route('purchasing.requirements.destroy', $pr->id) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button></form>';
+                        $html .= ' <a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr->id) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
+                        $html .= ' <form action="' . route('purchasing.requisitions.destroy', $pr->id) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
                     }
                     return $html;
                 })
@@ -90,8 +90,8 @@ class PurchaseRequirementController extends Controller
             ->get();
 
         if ($periods->isEmpty()) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
-                ->with('error', 'Tidak ada periode aktif (open). Silakan hubungi Admin untuk membuka periode.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('error', 'No active open period. Please contact Admin to open a period.');
         }
 
         return view('purchasing.pr.create', compact('periods', 'suppliers'));
@@ -113,10 +113,10 @@ class PurchaseRequirementController extends Controller
         try {
             DB::beginTransaction();
 
-            $pr = PurchaseRequirement::create([
+            $pr = PurchaseRequisition::create([
                 'period_id' => $validated['period_id'],
                 'created_by' => auth()->id(),
-                'pr_number' => $validated['action'] === 'submitted' ? PurchaseRequirement::generatePrNumber() : null,
+                'pr_number' => $validated['action'] === 'submitted' ? PurchaseRequisition::generatePrNumber() : null,
                 'notes' => $request->notes,
                 'status' => $validated['action'], // 'draft' or 'submitted'
             ]);
@@ -134,23 +134,23 @@ class PurchaseRequirementController extends Controller
                 $admins = \App\Models\User::where('role', 'admin')->get();
                 foreach ($admins as $admin) {
                     $admin->notify(new \App\Notifications\SystemNotification(
-                        'Permintaan Material Baru',
-                        "PR baru {$pr->pr_number} telah diajukan oleh " . auth()->user()->name,
-                        route('purchasing.requirements.show', $pr->id),
+                        'New Purchase Requisition',
+                        "New PR {$pr->pr_number} has been submitted by " . auth()->user()->name,
+                        route('purchasing.requisitions.show', $pr->id),
                         'bi-clipboard-plus text-primary',
                     ));
                 }
             }
 
             $message = $validated['action'] === 'submitted'
-                ? "Permintaan material berhasil diajukan!"
-                : "Permintaan material berhasil disimpan sebagai draft.";
+                ? "Purchase Requisition successfully submitted!"
+                : "Purchase Requisition successfully saved as draft.";
 
-            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))->with('success', $message);
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Terjadi kesalahan sistem saat menyimpan data: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'A system error occurred while saving data: ' . $e->getMessage());
         }
     }
 
@@ -159,7 +159,7 @@ class PurchaseRequirementController extends Controller
      */
     public function show(string $id)
     {
-        $pr = PurchaseRequirement::with([
+        $pr = PurchaseRequisition::with([
             'period',
             'items',
             'invitedSuppliers.supplier',
@@ -208,11 +208,11 @@ class PurchaseRequirementController extends Controller
      */
     public function edit(string $id)
     {
-        $pr = PurchaseRequirement::with(['period', 'items', 'invitedSuppliers.supplier'])->findOrFail($id);
+        $pr = PurchaseRequisition::with(['period', 'items', 'invitedSuppliers.supplier'])->findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
-                ->with('error', "Anda tidak dapat mengedit permintaan ini.");
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('error', "You cannot edit this requisition.");
         }
 
         $periods = Period::where('status', 'open')
@@ -233,11 +233,11 @@ class PurchaseRequirementController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $pr = PurchaseRequirement::findOrFail($id);
+        $pr = PurchaseRequisition::findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
-                ->with('error', "Anda tidak dapat mengedit permintaan ini.");
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('error', "You cannot edit this requisition.");
         }
 
         $this->prepareMaterialInput($request);
@@ -253,7 +253,7 @@ class PurchaseRequirementController extends Controller
 
             $pr->update([
                 'period_id' => $validated['period_id'],
-                'pr_number' => ($validated['action'] === 'submitted' && !$pr->pr_number) ? PurchaseRequirement::generatePrNumber() : $pr->pr_number,
+                'pr_number' => ($validated['action'] === 'submitted' && !$pr->pr_number) ? PurchaseRequisition::generatePrNumber() : $pr->pr_number,
                 'notes' => $request->notes,
                 'status' => $validated['action'],
             ]);
@@ -273,14 +273,14 @@ class PurchaseRequirementController extends Controller
             DB::commit();
 
             $message = $validated['action'] === 'submitted'
-                ? 'Permintaan material berhasil diajukan!'
-                : 'Draft permintaan material berhasil diperbarui.';
+                ? 'Purchase Requisition successfully submitted!'
+                : 'Draft purchase requisition successfully updated.';
 
-            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))->with('success', $message);
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Terjadi kesalahan sistem saat menyimpan data: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'A system error occurred while saving data: ' . $e->getMessage());
         }
     }
 
@@ -333,15 +333,15 @@ class PurchaseRequirementController extends Controller
     private function materialValidationMessages(): array
     {
         return [
-            'items.required' => 'Minimal 1 material wajib ditambahkan.',
-            'items.*.material_name.required' => 'Nama material wajib diisi.',
-            'items.*.hs_code.required' => 'HS Code wajib diisi.',
-            'items.*.quantity.required' => 'Quantity wajib diisi.',
-            'items.*.quantity.min' => 'Quantity minimal 1.',
-            'items.*.weight_needed.required' => 'Berat per unit wajib diisi.',
-            'items.*.shape.in' => 'Bentuk material harus Flat, Round, atau Hollow.',
-            'supplier_id.exists' => 'Supplier yang dipilih harus supplier aktif.',
-            'supplier_ids.*.exists' => 'Supplier yang dipilih harus supplier aktif.',
+            'items.required' => 'At least 1 material must be added.',
+            'items.*.material_name.required' => 'Material name is required.',
+            'items.*.hs_code.required' => 'HS Code is required.',
+            'items.*.quantity.required' => 'Quantity is required.',
+            'items.*.quantity.min' => 'Quantity must be at least 1.',
+            'items.*.weight_needed.required' => 'Weight per unit is required.',
+            'items.*.shape.in' => 'Material shape must be Flat, Round, or Hollow.',
+            'supplier_id.exists' => 'The selected supplier must be an active supplier.',
+            'supplier_ids.*.exists' => 'The selected supplier must be an active supplier.',
         ];
     }
 
@@ -368,7 +368,7 @@ class PurchaseRequirementController extends Controller
             ->all();
     }
 
-    private function syncInvitedSuppliers(PurchaseRequirement $pr, array $supplierIds): void
+    private function syncInvitedSuppliers(PurchaseRequisition $pr, array $supplierIds): void
     {
         $syncData = collect($supplierIds)
             ->filter()
@@ -386,11 +386,11 @@ class PurchaseRequirementController extends Controller
      */
     public function destroy(string $id)
     {
-        $pr = PurchaseRequirement::findOrFail($id);
+        $pr = PurchaseRequisition::findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
-                ->with('error', "Permintaan material tidak dapat dihapus karena sudah diproses.");
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('error', "Purchase Requisition cannot be deleted because it has been processed.");
         }
 
         try {
@@ -399,11 +399,11 @@ class PurchaseRequirementController extends Controller
             $pr->delete();
             DB::commit();
 
-            return redirect(PurchasingNavigation::backUrl('purchasing.requirements.index'))
-                ->with('success', 'Permintaan material berhasil dihapus.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('success', 'Purchase Requisition successfully deleted.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Terjadi kesalahan saat menghapus data.');
+            return back()->with('error', 'An error occurred while deleting data.');
         }
     }
 }

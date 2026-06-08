@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class PurchaseRequirement extends Model
+class PurchaseRequisition extends Model
 {
     use SoftDeletes;
+
+    protected $table = 'purchase_requisitions';
 
     protected $fillable = [
         'period_id',
@@ -81,7 +83,7 @@ class PurchaseRequirement extends Model
 
     public function invitedSuppliers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'purchase_requirement_suppliers', 'pr_id', 'supplier_id')
+        return $this->belongsToMany(User::class, 'purchase_requisition_suppliers', 'pr_id', 'supplier_id')
             ->withPivot('invited_at')
             ->withTimestamps();
     }

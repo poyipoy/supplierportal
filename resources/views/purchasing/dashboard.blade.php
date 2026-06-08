@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Dashboard Purchasing — ADASI Portal')
+@section('title', 'Purchasing Dashboard - ADASI Portal')
 @section('page-title', 'Dashboard Purchasing')
 
 @push('styles')
@@ -67,9 +67,9 @@
             <div>
                 <h6 class="fw-bold mb-1 text-dark">Action Required</h6>
                 <p class="mb-0 text-muted small">
-                    @if(($poStatusDist['overdue'] ?? 0) > 0) <span class="text-danger fw-semibold"><i class="bi bi-exclamation-circle"></i> Terdapat {{ $poStatusDist['overdue'] }} PO Overdue</span> yang melewati estimasi. @endif
-                    @if($menungguPenawaran > 0) <span class="text-warning fw-semibold ms-1"><i class="bi bi-clock"></i> {{ $menungguPenawaran }} PR</span> belum mendapat satupun penawaran. @endif
-                    @if(($poStatusDist['waiting_qc'] ?? 0) > 0) <span class="text-primary fw-semibold ms-1"><i class="bi bi-box-seam"></i> {{ $poStatusDist['waiting_qc'] }} PO</span> sedang menunggu inspeksi QC. @endif
+                    @if(($poStatusDist['overdue'] ?? 0) > 0) <span class="text-danger fw-semibold"><i class="bi bi-exclamation-circle"></i> {{ $poStatusDist['overdue'] }} overdue PO</span> have passed their estimated date. @endif
+                    @if($menungguPenawaran > 0) <span class="text-warning fw-semibold ms-1"><i class="bi bi-clock"></i> {{ $menungguPenawaran }} PR</span> have not received any quotations yet. @endif
+                    @if(($poStatusDist['waiting_qc'] ?? 0) > 0) <span class="text-primary fw-semibold ms-1"><i class="bi bi-box-seam"></i> {{ $poStatusDist['waiting_qc'] }} PO</span> are waiting for QC inspection. @endif
                 </p>
             </div>
         </div>
@@ -80,10 +80,10 @@
 {{-- Card Statistik (Clickable) --}}
 <div class="row g-4 mb-4 animate-fade-in">
     <div class="col-md-6 col-xl-3">
-        <a href="{{ route('purchasing.requirements.index', ['status' => 'submitted']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-primary">
+        <a href="{{ route('purchasing.requisitions.index', ['status' => 'submitted']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-primary">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">PERMINTAAN AKTIF</div><h3 class="fw-bold mb-0">{{ $prAktif }}</h3></div>
+                    <div><div class="text-muted small fw-medium mb-1">ACTIVE REQUISITIONS</div><h3 class="fw-bold mb-0">{{ $prAktif }}</h3></div>
                     <div class="position-relative">
                         <div class="bg-primary bg-opacity-10 rounded-circle p-3"><i class="bi bi-clipboard-data text-primary fs-4"></i></div>
                         <i class="bi bi-arrow-right kpi-arrow text-primary position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
@@ -93,10 +93,10 @@
         </a>
     </div>
     <div class="col-md-6 col-xl-3">
-        <a href="{{ route('purchasing.requirements.index', ['status' => 'bidding']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-warning">
+        <a href="{{ route('purchasing.requisitions.index', ['status' => 'bidding']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-warning">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">MENUNGGU PENAWARAN</div><h3 class="fw-bold mb-0 text-warning">{{ $menungguPenawaran }}</h3></div>
+                    <div><div class="text-muted small fw-medium mb-1">WAITING FOR QUOTATION</div><h3 class="fw-bold mb-0 text-warning">{{ $menungguPenawaran }}</h3></div>
                     <div class="position-relative">
                         <div class="bg-warning bg-opacity-10 rounded-circle p-3"><i class="bi bi-hourglass-split text-warning fs-4"></i></div>
                         <i class="bi bi-arrow-right kpi-arrow text-warning position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
@@ -109,7 +109,7 @@
         <a href="{{ route('purchasing.purchase-orders.index', ['status' => 'active']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-success">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">PO BERJALAN</div><h3 class="fw-bold mb-0 text-success">{{ $poBerjalan }}</h3></div>
+                    <div><div class="text-muted small fw-medium mb-1">ACTIVE PO</div><h3 class="fw-bold mb-0 text-success">{{ $poBerjalan }}</h3></div>
                     <div class="position-relative">
                         <div class="bg-success bg-opacity-10 rounded-circle p-3"><i class="bi bi-receipt text-success fs-4"></i></div>
                         <i class="bi bi-arrow-right kpi-arrow text-success position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
@@ -122,7 +122,7 @@
         <a href="{{ route('purchasing.purchase-orders.index', ['arrival' => 'this_week']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-info">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">TIBA MINGGU INI</div><h3 class="fw-bold mb-0 text-info">{{ $materialMingguIni }}</h3></div>
+                    <div><div class="text-muted small fw-medium mb-1">ARRIVING THIS WEEK</div><h3 class="fw-bold mb-0 text-info">{{ $materialMingguIni }}</h3></div>
                     <div class="position-relative">
                         <div class="bg-info bg-opacity-10 rounded-circle p-3"><i class="bi bi-truck text-info fs-4"></i></div>
                         <i class="bi bi-arrow-right kpi-arrow text-info position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
@@ -137,8 +137,8 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
-            <h6 class="mb-0 fw-bold">Perlu Dicek</h6>
-            <div class="text-muted small">Ringkasan data operasional yang perlu perhatian purchasing.</div>
+            <h6 class="mb-0 fw-bold">Needs Review</h6>
+            <div class="text-muted small">Operational summary that needs Purchasing attention.</div>
         </div>
         <span class="badge bg-light text-muted border">Quick Wins</span>
     </div>
@@ -153,9 +153,9 @@
                         <span class="d-flex align-items-center gap-2">
                             <span class="fw-bold fs-5 lh-1">{{ $check['count'] }}</span>
                             @if($check['count'] > 0)
-                                <span class="badge bg-{{ $check['class'] }}">Perlu aksi</span>
+                                <span class="badge bg-{{ $check['class'] }}">Needs Action</span>
                             @else
-                                <span class="badge bg-success">Aman</span>
+                                <span class="badge bg-success">Safe</span>
                             @endif
                         </span>
                         <span class="d-block fw-semibold mt-1">{{ $check['label'] }}</span>
@@ -171,7 +171,7 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Permintaan Material per Bulan</h6></div>
+            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Purchase Requisition per Month</h6></div>
             <div class="card-body"><canvas id="prChart" height="260"></canvas></div>
         </div>
     </div>
@@ -182,45 +182,45 @@
                 @if(count($poStatusDist) > 0)
                     <div style="width:220px;height:220px;"><canvas id="poDonut"></canvas></div>
                 @else
-                    <div class="text-muted text-center small">Belum ada data PO.</div>
+                    <div class="text-muted text-center small">No data available PO.</div>
                 @endif
             </div>
         </div>
     </div>
 </div>
 
-{{-- Tabel + Kurs --}}
+{{-- Table + Exchange Rate --}}
 <div class="row g-4">
     <div class="col-lg-5">
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">5 PR Terbaru</h6>
-                <a href="{{ route('purchasing.requirements.index') }}" class="btn btn-sm btn-light">Semua</a>
+                <h6 class="mb-0 fw-bold">Latest 5 PRs</h6>
+                <a href="{{ route('purchasing.requisitions.index') }}" class="btn btn-sm btn-light">All</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
-                        <thead class="table-light"><tr><th>No. PR</th><th>Periode</th><th>Status</th><th></th></tr></thead>
+                        <thead class="table-light"><tr><th>PR No.</th><th>Period</th><th>Status</th><th></th></tr></thead>
                         <tbody>
                             @forelse($prTerbaru as $pr)
                             <tr>
                                 <td class="fw-bold">{{ $pr->pr_number ?? 'DRAFT' }}</td>
                                 <td>{{ $pr->period->name }}</td>
                                 <td><x-status-badge type="pr" :status="$pr->status" /></td>
-                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requirements.show', $pr->id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr->id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
                             </tr>
-                            @empty<tr><td colspan="4" class="text-center text-muted py-3">Belum ada data.</td></tr>@endforelse
+                            @empty<tr><td colspan="4" class="text-center text-muted py-3">No data available.</td></tr>@endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-        {{-- Kurs --}}
+        {{-- Exchange Rate --}}
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">
-                    <i class="bi bi-currency-exchange me-1"></i> Kurs Hari Ini
-                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Kurs terbaru dipakai untuk input baru. Histori penawaran dan PO tetap memakai kurs snapshot masing-masing."></i>
+                    <i class="bi bi-currency-exchange me-1"></i> Today Exchange Rate
+                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="The latest exchange rate is used for new input. Quotation and PO history keep their own exchange rate snapshots."></i>
                 </h6>
                 <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#kursModal"><i class="bi bi-pencil-square"></i> Update</button>
             </div>
@@ -242,7 +242,7 @@
                     $lastRateUpdated = $latestRates->filter()->sortByDesc('valid_from')->first()?->valid_from;
                 @endphp
                 @if($lastRateUpdated)
-                    <div class="text-muted text-center mt-2" style="font-size:.7rem">Update kurs terbaru: {{ $lastRateUpdated->format('d M Y') }}</div>
+                    <div class="text-muted text-center mt-2" style="font-size:.7rem">Latest exchange rate update: {{ $lastRateUpdated->format('d M Y') }}</div>
                 @endif
             </div>
         </div>
@@ -250,13 +250,13 @@
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">PO - Kedatangan Terdekat</h6>
-                <a href="{{ route('purchasing.purchase-orders.index') }}" class="btn btn-sm btn-light">Semua PO</a>
+                <h6 class="mb-0 fw-bold">PO - Nearest Arrival</h6>
+                <a href="{{ route('purchasing.purchase-orders.index') }}" class="btn btn-sm btn-light">All PO</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
-                        <thead class="table-light"><tr><th>No. PO</th><th>Supplier</th><th>Estimasi Tiba</th><th>Status</th><th></th></tr></thead>
+                        <thead class="table-light"><tr><th>PO No.</th><th>Supplier</th><th>Estimated Arrival</th><th>Status</th><th></th></tr></thead>
                         <tbody>
                             @forelse($poTerdekat as $po)
                             <tr>
@@ -266,7 +266,7 @@
                                 <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
                                 <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
                             </tr>
-                            @empty<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada PO aktif.</td></tr>@endforelse
+                            @empty<tr><td colspan="5" class="text-center text-muted py-3">No active PO.</td></tr>@endforelse
                         </tbody>
                     </table>
                 </div>
@@ -275,13 +275,13 @@
     </div>
 </div>
 
-{{-- Modal Kurs --}}
+{{-- Exchange Rate Modal --}}
 <div class="modal fade" id="kursModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content">
     <form action="{{ route('purchasing.kurs.update') }}" method="POST">@csrf
-        <div class="modal-header"><h6 class="modal-title fw-bold">Update Kurs</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header"><h6 class="modal-title fw-bold">Update Exchange Rate</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <div class="mb-3">
-                <label class="form-label small fw-bold">Mata Uang</label>
+                <label class="form-label small fw-bold">Currency</label>
                 <select name="currency" class="form-select form-select-sm" required>
                     @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
                         <option value="{{ $code }}">{{ $label }}</option>
@@ -290,16 +290,13 @@
             </div>
             <div class="mb-3">
                 <label class="form-label small fw-bold">
-                    Rate ke IDR
-                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Kurs baru disimpan sebagai histori baru, bukan menimpa kurs lama."></i>
+                    Rate to IDR
+                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="New exchange rate is saved as new history, not overwriting the old one."></i>
                 </label>
                 <input type="number" step="0.01" name="rate_to_idr" class="form-control form-control-sm" required placeholder="16500">
             </div>
         </div>
-        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Simpan</button></div>
-    </form>
-        </div>
-        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Simpan</button></div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Save</button></div>
     </form>
 </div></div></div>
 @endsection
@@ -326,7 +323,7 @@
             data: {
                 labels: {!! json_encode(array_column($prPerBulan, 'label')) !!},
                 datasets: [{
-                    label: 'Jumlah PR',
+                    label: 'Amount PR',
                     data: {!! json_encode(array_column($prPerBulan, 'count')) !!},
                     backgroundColor: 'rgba(31,95,166,0.7)',
                     borderRadius: 6

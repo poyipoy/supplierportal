@@ -30,5 +30,5 @@ class InspectionsExport implements FromCollection, WithHeadings, ShouldAutoSize
         return $rows;
     }
 
-    public function headings(): array { return ['Nomor PO', 'Supplier', 'Material', 'Spesifikasi Diminta', 'Dimensi Aktual', 'Status Item', 'Status Inspeksi', 'Tanggal Inspeksi']; }
+    public function headings(): array { return ['PO Number', 'Supplier', 'Material', 'Requested Specification', 'Actual Dimensions', 'Item Status', 'Inspection Status', 'Inspection Date']; }
 }
