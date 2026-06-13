@@ -248,14 +248,14 @@
             <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Action</h6></div>
             <div class="card-body">
                 @if($quotation->status === 'submitted' && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
-                    <form action="{{ route('purchasing.quotations.accept', $quotation->id) }}" method="POST" class="mb-2">
+                    <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="mb-2">
                         @csrf
                         <button type="submit" class="btn btn-success w-100">
                             <i class="bi bi-check-circle me-1"></i> Accept Quotation
                         </button>
                     </form>
 
-                    <form action="{{ route('purchasing.quotations.request-revision', $quotation->id) }}" method="POST" class="mb-2" id="requestRevisionForm">
+                    <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="mb-2" id="requestRevisionForm">
                         @csrf
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                         <label for="revisionNote" class="form-label small fw-medium">Revision Notes</label>
@@ -265,7 +265,7 @@
                         </button>
                     </form>
 
-                    <form action="{{ route('purchasing.quotations.reject', $quotation->id) }}" method="POST" class="mb-3">
+                    <form action="{{ route('purchasing.quotations.reject', $quotation) }}" method="POST" class="mb-3">
                         @csrf
                         <label class="form-label small fw-medium">Rejection Notes</label>
                         <textarea name="reviewer_notes" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Required if the quotation is rejected.">{{ old('reviewer_notes') }}</textarea>
@@ -276,12 +276,12 @@
                 @endif
 
                 @if($canCreatePo)
-                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation->id) }}" class="btn btn-primary w-100 mb-2" style="background-color: var(--adasi-blue);">
+                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation) }}" class="btn btn-primary w-100 mb-2" style="background-color: var(--adasi-blue);">
                         <i class="bi bi-receipt me-1"></i> Create PO from This Quotation
                     </a>
                 @elseif($quotation->status === 'submitted' && $quotation->isExpired())
                     @if($canRequestRevision)
-                        <form action="{{ route('purchasing.quotations.request-revision', $quotation->id) }}" method="POST" class="mb-2" id="requestRevisionForm">
+                        <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="mb-2" id="requestRevisionForm">
                             @csrf
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                             <div class="alert alert-warning small mb-2">

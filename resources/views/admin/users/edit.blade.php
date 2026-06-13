@@ -14,7 +14,7 @@
             <h6 class="mb-0 fw-bold">Edit User Form: {{ $user->name }}</h6>
         </div>
         <div class="card-body">
-            <form action="{{ route('admin.users.update', $user->id) }}" method="POST">
+            <form action="{{ route('admin.users.update', $user) }}" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="row g-4">

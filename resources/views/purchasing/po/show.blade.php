@@ -40,7 +40,7 @@
                 <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
                 <div>
                     <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
-                    <a href="{{ route('purchasing.pdf.purchase-order', $po->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order">
+                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order">
                         <i class="bi bi-file-earmark-pdf"></i> Print PDF
                     </a>
                 </div>
@@ -55,7 +55,7 @@
                     <div class="col-md-8 fw-medium">
                         @php $prs = $po->purchaseRequisitions(); @endphp
                         @foreach($prs as $pr)
-                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr->id) }}" class="text-primary text-decoration-none me-2">
+                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="text-primary text-decoration-none me-2">
                                 {{ $pr->pr_number ?? '-' }}
                                 <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
                             </a>
@@ -264,7 +264,7 @@
                 <h6 class="mb-0 fw-bold">Negotiation & Chat</h6>
             </div>
             <div class="card-body">
-                <form action="{{ route('purchasing.conversations.start.po', $po->id) }}" method="POST" data-chat-start-form>
+                <form action="{{ route('purchasing.conversations.start.po', $po) }}" method="POST" data-chat-start-form>
                     @csrf
                     <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                     <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center">
@@ -292,12 +292,12 @@
                     </p>
 
                     @if($activeClaim)
-                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-exclamation-octagon me-2"></i> View Claim Material</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     @elseif($latestNgInspection)
-                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-plus-circle me-2"></i> Submit Material Claim</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
@@ -368,7 +368,7 @@
 
         {{-- Confirm Arrival --}}
         @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival)
-            <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po->id) }}" method="POST" id="arrivalForm">
+            <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po) }}" method="POST" id="arrivalForm">
                 @csrf
                 <button type="button" class="btn btn-success w-100 mb-3 py-2 fw-semibold shadow-sm" id="btnConfirmArrival">               <i class="bi bi-box-seam me-1"></i> Confirm Material Arrival
                 </button>

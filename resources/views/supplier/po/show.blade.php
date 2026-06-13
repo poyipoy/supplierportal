@@ -31,7 +31,12 @@
                         default => 'bg-secondary'
                     };
                 @endphp
-                <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
+                <div>
+                    <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
+                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order">
+                        <i class="bi bi-file-earmark-pdf"></i> Print PDF
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-2">
@@ -166,7 +171,7 @@
                         <p class="small text-muted mb-3">
                             ADASI submitted a claim for this PO. Please provide a response and supporting attachments.
                         </p>
-                        <a href="{{ route('supplier.claims.show', $pendingClaim->id) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
+                        <a href="{{ route('supplier.claims.show', $pendingClaim) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-reply me-2"></i> Claim Response</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>
@@ -174,7 +179,7 @@
                         <p class="small text-muted mb-3">
                             This PO has a material claim history. Open claim details to view status and response.
                         </p>
-                        <a href="{{ route('supplier.claims.show', $latestClaim->id) }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
+                        <a href="{{ route('supplier.claims.show', $latestClaim) }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-exclamation-octagon me-2"></i> View Claim Material</span>
                             <i class="bi bi-chevron-right"></i>
                         </a>

@@ -66,7 +66,7 @@
     <span class="fw-bold">Inspection Status: NG (Not Good)</span> - There are materials that do not meet specifications. Please upload evidence photos.
 </div>
 
-<form action="{{ route('qc.inspections.store', $po->id) }}" method="POST" enctype="multipart/form-data" id="inspectionForm">
+<form action="{{ route('qc.inspections.store', $po) }}" method="POST" enctype="multipart/form-data" id="inspectionForm">
     @csrf
 
     @php $allItems = $po->quotations->flatMap(fn($q) => $q->items); @endphp

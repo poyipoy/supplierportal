@@ -6,9 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Traits\HasHashids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Conversation extends Model
 {
+    use HasFactory, HasHashids;
+
     public const STATUS_OPEN = 'open';
     public const STATUS_WAITING_SUPPLIER = 'waiting_supplier';
     public const STATUS_WAITING_PURCHASING = 'waiting_purchasing';

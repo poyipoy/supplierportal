@@ -193,8 +193,8 @@
                         <i class="bi bi-info-circle me-1"></i> This requisition is still in draft status. Please edit and submit when finished.
                     </div>
                     <div class="d-grid gap-2">
-                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr->id) }}" class="btn btn-outline-primary">Edit Draft</a>
-                        <form action="{{ route('purchasing.requisitions.update', $pr->id) }}" method="POST">
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr) }}" class="btn btn-outline-primary">Edit Draft</a>
+                        <form action="{{ route('purchasing.requisitions.update', $pr) }}" method="POST">
                             @csrf
                             @method('PUT')
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
@@ -221,7 +221,7 @@
                         <i class="bi bi-exclamation-triangle-fill me-1"></i> Requisition rejected by Admin. Please check notes and revise.
                     </div>
                     <div class="d-grid gap-2">
-                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr->id) }}" class="btn btn-danger">Revise & Resubmit</a>
+                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr) }}" class="btn btn-danger">Revise & Resubmit</a>
                     </div>
                 @else
                     <div class="alert alert-success small mb-0">

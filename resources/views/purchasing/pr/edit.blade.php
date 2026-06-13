@@ -14,7 +14,7 @@
         @endif
     </div>
     <div class="card-body">
-        <form id="prForm" action="{{ route('purchasing.requisitions.update', $pr->id) }}" method="POST">
+        <form id="prForm" action="{{ route('purchasing.requisitions.update', $pr) }}" method="POST">
             @csrf
             @method('PUT')
             <input type="hidden" name="return_url" value="{{ request('return_url') }}">

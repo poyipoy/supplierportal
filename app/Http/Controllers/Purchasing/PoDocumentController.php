@@ -49,7 +49,7 @@ class PoDocumentController extends Controller
             $po->creator->notify(new SystemNotification(
                 'Document Status Updated',
                 "Document {$docLabel} on PO {$po->po_number} has been updated to \"{$statusLabel}\".",
-                route('purchasing.purchase-orders.show', $po->id),
+                route('purchasing.purchase-orders.show', $po),
                 'bi-file-earmark-check text-primary',
                 ['category' => NotificationCategory::DOCUMENT]
             ));
@@ -63,7 +63,7 @@ class PoDocumentController extends Controller
             $po->creator->notify(new SystemNotification(
                 'All Import Documents Complete',
                 "All import documents for PO {$po->po_number} are complete. Confirm material arrival if it has arrived.",
-                route('purchasing.purchase-orders.show', $po->id),
+                route('purchasing.purchase-orders.show', $po),
                 'bi-check2-circle text-success',
                 ['category' => NotificationCategory::DOCUMENT]
             ));

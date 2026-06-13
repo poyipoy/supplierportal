@@ -57,7 +57,7 @@
             <div class="card border-0 shadow-sm mb-4 bg-light">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">QC Inspection Reference</h6>
-                    <a href="{{ route('qc.inspections.show', $inspection->id) }}" target="_blank" class="btn btn-sm btn-outline-info">QC Details</a>
+                    <a href="{{ route('qc.inspections.show', $inspection) }}" target="_blank" class="btn btn-sm btn-outline-info">QC Details</a>
                 </div>
                 <div class="card-body">
                     <div class="mb-2">

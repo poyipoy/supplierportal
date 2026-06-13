@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use App\Traits\HasHashids;
 
 /**
  * @property \Illuminate\Support\Carbon|null $estimated_arrival
@@ -16,7 +17,9 @@ use Illuminate\Support\Collection;
  */
 class PurchaseOrder extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasHashids;
+
+    public const STATUS_DRAFT = 'draft';
 
     protected $fillable = [
         'supplier_id',

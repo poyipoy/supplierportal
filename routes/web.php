@@ -111,15 +111,27 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/comparison/vs-best/data', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'vsBestPriceData'])->name('comparison.vs-best.data');
     Route::get('/comparison/{pr_id}', function ($pr_id) {
         return redirect()->route('purchasing.comparison.inter-supplier', ['pr_id' => $pr_id]);
-    })->whereNumber('pr_id')->name('comparison.show');
+    })->name('comparison.show');
     // Laporan
     Route::get('/reports', [\App\Http\Controllers\Purchasing\ReportController::class, 'index'])->name('reports.index');
     // Export
     Route::get('/export/requisitions', [\App\Http\Controllers\Purchasing\ExportController::class, 'requisitions'])->name('export.requisitions');
     Route::get('/export/purchase-orders', [\App\Http\Controllers\Purchasing\ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
-    // PDF
-    Route::get('/pdf/purchase-order/{id}', [\App\Http\Controllers\Purchasing\PdfController::class, 'purchaseOrder'])->name('pdf.purchase-order');
-    Route::get('/pdf/qc-inspection/{id}', [\App\Http\Controllers\Purchasing\PdfController::class, 'qcInspection'])->name('pdf.qc-inspection');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Shared PDF Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->prefix('shared')->name('shared.')->group(function () {
+    Route::get('/pdf/purchase-order/{id}', [\App\Http\Controllers\Purchasing\PdfController::class, 'purchaseOrder'])
+        ->middleware('role:purchasing,supplier,admin')
+        ->name('pdf.purchase-order');
+        
+    Route::get('/pdf/qc-inspection/{id}', [\App\Http\Controllers\Purchasing\PdfController::class, 'qcInspection'])
+        ->middleware('role:purchasing,qc,admin')
+        ->name('pdf.qc-inspection');
 });
 
 /*

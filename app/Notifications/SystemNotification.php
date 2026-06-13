@@ -25,9 +25,16 @@ class SystemNotification extends Notification implements ShouldBroadcast
     {
         $this->title = __($title, $replace);
         $this->message = __($message, $replace);
-        $this->url = $url;
         $this->icon = $icon;
         $this->data = $data;
+
+        // Force the URL to be relative to avoid cross-domain 403 errors when testing on multiple domains
+        if (str_starts_with($url, 'http')) {
+            $parsedUrl = parse_url($url);
+            $this->url = ($parsedUrl['path'] ?? '/') . (isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '');
+        } else {
+            $this->url = $url;
+        }
     }
 
     /**

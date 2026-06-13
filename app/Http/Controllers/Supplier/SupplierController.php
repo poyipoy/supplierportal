@@ -14,15 +14,28 @@ class SupplierController extends Controller
     public function dashboard()
     {
         $sid = auth()->id();
-        $periodeAktif = Period::where('status', 'open')->count();
-        $belumDirespons = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])
-            ->visibleToSupplier($sid)
-            ->whereHas('period', fn($q) => $q->where('status', 'open'))
-            ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))->count();
-        $penawaranTerkirim = Quotation::where('supplier_id', $sid)->where('status', 'submitted')
-            ->whereMonth('submitted_at', now()->month)->whereYear('submitted_at', now()->year)->count();
-        $poDiterima = PurchaseOrder::where('supplier_id', $sid)->count();
 
+        // ─── Cached widget counts per supplier (5 menit) ───
+        $widgetData = \Illuminate\Support\Facades\Cache::remember(
+            'supplier_dashboard_widgets_' . $sid,
+            now()->addMinutes(5),
+            function () use ($sid) {
+                $periodeAktif = Period::where('status', 'open')->count();
+                $belumDirespons = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])
+                    ->visibleToSupplier($sid)
+                    ->whereHas('period', fn($q) => $q->where('status', 'open'))
+                    ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))->count();
+                $penawaranTerkirim = Quotation::where('supplier_id', $sid)->where('status', 'submitted')
+                    ->whereMonth('submitted_at', now()->month)->whereYear('submitted_at', now()->year)->count();
+                $poDiterima = PurchaseOrder::where('supplier_id', $sid)->count();
+
+                return compact('periodeAktif', 'belumDirespons', 'penawaranTerkirim', 'poDiterima');
+            }
+        );
+
+        extract($widgetData);
+
+        // Quick tables (tidak di-cache agar selalu fresh)
         $prBelumRespons = PurchaseRequisition::with('period', 'items')
             ->whereIn('status', ['submitted', 'bidding'])
             ->visibleToSupplier($sid)

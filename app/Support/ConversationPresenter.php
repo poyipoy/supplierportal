@@ -266,7 +266,7 @@ class ConversationPresenter
             }
 
             if ($viewer->role === 'supplier' && $quotation && Route::has('supplier.quotations.show')) {
-                return route('supplier.quotations.show', $quotation->id);
+                return route('supplier.quotations.show', $quotation);
             }
         }
 

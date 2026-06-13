@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Login - ADASI Supplier Portal')</title>
 
+    <!-- Favicon -->
+    <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
+
     {{-- Google Fonts: Inter --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -185,27 +188,58 @@
             box-shadow: 0 0 0 0.2rem rgba(31, 95, 166, 0.16);
         }
 
+        .btn-password-toggle {
+            background: rgba(255, 255, 255, 0.78) !important;
+            border-color: rgba(255, 255, 255, 0.9) !important;
+            border-left: transparent !important;
+            color: var(--auth-muted);
+            box-shadow: none !important;
+        }
+
+        .btn-password-toggle:hover,
+        .btn-password-toggle:focus {
+            background: rgba(255, 255, 255, 0.9) !important;
+            color: var(--adasi-blue);
+        }
+
         .auth-card .form-check-input:checked {
             background-color: var(--adasi-blue);
             border-color: var(--adasi-blue);
         }
 
         .btn-login {
-            background-color: var(--adasi-blue);
-            border-color: var(--adasi-blue);
+            background: linear-gradient(135deg, var(--adasi-blue), #164a85);
+            border-color: transparent;
             border-radius: 10px;
             box-shadow: 0 12px 26px rgba(31, 95, 166, 0.24);
             color: #fff;
             font-size: 0.95rem;
             font-weight: 600;
             padding: 0.68rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         .btn-login:hover,
         .btn-login:focus {
-            background-color: var(--adasi-blue-dark);
-            border-color: var(--adasi-blue-dark);
+            background: linear-gradient(135deg, #164a85, #0f3664);
+            border-color: transparent;
             color: #fff;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 18px 36px rgba(31, 95, 166, 0.35);
+        }
+
+        /* Card Animation */
+        .auth-card {
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        @keyframes slideUpFade {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .auth-footer {
@@ -252,6 +286,12 @@
     </style>
 </head>
 <body>
+    <!-- Top Left Logo -->
+    <div class="position-absolute top-0 start-0 ps-4 pt-3 d-flex align-items-center gap-3" style="z-index: 10;">
+        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="Logo ADASI" style="height: 80px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); transform: translateY(-3px);">
+        <img src="{{ asset('assets/images/text-adasi.png') }}" alt="PT. Astra Daido Steel Indonesia" style="height: 100px; width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+    </div>
+
     <main class="auth-shell">
         <div class="auth-card">
             @include('partials.alerts')

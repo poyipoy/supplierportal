@@ -68,11 +68,11 @@ class SupplierPurchaseOrderController extends Controller
                     $pendingClaim = $po->materialClaims->where('status', 'pending')->sortByDesc('created_at')->first();
                     $latestClaim = $po->materialClaims->sortByDesc('created_at')->first();
                     if ($pendingClaim) {
-                        $html .= '<a href="' . route('supplier.claims.show', $pendingClaim->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-reply me-1"></i> Claim Response</a>';
+                        $html .= '<a href="' . route('supplier.claims.show', $pendingClaim) . '" class="btn btn-sm btn-danger"><i class="bi bi-reply me-1"></i> Claim Response</a>';
                     } elseif ($latestClaim) {
-                        $html .= '<a href="' . route('supplier.claims.show', $latestClaim->id) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> View Claim</a>';
+                        $html .= '<a href="' . route('supplier.claims.show', $latestClaim) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> View Claim</a>';
                     }
-                    $html .= '<a href="' . route('supplier.purchase-orders.show', $po->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
+                    $html .= '<a href="' . route('supplier.purchase-orders.show', $po) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
                     $html .= '</div>';
                     return $html;
                 })

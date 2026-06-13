@@ -101,12 +101,12 @@ class PurchaseOrderController extends Controller
                         $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
                         $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
                         if ($activeClaim) {
-                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim->id) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Claim</a>';
+                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Claim</a>';
                         } elseif ($latestNgInspection) {
-                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Create Claim</a>';
+                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection) . '" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Create Claim</a>';
                         }
                     }
-                    $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
+                    $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
                     $html .= '</div>';
                     return $html;
                 })
@@ -273,7 +273,7 @@ class PurchaseOrderController extends Controller
                 $supplierUser->notify(new \App\Notifications\SystemNotification(
                     'New PO Issued',
                     "Purchase Order {$po->po_number} has been issued for your quotation{$prLabel}.",
-                    route('supplier.purchase-orders.show', $po->id),
+                    route('supplier.purchase-orders.show', $po),
                     'bi-receipt text-primary'
                 ));
             }
@@ -336,7 +336,7 @@ class PurchaseOrderController extends Controller
         $po = PurchaseOrder::findOrFail($id);
 
         if (!in_array($po->status, ['active', 'overdue'])) {
-            return redirect()->route('purchasing.purchase-orders.show', $po->id)
+            return redirect()->route('purchasing.purchase-orders.show', $po)
                 ->with('error', 'Material arrival can only be confirmed for Active or Overdue PO records.');
         }
 
@@ -352,12 +352,12 @@ class PurchaseOrderController extends Controller
             $qcUser->notify(new \App\Notifications\SystemNotification(
                 'Material Arrived - Ready for Inspection',
                 "Material from PO {$po->po_number} has arrived. Please perform QC inspection.",
-                route('qc.inspections.create', $po->id),
+                route('qc.inspections.create', $po),
                 'bi-box-seam text-warning'
             ));
         }
 
-        return redirect()->route('purchasing.purchase-orders.show', $po->id)
+        return redirect()->route('purchasing.purchase-orders.show', $po)
             ->with('success', 'Material arrival confirmed. QC will be notified for inspection.');
     }
 }

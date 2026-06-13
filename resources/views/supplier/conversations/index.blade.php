@@ -56,7 +56,7 @@
                                 </td>
                                 <td class="text-end">
                                     @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
-                                    <a href="{{ route('supplier.conversations.show', $conv->id) }}" class="btn btn-sm btn-outline-primary position-relative">
+                                    <a href="{{ route('supplier.conversations.show', $conv) }}" class="btn btn-sm btn-outline-primary position-relative">
                                         <i class="bi bi-chat-text"></i> Open Chat
                                         @if($unreadCount > 0)
                                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">

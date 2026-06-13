@@ -50,7 +50,7 @@
     </div>
 @endif
 
-<form id="quotationForm" action="{{ route('supplier.quotations.store', $pr->id) }}" method="POST" enctype="multipart/form-data">
+<form id="quotationForm" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="action" id="formAction" value="draft">
 

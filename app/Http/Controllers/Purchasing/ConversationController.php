@@ -94,7 +94,7 @@ class ConversationController extends Controller
             ]);
         }
 
-        $showParameters = [$conversation->id];
+        $showParameters = [$conversation];
         if (PurchasingNavigation::isSafeUrl(request()->input('return_url'))) {
             $showParameters['return_url'] = request()->input('return_url');
         }
@@ -134,7 +134,7 @@ class ConversationController extends Controller
             ]);
         }
 
-        $showParameters = [$conversation->id];
+        $showParameters = [$conversation];
         if (PurchasingNavigation::isSafeUrl(request()->input('return_url'))) {
             $showParameters['return_url'] = request()->input('return_url');
         }

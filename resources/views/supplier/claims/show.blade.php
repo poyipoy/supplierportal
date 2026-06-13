@@ -66,7 +66,7 @@
             </div>
             <div class="card-body">
                 @if($claim->status === 'pending')
-                    <form action="{{ route('supplier.claims.respond', $claim->id) }}" method="POST" enctype="multipart/form-data" id="respondForm">
+                    <form action="{{ route('supplier.claims.respond', $claim) }}" method="POST" enctype="multipart/form-data" id="respondForm">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label fw-medium">Response & Explanation <span class="text-danger">*</span></label>

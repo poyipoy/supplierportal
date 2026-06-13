@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class ExchangeRate extends Model
 {
@@ -41,6 +42,16 @@ class ExchangeRate extends Model
         ];
     }
 
+    // ─── Boot ───
+
+    protected static function booted(): void
+    {
+        // Otomatis invalidate cache saat kurs baru di-INSERT
+        static::created(function (ExchangeRate $rate) {
+            static::clearLatestRateCache($rate->currency);
+        });
+    }
+
     // ─── Relationships ───
 
     public function creator(): BelongsTo
@@ -51,12 +62,25 @@ class ExchangeRate extends Model
     // ─── Helpers ───
 
     /**
-     * Get the latest rate for a given currency.
+     * Get the latest rate for a given currency (cached for 60 minutes).
      */
     public static function latestRate(string $currency): ?self
     {
-        return static::where('currency', $currency)
-            ->orderBy('valid_from', 'desc')
-            ->first();
+        $cacheKey = 'exchange_rate_latest_' . strtoupper($currency);
+
+        return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($currency) {
+            return static::where('currency', $currency)
+                ->orderBy('valid_from', 'desc')
+                ->first();
+        });
+    }
+
+    /**
+     * Clear the cached latest rate for a specific currency.
+     */
+    public static function clearLatestRateCache(string $currency): void
+    {
+        Cache::forget('exchange_rate_latest_' . strtoupper($currency));
     }
 }
+

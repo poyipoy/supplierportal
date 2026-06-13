@@ -132,14 +132,14 @@ class ConversationMessageController extends Controller
             
             // Determine the correct route for the notification URL based on partner's role
             $routePrefix = $partner->role === 'purchasing' ? 'purchasing' : 'supplier';
-            $url = route("{$routePrefix}.conversations.show", $conversation->id);
+            $url = route("{$routePrefix}.conversations.show", $conversation);
 
             $partner->notify(new SystemNotification(
                 'New message from ' . $senderName,
                 $preview,
                 $url,
                 'bi-chat-dots',
-                ['category' => NotificationCategory::CHAT]
+                ['category' => NotificationCategory::CHAT, 'conversation_id' => $conversation->id]
             ));
         }
 
@@ -474,7 +474,7 @@ class ConversationMessageController extends Controller
         $quotation->supplier?->notify(new SystemNotification(
             $title,
             $message,
-            route('supplier.quotations.show', $quotation->id),
+            route('supplier.quotations.show', $quotation),
             'bi-chat-dots text-primary',
             [
                 'category' => NotificationCategory::CHAT,

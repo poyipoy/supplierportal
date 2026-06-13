@@ -12,6 +12,7 @@
         "laravel/reverb": "*",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "*",
+        "vinkla/hashids": "*",
         "yajra/laravel-datatables-oracle": "~12.0"
     },
     "require-dev": {

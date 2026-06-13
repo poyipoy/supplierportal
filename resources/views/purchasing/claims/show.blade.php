@@ -114,7 +114,7 @@
                     <div class="alert alert-info small">
                         <i class="bi bi-reply-fill me-1"></i> Supplier has provided a response. Is the solution acceptable?
                     </div>
-                    <form action="{{ route('purchasing.claims.resolve', $claim->id) }}" method="POST">
+                    <form action="{{ route('purchasing.claims.resolve', $claim) }}" method="POST">
                         @csrf
                         <button type="submit" class="btn btn-success w-100 mb-2">
                             <i class="bi bi-check2-circle me-1"></i> Mark Completed (Resolved)

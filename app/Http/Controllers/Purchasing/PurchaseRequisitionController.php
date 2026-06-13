@@ -61,10 +61,10 @@ class PurchaseRequisitionController extends Controller
                 })
                 ->addColumn('created_date', fn($pr) => $pr->created_at->format('d M Y, H:i'))
                 ->addColumn('action', function ($pr) {
-                    $html = '<a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr->id) . '" class="btn btn-sm btn-outline-info" title="Details"><i class="bi bi-eye"></i></a>';
+                    $html = '<a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) . '" class="btn btn-sm btn-outline-info" title="Details"><i class="bi bi-eye"></i></a>';
                     if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
-                        $html .= ' <a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr->id) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
-                        $html .= ' <form action="' . route('purchasing.requisitions.destroy', $pr->id) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
+                        $html .= ' <a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
+                        $html .= ' <form action="' . route('purchasing.requisitions.destroy', $pr) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
                     }
                     return $html;
                 })
@@ -136,7 +136,7 @@ class PurchaseRequisitionController extends Controller
                     $admin->notify(new \App\Notifications\SystemNotification(
                         'New Purchase Requisition',
                         "New PR {$pr->pr_number} has been submitted by " . auth()->user()->name,
-                        route('purchasing.requisitions.show', $pr->id),
+                        route('purchasing.requisitions.show', $pr),
                         'bi-clipboard-plus text-primary',
                     ));
                 }

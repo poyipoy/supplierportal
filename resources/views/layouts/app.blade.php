@@ -6,9 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @auth
-    <meta name="user-id" content="{{ auth()->id() }}">
+        <meta name="user-id" content="{{ auth()->id() }}">
     @endauth
     <title>@yield('title', 'ADASI Supplier Portal')</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,9 +55,11 @@
             background: var(--adasi-red) !important;
             height: 3px !important;
         }
+
         #nprogress .peg {
             box-shadow: 0 0 10px var(--adasi-red), 0 0 5px var(--adasi-red) !important;
         }
+
         #nprogress .spinner-icon {
             border-top-color: var(--adasi-red) !important;
             border-left-color: var(--adasi-red) !important;
@@ -72,17 +77,41 @@
             min-height: 1em;
             pointer-events: none;
         }
+
         .skeleton * {
             visibility: hidden;
         }
-        .skeleton-text { width: 100%; height: 1.1em; margin-bottom: 0.25rem; }
-        .skeleton-text.short { width: 60%; }
-        .skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
-        .skeleton-button { width: 100px; height: 36px; border-radius: 4px; }
-        
+
+        .skeleton-text {
+            width: 100%;
+            height: 1.1em;
+            margin-bottom: 0.25rem;
+        }
+
+        .skeleton-text.short {
+            width: 60%;
+        }
+
+        .skeleton-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .skeleton-button {
+            width: 100px;
+            height: 36px;
+            border-radius: 4px;
+        }
+
         @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
         }
 
         /* ── ADASI Full-Screen Loader Overlay ── */
@@ -95,12 +124,14 @@
             background: rgba(244, 246, 248, 0.6);
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
-            display: none; /* Tersembunyi secara default */
+            display: none;
+            /* Tersembunyi secara default */
             align-items: center;
             justify-content: center;
             z-index: 9999;
             transition: opacity 0.2s ease;
         }
+
         .adasi-loader-overlay.active {
             display: flex;
         }
@@ -110,7 +141,7 @@
             border-radius: 16px;
             padding: 28px 32px;
             box-shadow: 0 12px 40px rgba(31, 95, 166, 0.18),
-                        0 4px 12px rgba(0, 0, 0, 0.08);
+                0 4px 12px rgba(0, 0, 0, 0.08);
             border: 1px solid rgba(31, 95, 166, 0.1);
             display: flex;
             flex-direction: column;
@@ -120,8 +151,15 @@
         }
 
         @keyframes loaderFadeIn {
-            from { opacity: 0; transform: scale(0.92); }
-            to   { opacity: 1; transform: scale(1); }
+            from {
+                opacity: 0;
+                transform: scale(0.92);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         /* Logo ring container */
@@ -141,7 +179,8 @@
             inset: 0;
             border-radius: 50%;
             border: 3px solid #e8ecf1;
-            border-top-color: #94a3b8; /* Silver */
+            border-top-color: #94a3b8;
+            /* Silver */
             border-right-color: var(--adasi-red);
             animation: adasiSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
         }
@@ -166,7 +205,9 @@
         }
 
         @keyframes adasiSpin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Sembunyikan DataTables default processing sepenuhnya */
@@ -176,14 +217,28 @@
 
         /* Micro-animations */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .animate-fade-in {
             animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        .card { transition: box-shadow 0.2s ease, transform 0.2s ease; }
-        .card:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.08) !important; }
+
+        .card {
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .08) !important;
+        }
 
         /* Action button consistency in tables */
         .table .btn {
@@ -191,7 +246,10 @@
             font-size: 0.85rem;
             border-radius: 4px;
         }
-        .table .btn i { margin-right: 0.2rem; }
+
+        .table .btn i {
+            margin-right: 0.2rem;
+        }
 
         /* Sidebar */
         .sidebar {
@@ -340,9 +398,17 @@
             flex-grow: 1;
             animation: fadeInContent 0.25s ease-out;
         }
+
         @keyframes fadeInContent {
-            from { opacity: 0; transform: translateY(6px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Role Badge */
@@ -375,28 +441,35 @@
 
         /* Global Table Styling */
         .table {
-            border: 1px solid #cbd5e1 !important; /* Slate-300 untuk border lebih tegas */
+            border: 1px solid #cbd5e1 !important;
+            /* Slate-300 untuk border lebih tegas */
             border-collapse: collapse !important;
             background-color: #fff;
         }
 
         .table thead th {
-            background-color: #f1f5f9 !important; /* Slate-100 */
-            border-bottom: 2px solid #94a3b8 !important; /* Slate-400 */
-            color: #1e293b !important; /* Slate-800 */
+            background-color: #f1f5f9 !important;
+            /* Slate-100 */
+            border-bottom: 2px solid #94a3b8 !important;
+            /* Slate-400 */
+            color: #1e293b !important;
+            /* Slate-800 */
             font-weight: 700 !important;
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.025em;
         }
 
-        .table td, .table th {
-            border: 1px solid #cbd5e1 !important; /* Slate-300 */
+        .table td,
+        .table th {
+            border: 1px solid #cbd5e1 !important;
+            /* Slate-300 */
             vertical-align: middle !important;
         }
 
         .table-striped tbody tr:nth-of-type(odd) {
-            background-color: #f8fafc !important; /* Slate-50 */
+            background-color: #f8fafc !important;
+            /* Slate-50 */
         }
 
         .table-hover tbody tr:hover {
@@ -405,16 +478,20 @@
 
         /* Sticky Table Header - keeps column context visible when scrolling */
         .table-responsive {
-            max-height: none; /* allow natural scroll */
+            max-height: none;
+            /* allow natural scroll */
         }
+
         .table thead th {
             position: sticky;
             top: 0;
             z-index: 5;
         }
+
         /* When table is inside content-area (below sticky navbar), offset for navbar */
         .content-area .card .table thead th {
-            top: 0; /* relative to card scroll container */
+            top: 0;
+            /* relative to card scroll container */
         }
 
         /* Action button sizing - consistent minimum touch target */
@@ -432,14 +509,17 @@
             display: block;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
+
         a.kpi-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(31, 95, 166, 0.12) !important;
         }
+
         a.kpi-card .kpi-arrow {
             opacity: 0;
             transition: opacity 0.15s ease;
         }
+
         a.kpi-card:hover .kpi-arrow {
             opacity: 1;
         }
@@ -923,6 +1003,10 @@
                 width: auto;
             }
         }
+
+        .cursor-pointer {
+            cursor: pointer !important;
+        }
     </style>
     @stack('styles')
 </head>
@@ -932,7 +1016,7 @@
         $initNotifCount = 0;
         $initChatCount = 0;
         $dashboardUrl = url('/');
-        if(auth()->check()) {
+        if (auth()->check()) {
             $roleDashboardRoute = auth()->user()->role
                 ? auth()->user()->role . '.dashboard'
                 : 'dashboard';
@@ -940,11 +1024,13 @@
                 ? route($roleDashboardRoute)
                 : route('dashboard');
             $initNotifCount = auth()->user()->unreadNotifications()->count();
-            if(in_array(auth()->user()->role, ['purchasing', 'supplier'])) {
+            if (in_array(auth()->user()->role, ['purchasing', 'supplier'])) {
                 $initChatCount = \App\Models\Conversation::forUser(auth()->id())
-                    ->withCount(['messages' => function($q) {
-                        $q->where('sender_id', '!=', auth()->id())->whereNull('read_at');
-                    }])
+                    ->withCount([
+                        'messages' => function ($q) {
+                            $q->where('sender_id', '!=', auth()->id())->whereNull('read_at');
+                        }
+                    ])
                     ->get()
                     ->sum('messages_count');
             }
@@ -974,7 +1060,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        window.initAdasiTooltips = function(root = document) {
+        window.initAdasiTooltips = function (root = document) {
             if (!window.bootstrap?.Tooltip) {
                 return;
             }
@@ -995,26 +1081,26 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         // ADASI Loader — Inject overlay ke body
-        $(function() {
+        $(function () {
             // Buat overlay loader sekali saja
             $('body').append(
                 '<div class="adasi-loader-overlay" id="adasiLoader">' +
-                    '<div class="adasi-loader-card">' +
-                        '<div class="adasi-loader-ring">' +
-                            '<div class="adasi-loader-logo"></div>' +
-                        '</div>' +
-                        '<span class="adasi-loader-text">Loading...</span>' +
-                    '</div>' +
+                '<div class="adasi-loader-card">' +
+                '<div class="adasi-loader-ring">' +
+                '<div class="adasi-loader-logo"></div>' +
+                '</div>' +
+                '<span class="adasi-loader-text">Loading...</span>' +
+                '</div>' +
                 '</div>'
             );
 
             // Tampilkan saat AJAX mulai (termasuk DataTables)
-            $(document).ajaxStart(function() {
+            $(document).ajaxStart(function () {
                 $('#adasiLoader').addClass('active');
             });
 
             // Sembunyikan saat AJAX selesai
-            $(document).ajaxStop(function() {
+            $(document).ajaxStop(function () {
                 $('#adasiLoader').removeClass('active');
             });
         });
@@ -1155,11 +1241,11 @@
                             });
                         });
                 @endif
-            }
+                }
 
             // Run immediately on load
             updateBadges();
-            
+
             // Polling every 30 seconds
             setInterval(updateBadges, 30000);
         @endauth
@@ -1259,11 +1345,11 @@
 
     {{-- Global Script untuk Export Preview --}}
     <script>
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             const exportBtn = e.target.closest('a[href*="/export/"]');
             if (exportBtn) {
                 e.preventDefault();
-                
+
                 let recordsTotal = 'seluruh';
                 if (typeof $ !== 'undefined' && $.fn.dataTable) {
                     const tables = $.fn.dataTable.tables(true);
@@ -1272,7 +1358,7 @@
                         recordsTotal = info.recordsTotal;
                     }
                 }
-                
+
                 Swal.fire({
                     title: 'Confirm Export',
                     html: `You will export <strong>${recordsTotal}</strong> rows of data to Excel.<br>This process may take some time. Continue?`,
@@ -1295,7 +1381,7 @@
 
     {{-- Keyboard Shortcuts --}}
     <script>
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             // Abaikan jika fokus ada pada input/textarea
             if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
                 return;
@@ -1351,10 +1437,10 @@
 
         // Integrasi dengan jQuery AJAX (seperti DataTables)
         if (typeof jQuery !== 'undefined') {
-            $(document).ajaxStart(function() {
+            $(document).ajaxStart(function () {
                 NProgress.start();
             });
-            $(document).ajaxStop(function() {
+            $(document).ajaxStop(function () {
                 NProgress.done();
             });
         }
@@ -1364,84 +1450,96 @@
     <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js"></script>
     @auth
-    <script>
-        // Inisialisasi Laravel Echo dengan Reverb
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: '{{ env("REVERB_APP_KEY") }}',
-            wsHost: '{{ env("REVERB_HOST", "127.0.0.1") }}',
-            wsPort: {{ env("REVERB_PORT", 8080) }},
-            wssPort: {{ env("REVERB_PORT", 8080) }},
-            forceTLS: {{ env("REVERB_SCHEME", "http") === "https" ? "true" : "false" }},
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/broadcasting/auth',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        <script>
+            // Inisialisasi Laravel Echo dengan Reverb
+            window.Echo = new Echo({
+                broadcaster: 'reverb',
+                key: '{{ env("REVERB_APP_KEY") }}',
+                wsHost: '{{ env("REVERB_HOST", "127.0.0.1") }}',
+                wsPort: {{ env("REVERB_PORT", 8080) }},
+                wssPort: {{ env("REVERB_PORT", 8080) }},
+                forceTLS: {{ env("REVERB_SCHEME", "http") === "https" ? "true" : "false" }},
+                enabledTransports: ['ws', 'wss'],
+                authEndpoint: '/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    }
                 }
-            }
-        });
+            });
 
-        // Dengarkan notifikasi real-time di private channel user
-        var userId = document.querySelector('meta[name="user-id"]')?.content;
-        if (userId) {
-            Echo.private('App.Models.User.' + userId)
-                .notification((notification) => {
-                    console.log('[Reverb] Notifikasi diterima:', notification);
+            // Dengarkan notifikasi real-time di private channel user
+            var userId = document.querySelector('meta[name="user-id"]')?.content;
+            if (userId) {
+                Echo.private('App.Models.User.' + userId)
+                    .notification((notification) => {
+                        console.log('[Reverb] Notifikasi diterima:', notification);
 
-                    // 1. Update badge count di ikon lonceng
-                    var badge = document.querySelector('.notification-badge');
-                    if (badge) {
-                        var currentCount = parseInt(badge.textContent) || 0;
-                        badge.textContent = currentCount + 1;
-                        badge.style.display = 'inline-block';
-                    }
+                        // 1. Update badge count di ikon lonceng
+                        var badge = document.querySelector('.notification-badge');
+                        if (badge) {
+                            var currentCount = parseInt(badge.textContent) || 0;
+                            badge.textContent = currentCount + 1;
+                            badge.style.display = 'inline-block';
+                        }
 
-                    // 2. Tampilkan SweetAlert2 Toast
-                    if (window.Swal) {
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            showCloseButton: true,
-                            timer: 5000,
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.addEventListener('mouseenter', Swal.stopTimer);
-                                toast.addEventListener('mouseleave', Swal.resumeTimer);
-                            }
-                        });
+                        // 2. Tampilkan SweetAlert2 Toast
+                        if (window.Swal) {
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                showCloseButton: true,
+                                timer: 5000,
+                                timerProgressBar: true,
+                                customClass: {
+                                    popup: notification.url ? 'cursor-pointer' : ''
+                                },
+                                didOpen: (toast) => {
+                                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                                    toast.addEventListener('mouseleave', Swal.resumeTimer);
 
-                        Toast.fire({
-                            icon: 'info',
-                            title: notification.title || 'Notifikasi Baru',
-                            text: notification.message || '',
-                        });
-                    }
+                                    if (notification.url) {
+                                        toast.addEventListener('click', (e) => {
+                                            // Jangan redirect jika yang diklik adalah tombol close (x)
+                                            if (!e.target.closest('.swal2-close')) {
+                                                window.location.href = notification.url;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
 
-                    // 3. Prepend notifikasi baru ke daftar dropdown (jika ada)
-                    var notifList = document.querySelector('.notification-list .tab-pane.active');
-                    if (notifList) {
-                        var newItem = document.createElement('a');
-                        newItem.href = notification.url || '#';
-                        newItem.className = 'notification-item bg-light';
-                        newItem.innerHTML =
-                            '<div class="d-flex align-items-start gap-2 w-100">' +
+                            Toast.fire({
+                                icon: 'info',
+                                title: notification.title || 'Notifikasi Baru',
+                                text: notification.message || '',
+                            });
+                        }
+
+                        // 3. Prepend notifikasi baru ke daftar dropdown (jika ada)
+                        var notifList = document.querySelector('.notification-list .tab-pane.active');
+                        if (notifList) {
+                            var newItem = document.createElement('a');
+                            newItem.href = notification.url || '#';
+                            newItem.className = 'notification-item bg-light';
+                            newItem.innerHTML =
+                                '<div class="d-flex align-items-start gap-2 w-100">' +
                                 '<i class="bi ' + (notification.icon || 'bi-bell') + ' fs-5 text-primary mt-1"></i>' +
                                 '<div class="flex-grow-1 overflow-hidden">' +
-                                    '<div class="d-flex align-items-center gap-1">' +
-                                        '<div class="fw-semibold small text-truncate">' + (notification.title || 'Notifikasi') + '</div>' +
-                                        '<span class="badge bg-danger flex-shrink-0" style="font-size:.55rem">New</span>' +
-                                    '</div>' +
-                                    '<div class="text-muted small text-truncate">' + (notification.message || '') + '</div>' +
-                                    '<div class="text-muted" style="font-size:.7rem">Baru saja</div>' +
+                                '<div class="d-flex align-items-center gap-1">' +
+                                '<div class="fw-semibold small text-truncate">' + (notification.title || 'Notifikasi') + '</div>' +
+                                '<span class="badge bg-danger flex-shrink-0" style="font-size:.55rem">New</span>' +
                                 '</div>' +
-                            '</div>';
-                        notifList.prepend(newItem);
-                    }
-                });
-        }
-    </script>
+                                '<div class="text-muted small text-truncate">' + (notification.message || '') + '</div>' +
+                                '<div class="text-muted" style="font-size:.7rem">Baru saja</div>' +
+                                '</div>' +
+                                '</div>';
+                            notifList.prepend(newItem);
+                        }
+                    });
+            }
+        </script>
     @endauth
 
     @stack('scripts')

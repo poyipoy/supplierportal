@@ -207,7 +207,7 @@
                                 <td class="fw-bold">{{ $pr->pr_number ?? 'DRAFT' }}</td>
                                 <td>{{ $pr->period->name }}</td>
                                 <td><x-status-badge type="pr" :status="$pr->status" /></td>
-                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr->id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
                             </tr>
                             @empty<tr><td colspan="4" class="text-center text-muted py-3">No data available.</td></tr>@endforelse
                         </tbody>
@@ -264,7 +264,7 @@
                                 <td>{{ $po->supplier->name }}</td>
                                 <td>{{ \Carbon\Carbon::parse($po->estimated_arrival)->format('d M Y') }}</td>
                                 <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
-                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po->id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
                             </tr>
                             @empty<tr><td colspan="5" class="text-center text-muted py-3">No active PO.</td></tr>@endforelse
                         </tbody>

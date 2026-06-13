@@ -165,7 +165,7 @@
                         <i class="bi bi-pencil-square me-1"></i> Revise Quotation
                     </a>
                     @if($conversation)
-                        <a href="{{ route('supplier.conversations.show', $conversation->id) }}" class="btn btn-outline-primary" data-open-chat-conversation="{{ $conversation->id }}">
+                        <a href="{{ route('supplier.conversations.show', $conversation) }}" class="btn btn-outline-primary" data-open-chat-conversation="{{ $conversation->id }}">
                             <i class="bi bi-chat-dots me-1"></i> Open Revision Chat
                         </a>
                     @endif

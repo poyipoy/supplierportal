@@ -4,11 +4,10 @@
 
 @section('content')
     {{-- Logo --}}
-    <div class="auth-logo">
+    <div class="auth-logo text-center mb-4">
         <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="Logo ADASI"
-            style="width: 100px; height: auto; margin-bottom: 1rem;">
-        <h4>ADASI Supplier Portal</h4>
-        <p>PT. Astra Daido Steel Indonesia</p>
+            style="width: 80px; height: auto; margin-bottom: 1rem;">
+        <h4 class="fw-bold text-dark mb-1" style="font-size: 1.25rem;">ADASI Supplier Portal</h4>
     </div>
 
     {{-- Login Form --}}
@@ -32,7 +31,10 @@
             <div class="input-group">
                 <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
                 <input type="password" name="password" id="password"
-                    class="form-control @error('password') is-invalid @enderror" placeholder="********" autocomplete="current-password" required>
+                    class="form-control border-end-0 @error('password') is-invalid @enderror" placeholder="********" autocomplete="current-password" required>
+                <button class="btn btn-password-toggle" type="button" id="togglePassword">
+                    <i class="bi bi-eye"></i>
+                </button>
             </div>
             @error('password')
                 <div class="text-danger small mt-1">{{ $message }}</div>
@@ -55,4 +57,23 @@
     <div class="auth-footer">
         &copy; {{ date('Y') }} PT. Astra Daido Steel Indonesia
     </div>
+@endsection
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const togglePassword = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+        const icon = togglePassword.querySelector('i');
+
+        togglePassword.addEventListener('click', function (e) {
+            // Toggle the type attribute
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            
+            // Toggle the eye / eye slash icon
+            icon.classList.toggle('bi-eye');
+            icon.classList.toggle('bi-eye-slash');
+        });
+    });
+</script>
 @endsection

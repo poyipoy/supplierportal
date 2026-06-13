@@ -185,7 +185,7 @@
     const emptyState = document.getElementById('empty-state');
     const attachmentInput = document.getElementById('message-attachments');
     const attachmentPreview = document.getElementById('message-attachments-preview');
-    const quickActionUrl = `{{ route('conversations.quick-action', $conversation->id) }}`;
+    const quickActionUrl = `{{ route('conversations.quick-action', $conversation) }}`;
     let lastMessageId = {{ $conversation->messages->last()->id ?? 0 }};
     let isSending = false;
 
@@ -273,7 +273,7 @@
         payload.append('body', body);
         files.forEach((file) => payload.append('attachments[]', file));
 
-        fetch(`{{ route('conversations.messages.store', $conversation->id) }}`, {
+        fetch(`{{ route('conversations.messages.store', $conversation) }}`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -443,7 +443,7 @@
 
     // Polling new messages
     setInterval(() => {
-        fetch(`{{ route('conversations.messages.latest', $conversation->id) }}?after=${lastMessageId}`, {
+        fetch(`{{ route('conversations.messages.latest', $conversation) }}?after=${lastMessageId}`, {
             headers: { 'Accept': 'application/json' }
         })
         .then(res => res.json())

@@ -16,58 +16,87 @@ class PurchasingController extends Controller
 {
     public function dashboard()
     {
-        $prAktif = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])->count();
-        $menungguPenawaran = PurchaseRequisition::where('status', 'submitted')
-            ->whereDoesntHave('quotations')->count();
-        $poBerjalan = PurchaseOrder::whereIn('status', ['active', 'overdue', 'waiting_qc'])->count();
-        $materialMingguIni = PurchaseOrder::where('status', 'active')
-            ->whereBetween('estimated_arrival', [now(), now()->addDays(7)])->count();
+        // ─── Cached dashboard widgets (10 menit) ───
+        $dashboardData = \Illuminate\Support\Facades\Cache::remember(
+            'purchasing_dashboard_widgets',
+            now()->addMinutes(10),
+            function () {
+                $prAktif = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])->count();
+                $menungguPenawaran = PurchaseRequisition::where('status', 'submitted')
+                    ->whereDoesntHave('quotations')->count();
+                $poBerjalan = PurchaseOrder::whereIn('status', ['active', 'overdue', 'waiting_qc'])->count();
+                $materialMingguIni = PurchaseOrder::where('status', 'active')
+                    ->whereBetween('estimated_arrival', [now(), now()->addDays(7)])->count();
 
-        // Chart: PR per month for the last 6 months.
-        $prPerBulan = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $d = Carbon::now()->subMonths($i);
-            $prPerBulan[] = [
-                'label' => $d->format('M Y'),
-                'count' => PurchaseRequisition::whereYear('created_at', $d->year)
-                    ->whereMonth('created_at', $d->month)->count(),
-            ];
-        }
+                // Chart: PR per bulan — 1 query tunggal dengan GROUP BY (mengganti 6 query terpisah)
+                $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
+                $prCounts = PurchaseRequisition::where('created_at', '>=', $sixMonthsAgo)
+                    ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mn, COUNT(*) as total')
+                    ->groupByRaw('YEAR(created_at), MONTH(created_at)')
+                    ->get()
+                    ->keyBy(fn($row) => $row->yr . '-' . $row->mn);
 
-        // Chart: PO status distribution.
-        $poStatusDist = PurchaseOrder::selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')->pluck('total', 'status')->toArray();
+                $prPerBulan = [];
+                for ($i = 5; $i >= 0; $i--) {
+                    $d = Carbon::now()->subMonths($i);
+                    $key = $d->year . '-' . $d->month;
+                    $prPerBulan[] = [
+                        'label' => $d->format('M Y'),
+                        'count' => (int) ($prCounts->get($key)?->total ?? 0),
+                    ];
+                }
 
-        // Quick tables.
-        $prTerbaru = PurchaseRequisition::with('period')->orderBy('created_at', 'desc')->take(5)->get();
-        $poTerdekat = PurchaseOrder::with(['supplier', 'quotations.purchaseRequisition'])
-            ->whereIn('status', ['active', 'overdue'])->whereNotNull('estimated_arrival')
-            ->orderBy('estimated_arrival', 'asc')->take(5)->get();
+                // Chart: PO status distribution.
+                $poStatusDist = PurchaseOrder::selectRaw('status, COUNT(*) as total')
+                    ->groupBy('status')->pluck('total', 'status')->toArray();
 
-        $documentStatusSubquery = DB::table('purchase_orders')
-            ->leftJoin('po_documents', 'po_documents.po_id', '=', 'purchase_orders.id')
-            ->whereNull('purchase_orders.deleted_at')
-            ->selectRaw('
-                purchase_orders.id,
-                COUNT(po_documents.id) as documents_count,
-                SUM(CASE WHEN po_documents.status IN (?, ?, ?) THEN 1 ELSE 0 END) as completed_documents_count
-            ', ['received', 'verified', 'done'])
-            ->groupBy('purchase_orders.id');
+                // Operational checks
+                $documentStatusSubquery = DB::table('purchase_orders')
+                    ->leftJoin('po_documents', 'po_documents.po_id', '=', 'purchase_orders.id')
+                    ->whereNull('purchase_orders.deleted_at')
+                    ->selectRaw('
+                        purchase_orders.id,
+                        COUNT(po_documents.id) as documents_count,
+                        SUM(CASE WHEN po_documents.status IN (?, ?, ?) THEN 1 ELSE 0 END) as completed_documents_count
+                    ', ['received', 'verified', 'done'])
+                    ->groupBy('purchase_orders.id');
 
-        $poDocumentsIncomplete = DB::query()
-            ->fromSub($documentStatusSubquery, 'po_doc_status')
-            ->where(function ($query) {
-                $query->where('documents_count', '<', 4)
-                    ->orWhere('completed_documents_count', '<', 4);
-            })
-            ->count();
+                $poDocumentsIncomplete = DB::query()
+                    ->fromSub($documentStatusSubquery, 'po_doc_status')
+                    ->where(function ($query) {
+                        $query->where('documents_count', '<', 4)
+                            ->orWhere('completed_documents_count', '<', 4);
+                    })
+                    ->count();
+
+                $completedPrWithoutPo = PurchaseRequisition::where('status', 'completed')
+                    ->whereDoesntHave('quotations.purchaseOrders')
+                    ->count();
+
+                $waitingQcLong = PurchaseOrder::where('status', 'waiting_qc')
+                    ->whereNotNull('actual_arrival')
+                    ->whereDate('actual_arrival', '<', today()->subDays(2))
+                    ->count();
+
+                $claimsPastDeadline = MaterialClaim::where('status', 'pending')
+                    ->whereDate('deadline', '<', today())
+                    ->count();
+
+                return compact(
+                    'prAktif', 'menungguPenawaran', 'poBerjalan', 'materialMingguIni',
+                    'prPerBulan', 'poStatusDist', 'poDocumentsIncomplete',
+                    'completedPrWithoutPo', 'waitingQcLong', 'claimsPastDeadline'
+                );
+            }
+        );
+
+        // Extract cached data
+        extract($dashboardData);
 
         $operationalChecks = [
             [
                 'label' => 'Completed PR Without PO',
-                'count' => PurchaseRequisition::where('status', 'completed')
-                    ->whereDoesntHave('quotations.purchaseOrders')
-                    ->count(),
+                'count' => $completedPrWithoutPo,
                 'icon' => 'bi-clipboard-x',
                 'class' => 'danger',
                 'url' => route('purchasing.requisitions.index', ['status' => 'completed']),
@@ -83,10 +112,7 @@ class PurchasingController extends Controller
             ],
             [
                 'label' => 'Waiting QC > 2 Days',
-                'count' => PurchaseOrder::where('status', 'waiting_qc')
-                    ->whereNotNull('actual_arrival')
-                    ->whereDate('actual_arrival', '<', today()->subDays(2))
-                    ->count(),
+                'count' => $waitingQcLong,
                 'icon' => 'bi-clipboard-pulse',
                 'class' => 'info',
                 'url' => route('purchasing.purchase-orders.index', ['status' => 'waiting_qc']),
@@ -94,9 +120,7 @@ class PurchasingController extends Controller
             ],
             [
                 'label' => 'Claims Past Deadline',
-                'count' => MaterialClaim::where('status', 'pending')
-                    ->whereDate('deadline', '<', today())
-                    ->count(),
+                'count' => $claimsPastDeadline,
                 'icon' => 'bi-exclamation-octagon',
                 'class' => 'danger',
                 'url' => route('purchasing.claims.index'),
@@ -104,7 +128,13 @@ class PurchasingController extends Controller
             ],
         ];
 
-        // Exchange rates.
+        // Quick tables (tidak di-cache karena harus selalu fresh)
+        $prTerbaru = PurchaseRequisition::with('period')->orderBy('created_at', 'desc')->take(5)->get();
+        $poTerdekat = PurchaseOrder::with(['supplier', 'quotations.purchaseRequisition'])
+            ->whereIn('status', ['active', 'overdue'])->whereNotNull('estimated_arrival')
+            ->orderBy('estimated_arrival', 'asc')->take(5)->get();
+
+        // Exchange rates (sudah di-cache oleh model ExchangeRate::latestRate)
         $latestRates = collect(ExchangeRate::CURRENCIES)
             ->mapWithKeys(fn($currency) => [$currency => ExchangeRate::latestRate($currency)]);
 

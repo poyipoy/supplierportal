@@ -55,7 +55,7 @@ class QcInspectionController extends Controller
             ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
             ->addColumn('arrival_date', fn($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
             ->addColumn('item_count', fn($po) => $po->quotations->sum('items_count') . ' Item')
-            ->addColumn('action', fn($po) => '<a href="' . route('qc.inspections.create', $po->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Start Inspection</a>')
+            ->addColumn('action', fn($po) => '<a href="' . route('qc.inspections.create', $po) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Start Inspection</a>')
             ->rawColumns(['action'])
             ->make(true);
     }
@@ -78,7 +78,7 @@ class QcInspectionController extends Controller
                 StatusHelper::qcLabel($i->status)
             ))
             ->addColumn('inspector_name', fn($i) => $i->inspector->name ?? '-')
-            ->addColumn('action', fn($i) => '<a href="' . route('qc.inspections.show', $i->id) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Details</a>')
+            ->addColumn('action', fn($i) => '<a href="' . route('qc.inspections.show', $i) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Details</a>')
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
@@ -221,7 +221,7 @@ class QcInspectionController extends Controller
                     $pUser->notify(new SystemNotification(
                         'QC Inspection Completed',
                         'Material from ' . $po->po_number . ' has passed QC inspection.',
-                        route('purchasing.purchase-orders.show', $po->id),
+                        route('purchasing.purchase-orders.show', $po),
                         'bi-check-circle text-success'
                     ));
                 }
@@ -232,7 +232,7 @@ class QcInspectionController extends Controller
                     $pUser->notify(new SystemNotification(
                         'NG Material Found',
                         'Material from ' . $po->po_number . ' was marked NG by QC. Please submit a claim to the supplier.',
-                        route('purchasing.claims.create', $inspection->id),
+                        route('purchasing.claims.create', $inspection),
                         'bi-exclamation-triangle text-danger'
                     ));
                 }
@@ -240,7 +240,7 @@ class QcInspectionController extends Controller
 
             DB::commit();
 
-            return redirect()->route('qc.inspections.show', $inspection->id)->with('success', 'Inspection result successfully saved.');
+            return redirect()->route('qc.inspections.show', $inspection)->with('success', 'Inspection result successfully saved.');
 
         } catch (\RuntimeException $e) {
             DB::rollBack();

@@ -40,7 +40,7 @@ class ClaimController extends Controller
                 })
                 ->addColumn('action', function ($c) {
                     $label = $c->status === 'pending' ? 'Give Response' : 'View Details';
-                    return '<a href="' . route('supplier.claims.show', $c->id) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">' . $label . '</a>';
+                    return '<a href="' . route('supplier.claims.show', $c) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">' . $label . '</a>';
                 })
                 ->rawColumns(['deadline_display', 'status_badge', 'action'])
                 ->make(true);
@@ -115,11 +115,11 @@ class ClaimController extends Controller
             $pUser->notify(new SystemNotification(
                 'Claim Response Accepted',
                 'The supplier has responded to the claim for PO ' . $claim->purchaseOrder->po_number . '.',
-                route('purchasing.claims.show', $claim->id),
+                route('purchasing.claims.show', $claim),
                 'bi-reply text-primary'
             ));
         }
 
-        return redirect()->route('supplier.claims.show', $claim->id)->with('success', 'Response successfully sent.');
+        return redirect()->route('supplier.claims.show', $claim)->with('success', 'Response successfully sent.');
     }
 }

@@ -136,10 +136,10 @@ class QuotationController extends Controller
                     $quotation = $pr->quotations->first();
                     $status = $quotation ? $quotation->status : 'unresponded';
                     return match($status) {
-                        'unresponded' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Create Quotation</a>',
-                        'draft' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Continue</a>',
-                        'revision_requested' => '<a href="' . route('supplier.quotations.create', $pr->id) . '" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revise Quotation</a>',
-                        default => $quotation ? '<a href="' . route('supplier.quotations.show', $quotation->id) . '" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> View</a>' : '-',
+                        'unresponded' => '<a href="' . route('supplier.quotations.create', $pr) . '" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Create Quotation</a>',
+                        'draft' => '<a href="' . route('supplier.quotations.create', $pr) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Continue</a>',
+                        'revision_requested' => '<a href="' . route('supplier.quotations.create', $pr) . '" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revise Quotation</a>',
+                        default => $quotation ? '<a href="' . route('supplier.quotations.show', $quotation) . '" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> View</a>' : '-',
                     };
                 })
                 ->rawColumns(['status_badge', 'action'])
@@ -172,7 +172,7 @@ class QuotationController extends Controller
 
         // Final quotations are read-only; drafts and revision_requested quotations can be edited.
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
-            return redirect()->route('supplier.quotations.show', $quotation->id)
+            return redirect()->route('supplier.quotations.show', $quotation)
                 ->with('info', 'You have already submitted a quotation for this requisition.');
         }
 
@@ -241,7 +241,7 @@ class QuotationController extends Controller
         $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
 
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
-            return redirect()->route('supplier.quotations.show', $quotation->id)
+            return redirect()->route('supplier.quotations.show', $quotation)
                 ->with('error', 'This quotation has already been submitted and cannot be changed.');
         }
 
@@ -348,7 +348,7 @@ class QuotationController extends Controller
                     $pUser->notify(new \App\Notifications\SystemNotification(
                         $title,
                         $message,
-                        route('purchasing.requisitions.show', $pr->id),
+                        route('purchasing.requisitions.show', $pr),
                         'bi-envelope-check text-success',
                         ['category' => NotificationCategory::QUOTATION],
                         ['name' => auth()->user()->name, 'pr_number' => $pr->pr_number]

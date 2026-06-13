@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Conversation;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
@@ -57,11 +58,51 @@ class NotificationController extends Controller
             $url = '';
         }
 
+        // Rewrite the URL's host to match the current request so that
+        // notifications created on adasi_portal-supplier.test still work
+        // when opened from localhost:8000 (and vice versa).
+        $url = $this->normalizeNotificationUrl($url);
+
         if ($this->isUsableNotificationUrl($url, $notification->id)) {
             return $url;
         }
 
         return $this->fallbackUrlFor($notification) ?? $this->dashboardUrl();
+    }
+
+    /**
+     * Rewrite the scheme, host, and port of a notification URL to match the
+     * current HTTP request, keeping the path and query string intact.
+     */
+    private function normalizeNotificationUrl(string $url): string
+    {
+        if ($url === '' || $url === '#') {
+            return $url;
+        }
+
+        $parsed = parse_url($url);
+        if (! isset($parsed['host'])) {
+            return $url; // relative URL, nothing to rewrite
+        }
+
+        $currentHost = request()->getHost();
+        if ($parsed['host'] === $currentHost) {
+            return $url; // already correct
+        }
+
+        // Rebuild with the current request's scheme, host, and port
+        $scheme = request()->getScheme();
+        $port = request()->getPort();
+        $base = $scheme . '://' . $currentHost;
+        if (($scheme === 'http' && $port != 80) || ($scheme === 'https' && $port != 443)) {
+            $base .= ':' . $port;
+        }
+
+        $path = $parsed['path'] ?? '/';
+        $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
+        $fragment = isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '';
+
+        return $base . $path . $query . $fragment;
     }
 
     private function isUsableNotificationUrl(string $url, string $notificationId): bool
@@ -76,7 +117,24 @@ class NotificationController extends Controller
 
         $path = parse_url($url, PHP_URL_PATH) ?: $url;
 
-        return ! Str::contains($path, "/notifications/{$notificationId}/read");
+        if (Str::contains($path, "/notifications/{$notificationId}/read")) {
+            return false;
+        }
+
+        // Reject URLs whose route prefix belongs to a different role.
+        // e.g. a supplier user clicking a URL that starts with /purchasing/...
+        $rolePrefix = auth()->user()->role;
+        $rolePrefixes = ['admin', 'purchasing', 'supplier', 'qc'];
+        foreach ($rolePrefixes as $prefix) {
+            if ($prefix === $rolePrefix) {
+                continue;
+            }
+            if (Str::startsWith(ltrim($path, '/'), $prefix . '/')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function fallbackUrlFor(DatabaseNotification $notification): ?string
@@ -88,6 +146,10 @@ class NotificationController extends Controller
             (string) ($data['po_number'] ?? ''),
             (string) ($data['pr_number'] ?? ''),
         ]);
+
+        if ($conversationUrl = $this->conversationUrl($data['conversation_id'] ?? null)) {
+            return $conversationUrl;
+        }
 
         if ($quotationUrl = $this->quotationUrl($data['quotation_id'] ?? null)) {
             return $quotationUrl;
@@ -135,10 +197,10 @@ class NotificationController extends Controller
 
         return match (auth()->user()->role) {
             'supplier' => Route::has('supplier.purchase-orders.show')
-                ? route('supplier.purchase-orders.show', $po->id)
+                ? route('supplier.purchase-orders.show', $po)
                 : null,
             'purchasing' => Route::has('purchasing.purchase-orders.show')
-                ? route('purchasing.purchase-orders.show', $po->id)
+                ? route('purchasing.purchase-orders.show', $po)
                 : null,
             default => null,
         };
@@ -151,11 +213,11 @@ class NotificationController extends Controller
         }
 
         if (auth()->user()->role === 'purchasing' && Route::has('purchasing.requisitions.show')) {
-            return route('purchasing.requisitions.show', $pr->id);
+            return route('purchasing.requisitions.show', $pr);
         }
 
         if (auth()->user()->role === 'supplier' && Route::has('supplier.quotations.create')) {
-            return route('supplier.quotations.create', $pr->id);
+            return route('supplier.quotations.create', $pr);
         }
 
         return null;
@@ -190,6 +252,23 @@ class NotificationController extends Controller
                 : null,
             'purchasing' => Route::has('purchasing.claims.show')
                 ? route('purchasing.claims.show', $claimId)
+                : null,
+            default => null,
+        };
+    }
+
+    private function conversationUrl(mixed $conversationId): ?string
+    {
+        if (! $conversationId || ! Conversation::whereKey($conversationId)->exists()) {
+            return null;
+        }
+
+        return match (auth()->user()->role) {
+            'supplier' => Route::has('supplier.conversations.show')
+                ? route('supplier.conversations.show', $conversationId)
+                : null,
+            'purchasing' => Route::has('purchasing.conversations.show')
+                ? route('purchasing.conversations.show', $conversationId)
                 : null,
             default => null,
         };

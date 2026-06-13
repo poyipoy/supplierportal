@@ -31,6 +31,7 @@ class PriceComparisonController extends Controller
             ->whereHas('quotations', function ($q) {
                 $q->whereIn('status', ['submitted', 'accepted', 'rejected']);
             }, '>=', 2)
+            ->where('created_at', '>=', now()->subYears(3)) // Batasi maks 3 tahun terakhir
             ->orderByDesc('created_at')
             ->get();
 
@@ -112,7 +113,7 @@ class PriceComparisonController extends Controller
                             'amount' => $quotationItem ? (float) $quotationItem->amount : null,
                             'currency' => $quotation->currency,
                             'detail_url' => $quotationItem
-                                ? PurchasingNavigation::toRoute('purchasing.quotations.show', $quotation->id)
+                                ? PurchasingNavigation::toRoute('purchasing.quotations.show', $quotation)
                                 : null,
                         ];
                     }
@@ -307,7 +308,7 @@ class PriceComparisonController extends Controller
                 $this->applyVsBestKeywordFilter($query, $keyword);
             })
             ->addColumn('material_display', function ($row) use ($returnUrl) {
-                $prUrl = $this->routeWithReturn('purchasing.requirements.show', $row->current_pr_id, $returnUrl);
+                $prUrl = $this->routeWithReturn('purchasing.requisitions.show', $row->current_pr_id, $returnUrl);
 
                 return '<div class="fw-bold">' . e($row->material_name) . '</div>'
                     . '<div class="text-muted small">Qty: ' . number_format((int) ($row->quantity ?? 1), 0, ',', '.') . '</div>'
@@ -329,7 +330,7 @@ class PriceComparisonController extends Controller
                     . '<div class="text-muted small">' . e($row->best_supplier ?: '-') . '</div>';
 
                 if ($row->best_pr_id) {
-                    $bestPrUrl = $this->routeWithReturn('purchasing.requirements.show', $row->best_pr_id, $returnUrl);
+                    $bestPrUrl = $this->routeWithReturn('purchasing.requisitions.show', $row->best_pr_id, $returnUrl);
                     $html .= '<a href="' . e($bestPrUrl) . '" class="small text-primary text-decoration-none">'
                         . e($row->best_pr_number ?: '-')
                         . '<i class="bi bi-arrow-right-short ms-1"></i></a>';
@@ -759,7 +760,7 @@ class PriceComparisonController extends Controller
                 'pr_id' => $purchaseRequisition?->id,
                 'pr_number' => $purchaseRequisition?->pr_number ?? '-',
                 'pr_url' => $purchaseRequisition
-                    ? PurchasingNavigation::toRoute('purchasing.requirements.show', $purchaseRequisition->id)
+                    ? PurchasingNavigation::toRoute('purchasing.requisitions.show', $purchaseRequisition)
                     : null,
                 'supplier' => $item->quotation->supplier->name ?? '-',
                 'price_per_kg' => (float) $item->price_per_kg,

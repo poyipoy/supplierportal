@@ -231,7 +231,7 @@ class QuotationListController extends Controller
             $quotation->supplier->notify(new SystemNotification(
                 'Quotation Revision Requested',
                 'Purchasing requested a quotation revision for PR :pr_number.',
-                route('supplier.quotations.show', $quotation->id),
+                route('supplier.quotations.show', $quotation),
                 'bi-arrow-repeat text-warning',
                 [
                     'category' => NotificationCategory::QUOTATION,

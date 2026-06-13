@@ -44,9 +44,9 @@ class UserController extends Controller
                     : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Inactive</span>')
                 ->addColumn('created_date', fn($user) => $user->created_at->format('d M Y'))
                 ->addColumn('action', function ($user) {
-                    $html = '<a href="' . route('admin.users.edit', $user->id) . '" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>';
+                    $html = '<a href="' . route('admin.users.edit', $user) . '" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>';
                     if ($user->id !== auth()->id()) {
-                        $html .= ' <form action="' . route('admin.users.destroy', $user->id) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
+                        $html .= ' <form action="' . route('admin.users.destroy', $user) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
                     }
                     return $html;
                 })

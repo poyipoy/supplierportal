@@ -26,7 +26,7 @@
                 @else
                     <span class="badge bg-danger fs-6 px-3 py-2 me-2">STATUS: NG</span>
                 @endif
-                <a href="{{ route('purchasing.pdf.qc-inspection', $inspection->id) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Report QC">
+                <a href="{{ route('shared.pdf.qc-inspection', $inspection) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Report QC">
                     <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
                 </a>
             </div>
@@ -170,7 +170,7 @@
         @endif
 
         @if(auth()->user()->role === 'qc')
-            <form action="{{ route('qc.inspections.attachments.store', $inspection->id) }}" method="POST" enctype="multipart/form-data" class="border-top mt-3 pt-3">
+            <form action="{{ route('qc.inspections.attachments.store', $inspection) }}" method="POST" enctype="multipart/form-data" class="border-top mt-3 pt-3">
                 @csrf
                 <label class="form-label fw-medium small">Add NG Evidence Photo</label>
                 <input type="file" name="attachments[]" class="form-control @error('attachments') is-invalid @enderror @error('attachments.*') is-invalid @enderror" accept=".jpg,.jpeg,.png" multiple required>

@@ -164,7 +164,7 @@ class MaterialClaimController extends Controller
             $supplierUser->notify(new SystemNotification(
                 'New Material Claim',
                 'You received a new claim for PO ' . $inspection->purchaseOrder->po_number . '. Please respond before ' . \Carbon\Carbon::parse($claim->deadline)->format('d M Y') . '.',
-                route('supplier.claims.show', $claim->id),
+                route('supplier.claims.show', $claim),
                 'bi-exclamation-octagon text-danger'
             ));
         }
@@ -217,7 +217,7 @@ class MaterialClaimController extends Controller
             $supplierUser->notify(new SystemNotification(
                 'Material Claim Completed',
                 'Claim for PO ' . ($claim->purchaseOrder->po_number ?? '-') . ' has been marked completed by Purchasing.',
-                route('supplier.claims.show', $claim->id),
+                route('supplier.claims.show', $claim),
                 'bi-check-circle text-success'
             ));
         }
