@@ -8,11 +8,12 @@ use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\QcItem;
 use App\Models\User;
-use App\Notifications\SystemNotification;
+use App\Services\NotificationService;
+use App\Support\NotificationCategory;
 use App\Support\StatusHelper;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -21,6 +22,8 @@ use Yajra\DataTables\Facades\DataTables;
 
 class QcInspectionController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     private const ACTUAL_FIELD_BY_DIMENSION = [
         'thickness' => 'actual_thickness',
         'd_inner' => 'actual_d_inner',
@@ -45,17 +48,17 @@ class QcInspectionController extends Controller
     {
         $query = PurchaseOrder::with([
             'supplier',
-            'quotations' => fn($query) => $query->withCount('items'),
+            'quotations' => fn ($query) => $query->withCount('items'),
         ])
             ->where('status', 'waiting_qc')
             ->orderBy('actual_arrival', 'asc');
 
         return DataTables::eloquent($query)
-            ->addColumn('po_number_display', fn($po) => $po->po_number)
-            ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
-            ->addColumn('arrival_date', fn($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
-            ->addColumn('item_count', fn($po) => $po->quotations->sum('items_count') . ' Item')
-            ->addColumn('action', fn($po) => '<a href="' . route('qc.inspections.create', $po) . '" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Start Inspection</a>')
+            ->addColumn('po_number_display', fn ($po) => $po->po_number)
+            ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
+            ->addColumn('arrival_date', fn ($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
+            ->addColumn('item_count', fn ($po) => $po->quotations->sum('items_count').' Item')
+            ->addColumn('action', fn ($po) => '<a href="'.route('qc.inspections.create', $po).'" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Start Inspection</a>')
             ->rawColumns(['action'])
             ->make(true);
     }
@@ -70,15 +73,15 @@ class QcInspectionController extends Controller
         }
 
         return DataTables::eloquent($query)
-            ->addColumn('po_number', fn($i) => $i->purchaseOrder->po_number ?? '-')
-            ->addColumn('supplier_name', fn($i) => $i->purchaseOrder->supplier->name ?? '-')
-            ->addColumn('inspected_date', fn($i) => $i->inspected_at?->format('d M Y, H:i') ?? '-')
-            ->addColumn('status_badge', fn($i) => StatusHelper::badge(
+            ->addColumn('po_number', fn ($i) => $i->purchaseOrder->po_number ?? '-')
+            ->addColumn('supplier_name', fn ($i) => $i->purchaseOrder->supplier->name ?? '-')
+            ->addColumn('inspected_date', fn ($i) => $i->inspected_at?->format('d M Y, H:i') ?? '-')
+            ->addColumn('status_badge', fn ($i) => StatusHelper::badge(
                 StatusHelper::qcBadge($i->status),
                 StatusHelper::qcLabel($i->status)
             ))
-            ->addColumn('inspector_name', fn($i) => $i->inspector->name ?? '-')
-            ->addColumn('action', fn($i) => '<a href="' . route('qc.inspections.show', $i) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Details</a>')
+            ->addColumn('inspector_name', fn ($i) => $i->inspector->name ?? '-')
+            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Details</a>')
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
@@ -109,7 +112,7 @@ class QcInspectionController extends Controller
     {
         $po = PurchaseOrder::with(['quotations.items.prItem'])->findOrFail($po_id);
         $poPrItems = $po->quotations
-            ->flatMap(fn($quotation) => $quotation->items->pluck('prItem'))
+            ->flatMap(fn ($quotation) => $quotation->items->pluck('prItem'))
             ->filter()
             ->keyBy('id');
 
@@ -211,39 +214,42 @@ class QcInspectionController extends Controller
                 throw new \RuntimeException('NG evidence photos were not uploaded. Please upload the evidence photos again before saving the inspection.');
             }
 
-            // Update PO Status & Send Notification
-            $purchasingUsers = User::where('role', 'purchasing')->get();
-
+            // Update PO status. Notifications are sent only after commit.
             if ($overallStatus === 'ok') {
                 $po->update(['status' => 'completed']);
-                foreach ($purchasingUsers as $pUser) {
-                    /** @var User $pUser */
-                    $pUser->notify(new SystemNotification(
-                        'QC Inspection Completed',
-                        'Material from ' . $po->po_number . ' has passed QC inspection.',
-                        route('purchasing.purchase-orders.show', $po),
-                        'bi-check-circle text-success'
-                    ));
-                }
             } else {
                 $po->update(['status' => 'claim_needed']);
-                foreach ($purchasingUsers as $pUser) {
-                    /** @var User $pUser */
-                    $pUser->notify(new SystemNotification(
-                        'NG Material Found',
-                        'Material from ' . $po->po_number . ' was marked NG by QC. Please submit a claim to the supplier.',
-                        route('purchasing.claims.create', $inspection),
-                        'bi-exclamation-triangle text-danger'
-                    ));
-                }
             }
 
             DB::commit();
+
+            $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
+            $isOk = $overallStatus === 'ok';
+            $this->notifications->send(
+                $purchasingUsers,
+                $isOk ? 'qc.inspection_ok' : 'qc.inspection_ng',
+                'qc.inspection_result:'.$inspection->id,
+                $isOk ? 'QC Inspection Completed' : 'NG Material Found',
+                $isOk
+                    ? 'Material from '.$po->po_number.' has passed QC inspection.'
+                    : 'Material from '.$po->po_number.' was marked NG by QC. Please submit a claim to the supplier.',
+                $isOk
+                    ? route('purchasing.purchase-orders.show', $po, absolute: false)
+                    : route('purchasing.claims.create', $inspection, absolute: false),
+                $isOk ? 'bi-check-circle text-success' : 'bi-exclamation-triangle text-danger',
+                [
+                    'category' => NotificationCategory::OTHER,
+                    'po_id' => $po->id,
+                    'po_number' => $po->po_number,
+                    'inspection_id' => $inspection->id,
+                ],
+            );
 
             return redirect()->route('qc.inspections.show', $inspection)->with('success', 'Inspection result successfully saved.');
 
         } catch (\RuntimeException $e) {
             DB::rollBack();
+
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             DB::rollBack();
@@ -308,7 +314,7 @@ class QcInspectionController extends Controller
             'purchaseOrder.supplier',
             'inspector',
             'items.prItem',
-            'attachments'
+            'attachments',
         ])->findOrFail($id);
 
         return view('qc.inspections.show', compact('inspection'));
@@ -348,7 +354,7 @@ class QcInspectionController extends Controller
 
     private function saveAttachment(UploadedFile $file, Model $attachable): void
     {
-        $path = 'attachments/' . now()->format('Y/m') . '/' . $file->hashName();
+        $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName();
         $stream = fopen($file->getPathname(), 'r');
 
         if (! $stream) {

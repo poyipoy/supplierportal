@@ -294,15 +294,11 @@
             ? `The PO will be created by combining <strong>${totalPr} PRs</strong>. `
             : '';
 
-        Swal.fire({
+        AdasiAlert.confirm({
             title: 'Create Purchase Order?',
             html: prMsg + 'Quotations from other suppliers on the same PR will automatically be <strong>rejected</strong>.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: 'var(--adasi-blue)',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, Create PO!',
-            cancelButtonText: 'Cancel'
+            confirmText: 'Yes, Create PO!',
+            cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#poForm').submit();

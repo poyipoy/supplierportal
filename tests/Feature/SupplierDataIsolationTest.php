@@ -7,7 +7,7 @@ use App\Models\MaterialClaim;
 use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequirement;
+use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
@@ -60,7 +60,7 @@ class SupplierDataIsolationTest extends TestCase
             'created_by' => $this->admin->id,
         ]);
 
-        $pr = PurchaseRequirement::create([
+        $pr = PurchaseRequisition::create([
             'period_id' => $period->id,
             'created_by' => $this->purchasing->id,
             'pr_number' => 'REQ/TEST/' . str_pad($supplier->id, 3, '0', STR_PAD_LEFT),

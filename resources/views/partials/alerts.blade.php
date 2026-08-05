@@ -1,28 +1,26 @@
-{{-- Flash message: success --}}
 @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-        <i class="bi bi-check-circle-fill"></i>
-        <div>{{ session('success') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div hidden data-adasi-flash data-type="success" data-title="Success" data-message="{{ session('success') }}" data-duration="4000"></div>
 @endif
 
-{{-- Flash message: error --}}
 @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-        <i class="bi bi-x-circle-fill"></i>
-        <div>{{ session('error') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div hidden data-adasi-flash data-type="error" data-title="Error" data-message="{{ session('error') }}"></div>
 @endif
 
-{{-- Flash message: warning --}}
 @if(session('warning'))
-    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <div>{{ session('warning') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div hidden data-adasi-flash data-type="warning" data-title="Warning" data-message="{{ session('warning') }}" data-duration="5500"></div>
+@endif
+
+@if(session('info'))
+    <div hidden data-adasi-flash data-type="info" data-title="Information" data-message="{{ session('info') }}" data-duration="4500"></div>
+@endif
+
+@if(session('status'))
+    @php
+        $statusMessage = session('status') === 'verification-link-sent'
+            ? 'A new verification link has been sent to the email address you provided during registration.'
+            : session('status');
+    @endphp
+    <div hidden data-adasi-flash data-type="info" data-title="Information" data-message="{{ $statusMessage }}" data-duration="5000"></div>
 @endif
 
 {{-- Validation errors --}}

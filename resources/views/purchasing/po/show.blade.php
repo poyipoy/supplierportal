@@ -40,7 +40,10 @@
                 <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
                 <div>
                     <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
-                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order">
+                    <a href="{{ route('purchasing.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                    </a>
+                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order" data-pdf-confirm>
                         <i class="bi bi-file-earmark-pdf"></i> Print PDF
                     </a>
                 </div>
@@ -51,17 +54,21 @@
                     <div class="col-md-8 fw-medium">{{ $po->supplier->name }}</div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">PR No.</div>
+                    <div class="col-md-4 text-muted small">Reference (No. PR)</div>
                     <div class="col-md-8 fw-medium">
                         @php $prs = $po->purchaseRequisitions(); @endphp
-                        @foreach($prs as $pr)
-                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="text-primary text-decoration-none me-2">
-                                {{ $pr->pr_number ?? '-' }}
-                                <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
-                            </a>
-                        @endforeach
-                        @if($prs->count() > 1)
-                            <span class="badge bg-primary bg-opacity-10 text-primary ms-1">{{ $prs->count() }} combined PRs</span>
+                        @if($prs->isEmpty())
+                            -
+                        @else
+                            @foreach($prs as $pr)
+                                <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="text-primary text-decoration-none me-2">
+                                    {{ $pr->pr_number ?? '-' }}
+                                    <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
+                                </a>
+                            @endforeach
+                            @if($prs->count() > 1)
+                                <span class="badge bg-primary bg-opacity-10 text-primary ms-1">{{ $prs->count() }} combined PRs</span>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -97,12 +104,10 @@
                     <div class="col-md-4 text-muted small">Currency</div>
                     <div class="col-md-8 fw-medium">{{ $po->currency }}</div>
                 </div>
-                @if($po->notes)
                 <div class="row">
-                    <div class="col-md-4 text-muted small">Notes</div>
-                    <div class="col-md-8">{{ $po->notes }}</div>
+                    <div class="col-md-4 text-muted small">Remark</div>
+                    <div class="col-md-8">{{ $po->notes ?: '-' }}</div>
                 </div>
-                @endif
             </div>
         </div>
 
@@ -125,15 +130,22 @@
                                 <th>Price/Kg</th>
                                 <th>Amount</th>
                                 <th>IDR</th>
+                                <th>Reference (No. PR)</th>
+                                <th>Remark</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @php $globalNo = 1; $grandTotalAmount = 0; $grandTotalIdr = 0; @endphp
+                            @php
+                                $globalNo = 1;
+                                $grandTotalAmount = 0;
+                                $grandTotalIdr = 0;
+                                $poRemark = trim((string) $po->notes);
+                            @endphp
                             @foreach($po->quotations as $quotation)
                                 @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                                 @if($po->quotations->count() > 1)
                                     <tr class="table-primary">
-                                        <td colspan="9" class="fw-bold small ps-3">
+                                        <td colspan="11" class="fw-bold small ps-3">
                                             <i class="bi bi-folder2 me-1"></i>
                                             {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
@@ -168,15 +180,35 @@
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
                                         <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
                                         <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                                        <td class="text-nowrap">
+                                            @if($quotation->purchaseRequisition)
+                                                <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none" title="Open PR detail">
+                                                    {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
+                                                    <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
+                                                </a>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($poRemark !== '')
+                                                <span class="d-inline-block text-truncate" style="max-width: 220px;" title="{{ $poRemark }}">
+                                                    {{ \Illuminate\Support\Str::limit($poRemark, 80) }}
+                                                </span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             @endforeach
                         </tbody>
                         <tfoot class="table-light fw-bold">
                             <tr>
-                                <td colspan="7" class="text-end">GRAND TOTAL</td>
-                                <td class="text-end">{{ number_format($grandTotalAmount, 2) }}</td>
-                                <td class="text-end text-primary">Rp {{ number_format($grandTotalIdr, 0, ',', '.') }}</td>
+                                <td colspan="7" class="text-end text-nowrap align-middle">GRAND TOTAL</td>
+                                <td class="text-end text-nowrap align-middle">{{ number_format($grandTotalAmount, 2) }}</td>
+                                <td class="text-end text-primary text-nowrap align-middle">Rp {{ number_format($grandTotalIdr, 0, ',', '.') }}</td>
+                                <td colspan="2"></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -608,17 +640,19 @@
 
                     bootstrap.Modal.getInstance(document.getElementById('updateDocModal')).hide();
 
-                    Swal.fire({
-                        icon: 'success',
+                    AdasiAlert.toast({
+                        type: 'success',
                         title: @json('Success!'),
                         text: res.message,
-                        timer: 1500,
-                        showConfirmButton: false
+                        duration: 1500
                     });
                 }
             },
             error: function(xhr) {
-                Swal.fire(@json('Error'), @json('Failed to update document status.'), 'error');
+                AdasiAlert.error({
+                    title: @json('Error'),
+                    text: @json('Failed to update document status.')
+                });
             },
             complete: function() {
                 $('#docSpinner').addClass('d-none');
@@ -629,15 +663,12 @@
 
     // Confirm Arrival
     $('#btnConfirmArrival').on('click', function() {
-        Swal.fire({
+        AdasiAlert.confirm({
             title: @json('Confirm Material Arrival?'),
             text: @json('The arrival date will be set to today and QC will be notified.'),
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#198754',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: @json('Yes, Confirm!'),
-            cancelButtonText: @json('Cancel')
+            confirmTone: 'success',
+            confirmText: @json('Yes, Confirm!'),
+            cancelText: @json('Cancel')
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#arrivalForm').submit();

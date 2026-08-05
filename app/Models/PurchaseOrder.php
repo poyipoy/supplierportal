@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\HasHashids;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
-use App\Traits\HasHashids;
 
 /**
  * @property \Illuminate\Support\Carbon|null $estimated_arrival
@@ -85,6 +86,31 @@ class PurchaseOrder extends Model
     public function getFirstQuotationAttribute(): ?Quotation
     {
         return $this->quotations->first();
+    }
+
+    public function getPrReferenceAttribute(): string
+    {
+        $reference = $this->purchaseRequisitions()
+            ->pluck('pr_number')
+            ->filter(fn ($number) => is_string($number) && trim($number) !== '')
+            ->map(fn ($number) => trim($number))
+            ->unique()
+            ->implode(', ');
+
+        return $reference !== '' ? $reference : '-';
+    }
+
+    public function scopeWherePrReferenceContains(Builder $query, string $term): Builder
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        return $query->whereHas('quotations.purchaseRequisition', function (Builder $requisitionQuery) use ($term) {
+            $requisitionQuery->where('pr_number', 'like', '%'.$term.'%');
+        });
     }
 
     public function creator(): BelongsTo

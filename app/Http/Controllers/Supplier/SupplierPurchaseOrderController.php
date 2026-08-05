@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Support\PurchasingNavigation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
 class SupplierPurchaseOrderController extends Controller
@@ -32,6 +33,18 @@ class SupplierPurchaseOrderController extends Controller
                     return $periods->count() > 1
                         ? $periods->first() . ' +' . ($periods->count() - 1)
                         : ($periods->first() ?? '-');
+                })
+                ->addColumn('pr_reference', fn ($po) => e($po->pr_reference))
+                ->addColumn('remark_display', function ($po) {
+                    $notes = trim((string) $po->notes);
+
+                    if ($notes === '') {
+                        return '-';
+                    }
+
+                    $preview = Str::limit((string) preg_replace('/\s+/u', ' ', $notes), 40);
+
+                    return '<span title="'.e($notes).'">'.e($preview).'</span>';
                 })
                 ->addColumn('total_idr', function ($po) {
                     $totalIdr = 0;
@@ -76,7 +89,16 @@ class SupplierPurchaseOrderController extends Controller
                     $html .= '</div>';
                     return $html;
                 })
-                ->rawColumns(['status_badge', 'action'])
+                ->filterColumn('period_name', function ($query, $keyword) {
+                    $query->whereHas('quotations.purchaseRequisition.period', fn ($periodQuery) => $periodQuery->where('name', 'like', '%'.$keyword.'%'));
+                })
+                ->filterColumn('pr_reference', function ($query, $keyword) {
+                    $query->wherePrReferenceContains($keyword);
+                })
+                ->filterColumn('remark_display', function ($query, $keyword) {
+                    $query->where('notes', 'like', '%'.$keyword.'%');
+                })
+                ->rawColumns(['status_badge', 'remark_display', 'action'])
                 ->make(true);
         }
 

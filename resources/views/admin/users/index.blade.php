@@ -52,18 +52,14 @@
             order: []
         });
 
-        // SweetAlert Delete Confirmation (delegated for dynamic rows)
+        // ADASI Alert delete confirmation (delegated for dynamic rows)
         $(document).on('click', '.btn-delete', function() {
             const form = $(this).closest('form');
-            Swal.fire({
+            AdasiAlert.confirmDanger({
                 title: @json('Are you sure you want to delete?'),
                 text: @json('This user will be permanently deleted!'),
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: @json('Yes, delete!'),
-                cancelButtonText: @json('Cancel')
+                confirmText: @json('Yes, delete!'),
+                cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

@@ -518,16 +518,18 @@
                                     loadConversations();
                                     if (typeof updateBadges === 'function') updateBadges();
 
-                                    Swal.fire({
-                                        icon: 'success',
+                                    AdasiAlert.toast({
+                                        type: 'success',
                                         title: 'Success',
                                         text: `${label} processed successfully.`,
-                                        timer: 1400,
-                                        showConfirmButton: false
+                                        duration: 1400
                                     });
                                 })
                                 .catch((error) => {
-                                    Swal.fire('Error', error.message || 'The action cannot be processed yet.', 'error');
+                                    AdasiAlert.error({
+                                        title: 'Error',
+                                        text: error.message || 'The action cannot be processed yet.'
+                                    });
                                 })
                                 .finally(() => {
                                     button.disabled = false;
@@ -536,21 +538,15 @@
                         };
 
                         if (requiresNote || actionType === 'prompt') {
-                            Swal.fire({
+                            AdasiAlert.prompt({
                                 title: label,
-                                input: 'textarea',
                                 inputLabel: requiresNote ? 'Notes are required' : 'Additional notes',
-                                inputPlaceholder: 'Write a note for the supplier...',
-                                inputAttributes: { maxlength: 1000 },
-                                showCancelButton: true,
-                                confirmButtonText: 'Send',
-                                cancelButtonText: 'Cancel',
-                                inputValidator: (value) => {
-                                    if (requiresNote && !String(value || '').trim()) {
-                                        return 'Notes are required.';
-                                    }
-                                    return null;
-                                }
+                                placeholder: 'Write a note for the supplier...',
+                                maxLength: 1000,
+                                required: requiresNote,
+                                requiredMessage: 'Notes are required.',
+                                confirmText: 'Send',
+                                cancelText: 'Cancel'
                             }).then((result) => {
                                 if (result.isConfirmed) {
                                     execute(String(result.value || '').trim());
@@ -559,13 +555,11 @@
                             return;
                         }
 
-                        Swal.fire({
+                        AdasiAlert.confirm({
                             title: label,
                             text: 'Continue with this action?',
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonText: 'Yes, continue',
-                            cancelButtonText: 'Cancel'
+                            confirmText: 'Yes, continue',
+                            cancelText: 'Cancel'
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 execute();
@@ -657,7 +651,10 @@
                                 }
                             })
                             .catch(() => {
-                                Swal.fire('Error', 'Chat cannot be opened yet. Please try again later.', 'error');
+                                AdasiAlert.error({
+                                    title: 'Error',
+                                    text: 'Chat cannot be opened yet. Please try again later.'
+                                });
                             })
                             .finally(() => {
                                 if (submitButton) {
@@ -705,7 +702,10 @@
                                 loadConversations();
                             })
                             .catch(() => {
-                                Swal.fire('Error', 'Message was not sent. Please try again.', 'error');
+                                AdasiAlert.error({
+                                    title: 'Error',
+                                    text: 'Message was not sent. Please try again.'
+                                });
                            })
                             .finally(() => {
                                 isSending = false;

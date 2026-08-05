@@ -21,16 +21,22 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">Material Price Details</h6>
-                    <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
+                        <a href="{{ route('supplier.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th width="5%">No</th>
-                                    <th width="22%">Material</th>
-                                    <th width="8%">Qty</th>
+                                     <th width="5%">No</th>
+                                     <th width="22%">Material</th>
+                                     <th width="15%">Supplier Availability</th>
+                                     <th width="8%">Qty</th>
                                     <th width="10%">Weight/Unit (Kg)</th>
                                     <th width="10%">Total Weight (Kg)</th>
                                     <th width="15%">Price ({{ $quotation->currency }})</th>
@@ -54,7 +60,7 @@
                                     @endphp
                                     <tr>
                                         <td class="text-center">{{ $index + 1 }}</td>
-                                        <td>
+                                         <td>
                                             <div class="fw-bold">{{ $item->prItem->material_name }}</div>
                                             <div class="text-muted" style="font-size: 0.75rem;">
                                                 @if($item->prItem->shape)
@@ -63,8 +69,17 @@
                                                     -
                                                 @endif
                                             </div>
-                                        </td>
-                                        <td class="text-center fw-medium">{{ number_format($item->prItem->quantity_value, 0) }}</td>
+                                         </td>
+                                         <td class="small">
+                                             @php($availability = $item->availability_comparison)
+                                             @if($availability['quantity']['code'] === 'not_specified' && $availability['specification']['code'] === 'not_specified')
+                                                 <span class="text-muted">Not specified</span>
+                                             @else
+                                                 <div><span class="text-muted">Qty:</span> {{ $item->available_qty ?? '-' }}</div>
+                                                 <div class="text-muted mt-1">{{ $item->available_dimension_label }}</div>
+                                             @endif
+                                         </td>
+                                         <td class="text-center fw-medium">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                                         <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                                         <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
@@ -87,7 +102,7 @@
                             </tbody>
                             <tfoot class="table-light fw-bold">
                                 <tr>
-                                    <td colspan="6" class="text-end">TOTAL</td>
+                                    <td colspan="7" class="text-end">TOTAL</td>
                                     <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
                                     <td class="text-end text-primary">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                                     <td colspan="2"></td>

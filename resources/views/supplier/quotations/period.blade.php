@@ -11,8 +11,13 @@
 </div>
 
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-semibold">Purchase Requisition List</h5>
+        <a href="{{ route('supplier.export.quotations', ['period_id' => $period->id]) }}"
+            class="btn btn-success btn-sm" id="exportSupplierQuotationsBtn"
+            data-export-url="{{ route('supplier.export.quotations') }}">
+            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+        </a>
     </div>
     <div class="card-body">
         <div class="row g-3 align-items-end mb-4">
@@ -83,6 +88,20 @@
             language: {},
             pageLength: 25,
             order: []
+        });
+
+        $('#exportSupplierQuotationsBtn').on('click', function(event) {
+            const exportUrl = new URL(this.dataset.exportUrl, window.location.origin);
+            const prNumber = $('#filter_pr_number').val().trim();
+            const status = $('#filter_status').val();
+            const search = table.search().trim();
+
+            exportUrl.searchParams.set('period_id', @json($period->id));
+            if (prNumber) exportUrl.searchParams.set('pr_number', prNumber);
+            if (status) exportUrl.searchParams.set('status', status);
+            if (search) exportUrl.searchParams.set('search', search);
+
+            this.href = exportUrl.toString();
         });
 
         $('#filter_status').on('change', function() { table.ajax.reload(); });

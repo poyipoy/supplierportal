@@ -7,14 +7,21 @@ use App\Models\ExchangeRate;
 use App\Models\PoDocument;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
+use App\Models\User;
+use App\Services\NotificationService;
+use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseOrderController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     /**
      * List all POs.
      */
@@ -32,7 +39,7 @@ class PurchaseOrderController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('po_number')) {
-            $query->where('po_number', 'like', '%' . trim($request->po_number) . '%');
+            $query->where('po_number', 'like', '%'.trim($request->po_number).'%');
         }
 
         if ($request->filled('status')) {
@@ -57,13 +64,26 @@ class PurchaseOrderController extends Controller
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
-                ->addColumn('po_number_display', fn($po) => $po->po_number)
-                ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
+                ->addColumn('po_number_display', fn ($po) => $po->po_number)
+                ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
                 ->addColumn('period_name', function ($po) {
-                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequisition?->period?->name)->filter()->unique();
+                    $periods = $po->quotations->map(fn ($q) => $q->purchaseRequisition?->period?->name)->filter()->unique();
+
                     return $periods->count() > 1
-                        ? $periods->first() . ' +' . ($periods->count() - 1)
+                        ? $periods->first().' +'.($periods->count() - 1)
                         : ($periods->first() ?? '-');
+                })
+                ->addColumn('pr_reference', fn ($po) => e($po->pr_reference))
+                ->addColumn('remark_display', function ($po) {
+                    $notes = trim((string) $po->notes);
+
+                    if ($notes === '') {
+                        return '-';
+                    }
+
+                    $preview = Str::limit((string) preg_replace('/\s+/u', ' ', $notes), 40);
+
+                    return '<span title="'.e($notes).'">'.e($preview).'</span>';
                 })
                 ->addColumn('total_idr', function ($po) {
                     $totalIdr = 0;
@@ -73,7 +93,8 @@ class PurchaseOrderController extends Controller
                             $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
                         }
                     }
-                    return 'Rp ' . number_format($totalIdr, 0, ',', '.');
+
+                    return 'Rp '.number_format($totalIdr, 0, ',', '.');
                 })
                 ->addColumn('status_badge', function ($po) {
                     return StatusHelper::badge(
@@ -91,9 +112,9 @@ class PurchaseOrderController extends Controller
                     $date = $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-';
 
                     return '<div class="d-flex flex-column align-items-start gap-1">'
-                        . '<span>' . e($date) . '</span>'
-                        . StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
-                        . '</div>';
+                        .'<span>'.e($date).'</span>'
+                        .StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
+                        .'</div>';
                 })
                 ->addColumn('action', function ($po) {
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
@@ -101,25 +122,36 @@ class PurchaseOrderController extends Controller
                         $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
                         $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
                         if ($activeClaim) {
-                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim) . '" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim).'" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Claim</a>';
                         } elseif ($latestNgInspection) {
-                            $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection) . '" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Create Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection).'" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Create Claim</a>';
                         }
                     }
-                    $html .= '<a href="' . PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po) . '" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
+                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
                     $html .= '</div>';
+
                     return $html;
                 })
-                ->rawColumns(['status_badge', 'estimated_date', 'action'])
+                ->filterColumn('supplier_name', function ($query, $keyword) {
+                    $query->whereHas('supplier', fn ($supplierQuery) => $supplierQuery->where('name', 'like', '%'.$keyword.'%'));
+                })
+                ->filterColumn('period_name', function ($query, $keyword) {
+                    $query->whereHas('quotations.purchaseRequisition.period', fn ($periodQuery) => $periodQuery->where('name', 'like', '%'.$keyword.'%'));
+                })
+                ->filterColumn('pr_reference', function ($query, $keyword) {
+                    $query->wherePrReferenceContains($keyword);
+                })
+                ->filterColumn('remark_display', function ($query, $keyword) {
+                    $query->where('notes', 'like', '%'.$keyword.'%');
+                })
+                ->rawColumns(['status_badge', 'estimated_date', 'remark_display', 'action'])
                 ->make(true);
         }
 
-        $suppliers = \App\Models\User::where('role', 'supplier')->get();
+        $suppliers = User::where('role', 'supplier')->get();
 
         return view('purchasing.po.index', compact('suppliers'));
     }
-
-    
 
     /**
      * Form buat PO dari quotation terpilih.
@@ -131,7 +163,7 @@ class PurchaseOrderController extends Controller
             'supplier',
             'items.prItem',
             'purchaseRequisition.period',
-            'exchange_rate'
+            'exchange_rate',
         ])->findOrFail($quotation_id);
 
         if (! in_array($quotation->status, ['submitted', 'accepted'], true)) {
@@ -181,14 +213,14 @@ class PurchaseOrderController extends Controller
         ]);
 
         // Load all quotation yang dipilih
-        /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\Quotation> $quotations */
+        /** @var Collection<Quotation> $quotations */
         $quotations = Quotation::with(['purchaseRequisition', 'exchange_rate'])
             ->whereIn('id', $request->quotation_ids)
             ->get();
 
         // Validate that all quotations are submitted.
         foreach ($quotations as $q) {
-            /** @var \App\Models\Quotation $q */
+            /** @var Quotation $q */
             if (! in_array($q->status, ['submitted', 'accepted'], true)) {
                 return redirect()->back()->with('error', "Quotation #{$q->id} not valid (status: {$q->status}).");
             }
@@ -250,7 +282,7 @@ class PurchaseOrderController extends Controller
 
             // 4. Accept all selected quotations
             foreach ($quotations as $q) {
-                /** @var \App\Models\Quotation $q */
+                /** @var Quotation $q */
                 $q->update(['status' => 'accepted']);
 
                 // 5. Reject all other quotations for the same PR
@@ -270,12 +302,20 @@ class PurchaseOrderController extends Controller
             if ($supplierUser) {
                 $prCount = $quotations->count();
                 $prLabel = $prCount > 1 ? " (combining {$prCount} PR)" : '';
-                $supplierUser->notify(new \App\Notifications\SystemNotification(
+                $this->notifications->send(
+                    $supplierUser,
+                    'po.issued',
+                    "po.issued:{$po->id}",
                     'New PO Issued',
                     "Purchase Order {$po->po_number} has been issued for your quotation{$prLabel}.",
-                    route('supplier.purchase-orders.show', $po),
-                    'bi-receipt text-primary'
-                ));
+                    route('supplier.purchase-orders.show', $po, absolute: false),
+                    'bi-receipt text-primary',
+                    [
+                        'category' => NotificationCategory::OTHER,
+                        'po_id' => $po->id,
+                        'po_number' => $po->po_number,
+                    ],
+                );
             }
 
             $showParameters = [$po->id];
@@ -284,11 +324,12 @@ class PurchaseOrderController extends Controller
             }
 
             return redirect()->route('purchasing.purchase-orders.show', $showParameters)
-                ->with('success', 'Purchase Order ' . $po->po_number . ' successfully created!');
+                ->with('success', 'Purchase Order '.$po->po_number.' successfully created!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Failed to create PO: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Failed to create PO: '.$e->getMessage());
         }
     }
 
@@ -335,7 +376,7 @@ class PurchaseOrderController extends Controller
     {
         $po = PurchaseOrder::findOrFail($id);
 
-        if (!in_array($po->status, ['active', 'overdue'])) {
+        if (! in_array($po->status, ['active', 'overdue'])) {
             return redirect()->route('purchasing.purchase-orders.show', $po)
                 ->with('error', 'Material arrival can only be confirmed for Active or Overdue PO records.');
         }
@@ -346,16 +387,21 @@ class PurchaseOrderController extends Controller
         ]);
 
         // Notify all QC users: material arrived
-        $qcUsers = \App\Models\User::where('role', 'qc')->get();
-        foreach ($qcUsers as $qcUser) {
-            /** @var \App\Models\User $qcUser */
-            $qcUser->notify(new \App\Notifications\SystemNotification(
-                'Material Arrived - Ready for Inspection',
-                "Material from PO {$po->po_number} has arrived. Please perform QC inspection.",
-                route('qc.inspections.create', $po),
-                'bi-box-seam text-warning'
-            ));
-        }
+        $qcUsers = User::where('role', 'qc')->where('is_active', true)->get();
+        $this->notifications->send(
+            $qcUsers,
+            'po.material_arrived',
+            "po.material_arrived:{$po->id}",
+            'Material Arrived - Ready for Inspection',
+            "Material from PO {$po->po_number} has arrived. Please perform QC inspection.",
+            route('qc.inspections.create', $po, absolute: false),
+            'bi-box-seam text-warning',
+            [
+                'category' => NotificationCategory::OTHER,
+                'po_id' => $po->id,
+                'po_number' => $po->po_number,
+            ],
+        );
 
         return redirect()->route('purchasing.purchase-orders.show', $po)
             ->with('success', 'Material arrival confirmed. QC will be notified for inspection.');

@@ -3,19 +3,21 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Notification;
 
-
-class SystemNotification extends Notification implements ShouldBroadcast
+class SystemNotification extends Notification
 {
     use Queueable;
 
     protected $title;
+
     protected $message;
+
     protected $url;
+
     protected $icon;
+
     protected $data;
 
     /**
@@ -31,7 +33,7 @@ class SystemNotification extends Notification implements ShouldBroadcast
         // Force the URL to be relative to avoid cross-domain 403 errors when testing on multiple domains
         if (str_starts_with($url, 'http')) {
             $parsedUrl = parse_url($url);
-            $this->url = ($parsedUrl['path'] ?? '/') . (isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '');
+            $this->url = ($parsedUrl['path'] ?? '/').(isset($parsedUrl['query']) ? '?'.$parsedUrl['query'] : '');
         } else {
             $this->url = $url;
         }
@@ -73,5 +75,12 @@ class SystemNotification extends Notification implements ShouldBroadcast
             'url' => $this->url,
             'icon' => $this->icon,
         ], $this->data));
+    }
+
+    public function eventKey(): ?string
+    {
+        $eventKey = $this->data['event_key'] ?? null;
+
+        return is_string($eventKey) && $eventKey !== '' ? $eventKey : null;
     }
 }

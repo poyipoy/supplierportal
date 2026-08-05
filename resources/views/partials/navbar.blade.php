@@ -20,37 +20,6 @@
         @endif
 
         {{-- Notification Icon --}}
-        @php
-            $notificationCategories = \App\Support\NotificationCategory::options();
-            $navbarNotifications = auth()->user()->notifications()->latest()->take(30)->get();
-            $navbarUnreadCount = auth()->user()->unreadNotifications()->count();
-            $navbarVisibleUnreadNotifications = $navbarNotifications->whereNull('read_at');
-            $navbarNotificationCounts = collect($notificationCategories)->mapWithKeys(function ($option, $key) use ($navbarVisibleUnreadNotifications, $navbarUnreadCount) {
-                if ($key === \App\Support\NotificationCategory::ALL) {
-                    return [$key => $navbarUnreadCount];
-                }
-
-                $items = $key === \App\Support\NotificationCategory::ALL
-                    ? $navbarVisibleUnreadNotifications
-                    : $navbarVisibleUnreadNotifications->filter(fn ($notification) => \App\Support\NotificationCategory::key($notification) === $key);
-
-                return [$key => $items->count()];
-            });
-            $navbarNotificationTotals = collect($notificationCategories)->mapWithKeys(function ($option, $key) use ($navbarNotifications) {
-                $items = $key === \App\Support\NotificationCategory::ALL
-                    ? $navbarNotifications
-                    : $navbarNotifications->filter(fn ($notification) => \App\Support\NotificationCategory::key($notification) === $key);
-
-                return [$key => $items->count()];
-            });
-            $navbarNotificationGroups = collect($notificationCategories)->mapWithKeys(function ($option, $key) use ($navbarNotifications) {
-                $items = $key === \App\Support\NotificationCategory::ALL
-                    ? $navbarNotifications
-                    : $navbarNotifications->filter(fn ($notification) => \App\Support\NotificationCategory::key($notification) === $key)->values();
-
-                return [$key => $items];
-            });
-        @endphp
         <div class="dropdown">
             <button class="btn btn-sm btn-light position-relative" type="button" title="Notifications"
                 data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">

@@ -30,8 +30,8 @@
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
 
-    <!-- NProgress CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" />
+    <!-- ADASI Alert Theme -->
+    <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
     <!-- Custom CSS -->
     <style>
@@ -48,21 +48,6 @@
             background-color: var(--bg-light);
             color: #333;
             overflow-x: hidden;
-        }
-
-        /* NProgress Override */
-        #nprogress .bar {
-            background: var(--adasi-red) !important;
-            height: 3px !important;
-        }
-
-        #nprogress .peg {
-            box-shadow: 0 0 10px var(--adasi-red), 0 0 5px var(--adasi-red) !important;
-        }
-
-        #nprogress .spinner-icon {
-            border-top-color: var(--adasi-red) !important;
-            border-left-color: var(--adasi-red) !important;
         }
 
         /* Skeleton Loading */
@@ -1023,7 +1008,6 @@
             $dashboardUrl = \Illuminate\Support\Facades\Route::has($roleDashboardRoute)
                 ? route($roleDashboardRoute)
                 : route('dashboard');
-            $initNotifCount = auth()->user()->unreadNotifications()->count();
             if (in_array(auth()->user()->role, ['purchasing', 'supplier'])) {
                 $initChatCount = \App\Models\Conversation::forUser(auth()->id())
                     ->withCount([
@@ -1108,16 +1092,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
-    <script>
-        // SweetAlert2 global defaults: keyboard-friendly confirmations
-        if (window.Swal) {
-            const SwalDefault = Swal.mixin({
-                focusConfirm: true,
-                reverseButtons: true,
-            });
-            window.Swal = SwalDefault;
-        }
-    </script>
+    <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
 
     <!-- Ngrok browser warning bypass for internal async requests -->
     <script>
@@ -1224,6 +1199,10 @@
                                 badge.classList.add('d-none');
                             }
                         });
+
+                        if (typeof updateNotificationCategoryBadges === 'function') {
+                            updateNotificationCategoryBadges(data.category_counts);
+                        }
                     });
 
                 // Chat badge
@@ -1347,35 +1326,91 @@
     <script>
         document.addEventListener('click', function (e) {
             const exportBtn = e.target.closest('a[href*="/export/"]');
-            if (exportBtn) {
-                e.preventDefault();
+            if (!exportBtn) {
+                return;
+            }
 
-                let recordsTotal = 'seluruh';
-                if (typeof $ !== 'undefined' && $.fn.dataTable) {
-                    const tables = $.fn.dataTable.tables(true);
-                    if (tables.length > 0) {
-                        const info = $(tables[0]).DataTable().page.info();
-                        recordsTotal = info.recordsTotal;
-                    }
+            e.preventDefault();
+
+            // One open confirmation belongs to one click. Repeated clicks while
+            // SweetAlert is visible must not open another dialog or download.
+            if (window.exportConfirmationOpen) {
+                return;
+            }
+
+            window.exportConfirmationOpen = true;
+
+            let recordsTotal = 'all';
+            if (typeof $ !== 'undefined' && $.fn.dataTable) {
+                const tables = $.fn.dataTable.tables(true);
+                if (tables.length > 0) {
+                    const info = $(tables[0]).DataTable().page.info();
+                    recordsTotal = info.recordsTotal;
+                }
+            }
+
+            AdasiAlert.confirm({
+                title: 'Confirm Export',
+                text: `You will export ${recordsTotal} rows of data to Excel. This process may take some time. Continue?`,
+                type: 'info',
+                confirmTone: 'success',
+                confirmText: 'Yes, Export',
+                cancelText: 'Cancel'
+            }).then((result) => {
+                window.exportConfirmationOpen = false;
+
+                if (result.isConfirmed) {
+                    window.isExporting = true;
+                    window.location.href = exportBtn.href;
+                    setTimeout(() => window.isExporting = false, 3000);
+                }
+            }).catch(() => {
+                window.exportConfirmationOpen = false;
+            });
+        });
+    </script>
+
+    {{-- Global Script untuk PDF Preview --}}
+    <script>
+        document.addEventListener('click', function (e) {
+            const pdfBtn = e.target.closest('a[href*="/pdf/"][data-pdf-confirm]');
+            if (!pdfBtn || e.defaultPrevented || e.button !== 0) {
+                return;
+            }
+
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                return;
+            }
+
+            e.preventDefault();
+
+            if (window.pdfConfirmationOpen) {
+                return;
+            }
+
+            window.pdfConfirmationOpen = true;
+
+            AdasiAlert.confirm({
+                title: 'Download PDF Document?',
+                text: 'The PDF document will be downloaded. Do you want to continue?',
+                confirmText: 'Yes, Download',
+                cancelText: 'Cancel'
+            }).then((result) => {
+                window.pdfConfirmationOpen = false;
+
+                if (!result.isConfirmed) {
+                    return;
                 }
 
-                Swal.fire({
-                    title: 'Confirm Export',
-                    html: `You will export <strong>${recordsTotal}</strong> rows of data to Excel.<br>This process may take some time. Continue?`,
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="bi bi-file-earmark-excel me-1"></i> Yes, Export',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true,
-                    confirmButtonColor: '#198754'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.isExporting = true;
-                        window.location.href = exportBtn.href;
-                        setTimeout(() => window.isExporting = false, 3000);
-                    }
-                });
-            }
+                const target = pdfBtn.getAttribute('target');
+                if (target === '_blank') {
+                    window.open(pdfBtn.href, '_blank', 'noopener,noreferrer');
+                } else {
+                    window.location.href = pdfBtn.href;
+                }
+            }).catch(() => {
+                window.pdfConfirmationOpen = false;
+            });
         });
     </script>
 
@@ -1396,7 +1431,7 @@
             // ? -> Modal Shortcut
             if (e.key === '?') {
                 e.preventDefault();
-                Swal.fire({
+                AdasiAlert.info({
                     title: 'Keyboard Shortcuts',
                     html: `
                         <div class="text-start">
@@ -1407,139 +1442,165 @@
                                 </tr>
                                 <tr>
                                     <td><kbd>?</kbd></td>
-                                    <td>Buka Bantuan Ini</td>
+                                    <td>Open This Help</td>
                                 </tr>
                             </table>
                         </div>
                     `,
-                    icon: 'info',
-                    confirmButtonText: 'Tutup'
+                    confirmText: 'Close'
                 });
             }
         });
     </script>
 
-    <!-- NProgress JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
-    <script>
-        // Konfigurasi NProgress
-        NProgress.configure({ showSpinner: true, minimum: 0.1, speed: 400 });
-
-        // Mulai loading saat pindah halaman
-        window.addEventListener('beforeunload', function () {
-            NProgress.start();
-        });
-
-        // Selesai loading saat halaman termuat
-        window.addEventListener('load', function () {
-            NProgress.done();
-        });
-
-        // Integrasi dengan jQuery AJAX (seperti DataTables)
-        if (typeof jQuery !== 'undefined') {
-            $(document).ajaxStart(function () {
-                NProgress.start();
-            });
-            $(document).ajaxStop(function () {
-                NProgress.done();
-            });
-        }
-    </script>
-
-    <!-- Laravel Echo + Pusher JS (untuk Reverb WebSocket) -->
-    <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js"></script>
+    @php
+        $reverbClient = config('reverb.client', []);
+        $reverbClientReady = config('broadcasting.default') === 'reverb'
+            && filled($reverbClient['key'] ?? null)
+            && filled($reverbClient['host'] ?? null)
+            && filled($reverbClient['port'] ?? null)
+            && in_array($reverbClient['scheme'] ?? null, ['http', 'https'], true);
+    @endphp
     @auth
+        @if($reverbClientReady)
+        <!-- Laravel Echo + Pusher JS (untuk Reverb WebSocket) -->
+        <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js"></script>
         <script>
-            // Inisialisasi Laravel Echo dengan Reverb
-            window.Echo = new Echo({
-                broadcaster: 'reverb',
-                key: '{{ env("REVERB_APP_KEY") }}',
-                wsHost: '{{ env("REVERB_HOST", "127.0.0.1") }}',
-                wsPort: {{ env("REVERB_PORT", 8080) }},
-                wssPort: {{ env("REVERB_PORT", 8080) }},
-                forceTLS: {{ env("REVERB_SCHEME", "http") === "https" ? "true" : "false" }},
-                enabledTransports: ['ws', 'wss'],
-                authEndpoint: '/broadcasting/auth',
-                auth: {
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    }
+            (() => {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                const userId = document.querySelector('meta[name="user-id"]')?.content;
+                const readUrlBase = @json(url('/notifications/__NOTIFICATION_ID__/read'));
+                const allowedCategories = new Set(@json(array_keys(\App\Support\NotificationCategory::options())));
+
+                if (!window.Echo || !window.Pusher || !csrfToken || !userId) {
+                    return;
                 }
-            });
 
-            // Dengarkan notifikasi real-time di private channel user
-            var userId = document.querySelector('meta[name="user-id"]')?.content;
-            if (userId) {
-                Echo.private('App.Models.User.' + userId)
-                    .notification((notification) => {
-                        console.log('[Reverb] Notifikasi diterima:', notification);
+                const readUrlFor = (id) => id
+                    ? readUrlBase.replace('__NOTIFICATION_ID__', encodeURIComponent(String(id)))
+                    : null;
 
-                        // 1. Update badge count di ikon lonceng
-                        var badge = document.querySelector('.notification-badge');
-                        if (badge) {
-                            var currentCount = parseInt(badge.textContent) || 0;
-                            badge.textContent = currentCount + 1;
-                            badge.style.display = 'inline-block';
+                const markReadAndRedirect = async (readUrl) => {
+                    if (!readUrl) return;
+
+                    try {
+                        const response = await fetch(readUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+                        const data = response.ok ? await response.json() : null;
+                        if (data?.redirect) {
+                            window.location.href = data.redirect;
                         }
+                    } catch (error) {
+                        // Polling remains the fallback when real-time handling fails.
+                    }
+                };
 
-                        // 2. Tampilkan SweetAlert2 Toast
-                        if (window.Swal) {
-                            const Toast = Swal.mixin({
-                                toast: true,
-                                position: 'top-end',
-                                showConfirmButton: false,
-                                showCloseButton: true,
-                                timer: 5000,
-                                timerProgressBar: true,
-                                customClass: {
-                                    popup: notification.url ? 'cursor-pointer' : ''
-                                },
-                                didOpen: (toast) => {
-                                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                const createNotificationItem = (notification, category, readUrl) => {
+                    const item = document.createElement('div');
+                    item.className = 'notification-item bg-light';
+                    item.setAttribute('role', 'button');
+                    item.dataset.notificationItem = '';
+                    item.dataset.notificationCategory = category;
+                    item.dataset.notificationUnread = '1';
+                    item.dataset.notificationReadUrl = readUrl;
+                    item.dataset.notificationId = String(notification.id);
+                    item.style.cursor = 'pointer';
 
-                                    if (notification.url) {
-                                        toast.addEventListener('click', (e) => {
-                                            // Jangan redirect jika yang diklik adalah tombol close (x)
-                                            if (!e.target.closest('.swal2-close')) {
-                                                window.location.href = notification.url;
-                                            }
-                                        });
-                                    }
-                                }
-                            });
+                    const row = document.createElement('div');
+                    row.className = 'd-flex gap-3';
+                    const iconWrap = document.createElement('div');
+                    iconWrap.className = 'bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0';
+                    iconWrap.style.cssText = 'width:34px;height:34px;';
+                    const icon = document.createElement('i');
+                    const iconName = String(notification.icon || 'bi-bell').split(/\s+/).find((part) => /^bi-[a-z0-9-]+$/.test(part)) || 'bi-bell';
+                    icon.className = `bi ${iconName} text-primary`;
+                    iconWrap.append(icon);
 
-                            Toast.fire({
-                                icon: 'info',
-                                title: notification.title || 'Notifikasi Baru',
+                    const content = document.createElement('div');
+                    content.className = 'min-w-0 flex-grow-1';
+                    const heading = document.createElement('div');
+                    heading.className = 'd-flex justify-content-between gap-2';
+                    const title = document.createElement('div');
+                    title.className = 'fw-semibold small text-truncate';
+                    title.textContent = String(notification.title || 'Notification');
+                    const newBadge = document.createElement('span');
+                    newBadge.className = 'badge bg-danger flex-shrink-0';
+                    newBadge.style.fontSize = '.55rem';
+                    newBadge.dataset.notificationNewBadge = '';
+                    newBadge.textContent = 'New';
+                    heading.append(title, newBadge);
+
+                    const message = document.createElement('div');
+                    message.className = 'text-muted';
+                    message.style.fontSize = '.76rem';
+                    message.textContent = String(notification.message || '-');
+                    const time = document.createElement('div');
+                    time.className = 'text-muted mt-2';
+                    time.style.fontSize = '.68rem';
+                    time.textContent = 'Just now';
+                    content.append(heading, message, time);
+                    row.append(iconWrap, content);
+                    item.append(row);
+
+                    return item;
+                };
+
+                const insertNotification = (notification, readUrl) => {
+                    const category = allowedCategories.has(notification.category) && notification.category !== 'all'
+                        ? notification.category
+                        : 'other';
+
+                    ['all', category].forEach((paneCategory) => {
+                        const pane = document.querySelector(`#notif-pane-${paneCategory}`);
+                        if (!pane || pane.querySelector(`[data-notification-id="${CSS.escape(String(notification.id))}"]`)) return;
+
+                        pane.querySelector('.text-center.text-muted.py-5')?.remove();
+                        pane.prepend(createNotificationItem(notification, category, readUrl));
+                    });
+                };
+
+                try {
+                    window.Echo = new Echo({
+                        broadcaster: 'reverb',
+                        key: @json($reverbClient['key']),
+                        wsHost: @json($reverbClient['host']),
+                        wsPort: @json((int) $reverbClient['port']),
+                        wssPort: @json((int) $reverbClient['port']),
+                        forceTLS: @json(($reverbClient['scheme'] ?? 'http') === 'https'),
+                        enabledTransports: ['ws', 'wss'],
+                        authEndpoint: '/broadcasting/auth',
+                        auth: { headers: { 'X-CSRF-TOKEN': csrfToken } },
+                    });
+
+                    window.Echo.private('App.Models.User.' + userId).notification((notification) => {
+                        const readUrl = readUrlFor(notification.id);
+                        if (!readUrl) return;
+
+                        insertNotification(notification, readUrl);
+                        updateBadges();
+
+                        if (window.AdasiAlert) {
+                            AdasiAlert.notification({
+                                title: notification.title || 'New Notification',
                                 text: notification.message || '',
+                                onClick: () => markReadAndRedirect(readUrl),
                             });
-                        }
-
-                        // 3. Prepend notifikasi baru ke daftar dropdown (jika ada)
-                        var notifList = document.querySelector('.notification-list .tab-pane.active');
-                        if (notifList) {
-                            var newItem = document.createElement('a');
-                            newItem.href = notification.url || '#';
-                            newItem.className = 'notification-item bg-light';
-                            newItem.innerHTML =
-                                '<div class="d-flex align-items-start gap-2 w-100">' +
-                                '<i class="bi ' + (notification.icon || 'bi-bell') + ' fs-5 text-primary mt-1"></i>' +
-                                '<div class="flex-grow-1 overflow-hidden">' +
-                                '<div class="d-flex align-items-center gap-1">' +
-                                '<div class="fw-semibold small text-truncate">' + (notification.title || 'Notifikasi') + '</div>' +
-                                '<span class="badge bg-danger flex-shrink-0" style="font-size:.55rem">New</span>' +
-                                '</div>' +
-                                '<div class="text-muted small text-truncate">' + (notification.message || '') + '</div>' +
-                                '<div class="text-muted" style="font-size:.7rem">Baru saja</div>' +
-                                '</div>' +
-                                '</div>';
-                            notifList.prepend(newItem);
                         }
                     });
-            }
+                } catch (error) {
+                    window.Echo = null;
+                }
+            })();
         </script>
+        @endif
     @endauth
 
     @stack('scripts')

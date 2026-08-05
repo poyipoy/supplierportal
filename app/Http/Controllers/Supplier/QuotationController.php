@@ -2,21 +2,36 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Exports\QuotationImportTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Imports\QuotationItemsImport;
+use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\Period;
+use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Models\Conversation;
+use App\Models\QuotationItem;
+use App\Models\User;
+use App\Services\NotificationService;
 use App\Support\NotificationCategory;
+use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
+use Maatwebsite\Excel\Facades\Excel;
+use Throwable;
 use Yajra\DataTables\Facades\DataTables;
 
 class QuotationController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     /**
      * Display open quotation periods.
      */
@@ -52,7 +67,7 @@ class QuotationController extends Controller
                 ->merge($quotedPrIds)
                 ->unique()
                 ->count();
-            
+
             // PRs that already have quotations from this supplier, including draft/submitted/rejected/accepted.
             $respondedCount = Quotation::where('supplier_id', auth()->id())
                 ->whereIn('pr_id', $quotedPrIds)
@@ -62,7 +77,7 @@ class QuotationController extends Controller
                 ->whereIn('pr_id', $quotedPrIds)
                 ->where('status', 'rejected')
                 ->count();
-                
+
             $period->responded_prs = $respondedCount;
             $period->rejected_prs = $rejectedCount;
             $period->unresponded_prs = $activePrs->filter(function ($pr) use ($supplierId) {
@@ -82,10 +97,10 @@ class QuotationController extends Controller
     {
         $period = Period::findOrFail($period_id);
         $supplierId = auth()->id();
-        
-        $query = PurchaseRequisition::with(['items', 'quotations' => function($query) use ($supplierId) {
-                $query->where('supplier_id', $supplierId);
-            }])
+
+        $query = PurchaseRequisition::with(['items', 'quotations' => function ($query) use ($supplierId) {
+            $query->where('supplier_id', $supplierId);
+        }])
             ->where('period_id', $period_id)
             ->visibleToSupplier($supplierId)
             ->where(function ($query) use ($supplierId) {
@@ -96,7 +111,7 @@ class QuotationController extends Controller
             });
 
         if ($request->filled('pr_number')) {
-            $query->where('pr_number', 'like', '%' . $request->pr_number . '%');
+            $query->where('pr_number', 'like', '%'.$request->pr_number.'%');
         }
 
         if ($request->filled('status')) {
@@ -116,31 +131,35 @@ class QuotationController extends Controller
         if ($request->ajax()) {
             return DataTables::eloquent($query->orderByDesc('updated_at'))
                 ->addIndexColumn()
-                ->addColumn('pr_number_display', fn($pr) => $pr->pr_number ?? '-')
-                ->addColumn('updated_date', fn($pr) => $pr->updated_at->format('d M Y, H:i'))
-                ->addColumn('item_count', fn($pr) => $pr->items->count() . ' Item')
+                ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
+                ->addColumn('updated_date', fn ($pr) => $pr->updated_at->format('d M Y, H:i'))
+                ->addColumn('item_count', fn ($pr) => $pr->items->count().' Item')
                 ->addColumn('status_badge', function ($pr) {
                     $quotation = $pr->quotations->first();
                     $status = $quotation ? $quotation->status : 'unresponded';
-                    return match($status) {
+
+                    return match ($status) {
                         'unresponded' => '<span class="badge bg-danger">Not Responded</span>',
                         'draft' => '<span class="badge bg-secondary">Draft</span>',
                         'revision_requested' => '<span class="badge bg-warning text-dark">Revision Requested</span>',
-                        'submitted' => '<span class="badge bg-success">Submitted (' . ($quotation->submitted_at?->format('d M Y H:i') ?? '-') . ')</span>',
+                        'submitted' => '<span class="badge bg-success">Submitted ('.($quotation->submitted_at?->format('d M Y H:i') ?? '-').')</span>',
                         'accepted' => '<span class="badge bg-primary">Accepted</span>',
                         'rejected' => '<span class="badge bg-dark">Rejected</span>',
-                        default => '<span class="badge bg-secondary">' . ucwords($status) . '</span>',
+                        default => '<span class="badge bg-secondary">'.ucwords($status).'</span>',
                     };
                 })
                 ->addColumn('action', function ($pr) {
                     $quotation = $pr->quotations->first();
                     $status = $quotation ? $quotation->status : 'unresponded';
-                    return match($status) {
-                        'unresponded' => '<a href="' . route('supplier.quotations.create', $pr) . '" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Create Quotation</a>',
-                        'draft' => '<a href="' . route('supplier.quotations.create', $pr) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Continue</a>',
-                        'revision_requested' => '<a href="' . route('supplier.quotations.create', $pr) . '" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revise Quotation</a>',
-                        default => $quotation ? '<a href="' . route('supplier.quotations.show', $quotation) . '" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> View</a>' : '-',
+
+                    $action = match ($status) {
+                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Create Quotation</a>',
+                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Continue</a>',
+                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revise Quotation</a>',
+                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> View</a>' : '-',
                     };
+
+                    return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';
                 })
                 ->rawColumns(['status_badge', 'action'])
                 ->make(true);
@@ -156,7 +175,7 @@ class QuotationController extends Controller
     {
         $pr = PurchaseRequisition::with(['items', 'invitedSuppliers'])->findOrFail($pr_id);
 
-        if (!in_array($pr->status, ['submitted', 'bidding'])) {
+        if (! in_array($pr->status, ['submitted', 'bidding'])) {
             return redirect()->route('supplier.quotations.index')->with('error', 'This requisition is not available for quotation.');
         }
 
@@ -194,6 +213,55 @@ class QuotationController extends Controller
         return view('supplier.quotations.create', compact('pr', 'quotation', 'supplierCurrency', 'supplierRate', 'currencyOptions', 'currencyRates'));
     }
 
+    public function importTemplate($pr_id)
+    {
+        $pr = $this->importableRequisition($pr_id);
+        $safeNumber = trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '_', $pr->pr_number ?? ''), '_');
+        $safeNumber = $safeNumber !== '' ? $safeNumber : 'PR_'.$pr->id;
+
+        return Excel::download(
+            new QuotationImportTemplateExport($pr->id),
+            'template_import_quotation_'.$safeNumber.'.xlsx'
+        );
+    }
+
+    public function importPreview(Request $request, $pr_id)
+    {
+        $pr = $this->importableRequisition($pr_id);
+        $validator = Validator::make($request->all(), [
+            'import_file' => [
+                'required',
+                File::types(['xlsx', 'xls', 'csv'])->max(10240),
+                'extensions:xlsx,xls,csv',
+            ],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(
+                $this->importFailurePayload($validator->errors()->get('import_file')),
+                422
+            );
+        }
+
+        $import = new QuotationItemsImport($pr->items);
+
+        try {
+            SpreadsheetImportReader::import($import, $request->file('import_file'));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json(
+                $this->importFailurePayload(['The spreadsheet could not be read. Verify the file and try again.']),
+                422
+            );
+        }
+
+        return response()->json(
+            $import->preview(),
+            $import->hasFileErrors() ? 422 : 200
+        );
+    }
+
     /**
      * Save quotation as draft or submitted.
      */
@@ -201,7 +269,7 @@ class QuotationController extends Controller
     {
         $pr = PurchaseRequisition::with('invitedSuppliers', 'items')->findOrFail($pr_id);
 
-        if (!in_array($pr->status, ['submitted', 'bidding'])) {
+        if (! in_array($pr->status, ['submitted', 'bidding'])) {
             return redirect()->route('supplier.quotations.index')->with('error', 'This requisition is not available for quotation.');
         }
 
@@ -218,10 +286,21 @@ class QuotationController extends Controller
                 ? 'required|date|after_or_equal:today'
                 : 'nullable|date',
             'general_notes' => 'nullable|string',
-            'items' => 'required|array',
-            'items.*.pr_item_id' => 'required|exists:pr_items,id',
+            'items' => ['required', 'array', 'min:1', 'size:'.$pr->items->count()],
+            'items.*.pr_item_id' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('pr_items', 'id')->where(fn ($query) => $query->where('pr_id', $pr->id)),
+            ],
             'items.*.price_per_kg' => 'required|numeric|min:0.01',
             'items.*.notes' => 'nullable|string',
+            'items.*.available_qty' => 'nullable|integer|min:1',
+            'items.*.available_thickness' => 'nullable|numeric|min:0',
+            'items.*.available_d_inner' => 'nullable|numeric|min:0',
+            'items.*.available_d_outer' => 'nullable|numeric|min:0',
+            'items.*.available_width' => 'nullable|numeric|min:0',
+            'items.*.available_length' => 'nullable|numeric|min:0',
             'items.*.mtc_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ], [
             'currency.required' => 'Currency is required.',
@@ -260,15 +339,16 @@ class QuotationController extends Controller
                 $rate = ExchangeRate::latestRate($supplierCurrency);
                 if (! $rate) {
                     DB::rollBack();
+
                     return back()
                         ->withInput()
-                        ->with('error', 'Exchange rate for ' . $supplierCurrency . ' is not available yet. Contact Admin before submitting the final quotation.');
+                        ->with('error', 'Exchange rate for '.$supplierCurrency.' is not available yet. Contact Admin before submitting the final quotation.');
                 }
 
                 $exchangeRateId = $rate->id;
             }
 
-            if (!$quotation) {
+            if (! $quotation) {
                 $quotation = Quotation::create([
                     'pr_id' => $pr_id,
                     'supplier_id' => auth()->id(),
@@ -302,28 +382,29 @@ class QuotationController extends Controller
 
             $quotation->items()->delete();
 
-            // Save items.
-            foreach ($request->items as $index => $itemData) {
-                $prItem = $pr->items->firstWhere('id', (int) $itemData['pr_item_id']);
-                if ($prItem) {
-                    $amount = $itemData['price_per_kg'] * $prItem->total_weight;
-                    
-                    $quotationItem = $quotation->items()->create([
-                        'pr_item_id' => $prItem->id,
-                        'price_per_kg' => $itemData['price_per_kg'],
-                        'amount' => $amount,
-                        'notes' => $itemData['notes'] ?? null,
-                    ]);
+            // Save the validated, exact PR item set without trusting request indexes or IDs.
+            $prItemsById = $pr->items->keyBy('id');
+            foreach ($validated['items'] as $index => $itemData) {
+                /** @var PrItem $prItem */
+                $prItem = $prItemsById->get((int) $itemData['pr_item_id']);
+                $amount = $itemData['price_per_kg'] * $prItem->total_weight;
 
-                    $mtcFile = $request->file("items.{$index}.mtc_file");
-                    if ($mtcFile && $mtcFile->isValid()) {
-                        $this->storeMtcAttachment($quotationItem, $mtcFile);
-                    } elseif ($existingItemAttachments->has($prItem->id)) {
-                        foreach ($existingItemAttachments->get($prItem->id) as $attachment) {
-                            $attachment->update([
-                                'attachable_id' => $quotationItem->id,
-                            ]);
-                        }
+                $quotationItem = $quotation->items()->create([
+                    'pr_item_id' => $prItem->id,
+                    'price_per_kg' => $itemData['price_per_kg'],
+                    'amount' => $amount,
+                    'notes' => $itemData['notes'] ?? null,
+                    ...QuotationItem::sanitizeAvailabilityData($itemData, $prItem),
+                ]);
+
+                $mtcFile = $request->file("items.{$index}.mtc_file");
+                if ($mtcFile && $mtcFile->isValid()) {
+                    $this->storeMtcAttachment($quotationItem, $mtcFile);
+                } elseif ($existingItemAttachments->has($prItem->id)) {
+                    foreach ($existingItemAttachments->get($prItem->id) as $attachment) {
+                        $attachment->update([
+                            'attachable_id' => $quotationItem->id,
+                        ]);
                     }
                 }
             }
@@ -337,33 +418,42 @@ class QuotationController extends Controller
 
             // Notify purchasing when quotation submitted
             if ($request->action === 'submitted') {
-                $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+                $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
                 $title = $wasRevisionRequested ? 'Revised Quotation Received' : 'New Quotation Received';
                 $message = $wasRevisionRequested
                     ? 'Supplier :name resubmitted a revised quotation for PR :pr_number'
                     : 'Supplier :name submitted a quotation for PR :pr_number';
 
-                foreach ($purchasingUsers as $pUser) {
-                    /** @var \App\Models\User $pUser */
-                    $pUser->notify(new \App\Notifications\SystemNotification(
-                        $title,
-                        $message,
-                        route('purchasing.requisitions.show', $pr),
-                        'bi-envelope-check text-success',
-                        ['category' => NotificationCategory::QUOTATION],
-                        ['name' => auth()->user()->name, 'pr_number' => $pr->pr_number]
-                    ));
-                }
+                $event = $wasRevisionRequested ? 'quotation.revised' : 'quotation.submitted';
+                $submittedKey = $quotation->submitted_at?->format('YmdHis.u') ?? $quotation->updated_at?->format('YmdHis.u');
+                $this->notifications->send(
+                    $purchasingUsers,
+                    $event,
+                    "{$event}:{$quotation->id}:{$submittedKey}",
+                    $title,
+                    $message,
+                    route('purchasing.requisitions.show', $pr, absolute: false),
+                    'bi-envelope-check text-success',
+                    [
+                        'category' => NotificationCategory::QUOTATION,
+                        'quotation_id' => $quotation->id,
+                        'pr_id' => $pr->id,
+                        'pr_number' => $pr->pr_number,
+                    ],
+                    ['name' => auth()->user()->name, 'pr_number' => $pr->pr_number],
+                );
             }
 
             $msg = $request->action === 'submitted'
                 ? ($wasRevisionRequested ? 'Revised quotation has been resubmitted.' : 'Quotation successfully sent.')
                 : ($wasRevisionRequested ? 'Revised quotation draft successfully saved.' : 'Draft quotation successfully saved.');
+
             return redirect()->route('supplier.quotations.period', $pr->period_id)->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Failed to save quotation: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Failed to save quotation: '.$e->getMessage());
         }
     }
 
@@ -385,15 +475,15 @@ class QuotationController extends Controller
         return view('supplier.quotations.show', compact('quotation', 'conversation'));
     }
 
-    private function storeMtcAttachment(\App\Models\QuotationItem $quotationItem, \Illuminate\Http\UploadedFile $file): void
+    private function storeMtcAttachment(QuotationItem $quotationItem, UploadedFile $file): void
     {
         // Use getPathname() to avoid getRealPath() returning false on Windows.
         $fileName = $file->hashName();
-        $path = 'attachments/' . now()->format('Y/m') . '/' . $fileName;
+        $path = 'attachments/'.now()->format('Y/m').'/'.$fileName;
 
         $stream = fopen($file->getPathname(), 'r');
         if ($stream) {
-            \Illuminate\Support\Facades\Storage::disk('private')->put($path, $stream);
+            Storage::disk('private')->put($path, $stream);
             fclose($stream);
 
             $quotationItem->attachments()->create([
@@ -403,5 +493,64 @@ class QuotationController extends Controller
                 'uploaded_by' => auth()->id(),
             ]);
         }
+    }
+
+    private function importableRequisition($prId): PurchaseRequisition
+    {
+        $supplier = auth()->user();
+
+        if (! $supplier || ! $supplier->is_active) {
+            abort(403, 'This supplier account is not active.');
+        }
+
+        $supplierId = (int) $supplier->id;
+        $pr = PurchaseRequisition::with([
+            'items',
+            'invitedSuppliers',
+            'quotations' => fn ($query) => $query->where('supplier_id', $supplierId),
+        ])->findOrFail($prId);
+
+        if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
+            abort(403, 'This requisition is not available for quotation import.');
+        }
+
+        $isVisible = PurchaseRequisition::query()
+            ->whereKey($pr->id)
+            ->visibleToSupplier($supplierId)
+            ->exists();
+
+        if (! $isVisible) {
+            abort(403, 'You are not invited to submit a quotation for this requisition.');
+        }
+
+        $quotation = $pr->quotations->first();
+
+        if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
+            abort(403, 'This quotation can no longer be imported or changed.');
+        }
+
+        return $pr;
+    }
+
+    private function importFailurePayload(array $messages): array
+    {
+        return [
+            'success' => false,
+            'rows' => [],
+            'warnings' => [],
+            'summary' => [
+                'total' => 0,
+                'valid' => 0,
+                'invalid' => 0,
+            ],
+            'errors' => collect($messages)
+                ->map(fn (string $message) => [
+                    'row' => null,
+                    'column' => 'import_file',
+                    'message' => $message,
+                ])
+                ->values()
+                ->all(),
+        ];
     }
 }

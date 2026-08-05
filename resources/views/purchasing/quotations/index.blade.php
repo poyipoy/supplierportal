@@ -118,7 +118,14 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold">Quotation List</h5>
-            <span class="badge bg-primary" id="quotationCountBadge">{{ $quotations->total() }} Quotation</span>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('purchasing.export.quotations', request()->only(['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency'])) }}"
+                    class="btn btn-success btn-sm" id="exportQuotationsBtn"
+                    data-export-url="{{ route('purchasing.export.quotations') }}">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                </a>
+                <span class="badge bg-primary" id="quotationCountBadge">{{ $quotations->total() }} Quotation</span>
+            </div>
         </div>
         <div class="card-body">
             {{-- Filter --}}
@@ -278,6 +285,7 @@
             const dateTo = document.getElementById('quotationDateTo');
             const dateRangeControl = document.getElementById('quotationDateRangeControl');
             const dateError = document.getElementById('quotationDateError');
+            const exportButton = document.getElementById('exportQuotationsBtn');
             const textFilters = filterForm.querySelectorAll('input[type="text"]');
             const instantFilters = filterForm.querySelectorAll('select, input[type="month"]');
             let filterTimer;
@@ -303,6 +311,17 @@
                 });
 
                 return url;
+            };
+
+            const updateExportUrl = (filterUrl) => {
+                const exportUrl = new URL(exportButton.dataset.exportUrl, window.location.origin);
+
+                ['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency'].forEach((key) => {
+                    const value = filterUrl.searchParams.get(key);
+                    if (value) exportUrl.searchParams.set(key, value);
+                });
+
+                exportButton.href = exportUrl.toString();
             };
 
             const captureTextCursor = () => {
@@ -352,6 +371,7 @@
 
                 toggleDateError(false);
                 const url = targetUrl || buildFilterUrl();
+                updateExportUrl(url);
                 const cursor = preserveCursor ? captureTextCursor() : null;
 
                 if (filterRequest) {

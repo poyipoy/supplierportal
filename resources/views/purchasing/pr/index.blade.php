@@ -8,7 +8,8 @@
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-semibold">Requisition List Material</h5>
         <div class="d-flex gap-2">
-            <a href="{{ route('purchasing.export.requisitions', request()->all()) }}" class="btn btn-success btn-sm">
+            <a href="{{ route('purchasing.export.requisitions') }}" class="btn btn-success btn-sm"
+                id="exportRequisitionsBtn" data-export-url="{{ route('purchasing.export.requisitions') }}">
                 <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
             </a>
             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create') }}" class="btn btn-primary btn-sm" style="background-color: var(--adasi-blue); border-color: var(--adasi-blue);">
@@ -102,6 +103,19 @@
             order: []
         });
 
+        $('#exportRequisitionsBtn').on('click', function(event) {
+            const exportUrl = new URL(this.dataset.exportUrl, window.location.origin);
+            const periodId = $('#period_id').val();
+            const status = $('#status').val();
+            const search = table.search().trim();
+
+            if (periodId) exportUrl.searchParams.set('period_id', periodId);
+            if (status) exportUrl.searchParams.set('status', status);
+            if (search) exportUrl.searchParams.set('search', search);
+
+            this.href = exportUrl.toString();
+        });
+
         function updateFilterChips() {
             const periodText = $('#period_id option:selected').val() ? $('#period_id option:selected').text().trim() : null;
             const statusText = $('#status option:selected').val() ? $('#status option:selected').text().trim() : null;
@@ -137,18 +151,14 @@
 
         updateFilterChips();
 
-        // SweetAlert Delete Confirmation (delegated for dynamic rows)
+        // ADASI Alert delete confirmation (delegated for dynamic rows)
         $(document).on('click', '.btn-delete', function() {
             const form = $(this).closest('form');
-            Swal.fire({
+            AdasiAlert.confirmDanger({
                 title: @json('Are you sure you want to delete?'),
                 text: @json('This material requisition will be permanently deleted!'),
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: @json('Yes, delete!'),
-                cancelButtonText: @json('Cancel')
+                confirmText: @json('Yes, delete!'),
+                cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

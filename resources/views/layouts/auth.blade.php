@@ -20,6 +20,10 @@
     {{-- Bootstrap Icons --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
+    {{-- SweetAlert2 + ADASI Alert Theme --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
+
     <style>
         :root {
             --adasi-blue: #1F5FA6;
@@ -301,6 +305,8 @@
 
     {{-- Bootstrap 5 JS --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
     @yield('scripts')
     @stack('scripts')
 </body>

@@ -318,15 +318,12 @@
                 return;
             }
 
-            Swal.fire({
+            AdasiAlert.confirm({
                 title: @json('Save Inspection Results?'),
                 html: @json('Inspection results cannot be changed after saving.<br>PO status will be updated automatically.'),
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: 'var(--adasi-blue)',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: @json('Yes, Save!'),
-                cancelButtonText: @json('Cancel')
+                type: 'warning',
+                confirmText: @json('Yes, Save!'),
+                cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('#inspectionForm').submit();

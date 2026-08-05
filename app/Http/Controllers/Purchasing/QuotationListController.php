@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
-use App\Models\Quotation;
-use App\Models\User;
 use App\Models\ExchangeRate;
 use App\Models\PurchaseRequisition;
-use App\Notifications\SystemNotification;
+use App\Models\Quotation;
+use App\Models\User;
+use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use Carbon\Carbon;
@@ -18,6 +18,8 @@ use Illuminate\Validation\Rule;
 
 class QuotationListController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     /**
      * List all incoming quotations for Purchasing.
      */
@@ -41,7 +43,7 @@ class QuotationListController extends Controller
         // Filter: Number PR
         if ($request->filled('pr_number')) {
             $query->whereHas('purchaseRequisition', function ($q) use ($request) {
-                $q->where('pr_number', 'like', '%' . trim($request->pr_number) . '%');
+                $q->where('pr_number', 'like', '%'.trim($request->pr_number).'%');
             });
         }
 
@@ -104,7 +106,7 @@ class QuotationListController extends Controller
         $canCreatePo = in_array($quotation->status, [Quotation::STATUS_SUBMITTED, Quotation::STATUS_ACCEPTED], true)
             && $quotation->purchaseOrders->isEmpty()
             && $quotation->purchaseRequisition->status !== 'completed'
-            && !$quotation->isExpired();
+            && ! $quotation->isExpired();
 
         $canRequestRevision = $quotation->canRequestRevision()
             && $quotation->purchaseRequisition->status !== 'completed';
@@ -126,7 +128,7 @@ class QuotationListController extends Controller
 
     public function accept(Request $request, $id)
     {
-        $quotation = Quotation::with(['purchaseRequisition', 'purchaseOrders'])->findOrFail($id);
+        $quotation = Quotation::with(['supplier', 'purchaseRequisition', 'purchaseOrders'])->findOrFail($id);
 
         if (! $quotation->canApproveBy(auth()->user())) {
             return back()->with('error', 'This quotation cannot be accepted.');
@@ -143,6 +145,8 @@ class QuotationListController extends Controller
             'reviewer_notes' => $request->input('reviewer_notes'),
         ]);
 
+        $this->notifySupplierOfReview($quotation, 'accepted', 'Quotation Accepted', 'Quotation for PR :pr_number has been accepted by Purchasing.');
+
         return back()->with('success', 'Quotation successfully accepted.');
     }
 
@@ -154,7 +158,7 @@ class QuotationListController extends Controller
             'reviewer_notes.required' => 'Rejection notes are required.',
         ]);
 
-        $quotation = Quotation::with('purchaseOrders')->findOrFail($id);
+        $quotation = Quotation::with(['supplier', 'purchaseRequisition', 'purchaseOrders'])->findOrFail($id);
 
         if (! $quotation->canApproveBy(auth()->user())) {
             return back()->with('error', 'This quotation cannot be rejected.');
@@ -166,6 +170,8 @@ class QuotationListController extends Controller
             'reviewed_by' => auth()->id(),
             'reviewer_notes' => $request->reviewer_notes,
         ]);
+
+        $this->notifySupplierOfReview($quotation, 'rejected', 'Quotation Rejected', 'Quotation for PR :pr_number was rejected by Purchasing.');
 
         return back()->with('success', 'Quotation successfully rejected.');
     }
@@ -191,16 +197,12 @@ class QuotationListController extends Controller
             return back()->with('error', 'The PR is completed. A quotation revision cannot be requested.');
         }
 
-        if (!$quotation->canRequestRevision()) {
+        if (! $quotation->canRequestRevision()) {
             return back()->with('error', 'A revision can only be requested for submitted quotations that have expired and have not been used to create a PO.');
         }
 
         $revisionNote = trim((string) $request->input('revision_note', ''));
-        $supplierName = $quotation->supplier->supplier->company_name
-            ?? $quotation->supplier->name
-            ?? 'Supplier';
-
-        DB::transaction(function () use ($quotation, $revisionNote, $supplierName) {
+        DB::transaction(function () use ($quotation, $revisionNote) {
             $quotation->update([
                 'status' => Quotation::STATUS_REVISION_REQUESTED,
                 'reviewed_at' => now(),
@@ -216,11 +218,11 @@ class QuotationListController extends Controller
             ]);
 
             $message = 'Please revise the quotation for PR '
-                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
-                . ' because the quotation validity has expired.';
+                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
+                .' because the quotation validity has expired.';
 
             if ($revisionNote !== '') {
-                $message .= "\n\nRevision notes: " . $revisionNote;
+                $message .= "\n\nRevision notes: ".$revisionNote;
             }
 
             $conversation->messages()->create([
@@ -228,24 +230,14 @@ class QuotationListController extends Controller
                 'body' => $message,
             ]);
 
-            $quotation->supplier->notify(new SystemNotification(
-                'Quotation Revision Requested',
-                'Purchasing requested a quotation revision for PR :pr_number.',
-                route('supplier.quotations.show', $quotation),
-                'bi-arrow-repeat text-warning',
-                [
-                    'category' => NotificationCategory::QUOTATION,
-                    'quotation_id' => $quotation->id,
-                    'pr_id' => $quotation->pr_id,
-                    'pr_number' => $quotation->purchaseRequisition->pr_number,
-                    'revision_note' => $revisionNote,
-                ],
-                [
-                    'pr_number' => $quotation->purchaseRequisition->pr_number ?? '-',
-                    'supplier' => $supplierName,
-                ]
-            ));
         });
+
+        $this->notifySupplierOfReview(
+            $quotation,
+            'revision_requested',
+            'Quotation Revision Requested',
+            'Purchasing requested a quotation revision for PR :pr_number.',
+        );
 
         $showParameters = [$quotation->id];
         if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
@@ -254,5 +246,28 @@ class QuotationListController extends Controller
 
         return redirect()->route('purchasing.quotations.show', $showParameters)
             ->with('success', 'Quotation revision request has been sent to the supplier.');
+    }
+
+    private function notifySupplierOfReview(Quotation $quotation, string $eventSuffix, string $title, string $message): void
+    {
+        $quotation->loadMissing(['supplier', 'purchaseRequisition']);
+        $reviewKey = $quotation->reviewed_at?->format('YmdHis.u') ?? $quotation->updated_at?->format('YmdHis.u');
+
+        $this->notifications->send(
+            $quotation->supplier,
+            "quotation.{$eventSuffix}",
+            "quotation.{$eventSuffix}:{$quotation->id}:{$reviewKey}",
+            $title,
+            $message,
+            route('supplier.quotations.show', $quotation, absolute: false),
+            $eventSuffix === 'revision_requested' ? 'bi-arrow-repeat text-warning' : 'bi-tags text-primary',
+            [
+                'category' => NotificationCategory::QUOTATION,
+                'quotation_id' => $quotation->id,
+                'pr_id' => $quotation->pr_id,
+                'pr_number' => $quotation->purchaseRequisition->pr_number,
+            ],
+            ['pr_number' => $quotation->purchaseRequisition->pr_number ?? '-'],
+        );
     }
 }

@@ -6,7 +6,7 @@
 @push('styles')
 <style>
     .quotation-items-table {
-        min-width: 1500px;
+        min-width: 1780px;
     }
 
     .quotation-item-notes {
@@ -15,14 +15,45 @@
         line-height: 1.35;
         resize: vertical;
     }
+
+    .availability-panel {
+        min-width: 285px;
+    }
+
+    .availability-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+        gap: .5rem;
+    }
+
+    .availability-field-label {
+        display: block;
+        margin-bottom: .2rem;
+        color: #6c757d;
+        font-size: .68rem;
+        font-weight: 600;
+    }
+
+    .availability-copied .availability-panel {
+        background-color: #edf7ef !important;
+        transition: background-color .2s ease;
+    }
+
+    @media (max-width: 991.98px) {
+        .availability-grid {
+            grid-template-columns: repeat(2, minmax(100px, 1fr));
+        }
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('supplier.quotations.period', $pr->period_id) }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to Requisition List
-    </a>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <a href="{{ route('supplier.quotations.period', $pr->period_id) }}" class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left me-1"></i> Back to Requisition List
+        </a>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm mb-4">
@@ -55,12 +86,21 @@
     <input type="hidden" name="action" id="formAction" value="draft">
 
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h6 class="mb-0 fw-bold">
                 Material Price Entry
                 <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><i class="bi bi-cloud-check me-1"></i>Draft Auto-saved</span>
             </h6>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                <a href="{{ route('supplier.quotations.import-template', $pr) }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i> Download Template
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#quotationImportModal">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Import Excel
+                </button>
+                <button type="button" id="copyAllRequested" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-clipboard-check me-1"></i> Copy All Requested Values
+                </button>
                 <label for="quotationCurrency" class="small fw-medium text-muted mb-0">Currency:</label>
                 <select name="currency" id="quotationCurrency" class="form-select form-select-sm" style="width: 110px;" required>
                     <option value="" disabled @selected($supplierCurrency === '')>Select</option>
@@ -79,9 +119,10 @@
                 <table class="table table-bordered align-middle mb-0 quotation-items-table" style="font-size: 0.85rem;">
                     <thead class="table-light text-center">
                         <tr>
-                            <th width="3%">No</th>
-                            <th width="15%" style="min-width: 150px;">Material & Specification</th>
-                            <th width="4%">Qty</th>
+                             <th width="3%">No</th>
+                             <th width="15%" style="min-width: 150px;">Material & Specification</th>
+                             <th width="16%" class="availability-panel">Supplier Availability</th>
+                             <th width="4%">Qty</th>
                             <th width="7%">Weight/Unit (Kg)</th>
                             <th width="8%">Total Weight (Kg)</th>
                             <th width="12%" style="min-width: 130px;">Price per-KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
@@ -98,26 +139,81 @@
                                 if ($quotation) {
                                     $qItem = $quotation->items->where('pr_item_id', $item->id)->first();
                                 }
-                                $oldPrice = old("items.{$index}.price_per_kg", $qItem ? $qItem->price_per_kg : '');
-                                $oldNotes = old("items.{$index}.notes", $qItem ? $qItem->notes : '');
-                                $mtcAttachment = $qItem?->attachments?->first();
-                            @endphp
+                                 $oldPrice = old("items.{$index}.price_per_kg", $qItem ? $qItem->price_per_kg : '');
+                                 $oldNotes = old("items.{$index}.notes", $qItem ? $qItem->notes : '');
+                                 $mtcAttachment = $qItem?->attachments?->first();
+                                 $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($item->shape);
+                             @endphp
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>
-                                    <div class="fw-bold">{{ $item->material_name }}</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                     <div class="fw-bold">{{ $item->material_name }}</div>
+                                     <div class="text-muted" style="font-size: 0.75rem;">
                                         @if($item->hs_code) HS: {{ $item->hs_code }} | @endif
                                         @if($item->shape)
                                             {{ $item->shape }}: {{ $item->dimension_label }}
                                         @else
-                                            -
-                                        @endif
-                                    </div>
-                                    <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
-                                    <input type="hidden" class="item-weight" value="{{ $item->total_weight }}">
-                                </td>
-                                <td class="text-center fw-medium">{{ number_format($item->quantity_value, 0) }}</td>
+                                             -
+                                         @endif
+                                     </div>
+                                     <div class="small text-muted mt-2"><i class="bi bi-building me-1"></i>Requested by Purchasing</div>
+                                     @if($item->remark)
+                                         <div class="small mt-1 text-break"><span class="text-muted">Remark:</span> {{ $item->remark }}</div>
+                                     @endif
+                                     <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
+                                     <input type="hidden" class="item-weight" value="{{ $item->total_weight }}">
+                                 </td>
+                                 <td class="availability-panel">
+                                     <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                         <span class="small fw-semibold text-primary"><i class="bi bi-box-seam me-1"></i>Offered by Supplier</span>
+                                         <button
+                                             type="button"
+                                             class="btn btn-sm btn-outline-secondary py-0 copy-from-pr-btn"
+                                             data-requested-qty="{{ $item->quantity_value }}"
+                                             data-requested-thickness="{{ $item->thickness ?? '' }}"
+                                             data-requested-d-inner="{{ $item->d_inner ?? '' }}"
+                                             data-requested-d-outer="{{ $item->d_outer ?? '' }}"
+                                             data-requested-width="{{ $item->width ?? '' }}"
+                                             data-requested-length="{{ $item->length ?? '' }}"
+                                             title="Copy requested quantity and relevant dimensions"
+                                         >
+                                             <i class="bi bi-clipboard-check"></i> Copy
+                                         </button>
+                                     </div>
+                                     <div class="availability-grid">
+                                         <div>
+                                             <label class="availability-field-label" for="availableQty{{ $index }}">Qty</label>
+                                             <input
+                                                 id="availableQty{{ $index }}"
+                                                 type="number"
+                                                 min="1"
+                                                 step="1"
+                                                 name="items[{{ $index }}][available_qty]"
+                                                 class="form-control form-control-sm availability-input"
+                                                 data-availability-field="qty"
+                                                 value="{{ old("items.{$index}.available_qty", $qItem?->available_qty) }}"
+                                             >
+                                         </div>
+                                         @foreach($relevantDimensions as $dimension)
+                                             <div>
+                                                 <label class="availability-field-label" for="available{{ ucfirst(str_replace('_', '', $dimension)) }}{{ $index }}">
+                                                     {{ \App\Models\PrItem::DIMENSION_LABELS[$dimension] }}
+                                                 </label>
+                                                 <input
+                                                     id="available{{ ucfirst(str_replace('_', '', $dimension)) }}{{ $index }}"
+                                                     type="number"
+                                                     min="0"
+                                                     step="0.0001"
+                                                     name="items[{{ $index }}][available_{{ $dimension }}]"
+                                                     class="form-control form-control-sm availability-input"
+                                                     data-availability-field="{{ $dimension }}"
+                                                     value="{{ old("items.{$index}.available_{$dimension}", $qItem?->{'available_'.$dimension}) }}"
+                                                 >
+                                             </div>
+                                         @endforeach
+                                     </div>
+                                 </td>
+                                 <td class="text-center fw-medium">{{ number_format($item->quantity_value, 0) }}</td>
                                 <td class="text-center">{{ number_format($item->weight_needed, 2) }}</td>
                                 <td class="text-center fw-medium text-primary">{{ number_format($item->total_weight, 2) }}</td>
                                 <td>
@@ -153,7 +249,7 @@
                     </tbody>
                     <tfoot class="table-light fw-bold">
                         <tr>
-                            <td colspan="6" class="text-end">TOTAL</td>
+                            <td colspan="7" class="text-end">TOTAL</td>
                             <td class="text-end" id="totalAmount">0.00</td>
                             <td class="text-end text-primary" id="totalIdr">0</td>
                             <td colspan="2"></td>
@@ -211,6 +307,82 @@
     </div>
 </form>
 
+<div class="modal fade" id="quotationImportModal" tabindex="-1" aria-labelledby="quotationImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="quotationImportModalLabel">Import Quotation Items from Excel</h5>
+                    <div class="small text-muted">Imported values are mapped by PR Item ID and are not saved automatically.</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label for="quotationImportFile" class="form-label fw-medium">Spreadsheet File</label>
+                        <input type="file" id="quotationImportFile" class="form-control" accept=".xlsx,.xls,.csv">
+                        <div class="form-text">Use the template for this PR. XLSX, XLS, or CSV; maximum 10 MB.</div>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="quotationImportMode" class="form-label fw-medium">Import Mode</label>
+                        <select id="quotationImportMode" class="form-select">
+                            <option value="fill_empty" selected>Fill Empty Fields Only</option>
+                            <option value="replace">Replace Imported Fields</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="quotationImportResult" class="d-none mt-4">
+                    <div id="quotationImportSummary" class="alert alert-light border py-2 mb-3"></div>
+
+                    <div id="quotationImportWarningsPanel" class="alert alert-warning d-none">
+                        <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Warnings</div>
+                        <ul id="quotationImportWarnings" class="mb-0 small ps-3"></ul>
+                    </div>
+
+                    <div id="quotationImportErrorsPanel" class="alert alert-danger d-none">
+                        <div class="fw-semibold mb-1"><i class="bi bi-x-circle me-1"></i>Import Errors</div>
+                        <ul id="quotationImportErrors" class="mb-0 small ps-3"></ul>
+                    </div>
+
+                    <div id="quotationImportPreviewPanel" class="d-none">
+                        <div class="fw-semibold mb-2">Parsed Item Preview</div>
+                        <div class="table-responsive border rounded" style="max-height: 330px;">
+                            <table class="table table-sm table-striped align-middle mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>PR Item ID</th>
+                                        <th>Price/Kg</th>
+                                        <th>Available Qty</th>
+                                        <th>Thickness</th>
+                                        <th>Inner D.</th>
+                                        <th>Outer D.</th>
+                                        <th>Width</th>
+                                        <th>Length</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="quotationImportPreviewBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-primary" id="btnParseQuotationImport">
+                    <span class="spinner-border spinner-border-sm me-1 d-none" id="quotationImportSpinner"></span>
+                    Parse &amp; Validate
+                </button>
+                <button type="button" class="btn btn-primary" id="btnApplyQuotationImport" disabled>
+                    <i class="bi bi-check2-circle me-1"></i> Apply to Form
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Exchange rate data for JS --}}
 <div id="exchangeRates" class="d-none"></div>
 
@@ -219,6 +391,212 @@
 @push('scripts')
 <script>
     const currencyRates = @json($currencyRates);
+    const quotationImportPreviewUrl = @json(route('supplier.quotations.import-preview', $pr));
+    let quotationImportRows = [];
+    let quotationImportRequestInFlight = false;
+
+    const quotationImportFieldSelectors = {
+        price_per_kg: '.price-input',
+        available_qty: '[data-availability-field="qty"]',
+        available_thickness: '[data-availability-field="thickness"]',
+        available_d_inner: '[data-availability-field="d_inner"]',
+        available_d_outer: '[data-availability-field="d_outer"]',
+        available_width: '[data-availability-field="width"]',
+        available_length: '[data-availability-field="length"]',
+        notes: '.quotation-item-notes'
+    };
+
+    function quotationRowForPrItem(prItemId) {
+        return $('input[name^="items"][name$="[pr_item_id]"]').filter(function() {
+            return String($(this).val()) === String(prItemId);
+        }).first().closest('tr');
+    }
+
+    function formatQuotationImportMessage(entry) {
+        const location = entry.row
+            ? `Row ${entry.row}${entry.column ? `, ${entry.column}` : ''}`
+            : (entry.column || 'File');
+
+        return `${location}: ${entry.message}`;
+    }
+
+    function renderQuotationImportResult(payload) {
+        const summary = payload.summary || { total: 0, valid: 0, invalid: 0 };
+        const warnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+        const errors = Array.isArray(payload.errors) ? payload.errors : [];
+        const rows = Array.isArray(payload.rows) ? payload.rows : [];
+
+        $('#quotationImportResult').removeClass('d-none');
+        $('#quotationImportSummary').text(
+            `Total: ${summary.total || 0} | Valid: ${summary.valid || 0} | Invalid: ${summary.invalid || 0}`
+        );
+
+        const $warnings = $('#quotationImportWarnings').empty();
+        warnings.forEach((warning) => $('<li>').text(formatQuotationImportMessage(warning)).appendTo($warnings));
+        $('#quotationImportWarningsPanel').toggleClass('d-none', warnings.length === 0);
+
+        const $errors = $('#quotationImportErrors').empty();
+        errors.forEach((error) => $('<li>').text(formatQuotationImportMessage(error)).appendTo($errors));
+        $('#quotationImportErrorsPanel').toggleClass('d-none', errors.length === 0);
+
+        const $preview = $('#quotationImportPreviewBody').empty();
+        rows.forEach((row) => {
+            const $tableRow = $('<tr>');
+            [
+                row.pr_item_id,
+                row.price_per_kg,
+                row.available_qty ?? '-',
+                row.available_thickness ?? '-',
+                row.available_d_inner ?? '-',
+                row.available_d_outer ?? '-',
+                row.available_width ?? '-',
+                row.available_length ?? '-',
+                row.notes ?? '-'
+            ].forEach((value) => $('<td>').text(value).appendTo($tableRow));
+            $tableRow.appendTo($preview);
+        });
+        $('#quotationImportPreviewPanel').toggleClass('d-none', rows.length === 0);
+
+        quotationImportRows = payload.success === true ? rows : [];
+        $('#btnApplyQuotationImport').prop('disabled', payload.success !== true || rows.length === 0);
+    }
+
+    function setQuotationImportBusy(isBusy) {
+        quotationImportRequestInFlight = isBusy;
+        $('#btnParseQuotationImport').prop('disabled', isBusy);
+        $('#quotationImportFile, #quotationImportMode').prop('disabled', isBusy);
+        $('#quotationImportSpinner').toggleClass('d-none', !isBusy);
+    }
+
+    function parseQuotationImport() {
+        if (quotationImportRequestInFlight) {
+            return;
+        }
+
+        const file = document.getElementById('quotationImportFile').files[0];
+        if (!file) {
+            AdasiAlert.warning({
+                title: 'File Required',
+                text: 'Select an XLSX, XLS, or CSV file first.'
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('_token', @json(csrf_token()));
+        formData.append('import_file', file);
+        quotationImportRows = [];
+        $('#btnApplyQuotationImport').prop('disabled', true);
+        setQuotationImportBusy(true);
+
+        $.ajax({
+            url: quotationImportPreviewUrl,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).done((payload) => {
+            renderQuotationImportResult(payload);
+        }).fail((xhr) => {
+            renderQuotationImportResult(xhr.responseJSON || {
+                success: false,
+                rows: [],
+                warnings: [],
+                summary: { total: 0, valid: 0, invalid: 0 },
+                errors: [{ row: null, column: 'import_file', message: 'The spreadsheet could not be processed.' }]
+            });
+        }).always(() => {
+            setQuotationImportBusy(false);
+        });
+    }
+
+    function quotationImportWouldOverwrite() {
+        return quotationImportRows.some((row) => {
+            const $formRow = quotationRowForPrItem(row.pr_item_id);
+            if ($formRow.length === 0) {
+                return false;
+            }
+
+            return Object.entries(quotationImportFieldSelectors).some(([field, selector]) => {
+                const $input = $formRow.find(selector);
+                if ($input.length === 0) {
+                    return false;
+                }
+
+                const current = String($input.val() ?? '').trim();
+                const incoming = String(row[field] ?? '').trim();
+                return current !== '' && current !== incoming;
+            });
+        });
+    }
+
+    function performQuotationImportApply(mode) {
+        let changedFields = 0;
+        const importedItems = quotationImportRows.length;
+
+        quotationImportRows.forEach((row) => {
+            const $formRow = quotationRowForPrItem(row.pr_item_id);
+            if ($formRow.length === 0) {
+                return;
+            }
+
+            Object.entries(quotationImportFieldSelectors).forEach(([field, selector]) => {
+                const $input = $formRow.find(selector);
+                if ($input.length === 0) {
+                    return;
+                }
+
+                const incoming = row[field] ?? '';
+                const current = String($input.val() ?? '').trim();
+                const incomingText = String(incoming).trim();
+                const shouldApply = mode === 'replace'
+                    || (current === '' && incomingText !== '');
+
+                if (!shouldApply || current === incomingText) {
+                    return;
+                }
+
+                $input.val(incoming).trigger('input').trigger('change');
+                changedFields++;
+            });
+        });
+
+        calculateTotal();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('quotationImportModal')).hide();
+        AdasiAlert.toast({
+            type: 'success',
+            title: 'Import Applied',
+            text: `${changedFields} field(s) across ${importedItems} item(s) were applied. Review the quotation before saving.`,
+            duration: 2400
+        });
+    }
+
+    function applyQuotationImport() {
+        if (quotationImportRows.length === 0) {
+            return;
+        }
+
+        const mode = $('#quotationImportMode').val();
+        if (mode === 'replace' && quotationImportWouldOverwrite()) {
+            AdasiAlert.confirmDanger({
+                title: 'Replace existing item values?',
+                text: 'Imported values, including blank optional fields, will replace values currently entered for matching PR items.',
+                confirmText: 'Yes, Replace Fields',
+                cancelText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performQuotationImportApply(mode);
+                }
+            });
+            return;
+        }
+
+        performQuotationImportApply(mode);
+    }
 
     function selectedCurrency() {
         return $('#quotationCurrency').val() || '';
@@ -259,7 +637,61 @@
         calculateTotal();
     });
 
+    function copyRequestedValues(button) {
+        const row = button.closest('tr');
+        const values = {
+            qty: button.dataset.requestedQty,
+            thickness: button.dataset.requestedThickness,
+            d_inner: button.dataset.requestedDInner,
+            d_outer: button.dataset.requestedDOuter,
+            width: button.dataset.requestedWidth,
+            length: button.dataset.requestedLength,
+        };
+        let copied = false;
+
+        Object.entries(values).forEach(([field, value]) => {
+            const input = row.querySelector(`[data-availability-field="${field}"]`);
+            if (input && value !== undefined && value !== '') {
+                input.value = value;
+                $(input).trigger('input');
+                copied = true;
+            }
+        });
+
+        if (copied) {
+            row.classList.add('availability-copied');
+            setTimeout(() => row.classList.remove('availability-copied'), 900);
+        }
+
+        return copied;
+    }
+
+    function showCopyFeedback(message) {
+        if (typeof AdasiAlert !== 'undefined') {
+            AdasiAlert.toast({
+                type: 'success',
+                title: message,
+                duration: 1800
+            });
+        }
+    }
+
     $(document).ready(function() {
+        $('#btnParseQuotationImport').on('click', parseQuotationImport);
+        $('#btnApplyQuotationImport').on('click', applyQuotationImport);
+        $('#quotationImportModal').on('hidden.bs.modal', function() {
+            if (quotationImportRequestInFlight) {
+                return;
+            }
+
+            document.getElementById('quotationImportFile').value = '';
+            $('#quotationImportMode').val('fill_empty');
+            $('#quotationImportResult').addClass('d-none');
+            $('#quotationImportWarnings, #quotationImportErrors, #quotationImportPreviewBody').empty();
+            $('#btnApplyQuotationImport').prop('disabled', true);
+            quotationImportRows = [];
+        });
+
         function refreshCurrencyState() {
             const currency = selectedCurrency();
             $('.currency-label').text(currency || '-');
@@ -269,6 +701,24 @@
         }
 
         $('#quotationCurrency').on('change', refreshCurrencyState);
+        $('.copy-from-pr-btn').on('click', function() {
+            if (copyRequestedValues(this)) {
+                showCopyFeedback('Requested values copied. Review before saving.');
+            }
+        });
+
+        $('#copyAllRequested').on('click', function() {
+            let copiedRows = 0;
+            $('.copy-from-pr-btn').each(function() {
+                if (copyRequestedValues(this)) {
+                    copiedRows++;
+                }
+            });
+
+            if (copiedRows > 0) {
+                showCopyFeedback(`Requested values copied for ${copiedRows} item(s). Review before saving.`);
+            }
+        });
         refreshCurrencyState();
         calculateTotal(); // initial calculation if pre-filled
     });
@@ -291,19 +741,19 @@
         });
 
         if (!isValid) {
-            Swal.fire('Error', 'Please complete all required fields: Currency, Price, Estimated Delivery Time, and Quotation Valid Until.', 'error');
+            AdasiAlert.error({
+                title: 'Error',
+                text: 'Please complete all required fields: Currency, Price, Estimated Delivery Time, and Quotation Valid Until.'
+            });
             return;
         }
 
-        Swal.fire({
+        AdasiAlert.confirm({
             title: {!! json_encode($quotation?->status === 'revision_requested' ? 'Resubmit Quotation?' : 'Send Final Quotation?') !!},
             text: {!! json_encode($quotation?->status === 'revision_requested' ? 'The revised quotation will be sent back to Purchasing for evaluation.' : 'Submitted quotations cannot be changed anymore.') !!},
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: 'var(--adasi-blue)',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: @json($quotation?->status === 'revision_requested' ? 'Yes, Resubmit!' : 'Yes, Send!'),
-            cancelButtonText: @json('Cancel')
+            type: 'warning',
+            confirmText: @json($quotation?->status === 'revision_requested' ? 'Yes, Resubmit!' : 'Yes, Send!'),
+            cancelText: @json('Cancel')
         }).then((result) => {
             if (result.isConfirmed) {
                 // Clear draft on submit

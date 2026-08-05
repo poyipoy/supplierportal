@@ -7,7 +7,8 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-semibold">Purchase Order List</h5>
-        <a href="{{ route('purchasing.export.purchase-orders', request()->all()) }}" class="btn btn-success btn-sm">
+        <a href="{{ route('purchasing.export.purchase-orders') }}" class="btn btn-success btn-sm"
+            id="exportPurchaseOrdersBtn" data-export-url="{{ route('purchasing.export.purchase-orders') }}">
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
     </div>
@@ -60,6 +61,8 @@
                         <th>Number PO</th>
                         <th>Supplier</th>
                         <th>Period</th>
+                        <th>Reference (No. PR)</th>
+                        <th>Remark</th>
                         <th class="text-end">Total IDR</th>
                         <th class="text-center">Status</th>
                         <th>Estimated Arrival</th>
@@ -91,14 +94,31 @@
                 { data: 'po_number_display', name: 'po_number', className: 'fw-bold' },
                 { data: 'supplier_name', name: 'supplier_name', orderable: false },
                 { data: 'period_name', name: 'period_name', orderable: false },
+                { data: 'pr_reference', name: 'pr_reference', orderable: false },
+                { data: 'remark_display', name: 'remark_display', orderable: false },
                 { data: 'total_idr', name: 'total_idr', className: 'text-end fw-medium', orderable: false, searchable: false },
-                { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
+                { data: 'status_badge', name: 'status', className: 'text-center' },
                 { data: 'estimated_date', name: 'estimated_arrival' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},
             pageLength: 25,
             order: []
+        });
+
+        $('#exportPurchaseOrdersBtn').on('click', function(event) {
+            const exportUrl = new URL(this.dataset.exportUrl, window.location.origin);
+            const poNumber = $('#filter_po_number').val().trim();
+            const status = $('#filter_status').val();
+            const supplierId = $('#filter_supplier').val();
+            const search = table.search().trim();
+
+            if (poNumber) exportUrl.searchParams.set('po_number', poNumber);
+            if (status) exportUrl.searchParams.set('status', status);
+            if (supplierId) exportUrl.searchParams.set('supplier_id', supplierId);
+            if (search) exportUrl.searchParams.set('search', search);
+
+            this.href = exportUrl.toString();
         });
 
         var poSearchTimer;

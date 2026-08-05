@@ -83,6 +83,7 @@ class PrItemController extends Controller
             'd_outer' => 'nullable|numeric|min:0',
             'width' => 'nullable|numeric|min:0',
             'length' => 'nullable|numeric|min:0',
+            'remark' => 'nullable|string|max:2000',
         ];
     }
 }

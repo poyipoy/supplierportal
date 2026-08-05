@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Models\PoDocument;
-use App\Notifications\SystemNotification;
+use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
 
 class PoDocumentController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     /**
      * Update status document via AJAX.
      */
@@ -25,6 +27,7 @@ class PoDocumentController extends Controller
             ->documents()
             ->whereIn('status', $completedStatuses)
             ->count() === 4;
+        $statusChanged = $doc->status !== $request->status;
 
         $doc->update(['status' => $request->status]);
         $doc->refresh();
@@ -45,28 +48,44 @@ class PoDocumentController extends Controller
             'done' => 'Completed',
         ][$doc->status] ?? $doc->status;
 
-        if ($po?->creator) {
-            $po->creator->notify(new SystemNotification(
+        if ($statusChanged && $po?->creator) {
+            $this->notifications->send(
+                $po->creator,
+                'document.status_updated',
+                'document.status_updated:'.$doc->id.':'.$doc->status.':'.($doc->updated_at?->format('YmdHis.u') ?? 'updated'),
                 'Document Status Updated',
                 "Document {$docLabel} on PO {$po->po_number} has been updated to \"{$statusLabel}\".",
-                route('purchasing.purchase-orders.show', $po),
+                route('purchasing.purchase-orders.show', $po, absolute: false),
                 'bi-file-earmark-check text-primary',
-                ['category' => NotificationCategory::DOCUMENT]
-            ));
+                [
+                    'category' => NotificationCategory::DOCUMENT,
+                    'document_id' => $doc->id,
+                    'po_id' => $po->id,
+                    'po_number' => $po->po_number,
+                ],
+            );
         }
 
         $allDone = $po
             ? $po->documents()->whereIn('status', $completedStatuses)->count() === 4
             : false;
 
-        if ($allDone && !$wasAllDone && $po?->creator) {
-            $po->creator->notify(new SystemNotification(
+        if ($allDone && ! $wasAllDone && $po?->creator) {
+            $this->notifications->send(
+                $po->creator,
+                'document.all_completed',
+                "document.all_completed:{$po->id}",
                 'All Import Documents Complete',
                 "All import documents for PO {$po->po_number} are complete. Confirm material arrival if it has arrived.",
-                route('purchasing.purchase-orders.show', $po),
+                route('purchasing.purchase-orders.show', $po, absolute: false),
                 'bi-check2-circle text-success',
-                ['category' => NotificationCategory::DOCUMENT]
-            ));
+                [
+                    'category' => NotificationCategory::DOCUMENT,
+                    'document_id' => $doc->id,
+                    'po_id' => $po->id,
+                    'po_number' => $po->po_number,
+                ],
+            );
         }
 
         return response()->json([
@@ -78,7 +97,7 @@ class PoDocumentController extends Controller
                 'doc_type' => $doc->doc_type,
                 'status' => $doc->status,
                 'updated_at' => $doc->updated_at->format('d M Y, H:i'),
-            ]
+            ],
         ]);
     }
 }

@@ -14,7 +14,12 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">{{ $pr->pr_number ?? 'Requisition Draft' }}</h6>
-                <x-status-badge type="pr" :status="$pr->status" size="lg" />
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('purchasing.export.requisitions.detail', $pr) }}" class="btn btn-success btn-sm">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                    </a>
+                    <x-status-badge type="pr" :status="$pr->status" size="lg" />
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -74,6 +79,7 @@
                                 <th>Qty</th>
                                 <th>Weight/Unit (Kg)</th>
                                 <th>Total Weight (Kg)</th>
+                                <th>Remark</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -93,6 +99,7 @@
                                     <td class="text-center fw-bold">{{ number_format($item->quantity_value, 0) }}</td>
                                     <td class="text-center">{{ number_format($item->weight_needed, 2) }}</td>
                                     <td class="text-center fw-bold text-primary">{{ number_format($item->total_weight, 2) }}</td>
+                                    <td>{{ $item->remark ?: '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -212,6 +219,7 @@
                                 <input type="hidden" name="items[{{ $index }}][width]" value="{{ $item->width }}">
                                 <input type="hidden" name="items[{{ $index }}][length]" value="{{ $item->length }}">
                                 <input type="hidden" name="items[{{ $index }}][weight_needed]" value="{{ $item->weight_needed }}">
+                                <input type="hidden" name="items[{{ $index }}][remark]" value="{{ $item->remark }}">
                             @endforeach
                             <button type="button" class="btn btn-primary w-100 btn-submit" style="background-color: var(--adasi-blue);">Submit Requisition</button>
                         </form>
@@ -297,15 +305,11 @@
 <script>
     $('.btn-submit').on('click', function() {
         const form = $(this).closest('form');
-        Swal.fire({
+        AdasiAlert.confirm({
             title: @json('Submit Requisition?'),
             text: @json('Status will change to Submitted and cannot be edited anymore.'),
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: 'var(--adasi-blue)',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: @json('Yes, Submit!'),
-            cancelButtonText: @json('Cancel')
+            confirmText: @json('Yes, Submit!'),
+            cancelText: @json('Cancel')
         }).then((result) => {
             if (result.isConfirmed) {
                 form.submit();

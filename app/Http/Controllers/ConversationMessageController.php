@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
-use App\Notifications\SystemNotification;
+use App\Services\NotificationService;
 use App\Support\ConversationPresenter;
 use App\Support\NotificationCategory;
 use Illuminate\Http\JsonResponse;
@@ -17,17 +19,19 @@ use Illuminate\Validation\ValidationException;
 
 class ConversationMessageController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     /**
      * Conversation list for the chat drawer.
      */
     public function drawerIndex()
     {
         $conversations = Conversation::with([
-                'conversable',
-                'purchasingUser.supplier',
-                'supplierUser.supplier',
-                'latestMessage.sender',
-            ])
+            'conversable',
+            'purchasingUser.supplier',
+            'supplierUser.supplier',
+            'latestMessage.sender',
+        ])
             ->withMax('messages', 'created_at')
             ->forUser(auth()->id())
             ->when(request()->filled('q'), function ($query) {
@@ -38,8 +42,8 @@ class ConversationMessageController extends Controller
                         ->orWhereHas('supplierUser', fn ($user) => $user
                             ->where('name', 'like', "%{$keyword}%")
                             ->orWhereHas('supplier', fn ($supplier) => $supplier->where('company_name', 'like', "%{$keyword}%")))
-                        ->orWhereHasMorph('conversable', [\App\Models\PurchaseRequisition::class], fn ($pr) => $pr->where('pr_number', 'like', "%{$keyword}%"))
-                        ->orWhereHasMorph('conversable', [\App\Models\PurchaseOrder::class], fn ($po) => $po->where('po_number', 'like', "%{$keyword}%"));
+                        ->orWhereHasMorph('conversable', [PurchaseRequisition::class], fn ($pr) => $pr->where('pr_number', 'like', "%{$keyword}%"))
+                        ->orWhereHasMorph('conversable', [PurchaseOrder::class], fn ($po) => $po->where('po_number', 'like', "%{$keyword}%"));
                 });
             })
             ->orderByDesc(DB::raw('COALESCE(messages_max_created_at, conversations.updated_at, conversations.created_at)'))
@@ -59,12 +63,12 @@ class ConversationMessageController extends Controller
     public function drawerShow($id)
     {
         $conversation = Conversation::with([
-                'conversable',
-                'purchasingUser.supplier',
-                'supplierUser.supplier',
-                'messages.sender',
-                'latestMessage.sender',
-            ])
+            'conversable',
+            'purchasingUser.supplier',
+            'supplierUser.supplier',
+            'messages.sender',
+            'latestMessage.sender',
+        ])
             ->findOrFail($id);
 
         $this->authorize('view', $conversation);
@@ -122,25 +126,31 @@ class ConversationMessageController extends Controller
 
         // Send a notification to the other party.
         $partner = $conversation->getPartner(auth()->id());
-        
+
         // Keep the notification behavior simple and always notify the partner.
         if ($partner) {
             $senderName = auth()->user()->name;
             $preview = $message->body !== ''
                 ? Str::limit($message->body, 50)
                 : 'Sent an attachment in the chat.';
-            
+
             // Determine the correct route for the notification URL based on partner's role
             $routePrefix = $partner->role === 'purchasing' ? 'purchasing' : 'supplier';
             $url = route("{$routePrefix}.conversations.show", $conversation);
 
-            $partner->notify(new SystemNotification(
-                'New message from ' . $senderName,
+            $this->notifications->send(
+                $partner,
+                'conversation.message_created',
+                "conversation.message_created:{$message->id}",
+                'New message from '.$senderName,
                 $preview,
                 $url,
                 'bi-chat-dots',
-                ['category' => NotificationCategory::CHAT, 'conversation_id' => $conversation->id]
-            ));
+                [
+                    'category' => NotificationCategory::CHAT,
+                    'conversation_id' => $conversation->id,
+                ],
+            );
         }
 
         if ($request->expectsJson()) {
@@ -207,20 +217,37 @@ class ConversationMessageController extends Controller
                     $conversation,
                     $quotation,
                     'Please extend the quotation validity for PR '
-                        . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id) . '.',
+                        .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id).'.',
                     $note
                 ),
                 'request_delivery_confirmation' => $this->sendActionMessage(
                     $conversation,
                     $quotation,
                     'Please confirm the latest estimated delivery for PR '
-                        . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id) . '.',
+                        .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id).'.',
                     $note
                 ),
                 'accept_quotation' => $this->acceptQuotation($conversation, $quotation),
                 'reject_quotation' => $this->rejectQuotation($conversation, $quotation, $note),
             };
         });
+
+        $notification = match ($validated['action']) {
+            'request_price_revision' => ['quotation.revision_requested', 'Quotation Revision Requested', 'Purchasing requested a quotation revision for PR :pr_number.', NotificationCategory::QUOTATION],
+            'accept_quotation' => ['quotation.accepted', 'Quotation Accepted', 'Quotation for PR :pr_number has been accepted by Purchasing.', NotificationCategory::QUOTATION],
+            'reject_quotation' => ['quotation.rejected', 'Quotation Rejected', 'Quotation for PR :pr_number was rejected by Purchasing.', NotificationCategory::QUOTATION],
+            default => ['quotation.negotiation_message', 'New Negotiation Message', 'Purchasing sent a negotiation message for PR :pr_number.', NotificationCategory::CHAT],
+        };
+
+        $this->notifySupplier(
+            $conversation,
+            $quotation,
+            $notification[0],
+            $notification[1],
+            $notification[2],
+            $notification[3],
+            "{$notification[0]}:{$message->id}",
+        );
 
         return response()->json([
             'success' => true,
@@ -276,7 +303,7 @@ class ConversationMessageController extends Controller
     public function unreadCount()
     {
         $count = Conversation::forUser(auth()->id())
-            ->withCount(['messages' => function($q) {
+            ->withCount(['messages' => function ($q) {
                 $q->where('sender_id', '!=', auth()->id())->whereNull('read_at');
             }])
             ->get()
@@ -293,7 +320,7 @@ class ConversationMessageController extends Controller
         return [
             'id' => $conversation->id,
             'context_label' => $conversation->context_label,
-            'context_type' => $conversation->conversable_type === \App\Models\PurchaseRequisition::class ? 'PR' : 'PO',
+            'context_type' => $conversation->conversable_type === PurchaseRequisition::class ? 'PR' : 'PO',
             'partner_name' => $this->displayName($partner),
             'partner_role' => $partner?->role,
             'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : 'No messages yet',
@@ -336,7 +363,7 @@ class ConversationMessageController extends Controller
     private function storeAttachments(Message $message, Request $request): void
     {
         foreach ($request->file('attachments', []) as $file) {
-            $path = $file->store('attachments/' . now()->format('Y/m'), 'private');
+            $path = $file->store('attachments/'.now()->format('Y/m'), 'private');
 
             $message->attachments()->create([
                 'file_path' => $path,
@@ -371,16 +398,14 @@ class ConversationMessageController extends Controller
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
             'body' => 'Please revise the quotation price for PR '
-                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
-                . ".\n\nRevision notes: " . $note,
+                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
+                .".\n\nRevision notes: ".$note,
         ]);
 
         $conversation->forceFill([
             'status' => Conversation::STATUS_WAITING_SUPPLIER,
             'resolved_at' => null,
         ])->save();
-
-        $this->notifySupplier($quotation, 'Quotation Revision Requested', 'Purchasing requested a quotation revision for PR :pr_number.');
 
         return $message;
     }
@@ -408,12 +433,11 @@ class ConversationMessageController extends Controller
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
             'body' => 'Quotation for PR '
-                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
-                . ' has been accepted by Purchasing.',
+                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
+                .' has been accepted by Purchasing.',
         ]);
 
         $conversation->markResolved();
-        $this->notifySupplier($quotation, 'Quotation Accepted', 'Quotation for PR :pr_number has been accepted by Purchasing.');
 
         return $message;
     }
@@ -436,12 +460,11 @@ class ConversationMessageController extends Controller
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
             'body' => 'Quotation for PR '
-                . ($quotation->purchaseRequisition->pr_number ?? '#' . $quotation->pr_id)
-                . " was rejected by Purchasing.\n\nNotes: " . $note,
+                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
+                ." was rejected by Purchasing.\n\nNotes: ".$note,
         ]);
 
         $conversation->markResolved();
-        $this->notifySupplier($quotation, 'Quotation Rejected', 'Quotation for PR :pr_number was rejected by Purchasing.');
 
         return $message;
     }
@@ -449,7 +472,7 @@ class ConversationMessageController extends Controller
     private function sendActionMessage(Conversation $conversation, Quotation $quotation, string $body, string $note = ''): Message
     {
         if ($note !== '') {
-            $body .= "\n\nNotes: " . $note;
+            $body .= "\n\nNotes: ".$note;
         }
 
         $message = $conversation->messages()->create([
@@ -462,35 +485,44 @@ class ConversationMessageController extends Controller
             'resolved_at' => null,
         ])->save();
 
-        $this->notifySupplier($quotation, 'New Negotiation Message', 'Purchasing sent a negotiation message for PR :pr_number.');
-
         return $message;
     }
 
-    private function notifySupplier(Quotation $quotation, string $title, string $message): void
-    {
+    private function notifySupplier(
+        Conversation $conversation,
+        Quotation $quotation,
+        string $event,
+        string $title,
+        string $message,
+        string $category,
+        string $eventKey,
+    ): void {
         $quotation->loadMissing(['supplier', 'purchaseRequisition']);
 
-        $quotation->supplier?->notify(new SystemNotification(
+        $this->notifications->send(
+            $quotation->supplier,
+            $event,
+            $eventKey,
             $title,
             $message,
-            route('supplier.quotations.show', $quotation),
+            route('supplier.quotations.show', $quotation, absolute: false),
             'bi-chat-dots text-primary',
             [
-                'category' => NotificationCategory::CHAT,
+                'category' => $category,
+                'conversation_id' => $conversation->id,
                 'quotation_id' => $quotation->id,
                 'pr_id' => $quotation->pr_id,
                 'pr_number' => $quotation->purchaseRequisition->pr_number ?? '-',
             ],
             [
                 'pr_number' => $quotation->purchaseRequisition->pr_number ?? '-',
-            ]
-        ));
+            ],
+        );
     }
 
     private function displayName(?User $user): string
     {
-        if (!$user) {
+        if (! $user) {
             return 'User';
         }
 

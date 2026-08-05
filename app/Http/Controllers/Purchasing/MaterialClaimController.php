@@ -7,9 +7,11 @@ use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\User;
-use App\Notifications\SystemNotification;
+use App\Services\NotificationService;
+use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,11 +19,13 @@ use Yajra\DataTables\Facades\DataTables;
 
 class MaterialClaimController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function index()
     {
         // Counts for tab badges
         $actionCount = PurchaseOrder::where('status', 'claim_needed')
-            ->whereDoesntHave('materialClaims', function($q) {
+            ->whereDoesntHave('materialClaims', function ($q) {
                 $q->whereIn('status', ['pending', 'responded', 'escalated']);
             })->count();
 
@@ -34,28 +38,29 @@ class MaterialClaimController extends Controller
     {
         $query = PurchaseOrder::with([
             'supplier',
-            'qcInspections' => fn($query) => $query
+            'qcInspections' => fn ($query) => $query
                 ->orderByDesc('inspected_at')
                 ->orderByDesc('id'),
         ])
             ->where('status', 'claim_needed')
-            ->whereDoesntHave('materialClaims', function($q) {
+            ->whereDoesntHave('materialClaims', function ($q) {
                 $q->whereIn('status', ['pending', 'responded', 'escalated']);
             });
 
         return DataTables::eloquent($query)
-            ->addColumn('po_number_display', fn($po) => $po->po_number)
-            ->addColumn('supplier_name', fn($po) => $po->supplier->name ?? '-')
-            ->addColumn('inspection_date', fn($po) => $po->qcInspections->first()?->inspected_at?->format('d M Y') ?? '-')
-            ->addColumn('status_badge', fn($po) => StatusHelper::badge(
+            ->addColumn('po_number_display', fn ($po) => $po->po_number)
+            ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
+            ->addColumn('inspection_date', fn ($po) => $po->qcInspections->first()?->inspected_at?->format('d M Y') ?? '-')
+            ->addColumn('status_badge', fn ($po) => StatusHelper::badge(
                 StatusHelper::poBadge($po->status),
                 StatusHelper::poLabel($po->status)
             ))
             ->addColumn('action', function ($po) {
                 $lastInspection = $po->qcInspections->first();
                 if ($lastInspection) {
-                    return '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection->id) . '" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Create Claim</a>';
+                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection->id).'" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Create Claim</a>';
                 }
+
                 return '-';
             })
             ->rawColumns(['status_badge', 'action'])
@@ -68,18 +73,18 @@ class MaterialClaimController extends Controller
             ->orderBy('created_at', 'desc');
 
         return DataTables::eloquent($query)
-            ->addColumn('claim_id', fn($c) => '#' . $c->id)
-            ->addColumn('po_number', fn($c) => $c->purchaseOrder->po_number ?? '-')
-            ->addColumn('supplier_name', fn($c) => $c->purchaseOrder->supplier->name ?? '-')
-            ->addColumn('created_date', fn($c) => $c->created_at->format('d M Y'))
+            ->addColumn('claim_id', fn ($c) => '#'.$c->id)
+            ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
+            ->addColumn('supplier_name', fn ($c) => $c->purchaseOrder->supplier->name ?? '-')
+            ->addColumn('created_date', fn ($c) => $c->created_at->format('d M Y'))
             ->addColumn('deadline_display', function ($c) {
                 $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
                 $date = $c->deadline ? $c->deadline->format('d M Y') : '-';
 
                 return '<div class="d-flex flex-column align-items-start gap-1">'
-                    . '<span>' . e($date) . '</span>'
-                    . StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
-                    . '</div>';
+                    .'<span>'.e($date).'</span>'
+                    .StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
+                    .'</div>';
             })
             ->addColumn('status_badge', function ($c) {
                 return StatusHelper::badge(
@@ -87,7 +92,7 @@ class MaterialClaimController extends Controller
                     StatusHelper::claimLabel($c->status)
                 );
             })
-            ->addColumn('action', fn($c) => '<a href="' . PurchasingNavigation::toRoute('purchasing.claims.show', $c->id) . '" class="btn btn-sm btn-outline-primary">Details</a>')
+            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c->id).'" class="btn btn-sm btn-outline-primary">Details</a>')
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
             ->make(true);
     }
@@ -161,12 +166,22 @@ class MaterialClaimController extends Controller
         // Notify the supplier.
         $supplierUser = $inspection->purchaseOrder->supplier;
         if ($supplierUser) {
-            $supplierUser->notify(new SystemNotification(
+            $this->notifications->send(
+                $supplierUser,
+                'claim.created',
+                "claim.created:{$claim->id}",
                 'New Material Claim',
-                'You received a new claim for PO ' . $inspection->purchaseOrder->po_number . '. Please respond before ' . \Carbon\Carbon::parse($claim->deadline)->format('d M Y') . '.',
-                route('supplier.claims.show', $claim),
-                'bi-exclamation-octagon text-danger'
-            ));
+                'You received a new claim for PO '.$inspection->purchaseOrder->po_number.'. Please respond before '.Carbon::parse($claim->deadline)->format('d M Y').'.',
+                route('supplier.claims.show', $claim, absolute: false),
+                'bi-exclamation-octagon text-danger',
+                [
+                    'category' => NotificationCategory::OTHER,
+                    'claim_id' => $claim->id,
+                    'inspection_id' => $claim->inspection_id,
+                    'po_id' => $claim->po_id,
+                    'po_number' => $inspection->purchaseOrder->po_number,
+                ],
+            );
         }
 
         $showParameters = [$claim->id];
@@ -183,7 +198,7 @@ class MaterialClaimController extends Controller
             'purchaseOrder.supplier',
             'inspection.items.prItem',
             'inspection.attachments',
-            'submitter'
+            'submitter',
         ])->findOrFail($id);
 
         return view('purchasing.claims.show', compact('claim'));
@@ -192,7 +207,7 @@ class MaterialClaimController extends Controller
     public function resolve($id)
     {
         $claim = MaterialClaim::with('purchaseOrder')->findOrFail($id);
-        
+
         if ($claim->status !== 'responded') {
             return back()->with('error', 'Only responded claims can be resolved.');
         }
@@ -214,12 +229,22 @@ class MaterialClaimController extends Controller
         /** @var User $supplierUser */
         $supplierUser = User::find($claim->supplier_id);
         if ($supplierUser) {
-            $supplierUser->notify(new SystemNotification(
+            $this->notifications->send(
+                $supplierUser,
+                'claim.resolved',
+                "claim.resolved:{$claim->id}",
                 'Material Claim Completed',
-                'Claim for PO ' . ($claim->purchaseOrder->po_number ?? '-') . ' has been marked completed by Purchasing.',
-                route('supplier.claims.show', $claim),
-                'bi-check-circle text-success'
-            ));
+                'Claim for PO '.($claim->purchaseOrder->po_number ?? '-').' has been marked completed by Purchasing.',
+                route('supplier.claims.show', $claim, absolute: false),
+                'bi-check-circle text-success',
+                [
+                    'category' => NotificationCategory::OTHER,
+                    'claim_id' => $claim->id,
+                    'inspection_id' => $claim->inspection_id,
+                    'po_id' => $claim->po_id,
+                    'po_number' => $claim->purchaseOrder->po_number ?? null,
+                ],
+            );
         }
 
         return back()->with('success', 'Claim has been marked completed.');

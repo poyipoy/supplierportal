@@ -36,7 +36,12 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">Quotation Information</h6>
-                <span class="badge {{ $quotation->statusBadgeClass() }} text-uppercase px-3 py-2">{{ $quotation->statusLabel() }}</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge {{ $quotation->statusBadgeClass() }} text-uppercase px-3 py-2">{{ $quotation->statusLabel() }}</span>
+                    <a href="{{ route('purchasing.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -96,9 +101,10 @@
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
                         <thead class="table-light text-center">
                             <tr>
-                                <th>No</th>
-                                <th class="text-start">Material</th>
-                                <th>Qty</th>
+                                 <th>No</th>
+                                 <th class="text-start">Material</th>
+                                 <th>Requested vs Offered</th>
+                                 <th>Qty</th>
                                 <th>Weight/Unit (Kg)</th>
                                 <th>Total Weight (Kg)</th>
                                 <th>Price/Kg ({{ $quotation->currency }})</th>
@@ -128,14 +134,44 @@
                                 @endphp
                                 <tr>
                                     <td class="text-center">{{ $idx + 1 }}</td>
-                                    <td>
-                                        <div class="fw-medium">{{ $item->prItem->material_name ?? '-' }}</div>
+                                     <td>
+                                         <div class="fw-medium">{{ $item->prItem->material_name ?? '-' }}</div>
                                         @if($item->prItem && $item->prItem->shape)
                                             <span class="badge bg-light text-dark border" style="font-size:.65rem">{{ $item->prItem->shape }}</span>
-                                            <div class="text-muted small">{{ $item->prItem->dimension_label }}</div>
-                                        @endif
-                                    </td>
-                                    <td class="text-center fw-medium">{{ number_format($quantity, 0) }}</td>
+                                             <div class="text-muted small">{{ $item->prItem->dimension_label }}</div>
+                                         @endif
+                                         @if($item->prItem?->remark)
+                                             <div class="text-muted small mt-1">Remark: {{ $item->prItem->remark }}</div>
+                                         @endif
+                                     </td>
+                                     @php($availability = $item->availability_comparison)
+                                     <td class="text-start small" style="min-width: 230px;">
+                                         <div class="border rounded p-2 bg-light mb-2">
+                                             <div class="text-muted fw-semibold mb-1"><i class="bi bi-building me-1"></i>Requested by Purchasing</div>
+                                             <div>Qty: {{ number_format($quantity, 0) }}</div>
+                                             <div class="text-muted">{{ $item->prItem?->dimension_label ?? '-' }}</div>
+                                         </div>
+                                         <div class="border rounded p-2">
+                                             <div class="text-primary fw-semibold mb-1"><i class="bi bi-box-seam me-1"></i>Offered by Supplier</div>
+                                             <div>Qty: {{ $item->available_qty ?? '-' }}</div>
+                                             <div class="text-muted">{{ $item->available_dimension_label }}</div>
+                                             <div class="d-flex flex-wrap gap-1 mt-2">
+                                                 <span @class([
+                                                     'badge',
+                                                     'bg-secondary' => $availability['quantity']['code'] === 'not_specified',
+                                                     'bg-warning text-dark' => $availability['quantity']['code'] === 'shortage',
+                                                     'bg-success' => in_array($availability['quantity']['code'], ['match', 'surplus'], true),
+                                                 ])>{{ $availability['quantity']['label'] }}</span>
+                                                 <span @class([
+                                                     'badge',
+                                                     'bg-secondary' => $availability['specification']['code'] === 'not_specified',
+                                                     'bg-warning text-dark' => $availability['specification']['code'] === 'different',
+                                                     'bg-success' => $availability['specification']['code'] === 'exact',
+                                                 ])>{{ $availability['specification']['label'] }}</span>
+                                             </div>
+                                         </div>
+                                     </td>
+                                     <td class="text-center fw-medium">{{ number_format($quantity, 0) }}</td>
                                     <td class="text-center">{{ number_format($weight, 2) }}</td>
                                     <td class="text-center fw-medium text-primary">{{ number_format($totalWeight, 2) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($pricePerKg, 2) }}</td>
@@ -162,7 +198,7 @@
                         </tbody>
                         <tfoot class="table-light">
                             <tr class="fw-bold">
-                                <td colspan="6" class="text-end">Total:</td>
+                                <td colspan="7" class="text-end">Total:</td>
                                 <td class="text-end">{{ number_format($totalOriginal, 2) }}</td>
                                 <td></td>
                                 <td class="text-end text-primary">{{ $rateValue !== null ? 'Rp ' . number_format($totalIdr, 0, ',', '.') : '-' }}</td>
@@ -342,15 +378,12 @@
         form.addEventListener('submit', (event) => {
             event.preventDefault();
 
-            Swal.fire({
+            AdasiAlert.confirm({
                 title: @json('Request Quotation Revision?'),
                 text: @json('The supplier will be notified and the quotation will be reopened for resubmission.'),
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: 'var(--adasi-blue)',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: @json('Yes, Request Revision'),
-                cancelButtonText: @json('Cancel')
+                type: 'warning',
+                confirmText: @json('Yes, Request Revision'),
+                cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

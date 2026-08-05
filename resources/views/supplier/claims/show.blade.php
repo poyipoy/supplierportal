@@ -147,15 +147,12 @@
             return;
         }
 
-        Swal.fire({
+        AdasiAlert.confirm({
             title: 'Send Claim Response?',
             text: "Ensure your response and offered resolution are appropriate. Responses cannot be changed after submission.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: 'var(--adasi-blue)',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, Send!',
-            cancelButtonText: 'Cancel'
+            type: 'warning',
+            confirmText: 'Yes, Send!',
+            cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 form.submit();

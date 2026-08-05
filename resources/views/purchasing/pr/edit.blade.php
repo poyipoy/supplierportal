@@ -76,9 +76,10 @@
                             <th width="28%">Material & HS Code <span class="text-danger">*</span></th>
                             <th width="12%">Shape</th>
                             <th width="8%">Qty <span class="text-danger">*</span></th>
-                            <th width="34%">Dimensions (mm)</th>
+                            <th width="26%">Dimensions (mm)</th>
                             <th width="10%">Weight/Unit (Kg) <span class="text-danger">*</span></th>
-                            <th width="8%">Action</th>
+                            <th width="10%">Remark</th>
+                            <th width="6%">Action</th>
                         </tr>
                     </thead>
                     <tbody id="itemsBody">
@@ -131,14 +132,10 @@
     }
 
     function removeRow(btn) {
-        Swal.fire({
+        AdasiAlert.confirmDanger({
             title: 'Delete this row?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes',
-            cancelButtonText: 'Cancel'
+            confirmText: 'Yes',
+            cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 $(btn).closest('tr').remove();
@@ -158,7 +155,7 @@
     function submitForm(action) {
         if ($('#itemsBody tr').length === 0) {
             $('#noItemAlert').removeClass('d-none');
-            Swal.fire('Error', 'At least 1 material must be added.', 'error');
+            AdasiAlert.error({ title: 'Error', text: 'At least 1 material must be added.' });
             return;
         }
         $('#formAction').val(action);
@@ -168,19 +165,15 @@
     function confirmSubmit() {
         if ($('#itemsBody tr').length === 0) {
             $('#noItemAlert').removeClass('d-none');
-            Swal.fire('Error', 'At least 1 material must be added.', 'error');
+            AdasiAlert.error({ title: 'Error', text: 'At least 1 material must be added.' });
             return;
         }
 
-        Swal.fire({
+        AdasiAlert.confirm({
             title: 'Submit Requisition?',
             text: 'Status will change to Submitted and cannot be edited anymore.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#1F5FA6',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, Submit!',
-            cancelButtonText: 'Cancel'
+            confirmText: 'Yes, Submit!',
+            cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#formAction').val('submitted');

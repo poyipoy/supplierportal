@@ -33,23 +33,18 @@
                 @endphp
                 <div>
                     <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
-                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order">
+                    <a href="{{ route('supplier.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                    </a>
+                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order" data-pdf-confirm>
                         <i class="bi bi-file-earmark-pdf"></i> Print PDF
                     </a>
                 </div>
             </div>
             <div class="card-body">
                 <div class="row mb-2">
-                    <div class="col-md-4 text-muted small">PR No.</div>
-                    <div class="col-md-8 fw-medium">
-                        @php $prs = $po->purchaseRequisitions(); @endphp
-                        @foreach($prs as $pr)
-                            <span class="text-primary me-2">{{ $pr->pr_number ?? '-' }}</span>
-                        @endforeach
-                        @if($prs->count() > 1)
-                            <span class="badge bg-primary bg-opacity-10 text-primary ms-1">{{ $prs->count() }} PR</span>
-                        @endif
-                    </div>
+                    <div class="col-md-4 text-muted small">Reference (No. PR)</div>
+                    <div class="col-md-8 fw-medium">{{ $po->pr_reference }}</div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Date Created</div>
@@ -73,6 +68,10 @@
                     <div class="col-md-4 text-muted small">Currency</div>
                     <div class="col-md-8 fw-medium">{{ $po->currency }}</div>
                 </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 text-muted small">Remark</div>
+                    <div class="col-md-8">{{ $po->notes ?: '-' }}</div>
+                </div>
             </div>
         </div>
 
@@ -88,6 +87,8 @@
                             <tr>
                                 <th>No</th>
                                 <th>Material</th>
+                                <th>Reference (No. PR)</th>
+                                <th>Remark</th>
                                 <th>Qty</th>
                                 <th>Weight/Unit (Kg)</th>
                                 <th>Total Weight (Kg)</th>
@@ -97,12 +98,17 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php $totalAmount = 0; $totalIdr = 0; $no = 1; @endphp
+                            @php
+                                $totalAmount = 0;
+                                $totalIdr = 0;
+                                $no = 1;
+                                $poRemark = trim((string) $po->notes);
+                            @endphp
                             @foreach($po->quotations as $quotation)
                                 @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                                 @if($po->quotations->count() > 1)
                                     <tr class="table-primary">
-                                        <td colspan="8" class="fw-bold small ps-3">
+                                        <td colspan="10" class="fw-bold small ps-3">
                                             <i class="bi bi-folder2 me-1"></i>
                                             {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
@@ -122,6 +128,25 @@
                                     <tr>
                                         <td class="text-center">{{ $no++ }}</td>
                                         <td class="fw-medium">{{ $item->prItem->material_name }}</td>
+                                        <td class="text-nowrap">
+                                            @if($quotation->purchaseRequisition)
+                                                <a href="{{ route('supplier.quotations.show', $quotation) }}" class="text-primary text-decoration-none" title="Open related PR detail">
+                                                    {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
+                                                    <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
+                                                </a>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($poRemark !== '')
+                                                <span class="d-inline-block text-truncate" style="max-width: 220px;" title="{{ $poRemark }}">
+                                                    {{ \Illuminate\Support\Str::limit($poRemark, 80) }}
+                                                </span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         <td class="text-center">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                                         <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                                         <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
@@ -134,7 +159,7 @@
                         </tbody>
                         <tfoot class="table-light fw-bold">
                             <tr>
-                                <td colspan="6" class="text-end">TOTAL</td>
+                                <td colspan="8" class="text-end">TOTAL</td>
                                 <td class="text-end">{{ number_format($totalAmount, 2) }}</td>
                                 <td class="text-end text-primary">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                             </tr>

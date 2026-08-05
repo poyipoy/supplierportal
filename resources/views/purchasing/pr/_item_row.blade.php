@@ -41,6 +41,19 @@
     <td>
         <input type="number" step="0.01" min="0.01" name="items[{{ $index }}][weight_needed]" class="form-control form-control-sm" required value="{{ $item['weight_needed'] ?? '' }}">
     </td>
+    <td>
+        @php($remarkErrorKey = "items.{$index}.remark")
+        <textarea
+            name="items[{{ $index }}][remark]"
+            class="form-control form-control-sm {{ $errors->has($remarkErrorKey) ? 'is-invalid' : '' }}"
+            rows="2"
+            maxlength="2000"
+            placeholder="Optional material remark"
+        >{{ $item['remark'] ?? '' }}</textarea>
+        @if($errors->has($remarkErrorKey))
+            <div class="invalid-feedback">{{ $errors->first($remarkErrorKey) }}</div>
+        @endif
+    </td>
     <td class="text-center">
         <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeRow(this)">
             <i class="bi bi-trash"></i>

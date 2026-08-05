@@ -26,8 +26,8 @@
                 @else
                     <span class="badge bg-danger fs-6 px-3 py-2 me-2">STATUS: NG</span>
                 @endif
-                <a href="{{ route('shared.pdf.qc-inspection', $inspection) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Cetak Report QC">
-                    <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
+                <a href="{{ route('shared.pdf.qc-inspection', $inspection) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print QC Report" data-pdf-confirm>
+                    <i class="bi bi-file-earmark-pdf"></i> Print PDF
                 </a>
             </div>
         </div>

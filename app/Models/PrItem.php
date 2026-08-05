@@ -26,6 +26,14 @@ class PrItem extends Model
         'length',
     ];
 
+    public const DIMENSION_LABELS = [
+        'thickness' => 'Thickness',
+        'd_inner' => 'Inner D.',
+        'd_outer' => 'Outer D.',
+        'width' => 'Width',
+        'length' => 'Length',
+    ];
+
     public const RELEVANT_DIMENSIONS = [
         self::SHAPE_FLAT => ['thickness', 'width', 'length'],
         self::SHAPE_ROUND => ['d_outer', 'length'],
@@ -44,6 +52,7 @@ class PrItem extends Model
         'width',
         'length',
         'weight_needed',
+        'remark',
     ];
 
     protected function casts(): array
@@ -83,6 +92,7 @@ class PrItem extends Model
             'width' => self::nullableValue($item['width'] ?? null),
             'length' => self::nullableValue($item['length'] ?? null),
             'weight_needed' => $item['weight_needed'] ?? null,
+            'remark' => self::nullableString($item['remark'] ?? null),
         ];
 
         foreach (self::DIMENSION_FIELDS as $field) {
@@ -106,17 +116,28 @@ class PrItem extends Model
 
     public function getDimensionLabelAttribute(): string
     {
-        return match ($this->shape) {
+        return self::formatDimensionLabel($this->shape, [
+            'thickness' => $this->thickness,
+            'd_inner' => $this->d_inner,
+            'd_outer' => $this->d_outer,
+            'width' => $this->width,
+            'length' => $this->length,
+        ]);
+    }
+
+    public static function formatDimensionLabel(?string $shape, array $dimensions): string
+    {
+        return match ($shape) {
             self::SHAPE_FLAT => implode(' × ', [
-                $this->formatDimensionValue($this->thickness),
-                $this->formatDimensionValue($this->width),
-                $this->formatDimensionValue($this->length),
+                self::formatDimensionValue($dimensions['thickness'] ?? null),
+                self::formatDimensionValue($dimensions['width'] ?? null),
+                self::formatDimensionValue($dimensions['length'] ?? null),
             ]),
-            self::SHAPE_ROUND => 'Ø ' . $this->formatDimensionValue($this->d_outer)
-                . ' × ' . $this->formatDimensionValue($this->length),
-            self::SHAPE_HOLLOW => 'Ø ' . $this->formatDimensionValue($this->d_outer)
-                . ' × Ø ' . $this->formatDimensionValue($this->d_inner)
-                . ' × ' . $this->formatDimensionValue($this->length),
+            self::SHAPE_ROUND => 'Ø ' . self::formatDimensionValue($dimensions['d_outer'] ?? null)
+                . ' × ' . self::formatDimensionValue($dimensions['length'] ?? null),
+            self::SHAPE_HOLLOW => 'Ø ' . self::formatDimensionValue($dimensions['d_outer'] ?? null)
+                . ' × Ø ' . self::formatDimensionValue($dimensions['d_inner'] ?? null)
+                . ' × ' . self::formatDimensionValue($dimensions['length'] ?? null),
             default => '-',
         };
     }
@@ -150,7 +171,7 @@ class PrItem extends Model
         return (int) $value;
     }
 
-    private function formatDimensionValue(mixed $value): string
+    public static function formatDimensionValue(mixed $value): string
     {
         if ($value === null || $value === '') {
             return '-';

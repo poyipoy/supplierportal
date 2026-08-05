@@ -2,19 +2,30 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Exports\PrImportTemplateExport;
 use App\Http\Controllers\Controller;
-use App\Models\PurchaseRequisition;
-use App\Models\PrItem;
+use App\Imports\PrItemsImport;
 use App\Models\Period;
+use App\Models\PrItem;
+use App\Models\PurchaseRequisition;
 use App\Models\User;
+use App\Services\NotificationService;
+use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
+use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
+use Maatwebsite\Excel\Facades\Excel;
+use Throwable;
 use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseRequisitionController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -35,13 +46,13 @@ class PurchaseRequisitionController extends Controller
 
             return DataTables::eloquent($query)
                 ->addIndexColumn()
-                ->addColumn('pr_number_display', fn($pr) => $pr->pr_number ?? '-')
-                ->addColumn('period_name', fn($pr) => $pr->period->name ?? '-')
-                ->addColumn('creator_name', fn($pr) => $pr->creator->name ?? '-')
-                ->addColumn('item_count', fn($pr) => $pr->items->count() . ' Item')
-                ->addColumn('supplier_count', fn($pr) => $pr->invited_suppliers_count)
+                ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
+                ->addColumn('period_name', fn ($pr) => $pr->period->name ?? '-')
+                ->addColumn('creator_name', fn ($pr) => $pr->creator->name ?? '-')
+                ->addColumn('item_count', fn ($pr) => $pr->items->count().' Item')
+                ->addColumn('supplier_count', fn ($pr) => $pr->invited_suppliers_count)
                 ->addColumn('status_badge', function ($pr) {
-                    $badgeClass = match($pr->status) {
+                    $badgeClass = match ($pr->status) {
                         'draft' => 'bg-secondary',
                         'submitted' => 'bg-primary',
                         'rejected' => 'bg-danger',
@@ -49,7 +60,7 @@ class PurchaseRequisitionController extends Controller
                         'completed' => 'bg-success',
                         default => 'bg-secondary'
                     };
-                    $statusLabel = match($pr->status) {
+                    $statusLabel = match ($pr->status) {
                         'draft' => 'Draft',
                         'submitted' => 'Submitted',
                         'rejected' => 'Rejected',
@@ -57,15 +68,17 @@ class PurchaseRequisitionController extends Controller
                         'completed' => 'Completed',
                         default => ucwords(str_replace('_', ' ', $pr->status)),
                     };
-                    return '<span class="badge ' . $badgeClass . ' text-uppercase" style="font-size: 0.7rem;">' . $statusLabel . '</span>';
+
+                    return '<span class="badge '.$badgeClass.' text-uppercase" style="font-size: 0.7rem;">'.$statusLabel.'</span>';
                 })
-                ->addColumn('created_date', fn($pr) => $pr->created_at->format('d M Y, H:i'))
+                ->addColumn('created_date', fn ($pr) => $pr->created_at->format('d M Y, H:i'))
                 ->addColumn('action', function ($pr) {
-                    $html = '<a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) . '" class="btn btn-sm btn-outline-info" title="Details"><i class="bi bi-eye"></i></a>';
+                    $html = '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr).'" class="btn btn-sm btn-outline-info" title="Details"><i class="bi bi-eye"></i></a>';
                     if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
-                        $html .= ' <a href="' . PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr) . '" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
-                        $html .= ' <form action="' . route('purchasing.requisitions.destroy', $pr) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
+                        $html .= ' <a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr).'" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
+                        $html .= ' <form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="d-inline delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
                     }
+
                     return $html;
                 })
                 ->rawColumns(['status_badge', 'action'])
@@ -95,6 +108,47 @@ class PurchaseRequisitionController extends Controller
         }
 
         return view('purchasing.pr.create', compact('periods', 'suppliers'));
+    }
+
+    public function importTemplate()
+    {
+        return Excel::download(new PrImportTemplateExport, 'template_import_pr.xlsx');
+    }
+
+    public function importPreview(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'import_file' => [
+                'required',
+                File::types(['xlsx', 'xls', 'csv'])->max(10240),
+                'extensions:xlsx,xls,csv',
+            ],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(
+                $this->importFailurePayload($validator->errors()->get('import_file')),
+                422
+            );
+        }
+
+        $import = new PrItemsImport;
+
+        try {
+            SpreadsheetImportReader::import($import, $request->file('import_file'));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json(
+                $this->importFailurePayload(['The spreadsheet could not be read. Verify the file and try again.']),
+                422
+            );
+        }
+
+        return response()->json(
+            $import->preview(),
+            $import->hasFileErrors() ? 422 : 200
+        );
     }
 
     /**
@@ -129,28 +183,20 @@ class PurchaseRequisitionController extends Controller
 
             DB::commit();
 
-            // Notify admin when PR submitted
             if ($validated['action'] === 'submitted') {
-                $admins = \App\Models\User::where('role', 'admin')->get();
-                foreach ($admins as $admin) {
-                    $admin->notify(new \App\Notifications\SystemNotification(
-                        'New Purchase Requisition',
-                        "New PR {$pr->pr_number} has been submitted by " . auth()->user()->name,
-                        route('purchasing.requisitions.show', $pr),
-                        'bi-clipboard-plus text-primary',
-                    ));
-                }
+                $this->notifyAdminsOfSubmission($pr);
             }
 
             $message = $validated['action'] === 'submitted'
-                ? "Purchase Requisition successfully submitted!"
-                : "Purchase Requisition successfully saved as draft.";
+                ? 'Purchase Requisition successfully submitted!'
+                : 'Purchase Requisition successfully saved as draft.';
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'A system error occurred while saving data: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'A system error occurred while saving data: '.$e->getMessage());
         }
     }
 
@@ -190,7 +236,7 @@ class PurchaseRequisitionController extends Controller
 
         $lowestTotalIdr = $quotations
             ->pluck('total_idr')
-            ->filter(fn($total) => $total !== null && $total > 0)
+            ->filter(fn ($total) => $total !== null && $total > 0)
             ->min();
 
         $submittedQuotationCount = $quotations->where('status', 'submitted')->count();
@@ -210,9 +256,9 @@ class PurchaseRequisitionController extends Controller
     {
         $pr = PurchaseRequisition::with(['period', 'items', 'invitedSuppliers.supplier'])->findOrFail($id);
 
-        if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
+        if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', "You cannot edit this requisition.");
+                ->with('error', 'You cannot edit this requisition.');
         }
 
         $periods = Period::where('status', 'open')
@@ -235,9 +281,9 @@ class PurchaseRequisitionController extends Controller
     {
         $pr = PurchaseRequisition::findOrFail($id);
 
-        if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
+        if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', "You cannot edit this requisition.");
+                ->with('error', 'You cannot edit this requisition.');
         }
 
         $this->prepareMaterialInput($request);
@@ -253,7 +299,7 @@ class PurchaseRequisitionController extends Controller
 
             $pr->update([
                 'period_id' => $validated['period_id'],
-                'pr_number' => ($validated['action'] === 'submitted' && !$pr->pr_number) ? PurchaseRequisition::generatePrNumber() : $pr->pr_number,
+                'pr_number' => ($validated['action'] === 'submitted' && ! $pr->pr_number) ? PurchaseRequisition::generatePrNumber() : $pr->pr_number,
                 'notes' => $request->notes,
                 'status' => $validated['action'],
             ]);
@@ -272,6 +318,10 @@ class PurchaseRequisitionController extends Controller
 
             DB::commit();
 
+            if ($validated['action'] === 'submitted') {
+                $this->notifyAdminsOfSubmission($pr);
+            }
+
             $message = $validated['action'] === 'submitted'
                 ? 'Purchase Requisition successfully submitted!'
                 : 'Draft purchase requisition successfully updated.';
@@ -280,7 +330,8 @@ class PurchaseRequisitionController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'A system error occurred while saving data: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'A system error occurred while saving data: '.$e->getMessage());
         }
     }
 
@@ -327,6 +378,7 @@ class PurchaseRequisitionController extends Controller
             'items.*.d_outer' => 'nullable|numeric|min:0',
             'items.*.width' => 'nullable|numeric|min:0',
             'items.*.length' => 'nullable|numeric|min:0',
+            'items.*.remark' => 'nullable|string|max:2000',
         ];
     }
 
@@ -381,6 +433,52 @@ class PurchaseRequisitionController extends Controller
         $pr->invitedSuppliers()->sync($syncData);
     }
 
+    private function notifyAdminsOfSubmission(PurchaseRequisition $pr): void
+    {
+        $admins = User::where('role', 'admin')->where('is_active', true)->get();
+
+        $this->notifications->send(
+            $admins,
+            'pr.submitted',
+            'pr.submitted:'.$pr->id.':'.($pr->updated_at?->format('YmdHis.u') ?? 'initial'),
+            'New Purchase Requisition',
+            'New PR :pr_number has been submitted by :name',
+            route('admin.requisitions.show', $pr, absolute: false),
+            'bi-clipboard-plus text-primary',
+            [
+                'category' => NotificationCategory::QUOTATION,
+                'pr_id' => $pr->id,
+                'pr_number' => $pr->pr_number,
+            ],
+            [
+                'pr_number' => $pr->pr_number ?? '-',
+                'name' => auth()->user()->name,
+            ],
+        );
+    }
+
+    private function importFailurePayload(array $messages): array
+    {
+        return [
+            'success' => false,
+            'rows' => [],
+            'warnings' => [],
+            'summary' => [
+                'total' => 0,
+                'valid' => 0,
+                'invalid' => 0,
+            ],
+            'errors' => collect($messages)
+                ->map(fn (string $message) => [
+                    'row' => null,
+                    'column' => 'import_file',
+                    'message' => $message,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -388,9 +486,9 @@ class PurchaseRequisitionController extends Controller
     {
         $pr = PurchaseRequisition::findOrFail($id);
 
-        if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
+        if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', "Purchase Requisition cannot be deleted because it has been processed.");
+                ->with('error', 'Purchase Requisition cannot be deleted because it has been processed.');
         }
 
         try {
@@ -403,6 +501,7 @@ class PurchaseRequisitionController extends Controller
                 ->with('success', 'Purchase Requisition successfully deleted.');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->with('error', 'An error occurred while deleting data.');
         }
     }
