@@ -92,12 +92,7 @@
                 <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><i class="bi bi-cloud-check me-1"></i>Draft Auto-saved</span>
             </h6>
             <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                <a href="{{ route('supplier.quotations.import-template', $pr) }}" class="btn btn-sm btn-outline-success">
-                    <i class="bi bi-file-earmark-arrow-down me-1"></i> Download Template
-                </a>
-                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#quotationImportModal">
-                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Import Excel
-                </button>
+                @include('supplier.quotations._import_controls')
                 <button type="button" id="copyAllRequested" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-clipboard-check me-1"></i> Copy All Requested Values
                 </button>
@@ -322,14 +317,15 @@
                     <div class="col-md-7">
                         <label for="quotationImportFile" class="form-label fw-medium">Spreadsheet File</label>
                         <input type="file" id="quotationImportFile" class="form-control" accept=".xlsx,.xls,.csv">
-                        <div class="form-text">Use the template for this PR. XLSX, XLS, or CSV; maximum 10 MB.</div>
+                        <div class="form-text">Use the template for this PR. XLSX, XLS, or CSV; maximum 10 MB and 1,000 data rows.</div>
                     </div>
                     <div class="col-md-5">
                         <label for="quotationImportMode" class="form-label fw-medium">Import Mode</label>
-                        <select id="quotationImportMode" class="form-select">
+                        <select id="quotationImportMode" class="form-select" aria-describedby="quotationImportModeHelp">
                             <option value="fill_empty" selected>Fill Empty Fields Only</option>
                             <option value="replace">Replace Imported Fields</option>
                         </select>
+                        <div id="quotationImportModeHelp" class="form-text">Choose how validated Excel values update the current quotation.</div>
                     </div>
                 </div>
 

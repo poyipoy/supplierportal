@@ -73,13 +73,25 @@ class PurchaseRequisitionController extends Controller
                 })
                 ->addColumn('created_date', fn ($pr) => $pr->created_at->format('d M Y, H:i'))
                 ->addColumn('action', function ($pr) {
-                    $html = '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr).'" class="btn btn-sm btn-outline-info" title="Details"><i class="bi bi-eye"></i></a>';
-                    if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
-                        $html .= ' <a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr).'" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>';
-                        $html .= ' <form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="d-inline delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
+                    $actions = [
+                        '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr).'" class="btn btn-sm btn-outline-info action-grid-button" title="Details" aria-label="Details"><i class="bi bi-eye"></i></a>',
+                    ];
+
+                    if ($pr->created_by === auth()->id() && $pr->status === 'draft') {
+                        $actions[] = '<form action="'.route('purchasing.requisitions.submit', $pr).'" method="POST" class="draft-submit-form action-grid-form">'
+                            .csrf_field()
+                            .method_field('PUT')
+                            .'<button type="button" class="btn btn-sm btn-primary btn-submit-draft action-grid-button" title="Submit Draft" aria-label="Submit Draft">'
+                            .'<i class="bi bi-send-check"></i>'
+                            .'</button></form>';
                     }
 
-                    return $html;
+                    if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
+                        $actions[] = '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr).'" class="btn btn-sm btn-outline-primary action-grid-button" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>';
+                        $actions[] = '<form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form action-grid-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete action-grid-button" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button></form>';
+                    }
+
+                    return '<div class="action-button-grid">'.implode('', $actions).'</div>';
                 })
                 ->rawColumns(['status_badge', 'action'])
                 ->make(true);
@@ -149,6 +161,42 @@ class PurchaseRequisitionController extends Controller
             $import->preview(),
             $import->hasFileErrors() ? 422 : 200
         );
+    }
+
+    /**
+     * Submit an existing draft requisition from the requisition list.
+     */
+    public function submitDraft(string $id)
+    {
+        $pr = PurchaseRequisition::findOrFail($id);
+
+        if ($pr->created_by !== auth()->id() || $pr->status !== 'draft') {
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('error', 'Only your draft requisitions can be submitted from this list.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $pr->update([
+                'pr_number' => $pr->pr_number ?: PurchaseRequisition::generatePrNumber(),
+                'status' => 'submitted',
+            ]);
+
+            DB::commit();
+
+            $this->notifyAdminsOfSubmission($pr);
+
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('success', 'Purchase Requisition successfully submitted!');
+        } catch (\Exception $exception) {
+            DB::rollBack();
+
+            report($exception);
+
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('error', 'A system error occurred while submitting the purchase requisition.');
+        }
     }
 
     /**

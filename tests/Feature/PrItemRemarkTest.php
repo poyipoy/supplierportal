@@ -104,6 +104,71 @@ class PrItemRemarkTest extends TestCase
         $this->assertSame('Keep this remark', $pr->items()->sole()->remark);
     }
 
+    public function test_draft_list_action_is_centered_and_submits_only_the_creator_draft(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $otherPurchasing = User::factory()->create([
+            'role' => 'purchasing',
+            'is_active' => true,
+        ]);
+        $pr = PurchaseRequisition::create([
+            'period_id' => $this->period->id,
+            'created_by' => $this->purchasing->id,
+            'notes' => 'Submit from requisition list',
+            'status' => 'draft',
+        ]);
+        $item = $pr->items()->create($this->materialPayload('List Submit Material', 'Keep this remark'));
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.requisitions.index'))
+            ->assertOk()
+            ->assertSee('<thead class="table-light text-center">', false)
+            ->assertSee('<th>Action</th>', false)
+            ->assertSee("className: 'text-center'", false);
+
+        $dataResponse = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.requisitions.index'), [
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->assertOk();
+        $action = collect($dataResponse->json('data'))
+            ->first(fn (array $row) => str_contains(
+                $row['action'],
+                route('purchasing.requisitions.submit', $pr)
+            ))['action'];
+
+        $this->assertStringContainsString('btn-submit-draft', $action);
+        $this->assertStringContainsString('bi-send-check', $action);
+        $this->assertStringContainsString('action-button-grid', $action);
+        $this->assertSame(4, substr_count($action, 'action-grid-button'));
+
+        $this->actingAs($otherPurchasing)
+            ->put(route('purchasing.requisitions.submit', $pr))
+            ->assertRedirect();
+        $this->assertSame('draft', $pr->fresh()->status);
+
+        $this->actingAs($this->purchasing)
+            ->put(route('purchasing.requisitions.submit', $pr))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $pr->refresh();
+        $this->assertSame('submitted', $pr->status);
+        $this->assertNotNull($pr->pr_number);
+        $this->assertSame('Submit from requisition list', $pr->notes);
+        $this->assertSame('Keep this remark', $pr->items()->sole()->remark);
+        $this->assertSame(1, $admin->notifications()->count());
+        $this->assertSame($item->id, $pr->items()->sole()->id);
+
+        $this->actingAs($this->purchasing)
+            ->put(route('purchasing.requisitions.submit', $pr))
+            ->assertRedirect();
+        $this->assertSame(1, $admin->notifications()->count());
+    }
+
     public function test_remark_validation_and_individual_item_endpoints(): void
     {
         $tooLong = str_repeat('x', 2001);

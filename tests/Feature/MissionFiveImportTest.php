@@ -244,6 +244,75 @@ class MissionFiveImportTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
+    public function test_draft_pr_edit_keeps_import_controls_and_preview_available_without_writes(): void
+    {
+        $draftPr = PurchaseRequisition::create([
+            'period_id' => $this->period->id,
+            'created_by' => $this->purchasing->id,
+            'status' => 'draft',
+            'notes' => 'Draft import test',
+        ]);
+        $draftPr->items()->create([
+            'material_name' => 'Existing draft material',
+            'hs_code' => '220011',
+            'shape' => PrItem::SHAPE_FLAT,
+            'quantity' => 1,
+            'thickness' => 1,
+            'width' => 100,
+            'length' => 200,
+            'weight_needed' => 12.5,
+        ]);
+        $before = $this->databaseSnapshot();
+        $upload = $this->spreadsheetUpload(
+            ['material_name', 'hs_code', 'quantity', 'weight_needed'],
+            [['Imported draft material', '330022', 2, 15]]
+        );
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.requisitions.edit', $draftPr))
+            ->assertOk()
+            ->assertSee('Download Template')
+            ->assertSee('Import Excel')
+            ->assertSee('Replace Current Rows')
+            ->assertSee('Append to Current Rows')
+            ->assertSee('prImportPreviewUrl', false);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.requisitions.import-preview'), ['import_file' => $upload])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('rows.0.material_name', 'Imported draft material');
+
+        $this->assertSame('draft', $draftPr->fresh()->status);
+        $this->assertSame($before, $this->databaseSnapshot());
+    }
+
+    public function test_rejected_and_final_pr_edit_forms_do_not_expose_import_controls(): void
+    {
+        $rejectedPr = PurchaseRequisition::create([
+            'period_id' => $this->period->id,
+            'created_by' => $this->purchasing->id,
+            'status' => 'rejected',
+        ]);
+        $rejectedPr->items()->create([
+            'material_name' => 'Rejected material',
+            'hs_code' => '440033',
+            'quantity' => 1,
+            'weight_needed' => 10,
+        ]);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.requisitions.edit', $rejectedPr))
+            ->assertOk()
+            ->assertDontSee('Download Template')
+            ->assertDontSee('Import Excel')
+            ->assertDontSee('prImportPreviewUrl', false);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.requisitions.edit', $this->pr))
+            ->assertRedirect();
+    }
+
     public function test_quotation_preview_maps_only_editable_fields_by_pr_item_id(): void
     {
         $target = $this->pr->items->first();
@@ -328,6 +397,10 @@ class MissionFiveImportTest extends TestCase
             'payment_terms' => 'TT 30 Days',
         ]);
 
+        $this->actingAs($this->supplierA)
+            ->get(route('supplier.quotations.create', $this->pr))
+            ->assertRedirect();
+
         $lockedUpload = $this->spreadsheetUpload(
             ['pr_item_id', 'price_per_kg'],
             [[$ownItem->id, 5]]
@@ -408,6 +481,57 @@ class MissionFiveImportTest extends TestCase
             ->assertJsonPath('errors.0.column', 'import_file');
     }
 
+    public function test_draft_quotation_import_is_available_and_preview_remains_read_only(): void
+    {
+        $quotation = Quotation::create([
+            'pr_id' => $this->pr->id,
+            'supplier_id' => $this->supplierA->id,
+            'currency' => 'USD',
+            'status' => Quotation::STATUS_DRAFT,
+            'estimated_delivery' => now()->addDays(14),
+            'validity_period' => now()->addDays(30),
+            'payment_terms' => 'TT 30 Days',
+        ]);
+        $quotationItem = $quotation->items()->create([
+            'pr_item_id' => $this->pr->items->first()->id,
+            'price_per_kg' => 4.25,
+            'amount' => 85,
+        ]);
+        $attachment = $quotationItem->attachments()->create([
+            'file_path' => 'attachments/2026/08/draft-mtc.pdf',
+            'file_name' => 'draft-mtc.pdf',
+            'file_type' => 'application/pdf',
+            'uploaded_by' => $this->supplierA->id,
+        ]);
+        $before = $this->databaseSnapshot();
+        $upload = $this->spreadsheetUpload(
+            ['pr_item_id', 'price_per_kg', 'notes'],
+            [[$this->pr->items->first()->id, 9.5, 'Draft preview only']]
+        );
+
+        $this->actingAs($this->supplierA)
+            ->get(route('supplier.quotations.create', $this->pr))
+            ->assertOk()
+            ->assertSee('Download Template')
+            ->assertSee('Import Excel')
+            ->assertSee('Import Mode')
+            ->assertSee('Fill Empty Fields Only')
+            ->assertSee('Replace Imported Fields')
+            ->assertSee('Choose how validated Excel values update the current quotation.')
+            ->assertSee('quotationImportPreviewUrl', false);
+
+        $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('rows.0.price_per_kg', 9.5);
+
+        $this->assertSame(Quotation::STATUS_DRAFT, $quotation->fresh()->status);
+        $this->assertSame('4.2500', $quotationItem->fresh()->price_per_kg);
+        $this->assertDatabaseHas('attachments', ['id' => $attachment->id]);
+        $this->assertSame($before, $this->databaseSnapshot());
+    }
+
     public function test_revision_requested_preview_preserves_quotation_items_and_mtc_attachment(): void
     {
         $quotation = Quotation::create([
@@ -485,8 +609,11 @@ class MissionFiveImportTest extends TestCase
         $this->actingAs($this->supplierA)
             ->get(route('supplier.quotations.create', $this->pr))
             ->assertOk()
+            ->assertSee('Import Data')
             ->assertSee('Download Template')
             ->assertSee('Import Excel')
+            ->assertSee('dropdown-toggle', false)
+            ->assertSee(route('supplier.quotations.import-template', $this->pr), false)
             ->assertSee('Fill Empty Fields Only')
             ->assertSee('Replace Imported Fields')
             ->assertSee('quotationImportPreviewUrl', false);

@@ -3,6 +3,30 @@
 @section('title', 'Material Requisition List - ADASI Portal')
 @section('page-title', 'Purchase Requisition')
 
+@push('styles')
+<style>
+    .action-button-grid {
+        display: inline-grid;
+        grid-template-columns: repeat(2, 2.25rem);
+        gap: .35rem;
+        justify-content: center;
+    }
+
+    .action-grid-form {
+        margin: 0;
+    }
+
+    .action-button-grid .action-grid-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -54,7 +78,7 @@
 
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="prTable">
-                <thead class="table-light">
+                <thead class="table-light text-center">
                     <tr>
                         <th>No</th>
                         <th>PR No.</th>
@@ -64,7 +88,7 @@
                         <th>Amount Item</th>
                         <th>Status</th>
                         <th>Date Created</th>
-                        <th class="text-end">Action</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -96,7 +120,7 @@
                 { data: 'item_count', name: 'item_count', searchable: false },
                 { data: 'status_badge', name: 'status', searchable: false },
                 { data: 'created_date', name: 'created_at' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
             language: {},
             pageLength: 25,
@@ -161,6 +185,31 @@
                 cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        let draftSubmitConfirmationOpen = false;
+        $(document).on('click', '.btn-submit-draft', function() {
+            const $button = $(this);
+            if (draftSubmitConfirmationOpen || $button.data('submitting')) {
+                return;
+            }
+
+            const form = $button.closest('form');
+            draftSubmitConfirmationOpen = true;
+
+            AdasiAlert.confirm({
+                title: @json('Submit Requisition?'),
+                text: @json('Status will change to Submitted and cannot be edited anymore.'),
+                confirmText: @json('Yes, Submit!'),
+                cancelText: @json('Cancel')
+            }).then((result) => {
+                draftSubmitConfirmationOpen = false;
+
+                if (result.isConfirmed) {
+                    $button.data('submitting', true).prop('disabled', true);
                     form.submit();
                 }
             });

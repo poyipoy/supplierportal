@@ -64,9 +64,14 @@
 
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="fw-bold mb-0">Required Material List</h6>
-                <button type="button" class="btn btn-sm btn-success" id="btnAddRow">
-                    <i class="bi bi-plus"></i> Add Material
-                </button>
+                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    @if($pr->status === 'draft')
+                        @include('purchasing.pr._import_controls')
+                    @endif
+                    <button type="button" class="btn btn-sm btn-success" id="btnAddRow">
+                        <i class="bi bi-plus"></i> Add Material
+                    </button>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -113,6 +118,10 @@
 <template id="rowTemplate">
     @include('purchasing.pr._item_row', ['index' => '{INDEX}', 'item' => null])
 </template>
+
+@if($pr->status === 'draft')
+    @include('purchasing.pr._import')
+@endif
 
 @endsection
 

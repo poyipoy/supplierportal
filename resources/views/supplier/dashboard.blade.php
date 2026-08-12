@@ -3,26 +3,6 @@
 @section('page-title', 'Dashboard Supplier')
 
 @section('content')
-    {{-- Greeting Card --}}
-    <div class="card border-0 shadow-sm mb-4 text-white overflow-hidden position-relative animate-fade-in"
-        style="background: linear-gradient(135deg, #1F5FA6 0%, #15457a 100%);">
-        <div class="position-absolute top-0 end-0 h-100 w-50 opacity-25"
-            style="background: radial-gradient(circle at top right, #ffffff, transparent);"></div>
-        <div class="card-body p-4 position-relative z-1">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h4 class="fw-bold mb-2">Selamat datang,
-                        {{ auth()->user()->supplier->company_name ?? auth()->user()->name }}! 👋</h4>
-                    <p class="mb-0 text-white-50">Here is a summary of your current material quotation activity and
-                        performance.</p>
-                </div>
-                <div class="col-md-4 text-end d-none d-md-block">
-                    <i class="bi bi-building fs-1 text-white opacity-50"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
     {{-- Insight & Alerts --}}
     @if($belumDirespons > 0)
         <div class="row mb-4 animate-fade-in">
@@ -237,14 +217,6 @@
                     <div class="card-footer bg-white text-center"><a href="{{ route('supplier.announcements.index') }}"
                             class="small text-decoration-none fw-bold">View All Announcement</a></div>
                 @endif
-            </div>
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body text-center py-4">
-                    <i class="bi bi-truck" style="font-size:2.5rem;opacity:.7"></i>
-                    <h5 class="mt-3 fw-bold">Selamat Datang!</h5>
-                    <p class="mb-0 small" style="opacity:.8">{{ auth()->user()->name }}</p>
-                    <p class="mb-0 small" style="opacity:.6">Portal Pengadaan Material Impor ADASI</p>
-                </div>
             </div>
         </div>
     </div>

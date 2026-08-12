@@ -111,6 +111,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
 
     Route::get('/requisitions/import-template', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importTemplate'])->name('requisitions.import-template');
     Route::post('/requisitions/import-preview', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importPreview'])->name('requisitions.import-preview');
+    Route::put('/requisitions/{id}/submit', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'submitDraft'])->name('requisitions.submit');
     Route::resource('requisitions', App\Http\Controllers\Purchasing\PurchaseRequisitionController::class);
     Route::resource('pr-items', PrItemController::class)->only(['store', 'update', 'destroy']);
     Route::get('/purchase-orders/create/{quotation_id}', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
