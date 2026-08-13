@@ -133,6 +133,10 @@
                 class="sidebar-link {{ request()->routeIs('admin.exchange-rates.*') ? 'active' : '' }}">
                 <i class="bi bi-currency-exchange"></i> <span>Exchange Rate Management</span>
             </a>
+            <a href="{{ route('admin.material-hs-code.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.material-hs-code.*', 'admin.material-masters.*', 'admin.hs-code-rules.*', 'admin.master-data-quality.*') ? 'active' : '' }}">
+                <i class="bi bi-boxes"></i> <span>Master Material &amp; HS Code</span>
+            </a>
 
             <div class="sidebar-heading">Content</div>
             <a href="{{ route('admin.announcements.index') }}"

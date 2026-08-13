@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Exports\PrImportTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SavePurchaseRequisitionRequest;
 use App\Imports\PrItemsImport;
 use App\Models\Period;
-use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\User;
+use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
@@ -16,15 +17,18 @@ use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseRequisitionController extends Controller
 {
-    public function __construct(private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly PurchaseRequisitionItemSynchronizer $itemSynchronizer,
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -144,7 +148,7 @@ class PurchaseRequisitionController extends Controller
             );
         }
 
-        $import = new PrItemsImport;
+        $import = app(PrItemsImport::class);
 
         try {
             SpreadsheetImportReader::import($import, $request->file('import_file'));
@@ -176,22 +180,23 @@ class PurchaseRequisitionController extends Controller
         }
 
         try {
-            DB::beginTransaction();
-
-            $pr->update([
-                'pr_number' => $pr->pr_number ?: PurchaseRequisition::generatePrNumber(),
-                'status' => 'submitted',
-            ]);
-
-            DB::commit();
+            DB::transaction(function () use ($pr) {
+                $this->itemSynchronizer->reprocessForSubmission($pr, auth()->id());
+                $pr->update([
+                    'pr_number' => $pr->pr_number ?: PurchaseRequisition::generatePrNumber(),
+                    'status' => 'submitted',
+                ]);
+            });
 
             $this->notifyAdminsOfSubmission($pr);
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
                 ->with('success', 'Purchase Requisition successfully submitted!');
-        } catch (\Exception $exception) {
-            DB::rollBack();
-
+        } catch (ValidationException $exception) {
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->withErrors($exception->errors())
+                ->with('error', 'Complete every material before submitting this requisition.');
+        } catch (Throwable $exception) {
             report($exception);
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
@@ -202,34 +207,30 @@ class PurchaseRequisitionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(SavePurchaseRequisitionRequest $request)
     {
-        $this->prepareMaterialInput($request);
-
-        $validated = $request->validate(
-            $this->materialValidationRules(),
-            $this->materialValidationMessages()
-        );
-        $items = $this->sanitizeMaterialItems($validated['items']);
+        $validated = $request->validated();
 
         try {
-            DB::beginTransaction();
+            $pr = DB::transaction(function () use ($validated) {
+                $pr = PurchaseRequisition::create([
+                    'period_id' => $validated['period_id'],
+                    'created_by' => auth()->id(),
+                    'pr_number' => $validated['action'] === 'submitted' ? PurchaseRequisition::generatePrNumber() : null,
+                    'notes' => $validated['notes'] ?? null,
+                    'status' => $validated['action'],
+                ]);
 
-            $pr = PurchaseRequisition::create([
-                'period_id' => $validated['period_id'],
-                'created_by' => auth()->id(),
-                'pr_number' => $validated['action'] === 'submitted' ? PurchaseRequisition::generatePrNumber() : null,
-                'notes' => $request->notes,
-                'status' => $validated['action'], // 'draft' or 'submitted'
-            ]);
+                $this->itemSynchronizer->sync(
+                    $pr,
+                    $validated['items'],
+                    $validated['action'] === 'submitted',
+                    auth()->id(),
+                );
+                $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
 
-            foreach ($items as $item) {
-                $pr->items()->create($item);
-            }
-
-            $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
-
-            DB::commit();
+                return $pr;
+            });
 
             if ($validated['action'] === 'submitted') {
                 $this->notifyAdminsOfSubmission($pr);
@@ -241,10 +242,12 @@ class PurchaseRequisitionController extends Controller
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))->with('success', $message);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
 
-            return back()->withInput()->with('error', 'A system error occurred while saving data: '.$e->getMessage());
+            return back()->withInput()->with('error', 'A system error occurred while saving the requisition.');
         }
     }
 
@@ -325,7 +328,7 @@ class PurchaseRequisitionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(SavePurchaseRequisitionRequest $request, string $id)
     {
         $pr = PurchaseRequisition::findOrFail($id);
 
@@ -334,37 +337,30 @@ class PurchaseRequisitionController extends Controller
                 ->with('error', 'You cannot edit this requisition.');
         }
 
-        $this->prepareMaterialInput($request);
-
-        $validated = $request->validate(
-            $this->materialValidationRules(),
-            $this->materialValidationMessages()
-        );
-        $items = $this->sanitizeMaterialItems($validated['items']);
+        $validated = $request->validated();
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($pr, $validated, $request) {
+                $this->itemSynchronizer->sync(
+                    $pr,
+                    $validated['items'],
+                    $validated['action'] === 'submitted',
+                    auth()->id(),
+                );
 
-            $pr->update([
-                'period_id' => $validated['period_id'],
-                'pr_number' => ($validated['action'] === 'submitted' && ! $pr->pr_number) ? PurchaseRequisition::generatePrNumber() : $pr->pr_number,
-                'notes' => $request->notes,
-                'status' => $validated['action'],
-            ]);
+                $pr->update([
+                    'period_id' => $validated['period_id'],
+                    'pr_number' => ($validated['action'] === 'submitted' && ! $pr->pr_number)
+                        ? PurchaseRequisition::generatePrNumber()
+                        : $pr->pr_number,
+                    'notes' => $validated['notes'] ?? null,
+                    'status' => $validated['action'],
+                ]);
 
-            // For simplicity in dynamic forms: delete all existing items and recreate
-            // Alternatively, use an ID-based check, but recreate is safe within transaction.
-            $pr->items()->delete();
-
-            foreach ($items as $item) {
-                $pr->items()->create($item);
-            }
-
-            if ($request->boolean('supplier_selection_present') || $request->has('supplier_id') || $request->has('supplier_ids')) {
-                $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
-            }
-
-            DB::commit();
+                if ($request->boolean('supplier_selection_present') || $request->has('supplier_id') || $request->has('supplier_ids')) {
+                    $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
+                }
+            });
 
             if ($validated['action'] === 'submitted') {
                 $this->notifyAdminsOfSubmission($pr);
@@ -376,84 +372,13 @@ class PurchaseRequisitionController extends Controller
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))->with('success', $message);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
 
-            return back()->withInput()->with('error', 'A system error occurred while saving data: '.$e->getMessage());
+            return back()->withInput()->with('error', 'A system error occurred while saving the requisition.');
         }
-    }
-
-    private function prepareMaterialInput(Request $request): void
-    {
-        $items = $request->input('items');
-
-        if (is_array($items)) {
-            $request->merge([
-                'items' => $this->sanitizeMaterialItems($items),
-            ]);
-        }
-    }
-
-    private function materialValidationRules(): array
-    {
-        return [
-            'period_id' => 'required|exists:periods,id',
-            'action' => 'required|in:draft,submitted',
-            'supplier_selection_present' => 'nullable|boolean',
-            'supplier_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('users', 'id')
-                    ->where('role', 'supplier')
-                    ->where('is_active', true),
-            ],
-            'supplier_ids' => 'nullable|array',
-            'supplier_ids.*' => [
-                'nullable',
-                'integer',
-                Rule::exists('users', 'id')
-                    ->where('role', 'supplier')
-                    ->where('is_active', true),
-            ],
-            'items' => 'required|array|min:1',
-            'items.*.material_name' => 'required|string|max:255',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.weight_needed' => 'required|numeric|min:0.01',
-            'items.*.hs_code' => 'required|string|max:100',
-            'items.*.shape' => ['nullable', Rule::in(PrItem::SHAPES)],
-            'items.*.thickness' => 'nullable|numeric|min:0',
-            'items.*.d_inner' => 'nullable|numeric|min:0',
-            'items.*.d_outer' => 'nullable|numeric|min:0',
-            'items.*.width' => 'nullable|numeric|min:0',
-            'items.*.length' => 'nullable|numeric|min:0',
-            'items.*.remark' => 'nullable|string|max:2000',
-        ];
-    }
-
-    private function materialValidationMessages(): array
-    {
-        return [
-            'items.required' => 'At least 1 material must be added.',
-            'items.*.material_name.required' => 'Material name is required.',
-            'items.*.hs_code.required' => 'HS Code is required.',
-            'items.*.quantity.required' => 'Quantity is required.',
-            'items.*.quantity.min' => 'Quantity must be at least 1.',
-            'items.*.weight_needed.required' => 'Weight per unit is required.',
-            'items.*.shape.in' => 'Material shape must be Flat, Round, or Hollow.',
-            'supplier_id.exists' => 'The selected supplier must be an active supplier.',
-            'supplier_ids.*.exists' => 'The selected supplier must be an active supplier.',
-        ];
-    }
-
-    private function sanitizeMaterialItems(array $items): array
-    {
-        $sanitized = [];
-
-        foreach ($items as $index => $item) {
-            $sanitized[$index] = PrItem::sanitizeMaterialData(is_array($item) ? $item : []);
-        }
-
-        return $sanitized;
     }
 
     private function supplierIdsFromValidated(array $validated): array
@@ -537,6 +462,16 @@ class PurchaseRequisitionController extends Controller
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
                 ->with('error', 'Purchase Requisition cannot be deleted because it has been processed.');
+        }
+
+        $hasReferencedItems = $pr->items()
+            ->where(function ($query) {
+                $query->whereHas('quotationItems')->orWhereHas('qcItems');
+            })
+            ->exists();
+        if ($hasReferencedItems) {
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->with('error', 'This requisition contains material referenced by a quotation or QC record and cannot be deleted.');
         }
 
         try {

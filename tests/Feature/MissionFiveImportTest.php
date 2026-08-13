@@ -9,6 +9,7 @@ use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
+use Database\Seeders\MaterialHsCodeMasterSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,8 @@ class MissionFiveImportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->seed(MaterialHsCodeMasterSeeder::class);
 
         $this->purchasing = User::factory()->create([
             'role' => 'purchasing',
@@ -104,8 +107,8 @@ class MissionFiveImportTest extends TestCase
     {
         $prTemplate = new PrImportTemplateExport;
         $this->assertSame([
-            'material_name', 'hs_code', 'shape', 'quantity', 'thickness', 'd_inner',
-            'd_outer', 'width', 'length', 'weight_needed', 'remark',
+            'material_name', 'shape', 'quantity', 'thickness', 'd_inner',
+            'd_outer', 'width', 'length', 'remark',
         ], $prTemplate->headings());
         $this->assertCount(1, $prTemplate->array());
 
@@ -126,8 +129,8 @@ class MissionFiveImportTest extends TestCase
         $this->temporaryFiles[] = $templatePath;
         $templateSheet = IOFactory::load($templatePath)->getActiveSheet();
         $this->assertSame('material_name', $templateSheet->getCell('A1')->getValue());
-        $this->assertSame('hs_code', $templateSheet->getCell('B1')->getValue());
-        $this->assertSame('72283010', $templateSheet->getCell('B2')->getValue());
+        $this->assertSame('shape', $templateSheet->getCell('B1')->getValue());
+        $this->assertSame('Round', $templateSheet->getCell('B2')->getValue());
 
         $this->actingAs($this->purchasing)
             ->post(route('purchasing.requisitions.import-preview'), [
@@ -168,7 +171,7 @@ class MissionFiveImportTest extends TestCase
             'quantity', 'material_name', 'weight_needed', 'shape', 'hs_code',
             'thickness', 'd_outer', 'length', 'remark',
         ], [[
-            4, 'Imported Round', 15.75, 'Round', '00990011', 9.9, 30, 500, 'Imported remark',
+            4, 'SCM440', 15.75, 'Round', '00990011', 9.9, 30, 500, 'Imported remark',
         ]]);
 
         $response = $this->actingAs($this->purchasing)
@@ -183,11 +186,11 @@ class MissionFiveImportTest extends TestCase
 
         $row = $response->json('rows.0');
         $this->assertSame(4, $row['quantity']);
-        $this->assertSame(15.75, $row['weight_needed']);
+        $this->assertEquals(2.7752, $row['weight_needed']);
         $this->assertNull($row['thickness']);
         $this->assertEquals(30.0, $row['d_outer']);
         $this->assertIsNumeric($row['d_outer']);
-        $this->assertSame('00990011', $row['hs_code']);
+        $this->assertSame('7228.30.10', $row['hs_code']);
         $this->assertNotEmpty($response->json('warnings'));
         $this->assertSame($before, $this->databaseSnapshot());
     }
@@ -197,8 +200,8 @@ class MissionFiveImportTest extends TestCase
         $upload = $this->spreadsheetUpload([
             'material_name', 'hs_code', 'shape', 'quantity', 'weight_needed', 'remark',
         ], [
-            ['Valid Material', '1111', 'Flat', 2, 10, 'valid'],
-            ['Invalid Quantity', '2222', 'Flat', 0, 10, 'invalid'],
+            ['SCM440', '1111', 'Round', 2, 10, 'valid'],
+            ['SCM440', '2222', 'Round', 0, 10, 'invalid'],
             ['=DANGEROUS()', '3333', 'Round', 2, 12, 'formula'],
         ]);
 
@@ -222,8 +225,8 @@ class MissionFiveImportTest extends TestCase
     public function test_file_level_pr_errors_are_structured_and_unprocessable(): void
     {
         $missingHeader = $this->spreadsheetUpload(
-            ['material_name', 'quantity', 'weight_needed'],
-            [['Missing HS Code', 1, 10]]
+            ['material_name', 'shape'],
+            [['SCM440', 'Round']]
         );
 
         $this->actingAs($this->purchasing)
@@ -231,10 +234,10 @@ class MissionFiveImportTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('success', false)
             ->assertJsonPath('errors.0.row', 1)
-            ->assertJsonPath('errors.0.column', 'hs_code');
+            ->assertJsonPath('errors.0.column', 'quantity');
 
         $empty = $this->spreadsheetUpload(
-            ['material_name', 'hs_code', 'quantity', 'weight_needed'],
+            ['material_name', 'quantity'],
             []
         );
 
@@ -264,8 +267,8 @@ class MissionFiveImportTest extends TestCase
         ]);
         $before = $this->databaseSnapshot();
         $upload = $this->spreadsheetUpload(
-            ['material_name', 'hs_code', 'quantity', 'weight_needed'],
-            [['Imported draft material', '330022', 2, 15]]
+            ['material_name', 'quantity'],
+            [['SCM440', 2]]
         );
 
         $this->actingAs($this->purchasing)
@@ -275,13 +278,16 @@ class MissionFiveImportTest extends TestCase
             ->assertSee('Import Excel')
             ->assertSee('Replace Current Rows')
             ->assertSee('Append to Current Rows')
+            ->assertSee('dimension-source-input', false)
+            ->assertSee('data-active-dimension-field="thickness"', false)
+            ->assertDontSee('Dimension 1')
             ->assertSee('prImportPreviewUrl', false);
 
         $this->actingAs($this->purchasing)
             ->post(route('purchasing.requisitions.import-preview'), ['import_file' => $upload])
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('rows.0.material_name', 'Imported draft material');
+            ->assertJsonPath('rows.0.material_name', 'SCM440');
 
         $this->assertSame('draft', $draftPr->fresh()->status);
         $this->assertSame($before, $this->databaseSnapshot());
@@ -413,13 +419,13 @@ class MissionFiveImportTest extends TestCase
     public function test_first_sheet_only_row_limit_and_extra_sheet_warning_are_enforced(): void
     {
         $extraSheetUpload = $this->spreadsheetUpload(
-            ['material_name', 'hs_code', 'quantity', 'weight_needed'],
-            [['First sheet material', '1111', 1, 10]],
+            ['material_name', 'quantity'],
+            [['SCM440', 1]],
             ExcelFormat::XLSX,
             [[
                 'title' => 'Ignored',
-                'headings' => ['material_name', 'hs_code', 'quantity', 'weight_needed'],
-                'rows' => [['Second sheet material', '2222', 1, 10]],
+                'headings' => ['material_name', 'quantity'],
+                'rows' => [['S45C', 1]],
             ]]
         );
 
@@ -434,10 +440,10 @@ class MissionFiveImportTest extends TestCase
 
         $rows = [];
         for ($index = 1; $index <= 1001; $index++) {
-            $rows[] = ["Material {$index}", (string) (1000 + $index), 1, 10];
+            $rows[] = ['SCM440', 1];
         }
         $tooManyRows = $this->spreadsheetUpload(
-            ['material_name', 'hs_code', 'quantity', 'weight_needed'],
+            ['material_name', 'quantity'],
             $rows,
             ExcelFormat::CSV
         );
@@ -451,8 +457,8 @@ class MissionFiveImportTest extends TestCase
     public function test_xls_is_supported_and_file_type_and_size_guards_are_structured(): void
     {
         $xls = $this->spreadsheetUpload(
-            ['material_name', 'hs_code', 'quantity', 'weight_needed'],
-            [['Legacy XLS Material', '778899', 2, 10]],
+            ['material_name', 'quantity'],
+            [['SCM440', 2]],
             ExcelFormat::XLS
         );
 
@@ -460,7 +466,7 @@ class MissionFiveImportTest extends TestCase
             ->post(route('purchasing.requisitions.import-preview'), ['import_file' => $xls])
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('rows.0.material_name', 'Legacy XLS Material');
+            ->assertJsonPath('rows.0.material_name', 'SCM440');
 
         $invalidType = UploadedFile::fake()->create('not-a-spreadsheet.pdf', 10, 'application/pdf');
         $this->actingAs($this->purchasing)
@@ -576,8 +582,8 @@ class MissionFiveImportTest extends TestCase
     {
         $before = $this->excelTemporaryFiles();
         $upload = $this->spreadsheetUpload(
-            ['material_name', 'hs_code', 'quantity', 'weight_needed'],
-            [['Temporary File Test', '1122', 1, 10]]
+            ['material_name', 'quantity'],
+            [['SCM440', 1]]
         );
 
         $this->actingAs($this->purchasing)

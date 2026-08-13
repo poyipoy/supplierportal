@@ -1,61 +1,144 @@
+@php
+    $itemData = is_array($item) ? $item : ($item?->toArray() ?? []);
+    $status = $itemData['hs_code_resolution_status'] ?? 'insufficient_data';
+    $source = $itemData['hs_code_source'] ?? 'auto';
+    $statusLabel = match (true) {
+        $source === 'manual' => 'Manual selection',
+        $status === 'matched' => 'Auto matched',
+        $status === 'ambiguous' => 'Ambiguous',
+        $status === 'no_rule' => 'No rule',
+        $status === 'unmapped_material' => 'Unmapped material',
+        default => 'Needs more data',
+    };
+    $unitKg = (float) ($itemData['weight_needed'] ?? 0);
+    $quantity = (int) ($itemData['quantity'] ?? 1);
+    $shapeValue = $itemData['shape'] ?? null;
+    $dimensionSlots = match ($shapeValue) {
+        \App\Models\PrItem::SHAPE_FLAT => [
+            ['field' => 'thickness', 'label' => 'Thickness'],
+            ['field' => 'width', 'label' => 'Width'],
+            ['field' => 'length', 'label' => 'Length'],
+        ],
+        \App\Models\PrItem::SHAPE_ROUND => [
+            ['field' => 'd_outer', 'label' => 'Outer Diameter'],
+            ['field' => 'length', 'label' => 'Length'],
+            null,
+        ],
+        \App\Models\PrItem::SHAPE_HOLLOW => [
+            ['field' => 'd_inner', 'label' => 'Inner Diameter'],
+            ['field' => 'd_outer', 'label' => 'Outer Diameter'],
+            ['field' => 'length', 'label' => 'Length'],
+        ],
+        default => [null, null, null],
+    };
+@endphp
 <tr class="item-row">
-    <td>
-        <input type="text" name="items[{{ $index }}][material_name]" class="form-control form-control-sm mb-1" required placeholder="Material Name" value="{{ $item['material_name'] ?? '' }}">
-        <input type="text" name="items[{{ $index }}][hs_code]" class="form-control form-control-sm" required placeholder="HS Code" style="font-size: 0.75rem" value="{{ $item['hs_code'] ?? '' }}">
-    </td>
-    <td>
-        <select name="items[{{ $index }}][shape]" class="form-select form-select-sm material-shape-select">
-            <option value="">Select</option>
-            <option value="Flat" {{ ($item['shape'] ?? '') == 'Flat' ? 'selected' : '' }}>Flat</option>
-            <option value="Round" {{ ($item['shape'] ?? '') == 'Round' ? 'selected' : '' }}>Round</option>
-            <option value="Hollow" {{ ($item['shape'] ?? '') == 'Hollow' ? 'selected' : '' }}>Hollow</option>
-        </select>
-    </td>
-    <td>
-        <input type="number" step="1" min="1" name="items[{{ $index }}][quantity]" class="form-control form-control-sm text-center" required value="{{ $item['quantity'] ?? 1 }}">
-    </td>
-    <td>
-        <div class="dimension-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: .5rem;">
-            <div class="dimension-cell" data-dimension-cell="thickness">
-                <div class="small text-muted" style="font-size: 0.7rem">Thickness</div>
-                <input type="number" step="0.01" min="0" name="items[{{ $index }}][thickness]" class="form-control form-control-sm dimension-input" data-dimension-field="thickness" value="{{ $item['thickness'] ?? '' }}">
+    <td class="pr-sticky-material">
+        @if(!empty($itemData['id']))
+            <input type="hidden" name="items[{{ $index }}][id]" value="{{ $itemData['id'] }}">
+        @endif
+        <input type="hidden" name="items[{{ $index }}][material_master_id]" class="material-master-id" value="{{ $itemData['material_master_id'] ?? '' }}">
+        @foreach(\App\Models\PrItem::DIMENSION_FIELDS as $dimension)
+            <input
+                type="hidden"
+                name="items[{{ $index }}][{{ $dimension }}]"
+                class="dimension-source-input"
+                data-dimension-field="{{ $dimension }}"
+                value="{{ $itemData[$dimension] ?? '' }}"
+            >
+        @endforeach
+        <div class="position-relative">
+            <input
+                type="text"
+                name="items[{{ $index }}][material_name]"
+                class="form-control form-control-sm material-master-search"
+                required
+                autocomplete="off"
+                placeholder="Search master material"
+                value="{{ $itemData['material_name'] ?? '' }}"
+            >
+            <div
+                class="material-search-results list-group shadow d-none"
+                role="listbox"
+                style="position: fixed; z-index: 1060; max-height: 220px; overflow-y: auto;"
+            ></div>
+        </div>
+        @error("items.{$index}.material_master_id")
+            <div class="text-danger small">{{ $message }}</div>
+        @enderror
+
+        <div class="mt-2">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">HS</span>
+                <input type="text" name="items[{{ $index }}][hs_code]" class="form-control hs-code-display" maxlength="20" value="{{ $itemData['hs_code'] ?? '' }}" placeholder="Auto or manual HS code">
             </div>
-            <div class="dimension-cell" data-dimension-cell="d_inner">
-                <div class="small text-muted" style="font-size: 0.7rem">Inner D.</div>
-                <input type="number" step="0.01" min="0" name="items[{{ $index }}][d_inner]" class="form-control form-control-sm dimension-input" data-dimension-field="d_inner" value="{{ $item['d_inner'] ?? '' }}">
-            </div>
-            <div class="dimension-cell" data-dimension-cell="d_outer">
-                <div class="small text-muted" style="font-size: 0.7rem">Outer D.</div>
-                <input type="number" step="0.01" min="0" name="items[{{ $index }}][d_outer]" class="form-control form-control-sm dimension-input" data-dimension-field="d_outer" value="{{ $item['d_outer'] ?? '' }}">
-            </div>
-            <div class="dimension-cell" data-dimension-cell="width">
-                <div class="small text-muted" style="font-size: 0.7rem">Width</div>
-                <input type="number" step="0.01" min="0" name="items[{{ $index }}][width]" class="form-control form-control-sm dimension-input" data-dimension-field="width" value="{{ $item['width'] ?? '' }}">
-            </div>
-            <div class="dimension-cell" data-dimension-cell="length">
-                <div class="small text-muted" style="font-size: 0.7rem">Length</div>
-                <input type="number" step="0.01" min="0" name="items[{{ $index }}][length]" class="form-control form-control-sm dimension-input" data-dimension-field="length" value="{{ $item['length'] ?? '' }}">
-            </div>
+            <input type="hidden" name="items[{{ $index }}][hs_code_manual_override]" class="hs-code-manual-override" value="{{ $source === 'manual' ? '1' : '0' }}">
+            <span class="badge mt-1 hs-status-badge {{ $source === 'manual' ? 'bg-warning text-dark' : ($status === 'matched' ? 'bg-success' : 'bg-secondary') }}">{{ $statusLabel }}</span>
+            @error("items.{$index}.hs_code")
+                <div class="text-danger small">{{ $message }}</div>
+            @enderror
         </div>
     </td>
     <td>
-        <input type="number" step="0.01" min="0.01" name="items[{{ $index }}][weight_needed]" class="form-control form-control-sm" required value="{{ $item['weight_needed'] ?? '' }}">
+        <select name="items[{{ $index }}][shape]" class="form-select form-select-sm material-shape-select" aria-label="Material shape">
+            <option value="">Select</option>
+            @foreach(\App\Models\PrItem::SHAPES as $shape)
+                <option value="{{ $shape }}" {{ ($itemData['shape'] ?? '') === $shape ? 'selected' : '' }}>{{ $shape }}</option>
+            @endforeach
+        </select>
+        @error("items.{$index}.shape") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
     <td>
-        @php($remarkErrorKey = "items.{$index}.remark")
-        <textarea
-            name="items[{{ $index }}][remark]"
-            class="form-control form-control-sm {{ $errors->has($remarkErrorKey) ? 'is-invalid' : '' }}"
-            rows="2"
-            maxlength="2000"
-            placeholder="Optional material remark"
-        >{{ $item['remark'] ?? '' }}</textarea>
-        @if($errors->has($remarkErrorKey))
-            <div class="invalid-feedback">{{ $errors->first($remarkErrorKey) }}</div>
-        @endif
+        <input type="number" step="1" min="1" name="items[{{ $index }}][quantity]" class="form-control form-control-sm text-center material-quantity" required value="{{ $quantity }}">
+        @error("items.{$index}.quantity") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
-    <td class="text-center">
-        <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeRow(this)">
+    @foreach($dimensionSlots as $slotIndex => $slot)
+        @php
+            $slotField = $slot['field'] ?? null;
+            $slotLabel = $slot['label'] ?? '';
+        @endphp
+        <td class="pr-dimension-cell" data-dimension-slot="{{ $slotIndex }}">
+            <div class="dimension-slot-content">
+                <label
+                    class="dimension-slot-label"
+                    for="item-{{ $index }}-dimension-slot-{{ $slotIndex }}"
+                    @if(!$slotField) aria-hidden="true" @endif
+                >{{ $slotLabel }}</label>
+                <div class="dimension-slot-control {{ $slotField ? '' : 'd-none' }}">
+                    <input
+                        id="item-{{ $index }}-dimension-slot-{{ $slotIndex }}"
+                        type="number"
+                        step="0.0001"
+                        min="0.0001"
+                        class="form-control form-control-sm text-end dimension-slot-input dimension-input"
+                        data-slot-index="{{ $slotIndex }}"
+                        data-active-dimension-field="{{ $slotField ?? '' }}"
+                        aria-label="{{ $slotField ? $slotLabel.' in millimeters' : 'Dimension not used' }}"
+                        value="{{ $slotField ? ($itemData[$slotField] ?? '') : '' }}"
+                        {{ $slotField ? '' : 'disabled' }}
+                    >
+                </div>
+                <div class="dimension-slot-empty {{ $slotField ? 'd-none' : '' }}" aria-hidden="true">&mdash;</div>
+                @if($slotField)
+                    @error("items.{$index}.{$slotField}") <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                @endif
+            </div>
+        </td>
+    @endforeach
+    <td>
+        <div class="input-group input-group-sm">
+            <input type="number" step="0.0001" name="items[{{ $index }}][weight_needed]" class="form-control text-end weight-unit-display" value="{{ number_format($unitKg, 4, '.', '') }}">
+            <span class="input-group-text">kg</span>
+        </div>
+        <input type="hidden" name="items[{{ $index }}][weight_manual_override]" class="weight-manual-override" value="{{ ($itemData['weight_calculation_status'] ?? '') === 'manual' ? '1' : '0' }}">
+        @error("items.{$index}.weight_needed") <div class="text-danger small">{{ $message }}</div> @enderror
+    </td>
+    <td>
+        <textarea name="items[{{ $index }}][remark]" class="form-control form-control-sm" rows="2" maxlength="2000" placeholder="Optional material remark">{{ $itemData['remark'] ?? '' }}</textarea>
+        @error("items.{$index}.remark") <div class="text-danger small">{{ $message }}</div> @enderror
+    </td>
+    <td class="text-center pr-sticky-action">
+        <button type="button" class="btn btn-sm btn-outline-danger border-0 pr-delete-button" onclick="removeRow(this)" aria-label="Delete material row">
             <i class="bi bi-trash"></i>
         </button>
     </td>

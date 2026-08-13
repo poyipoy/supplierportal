@@ -8,8 +8,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PrItem extends Model
 {
+    public const HS_SOURCE_AUTO = 'auto';
+
+    public const HS_SOURCE_MANUAL = 'manual';
+
+    public const HS_SOURCE_LEGACY = 'legacy';
+
+    public const HS_SOURCES = [self::HS_SOURCE_AUTO, self::HS_SOURCE_MANUAL, self::HS_SOURCE_LEGACY];
+
+    public const WEIGHT_STATUS_CALCULATED = 'calculated';
+
+    public const WEIGHT_STATUS_MANUAL = 'manual';
+
+    public const WEIGHT_STATUS_INCOMPLETE = 'incomplete';
+
+    public const WEIGHT_STATUS_INVALID = 'invalid';
+
+    public const WEIGHT_STATUS_LEGACY = 'legacy';
+
     public const SHAPE_FLAT = 'Flat';
+
     public const SHAPE_ROUND = 'Round';
+
     public const SHAPE_HOLLOW = 'Hollow';
 
     public const SHAPES = [
@@ -42,7 +62,13 @@ class PrItem extends Model
 
     protected $fillable = [
         'pr_id',
+        'material_master_id',
         'hs_code',
+        'hs_code_rule_id',
+        'hs_code_source',
+        'hs_code_resolution_status',
+        'hs_code_manual_selected_by',
+        'hs_code_manual_selected_at',
         'material_name',
         'quantity',
         'shape',
@@ -52,6 +78,10 @@ class PrItem extends Model
         'width',
         'length',
         'weight_needed',
+        'weight_calculation_status',
+        'weight_formula_key',
+        'weight_factor',
+        'weight_calculated_at',
         'remark',
     ];
 
@@ -64,7 +94,10 @@ class PrItem extends Model
             'width' => 'decimal:4',
             'length' => 'decimal:4',
             'weight_needed' => 'decimal:4',
+            'weight_factor' => 'decimal:6',
             'quantity' => 'integer',
+            'hs_code_manual_selected_at' => 'datetime',
+            'weight_calculated_at' => 'datetime',
         ];
     }
 
@@ -111,7 +144,7 @@ class PrItem extends Model
 
     public function getTotalWeightAttribute(): float
     {
-        return (float) $this->weight_needed * $this->quantity_value;
+        return round((float) $this->weight_needed * $this->quantity_value, 4, PHP_ROUND_HALF_UP);
     }
 
     public function getDimensionLabelAttribute(): string
@@ -133,11 +166,11 @@ class PrItem extends Model
                 self::formatDimensionValue($dimensions['width'] ?? null),
                 self::formatDimensionValue($dimensions['length'] ?? null),
             ]),
-            self::SHAPE_ROUND => 'Ø ' . self::formatDimensionValue($dimensions['d_outer'] ?? null)
-                . ' × ' . self::formatDimensionValue($dimensions['length'] ?? null),
-            self::SHAPE_HOLLOW => 'Ø ' . self::formatDimensionValue($dimensions['d_outer'] ?? null)
-                . ' × Ø ' . self::formatDimensionValue($dimensions['d_inner'] ?? null)
-                . ' × ' . self::formatDimensionValue($dimensions['length'] ?? null),
+            self::SHAPE_ROUND => 'Ø '.self::formatDimensionValue($dimensions['d_outer'] ?? null)
+                .' × '.self::formatDimensionValue($dimensions['length'] ?? null),
+            self::SHAPE_HOLLOW => 'Ø '.self::formatDimensionValue($dimensions['d_outer'] ?? null)
+                .' × Ø '.self::formatDimensionValue($dimensions['d_inner'] ?? null)
+                .' × '.self::formatDimensionValue($dimensions['length'] ?? null),
             default => '-',
         };
     }
@@ -185,6 +218,21 @@ class PrItem extends Model
     public function purchaseRequisition(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequisition::class, 'pr_id');
+    }
+
+    public function materialMaster(): BelongsTo
+    {
+        return $this->belongsTo(MaterialMaster::class);
+    }
+
+    public function hsCodeRule(): BelongsTo
+    {
+        return $this->belongsTo(HsCodeRule::class);
+    }
+
+    public function hsCodeManualSelector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'hs_code_manual_selected_by');
     }
 
     public function quotationItems(): HasMany

@@ -77,7 +77,7 @@
                                 <th>Material Name</th>
                                 <th>Shape & Dimensions (mm)</th>
                                 <th>Qty</th>
-                                <th>Weight/Unit (Kg)</th>
+                                <th>KG / Unit</th>
                                 <th>Total Weight (Kg)</th>
                                 <th>Remark</th>
                             </tr>
@@ -86,7 +86,18 @@
                             @foreach($pr->items as $index => $item)
                                 <tr>
                                     <td class="text-center">{{ $index + 1 }}</td>
-                                    <td class="text-center">{{ $item->hs_code ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <div>{{ $item->hs_code ?? '-' }}</div>
+                                        @if($item->hs_code_source === 'manual')
+                                            <span class="badge bg-warning text-dark">Manual</span>
+                                        @elseif($item->hs_code_resolution_status === 'matched')
+                                            <span class="badge bg-success">Auto</span>
+                                        @elseif($item->hs_code_source === 'legacy')
+                                            <span class="badge bg-secondary">Legacy</span>
+                                        @else
+                                            <span class="badge bg-secondary">{{ str_replace('_', ' ', $item->hs_code_resolution_status ?? 'unresolved') }}</span>
+                                        @endif
+                                    </td>
                                     <td class="fw-medium">{{ $item->material_name }}</td>
                                     <td class="text-center" style="font-size: 0.85rem;">
                                         @if($item->shape)
@@ -97,8 +108,8 @@
                                         @endif
                                     </td>
                                     <td class="text-center fw-bold">{{ number_format($item->quantity_value, 0) }}</td>
-                                    <td class="text-center">{{ number_format($item->weight_needed, 2) }}</td>
-                                    <td class="text-center fw-bold text-primary">{{ number_format($item->total_weight, 2) }}</td>
+                                    <td class="text-center">{{ number_format($item->weight_needed, 4) }}</td>
+                                    <td class="text-center fw-bold text-primary">{{ number_format($item->total_weight, 4) }}</td>
                                     <td>{{ $item->remark ?: '-' }}</td>
                                 </tr>
                             @endforeach
@@ -201,26 +212,10 @@
                     </div>
                     <div class="d-grid gap-2">
                         <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr) }}" class="btn btn-outline-primary">Edit Draft</a>
-                        <form action="{{ route('purchasing.requisitions.update', $pr) }}" method="POST">
+                        <form action="{{ route('purchasing.requisitions.submit', $pr) }}" method="POST">
                             @csrf
                             @method('PUT')
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                            <input type="hidden" name="action" value="submitted">
-                            <input type="hidden" name="period_id" value="{{ $pr->period_id }}">
-                            <input type="hidden" name="notes" value="{{ $pr->notes }}">
-                            @foreach($pr->items as $index => $item)
-                                <input type="hidden" name="items[{{ $index }}][hs_code]" value="{{ $item->hs_code }}">
-                                <input type="hidden" name="items[{{ $index }}][material_name]" value="{{ $item->material_name }}">
-                                <input type="hidden" name="items[{{ $index }}][quantity]" value="{{ $item->quantity_value }}">
-                                <input type="hidden" name="items[{{ $index }}][shape]" value="{{ $item->shape }}">
-                                <input type="hidden" name="items[{{ $index }}][thickness]" value="{{ $item->thickness }}">
-                                <input type="hidden" name="items[{{ $index }}][d_inner]" value="{{ $item->d_inner }}">
-                                <input type="hidden" name="items[{{ $index }}][d_outer]" value="{{ $item->d_outer }}">
-                                <input type="hidden" name="items[{{ $index }}][width]" value="{{ $item->width }}">
-                                <input type="hidden" name="items[{{ $index }}][length]" value="{{ $item->length }}">
-                                <input type="hidden" name="items[{{ $index }}][weight_needed]" value="{{ $item->weight_needed }}">
-                                <input type="hidden" name="items[{{ $index }}][remark]" value="{{ $item->remark }}">
-                            @endforeach
                             <button type="button" class="btn btn-primary w-100 btn-submit" style="background-color: var(--adasi-blue);">Submit Requisition</button>
                         </form>
                     </div>

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Conversation;
+use App\Models\MaterialMaster;
 use App\Models\Period;
 use App\Models\PoDocument;
 use App\Models\PrItem;
@@ -13,6 +14,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
+use Database\Seeders\MaterialHsCodeMasterSeeder;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Broadcasting\BroadcastException;
 use Illuminate\Broadcasting\BroadcastManager;
@@ -94,6 +96,8 @@ class NotificationDeliveryTest extends TestCase
 
     public function test_pr_submission_succeeds_when_synchronous_broadcaster_throws(): void
     {
+        $this->seed(MaterialHsCodeMasterSeeder::class);
+        $material = MaterialMaster::where('material_code', 'S45C')->firstOrFail();
         $this->installFailingBroadcaster();
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $purchasing = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
@@ -110,12 +114,13 @@ class NotificationDeliveryTest extends TestCase
             'action' => 'submitted',
             'notes' => 'Core transaction remains successful',
             'items' => [[
+                'material_master_id' => $material->id,
                 'hs_code' => '7209.16.00',
                 'material_name' => 'Notification Test Material',
                 'quantity' => 1,
                 'shape' => 'Flat',
-                'thickness' => 2,
-                'width' => 1000,
+                'thickness' => 5,
+                'width' => 700,
                 'length' => 2000,
                 'weight_needed' => 100,
             ]],
@@ -128,6 +133,8 @@ class NotificationDeliveryTest extends TestCase
 
     public function test_draft_update_submission_notifies_active_admin_with_structured_payload(): void
     {
+        $this->seed(MaterialHsCodeMasterSeeder::class);
+        $material = MaterialMaster::where('material_code', 'S45C')->firstOrFail();
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         User::factory()->create(['role' => 'admin', 'is_active' => false]);
         $purchasing = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
@@ -138,12 +145,13 @@ class NotificationDeliveryTest extends TestCase
             'status' => 'draft',
         ]);
         $item = $pr->items()->create([
+            'material_master_id' => $material->id,
             'hs_code' => '7209.16.00',
             'material_name' => 'Draft Material',
             'quantity' => 1,
             'shape' => 'Flat',
-            'thickness' => 2,
-            'width' => 1000,
+            'thickness' => 5,
+            'width' => 700,
             'length' => 2000,
             'weight_needed' => 100,
         ]);
@@ -152,6 +160,8 @@ class NotificationDeliveryTest extends TestCase
             'period_id' => $period->id,
             'action' => 'submitted',
             'items' => [[
+                'id' => $item->id,
+                'material_master_id' => $material->id,
                 'hs_code' => $item->hs_code,
                 'material_name' => $item->material_name,
                 'quantity' => $item->quantity,

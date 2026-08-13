@@ -6,7 +6,6 @@ use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Models\QuotationItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -146,7 +145,17 @@ class QuotationAvailabilityTest extends TestCase
         $this->actingAs($this->supplier)
             ->get(route('supplier.quotations.create', $pr))
             ->assertOk()
-            ->assertSee('Supplier Availability');
+            ->assertSee('Supplier Availability')
+            ->assertSee('Supplier Offer')
+            ->assertSee('Commercial')
+            ->assertSee('Supporting')
+            ->assertSee('quotation-sticky-number', false)
+            ->assertSee('quotation-sticky-material', false)
+            ->assertSee('border-right: 1px solid #a8b5c5 !important', false)
+            ->assertSee('border-collapse: separate !important', false)
+            ->assertSee('width: 100% !important', false)
+            ->assertSee('quotation-calculated', false)
+            ->assertSee('mtc-file-input', false);
 
         $this->actingAs($this->supplier)
             ->get(route('supplier.quotations.show', $quotation))

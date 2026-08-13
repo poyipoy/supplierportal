@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\MaterialMaster;
 use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\User;
+use Database\Seeders\MaterialHsCodeMasterSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,9 +19,14 @@ class PrItemRemarkTest extends TestCase
 
     private Period $period;
 
+    private MaterialMaster $material;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->seed(MaterialHsCodeMasterSeeder::class);
+        $this->material = MaterialMaster::query()->where('material_code', 'S45C')->firstOrFail();
 
         $this->purchasing = User::factory()->create([
             'role' => 'purchasing',
@@ -75,24 +82,8 @@ class PrItemRemarkTest extends TestCase
         ]);
         $item = $pr->items()->create($this->materialPayload('Quick Submit Material', 'Keep this remark'));
 
-        $response = $this->actingAs($this->purchasing)->put(route('purchasing.requisitions.update', $pr), [
-            'period_id' => $this->period->id,
-            'action' => 'submitted',
-            'notes' => 'Header note',
-            'items' => [[
-                'hs_code' => $item->hs_code,
-                'material_name' => $item->material_name,
-                'quantity' => $item->quantity,
-                'shape' => $item->shape,
-                'thickness' => $item->thickness,
-                'd_inner' => $item->d_inner,
-                'd_outer' => $item->d_outer,
-                'width' => $item->width,
-                'length' => $item->length,
-                'weight_needed' => $item->weight_needed,
-                'remark' => $item->remark,
-            ]],
-        ]);
+        $response = $this->actingAs($this->purchasing)
+            ->put(route('purchasing.requisitions.submit', $pr));
 
         $response->assertRedirect();
         $response->assertSessionHasNoErrors();
@@ -205,14 +196,15 @@ class PrItemRemarkTest extends TestCase
     private function materialPayload(string $name, ?string $remark): array
     {
         return [
+            'material_master_id' => $this->material->id,
             'hs_code' => '7209.16.00',
             'material_name' => $name,
             'quantity' => 2,
             'shape' => PrItem::SHAPE_FLAT,
-            'thickness' => 2.5,
+            'thickness' => 5,
             'd_inner' => null,
             'd_outer' => null,
-            'width' => 1000,
+            'width' => 700,
             'length' => 2000,
             'weight_needed' => 150.5,
             'remark' => $remark,

@@ -5,24 +5,182 @@
 
 @push('styles')
 <style>
+    .quotation-entry-card {
+        overflow: hidden;
+    }
+
+    .quotation-entry-toolbar {
+        gap: 1rem;
+    }
+
+    .quotation-toolbar-heading {
+        min-width: 230px;
+    }
+
+    .quotation-toolbar-actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+        justify-content: flex-end;
+    }
+
+    .quotation-currency-control {
+        align-items: center;
+        display: flex;
+        gap: .5rem;
+    }
+
+    .quotation-currency-field {
+        width: 110px;
+    }
+
+    .quotation-table-scroll {
+        --quotation-number-width: 52px;
+        --quotation-material-width: 260px;
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        position: relative;
+        scrollbar-color: #94a3b8 #f1f5f9;
+        scrollbar-width: thin;
+    }
+
+    .quotation-table-scroll::-webkit-scrollbar {
+        height: 10px;
+    }
+
+    .quotation-table-scroll::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
+    .quotation-table-scroll::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border: 2px solid #f1f5f9;
+        border-radius: 999px;
+    }
+
     .quotation-items-table {
-        min-width: 1780px;
+        border: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0;
+        font-size: .82rem;
+        min-width: calc(var(--quotation-number-width) + var(--quotation-material-width) + 1605px);
+        table-layout: fixed;
+        width: 100% !important;
+    }
+
+    .quotation-items-table th,
+    .quotation-items-table td {
+        padding: .7rem .6rem;
+    }
+
+    .quotation-items-table .quotation-group-header th {
+        background: #e8f0f9 !important;
+        border-bottom: 1px solid #a8bad0 !important;
+        color: #1f4f82 !important;
+        height: 38px;
+        top: 0;
+        z-index: 8;
+    }
+
+    .quotation-items-table .quotation-field-header th {
+        background: #f8fafc !important;
+        height: 48px;
+        top: 38px;
+        z-index: 8;
+    }
+
+    .quotation-items-table .quotation-group-item,
+    .quotation-items-table .quotation-sticky-material {
+        border-right: 1px solid #a8b5c5 !important;
+    }
+
+    .quotation-items-table .quotation-group-item {
+        left: 0;
+        position: sticky;
+        width: calc(var(--quotation-number-width) + var(--quotation-material-width));
+        z-index: 12 !important;
+    }
+
+    .quotation-items-table .quotation-sticky-number {
+        background: #fff;
+        left: 0;
+        min-width: var(--quotation-number-width);
+        position: sticky;
+        width: var(--quotation-number-width);
+    }
+
+    .quotation-items-table .quotation-sticky-material {
+        background: #fff;
+        left: var(--quotation-number-width);
+        min-width: var(--quotation-material-width);
+        position: sticky;
+        width: var(--quotation-material-width);
+        z-index: 6;
+    }
+
+    .quotation-items-table thead .quotation-sticky-number,
+    .quotation-items-table thead .quotation-sticky-material {
+        background: #f8fafc !important;
+        z-index: 11;
+    }
+
+    .quotation-items-table tbody .quotation-sticky-number {
+        z-index: 5;
+    }
+
+    .quotation-items-table tbody .quotation-sticky-material {
+        box-shadow: 6px 0 10px -9px rgba(15, 23, 42, .75);
+        z-index: 6;
+    }
+
+    .quotation-items-table tbody tr:hover > .quotation-sticky-number,
+    .quotation-items-table tbody tr:hover > .quotation-sticky-material {
+        background: #f7fbff;
+    }
+
+    .quotation-items-table .form-control,
+    .quotation-items-table .form-select {
+        min-height: 38px;
+    }
+
+    .quotation-items-table .quotation-editable {
+        background: #fff;
+        border-color: #b7c4d3;
+    }
+
+    .quotation-items-table .quotation-editable:focus {
+        border-color: var(--adasi-blue);
+        box-shadow: 0 0 0 .18rem rgba(31, 95, 166, .14);
+        position: relative;
+        z-index: 2;
+    }
+
+    .quotation-items-table .quotation-calculated {
+        background: #f1f5f9 !important;
+        border-color: #d8e0e9;
+        color: #334155;
+        cursor: default;
+    }
+
+    .quotation-number {
+        font-variant-numeric: tabular-nums;
     }
 
     .quotation-item-notes {
-        min-width: 220px;
-        min-height: 76px;
+        min-height: 88px;
         line-height: 1.35;
         resize: vertical;
     }
 
     .availability-panel {
-        min-width: 285px;
+        min-width: 315px;
     }
 
     .availability-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+        grid-template-columns: repeat(2, minmax(112px, 1fr));
         gap: .5rem;
     }
 
@@ -34,14 +192,99 @@
         font-weight: 600;
     }
 
+    .mtc-upload {
+        background: #f8fafc;
+        border: 1px solid #d8e0e9;
+        border-radius: .5rem;
+        padding: .65rem;
+    }
+
+    .mtc-file-button {
+        align-items: center;
+        display: inline-flex;
+        min-height: 36px;
+    }
+
+    .mtc-file-input:focus-visible + .mtc-file-button {
+        border-color: var(--adasi-blue);
+        box-shadow: 0 0 0 .2rem rgba(31, 95, 166, .18);
+    }
+
+    .mtc-file-name {
+        color: #475569;
+        font-size: .72rem;
+        line-height: 1.35;
+        margin-top: .4rem;
+        overflow-wrap: anywhere;
+    }
+
     .availability-copied .availability-panel {
         background-color: #edf7ef !important;
         transition: background-color .2s ease;
     }
 
     @media (max-width: 991.98px) {
-        .availability-grid {
-            grid-template-columns: repeat(2, minmax(100px, 1fr));
+        .quotation-entry-toolbar {
+            align-items: flex-start !important;
+        }
+
+        .quotation-toolbar-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .quotation-entry-toolbar {
+            align-items: stretch !important;
+            flex-direction: column;
+        }
+
+        .quotation-toolbar-actions {
+            align-items: stretch;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .quotation-toolbar-actions > .btn,
+        .quotation-toolbar-actions > .dropdown,
+        .quotation-toolbar-actions > .btn-group {
+            width: 100%;
+        }
+
+        .quotation-toolbar-actions > .btn-group > .btn {
+            width: 100%;
+        }
+
+        .quotation-currency-control {
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .quotation-currency-field {
+            width: min(180px, 55vw);
+        }
+
+        .quotation-currency-control .form-select {
+            min-height: 44px;
+            width: 100% !important;
+        }
+
+        .quotation-table-scroll {
+            --quotation-number-width: 44px;
+            --quotation-material-width: 200px;
+        }
+
+        .quotation-items-table .form-control,
+        .quotation-items-table .form-select {
+            min-height: 44px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .quotation-items-table *,
+        .quotation-table-scroll * {
+            scroll-behavior: auto !important;
+            transition: none !important;
         }
     }
 </style>
@@ -85,24 +328,34 @@
     @csrf
     <input type="hidden" name="action" id="formAction" value="draft">
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h6 class="mb-0 fw-bold">
-                Material Price Entry
-                <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><i class="bi bi-cloud-check me-1"></i>Draft Auto-saved</span>
-            </h6>
-            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+    <div class="card border-0 shadow-sm mb-4 quotation-entry-card">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap quotation-entry-toolbar">
+            <div class="quotation-toolbar-heading">
+                <h6 class="mb-0 fw-bold">
+                    Material Price Entry
+                    <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><i class="bi bi-cloud-check me-1"></i>Draft Auto-saved</span>
+                </h6>
+                <div class="small text-muted mt-1">Review the requested specifications, then complete your availability and commercial offer.</div>
+            </div>
+            <div class="quotation-toolbar-actions">
                 @include('supplier.quotations._import_controls')
                 <button type="button" id="copyAllRequested" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-clipboard-check me-1"></i> Copy All Requested Values
                 </button>
-                <label for="quotationCurrency" class="small fw-medium text-muted mb-0">Currency:</label>
-                <select name="currency" id="quotationCurrency" class="form-select form-select-sm" style="width: 110px;" required>
-                    <option value="" disabled @selected($supplierCurrency === '')>Select</option>
-                    @foreach($currencyOptions as $currency)
-                        <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
-                    @endforeach
-                </select>
+                <div class="quotation-currency-control">
+                    <label for="quotationCurrency" class="small fw-semibold text-muted mb-0">Currency</label>
+                    <div class="quotation-currency-field">
+                        <select name="currency" id="quotationCurrency" class="form-select form-select-sm @error('currency') is-invalid @enderror" required>
+                            <option value="" disabled @selected($supplierCurrency === '')>Select</option>
+                            @foreach($currencyOptions as $currency)
+                                <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
+                            @endforeach
+                        </select>
+                        @error('currency')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
             </div>
         </div>
         <div id="currencyRateWarning" class="alert alert-warning rounded-0 border-0 border-top border-bottom mb-0 small {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
@@ -110,21 +363,50 @@
                 Exchange rate for <span id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</span> is not available yet. Contact Admin before submitting the final quotation.
         </div>
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle mb-0 quotation-items-table" style="font-size: 0.85rem;">
+            <div class="table-responsive quotation-table-scroll">
+                <table class="table table-bordered align-middle mb-0 quotation-items-table">
+                    <caption class="visually-hidden">Supplier quotation entry table with requested material, availability, pricing, notes, and MTC fields</caption>
+                    <colgroup>
+                        <col style="width: var(--quotation-number-width);">
+                        <col style="width: var(--quotation-material-width);">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 315px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 80px;">
+                        <col style="width: 120px;">
+                        <col style="width: 135px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 165px;">
+                        <col style="width: 165px;">
+                        <col style="width: 165px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 220px;">
+                        <col style="width: 240px;">
+                    </colgroup>
                     <thead class="table-light text-center">
-                        <tr>
-                             <th width="3%">No</th>
-                             <th width="15%" style="min-width: 150px;">Material & Specification</th>
-                             <th width="16%" class="availability-panel">Supplier Availability</th>
-                             <th width="4%">Qty</th>
-                            <th width="7%">Weight/Unit (Kg)</th>
-                            <th width="8%">Total Weight (Kg)</th>
-                            <th width="12%" style="min-width: 130px;">Price per-KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
-                            <th width="12%" style="min-width: 130px;">Amount (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
-                            <th width="12%" style="min-width: 130px;">Est. IDR</th>
-                            <th width="13%" style="min-width: 150px;">Notes Item</th>
-                            <th width="14%" style="min-width: 220px;">MTC</th>
+                        <tr class="quotation-group-header">
+                            <th colspan="2" scope="colgroup" class="quotation-group-item">Item</th>
+                            <th scope="colgroup">Supplier Offer</th>
+                            <th colspan="3" scope="colgroup">Requested</th>
+                            <th colspan="3" scope="colgroup">Commercial</th>
+                            <th colspan="2" scope="colgroup">Supporting</th>
+                        </tr>
+                        <tr class="quotation-field-header">
+                            <th scope="col" class="quotation-sticky-number">No</th>
+                            <th scope="col" class="quotation-sticky-material">Material &amp; Specification</th>
+                            <th scope="col" class="availability-panel">Supplier Availability</th>
+                            <th scope="col">Qty</th>
+                            <th scope="col">Weight/Unit (kg)</th>
+                            <th scope="col">Total Weight (kg)</th>
+                            <th scope="col">Price/KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
+                            <th scope="col">Amount (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
+                            <th scope="col">Est. IDR</th>
+                            <th scope="col">Notes Item</th>
+                            <th scope="col">MTC</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -140,8 +422,8 @@
                                  $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($item->shape);
                              @endphp
                             <tr>
-                                <td class="text-center">{{ $index + 1 }}</td>
-                                <td>
+                                <td class="text-center quotation-sticky-number quotation-number">{{ $index + 1 }}</td>
+                                <td class="quotation-sticky-material">
                                      <div class="fw-bold">{{ $item->material_name }}</div>
                                      <div class="text-muted" style="font-size: 0.75rem;">
                                         @if($item->hs_code) HS: {{ $item->hs_code }} | @endif
@@ -157,6 +439,9 @@
                                      @endif
                                      <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
                                      <input type="hidden" class="item-weight" value="{{ $item->total_weight }}">
+                                     @error("items.{$index}.pr_item_id")
+                                         <div class="text-danger small mt-1">{{ $message }}</div>
+                                     @enderror
                                  </td>
                                  <td class="availability-panel">
                                      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
@@ -184,10 +469,13 @@
                                                  min="1"
                                                  step="1"
                                                  name="items[{{ $index }}][available_qty]"
-                                                 class="form-control form-control-sm availability-input"
+                                                 class="form-control form-control-sm availability-input quotation-editable quotation-number @error("items.{$index}.available_qty") is-invalid @enderror"
                                                  data-availability-field="qty"
                                                  value="{{ old("items.{$index}.available_qty", $qItem?->available_qty) }}"
                                              >
+                                             @error("items.{$index}.available_qty")
+                                                 <div class="invalid-feedback">{{ $message }}</div>
+                                             @enderror
                                          </div>
                                          @foreach($relevantDimensions as $dimension)
                                              <div>
@@ -200,44 +488,81 @@
                                                      min="0"
                                                      step="0.0001"
                                                      name="items[{{ $index }}][available_{{ $dimension }}]"
-                                                     class="form-control form-control-sm availability-input"
+                                                     class="form-control form-control-sm availability-input quotation-editable quotation-number @error("items.{$index}.available_{$dimension}") is-invalid @enderror"
                                                      data-availability-field="{{ $dimension }}"
                                                      value="{{ old("items.{$index}.available_{$dimension}", $qItem?->{'available_'.$dimension}) }}"
                                                  >
+                                                 @error("items.{$index}.available_{$dimension}")
+                                                     <div class="invalid-feedback">{{ $message }}</div>
+                                                 @enderror
                                              </div>
                                          @endforeach
                                      </div>
                                  </td>
-                                 <td class="text-center fw-medium">{{ number_format($item->quantity_value, 0) }}</td>
-                                <td class="text-center">{{ number_format($item->weight_needed, 2) }}</td>
-                                <td class="text-center fw-medium text-primary">{{ number_format($item->total_weight, 2) }}</td>
+                                 <td class="text-end fw-medium quotation-number">{{ number_format($item->quantity_value, 0) }}</td>
+                                <td class="text-end quotation-number">{{ number_format($item->weight_needed, 2) }}</td>
+                                <td class="text-end fw-semibold text-primary quotation-number">{{ number_format($item->total_weight, 2) }}</td>
                                 <td>
-                                    <input type="number" step="0.0001" name="items[{{ $index }}][price_per_kg]" class="form-control form-control-sm price-input text-end" value="{{ $oldPrice }}" required>
+                                    <input
+                                        type="number"
+                                        step="0.0001"
+                                        min="0.01"
+                                        name="items[{{ $index }}][price_per_kg]"
+                                        class="form-control form-control-sm price-input text-end quotation-editable quotation-number @error("items.{$index}.price_per_kg") is-invalid @enderror"
+                                        value="{{ $oldPrice }}"
+                                        aria-label="Price per kilogram for {{ $item->material_name }}"
+                                        required
+                                    >
+                                    @error("items.{$index}.price_per_kg")
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm amount-display text-end bg-light" readonly>
+                                    <input type="text" class="form-control form-control-sm amount-display text-end quotation-calculated quotation-number" aria-label="Calculated amount for {{ $item->material_name }}" readonly>
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm idr-display text-end bg-light" readonly>
+                                    <input type="text" class="form-control form-control-sm idr-display text-end quotation-calculated quotation-number" aria-label="Estimated IDR for {{ $item->material_name }}" readonly>
                                 </td>
                                 <td>
                                     <textarea
                                         name="items[{{ $index }}][notes]"
-                                        class="form-control form-control-sm quotation-item-notes"
+                                        class="form-control form-control-sm quotation-item-notes quotation-editable @error("items.{$index}.notes") is-invalid @enderror"
                                         rows="3"
+                                        aria-label="Item notes for {{ $item->material_name }}"
                                         placeholder="Optional, e.g. price tolerance, MOQ, or material notes"
                                     >{{ $oldNotes }}</textarea>
+                                    @error("items.{$index}.notes")
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </td>
                                 <td>
-                                    <input type="file" name="items[{{ $index }}][mtc_file]" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png">
-                                    @if($mtcAttachment)
-                                        <a href="{{ route('attachments.show', $mtcAttachment->id) }}" class="small d-inline-flex align-items-center gap-1 mt-1 text-decoration-none" target="_blank">
-                                            <i class="bi bi-paperclip"></i>
-                                            {{ $mtcAttachment->file_name }}
-                                        </a>
-                                    @else
-                                        <div class="form-text small">Optional, PDF/JPG/PNG max. 5MB.</div>
-                                    @endif
+                                    <div class="mtc-upload @error("items.{$index}.mtc_file") border-danger @enderror">
+                                        <input
+                                            id="mtcFile{{ $index }}"
+                                            type="file"
+                                            name="items[{{ $index }}][mtc_file]"
+                                            class="visually-hidden mtc-file-input @error("items.{$index}.mtc_file") is-invalid @enderror"
+                                            accept=".pdf,.jpg,.jpeg,.png"
+                                        >
+                                        <label for="mtcFile{{ $index }}" class="btn btn-sm btn-outline-primary mtc-file-button">
+                                            <i class="bi bi-paperclip me-1"></i> Choose MTC File
+                                        </label>
+                                        <div
+                                            class="mtc-file-name"
+                                            data-default-name="{{ $mtcAttachment?->file_name ?? 'No file selected' }}"
+                                            aria-live="polite"
+                                        >{{ $mtcAttachment?->file_name ?? 'No file selected' }}</div>
+                                        @if($mtcAttachment)
+                                            <a href="{{ route('attachments.show', $mtcAttachment->id) }}" class="small d-inline-flex align-items-center gap-1 mt-2 text-decoration-none" target="_blank" rel="noopener">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                                View current file
+                                            </a>
+                                        @endif
+                                        <div class="form-text small">Optional, PDF/JPG/PNG, max. 5MB.</div>
+                                    </div>
+                                    @error("items.{$index}.mtc_file")
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
                                 </td>
                             </tr>
                         @endforeach
@@ -619,7 +944,7 @@
         let totalAmount = 0;
         let totalIdr = 0;
 
-        $('tbody tr').each(function() {
+        $('.quotation-items-table tbody tr').each(function() {
             const rowTotals = calculateRow($(this));
             totalAmount += rowTotals.amount;
             totalIdr += rowTotals.idr;
@@ -675,6 +1000,11 @@
     $(document).ready(function() {
         $('#btnParseQuotationImport').on('click', parseQuotationImport);
         $('#btnApplyQuotationImport').on('click', applyQuotationImport);
+        $('.mtc-file-input').on('change', function() {
+            const fileName = this.files?.[0]?.name;
+            const $fileName = $(this).closest('.mtc-upload').find('.mtc-file-name');
+            $fileName.text(fileName || $fileName.data('default-name') || 'No file selected');
+        });
         $('#quotationImportModal').on('hidden.bs.modal', function() {
             if (quotationImportRequestInFlight) {
                 return;

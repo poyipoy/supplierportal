@@ -45,10 +45,10 @@
                                     <tr>
                                         <th>Row</th>
                                         <th>Material</th>
-                                        <th>HS Code</th>
+                                        <th>HS Result</th>
                                         <th>Shape</th>
                                         <th>Qty</th>
-                                        <th>Weight/Unit</th>
+                                        <th>KG/Unit (Auto)</th>
                                         <th>Remark</th>
                                     </tr>
                                 </thead>
@@ -80,8 +80,8 @@
 
     function prRowHasMeaningfulData(row) {
         const fields = [
-            'material_name', 'hs_code', 'shape', 'thickness', 'd_inner',
-            'd_outer', 'width', 'length', 'weight_needed', 'remark'
+            'material_master_id', 'material_name', 'shape', 'thickness', 'd_inner',
+            'd_outer', 'width', 'length', 'manual_hs_code', 'remark'
         ];
 
         return fields.some((field) => {
@@ -97,6 +97,7 @@
         $('#itemsBody').append($row);
 
         const values = {
+            material_master_id: data.material_master_id ?? '',
             material_name: data.material_name ?? '',
             hs_code: data.hs_code ?? '',
             shape: data.shape ?? '',
@@ -107,6 +108,7 @@
             width: data.width ?? '',
             length: data.length ?? '',
             weight_needed: data.weight_needed ?? '',
+            manual_hs_code: data.manual_hs_code ?? '',
             remark: data.remark ?? ''
         };
 
@@ -115,6 +117,8 @@
         });
 
         applyMaterialShapeRules($row, true);
+        $row.data('selected-material-name', data.material_name ?? '');
+        scheduleMaterialPreview($row, 0);
         itemIndex++;
         $row.find('input, select, textarea').first().trigger('input');
 
@@ -154,7 +158,7 @@
             [
                 index + 1,
                 row.material_name ?? '-',
-                row.hs_code ?? '-',
+                `${row.hs_code ?? '-'} (${row.hs_code_resolution_status ?? 'unresolved'})`,
                 row.shape ?? '-',
                 row.quantity ?? '-',
                 row.weight_needed ?? '-',

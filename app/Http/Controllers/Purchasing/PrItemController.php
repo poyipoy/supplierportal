@@ -3,87 +3,72 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SavePrItemRequest;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use App\Services\Materials\PrItemProcessor;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 
 class PrItemController extends Controller
 {
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function __construct(private readonly PrItemProcessor $processor) {}
+
+    public function store(SavePrItemRequest $request): JsonResponse
     {
-        // Mostly handled en-masse via PurchaseRequisitionController
-        // But if needed for single AJAX adds:
-        $request->merge(PrItem::sanitizeMaterialData($request->all()));
-
-        $validated = $request->validate($this->materialValidationRules([
-            'pr_id' => 'required|exists:purchase_requisitions,id',
-        ]));
-
+        $validated = $request->validated();
         $pr = PurchaseRequisition::findOrFail($validated['pr_id']);
-        if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return response()->json(['error' => 'Cannot add items to this PR.'], 403);
+
+        if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'], true)) {
+            return response()->json(['error' => 'Cannot add items to this requisition.'], 403);
         }
 
-        $item = $pr->items()->create(PrItem::sanitizeMaterialData($validated));
+        $result = $this->processor->process($validated, false, auth()->id());
+        if (! $result->isValid()) {
+            throw ValidationException::withMessages($result->errors);
+        }
 
-        return response()->json(['success' => true, 'item' => $item]);
+        $item = $pr->items()->create($result->data);
+
+        return response()->json(['success' => true, 'item' => $item->fresh()]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(SavePrItemRequest $request, string $id): JsonResponse
     {
         $item = PrItem::with('purchaseRequisition')->findOrFail($id);
         $pr = $item->purchaseRequisition;
 
-        if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return response()->json(['error' => 'Cannot mengedit item pada PR ini.'], 403);
+        if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'], true)) {
+            return response()->json(['error' => 'Cannot edit items on this requisition.'], 403);
         }
 
-        $request->merge(PrItem::sanitizeMaterialData($request->all()));
-        $validated = $request->validate($this->materialValidationRules());
+        $result = $this->processor->process($request->validated(), false, auth()->id(), $item);
+        if (! $result->isValid()) {
+            throw ValidationException::withMessages($result->errors);
+        }
 
-        $item->update(PrItem::sanitizeMaterialData($validated));
+        $item->update($result->data);
 
-        return response()->json(['success' => true, 'item' => $item]);
+        return response()->json(['success' => true, 'item' => $item->fresh()]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         $item = PrItem::with('purchaseRequisition')->findOrFail($id);
         $pr = $item->purchaseRequisition;
 
-        if ($pr->created_by !== auth()->id() || !in_array($pr->status, ['draft', 'rejected'])) {
-            return response()->json(['error' => 'Cannot menghapus item pada PR ini.'], 403);
+        if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'], true)) {
+            return response()->json(['error' => 'Cannot delete items from this requisition.'], 403);
+        }
+
+        if ($item->quotationItems()->exists() || $item->qcItems()->exists()) {
+            return response()->json([
+                'error' => 'This material is already referenced by a quotation or QC record and cannot be deleted.',
+            ], 422);
         }
 
         $item->delete();
 
         return response()->json(['success' => true]);
-    }
-
-    private function materialValidationRules(array $extra = []): array
-    {
-        return $extra + [
-            'material_name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:1',
-            'weight_needed' => 'required|numeric|min:0.01',
-            'hs_code' => 'required|string|max:100',
-            'shape' => ['nullable', Rule::in(PrItem::SHAPES)],
-            'thickness' => 'nullable|numeric|min:0',
-            'd_inner' => 'nullable|numeric|min:0',
-            'd_outer' => 'nullable|numeric|min:0',
-            'width' => 'nullable|numeric|min:0',
-            'length' => 'nullable|numeric|min:0',
-            'remark' => 'nullable|string|max:2000',
-        ];
     }
 }

@@ -3,6 +3,10 @@
 @section('title', 'Edit Purchase Requisition - ADASI Portal')
 @section('page-title', 'Edit Purchase Requisition')
 
+@push('styles')
+    @include('purchasing.pr._form_table_styles')
+@endpush
+
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -62,7 +66,7 @@
 
             <hr>
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 pr-material-toolbar">
                 <h6 class="fw-bold mb-0">Required Material List</h6>
                 <div class="d-flex flex-wrap gap-2 justify-content-end">
                     @if($pr->status === 'draft')
@@ -74,17 +78,41 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm align-middle" id="itemsTable">
-                    <thead class="table-light text-center" style="font-size: 0.8rem;">
-                        <tr>
-                            <th width="28%">Material & HS Code <span class="text-danger">*</span></th>
-                            <th width="12%">Shape</th>
-                            <th width="8%">Qty <span class="text-danger">*</span></th>
-                            <th width="26%">Dimensions (mm)</th>
-                            <th width="10%">Weight/Unit (Kg) <span class="text-danger">*</span></th>
-                            <th width="10%">Remark</th>
-                            <th width="6%">Action</th>
+            <div class="table-responsive pr-form-table-scroll">
+                <table class="table table-bordered table-sm align-middle pr-items-table" id="itemsTable">
+                    <caption class="visually-hidden">Required material entry table with adaptive dimension columns</caption>
+                    <colgroup>
+                        <col style="width: 300px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 125px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 80px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 120px;">
+                        <col style="width: 120px;">
+                        <col style="width: 120px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 145px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 190px;">
+                    </colgroup>
+                    <colgroup>
+                        <col style="width: 72px;">
+                    </colgroup>
+                    <thead class="table-light text-center">
+                        <tr class="pr-group-header">
+                            <th scope="col" class="pr-sticky-material">Master Material &amp; HS Code <span class="text-danger">*</span></th>
+                            <th scope="col">Shape</th>
+                            <th scope="col">Qty <span class="text-danger">*</span></th>
+                            <th colspan="3" scope="colgroup">Dimensions (mm)</th>
+                            <th scope="col">KG / Unit (kg)</th>
+                            <th scope="col">Remark</th>
+                            <th scope="col" class="pr-sticky-action">Action</th>
                         </tr>
                     </thead>
                     <tbody id="itemsBody">
@@ -136,6 +164,7 @@
         const html = template.replace(/{INDEX}/g, itemIndex);
         $('#itemsBody').append(html);
         applyMaterialShapeRules($('#itemsBody tr.item-row').last(), true);
+        resetMaterialPreview($('#itemsBody tr.item-row').last());
         itemIndex++;
         checkRowCount();
     }
@@ -196,16 +225,10 @@
         initializeMaterialShapeRows();
         checkRowCount();
 
-        let isDirty = false;
-        $('#prForm').on('input change', 'input, select, textarea', function() {
-            isDirty = true;
-        });
-        $('#prForm').on('submit', function() {
-            isDirty = false;
-        });
-        $(window).on('beforeunload', function() {
-            if (isDirty) {
-                return 'You have unsaved changes. Are you sure you want to leave this page?';
+        // Enter edits fields; PR submission is available only through the action buttons.
+        $('#prForm').on('keydown', 'input, select', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
             }
         });
     });

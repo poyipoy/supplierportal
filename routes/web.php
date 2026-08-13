@@ -3,6 +3,9 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\ExchangeRateController;
+use App\Http\Controllers\Admin\HsCodeRuleController;
+use App\Http\Controllers\Admin\MaterialHsCodeController;
+use App\Http\Controllers\Admin\MaterialMasterController;
 use App\Http\Controllers\Admin\PurchaseRequisitionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AttachmentController;
@@ -11,7 +14,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Purchasing\ConversationController;
 use App\Http\Controllers\Purchasing\ExportController;
+use App\Http\Controllers\Purchasing\MaterialCalculationController;
 use App\Http\Controllers\Purchasing\MaterialClaimController;
+use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
 use App\Http\Controllers\Purchasing\PdfController;
 use App\Http\Controllers\Purchasing\PeriodController;
 use App\Http\Controllers\Purchasing\PoDocumentController;
@@ -86,6 +91,16 @@ Route::middleware('auth')->group(function () {
 */
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/material-hs-code', [MaterialHsCodeController::class, 'index'])->name('material-hs-code.index');
+    Route::get('/master-data-quality', [MaterialHsCodeController::class, 'quality'])->name('master-data-quality.index');
+    Route::get('/material-masters/data', [MaterialMasterController::class, 'data'])->name('material-masters.data');
+    Route::post('/material-masters', [MaterialMasterController::class, 'store'])->name('material-masters.store');
+    Route::put('/material-masters/{materialMaster}', [MaterialMasterController::class, 'update'])->name('material-masters.update');
+    Route::patch('/material-masters/{materialMaster}/status', [MaterialMasterController::class, 'status'])->name('material-masters.status');
+    Route::get('/hs-code-rules/data', [HsCodeRuleController::class, 'data'])->name('hs-code-rules.data');
+    Route::post('/hs-code-rules', [HsCodeRuleController::class, 'store'])->name('hs-code-rules.store');
+    Route::put('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'update'])->name('hs-code-rules.update');
+    Route::patch('/hs-code-rules/{hsCodeRule}/status', [HsCodeRuleController::class, 'status'])->name('hs-code-rules.status');
     Route::get('/requisitions/{requisition}', [PurchaseRequisitionController::class, 'show'])->name('requisitions.show');
     Route::post('/kurs/update', [AdminController::class, 'updateKurs'])->name('kurs.update');
 
@@ -108,6 +123,13 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::post('/kurs/update', [PurchasingController::class, 'updateKurs'])->name('kurs.update');
     // Manajemen Periode
     Route::resource('periods', PeriodController::class)->only(['index', 'store', 'update']);
+
+    Route::get('/material-masters/search', MaterialMasterSearchController::class)
+        ->middleware('throttle:120,1')
+        ->name('material-masters.search');
+    Route::post('/material-calculations/preview', [MaterialCalculationController::class, 'preview'])
+        ->middleware('throttle:120,1')
+        ->name('material-calculations.preview');
 
     Route::get('/requisitions/import-template', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importTemplate'])->name('requisitions.import-template');
     Route::post('/requisitions/import-preview', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importPreview'])->name('requisitions.import-preview');
