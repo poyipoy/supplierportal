@@ -90,24 +90,24 @@
             <div class="collapse {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
                 <div class="row g-2">
                     <div class="col-md-2 dimension-field" data-dim="thickness">
-                        <label class="form-label small text-muted">Thickness (mm)</label>
-                        <input type="number" step="0.01" name="thickness" class="form-control form-control-sm historical-filter-input" value="{{ request('thickness') }}">
+                        <label class="form-label small text-muted" for="purchasing-history-thickness">Thickness (mm)</label>
+                        <input type="number" step="0.01" name="thickness" id="purchasing-history-thickness" class="form-control form-control-sm historical-filter-input" value="{{ request('thickness') }}">
                     </div>
                     <div class="col-md-2 dimension-field" data-dim="d_inner">
-                        <label class="form-label small text-muted">D-Inner (mm)</label>
-                        <input type="number" step="0.01" name="d_inner" class="form-control form-control-sm historical-filter-input" value="{{ request('d_inner') }}">
+                        <label class="form-label small text-muted" for="purchasing-history-d-inner">D-Inner (mm)</label>
+                        <input type="number" step="0.01" name="d_inner" id="purchasing-history-d-inner" class="form-control form-control-sm historical-filter-input" value="{{ request('d_inner') }}">
                     </div>
                     <div class="col-md-2 dimension-field" data-dim="d_outer">
-                        <label class="form-label small text-muted">D-Outer (mm)</label>
-                        <input type="number" step="0.01" name="d_outer" class="form-control form-control-sm historical-filter-input" value="{{ request('d_outer') }}">
+                        <label class="form-label small text-muted" for="purchasing-history-d-outer">D-Outer (mm)</label>
+                        <input type="number" step="0.01" name="d_outer" id="purchasing-history-d-outer" class="form-control form-control-sm historical-filter-input" value="{{ request('d_outer') }}">
                     </div>
                     <div class="col-md-2 dimension-field" data-dim="width">
-                        <label class="form-label small text-muted">Width (mm)</label>
-                        <input type="number" step="0.01" name="width" class="form-control form-control-sm historical-filter-input" value="{{ request('width') }}">
+                        <label class="form-label small text-muted" for="purchasing-history-width">Width (mm)</label>
+                        <input type="number" step="0.01" name="width" id="purchasing-history-width" class="form-control form-control-sm historical-filter-input" value="{{ request('width') }}">
                     </div>
                     <div class="col-md-2 dimension-field" data-dim="length">
-                        <label class="form-label small text-muted">Length (mm)</label>
-                        <input type="number" step="0.01" name="length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
+                        <label class="form-label small text-muted" for="purchasing-history-length">Length (mm)</label>
+                        <input type="number" step="0.01" name="length" id="purchasing-history-length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
                     </div>
                     <div class="col-md-2 d-flex align-items-end flex-grow-1">
                         <x-ui.button type="submit" size="sm" class="tw-w-full"><x-slot:leading><i class="bi bi-search"></i></x-slot:leading>Apply</x-ui.button>
@@ -126,7 +126,7 @@
             </h6>
         </div>
         <div class="card-body">
-            <canvas id="historicalChart" height="300"></canvas>
+            <canvas id="historicalChart" height="300" role="img" aria-label="Historical material price trend">Historical material price trend chart.</canvas>
         </div>
     </div>
 
@@ -521,7 +521,7 @@ function historicalResultShellHtml() {
                 <h6 class="mb-0 fw-bold" id="historicalChartTitle"></h6>
             </div>
             <div class="card-body">
-                <canvas id="historicalChart" height="300"></canvas>
+                <canvas id="historicalChart" height="300" role="img" aria-label="Historical material price trend">Historical material price trend chart.</canvas>
             </div>
         </div>
 

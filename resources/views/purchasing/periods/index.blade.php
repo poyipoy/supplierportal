@@ -38,14 +38,14 @@
     </div>
 
     <!-- Create Modal -->
-    <div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createPeriodModalTitle" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form action="{{ route('purchasing.periods.store') }}" method="POST">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title fw-bold">Add New Period</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title fw-bold" id="createPeriodModalTitle">Add New Period</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="tw-grid tw-gap-4">
@@ -76,15 +76,15 @@
     </div>
 
     <!-- Edit Modal (single, dynamic) -->
-    <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editPeriodModalTitle" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form id="editForm" method="POST">
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
-                        <h5 class="modal-title fw-bold">Edit Period</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title fw-bold" id="editPeriodModalTitle">Edit Period</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="tw-grid tw-gap-4">

@@ -8,9 +8,9 @@
             </a></li>
         <li><hr class="dropdown-divider"></li>
         <li>
-            <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#quotationImportModal">
+            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#quotationImportModal">
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i> Import Excel
-            </a>
+            </button>
         </li>
     </ul>
 </div>

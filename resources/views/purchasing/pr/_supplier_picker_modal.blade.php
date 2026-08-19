@@ -64,7 +64,7 @@
                         <div class="col">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control supplier-search-input" placeholder="Search supplier name, email, or company...">
+                                <input type="text" class="form-control supplier-search-input" placeholder="Search supplier name, email, or company..." aria-label="Search suppliers">
                             </div>
                         </div>
                         <div class="col-auto">
@@ -84,7 +84,7 @@
                                     $supplierKey = strtolower($supplierName . ' ' . $supplierEmail . ' ' . ($supplier->name ?? ''));
                                 @endphp
                                 <label class="supplier-option d-flex gap-3 align-items-start p-3 border-bottom mb-0" data-supplier-key="{{ $supplierKey }}">
-                                    <input class="form-check-input mt-1 supplier-checkbox" type="checkbox" name="supplier_ids[]" value="{{ $supplier->id }}" data-supplier-name="{{ $supplierName }}" @checked(in_array((string) $supplier->id, $selectedSupplierIds, true))>
+                                    <input class="form-check-input mt-1 supplier-checkbox" type="checkbox" name="supplier_ids[]" value="{{ $supplier->id }}" data-supplier-name="{{ $supplierName }}" aria-label="Select supplier {{ $supplierName }}" @checked(in_array((string) $supplier->id, $selectedSupplierIds, true))>
                                     <span class="flex-grow-1">
                                         <span class="d-block fw-semibold">{{ $supplierName }}</span>
                                         <span class="d-block small text-muted">{{ $supplierEmail ?: $supplier->name }}</span>

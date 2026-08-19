@@ -10,12 +10,12 @@
     <div class="tw-border-b tw-border-outline-variant tw-px-4 tw-pt-3 shell:tw-px-5">
         <ul class="nav nav-tabs border-bottom-0" id="claimTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-medium px-4 pb-3" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab">
+                <button class="nav-link active fw-medium px-4 pb-3" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab" aria-controls="action" aria-selected="true">
                     Perlu Tindakan <span class="badge bg-danger ms-2">{{ $actionCount }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
                     History Claim
                 </button>
             </li>
@@ -24,7 +24,7 @@
     <div class="tw-p-4 shell:tw-p-5">
         <div class="tab-content" id="claimTabsContent">
             {{-- Tab: Perlu Tindakan --}}
-            <div class="tab-pane fade show active" id="action" role="tabpanel">
+            <div class="tab-pane fade show active" id="action" role="tabpanel" aria-labelledby="action-tab" tabindex="0">
                 <x-ui.alert class="tw-mb-4">The PO list below has been inspected by QC with an NG result. Submit a claim to the relevant supplier.</x-ui.alert>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle w-100" id="actionTable">
@@ -43,7 +43,7 @@
             </div>
 
             {{-- Tab: History Claim --}}
-            <div class="tab-pane fade" id="history" role="tabpanel">
+            <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle w-100" id="historyTable">
                         <thead class="table-light">

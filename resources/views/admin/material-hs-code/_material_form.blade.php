@@ -1,11 +1,11 @@
-<div class="modal fade" id="materialModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="materialModal" tabindex="-1" aria-labelledby="materialModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form id="materialForm" method="POST" action="{{ route('admin.material-masters.store') }}" class="modal-content">
             @csrf
             <input type="hidden" id="materialFormMethod">
             <input type="hidden" name="form_context" value="material">
             <input type="hidden" name="record_id" id="materialRecordId" value="{{ old('form_context') === 'material' ? old('record_id') : '' }}">
-            <div class="modal-header"><h5 class="modal-title" id="materialModalTitle">Add Material</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header"><h5 class="modal-title" id="materialModalTitle">Add Material</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
             <div class="modal-body">
                 <div class="row g-3">
                     <div class="col-md-6"><label class="form-label" for="materialCode">Material Code <span class="text-danger">*</span></label><input type="text" name="material_code" id="materialCode" class="form-control" maxlength="100" required value="{{ old('form_context') === 'material' ? old('material_code') : '' }}"></div>

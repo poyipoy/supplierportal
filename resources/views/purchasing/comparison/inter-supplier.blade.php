@@ -129,7 +129,7 @@
             </div>
         </x-slot:actions>
         <div class="tw-min-h-[280px]">
-            <canvas id="comparisonChart" height="280"></canvas>
+            <canvas id="comparisonChart" height="280" role="img" aria-label="Supplier quotation price comparison">Supplier quotation price comparison chart.</canvas>
         </div>
     </x-ui.card>
 

@@ -17,7 +17,7 @@
             <x-ui.card title="Quality Ratio" class="tw-h-full">
                 <div class="tw-flex tw-items-center tw-justify-center">
                     @if($totalInspections > 0)
-                        <div class="tw-h-[220px] tw-w-[220px]"><canvas id="qualityChart"></canvas></div>
+                        <div class="tw-h-[220px] tw-w-[220px]"><canvas id="qualityChart" role="img" aria-label="QC OK and NG distribution">QC OK and NG distribution chart.</canvas></div>
                     @else
                         <div class="text-muted text-center">No inspection data available.</div>
                     @endif
@@ -25,7 +25,7 @@
             </x-ui.card>
         </div>
         <div class="col-lg-8">
-            <x-ui.card title="OK vs NG Trend" description="Historical inspection outcome by period." class="tw-h-full"><canvas id="trendChart" height="200"></canvas></x-ui.card>
+            <x-ui.card title="OK vs NG Trend" description="Historical inspection outcome by period." class="tw-h-full"><canvas id="trendChart" height="200" role="img" aria-label="QC OK and NG trend by period">QC OK and NG trend chart by period.</canvas></x-ui.card>
         </div>
     </div>
 

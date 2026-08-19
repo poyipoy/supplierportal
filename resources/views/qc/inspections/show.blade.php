@@ -157,9 +157,9 @@
         @if(auth()->user()->role === 'qc')
             <form action="{{ route('qc.inspections.attachments.store', $inspection) }}" method="POST" enctype="multipart/form-data" class="border-top mt-3 pt-3">
                 @csrf
-                <label class="form-label fw-medium small">Add NG Evidence Photo</label>
-                <input type="file" name="attachments[]" class="form-control @error('attachments') is-invalid @enderror @error('attachments.*') is-invalid @enderror" accept=".jpg,.jpeg,.png" multiple required>
-                <div class="form-text">JPG, JPEG, or PNG format. Maximum 10MB per file.</div>
+                <label for="inspection-attachments" class="form-label fw-medium small">Add NG Evidence Photo</label>
+                <input type="file" id="inspection-attachments" name="attachments[]" class="form-control @error('attachments') is-invalid @enderror @error('attachments.*') is-invalid @enderror" accept=".jpg,.jpeg,.png" multiple required aria-describedby="inspection-attachments-help">
+                <div class="form-text" id="inspection-attachments-help">JPG, JPEG, or PNG format. Maximum 10MB per file.</div>
                 @error('attachments')
                     <div class="text-danger small mt-1">{{ $message }}</div>
                 @enderror

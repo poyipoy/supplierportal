@@ -14,14 +14,14 @@
     <x-ui.card padding="none">
         <div class="tw-border-b tw-border-outline-variant tw-px-4 tw-pt-3 shell:tw-px-5">
             <ul class="nav nav-tabs border-0" id="masterTabs" role="tablist">
-                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab">Materials</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#rules" type="button" role="tab">HS Code Rules</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#data-quality" type="button" role="tab">Data Quality</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link active" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab" aria-controls="materials" aria-selected="true">Materials</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules" type="button" role="tab" aria-controls="rules" aria-selected="false">HS Code Rules</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link" id="data-quality-tab" data-bs-toggle="tab" data-bs-target="#data-quality" type="button" role="tab" aria-controls="data-quality" aria-selected="false">Data Quality</button></li>
             </ul>
         </div>
 
         <div class="tab-content tw-p-4 shell:tw-p-5">
-            <div class="tab-pane fade show active" id="materials" role="tabpanel">
+            <div class="tab-pane fade show active" id="materials" role="tabpanel" aria-labelledby="materials-tab" tabindex="0">
                 <div class="tw-mb-4 tw-flex tw-flex-col tw-gap-3 xl:tw-flex-row xl:tw-items-end xl:tw-justify-between">
                     <div class="tw-grid tw-flex-1 tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-4">
                         <label class="tw-grid tw-gap-1 tw-text-ui-xs tw-font-medium">Status
@@ -46,7 +46,7 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="rules" role="tabpanel">
+            <div class="tab-pane fade" id="rules" role="tabpanel" aria-labelledby="rules-tab" tabindex="0">
                 <div class="tw-mb-4 tw-flex tw-flex-col tw-gap-3 xl:tw-flex-row xl:tw-items-end xl:tw-justify-between">
                     <div class="tw-grid tw-flex-1 tw-gap-3 md:tw-grid-cols-3">
                         <label class="tw-grid tw-gap-1 tw-text-ui-xs tw-font-medium">Status
@@ -68,7 +68,7 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="data-quality" role="tabpanel">
+            <div class="tab-pane fade" id="data-quality" role="tabpanel" aria-labelledby="data-quality-tab" tabindex="0">
                 <div id="qualityLoading" class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-12" role="status">
                     <span class="ui-spinner" aria-hidden="true"></span><span class="tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Analyzing master data...</span>
                 </div>

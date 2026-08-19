@@ -54,6 +54,7 @@
                 class="form-control form-control-sm material-master-search"
                 required
                 autocomplete="off"
+                aria-label="Material name"
                 placeholder="Search master material"
                 value="{{ $itemData['material_name'] ?? '' }}"
             >
@@ -69,7 +70,7 @@
         <div class="mt-2">
             <div class="input-group input-group-sm">
                 <span class="input-group-text">HS</span>
-                <input type="text" name="items[{{ $index }}][hs_code]" class="form-control hs-code-display" maxlength="20" value="{{ $itemData['hs_code'] ?? '' }}" placeholder="Auto or manual HS code">
+                <input type="text" name="items[{{ $index }}][hs_code]" class="form-control hs-code-display" maxlength="20" value="{{ $itemData['hs_code'] ?? '' }}" placeholder="Auto or manual HS code" aria-label="HS code">
             </div>
             <input type="hidden" name="items[{{ $index }}][hs_code_manual_override]" class="hs-code-manual-override" value="{{ $source === 'manual' ? '1' : '0' }}">
             <span class="badge mt-1 hs-status-badge {{ $source === 'manual' ? 'bg-warning text-dark' : ($status === 'matched' ? 'bg-success' : 'bg-secondary') }}">{{ $statusLabel }}</span>
@@ -88,7 +89,7 @@
         @error("items.{$index}.shape") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
     <td>
-        <input type="number" step="1" min="1" name="items[{{ $index }}][quantity]" class="form-control form-control-sm text-center material-quantity" required value="{{ $quantity }}">
+        <input type="number" step="1" min="1" name="items[{{ $index }}][quantity]" class="form-control form-control-sm text-center material-quantity" required value="{{ $quantity }}" aria-label="Material quantity">
         @error("items.{$index}.quantity") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
     @foreach($dimensionSlots as $slotIndex => $slot)
@@ -126,14 +127,14 @@
     @endforeach
     <td>
         <div class="input-group input-group-sm">
-            <input type="number" step="0.0001" name="items[{{ $index }}][weight_needed]" class="form-control text-end weight-unit-display" value="{{ number_format($unitKg, 4, '.', '') }}">
+            <input type="number" step="0.0001" name="items[{{ $index }}][weight_needed]" class="form-control text-end weight-unit-display" value="{{ number_format($unitKg, 4, '.', '') }}" aria-label="Unit weight in kilograms">
             <span class="input-group-text">kg</span>
         </div>
         <input type="hidden" name="items[{{ $index }}][weight_manual_override]" class="weight-manual-override" value="{{ ($itemData['weight_calculation_status'] ?? '') === 'manual' ? '1' : '0' }}">
         @error("items.{$index}.weight_needed") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
     <td>
-        <textarea name="items[{{ $index }}][remark]" class="form-control form-control-sm" rows="2" maxlength="2000" placeholder="Optional material remark">{{ $itemData['remark'] ?? '' }}</textarea>
+        <textarea name="items[{{ $index }}][remark]" class="form-control form-control-sm" rows="2" maxlength="2000" placeholder="Optional material remark" aria-label="Material remark">{{ $itemData['remark'] ?? '' }}</textarea>
         @error("items.{$index}.remark") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
     <td class="text-center pr-sticky-action">

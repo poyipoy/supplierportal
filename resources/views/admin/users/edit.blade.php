@@ -17,29 +17,30 @@
                         <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">Informasi Akun</h6>
                         
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $user->name) }}" required>
+                            <label class="form-label small fw-medium text-muted" for="user-name">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="user-name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $user->name) }}" required>
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Alamat Email <span class="text-danger">*</span></label>
-                            <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
+                            <label class="form-label small fw-medium text-muted" for="user-email">Alamat Email <span class="text-danger">*</span></label>
+                            <input type="email" name="email" id="user-email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
                             @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3 border rounded p-3 bg-light">
-                            <label class="form-label small fw-bold text-dark"><i class="bi bi-key"></i> Change Password</label>
-                            <p class="small text-muted mb-2">Leave blank if you do not want to change the password.</p>
+                            <label class="form-label small fw-bold text-dark" for="user-password"><i class="bi bi-key"></i> Change Password</label>
+                            <p class="small text-muted mb-2" id="user-password-help">Leave blank if you do not want to change the password.</p>
                             
-                            <input type="password" name="password" class="form-control mb-2 @error('password') is-invalid @enderror" placeholder="New password (minimum 12 characters)" minlength="12" maxlength="255" autocomplete="new-password">
+                            <input type="password" name="password" id="user-password" class="form-control mb-2 @error('password') is-invalid @enderror" placeholder="New password (minimum 12 characters)" minlength="12" maxlength="255" autocomplete="new-password" aria-describedby="user-password-help">
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             
-                            <input type="password" name="password_confirmation" class="form-control" placeholder="Confirm New Password" minlength="12" maxlength="255" autocomplete="new-password">
+                            <label class="tw-sr-only" for="user-password-confirmation">Confirm new password</label>
+                            <input type="password" name="password_confirmation" id="user-password-confirmation" class="form-control" placeholder="Confirm New Password" minlength="12" maxlength="255" autocomplete="new-password">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Role (Access Rights) <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted" for="role-select">Role (Access Rights) <span class="text-danger">*</span></label>
                             <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
                                 <option value="">-- Select Role --</option>
                                 <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin</option>
@@ -61,32 +62,32 @@
                         <h6 class="text-info fw-bold mb-3 border-bottom pb-2">Company Details (Supplier)</h6>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Company Name (PT/CV) <span class="text-danger">*</span></label>
-                            <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name', $user->supplier->company_name ?? '') }}">
+                            <label class="form-label small fw-medium text-muted" for="supplier-company-name">Company Name (PT/CV) <span class="text-danger">*</span></label>
+                            <input type="text" name="company_name" id="supplier-company-name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name', $user->supplier->company_name ?? '') }}">
                             @error('company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Alamat Lengkap <span class="text-danger">*</span></label>
-                            <textarea name="address" class="form-control @error('address') is-invalid @enderror" rows="3">{{ old('address', $user->supplier->address ?? '') }}</textarea>
+                            <label class="form-label small fw-medium text-muted" for="supplier-address">Alamat Lengkap <span class="text-danger">*</span></label>
+                            <textarea name="address" id="supplier-address" class="form-control @error('address') is-invalid @enderror" rows="3">{{ old('address', $user->supplier->address ?? '') }}</textarea>
                             @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Number Telepon <span class="text-danger">*</span></label>
-                            <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $user->supplier->phone ?? '') }}">
+                            <label class="form-label small fw-medium text-muted" for="supplier-phone">Number Telepon <span class="text-danger">*</span></label>
+                            <input type="text" name="phone" id="supplier-phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $user->supplier->phone ?? '') }}">
                             @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">NPWP <span class="text-danger">*</span></label>
-                            <input type="text" name="npwp" class="form-control @error('npwp') is-invalid @enderror" value="{{ old('npwp', $user->supplier->npwp ?? '') }}">
+                            <label class="form-label small fw-medium text-muted" for="supplier-npwp">NPWP <span class="text-danger">*</span></label>
+                            <input type="text" name="npwp" id="supplier-npwp" class="form-control @error('npwp') is-invalid @enderror" value="{{ old('npwp', $user->supplier->npwp ?? '') }}">
                             @error('npwp')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Kategori Material <span class="text-danger">*</span></label>
-                            <input type="text" name="category" class="form-control @error('category') is-invalid @enderror" value="{{ old('category', $user->supplier->category ?? '') }}" placeholder="Contoh: Baja, Plat Besi, dsb">
+                            <label class="form-label small fw-medium text-muted" for="supplier-category">Kategori Material <span class="text-danger">*</span></label>
+                            <input type="text" name="category" id="supplier-category" class="form-control @error('category') is-invalid @enderror" value="{{ old('category', $user->supplier->category ?? '') }}" placeholder="Contoh: Baja, Plat Besi, dsb">
                             @error('category')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 

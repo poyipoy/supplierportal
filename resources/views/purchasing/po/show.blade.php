@@ -411,6 +411,10 @@
         {{-- Progress Bar --}}
         <div class="progress mb-4 tw-h-2">
             <div class="progress-bar bg-success" role="progressbar" id="docProgressBar"
+                 aria-label="Import document completion"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="{{ $totalDocs > 0 ? round($completedDocs / $totalDocs * 100) : 0 }}"
                  style="width: {{ $totalDocs > 0 ? ($completedDocs/$totalDocs*100) : 0 }}%"></div>
         </div>
 
@@ -470,12 +474,12 @@
 </div>
 
 {{-- Update Document Modal --}}
-<div class="modal fade" id="updateDocModal" tabindex="-1">
+<div class="modal fade" id="updateDocModal" tabindex="-1" aria-labelledby="modalDocTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold" id="modalDocTitle">Update Document Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modalDocId">
@@ -613,7 +617,9 @@
                     }).length;
 
                     const pct = total > 0 ? (completed / total * 100) : 0;
-                    $('#docProgressBar').css('width', pct + '%');
+                    $('#docProgressBar')
+                        .css('width', pct + '%')
+                        .attr('aria-valuenow', Math.round(pct));
                     const docsComplete = completed >= total;
                     $('#docProgressBadge')
                         .text(completed + '/' + total + ' complete')

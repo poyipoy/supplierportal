@@ -122,22 +122,22 @@
                             <div class="qc-dimension-grid">
                             @foreach($visibleDimensions as $dimension)
                                 <div>
-                                    <label class="form-label small">{{ $qcDimensionLabels[$dimension] }}</label>
-                                    <input type="number" step="any" name="items[{{ $index }}][{{ $qcActualFields[$dimension] }}]" class="form-control form-control-sm actual-input" data-spec-type="{{ $dimension }}" value="{{ old('items.' . $index . '.' . $qcActualFields[$dimension]) }}">
+                                    <label class="form-label small" for="actual-{{ $index }}-{{ $dimension }}">{{ $qcDimensionLabels[$dimension] }}</label>
+                                    <input type="number" step="any" id="actual-{{ $index }}-{{ $dimension }}" name="items[{{ $index }}][{{ $qcActualFields[$dimension] }}]" class="form-control form-control-sm actual-input" data-spec-type="{{ $dimension }}" value="{{ old('items.' . $index . '.' . $qcActualFields[$dimension]) }}">
                                 </div>
                             @endforeach
                             </div>
                             <div class="mt-3">
-                                <label class="form-label small">Notes Item</label>
-                                <textarea name="items[{{ $index }}][notes]" class="form-control form-control-sm" rows="1" placeholder="Optional..."></textarea>
+                                <label class="form-label small" for="item-notes-{{ $index }}">Notes Item</label>
+                                <textarea id="item-notes-{{ $index }}" name="items[{{ $index }}][notes]" class="form-control form-control-sm" rows="1" placeholder="Optional..."></textarea>
                             </div>
                         </div>
 
                         {{-- NG Photo Upload (Hidden by default) --}}
                         <div class="ng-photo-section mt-3 p-3 bg-danger bg-opacity-10 border border-danger rounded d-none" id="photo-section-{{ $index }}">
-                            <label class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>NG Evidence Photos (Required)</label>
-                            <input type="file" name="attachments[{{ $index }}][]" class="form-control form-control-sm photo-input" accept=".jpg,.jpeg,.png" multiple disabled>
-                            <div class="form-text text-danger small">Max 10MB per file. Select at least 1 photo because this item status is NG.</div>
+                            <label for="photo-input-{{ $index }}" class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>NG Evidence Photos (Required)</label>
+                            <input type="file" id="photo-input-{{ $index }}" name="attachments[{{ $index }}][]" class="form-control form-control-sm photo-input" accept=".jpg,.jpeg,.png" multiple disabled aria-describedby="photo-input-help-{{ $index }}">
+                            <div class="form-text text-danger small" id="photo-input-help-{{ $index }}">Max 10MB per file. Select at least 1 photo because this item status is NG.</div>
                         </div>
                     </div>
                 </div>
@@ -146,7 +146,7 @@
     @endforeach
 
     <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
-        <x-ui.button href="javascript:history.back()" variant="ghost">Cancel</x-ui.button>
+        <x-ui.button :href="route('qc.inspections.index')" variant="ghost">Cancel</x-ui.button>
         <x-ui.button type="button" id="btnSubmit"><x-slot:leading><i class="bi bi-save"></i></x-slot:leading>Save Inspection Results</x-ui.button>
     </div>
 </form>

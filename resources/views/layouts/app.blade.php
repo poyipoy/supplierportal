@@ -49,8 +49,8 @@
 
         /* Skeleton Loading */
         .skeleton {
-            background: #e2e5e7;
-            background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+            background: var(--md-surface-container-high);
+            background-image: linear-gradient(90deg, rgba(var(--md-surface-rgb), 0), rgba(var(--md-surface-rgb), 0.4), rgba(var(--md-surface-rgb), 0));
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite linear;
             border-radius: 4px;
@@ -103,7 +103,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(244, 246, 248, 0.6);
+            background: rgba(var(--md-background-rgb), 0.6);
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
             display: none;
@@ -119,12 +119,11 @@
         }
 
         .adasi-loader-card {
-            background: #fff;
+            background: var(--md-surface);
             border-radius: 16px;
             padding: 28px 32px;
-            box-shadow: 0 12px 40px rgba(31, 95, 166, 0.18),
-                0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(31, 95, 166, 0.1);
+            box-shadow: var(--md-elevation-2);
+            border: 1px solid rgba(var(--md-primary-rgb), 0.1);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -160,8 +159,8 @@
             position: absolute;
             inset: 0;
             border-radius: 50%;
-            border: 3px solid #e8ecf1;
-            border-top-color: #94a3b8;
+            border: 3px solid var(--md-surface-container-high);
+            border-top-color: var(--md-outline-strong);
             /* Silver */
             border-right-color: var(--adasi-red);
             animation: adasiSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
@@ -758,18 +757,18 @@
 
         /* Global Table Styling */
         .table {
-            border: 1px solid #cbd5e1 !important;
+            border: 1px solid var(--md-outline) !important;
             /* Slate-300 untuk border lebih tegas */
             border-collapse: collapse !important;
-            background-color: #fff;
+            background-color: var(--md-surface);
         }
 
         .table thead th {
-            background-color: #f1f5f9 !important;
+            background-color: var(--md-surface-container) !important;
             /* Slate-100 */
-            border-bottom: 2px solid #94a3b8 !important;
+            border-bottom: 2px solid var(--md-outline-strong) !important;
             /* Slate-400 */
-            color: #1e293b !important;
+            color: var(--md-on-surface) !important;
             /* Slate-800 */
             font-weight: 700 !important;
             text-transform: uppercase;
@@ -779,18 +778,18 @@
 
         .table td,
         .table th {
-            border: 1px solid #cbd5e1 !important;
+            border: 1px solid var(--md-outline) !important;
             /* Slate-300 */
             vertical-align: middle !important;
         }
 
         .table-striped tbody tr:nth-of-type(odd) {
-            background-color: #f8fafc !important;
+            background-color: var(--md-surface-container-low) !important;
             /* Slate-50 */
         }
 
         .table-hover tbody tr:hover {
-            background-color: rgba(31, 95, 166, 0.05) !important;
+            background-color: rgba(var(--md-primary-rgb), 0.05) !important;
         }
 
         /* Sticky Table Header - keeps column context visible when scrolling */
@@ -829,7 +828,7 @@
 
         a.kpi-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(31, 95, 166, 0.12) !important;
+            box-shadow: var(--md-elevation-2) !important;
         }
 
         a.kpi-card .kpi-arrow {
@@ -844,7 +843,7 @@
         /* DataTables Adjustment */
         .dataTables_wrapper .dataTables_paginate .paginate_button.current {
             background: var(--adasi-blue) !important;
-            color: white !important;
+            color: var(--md-on-primary) !important;
             border: 1px solid var(--adasi-blue) !important;
         }
 
@@ -855,7 +854,7 @@
         }
 
         .chat-drawer .offcanvas-body {
-            background-color: #f4f7f6;
+            background-color: var(--md-background);
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -881,9 +880,9 @@
         }
 
         .chat-thread-button {
-            background: #fff;
+            background: var(--md-surface);
             border: 0;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--md-outline-variant);
             color: inherit;
             display: block;
             padding: 0.9rem 1rem;
@@ -892,7 +891,7 @@
         }
 
         .chat-thread-button:hover {
-            background: rgba(31, 95, 166, 0.06);
+            background: rgba(var(--md-primary-rgb), 0.06);
         }
 
         .chat-message-row {
@@ -925,20 +924,20 @@
 
         .chat-message-bubble.is-me {
             background: var(--adasi-blue);
-            color: #fff;
+            color: var(--md-on-primary);
             border-bottom-right-radius: 0.28rem;
         }
 
         .chat-message-bubble.is-partner {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            color: #1e293b;
+            background: var(--md-surface);
+            border: 1px solid var(--md-outline-variant);
+            color: var(--md-on-surface);
             border-bottom-left-radius: 0.28rem;
         }
 
         .chat-message-meta {
             align-items: center;
-            color: #64748b;
+            color: var(--md-on-surface-variant);
             display: flex;
             font-size: 0.72rem;
             gap: 0.25rem;
@@ -971,9 +970,9 @@
 
         .chat-context-field {
             min-width: 0;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--md-outline-variant);
             border-radius: 0.45rem;
-            background: #f8fafc;
+            background: var(--md-surface-container-low);
             padding: 0.35rem 0.5rem;
         }
 
@@ -1016,8 +1015,8 @@
 
         .chat-attachment-link {
             align-items: center;
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(var(--md-on-primary-rgb), 0.16);
+            border: 1px solid rgba(var(--md-on-primary-rgb), 0.28);
             border-radius: 0.45rem;
             color: inherit;
             display: flex;
@@ -1027,13 +1026,13 @@
         }
 
         .chat-message-bubble.is-partner .chat-attachment-link {
-            background: #f8fafc;
-            border-color: #dbe3ec;
+            background: var(--md-surface-container-low);
+            border-color: var(--md-outline-variant);
             color: var(--adasi-blue);
         }
 
         .chat-read-receipt {
-            color: #94a3b8;
+            color: var(--md-outline-strong);
             display: inline-flex;
             font-size: 0.82rem;
             line-height: 1;
@@ -1041,7 +1040,7 @@
         }
 
         .chat-read-receipt.is-read {
-            color: #3b82f6;
+            color: var(--md-primary);
         }
 
         .chat-fullpage-shell {
@@ -1145,7 +1144,7 @@
         .notification-dropdown {
             border: 0;
             border-radius: 0.75rem;
-            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+            box-shadow: var(--md-elevation-3);
             overflow: hidden;
             padding: 0;
             width: min(780px, calc(100vw - 2rem));
@@ -1160,8 +1159,8 @@
         }
 
         .notification-menu {
-            background: #f8fafc;
-            border-right: 1px solid #e2e8f0;
+            background: var(--md-surface-container-low);
+            border-right: 1px solid var(--md-outline-variant);
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -1170,7 +1169,7 @@
         }
 
         .notification-menu-heading {
-            color: #64748b;
+            color: var(--md-on-surface-variant);
             font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.04em;
@@ -1181,7 +1180,7 @@
         .notification-menu .nav-link {
             align-items: center;
             border-radius: 0.55rem;
-            color: #475569;
+            color: var(--md-on-surface-variant);
             display: flex;
             font-size: 0.82rem;
             font-weight: 600;
@@ -1195,7 +1194,7 @@
         }
 
         .notification-menu .nav-link.active {
-            background: rgba(31, 95, 166, 0.1);
+            background: rgba(var(--md-primary-rgb), 0.1);
             color: var(--adasi-blue);
         }
 
@@ -1221,7 +1220,7 @@
         }
 
         .notification-item:hover {
-            background: rgba(31, 95, 166, 0.05);
+            background: rgba(var(--md-primary-rgb), 0.05);
         }
 
         .min-w-0 {
@@ -1229,7 +1228,7 @@
         }
 
         .notification-page-menu {
-            background: #f8fafc;
+            background: var(--md-surface-container-low);
             border-radius: 0.75rem;
             padding: 0.85rem;
         }
@@ -1238,7 +1237,7 @@
             align-items: center;
             border: 0;
             border-radius: 0.55rem;
-            color: #475569;
+            color: var(--md-on-surface-variant);
             display: flex;
             font-size: 0.88rem;
             font-weight: 600;
@@ -1248,7 +1247,7 @@
         }
 
         .notification-page-menu .list-group-item.active {
-            background: rgba(31, 95, 166, 0.1);
+            background: rgba(var(--md-primary-rgb), 0.1);
             color: var(--adasi-blue);
         }
 
@@ -1278,7 +1277,7 @@
                 left: 0;
                 width: 100%;
                 height: 100vh;
-                background: rgba(0, 0, 0, var(--md-scrim-opacity));
+                background: var(--ui-dialog-scrim);
                 z-index: 998;
             }
 
@@ -1296,7 +1295,7 @@
             }
 
             .notification-menu {
-                border-bottom: 1px solid #e2e8f0;
+                border-bottom: 1px solid var(--md-outline-variant);
                 border-right: 0;
                 display: flex;
                 flex-direction: row;
@@ -1332,6 +1331,7 @@
     x-data="adasiShell"
     x-on:ui-sidebar-toggle.window="toggleSidebar()"
     x-on:keydown.escape.window="closeMobileSidebar()"
+    x-on:keydown.tab.window="trapSidebarFocus($event)"
     x-effect="document.body.classList.toggle('ui-nav-open', mobileOpen)"
 >
     <a href="#main-content" class="ui-skip-link">Langsung ke konten utama</a>

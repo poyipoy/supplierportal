@@ -10,12 +10,12 @@
     <div class="tw-flex tw-flex-col tw-gap-3 tw-border-b tw-border-outline-variant tw-px-4 tw-pt-3 shell:tw-flex-row shell:tw-items-start shell:tw-justify-between shell:tw-px-5">
         <ul class="nav nav-tabs border-bottom-0" id="inspectionTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-medium px-4 pb-3" id="waiting-tab" data-bs-toggle="tab" data-bs-target="#waiting" type="button" role="tab">
+                <button class="nav-link active fw-medium px-4 pb-3" id="waiting-tab" data-bs-toggle="tab" data-bs-target="#waiting" type="button" role="tab" aria-controls="waiting" aria-selected="true">
                     Waiting for Inspection <span class="badge bg-warning text-dark ms-2">{{ $waitingCount }}</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                <button class="nav-link fw-medium px-4 pb-3" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
                     Inspection History <span class="badge bg-secondary ms-2">{{ $historyCount }}</span>
                 </button>
             </li>
@@ -25,7 +25,7 @@
     <div class="tw-p-4 shell:tw-p-5">
         <div class="tab-content" id="inspectionTabsContent">
             {{-- Tab: Waiting for Inspection --}}
-            <div class="tab-pane fade show active" id="waiting" role="tabpanel">
+            <div class="tab-pane fade show active" id="waiting" role="tabpanel" aria-labelledby="waiting-tab" tabindex="0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle w-100" id="waitingTable">
                         <thead class="table-light">
@@ -43,7 +43,7 @@
             </div>
 
             {{-- Tab: Inspection History --}}
-            <div class="tab-pane fade" id="history" role="tabpanel">
+            <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
                 <div class="bg-light border rounded-3 p-3 mb-3">
                     <div class="row g-2 align-items-end">
                         <div class="col-12 col-md-4 col-lg-3">

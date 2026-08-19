@@ -117,12 +117,12 @@
 {{-- Grafik --}}
 <div class="tw-grid tw-gap-6 lg:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
     <x-ui.card title="Purchase requisitions per month" description="Monthly creation volume for the current reporting window." class="tw-min-w-0">
-        <div class="tw-h-[16.25rem]"><canvas id="prChart"></canvas></div>
+        <div class="tw-h-[16.25rem]"><canvas id="prChart" role="img" aria-label="Purchase requisition volume by month">Purchase requisition volume chart by month.</canvas></div>
     </x-ui.card>
     <x-ui.card title="PO status distribution" description="Current purchase-order workload by state." class="tw-min-w-0">
             <div class="tw-flex tw-min-h-[16.25rem] tw-items-center tw-justify-center">
                 @if(count($poStatusDist) > 0)
-                    <div class="tw-h-[13.75rem] tw-w-[13.75rem]"><canvas id="poDonut"></canvas></div>
+                    <div class="tw-h-[13.75rem] tw-w-[13.75rem]"><canvas id="poDonut" role="img" aria-label="Purchase order status distribution">Purchase order status distribution chart.</canvas></div>
                 @else
                     <x-ui.empty-state icon="bi-pie-chart" title="No PO status data" description="Status distribution will appear after purchase orders are created." />
                 @endif
@@ -211,24 +211,24 @@
 </div>
 
 {{-- Exchange Rate Modal --}}
-<div class="modal fade" id="kursModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content">
+<div class="modal fade" id="kursModal" tabindex="-1" aria-labelledby="purchasingKursModalTitle" aria-hidden="true"><div class="modal-dialog modal-sm"><div class="modal-content">
     <form action="{{ route('purchasing.kurs.update') }}" method="POST">@csrf
-        <div class="modal-header"><h6 class="modal-title fw-bold">Update Exchange Rate</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header"><h6 class="modal-title fw-bold" id="purchasingKursModalTitle">Update Exchange Rate</h6><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
         <div class="modal-body">
             <div class="mb-3">
-                <label class="form-label small fw-bold">Currency</label>
-                <select name="currency" class="form-select form-select-sm" required>
+                <label class="form-label small fw-bold" for="exchange-rate-currency">Currency</label>
+                <select name="currency" id="exchange-rate-currency" class="form-select form-select-sm" required>
                     @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
                         <option value="{{ $code }}">{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="mb-3">
-                <label class="form-label small fw-bold">
+                <label class="form-label small fw-bold" for="exchange-rate-value">
                     Rate to IDR
                     <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="New exchange rate is saved as new history, not overwriting the old one."></i>
                 </label>
-                <input type="number" step="0.01" name="rate_to_idr" class="form-control form-control-sm" required placeholder="16500">
+                <input type="number" step="0.01" name="rate_to_idr" id="exchange-rate-value" class="form-control form-control-sm" required placeholder="16500">
             </div>
         </div>
         <div class="modal-footer"><button type="submit" class="btn btn-primary btn-sm w-100">Save</button></div>

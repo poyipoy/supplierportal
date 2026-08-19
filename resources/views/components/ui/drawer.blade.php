@@ -1,7 +1,31 @@
 @props(['name', 'title' => null, 'show' => false, 'side' => 'right'])
 
 <div
-    x-data="{ open: @js($show), returnFocus: null, openDrawer() { this.returnFocus = document.activeElement; this.open = true; this.$nextTick(() => this.$refs.panel.focus()); }, closeDrawer() { this.open = false; this.$nextTick(() => this.returnFocus?.focus?.()); } }"
+    x-data="{
+        open: @js($show),
+        returnFocus: null,
+        focusables() {
+            return [...this.$refs.panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\'-1\'])')];
+        },
+        openDrawer() {
+            this.returnFocus = document.activeElement;
+            this.open = true;
+            this.$nextTick(() => (this.focusables()[0] || this.$refs.panel).focus());
+        },
+        closeDrawer() {
+            this.open = false;
+            this.$nextTick(() => this.returnFocus?.focus?.());
+        },
+        trapFocus(event) {
+            const items = this.focusables();
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        },
+    }"
+    x-init="$watch('open', value => document.body.classList.toggle('ui-dialog-open', value))"
     x-on:open-ui-drawer.window="if ($event.detail === '{{ $name }}' || $event.detail?.name === '{{ $name }}') openDrawer()"
     x-on:close-ui-drawer.window="if ($event.detail === '{{ $name }}' || $event.detail?.name === '{{ $name }}') closeDrawer()"
     x-on:keydown.escape.window="if (open) closeDrawer()"
@@ -12,6 +36,7 @@
     <div class="ui-scrim tw-absolute tw-inset-0" @click="closeDrawer()" aria-hidden="true"></div>
     <aside
         x-ref="panel"
+        x-on:keydown.tab="trapFocus($event)"
         role="dialog"
         aria-modal="true"
         @if($title) aria-label="{{ $title }}" @endif

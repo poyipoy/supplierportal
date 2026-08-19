@@ -49,6 +49,23 @@ Alpine.data('adasiShell', () => ({
             this.$nextTick(() => this.sidebarReturnFocus?.focus?.());
         }
     },
+
+    trapSidebarFocus(event) {
+        if (this.viewportIsDesktop || !this.mobileOpen) return;
+
+        const items = [...document.querySelectorAll('#sidebar a[href], #sidebar button:not([disabled]), #sidebar [tabindex]:not([tabindex="-1"])')];
+        if (!items.length) return;
+
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    },
 }));
 
 Alpine.start();

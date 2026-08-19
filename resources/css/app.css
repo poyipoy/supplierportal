@@ -109,10 +109,12 @@
         --md-on-info-container: var(--md-on-primary-container);
 
         --md-surface: #FFFFFF;
+        --md-surface-rgb: 255, 255, 255;
         --md-surface-container-low: #F8FAFC;
         --md-surface-container: #F1F5F9;
         --md-surface-container-high: #E9EDF2;
         --md-background: #F1F3F5;
+        --md-background-rgb: 241, 243, 245;
         --md-outline: #CBD5E1;
         --md-outline-strong: #748EAF;
         --md-outline-variant: #E2E8F0;
@@ -121,6 +123,7 @@
         --md-on-surface-variant: #607085;
         --md-on-surface-variant-rgb: 96, 112, 133;
         --md-scrim: #000000;
+        --md-scrim-rgb: 0, 0, 0;
         --md-scrim-opacity: .32;
 
         /* Elevation, shape, state, typography, spacing, motion, and layering. */
@@ -185,7 +188,7 @@
         --ui-table-header-bg: var(--md-surface-container);
         --ui-table-row-hover-bg: var(--md-surface-container-low);
         --ui-dialog-bg: var(--md-surface);
-        --ui-dialog-scrim: rgba(0, 0, 0, var(--md-scrim-opacity));
+        --ui-dialog-scrim: rgba(var(--md-scrim-rgb), var(--md-scrim-opacity));
 
         /* Legacy ADASI aliases. */
         --adasi-blue: var(--md-primary);
@@ -369,7 +372,7 @@
     }
 
     .ui-scrim {
-        background: rgba(0, 0, 0, var(--md-scrim-opacity));
+        background: var(--ui-dialog-scrim);
     }
 
     .ui-spinner {
