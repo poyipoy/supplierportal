@@ -15,7 +15,7 @@
     </a>
 </div>
 
-<div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 15px; z-index: 1020; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+<div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 15px; z-index: 1020; background: var(--md-surface); backdrop-filter: blur(10px);">
     <div class="card-body p-2">
         <ul class="nav nav-pills nav-fill small fw-medium" id="po-section-nav">
             <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-info">Info</a></li>
@@ -349,7 +349,7 @@
             </div>
             <div class="card-body p-4">
                 <div class="position-relative">
-                    <div class="position-absolute h-100 border-start" style="left: 10px; top: 0; border-color: #dee2e6 !important;"></div>
+                    <div class="position-absolute h-100 border-start" style="left: 10px; top: 0; border-color: var(--md-outline-variant) !important;"></div>
 
                     {{-- PO Created --}}
                     <div class="position-relative mb-4 ps-4">

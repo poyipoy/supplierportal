@@ -3,8 +3,8 @@
 @section('page-title', 'Price History Material')
 
 @section('content')
-<div class="card border-0 shadow-sm mb-4 text-white overflow-hidden position-relative animate-fade-in" style="background: linear-gradient(135deg, #1F5FA6 0%, #15457a 100%);">
-    <div class="position-absolute top-0 end-0 h-100 w-50 opacity-25" style="background: radial-gradient(circle at top right, #ffffff, transparent);"></div>
+<div class="card border-0 shadow-sm mb-4 text-white overflow-hidden position-relative animate-fade-in" style="background: var(--md-primary);">
+    <div class="position-absolute top-0 end-0 h-100 w-50 opacity-25" style="background: radial-gradient(circle at top right, var(--md-on-primary), transparent);"></div>
     <div class="card-body p-4 position-relative z-1">
         <div class="row align-items-center">
             <div class="col-md-8">

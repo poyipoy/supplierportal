@@ -193,8 +193,7 @@
                                     <td class="text-center fw-medium">
                                         @if(!empty($row['pr_id']) && !empty($row['pr_url']))
                                             <a href="{{ $row['pr_url'] }}"
-                                               class="text-primary text-decoration-none hover-underline"
-                                               style="color:#1F5FA6 !important;">
+                                               class="text-primary text-decoration-none hover-underline">
                                                 {{ $row['pr_number'] }}
                                                 <i class="bi bi-arrow-right-short ms-1" style="font-size: 0.85rem;"></i>
                                             </a>
@@ -442,6 +441,16 @@ document.addEventListener('DOMContentLoaded', () => {
 const initialHistorycalPayload = @json($payload);
 let historicalChart = null;
 const historicalDataUrl = @json(route('purchasing.comparison.historical'));
+const historicalThemeStyles = getComputedStyle(document.documentElement);
+const historicalThemeColor = (token) => historicalThemeStyles.getPropertyValue(token).trim();
+const historicalThemeRgba = (token, alpha) => `rgba(${historicalThemeColor(token)}, ${alpha})`;
+const historicalTooltipTheme = {
+    backgroundColor: historicalThemeColor('--md-surface'),
+    titleColor: historicalThemeColor('--md-on-surface'),
+    bodyColor: historicalThemeColor('--md-on-surface-variant'),
+    borderColor: historicalThemeColor('--md-outline'),
+    borderWidth: 1,
+};
 
 function formatRupiah(value) {
     if (value === null || value === undefined || value === '') return '-';
@@ -559,12 +568,12 @@ function historicalChartConfig(payload) {
                 datasets: [{
                     label: 'Average Price/Kg (IDR)',
                     data: chartData.pricesIdr || [],
-                    borderColor: '#1F5FA6',
-                    backgroundColor: 'rgba(31,95,166,0.1)',
+                    borderColor: historicalThemeColor('--md-primary'),
+                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
                     fill: true,
                     tension: 0.3,
                     pointRadius: 6,
-                    pointBackgroundColor: '#1F5FA6',
+                    pointBackgroundColor: historicalThemeColor('--md-primary'),
                 }],
             },
             options: {
@@ -574,6 +583,7 @@ function historicalChartConfig(payload) {
                 plugins: {
                     legend: { position: 'bottom' },
                     tooltip: {
+                        ...historicalTooltipTheme,
                         callbacks: {
                             label: (context) => 'Average: ' + formatRupiah(context.parsed.y),
                             afterLabel: (context) => {
@@ -601,23 +611,23 @@ function historicalChartConfig(payload) {
                 {
                     label: 'Price/Kg (Original)',
                     data: chartData.prices || [],
-                    borderColor: '#1F5FA6',
-                    backgroundColor: 'rgba(31,95,166,0.1)',
+                    borderColor: historicalThemeColor('--md-primary'),
+                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
                     fill: true,
                     tension: 0.3,
                     pointRadius: 6,
-                    pointBackgroundColor: '#1F5FA6',
+                    pointBackgroundColor: historicalThemeColor('--md-primary'),
                     yAxisID: 'y',
                 },
                 {
                     label: 'Price/Kg (IDR)',
                     data: chartData.pricesIdr || [],
-                    borderColor: '#C0392B',
-                    backgroundColor: 'rgba(192,57,43,0.1)',
+                    borderColor: historicalThemeColor('--md-error'),
+                    backgroundColor: historicalThemeRgba('--md-error-rgb', .1),
                     fill: true,
                     tension: 0.3,
                     pointRadius: 6,
-                    pointBackgroundColor: '#C0392B',
+                    pointBackgroundColor: historicalThemeColor('--md-error'),
                     yAxisID: 'y1',
                 },
             ],
@@ -626,7 +636,10 @@ function historicalChartConfig(payload) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { position: 'bottom' } },
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: historicalTooltipTheme,
+            },
             scales: {
                 y: { type: 'linear', position: 'left', title: { display: true, text: 'Original Currency' } },
                 y1: { type: 'linear', position: 'right', title: { display: true, text: 'IDR' }, grid: { drawOnChartArea: false }, ticks: { callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID') } },
@@ -698,7 +711,7 @@ function renderTable(payload) {
         <tr>
             <td class="text-center fw-medium">
                 ${row.pr_url
-                    ? `<a href="${escapeHtml(row.pr_url)}" class="text-primary text-decoration-none hover-underline" style="color:#1F5FA6 !important;">${escapeHtml(row.pr_number || '-')}<i class="bi bi-arrow-right-short ms-1" style="font-size: 0.85rem;"></i></a>`
+                    ? `<a href="${escapeHtml(row.pr_url)}" class="text-primary text-decoration-none hover-underline">${escapeHtml(row.pr_number || '-')}<i class="bi bi-arrow-right-short ms-1" style="font-size: 0.85rem;"></i></a>`
                     : escapeHtml(row.pr_number || '-')}
             </td>
             <td class="text-center">${escapeHtml(row.supplier || '-')}</td>

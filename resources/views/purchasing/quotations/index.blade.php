@@ -11,13 +11,13 @@
             gap: .5rem;
             min-height: 31px;
             padding: .25rem .5rem;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--md-outline);
             border-radius: .375rem;
-            background-color: #fff;
+            background-color: var(--md-surface);
         }
 
         .quotation-filter .date-range-control.is-invalid {
-            border-color: #dc3545;
+            border-color: var(--md-error);
         }
 
         .quotation-filter .date-range-segment {
@@ -30,7 +30,7 @@
         .quotation-filter .date-range-label {
             flex: 0 0 auto;
             font-size: .75rem;
-            color: #6c757d;
+            color: var(--md-on-surface-variant);
             white-space: nowrap;
         }
 
@@ -45,7 +45,7 @@
         }
 
         .quotation-filter .date-range-divider {
-            color: #adb5bd;
+            color: var(--md-outline);
             font-size: .875rem;
             line-height: 1;
         }
@@ -61,7 +61,7 @@
             min-width: 2rem;
             padding: .3rem .55rem;
             border-radius: .375rem;
-            color: #1F5FA6;
+            color: var(--md-primary);
             font-size: .78rem;
             font-weight: 600;
             line-height: 1.2;
@@ -76,14 +76,14 @@
         }
 
         .quotation-pagination .page-item.active .page-link {
-            border-color: #1F5FA6;
-            background-color: #1F5FA6;
-            color: #fff;
+            border-color: var(--md-primary);
+            background-color: var(--md-primary);
+            color: var(--md-on-primary);
         }
 
         .quotation-pagination .page-item.disabled .page-link {
-            color: #98a2b3;
-            background-color: #f8f9fa;
+            color: var(--md-on-surface-variant);
+            background-color: var(--md-surface-container-low);
         }
 
         @media (max-width: 575.98px) {

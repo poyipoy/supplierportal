@@ -113,11 +113,15 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const qcThemeStyles = getComputedStyle(document.documentElement);
+        const qcThemeColor = (token) => qcThemeStyles.getPropertyValue(token).trim();
+        const qcThemeRgba = (token, alpha) => `rgba(${qcThemeColor(token)}, ${alpha})`;
+
         const commonTooltip = {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            titleColor: '#333',
-            bodyColor: '#555',
-            borderColor: 'rgba(0,0,0,0.1)',
+            backgroundColor: qcThemeColor('--md-surface'),
+            titleColor: qcThemeColor('--md-on-surface'),
+            bodyColor: qcThemeColor('--md-on-surface-variant'),
+            borderColor: qcThemeColor('--md-outline'),
             borderWidth: 1,
             titleFont: { size: 14, family: 'Inter', weight: 'bold' },
             bodyFont: { size: 13, family: 'Inter' },
@@ -134,7 +138,7 @@
                     labels: ['OK', 'NG'],
                     datasets: [{
                         data: [{{ $totalOk }}, {{ $totalNg }}],
-                        backgroundColor: ['#198754', '#dc3545'],
+                        backgroundColor: [qcThemeColor('--md-success'), qcThemeColor('--md-error')],
                         borderWidth: 0
                     }]
                 },
@@ -158,22 +162,22 @@
                     {
                         label: 'OK',
                         data: {!! json_encode(array_column($trendData, 'ok')) !!},
-                        borderColor: '#198754',
-                        backgroundColor: 'rgba(25,135,84,0.1)',
+                        borderColor: qcThemeColor('--md-success'),
+                        backgroundColor: qcThemeRgba('--md-success-rgb', .1),
                         fill: true,
                         tension: 0.3,
                         pointRadius: 5,
-                        pointBackgroundColor: '#198754'
+                        pointBackgroundColor: qcThemeColor('--md-success')
                     },
                     {
                         label: 'NG',
                         data: {!! json_encode(array_column($trendData, 'ng')) !!},
-                        borderColor: '#dc3545',
-                        backgroundColor: 'rgba(220,53,69,0.1)',
+                        borderColor: qcThemeColor('--md-error'),
+                        backgroundColor: qcThemeRgba('--md-error-rgb', .1),
                         fill: true,
                         tension: 0.3,
                         pointRadius: 5,
-                        pointBackgroundColor: '#dc3545'
+                        pointBackgroundColor: qcThemeColor('--md-error')
                     }
                 ]
             },

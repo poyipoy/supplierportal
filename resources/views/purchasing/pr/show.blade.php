@@ -266,7 +266,7 @@
             </div>
             <div class="card-body p-4">
                 <div class="position-relative">
-                    <div class="position-absolute h-100 border-start" style="left: 10px; top: 0; border-color: #dee2e6 !important;"></div>
+                    <div class="position-absolute h-100 border-start" style="left: 10px; top: 0; border-color: var(--md-outline-variant) !important;"></div>
                     
                     {{-- Created --}}
                     <div class="position-relative mb-4 ps-4">

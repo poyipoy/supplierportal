@@ -8,7 +8,7 @@
         <div class="row mb-4 animate-fade-in">
             <div class="col-12">
                 <div class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-3 mb-0"
-                    style="background-color: #eef2ff; border-left: 4px solid #4f46e5 !important;">
+                    style="background-color: var(--md-info-container); border-left: 4px solid var(--md-info) !important;">
                     <div class="bg-primary bg-opacity-10 rounded-circle p-2 d-flex align-items-center justify-content-center"
                         style="width: 48px; height: 48px;">
                         <i class="bi bi-info-circle-fill fs-4 text-primary"></i>

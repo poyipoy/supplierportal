@@ -151,7 +151,7 @@ class QuotationAvailabilityTest extends TestCase
             ->assertSee('Supporting')
             ->assertSee('quotation-sticky-number', false)
             ->assertSee('quotation-sticky-material', false)
-            ->assertSee('border-right: 1px solid #a8b5c5 !important', false)
+            ->assertSee('border-right: 1px solid var(--md-outline) !important', false)
             ->assertSee('border-collapse: separate !important', false)
             ->assertSee('width: 100% !important', false)
             ->assertSee('quotation-calculated', false)

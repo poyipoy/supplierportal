@@ -35,8 +35,8 @@
 </style>
 @endpush
 
-<div class="card border-0 shadow-sm mb-4 text-white overflow-hidden position-relative animate-fade-in" style="background: linear-gradient(135deg, #1F5FA6 0%, #15457a 100%);">
-    <div class="position-absolute top-0 end-0 h-100 w-50 opacity-25" style="background: radial-gradient(circle at top right, #ffffff, transparent);"></div>
+<div class="card border-0 shadow-sm mb-4 text-white overflow-hidden position-relative animate-fade-in" style="background: var(--md-primary);">
+    <div class="position-absolute top-0 end-0 h-100 w-50 opacity-25" style="background: radial-gradient(circle at top right, var(--md-on-primary), transparent);"></div>
     <div class="card-body p-4 position-relative z-1">
         <div class="row align-items-center">
             <div class="col-md-8">
@@ -392,6 +392,16 @@ document.addEventListener('DOMContentLoaded', () => {
 const initialHistorycalPayload = @json($payload);
 let historicalChart = null;
 const historicalDataUrl = @json(route('supplier.price-history.historical'));
+const historicalThemeStyles = getComputedStyle(document.documentElement);
+const historicalThemeColor = (token) => historicalThemeStyles.getPropertyValue(token).trim();
+const historicalThemeRgba = (token, alpha) => `rgba(${historicalThemeColor(token)}, ${alpha})`;
+const historicalTooltipTheme = {
+    backgroundColor: historicalThemeColor('--md-surface'),
+    titleColor: historicalThemeColor('--md-on-surface'),
+    bodyColor: historicalThemeColor('--md-on-surface-variant'),
+    borderColor: historicalThemeColor('--md-outline'),
+    borderWidth: 1,
+};
 
 function formatRupiah(value) {
     if (value === null || value === undefined || value === '') return '-';
@@ -524,12 +534,12 @@ function historicalChartConfig(payload) {
                 datasets: [{
                     label: 'Average Price (IDR/Kg)',
                     data: chartData.pricesIdr || [],
-                    borderColor: '#1F5FA6',
-                    backgroundColor: 'rgba(31,95,166,0.1)',
+                    borderColor: historicalThemeColor('--md-primary'),
+                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
                     fill: true,
                     tension: 0.3,
                     pointRadius: 6,
-                    pointBackgroundColor: '#1F5FA6',
+                    pointBackgroundColor: historicalThemeColor('--md-primary'),
                 }],
             },
             options: {
@@ -539,6 +549,7 @@ function historicalChartConfig(payload) {
                 plugins: {
                     legend: { position: 'bottom' },
                     tooltip: {
+                        ...historicalTooltipTheme,
                         callbacks: {
                             label: (context) => 'Average: ' + formatRupiah(context.parsed.y),
                             afterLabel: (context) => {
@@ -566,23 +577,23 @@ function historicalChartConfig(payload) {
                 {
                     label: 'Price/Kg (Original)',
                     data: chartData.prices || [],
-                    borderColor: '#1F5FA6',
-                    backgroundColor: 'rgba(31,95,166,0.1)',
+                    borderColor: historicalThemeColor('--md-primary'),
+                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
                     fill: true,
                     tension: 0.3,
                     pointRadius: 6,
-                    pointBackgroundColor: '#1F5FA6',
+                    pointBackgroundColor: historicalThemeColor('--md-primary'),
                     yAxisID: 'y',
                 },
                 {
                     label: 'Price/Kg (IDR)',
                     data: chartData.pricesIdr || [],
-                    borderColor: '#C0392B',
-                    backgroundColor: 'rgba(192,57,43,0.1)',
+                    borderColor: historicalThemeColor('--md-error'),
+                    backgroundColor: historicalThemeRgba('--md-error-rgb', .1),
                     fill: true,
                     tension: 0.3,
                     pointRadius: 6,
-                    pointBackgroundColor: '#C0392B',
+                    pointBackgroundColor: historicalThemeColor('--md-error'),
                     yAxisID: 'y1',
                 },
             ],
@@ -591,7 +602,10 @@ function historicalChartConfig(payload) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { position: 'bottom' } },
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: historicalTooltipTheme,
+            },
             scales: {
                 y: { type: 'linear', position: 'left', title: { display: true, text: 'Original Currency' } },
                 y1: { type: 'linear', position: 'right', title: { display: true, text: 'IDR' }, grid: { drawOnChartArea: false }, ticks: { callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID') } },

@@ -20,10 +20,10 @@
     }
 
     .qc-spec-box {
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--md-outline-variant);
         border-radius: .5rem;
         padding: .65rem .75rem;
-        background: #f8fafc;
+        background: var(--md-surface-container-low);
         min-height: 64px;
     }
 </style>

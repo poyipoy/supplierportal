@@ -17,9 +17,9 @@
             justify-content: space-between;
             gap: .75rem;
             padding: .7rem .85rem;
-            border: 1px solid #e9eef4;
+            border: 1px solid var(--md-outline-variant);
             border-radius: .5rem;
-            background-color: #f8fafc;
+            background-color: var(--md-surface-container-low);
         }
 
         .exchange-rate-pagination .pagination {
@@ -41,7 +41,7 @@
             min-width: 2rem;
             padding: .3rem .55rem;
             border-radius: .375rem;
-            color: #1F5FA6;
+            color: var(--md-primary);
             font-size: .78rem;
             font-weight: 600;
             line-height: 1.2;
@@ -56,14 +56,14 @@
         }
 
         .exchange-rate-pagination .page-item.active .page-link {
-            border-color: #1F5FA6;
-            background-color: #1F5FA6;
-            color: #fff;
+            border-color: var(--md-primary);
+            background-color: var(--md-primary);
+            color: var(--md-on-primary);
         }
 
         .exchange-rate-pagination .page-item.disabled .page-link {
-            color: #98a2b3;
-            background-color: #f1f4f8;
+            color: var(--md-on-surface-variant);
+            background-color: var(--md-surface-container);
         }
 
         @media (max-width: 575.98px) {

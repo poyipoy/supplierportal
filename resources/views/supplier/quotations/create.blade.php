@@ -42,7 +42,7 @@
         overflow-x: auto;
         overscroll-behavior-inline: contain;
         position: relative;
-        scrollbar-color: #94a3b8 #f1f5f9;
+        scrollbar-color: var(--md-on-surface-variant) var(--md-surface-container);
         scrollbar-width: thin;
     }
 
@@ -51,12 +51,12 @@
     }
 
     .quotation-table-scroll::-webkit-scrollbar-track {
-        background: #f1f5f9;
+        background: var(--md-surface-container);
     }
 
     .quotation-table-scroll::-webkit-scrollbar-thumb {
-        background: #94a3b8;
-        border: 2px solid #f1f5f9;
+        background: var(--md-on-surface-variant);
+        border: 2px solid var(--md-surface-container);
         border-radius: 999px;
     }
 
@@ -76,16 +76,16 @@
     }
 
     .quotation-items-table .quotation-group-header th {
-        background: #e8f0f9 !important;
-        border-bottom: 1px solid #a8bad0 !important;
-        color: #1f4f82 !important;
+        background: var(--md-primary-container) !important;
+        border-bottom: 1px solid var(--md-outline) !important;
+        color: var(--md-on-primary-container) !important;
         height: 38px;
         top: 0;
         z-index: 8;
     }
 
     .quotation-items-table .quotation-field-header th {
-        background: #f8fafc !important;
+        background: var(--md-surface-container-low) !important;
         height: 48px;
         top: 38px;
         z-index: 8;
@@ -93,7 +93,7 @@
 
     .quotation-items-table .quotation-group-item,
     .quotation-items-table .quotation-sticky-material {
-        border-right: 1px solid #a8b5c5 !important;
+        border-right: 1px solid var(--md-outline) !important;
     }
 
     .quotation-items-table .quotation-group-item {
@@ -104,7 +104,7 @@
     }
 
     .quotation-items-table .quotation-sticky-number {
-        background: #fff;
+        background: var(--md-surface);
         left: 0;
         min-width: var(--quotation-number-width);
         position: sticky;
@@ -112,7 +112,7 @@
     }
 
     .quotation-items-table .quotation-sticky-material {
-        background: #fff;
+        background: var(--md-surface);
         left: var(--quotation-number-width);
         min-width: var(--quotation-material-width);
         position: sticky;
@@ -122,7 +122,7 @@
 
     .quotation-items-table thead .quotation-sticky-number,
     .quotation-items-table thead .quotation-sticky-material {
-        background: #f8fafc !important;
+        background: var(--md-surface-container-low) !important;
         z-index: 11;
     }
 
@@ -131,13 +131,13 @@
     }
 
     .quotation-items-table tbody .quotation-sticky-material {
-        box-shadow: 6px 0 10px -9px rgba(15, 23, 42, .75);
+        box-shadow: 6px 0 10px -9px rgba(var(--md-on-surface-rgb), .75);
         z-index: 6;
     }
 
     .quotation-items-table tbody tr:hover > .quotation-sticky-number,
     .quotation-items-table tbody tr:hover > .quotation-sticky-material {
-        background: #f7fbff;
+        background: rgba(var(--md-primary-rgb), .05);
     }
 
     .quotation-items-table .form-control,
@@ -146,21 +146,21 @@
     }
 
     .quotation-items-table .quotation-editable {
-        background: #fff;
-        border-color: #b7c4d3;
+        background: var(--md-surface);
+        border-color: var(--md-outline);
     }
 
     .quotation-items-table .quotation-editable:focus {
-        border-color: var(--adasi-blue);
-        box-shadow: 0 0 0 .18rem rgba(31, 95, 166, .14);
+        border-color: var(--md-primary);
+        box-shadow: 0 0 0 .18rem rgba(var(--md-primary-rgb), .14);
         position: relative;
         z-index: 2;
     }
 
     .quotation-items-table .quotation-calculated {
-        background: #f1f5f9 !important;
-        border-color: #d8e0e9;
-        color: #334155;
+        background: var(--md-surface-container) !important;
+        border-color: var(--md-outline-variant);
+        color: var(--md-on-surface);
         cursor: default;
     }
 
@@ -187,14 +187,14 @@
     .availability-field-label {
         display: block;
         margin-bottom: .2rem;
-        color: #6c757d;
+        color: var(--md-on-surface-variant);
         font-size: .68rem;
         font-weight: 600;
     }
 
     .mtc-upload {
-        background: #f8fafc;
-        border: 1px solid #d8e0e9;
+        background: var(--md-surface-container-low);
+        border: 1px solid var(--md-outline-variant);
         border-radius: .5rem;
         padding: .65rem;
     }
@@ -206,12 +206,12 @@
     }
 
     .mtc-file-input:focus-visible + .mtc-file-button {
-        border-color: var(--adasi-blue);
-        box-shadow: 0 0 0 .2rem rgba(31, 95, 166, .18);
+        border-color: var(--md-primary);
+        box-shadow: 0 0 0 .2rem rgba(var(--md-primary-rgb), .18);
     }
 
     .mtc-file-name {
-        color: #475569;
+        color: var(--md-on-surface-variant);
         font-size: .72rem;
         line-height: 1.35;
         margin-top: .4rem;
@@ -219,7 +219,7 @@
     }
 
     .availability-copied .availability-panel {
-        background-color: #edf7ef !important;
+        background-color: var(--md-success-container) !important;
         transition: background-color .2s ease;
     }
 

@@ -11,7 +11,7 @@
     }
 
     .operational-check-item {
-        border: 1px solid #e9ecef;
+        border: 1px solid var(--md-outline-variant);
         border-radius: .5rem;
         color: inherit;
         display: flex;
@@ -22,8 +22,8 @@
     }
 
     .operational-check-item:hover {
-        border-color: rgba(31, 95, 166, .28);
-        box-shadow: 0 .35rem 1rem rgba(31, 95, 166, .08);
+        border-color: rgba(var(--md-primary-rgb), .28);
+        box-shadow: 0 .35rem 1rem rgba(var(--md-primary-rgb), .08);
         transform: translateY(-1px);
     }
 
@@ -60,7 +60,7 @@
 @if($hasInsights)
 <div class="row mb-4 animate-fade-in">
     <div class="col-12">
-        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-3 mb-0" style="background-color: #fff9e6; border-left: 4px solid #ffc107 !important;">
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-3 mb-0" style="background-color: var(--md-warning-container); border-left: 4px solid var(--md-warning) !important;">
             <div class="bg-warning bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                 <i class="bi bi-lightbulb-fill fs-4 text-warning"></i>
             </div>
@@ -304,11 +304,15 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+        const dashboardThemeStyles = getComputedStyle(document.documentElement);
+        const dashboardThemeColor = (token) => dashboardThemeStyles.getPropertyValue(token).trim();
+        const dashboardThemeRgba = (token, alpha) => `rgba(${dashboardThemeColor(token)}, ${alpha})`;
+
         const commonTooltip = {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            titleColor: '#333',
-            bodyColor: '#555',
-            borderColor: 'rgba(0,0,0,0.1)',
+            backgroundColor: dashboardThemeColor('--md-surface'),
+            titleColor: dashboardThemeColor('--md-on-surface'),
+            bodyColor: dashboardThemeColor('--md-on-surface-variant'),
+            borderColor: dashboardThemeColor('--md-outline'),
             borderWidth: 1,
             titleFont: { size: 14, family: 'Inter', weight: 'bold' },
             bodyFont: { size: 13, family: 'Inter' },
@@ -325,7 +329,7 @@
                 datasets: [{
                     label: 'Amount PR',
                     data: {!! json_encode(array_column($prPerBulan, 'count')) !!},
-                    backgroundColor: 'rgba(31,95,166,0.7)',
+                    backgroundColor: dashboardThemeRgba('--md-primary-rgb', .7),
                     borderRadius: 6
                 }]
             },
@@ -344,21 +348,21 @@
 
         @if(count($poStatusDist)>0)
         @php
-            $statusColors = [
-                'active' => '#0d6efd',
-                'waiting_qc' => '#ffc107',
-                'completed' => '#198754',
-                'overdue' => '#dc3545',
-                'claim_needed' => '#dc3545',
-                'cancelled' => '#6c757d',
+            $statusColorTokens = [
+                'active' => '--md-primary',
+                'waiting_qc' => '--md-warning',
+                'completed' => '--md-success',
+                'overdue' => '--md-error',
+                'claim_needed' => '--md-error',
+                'cancelled' => '--md-secondary',
             ];
             $chartLabels = [];
             $chartData = [];
-            $chartColors = [];
+            $chartColorTokens = [];
             foreach($poStatusDist as $status => $count) {
                 $chartLabels[] = ucwords(str_replace('_', ' ', $status));
                 $chartData[] = $count;
-                $chartColors[] = $statusColors[$status] ?? '#6c757d';
+                $chartColorTokens[] = $statusColorTokens[$status] ?? '--md-secondary';
             }
         @endphp
         new Chart(document.getElementById('poDonut'), {
@@ -367,7 +371,7 @@
                 labels: {!! json_encode($chartLabels) !!},
                 datasets: [{
                     data: {!! json_encode($chartData) !!},
-                    backgroundColor: {!! json_encode($chartColors) !!},
+                    backgroundColor: {!! json_encode($chartColorTokens) !!}.map(dashboardThemeColor),
                     borderWidth: 0
                 }]
             },
