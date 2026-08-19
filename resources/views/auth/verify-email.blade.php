@@ -3,33 +3,18 @@
 @section('title', 'Verify Email - ADASI Supplier Portal')
 
 @section('content')
-    <div class="auth-logo text-center mb-4">
-        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="Logo ADASI" style="width:72px; height:auto; margin-bottom:1rem;">
-        <h4 class="fw-bold text-dark mb-1">ADASI Supplier Portal</h4>
-        <p>Account security</p>
-    </div>
+<header>
+    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">Account security</p>
+    <h2 class="tw-m-0 tw-mt-2 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Verify your email address</h2>
+    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Open the verification link sent to your email address. If it did not arrive, request another one below.</p>
+</header>
 
-    <div class="mb-4">
-        <h1 class="h4 fw-bold mb-2">Verify your email address</h1>
-        <p class="text-muted small mb-0">Before getting started, open the verification link sent to your email address. If you did not receive it, we can send another one.</p>
-    </div>
+@if (session('status') === 'verification-link-sent')
+    <x-ui.alert tone="success" title="Verification link sent" class="tw-mt-5">A new verification link has been sent to your email address.</x-ui.alert>
+@endif
 
-    @if (session('status') === 'verification-link-sent')
-        <div class="alert alert-success small d-flex gap-2 align-items-start" role="status">
-            <i class="bi bi-check-circle-fill mt-1" aria-hidden="true"></i>
-            <span>A new verification link has been sent to your email address.</span>
-        </div>
-    @endif
-
-    <div class="d-grid gap-2">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
-            <button type="submit" class="btn btn-login w-100">Resend Verification Email</button>
-        </form>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" class="btn btn-outline-secondary w-100">Log Out</button>
-        </form>
-    </div>
-    <p class="auth-footer mb-0">&copy; {{ now()->year }} ADASI Supplier Portal</p>
+<div class="tw-mt-6 tw-grid tw-gap-3">
+    <form method="POST" action="{{ route('verification.send') }}">@csrf<x-ui.button type="submit" class="tw-w-full">Resend Verification Email</x-ui.button></form>
+    <form method="POST" action="{{ route('logout') }}">@csrf<x-ui.button type="submit" variant="ghost" class="tw-w-full">Log Out</x-ui.button></form>
+</div>
 @endsection

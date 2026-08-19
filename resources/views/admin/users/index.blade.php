@@ -3,15 +3,10 @@
 @section('page-title', 'User Management')
 
 @section('content')
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">User List</h6>
-            <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm fw-medium">
-                <i class="bi bi-plus-lg me-1"></i> Add User
-            </a>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="User Management" description="Manage role assignment, account status, and supplier profile access." eyebrow="Admin" />
+    <x-ui.data-table title="User List" description="Search and administer registered portal users.">
+        <x-slot:toolbar><x-ui.button :href="route('admin.users.create')" size="sm"><x-slot:leading><i class="bi bi-plus-lg"></i></x-slot:leading>Add User</x-ui.button></x-slot:toolbar>
                 <table class="table table-hover align-middle" id="usersTable" style="font-size: 0.9rem; width: 100%;">
                     <thead class="table-light">
                         <tr>
@@ -26,9 +21,8 @@
                     </thead>
                     <tbody></tbody>
                 </table>
-            </div>
-        </div>
-    </div>
+    </x-ui.data-table>
+</div>
 @endsection
 
 @push('scripts')

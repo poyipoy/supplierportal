@@ -4,62 +4,39 @@
 @section('page-title', 'Authentication Audit')
 
 @section('content')
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h6 class="fw-bold mb-1">Authentication Activity</h6>
-            <p class="small text-muted mb-0">Security events are retained for {{ config('auth_security.audit.retention_days', 180) }} days.</p>
-        </div>
-        <div class="card-body">
-            <div class="row g-2 mb-3" id="auditFilters">
-                <div class="col-lg-3 col-md-6">
-                    <label for="auditUser" class="form-label small">User</label>
-                    <select id="auditUser" class="form-select form-select-sm">
-                        <option value="">All users</option>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->getRouteKey() }}">{{ $user->name }} — {{ $user->email }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <label for="auditEmail" class="form-label small">Attempted email</label>
-                    <input id="auditEmail" type="search" class="form-control form-control-sm" maxlength="255" placeholder="Search email">
-                </div>
-                <div class="col-lg-2 col-md-4">
-                    <label for="auditEvent" class="form-label small">Event</label>
-                    <select id="auditEvent" class="form-select form-select-sm">
-                        <option value="">All events</option>
-                        @foreach ($events as $event)
-                            <option value="{{ $event }}">{{ str($event)->replace('_', ' ')->title() }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-lg-2 col-md-4">
-                    <label for="auditDateFrom" class="form-label small">From</label>
-                    <input id="auditDateFrom" type="date" class="form-control form-control-sm">
-                </div>
-                <div class="col-lg-2 col-md-4">
-                    <label for="auditDateTo" class="form-label small">To</label>
-                    <input id="auditDateTo" type="date" class="form-control form-control-sm">
-                </div>
-            </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Authentication Activity"
+        description="Review security events retained for {{ config('auth_security.audit.retention_days', 180) }} days."
+        eyebrow="Admin Security"
+    />
 
-            <div class="table-responsive">
-                <table id="authAuditTable" class="table table-hover align-middle w-100" style="font-size:.84rem">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date &amp; Time</th>
-                            <th>Event</th>
-                            <th>User</th>
-                            <th>Attempted Email</th>
-                            <th>IP Address</th>
-                            <th>User Agent</th>
-                            <th>Metadata</th>
-                        </tr>
-                    </thead>
-                </table>
+    <x-ui.data-table title="Audit Events" description="Use the filters to narrow the server-side event log.">
+        <x-slot:filters>
+            <div class="tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-5" id="auditFilters">
+                <x-ui.select name="audit_user" id="auditUser" label="User" placeholder="All users">
+                    @foreach ($users as $user)
+                        <option value="{{ $user->getRouteKey() }}">{{ $user->name }} - {{ $user->email }}</option>
+                    @endforeach
+                </x-ui.select>
+                <x-ui.input name="audit_email" id="auditEmail" type="search" label="Attempted email" maxlength="255" placeholder="Search email" />
+                <x-ui.select name="audit_event" id="auditEvent" label="Event" placeholder="All events">
+                    @foreach ($events as $event)
+                        <option value="{{ $event }}">{{ str($event)->replace('_', ' ')->title() }}</option>
+                    @endforeach
+                </x-ui.select>
+                <x-ui.input name="audit_date_from" id="auditDateFrom" type="date" label="From" />
+                <x-ui.input name="audit_date_to" id="auditDateTo" type="date" label="To" />
             </div>
-        </div>
-    </div>
+        </x-slot:filters>
+
+        <table id="authAuditTable" class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm">
+            <thead class="table-light">
+                <tr><th>Date &amp; Time</th><th>Event</th><th>User</th><th>Attempted Email</th><th>IP Address</th><th>User Agent</th><th>Metadata</th></tr>
+            </thead>
+        </table>
+    </x-ui.data-table>
+</div>
 @endsection
 
 @push('scripts')

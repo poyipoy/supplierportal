@@ -3,66 +3,22 @@
 @section('title', 'Reset Password - ADASI Supplier Portal')
 
 @section('content')
-    <div class="auth-logo text-center mb-4">
-        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="Logo ADASI" style="width:72px; height:auto; margin-bottom:1rem;">
-        <h4 class="fw-bold text-dark mb-1">ADASI Supplier Portal</h4>
-        <p>Account security</p>
-    </div>
+<header>
+    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">Account security</p>
+    <h2 class="tw-m-0 tw-mt-2 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Create a new password</h2>
+    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Use at least 12 characters with uppercase and lowercase letters, a number, and a symbol.</p>
+</header>
 
-    <div class="mb-4">
-        <h1 class="h4 fw-bold mb-2">Create a new password</h1>
-        <p class="text-muted small mb-0">Use at least 12 characters with uppercase and lowercase letters, a number, and a symbol.</p>
-    </div>
+<form method="POST" action="{{ route('password.store') }}" class="tw-mt-6 tw-grid tw-gap-4" novalidate>
+    @csrf
+    <input type="hidden" name="token" value="{{ $request->route('token') }}">
+    <x-ui.input name="email" id="email" type="email" label="Email" :value="$request->email" placeholder="name@email.com" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus />
+    <x-ui.input name="password" id="password" type="password" label="New Password" placeholder="Create a strong password" autocomplete="new-password" minlength="12" maxlength="255" required />
+    <x-ui.input name="password_confirmation" id="password_confirmation" type="password" label="Confirm New Password" placeholder="Repeat your new password" autocomplete="new-password" minlength="12" maxlength="255" required />
+    <x-ui.button type="submit" class="tw-w-full"><x-slot:leading><i class="bi bi-shield-check"></i></x-slot:leading>Reset Password</x-ui.button>
+</form>
 
-    <form method="POST" action="{{ route('password.store') }}" novalidate>
-        @csrf
-        <input type="hidden" name="token" value="{{ $request->route('token') }}">
-
-        <div class="mb-3">
-            <label for="email" class="form-label fw-medium" style="font-size:0.875rem;">Email</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-envelope" aria-hidden="true"></i></span>
-                <input id="email" type="email" name="email"
-                    class="form-control @error('email') is-invalid @enderror"
-                    value="{{ old('email', $request->email) }}" placeholder="name@email.com" autocomplete="username"
-                    autocapitalize="none" spellcheck="false" required autofocus>
-            </div>
-            @error('email')
-                <div class="invalid-feedback d-block">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <div class="mb-3">
-            <label for="password" class="form-label fw-medium" style="font-size:0.875rem;">New Password</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
-                <input id="password" type="password" name="password"
-                    class="form-control @error('password') is-invalid @enderror"
-                    placeholder="Create a strong password" autocomplete="new-password" minlength="12" maxlength="255" required>
-            </div>
-            @error('password')
-                <div class="invalid-feedback d-block">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <div class="mb-4">
-            <label for="password_confirmation" class="form-label fw-medium" style="font-size:0.875rem;">Confirm New Password</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
-                <input id="password_confirmation" type="password" name="password_confirmation"
-                    class="form-control @error('password_confirmation') is-invalid @enderror"
-                    placeholder="Repeat your new password" autocomplete="new-password" minlength="12" maxlength="255" required>
-            </div>
-            @error('password_confirmation')
-                <div class="invalid-feedback d-block">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <button type="submit" class="btn btn-login w-100">Reset Password</button>
-    </form>
-
-    <p class="text-center small mt-4 mb-0">
-        <a href="{{ route('login') }}" class="text-decoration-none fw-semibold"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Login</a>
-    </p>
-    <p class="auth-footer mb-0">&copy; {{ now()->year }} ADASI Supplier Portal</p>
+<div class="tw-mt-5 tw-text-center">
+    <a href="{{ route('login') }}" class="ui-focus-ring tw-rounded-ui-xs tw-text-ui-sm tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Login</a>
+</div>
 @endsection

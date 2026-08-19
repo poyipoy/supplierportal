@@ -9,28 +9,21 @@
     'QC Inspection' => route('qc.inspections.index'),
     'PO Inspection ' . $inspection->purchaseOrder->po_number => '#'
 ]" />
-<div class="mb-3">
-    <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to Inspection List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="'Inspection — ' . $inspection->purchaseOrder->po_number" description="Review requested-versus-actual measurements, item outcomes, and NG evidence." eyebrow="QC">
+        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Inspection List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
 {{-- Header Card --}}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0">PO Inspection: {{ $inspection->purchaseOrder->po_number }}</h5>
-            <div>
+<x-ui.card :title="'PO Inspection: ' . $inspection->purchaseOrder->po_number">
+    <x-slot:actions><div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                 @if($inspection->status === 'ok')
                     <span class="badge bg-success fs-6 px-3 py-2 me-2">STATUS: OK</span>
                 @else
                     <span class="badge bg-danger fs-6 px-3 py-2 me-2">STATUS: NG</span>
                 @endif
-                <a href="{{ route('shared.pdf.qc-inspection', $inspection) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print QC Report" data-pdf-confirm>
-                    <i class="bi bi-file-earmark-pdf"></i> Print PDF
-                </a>
-            </div>
-        </div>
+                <x-ui.button :href="route('shared.pdf.qc-inspection', $inspection)" variant="danger" size="sm" target="_blank" title="Print QC Report" data-pdf-confirm><x-slot:leading><i class="bi bi-file-earmark-pdf"></i></x-slot:leading>Print PDF</x-ui.button>
+            </div></x-slot:actions>
         <div class="row g-3">
             <div class="col-md-3">
                 <div class="text-muted small">Supplier</div>
@@ -49,8 +42,7 @@
                 <div class="fw-medium">{{ $inspection->purchaseOrder->actual_arrival ? $inspection->purchaseOrder->actual_arrival->format('d M Y') : '-' }}</div>
             </div>
         </div>
-    </div>
-</div>
+</x-ui.card>
 
 @php
     if (!function_exists('compareValues')) {
@@ -147,11 +139,7 @@
 
 {{-- Photos if NG --}}
 @if($inspection->status === 'ng')
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">NG Evidence Photos</h6>
-    </div>
-    <div class="card-body">
+<x-ui.card title="NG Evidence Photos" description="Evidence is required for NG inspection outcomes.">
         @if($inspection->attachments->count() > 0)
             <div class="row g-3">
                 @foreach($inspection->attachments as $att)
@@ -163,10 +151,7 @@
                 @endforeach
             </div>
         @else
-            <div class="alert alert-warning small">
-                <i class="bi bi-exclamation-triangle me-1"></i>
-                No NG evidence photos for this inspection yet.
-            </div>
+            <x-ui.alert tone="warning">No NG evidence photos for this inspection yet.</x-ui.alert>
         @endif
 
         @if(auth()->user()->role === 'qc')
@@ -181,15 +166,13 @@
                 @error('attachments.*')
                     <div class="text-danger small mt-1">{{ $message }}</div>
                 @enderror
-                <div class="text-end mt-3">
-                    <button type="submit" class="btn btn-sm btn-danger">
-                        <i class="bi bi-upload me-1"></i>Upload Photo
-                    </button>
+                <div class="tw-mt-3 tw-flex tw-justify-end">
+                    <x-ui.button type="submit" variant="danger" size="sm"><x-slot:leading><i class="bi bi-upload"></i></x-slot:leading>Upload Photo</x-ui.button>
                 </div>
             </form>
         @endif
-    </div>
-</div>
+</x-ui.card>
 @endif
 
+</div>
 @endsection

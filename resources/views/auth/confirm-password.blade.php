@@ -3,34 +3,15 @@
 @section('title', 'Confirm Password - ADASI Supplier Portal')
 
 @section('content')
-    <div class="auth-logo text-center mb-4">
-        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="Logo ADASI" style="width:72px; height:auto; margin-bottom:1rem;">
-        <h4 class="fw-bold text-dark mb-1">ADASI Supplier Portal</h4>
-        <p>Protected action</p>
-    </div>
+<header>
+    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">Protected action</p>
+    <h2 class="tw-m-0 tw-mt-2 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Confirm your password</h2>
+    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">For your security, enter your current password before continuing.</p>
+</header>
 
-    <div class="mb-4">
-        <h1 class="h4 fw-bold mb-2">Confirm your password</h1>
-        <p class="text-muted small mb-0">For your security, enter your current password before continuing.</p>
-    </div>
-
-    <form method="POST" action="{{ route('password.confirm') }}" novalidate>
-        @csrf
-
-        <div class="mb-4">
-            <label for="password" class="form-label fw-medium" style="font-size:0.875rem;">Current Password</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
-                <input id="password" type="password" name="password"
-                    class="form-control @error('password') is-invalid @enderror"
-                    placeholder="Enter your password" autocomplete="current-password" maxlength="255" required autofocus>
-            </div>
-            @error('password')
-                <div class="invalid-feedback d-block">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <button type="submit" class="btn btn-login w-100">Confirm and Continue</button>
-    </form>
-    <p class="auth-footer mb-0">&copy; {{ now()->year }} ADASI Supplier Portal</p>
+<form method="POST" action="{{ route('password.confirm') }}" class="tw-mt-6 tw-grid tw-gap-4" novalidate>
+    @csrf
+    <x-ui.input name="password" id="password" type="password" label="Current Password" placeholder="Enter your password" autocomplete="current-password" maxlength="255" required autofocus />
+    <x-ui.button type="submit" class="tw-w-full"><x-slot:leading><i class="bi bi-shield-lock"></i></x-slot:leading>Confirm and Continue</x-ui.button>
+</form>
 @endsection

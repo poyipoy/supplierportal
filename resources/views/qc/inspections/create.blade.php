@@ -30,15 +30,13 @@
 @endpush
 
 @section('content')
-<div class="mb-3">
-    <a href="{{ route('qc.inspections.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to Inspection List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="'Inspect ' . $po->po_number" description="Compare each requested specification with actual measurements, mark OK/NG, and attach evidence for every NG item." eyebrow="QC">
+        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Inspection List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
 {{-- Info PO Header --}}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
+<x-ui.card title="Purchase Order Reference" description="Read-only arrival and supplier context for this inspection.">
         <div class="row">
             <div class="col-md-4">
                 <div class="text-muted small">Number PO</div>
@@ -53,18 +51,11 @@
                 <div class="fw-bold">{{ $po->actual_arrival ? $po->actual_arrival->format('d F Y') : '-' }}</div>
             </div>
         </div>
-    </div>
-</div>
+</x-ui.card>
 
-<div class="alert alert-success d-none mb-4" id="bannerOk">
-    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-    <span class="fw-bold">Inspection Status: OK</span> - All materials meet specifications.
-</div>
+<x-ui.alert tone="success" title="Inspection Status: OK" class="d-none" id="bannerOk">All materials meet specifications.</x-ui.alert>
 
-<div class="alert alert-danger d-none mb-4" id="bannerNg">
-    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-    <span class="fw-bold">Inspection Status: NG (Not Good)</span> - There are materials that do not meet specifications. Please upload evidence photos.
-</div>
+<x-ui.alert tone="error" title="Inspection Status: NG (Not Good)" class="d-none" id="bannerNg">One or more materials do not meet specifications. Upload evidence photos for every NG item.</x-ui.alert>
 
 <form action="{{ route('qc.inspections.store', $po) }}" method="POST" enctype="multipart/form-data" id="inspectionForm">
     @csrf
@@ -180,13 +171,12 @@
         </div>
     @endforeach
 
-    <div class="d-flex justify-content-end gap-2 mb-5">
-        <a href="javascript:history.back()" class="btn btn-light">Cancel</a>
-        <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSubmit">
-            <i class="bi bi-save me-1"></i> Save Inspection Results
-        </button>
+    <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
+        <x-ui.button href="javascript:history.back()" variant="ghost">Cancel</x-ui.button>
+        <x-ui.button type="button" id="btnSubmit"><x-slot:leading><i class="bi bi-save"></i></x-slot:leading>Save Inspection Results</x-ui.button>
     </div>
 </form>
+</div>
 @endsection
 
 @push('scripts')

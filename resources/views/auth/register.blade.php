@@ -1,52 +1,22 @@
-<x-guest-layout>
-    <form method="POST" action="{{ route('register') }}">
-        @csrf
+@extends('layouts.auth')
 
-        <!-- Name -->
-        <div>
-            <x-input-label for="name" :value="'Name'" />
-            <x-text-input id="name" class="tw-mt-1 tw-block tw-w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="tw-mt-2" />
-        </div>
+@section('title', 'Register - ADASI Supplier Portal')
 
-        <!-- Email Address -->
-        <div class="tw-mt-4">
-            <x-input-label for="email" :value="'Email'" />
-            <x-text-input id="email" class="tw-mt-1 tw-block tw-w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="tw-mt-2" />
-        </div>
+@section('content')
+<header>
+    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">New account</p>
+    <h2 class="tw-m-0 tw-mt-2 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Create your account</h2>
+    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Enter your identity and choose a strong password.</p>
+</header>
 
-        <!-- Password -->
-        <div class="tw-mt-4">
-            <x-input-label for="password" :value="'Password'" />
+<form method="POST" action="{{ route('register') }}" class="tw-mt-6 tw-grid tw-gap-4">
+    @csrf
+    <x-ui.input name="name" id="name" label="Name" autocomplete="name" required autofocus />
+    <x-ui.input name="email" id="email" type="email" label="Email" autocomplete="username" required />
+    <x-ui.input name="password" id="password" type="password" label="Password" autocomplete="new-password" minlength="12" maxlength="255" required />
+    <x-ui.input name="password_confirmation" id="password_confirmation" type="password" label="Confirm Password" autocomplete="new-password" minlength="12" maxlength="255" required />
+    <x-ui.button type="submit" class="tw-w-full">Register</x-ui.button>
+</form>
 
-            <x-text-input id="password" class="tw-mt-1 tw-block tw-w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password" minlength="12" maxlength="255" />
-
-            <x-input-error :messages="$errors->get('password')" class="tw-mt-2" />
-        </div>
-
-        <!-- Confirm Password -->
-        <div class="tw-mt-4">
-            <x-input-label for="password_confirmation" :value="'Confirm Password'" />
-
-            <x-text-input id="password_confirmation" class="tw-mt-1 tw-block tw-w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password" minlength="12" maxlength="255" />
-
-            <x-input-error :messages="$errors->get('password_confirmation')" class="tw-mt-2" />
-        </div>
-
-        <div class="tw-mt-4 tw-flex tw-items-center tw-justify-end">
-            <a class="tw-rounded-ui-sm tw-text-ui-sm tw-text-on-surface-variant tw-underline hover:tw-text-on-surface focus-visible:tw-outline-none focus-visible:tw-ring-2 focus-visible:tw-ring-primary focus-visible:tw-ring-offset-2" href="{{ route('login') }}">
-                Already registered?
-            </a>
-
-            <x-primary-button class="tw-ms-4">
-                Register
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
+<div class="tw-mt-5 tw-text-center"><a href="{{ route('login') }}" class="ui-focus-ring tw-rounded-ui-xs tw-text-ui-sm tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">Already registered?</a></div>
+@endsection

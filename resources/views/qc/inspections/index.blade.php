@@ -4,8 +4,10 @@
 @section('page-title', 'QC Inspections')
 
 @section('content')
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white pt-3 pb-0 border-bottom-0 d-flex justify-content-between align-items-start">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="QC Inspections" description="Process arrived materials and review inspection history by outcome." eyebrow="QC" />
+<x-ui.card padding="none" class="ui-data-table">
+    <div class="tw-flex tw-flex-col tw-gap-3 tw-border-b tw-border-outline-variant tw-px-4 tw-pt-3 shell:tw-flex-row shell:tw-items-start shell:tw-justify-between shell:tw-px-5">
         <ul class="nav nav-tabs border-bottom-0" id="inspectionTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-medium px-4 pb-3" id="waiting-tab" data-bs-toggle="tab" data-bs-target="#waiting" type="button" role="tab">
@@ -18,11 +20,9 @@
                 </button>
             </li>
         </ul>
-        <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center d-none" id="inspectionExportLink" data-async-export>
-            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-        </a>
+        <x-ui.button :href="route('qc.export.inspections', request()->all())" variant="secondary" size="sm" class="d-none" id="inspectionExportLink" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
     </div>
-    <div class="card-body border-top">
+    <div class="tw-p-4 shell:tw-p-5">
         <div class="tab-content" id="inspectionTabsContent">
             {{-- Tab: Waiting for Inspection --}}
             <div class="tab-pane fade show active" id="waiting" role="tabpanel">
@@ -83,6 +83,7 @@
             </div>
         </div>
     </div>
+</x-ui.card>
 </div>
 @endsection
 

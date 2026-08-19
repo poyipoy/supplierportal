@@ -3,17 +3,12 @@
 @section('page-title', 'Add User')
 
 @section('content')
-    <div class="mb-3">
-        <a href="{{ route('admin.users.index') }}" class="text-decoration-none text-muted small">
-            <i class="bi bi-arrow-left me-1"></i> Back to User List
-        </a>
-    </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Add User" description="Create a role-scoped account and collect supplier company details only when applicable." eyebrow="Admin">
+        <x-slot:actions><x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to User List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold">New User Form</h6>
-        </div>
-        <div class="card-body">
+    <x-ui.card title="New User Form" description="Passwords require at least 12 characters; role controls the available portal surface.">
             <form action="{{ route('admin.users.store') }}" method="POST">
                 @csrf
                 <div class="row g-4">
@@ -99,14 +94,12 @@
                     </div>
                 </div>
 
-                <div class="text-end mt-4">
-                    <button type="submit" class="btn btn-primary fw-medium px-4">
-                        <i class="bi bi-save me-1"></i> Save User Baru
-                    </button>
+                <div class="tw-mt-5 tw-flex tw-justify-end">
+                    <x-ui.button type="submit"><x-slot:leading><i class="bi bi-save"></i></x-slot:leading>Save New User</x-ui.button>
                 </div>
             </form>
-        </div>
-    </div>
+    </x-ui.card>
+</div>
 @endsection
 
 @push('scripts')

@@ -3,27 +3,22 @@
 @section('title', 'Set Up Two-Factor Authentication - ADASI Supplier Portal')
 
 @section('content')
-    <div class="text-center mb-3">
-        <h4 class="fw-bold text-dark">Set up two-factor authentication</h4>
-        <p class="small text-muted">Scan this QR code with an authenticator app, then enter the generated 6-digit code.</p>
-        <img src="{{ $qrCode }}" alt="Two-factor authentication QR code" class="img-fluid mx-auto my-3" style="max-width: 220px;">
-    </div>
+<header class="tw-text-center">
+    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">Account security</p>
+    <h2 class="tw-m-0 tw-mt-2 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Set up two-factor authentication</h2>
+    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Scan this QR code with an authenticator app, then enter the generated 6-digit code.</p>
+    <img src="{{ $qrCode }}" alt="Two-factor authentication QR code" class="tw-mx-auto tw-mt-5 tw-w-full tw-max-w-[220px] tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-white tw-p-2">
+</header>
 
-    <div class="alert alert-light border small">
-        <span class="text-muted d-block mb-1">Manual setup key</span>
-        <code class="text-break user-select-all">{{ $secret }}</code>
-    </div>
+<div class="tw-mt-5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4">
+    <span class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Manual setup key</span>
+    <code class="tw-mt-1 tw-block tw-break-all tw-select-all tw-text-primary">{{ $secret }}</code>
+</div>
 
-    <form method="POST" action="{{ route('profile.two-factor.confirm') }}">
-        @csrf
-        <div class="mb-3">
-            <label for="code" class="form-label fw-medium">Authentication code</label>
-            <input id="code" name="code" type="text" inputmode="numeric" pattern="[0-9]*"
-                autocomplete="one-time-code" maxlength="6"
-                class="form-control text-center font-monospace @error('code') is-invalid @enderror" required autofocus>
-            @error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror
-        </div>
-        <button type="submit" class="btn btn-login w-100">Enable two-factor authentication</button>
-        <a href="{{ route('profile.edit') }}" class="btn btn-link text-muted w-100 mt-2">Cancel</a>
-    </form>
+<form method="POST" action="{{ route('profile.two-factor.confirm') }}" class="tw-mt-5 tw-grid tw-gap-3">
+    @csrf
+    <x-ui.input name="code" id="code" type="text" label="Authentication code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" class="[&_input]:tw-text-center [&_input]:tw-font-mono [&_input]:tw-tracking-wider" required autofocus />
+    <x-ui.button type="submit" class="tw-w-full">Enable Two-Factor Authentication</x-ui.button>
+    <x-ui.button :href="route('profile.edit')" variant="ghost" class="tw-w-full">Cancel</x-ui.button>
+</form>
 @endsection

@@ -3,79 +3,34 @@
 @section('page-title', 'Dashboard Quality Control')
 
 @section('content')
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                <div class="card-body">
-                    <div class="text-muted small fw-medium mb-1">TOTAL INSPECTIONS</div>
-                    <h3 class="fw-bold mb-0">{{ $totalInspections }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                <div class="card-body">
-                    <div class="text-muted small fw-medium mb-1">MATERIAL OK</div>
-                    <h3 class="fw-bold mb-0 text-success">{{ $totalOk }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-                <div class="card-body">
-                    <div class="text-muted small fw-medium mb-1">MATERIAL NG</div>
-                    <h3 class="fw-bold mb-0 text-danger">{{ $totalNg }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small fw-medium mb-1">WAITING FOR INSPECTION</div>
-                        <h3 class="fw-bold mb-0 text-warning">{{ $waitingInspections }}</h3>
-                    </div>
-                    @if($firstWaitingPo)
-                        <a href="{{ route('qc.inspections.create', $firstWaitingPo) }}"
-                            class="btn btn-warning btn-sm text-dark"><i class="bi bi-play-fill"></i> Mulai</a>
-                    @endif
-                </div>
-            </div>
-        </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Quality Control Dashboard" description="Prioritize arrivals waiting for inspection and monitor OK/NG quality outcomes." eyebrow="QC" />
+    <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
+        <x-ui.metric-card label="Total Inspections" :value="$totalInspections" icon="bi-clipboard2-check" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card label="Material OK" :value="$totalOk" icon="bi-check-circle" tone="success" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card label="Material NG" :value="$totalNg" icon="bi-x-octagon" tone="error" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card label="Waiting for Inspection" :value="$waitingInspections" icon="bi-hourglass-split" tone="warning" :href="$firstWaitingPo ? route('qc.inspections.create', $firstWaitingPo) : route('qc.inspections.index')" />
     </div>
 
     <div class="row g-4 mb-4">
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">Rasio Kualitas</h6>
-                </div>
-                <div class="card-body d-flex align-items-center justify-content-center">
+            <x-ui.card title="Quality Ratio" class="tw-h-full">
+                <div class="tw-flex tw-items-center tw-justify-center">
                     @if($totalInspections > 0)
                         <div style="width:220px;height:220px;"><canvas id="qualityChart"></canvas></div>
                     @else
                         <div class="text-muted text-center">No inspection data available.</div>
                     @endif
                 </div>
-            </div>
+            </x-ui.card>
         </div>
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">OK vs NG Trend (History)</h6>
-                </div>
-                <div class="card-body"><canvas id="trendChart" height="200"></canvas></div>
-            </div>
+            <x-ui.card title="OK vs NG Trend" description="Historical inspection outcome by period." class="tw-h-full"><canvas id="trendChart" height="200"></canvas></x-ui.card>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">10 Latest Inspections</h6>
-            <a href="{{ route('qc.inspections.index') }}" class="btn btn-sm btn-light">View All</a>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
+    <x-ui.data-table title="10 Latest Inspections" description="Recent inspection results and report access.">
+        <x-slot:toolbar><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm">View All</x-ui.button></x-slot:toolbar>
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -104,10 +59,9 @@
             </div>
         </div>
         </tbody>
-        </table>
-    </div>
-    </div>
-    </div>
+                </table>
+    </x-ui.data-table>
+</div>
 @endsection
 
 @push('scripts')

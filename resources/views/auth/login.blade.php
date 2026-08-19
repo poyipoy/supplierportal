@@ -3,94 +3,61 @@
 @section('title', 'Login - ADASI Supplier Portal')
 
 @section('content')
-    {{-- Logo --}}
-    <div class="auth-logo text-center mb-4">
-        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="Logo ADASI"
-            style="width: 80px; height: auto; margin-bottom: 1rem;">
-        <h4 class="fw-bold text-dark mb-1" style="font-size: 1.25rem;">ADASI Supplier Portal</h4>
+<header>
+    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">Welcome back</p>
+    <h2 class="tw-m-0 tw-mt-2 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Sign in to your account</h2>
+    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Use your assigned ADASI Supplier Portal credentials.</p>
+</header>
+
+<form method="POST" action="{{ route('login') }}" class="tw-mt-6 tw-grid tw-gap-4">
+    @csrf
+    <x-ui.input name="email" id="email" type="email" label="Email" placeholder="name@email.com" autocomplete="email" required autofocus />
+
+    <div x-data="{ visible: false }" class="tw-grid tw-gap-1.5">
+        <div class="tw-flex tw-items-center tw-justify-between tw-gap-3">
+            <label for="password" class="tw-text-ui-sm tw-font-medium">Password <span class="tw-text-error" aria-hidden="true">*</span></label>
+            <a href="{{ route('password.request') }}" class="ui-focus-ring tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">Forgot password?</a>
+        </div>
+        <div class="tw-relative">
+            <input
+                id="password"
+                :type="visible ? 'text' : 'password'"
+                name="password"
+                class="ui-motion tw-min-h-[var(--ui-control-height-md)] tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-pe-12 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('password') ? 'tw-border-error' : 'tw-border-outline-strong' }}"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                maxlength="255"
+                @if($errors->has('password')) aria-invalid="true" aria-describedby="password-error" @endif
+                required
+            >
+            <button type="button" class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-1 tw-my-auto tw-inline-flex tw-h-10 tw-w-10 tw-items-center tw-justify-center tw-rounded-ui-full tw-text-on-surface-variant hover:tw-bg-surface-container" @click="visible = !visible" :aria-label="visible ? 'Hide password' : 'Show password'">
+                <i class="bi" :class="visible ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+            </button>
+        </div>
+        @error('password')<p id="password-error" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
     </div>
 
-    {{-- Login Form --}}
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+    <label class="tw-flex tw-items-start tw-gap-2 tw-text-ui-sm" for="remember">
+        <input type="checkbox" name="remember" value="1" class="form-check-input tw-mt-0.5" id="remember" {{ old('remember') ? 'checked' : '' }}>
+        <span><span class="tw-block tw-font-medium">Remember me</span><span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">Keep me signed in on this device.</span></span>
+    </label>
 
-        <div class="mb-3">
-            <label for="email" class="form-label fw-medium" style="font-size:0.875rem;">Email</label>
-            <div class="input-group">
-                <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
-                <input type="email" name="email" id="email" class="form-control @error('email') is-invalid @enderror"
-                    value="{{ old('email') }}" placeholder="nama@email.com" autocomplete="email" required autofocus>
-            </div>
-            @error('email')
-                <div class="text-danger small mt-1">{{ $message }}</div>
-            @enderror
+    @if ($turnstileRequired && $turnstileSiteKey)
+        <div>
+            <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}"></div>
+            @error('cf-turnstile-response')<p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
         </div>
+    @endif
 
-        <div class="mb-3">
-            <div class="d-flex align-items-center justify-content-between gap-3 mb-1">
-                <label for="password" class="form-label fw-medium mb-0" style="font-size:0.875rem;">Password</label>
-                <a href="{{ route('password.request') }}" class="small text-decoration-none fw-medium">
-                    Forgot password?
-                </a>
-            </div>
-            <div class="input-group">
-                <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
-                <input type="password" name="password" id="password"
-                    class="form-control border-end-0 @error('password') is-invalid @enderror" placeholder="********" autocomplete="current-password" maxlength="255" required>
-                <button class="btn btn-password-toggle" type="button" id="togglePassword">
-                    <i class="bi bi-eye"></i>
-                </button>
-            </div>
-            @error('password')
-                <div class="text-danger small mt-1">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <div class="mb-3 form-check d-flex align-items-start gap-2 ps-0">
-            <input type="checkbox" name="remember" value="1" class="form-check-input m-0 mt-1" id="remember" {{ old('remember') ? 'checked' : '' }}>
-            <label class="form-check-label small" for="remember">
-                <span class="fw-medium">Remember me</span>
-                <span class="d-block text-muted" style="font-size: 0.72rem;">Keep me signed in on this device.</span>
-            </label>
-        </div>
-
-        @if ($turnstileRequired && $turnstileSiteKey)
-            <div class="mb-3">
-                <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}"></div>
-                @error('cf-turnstile-response')
-                    <div class="text-danger small mt-1">{{ $message }}</div>
-                @enderror
-            </div>
-        @endif
-
-        <button type="submit" class="btn btn-login w-100">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Login
-        </button>
-    </form>
-
-    <div class="auth-footer">
-        &copy; {{ date('Y') }} PT. Astra Daido Steel Indonesia
-    </div>
+    <x-ui.button type="submit" class="tw-w-full">
+        <x-slot:leading><i class="bi bi-box-arrow-in-right"></i></x-slot:leading>
+        Sign In
+    </x-ui.button>
+</form>
 @endsection
+
 @section('scripts')
 @if ($turnstileRequired && $turnstileSiteKey)
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 @endif
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const togglePassword = document.getElementById('togglePassword');
-        const password = document.getElementById('password');
-        const icon = togglePassword.querySelector('i');
-
-        togglePassword.addEventListener('click', function (e) {
-            // Toggle the type attribute
-            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-            password.setAttribute('type', type);
-            
-            // Toggle the eye / eye slash icon
-            icon.classList.toggle('bi-eye');
-            icon.classList.toggle('bi-eye-slash');
-        });
-    });
-</script>
 @endsection

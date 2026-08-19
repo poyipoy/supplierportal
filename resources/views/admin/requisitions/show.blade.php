@@ -4,91 +4,51 @@
 @section('page-title', 'Purchase Requisition Details')
 
 @section('content')
-<x-breadcrumb :items="[
-    'Dashboard' => route('admin.dashboard'),
-    ($pr->pr_number ?? 'Purchase Requisition') => '#',
-]" />
+<div class="tw-grid tw-gap-6">
+    <x-ui.breadcrumb :items="[
+        'Dashboard' => route('admin.dashboard'),
+        ($pr->pr_number ?? 'Purchase Requisition') => null,
+    ]" />
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">{{ $pr->pr_number ?? 'Purchase Requisition' }}</h6>
-        <x-status-badge type="pr" :status="$pr->status" size="lg" />
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="text-muted small">Period</div>
-                <div class="fw-medium">{{ $pr->period->name ?? '-' }}</div>
-            </div>
-            <div class="col-md-6">
-                <div class="text-muted small">Created By</div>
-                <div class="fw-medium">{{ $pr->creator->name ?? '-' }}</div>
-            </div>
-            <div class="col-md-6">
-                <div class="text-muted small">Date Created</div>
-                <div class="fw-medium">{{ $pr->created_at?->format('d F Y, H:i') ?? '-' }}</div>
-            </div>
-            <div class="col-md-6">
-                <div class="text-muted small">Status</div>
-                <div class="fw-medium">{{ ucwords(str_replace('_', ' ', $pr->status)) }}</div>
-            </div>
-            <div class="col-12">
-                <div class="text-muted small">Header Notes</div>
-                <div class="fw-medium">{{ $pr->notes ?: '-' }}</div>
-            </div>
-        </div>
-    </div>
-</div>
+    <x-ui.page-header title="{{ $pr->pr_number ?? 'Purchase Requisition' }}" description="Read-only requisition details and requested material lines." eyebrow="Admin">
+        <x-slot:meta><x-status-badge type="pr" :status="$pr->status" size="lg" /></x-slot:meta>
+    </x-ui.page-header>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">Material List ({{ $pr->items->count() }} Item)</h6>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light text-center">
+    <x-ui.card title="Requisition Summary">
+        <dl class="tw-m-0 tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Period</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->period->name ?? '-' }}</dd></div>
+            <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Created By</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->creator->name ?? '-' }}</dd></div>
+            <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Date Created</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->created_at?->format('d F Y, H:i') ?? '-' }}</dd></div>
+            <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Status</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ ucwords(str_replace('_', ' ', $pr->status)) }}</dd></div>
+            <div class="md:tw-col-span-2"><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Header Notes</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->notes ?: '-' }}</dd></div>
+        </dl>
+    </x-ui.card>
+
+    <x-ui.data-table title="Material List" description="{{ $pr->items->count() }} requested item(s).">
+        <table class="table table-hover align-middle tw-m-0 tw-w-full tw-text-ui-sm">
+            <thead class="table-light text-center">
+                <tr><th scope="col">No</th><th scope="col">HS Code</th><th scope="col">Material</th><th scope="col">Shape &amp; Dimensions (mm)</th><th scope="col">Qty</th><th scope="col">Weight/Unit (Kg)</th><th scope="col">Total Weight (Kg)</th><th scope="col">Remark</th></tr>
+            </thead>
+            <tbody>
+                @forelse($pr->items as $index => $item)
                     <tr>
-                        <th>No</th>
-                        <th>HS Code</th>
-                        <th>Material</th>
-                        <th>Shape & Dimensions (mm)</th>
-                        <th>Qty</th>
-                        <th>Weight/Unit (Kg)</th>
-                        <th>Total Weight (Kg)</th>
-                        <th>Remark</th>
+                        <td class="text-center">{{ $index + 1 }}</td>
+                        <td class="text-center">{{ $item->hs_code ?: '-' }}</td>
+                        <td>{{ $item->material_name }}</td>
+                        <td class="text-center">@if($item->shape)<x-ui.status-chip tone="neutral">{{ $item->shape }}</x-ui.status-chip><div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ $item->dimension_label }}</div>@else - @endif</td>
+                        <td class="ui-tabular-nums text-center">{{ number_format($item->quantity_value, 0) }}</td>
+                        <td class="ui-tabular-nums text-end">{{ number_format($item->weight_needed, 2) }}</td>
+                        <td class="ui-tabular-nums text-end fw-semibold">{{ number_format($item->total_weight, 2) }}</td>
+                        <td>{{ $item->remark ?: '-' }}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse($pr->items as $index => $item)
-                        <tr>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td class="text-center">{{ $item->hs_code ?: '-' }}</td>
-                            <td>{{ $item->material_name }}</td>
-                            <td class="text-center">
-                                @if($item->shape)
-                                    <span class="badge bg-light text-dark border">{{ $item->shape }}</span><br>
-                                    <span class="small text-muted">{{ $item->dimension_label }}</span>
-                                @else
-                                    -
-                                @endif
-                            </td>
-                            <td class="text-center">{{ number_format($item->quantity_value, 0) }}</td>
-                            <td class="text-end">{{ number_format($item->weight_needed, 2) }}</td>
-                            <td class="text-end fw-semibold">{{ number_format($item->total_weight, 2) }}</td>
-                            <td>{{ $item->remark ?: '-' }}</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="8" class="text-center text-muted py-4">No material data.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="card-footer bg-white text-end">
-        <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
-        </a>
-    </div>
+                @empty
+                    <tr><td colspan="8"><x-ui.empty-state icon="bi-box-seam" title="No material data" /></td></tr>
+                @endforelse
+            </tbody>
+        </table>
+        <x-slot:pagination>
+            <div class="tw-flex tw-justify-end"><x-ui.button :href="route('admin.dashboard')" variant="ghost"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Dashboard</x-ui.button></div>
+        </x-slot:pagination>
+    </x-ui.data-table>
 </div>
 @endsection

@@ -1,211 +1,74 @@
 @extends('layouts.app')
-@section('title', 'Exchange Rate Management - ADASI Portal')
-@section('page-title', 'Exchange Rate Management & History')
-
-@push('styles')
-    <style>
-        .exchange-rate-filter-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: .4rem;
-        }
-
-        .exchange-rate-pagination {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: .75rem;
-            padding: .7rem .85rem;
-            border: 1px solid var(--md-outline-variant);
-            border-radius: .5rem;
-            background-color: var(--md-surface-container-low);
-        }
-
-        .exchange-rate-pagination .pagination {
-            align-items: center;
-            justify-content: flex-end;
-            gap: .25rem;
-            margin-bottom: 0;
-        }
-
-        .exchange-rate-pagination .pagination-links nav > div.d-none.flex-sm-fill > div:first-child {
-            display: none !important;
-        }
-
-        .exchange-rate-pagination .pagination-links nav > div.d-none.flex-sm-fill {
-            justify-content: flex-end !important;
-        }
-
-        .exchange-rate-pagination .page-link {
-            min-width: 2rem;
-            padding: .3rem .55rem;
-            border-radius: .375rem;
-            color: var(--md-primary);
-            font-size: .78rem;
-            font-weight: 600;
-            line-height: 1.2;
-            text-align: center;
-            box-shadow: none;
-        }
-
-        .exchange-rate-pagination .page-item:first-child .page-link,
-        .exchange-rate-pagination .page-item:last-child .page-link {
-            min-width: auto;
-            padding-inline: .65rem;
-        }
-
-        .exchange-rate-pagination .page-item.active .page-link {
-            border-color: var(--md-primary);
-            background-color: var(--md-primary);
-            color: var(--md-on-primary);
-        }
-
-        .exchange-rate-pagination .page-item.disabled .page-link {
-            color: var(--md-on-surface-variant);
-            background-color: var(--md-surface-container);
-        }
-
-        @media (max-width: 575.98px) {
-            .exchange-rate-filter-buttons {
-                justify-content: flex-start;
-                margin-top: .75rem;
-            }
-
-            .exchange-rate-pagination {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .exchange-rate-pagination .pagination {
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-
-            .exchange-rate-pagination .pagination-summary {
-                text-align: center;
-            }
-        }
-    </style>
-@endpush
+@section('title', 'Exchange Rates - ADASI Portal')
+@section('page-title', 'Exchange Rates')
 
 @section('content')
-    <div class="row g-4">
-        {{-- Exchange Rate History Table --}}
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                        <h6 class="mb-0 fw-bold">Exchange Rate Update History</h6>
-                        <div class="small text-muted">Total {{ $totalRates }} exchange rate records saved.</div>
-                    </div>
-                    <div class="exchange-rate-filter-buttons">
-                        <a href="{{ route('admin.exchange-rates.index') }}" class="btn btn-sm btn-outline-secondary {{ !request('currency') ? 'active' : '' }}">All <span class="badge text-bg-light">{{ $totalRates }}</span></a>
-                        @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
-                            <a href="{{ route('admin.exchange-rates.index', ['currency' => $currency]) }}" class="btn btn-sm btn-outline-secondary {{ request('currency') == $currency ? 'active' : '' }}">{{ $currency }} <span class="badge text-bg-light">{{ $currencyCounts[$currency] ?? 0 }}</span></a>
-                        @endforeach
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="small text-muted">
-                            Showing {{ $rates->count() }} of {{ $rates->total() }} records
-                            @if(request('currency'))
-                                for currency {{ request('currency') }}
-                            @endif
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" style="font-size: 0.9rem;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Currency</th>
-                                    <th>Value to IDR</th>
-                                    <th>Valid From</th>
-                                    <th>Updated By</th>
-                                    <th>Update Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($rates as $rate)
-                                    <tr>
-                                        <td>
-                                            <span class="badge bg-dark text-uppercase px-2 py-1">
-                                                {{ $rate->currency }}
-                                            </span>
-                                        </td>
-                                        <td class="fw-medium text-end">Rp {{ number_format($rate->rate_to_idr, 2, ',', '.') }}</td>
-                                        <td>{{ \Carbon\Carbon::parse($rate->valid_from)->format('d M Y') }}</td>
-                                        <td>{{ $rate->creator->name ?? '-' }}</td>
-                                        <td class="text-muted small">{{ $rate->created_at->format('d M Y H:i') }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center py-4 text-muted">No exchange rate history entered.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    @if($rates->hasPages())
-                        <div class="exchange-rate-pagination mt-3">
-                            <div class="pagination-summary small text-muted">
-                                Page {{ $rates->currentPage() }} of {{ $rates->lastPage() }}
-                                <span class="d-none d-sm-inline">- {{ $rates->firstItem() }} to {{ $rates->lastItem() }} of {{ $rates->total() }} records</span>
-                            </div>
-                            <div class="pagination-links">
-                                {{ $rates->onEachSide(1)->links('pagination::bootstrap-5') }}
-                            </div>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Exchange Rate History"
+        description="Review every effective rate and add a dated record without overwriting prior history."
+        eyebrow="Admin"
+    />
 
-        {{-- New Exchange Rate Form --}}
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-plus-circle me-1"></i> Input New Exchange Rate</h6>
+    <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] xl:tw-items-start">
+        <x-ui.data-table
+            title="Saved Rates"
+            description="Showing {{ $rates->count() }} of {{ $rates->total() }} records{{ request('currency') ? ' for ' . request('currency') : '' }}."
+        >
+            <x-slot:filters>
+                <div class="tw-flex tw-flex-wrap tw-gap-2" aria-label="Filter by currency">
+                    <x-ui.button :href="route('admin.exchange-rates.index')" size="sm" :variant="request('currency') ? 'ghost' : 'secondary'">All ({{ $totalRates }})</x-ui.button>
+                    @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                        <x-ui.button
+                            :href="route('admin.exchange-rates.index', ['currency' => $currency])"
+                            size="sm"
+                            :variant="request('currency') === $currency ? 'secondary' : 'ghost'"
+                        >{{ $currency }} ({{ $currencyCounts[$currency] ?? 0 }})</x-ui.button>
+                    @endforeach
                 </div>
-                <div class="card-body bg-light">
-                    <p class="small text-muted mb-3">
-                        <i class="bi bi-info-circle"></i> Entering a new exchange rate <strong>will not delete</strong> the old rate. It adds a new history record that will be used from the valid date.
-                    </p>
-                    <form action="{{ route('admin.exchange-rates.store') }}" method="POST">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Currency <span class="text-danger">*</span></label>
-                            <select name="currency" class="form-select @error('currency') is-invalid @enderror" required>
-                                @foreach(\App\Models\ExchangeRate::CURRENCY_LABELS as $code => $label)
-                                    <option value="{{ $code }}" {{ old('currency') === $code ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            @error('currency')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
+            </x-slot:filters>
 
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted">Value to Rupiah (IDR) <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="number" step="0.01" name="rate_to_idr" class="form-control @error('rate_to_idr') is-invalid @enderror" required placeholder="Example: 15500">
-                            </div>
-                            @error('rate_to_idr')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        </div>
+            <table class="table table-hover align-middle tw-m-0 tw-w-full tw-text-ui-sm">
+                <thead class="table-light">
+                    <tr><th scope="col">Currency</th><th scope="col" class="text-end">Value to IDR</th><th scope="col">Valid From</th><th scope="col">Updated By</th><th scope="col">Update Time</th></tr>
+                </thead>
+                <tbody>
+                    @forelse($rates as $rate)
+                        <tr>
+                            <td><x-ui.status-chip tone="neutral">{{ $rate->currency }}</x-ui.status-chip></td>
+                            <td class="ui-tabular-nums text-end fw-medium">Rp {{ number_format($rate->rate_to_idr, 2, ',', '.') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($rate->valid_from)->format('d M Y') }}</td>
+                            <td>{{ $rate->creator->name ?? '-' }}</td>
+                            <td class="text-muted small">{{ $rate->created_at->format('d M Y H:i') }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5"><x-ui.empty-state icon="bi-currency-exchange" title="No exchange rates found" description="Add the first effective rate using the form." /></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
 
-                        <div class="mb-4">
-                            <label class="form-label small fw-medium text-muted">Valid From <span class="text-danger">*</span></label>
-                            <input type="date" name="valid_from" class="form-control @error('valid_from') is-invalid @enderror" value="{{ date('Y-m-d') }}" required>
-                            @error('valid_from')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
+            @if($rates->hasPages())
+                <x-slot:pagination>
+                    <x-ui.pagination>
+                        <span>Page {{ $rates->currentPage() }} of {{ $rates->lastPage() }}</span>
+                        <span>{{ $rates->onEachSide(1)->links('pagination::bootstrap-5') }}</span>
+                    </x-ui.pagination>
+                </x-slot:pagination>
+            @endif
+        </x-ui.data-table>
 
-                        <button type="submit" class="btn btn-primary w-100 fw-medium">
-                            <i class="bi bi-save me-1"></i> Save Exchange Rate History
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
+        <x-ui.card title="Add Effective Rate" description="A new row is appended to history; existing rates are preserved." variant="tonal">
+            <form action="{{ route('admin.exchange-rates.store') }}" method="POST" class="tw-grid tw-gap-4">
+                @csrf
+                <x-ui.select name="currency" label="Currency" :options="\App\Models\ExchangeRate::CURRENCY_LABELS" :value="old('currency')" required />
+                <x-ui.input name="rate_to_idr" type="number" label="Value to Rupiah (IDR)" step="0.01" min="1" placeholder="Example: 15500" required />
+                <x-ui.input name="valid_from" type="date" label="Valid From" :value="old('valid_from', date('Y-m-d'))" required />
+                <x-ui.button type="submit" class="tw-w-full">
+                    <x-slot:leading><i class="bi bi-save"></i></x-slot:leading>
+                    Save Rate History
+                </x-ui.button>
+            </form>
+        </x-ui.card>
     </div>
+</div>
 @endsection

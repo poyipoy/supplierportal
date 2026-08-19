@@ -3,17 +3,12 @@
 @section('page-title', 'Edit User')
 
 @section('content')
-    <div class="mb-3">
-        <a href="{{ route('admin.users.index') }}" class="text-decoration-none text-muted small">
-            <i class="bi bi-arrow-left me-1"></i> Back to User List
-        </a>
-    </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="'Edit User — ' . $user->name" description="Update role, account status, credentials, and supplier profile within existing security rules." eyebrow="Admin">
+        <x-slot:actions><x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to User List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold">Edit User Form: {{ $user->name }}</h6>
-        </div>
-        <div class="card-body">
+    <x-ui.card :title="'Edit User Form: ' . $user->name">
             <form action="{{ route('admin.users.update', $user) }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -98,30 +93,27 @@
                     </div>
                 </div>
 
-                <div class="text-end mt-4">
-                    <button type="submit" class="btn btn-primary fw-medium px-4">
-                        <i class="bi bi-save me-1"></i> Save Changes
-                    </button>
+                <div class="tw-mt-5 tw-flex tw-justify-end">
+                    <x-ui.button type="submit"><x-slot:leading><i class="bi bi-save"></i></x-slot:leading>Save Changes</x-ui.button>
                 </div>
             </form>
-        </div>
-    </div>
+    </x-ui.card>
 
     @if ($user->hasTwoFactorAuthentication() && $user->id !== auth()->id())
-        <div class="card border-warning shadow-sm mt-3">
-            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <x-ui.card title="Two-Factor Authentication" description="Reset only when this user lost both authenticator and recovery-code access." variant="tonal">
+            <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
                 <div>
-                    <h6 class="fw-bold mb-1"><i class="bi bi-shield-lock me-1"></i>Two-Factor Authentication</h6>
                     <p class="text-muted small mb-0">Reset only when this user has lost access to the authenticator and every recovery code.</p>
                 </div>
                 <form method="POST" action="{{ route('admin.users.two-factor.destroy', $user) }}">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-outline-warning">Reset MFA</button>
+                    <x-ui.button type="submit" variant="danger">Reset MFA</x-ui.button>
                 </form>
             </div>
-        </div>
+        </x-ui.card>
     @endif
+</div>
 @endsection
 
 @push('scripts')
