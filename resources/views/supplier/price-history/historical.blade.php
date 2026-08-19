@@ -35,33 +35,9 @@
 </style>
 @endpush
 
-<div class="card border-0 shadow-sm mb-4 text-white overflow-hidden position-relative animate-fade-in" style="background: var(--md-primary);">
-    <div class="position-absolute top-0 end-0 h-100 w-50 opacity-25" style="background: radial-gradient(circle at top right, var(--md-on-primary), transparent);"></div>
-    <div class="card-body p-4 position-relative z-1">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h4 class="fw-bold mb-2"><i class="bi bi-graph-up-arrow me-2"></i>Price History Quotation</h4>
-                <p class="mb-0 text-white-50">Monitor and analyze price trends for materials you have quoted to ADASI.</p>
-            </div>
-            <div class="col-md-4 text-end d-none d-md-block">
-                <i class="bi bi-tags fs-1 text-white opacity-50"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('supplier.price-history.index') }}">
-            <i class="bi bi-list-ul me-1"></i> Ringkasan Material
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="{{ route('supplier.price-history.historical') }}">
-            <i class="bi bi-graph-up me-1"></i> Tren per Material
-        </a>
-    </li>
-</ul>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Material Price Trends" description="Analyze only your own quotation history by material, period, and matching dimensions." eyebrow="Supplier Portal" />
+    <x-supplier.price-history-tabs active="historical" />
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -251,6 +227,7 @@
         </div>
     </div>
 @endif
+</div>
 </div>
 @endsection
 

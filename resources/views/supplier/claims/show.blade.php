@@ -9,21 +9,16 @@
     'Material Claim' => route('supplier.claims.index'),
     'Claim #' . $claim->id => '#'
 ]" />
-<div class="mb-3">
-    <a href="{{ route('supplier.claims.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to Claim List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Respond to the claim for ' . $claim->purchaseOrder->po_number . ' before the stated deadline.'" eyebrow="Supplier Portal">
+        <x-slot:actions><x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Claim List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-<div class="row g-4">
-    <div class="col-lg-8">
+<div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+    <div class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         {{-- Info Claim Demand --}}
-        <div class="card border-0 shadow-sm mb-4 border-top border-4 border-danger">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-octagon me-2"></i>Claim Demand</h5>
-                    <x-status-badge type="claim" :status="$claim->status" size="lg" />
-                </div>
+        <x-ui.card title="Claim Request" description="Problem details and evidence submitted by ADASI.">
+            <x-slot:actions><x-status-badge type="claim" :status="$claim->status" size="lg" /></x-slot:actions>
                 
                 <div class="row mb-3">
                     <div class="col-md-3 text-muted small">Submitted Date</div>
@@ -56,35 +51,18 @@
                         @endforeach
                     </div>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- Form Response Supplier --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Response Supplier</h6>
-            </div>
-            <div class="card-body">
+        <x-ui.card title="Supplier Response" description="Your response is final after submission.">
                 @if($claim->status === 'pending')
-                    <form action="{{ route('supplier.claims.respond', $claim) }}" method="POST" enctype="multipart/form-data" id="respondForm">
+                    <form action="{{ route('supplier.claims.respond', $claim) }}" method="POST" enctype="multipart/form-data" id="respondForm" class="tw-grid tw-gap-4">
                         @csrf
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Response & Explanation <span class="text-danger">*</span></label>
-                            <textarea name="supplier_response" class="form-control @error('supplier_response') is-invalid @enderror" rows="5" required placeholder="Write your response or agreed resolution..."></textarea>
-                            @error('supplier_response') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                        <x-ui.textarea name="supplier_response" label="Response & Explanation" :rows="5" required placeholder="Write your response or agreed resolution..." />
+                        <x-ui.input type="file" name="attachments[]" label="Supporting Documents/Photos (Optional)" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" helper="Official letter, transfer evidence, or replacement receipt; max 10MB per file." :error="$errors->first('attachments.*')" />
 
-                        <div class="mb-4">
-                            <label class="form-label fw-medium">Supporting Documents/Photos (Optional)</label>
-                            <input type="file" name="attachments[]" class="form-control" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx">
-                            <div class="form-text small">Upload an official letter, refund transfer evidence, or replacement shipment receipt (max 10MB/file).</div>
-                            @error('attachments.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="d-flex justify-content-end">
-                            <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSubmitRespond">
-                                <i class="bi bi-send me-1"></i> Send Response
-                            </button>
+                        <div class="tw-flex tw-justify-end">
+                            <x-ui.button type="button" id="btnSubmitRespond"><x-slot:leading><i class="bi bi-send"></i></x-slot:leading>Send Response</x-ui.button>
                         </div>
                     </form>
                 @else
@@ -107,17 +85,12 @@
                         </div>
                     @endif
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
     </div>
 
-    <div class="col-lg-4">
+    <aside class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         {{-- Item Material NG --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Problem Material List</h6>
-            </div>
-            <div class="card-body p-0">
+        <x-ui.card title="Problem Material List" padding="none">
                 <ul class="list-group list-group-flush">
                     @foreach($claim->inspection->items->where('status', 'ng') as $item)
                         <li class="list-group-item">
@@ -128,13 +101,11 @@
                         </li>
                     @endforeach
                 </ul>
-            </div>
-        </div>
+        </x-ui.card>
 
-        <div class="alert alert-light border small text-muted">
-            <i class="bi bi-info-circle me-1"></i> If you need details about actual specifications versus requested specifications, contact the related ADASI Purchasing team.
-        </div>
-    </div>
+        <x-ui.alert>If you need details about actual versus requested specifications, contact the related ADASI Purchasing team.</x-ui.alert>
+    </aside>
+</div>
 </div>
 @endsection
 

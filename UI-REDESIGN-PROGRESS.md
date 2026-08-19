@@ -1,6 +1,6 @@
 # UI Redesign Progress
 
-Last updated: `2026-08-20 00:48:02 +07:00`
+Last updated: `2026-08-20 01:00:47 +07:00`
 
 ## Recovery state
 
@@ -20,9 +20,9 @@ Last updated: `2026-08-20 00:48:02 +07:00`
 | UI-01 Design Foundation | PASS | `620c584` | `UI-01-FOUNDATION-RESULT.md` | Complete |
 | UI-02 Components + Shell | PASS | `6c60943` | `UI-02-COMPONENTS-SHELL-RESULT.md` | Complete |
 | UI-03 Purchasing PR Pilot | PASS | `39818d3` | `UI-03-PR-PILOT-RESULT.md` | Complete |
-| UI-04 Remaining Purchasing | PASS | pending local checkpoint | `UI-04-PURCHASING-RESULT.md` | Complete |
-| UI-05 Supplier | IN_PROGRESS | — | — | Audit active Supplier views and reuse proven patterns |
-| UI-06 QC + Admin + Auth | NOT_STARTED | — | — | Reuse proven patterns |
+| UI-04 Remaining Purchasing | PASS | `fcc31ad` | `UI-04-PURCHASING-RESULT.md` | Complete |
+| UI-05 Supplier | PASS | pending local checkpoint | `UI-05-SUPPLIER-RESULT.md` | Complete |
+| UI-06 QC + Admin + Auth | IN_PROGRESS | — | — | Audit active role/auth views and migrate in bounded batches |
 | UI-07 Compatibility Cleanup | NOT_STARTED | — | — | Inventory before removal |
 | UI-08 Visual QA + Fixes | NOT_STARTED | — | — | Retry browser once; static QA otherwise |
 | UI-09 Final Audit + Report | NOT_STARTED | — | — | Final verification and report |
@@ -31,12 +31,13 @@ Last updated: `2026-08-20 00:48:02 +07:00`
 
 | Check | Result |
 |---|---|
-| `npm.cmd run build` | PASS — CSS 30.92 kB, JS 95.72 kB |
+| `npm.cmd run build` | PASS — CSS 31.18 kB, JS 95.72 kB |
 | `php artisan view:cache` | PASS |
 | UI-02 targeted tests | PASS — 13 tests, 67 assertions |
 | UI-03 targeted tests | PASS — 51 tests, 540 assertions |
 | UI-04 targeted batches | PASS — quotation 15/233; comparison 11/200; PO 27/370; claim 20/180 |
-| `php artisan test` | 200 passed, 4 risky, 1 known pre-existing failure, 2179 assertions |
+| UI-05 targeted batches | PASS — quotation 15/190; import/history 26/232; PO/claim 23/282 |
+| `php artisan test` | 194 passed, 10 risky, 1 known pre-existing failure, 2182 assertions |
 | HTTP login/assets/manifest smoke | PASS |
 | Browser screenshots | BLOCKED — no browser available |
 | Backend/schema guardrail | PASS — no guarded file or database change |
@@ -51,4 +52,4 @@ Last updated: `2026-08-20 00:48:02 +07:00`
 
 ## Resume instruction
 
-Resume from `UI-05 Supplier`. Do not repeat packages marked `PASS` unless a later verification proves a regression.
+Resume from `UI-06 QC + Admin + Auth`. Do not repeat packages marked `PASS` unless a later verification proves a regression.

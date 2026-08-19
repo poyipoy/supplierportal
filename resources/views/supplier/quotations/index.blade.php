@@ -4,15 +4,10 @@
 @section('page-title', 'Quotation Period')
 
 @section('content')
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">Select Period</h5>
-        <a href="{{ route('supplier.export.quotations') }}" class="btn btn-success btn-sm" data-async-export>
-            <i class="bi bi-file-earmark-excel me-1"></i> Export All History
-        </a>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Quotation Periods" description="Choose a period to review open requisitions and your quotation history." eyebrow="Supplier Portal" />
+    <x-ui.data-table title="Select Period" description="Counts show only requisitions and quotations available to your supplier account.">
+        <x-slot:toolbar><x-ui.button :href="route('supplier.export.quotations')" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export All History</x-ui.button></x-slot:toolbar>
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
@@ -55,9 +50,7 @@
                                 @endif
                             </td>
                             <td class="text-end pe-4">
-                                <a href="{{ route('supplier.quotations.period', $period->id) }}" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">
-                                    View Requisition <i class="bi bi-arrow-right ms-1"></i>
-                                </a>
+                                <x-ui.button :href="route('supplier.quotations.period', $period->id)" size="sm">View Requisitions<x-slot:trailing><i class="bi bi-arrow-right"></i></x-slot:trailing></x-ui.button>
                             </td>
                         </tr>
                     @empty
@@ -67,7 +60,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
-    </div>
+    </x-ui.data-table>
 </div>
 @endsection

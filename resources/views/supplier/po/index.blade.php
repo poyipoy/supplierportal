@@ -4,16 +4,10 @@
 @section('page-title', 'Purchase Order Saya')
 
 @section('content')
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">Received Purchase Order List</h5>
-        <a href="{{ route('supplier.export.purchase-orders') }}" class="btn btn-success btn-sm" data-async-export
-            id="exportSupplierPurchaseOrdersBtn" data-export-url="{{ route('supplier.export.purchase-orders') }}">
-            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="My Purchase Orders" description="Track only purchase orders issued to your supplier account." eyebrow="Supplier Portal" />
+    <x-ui.data-table title="Received Purchase Orders" description="Search, export, and open order details without exposing other suppliers' data.">
+        <x-slot:toolbar><x-ui.button :href="route('supplier.export.purchase-orders')" variant="secondary" size="sm" data-async-export id="exportSupplierPurchaseOrdersBtn" :data-export-url="route('supplier.export.purchase-orders')"><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button></x-slot:toolbar>
             <table class="table table-hover align-middle" id="poTable">
                 <thead class="table-light">
                     <tr>
@@ -29,8 +23,7 @@
                 </thead>
                 <tbody></tbody>
             </table>
-        </div>
-    </div>
+    </x-ui.data-table>
 </div>
 @endsection
 

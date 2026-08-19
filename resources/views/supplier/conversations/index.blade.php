@@ -3,12 +3,9 @@
 @section('page-title', 'Negotiation with Purchasing')
 
 @section('content')
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold">Negotiation Chat List</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Negotiation with Purchasing" description="Open conversations tied to your supplier's PR and PO context." eyebrow="Supplier Portal" />
+    <x-ui.data-table title="Negotiation Chats" description="Unread state and response timing help prioritize follow-up.">
                 <table class="table table-hover align-middle datatable" style="font-size: 0.9rem;">
                     <thead class="table-light">
                         <tr>
@@ -73,12 +70,9 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
             @if($conversations instanceof \Illuminate\Contracts\Pagination\Paginator && $conversations->hasPages())
-                <div class="mt-3">
-                    {{ $conversations->links('pagination::bootstrap-5') }}
-                </div>
+                <x-slot:pagination>{{ $conversations->links('pagination::bootstrap-5') }}</x-slot:pagination>
             @endif
-        </div>
-    </div>
+    </x-ui.data-table>
+</div>
 @endsection

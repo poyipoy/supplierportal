@@ -4,16 +4,10 @@
 @section('page-title', 'Material Claim')
 
 @section('content')
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-semibold">Material Claim List from ADASI</h5>
-    </div>
-    <div class="card-body">
-        <div class="alert alert-warning small mb-4">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> The list below contains NG (Not Good) material claims submitted by the ADASI Purchasing team. Please immediately respond to claims with status <strong>PENDING</strong> before the deadline.
-        </div>
-        
-        <div class="table-responsive">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Material Claims" description="Review and respond to NG material claims assigned to your supplier account." eyebrow="Supplier Portal" />
+    <x-ui.alert tone="warning">Claims with <strong>PENDING</strong> status require your response before the deadline.</x-ui.alert>
+    <x-ui.data-table title="Claims from ADASI" description="The list is scoped to your supplier account and its purchase orders.">
             <table class="table table-hover align-middle" id="claimTable" style="width: 100%;">
                 <thead class="table-light">
                     <tr>
@@ -30,8 +24,7 @@
                 </thead>
                 <tbody></tbody>
             </table>
-        </div>
-    </div>
+    </x-ui.data-table>
 </div>
 @endsection
 

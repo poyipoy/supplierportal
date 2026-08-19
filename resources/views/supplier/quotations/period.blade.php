@@ -4,28 +4,20 @@
 @section('page-title', 'Purchase Requisition' . ': ' . $period->name)
 
 @section('content')
-<div class="mb-3">
-    <a href="{{ route('supplier.quotations.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to Period List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="'Purchase Requisitions — ' . $period->name" description="Review requisitions and continue only the quotations assigned to your supplier account." eyebrow="Supplier Portal">
+        <x-slot:actions><x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Period List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">Purchase Requisition List</h5>
-        <a href="{{ route('supplier.export.quotations', ['period_id' => $period->id]) }}" data-async-export
-            class="btn btn-success btn-sm" id="exportSupplierQuotationsBtn"
-            data-export-url="{{ route('supplier.export.quotations') }}">
-            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="row g-3 align-items-end mb-4">
-            <div class="col-md-5">
+<x-ui.data-table title="Purchase Requisition List" description="Search and filter this period's supplier-visible requisitions.">
+    <x-slot:toolbar><x-ui.button :href="route('supplier.export.quotations', ['period_id' => $period->id])" variant="secondary" size="sm" data-async-export id="exportSupplierQuotationsBtn" :data-export-url="route('supplier.export.quotations')"><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button></x-slot:toolbar>
+    <x-slot:filters>
+        <div class="tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:tw-items-end">
+            <div>
                 <label class="form-label small fw-bold">Number PR</label>
                 <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="Search PR number... (REQ/MM/YYYY/XXX)">
             </div>
-            <div class="col-md-4">
+            <div>
                 <label class="form-label small fw-bold">Quotation Status</label>
                 <select id="filter_status" class="form-select form-select-sm">
                     <option value="">All Status</option>
@@ -37,15 +29,13 @@
                     <option value="rejected">Rejected</option>
                 </select>
             </div>
-            <div class="col-md-3 d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-primary flex-fill" style="background-color: var(--adasi-blue);" id="applyFilter">
-                    <i class="bi bi-search"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-light border flex-fill" id="resetFilter">Reset</button>
+            <div class="tw-flex tw-gap-2">
+                <x-ui.button type="button" size="sm" icon-only label="Apply filters" id="applyFilter"><i class="bi bi-search"></i></x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" id="resetFilter">Reset</x-ui.button>
             </div>
         </div>
+    </x-slot:filters>
 
-        <div class="table-responsive">
             <table class="table table-hover align-middle" id="prTable">
                 <thead class="table-light">
                     <tr>
@@ -59,8 +49,7 @@
                 </thead>
                 <tbody></tbody>
             </table>
-        </div>
-    </div>
+</x-ui.data-table>
 </div>
 @endsection
 

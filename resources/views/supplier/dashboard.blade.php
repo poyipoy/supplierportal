@@ -3,100 +3,29 @@
 @section('page-title', 'Dashboard Supplier')
 
 @section('content')
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Supplier Dashboard" description="Focus on open quotation opportunities, active orders, and claims that need your response." eyebrow="Supplier Portal" />
     {{-- Insight & Alerts --}}
     @if($belumDirespons > 0)
-        <div class="row mb-4 animate-fade-in">
-            <div class="col-12">
-                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-3 mb-0"
-                    style="background-color: var(--md-info-container); border-left: 4px solid var(--md-info) !important;">
-                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 d-flex align-items-center justify-content-center"
-                        style="width: 48px; height: 48px;">
-                        <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
-                    </div>
-                    <div>
-                        <h6 class="fw-bold mb-1 text-dark">Peluang Quotation</h6>
-                        <p class="mb-0 text-muted small">
-                            There are <span class="text-primary fw-semibold">{{ $belumDirespons }} active requisitions
-                                (PR)</span> that you have not quoted yet. Submit your best price soon!
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <x-ui.alert title="Quotation opportunities" class="animate-fade-in">
+            There are <strong>{{ $belumDirespons }} active requisitions</strong> that you have not quoted yet. Submit your best offer before the period closes.
+        </x-ui.alert>
     @endif
 
     {{-- Card Statistik --}}
-    <div class="row g-4 mb-4">
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small fw-medium mb-1">ACTIVE PERIODS</div>
-                            <h3 class="fw-bold mb-0">{{ $periodeAktif }}</h3>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 rounded-circle p-3"><i
-                                class="bi bi-calendar-event text-primary fs-4"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small fw-medium mb-1">NOT RESPONDED</div>
-                            <h3 class="fw-bold mb-0 text-danger">{{ $belumDirespons }}</h3>
-                        </div>
-                        <div class="bg-danger bg-opacity-10 rounded-circle p-3"><i
-                                class="bi bi-exclamation-circle text-danger fs-4"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small fw-medium mb-1">SUBMITTED QUOTATIONS</div>
-                            <h3 class="fw-bold mb-0 text-success">{{ $penawaranTerkirim }}</h3>
-                        </div>
-                        <div class="bg-success bg-opacity-10 rounded-circle p-3"><i
-                                class="bi bi-send-check text-success fs-4"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small fw-medium mb-1">RECEIVED PO</div>
-                            <h3 class="fw-bold mb-0 text-info">{{ $poDiterima }}</h3>
-                        </div>
-                        <div class="bg-info bg-opacity-10 rounded-circle p-3"><i class="bi bi-receipt text-info fs-4"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
+        <x-ui.metric-card label="Active Periods" :value="$periodeAktif" icon="bi-calendar-event" :href="route('supplier.quotations.index')" />
+        <x-ui.metric-card label="Not Responded" :value="$belumDirespons" icon="bi-exclamation-circle" tone="error" :href="route('supplier.quotations.index')" />
+        <x-ui.metric-card label="Submitted Quotations" :value="$penawaranTerkirim" icon="bi-send-check" tone="success" :href="route('supplier.quotations.index')" />
+        <x-ui.metric-card label="Received PO" :value="$poDiterima" icon="bi-receipt" tone="info" :href="route('supplier.purchase-orders.index')" />
     </div>
 
     {{-- Tabel + Announcement --}}
     <div class="row g-4">
         <div class="col-lg-8">
             {{-- PR Not Responded --}}
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle text-danger me-1"></i> Unresponsive
-                        Requisitions</h6>
-                    <a href="{{ route('supplier.quotations.index') }}" class="btn btn-sm btn-light">View All</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
+            <x-ui.data-table title="Requisitions Awaiting Your Quotation" description="These open opportunities still need a supplier response.">
+                <x-slot:toolbar><x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm">View All</x-ui.button></x-slot:toolbar>
                         <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
                             <thead class="table-light">
                                 <tr>
@@ -127,17 +56,10 @@
                                 @endforelse
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
+            </x-ui.data-table>
             {{-- PO Terbaru --}}
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Latest Purchase Orders</h6>
-                    <a href="{{ route('supplier.purchase-orders.index') }}" class="btn btn-sm btn-light">All PO</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
+            <x-ui.data-table title="Latest Purchase Orders" description="Recent orders and claim actions visible to your supplier account." class="tw-mt-6">
+                <x-slot:toolbar><x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm">All PO</x-ui.button></x-slot:toolbar>
                         <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
                             <thead class="table-light">
                                 <tr>
@@ -190,17 +112,11 @@
                                 </tr>@endforelse
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
+            </x-ui.data-table>
         </div>
         {{-- Announcement --}}
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-megaphone text-primary me-1"></i> Announcement ADASI</h6>
-                </div>
-                <div class="card-body p-0">
+            <x-ui.card title="ADASI Announcements" padding="none">
                     @forelse($announcements as $ann)
                         <div class="p-3 border-bottom">
                             <h6 class="mb-1 small fw-bold"><a href="{{ route('supplier.announcements.show', $ann->id) }}"
@@ -212,12 +128,11 @@
                     @empty
                         <div class="p-4 text-center text-muted small">No new announcements.</div>
                     @endforelse
-                </div>
                 @if($announcements->count() > 0)
-                    <div class="card-footer bg-white text-center"><a href="{{ route('supplier.announcements.index') }}"
-                            class="small text-decoration-none fw-bold">View All Announcement</a></div>
+                    <x-slot:footer><x-ui.button :href="route('supplier.announcements.index')" variant="ghost" size="sm" class="tw-w-full">View All Announcements</x-ui.button></x-slot:footer>
                 @endif
-            </div>
+            </x-ui.card>
         </div>
     </div>
+</div>
 @endsection

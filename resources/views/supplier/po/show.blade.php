@@ -9,18 +9,15 @@
     'Purchase Orders' => route('supplier.purchase-orders.index'),
     $po->po_number => '#'
 ]" />
-<div class="mb-3">
-    <a href="{{ route('supplier.purchase-orders.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to PO List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="$po->po_number" description="Review order details, material values, claim actions, and read-only import document status." eyebrow="Supplier Portal">
+        <x-slot:actions><x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to PO List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-<div class="row g-4">
-    <div class="col-lg-8">
+<div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+    <div class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         {{-- PO Info --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
+        <x-ui.card :title="$po->po_number">
                 @php
                     $badgeClass = match(true) {
                         $po->is_overdue => 'bg-danger',
@@ -31,17 +28,11 @@
                         default => 'bg-secondary'
                     };
                 @endphp
-                <div>
+                <x-slot:actions><div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
-                    <a href="{{ route('supplier.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1" data-async-export>
-                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-                    </a>
-                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order" data-pdf-confirm>
-                        <i class="bi bi-file-earmark-pdf"></i> Print PDF
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
+                    <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
+                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><x-slot:leading><i class="bi bi-file-earmark-pdf"></i></x-slot:leading>Print PDF</x-ui.button>
+                </div></x-slot:actions>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Reference (No. PR)</div>
                     <div class="col-md-8 fw-medium">{{ $po->pr_reference }}</div>
@@ -72,16 +63,10 @@
                     <div class="col-md-4 text-muted small">Remark</div>
                     <div class="col-md-8">{{ $po->notes ?: '-' }}</div>
                 </div>
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- Material Table --}}
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Material Details</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
+        <x-ui.data-table title="Material Details" description="Commercial values are grouped by your related quotation and PR reference.">
                     <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
                         <thead class="table-light text-center">
                             <tr>
@@ -165,12 +150,10 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-        </div>
+        </x-ui.data-table>
     </div>
 
-    <div class="col-lg-4">
+    <aside class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         @php
             $pendingClaim = $po->materialClaims
                 ->where('status', 'pending')
@@ -182,43 +165,26 @@
         @endphp
 
         @if($pendingClaim || $latestClaim)
-            <div class="card border-danger shadow-sm mb-4">
-                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0 fw-bold text-danger">
-                        <i class="bi bi-exclamation-octagon me-2"></i>Material Claim
-                    </h6>
-                    <span class="badge {{ $pendingClaim ? 'bg-warning text-dark' : 'bg-danger' }}">
+            <x-ui.card title="Material Claim" variant="tonal">
+                <x-slot:actions><span class="badge {{ $pendingClaim ? 'bg-warning text-dark' : 'bg-danger' }}">
                         {{ $pendingClaim ? 'Needs Response' : 'Has Claim' }}
-                    </span>
-                </div>
-                <div class="card-body">
+                    </span></x-slot:actions>
                     @if($pendingClaim)
                         <p class="small text-muted mb-3">
                             ADASI submitted a claim for this PO. Please provide a response and supporting attachments.
                         </p>
-                        <a href="{{ route('supplier.claims.show', $pendingClaim) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-reply me-2"></i> Claim Response</span>
-                            <i class="bi bi-chevron-right"></i>
-                        </a>
+                        <x-ui.button :href="route('supplier.claims.show', $pendingClaim)" variant="danger" class="tw-w-full tw-justify-between"><x-slot:leading><i class="bi bi-reply"></i></x-slot:leading>Claim Response<x-slot:trailing><i class="bi bi-chevron-right"></i></x-slot:trailing></x-ui.button>
                     @else
                         <p class="small text-muted mb-3">
                             This PO has a material claim history. Open claim details to view status and response.
                         </p>
-                        <a href="{{ route('supplier.claims.show', $latestClaim) }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-octagon me-2"></i> View Claim Material</span>
-                            <i class="bi bi-chevron-right"></i>
-                        </a>
+                        <x-ui.button :href="route('supplier.claims.show', $latestClaim)" variant="ghost" class="tw-w-full tw-justify-between"><x-slot:leading><i class="bi bi-exclamation-octagon"></i></x-slot:leading>View Material Claim<x-slot:trailing><i class="bi bi-chevron-right"></i></x-slot:trailing></x-ui.button>
                     @endif
-                </div>
-            </div>
+            </x-ui.card>
         @endif
 
         {{-- Document Status (read-only for supplier) --}}
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Import Document Status</h6>
-            </div>
-            <div class="card-body">
+        <x-ui.card title="Import Document Status" description="Read-only progress maintained by ADASI.">
                 @php
                     $docLabels = [
                         'invoice' => 'Invoice',
@@ -249,8 +215,8 @@
                         <span class="badge {{ $statusBadge }}">{{ $statusLabels[$doc->status] ?? $doc->status }}</span>
                     </div>
                 @endforeach
-            </div>
-        </div>
-    </div>
+        </x-ui.card>
+    </aside>
+</div>
 </div>
 @endsection

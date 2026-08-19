@@ -2,17 +2,13 @@
 @section('title', $announcement->title . ' - ADASI Portal')
 @section('page-title', 'Announcement Details')
 @section('content')
-<div class="row justify-content-center"><div class="col-lg-9">
-    <div class="mb-3"><a href="{{ route('supplier.announcements.index') }}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Back</a></div>
-    <div class="card border-0 shadow-sm overflow-hidden">
-        <div class="card-header bg-primary py-4 px-4 border-0">
-            <div class="text-white-50 small mb-1">{{ $announcement->published_at->format('d F Y, H:i') }}</div>
-            <h3 class="text-white fw-bold mb-0">{{ $announcement->title }}</h3>
-        </div>
-        <div class="card-body p-4 p-md-5">
-            <div style="line-height:1.8;font-size:1.05rem">{!! nl2br(e($announcement->content)) !!}</div>
-        </div>
-        <div class="card-footer bg-light p-4 text-center border-0"><div class="text-muted small">Diterbitkan oleh Tim Purchasing ADASI</div></div>
-    </div>
-</div></div>
+<div class="tw-mx-auto tw-grid tw-w-full tw-max-w-4xl tw-gap-6">
+    <x-ui.page-header :title="$announcement->title" :description="$announcement->published_at->format('d F Y, H:i')" eyebrow="ADASI Announcement">
+        <x-slot:actions><x-ui.button :href="route('supplier.announcements.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
+    <x-ui.card>
+        <article class="tw-whitespace-pre-line tw-text-ui-base tw-leading-8 tw-text-on-surface">{{ $announcement->content }}</article>
+        <x-slot:footer><div class="tw-text-center tw-text-ui-sm tw-text-on-surface-variant">Published by the ADASI Purchasing team</div></x-slot:footer>
+    </x-ui.card>
+</div>
 @endsection

@@ -291,19 +291,16 @@
 @endpush
 
 @section('content')
-<div class="mb-3">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <a href="{{ route('supplier.quotations.period', $pr->period_id) }}" class="text-decoration-none text-muted small">
-            <i class="bi bi-arrow-left me-1"></i> Back to Requisition List
-        </a>
-    </div>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        :title="$quotation?->status === 'revision_requested' ? 'Revise Quotation' : 'Create Quotation'"
+        :description="'Complete availability, commercial values, and supporting MTC files for ' . ($pr->pr_number ?? 'this requisition') . '.'"
+        eyebrow="Supplier Portal"
+    >
+        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Requisition List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">Purchase Requisition Details</h6>
-    </div>
-    <div class="card-body">
+<x-ui.card title="Purchase Requisition Details" description="Reference information supplied by Purchasing; quotation inputs remain supplier-owned.">
         <div class="row">
             <div class="col-md-2 text-muted small">Period</div>
             <div class="col-md-10 fw-medium">{{ $pr->period->name }} ({{ str_pad($pr->period->month, 2, '0', STR_PAD_LEFT) }}/{{ $pr->period->year }})</div>
@@ -312,16 +309,10 @@
             <div class="col-md-2 text-muted small">Notes PR</div>
             <div class="col-md-10">{{ $pr->notes ?? '-' }}</div>
         </div>
-    </div>
-</div>
+</x-ui.card>
 
 @if($quotation?->status === 'revision_requested')
-    <div class="alert alert-warning border-0 shadow-sm">
-        <div class="fw-semibold mb-1"><i class="bi bi-arrow-repeat me-1"></i> Quotation Revision Requested</div>
-        <div class="small mb-0">
-            Purchasing asked this quotation to be resubmitted. Update the price, estimated delivery, validity date, and notes if needed.
-        </div>
-    </div>
+    <x-ui.alert tone="warning" title="Quotation Revision Requested">Purchasing asked this quotation to be resubmitted. Update the price, estimated delivery, validity date, and notes if needed.</x-ui.alert>
 @endif
 
 <form id="quotationForm" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data">
@@ -580,52 +571,22 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold">Additional Information</h6>
+    <x-ui.card title="Additional Information" description="These dates and terms are required for Purchasing evaluation.">
+        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <x-ui.input type="date" name="estimated_delivery" label="Estimated Delivery Time" :value="optional($quotation?->estimated_delivery)->format('Y-m-d')" required />
+            <x-ui.input type="date" name="validity_period" id="validityPeriod" label="Quotation Valid Until" :value="optional($quotation?->validity_period)->format('Y-m-d')" :min="now()->toDateString()" helper="Required for final submission. Prices and terms remain valid until this date." />
+            <x-ui.textarea name="payment_terms" label="Payment Terms" :rows="2" maxlength="100" required placeholder="Example: TT 30 Days" :value="$quotation->payment_terms ?? 'TT 30 Days'" />
+            <x-ui.textarea name="general_notes" label="General Notes" :rows="2" placeholder="Optional..." :value="$quotation->general_notes ?? ''" />
         </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-medium">Estimated Delivery Time <span class="text-danger">*</span></label>
-                    <input type="date" name="estimated_delivery" class="form-control" value="{{ old('estimated_delivery', optional($quotation?->estimated_delivery)->format('Y-m-d')) }}" required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-medium">Quotation Valid Until <span class="text-danger">*</span></label>
-                    <input type="date"
-                           name="validity_period"
-                           id="validityPeriod"
-                           class="form-control @error('validity_period') is-invalid @enderror"
-                           value="{{ old('validity_period', optional($quotation?->validity_period)->format('Y-m-d')) }}"
-                           min="{{ now()->toDateString() }}">
-                    <div class="form-text">Required when submitting the final quotation. Prices and terms are valid until this date.</div>
-                    @error('validity_period')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-medium">Payment Terms</label>
-                    <textarea name="payment_terms" class="form-control" rows="2" maxlength="100" required placeholder="Contoh: TT 30 Days">{{ old('payment_terms', $quotation->payment_terms ?? 'TT 30 Days') }}</textarea>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-medium">Notes Umum</label>
-                    <textarea name="general_notes" class="form-control" rows="2" placeholder="Optional...">{{ old('general_notes', $quotation->general_notes ?? '') }}</textarea>
-                </div>
-            </div>
-        </div>
-    </div>
+    </x-ui.card>
 
-    <div class="d-flex justify-content-end gap-2 mb-5">
-        <button type="button" class="btn btn-secondary" onclick="submitForm('draft')">
-            {{ $quotation?->status === 'revision_requested' ? 'Save Revision' : 'Save Draft' }}
-        </button>
-        <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" onclick="confirmSubmit()">
-            {{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}
-        </button>
+    <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
+        <x-ui.button type="button" variant="secondary" onclick="submitForm('draft')">{{ $quotation?->status === 'revision_requested' ? 'Save Revision' : 'Save Draft' }}</x-ui.button>
+        <x-ui.button type="button" onclick="confirmSubmit()"><x-slot:leading><i class="bi bi-send-check"></i></x-slot:leading>{{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}</x-ui.button>
     </div>
 </form>
+
+</div>
 
 <div class="modal fade" id="quotationImportModal" tabindex="-1" aria-labelledby="quotationImportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">

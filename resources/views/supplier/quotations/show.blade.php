@@ -9,27 +9,18 @@
     'Quotation List' => route('supplier.quotations.index'),
     'Quotation Details' => '#'
 ]" />
-    <div class="mb-3">
-        <a href="{{ route('supplier.quotations.period', $quotation->purchaseRequisition->period_id) }}"
-            class="text-decoration-none text-muted small">
-            <i class="bi bi-arrow-left me-1"></i> Back to Requisition List
-        </a>
-    </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="'Quotation — ' . ($quotation->purchaseRequisition->pr_number ?? '-')" description="Review your submitted prices, supporting MTC files, and Purchasing feedback." eyebrow="Supplier Portal">
+        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $quotation->purchaseRequisition->period_id)" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Requisition List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Material Price Details</h6>
-                    <div class="d-flex align-items-center gap-2">
+    <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+        <div class="tw-min-w-0">
+            <x-ui.data-table title="Material Price Details" description="Values reflect your quotation's stored exchange-rate snapshot.">
+                <x-slot:toolbar><div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                         <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
-                        <a href="{{ route('supplier.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success" data-async-export>
-                            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
+                        <x-ui.button :href="route('supplier.export.quotations.detail', $quotation)" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
+                    </div></x-slot:toolbar>
                         <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
                             <thead class="table-light text-center">
                                 <tr>
@@ -109,17 +100,11 @@
                                 </tr>
                             </tfoot>
                         </table>
-                    </div>
-                </div>
-            </div>
+            </x-ui.data-table>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">Quotation Information</h6>
-                </div>
-                <div class="card-body">
+        <aside class="tw-min-w-0">
+            <x-ui.card title="Quotation Information">
                     <div class="row mb-3">
                         <div class="col-5 text-muted small">Submit Time</div>
                         <div class="col-7 fw-medium">
@@ -167,37 +152,26 @@
                             </div>
                         </div>
                     @endif
-                </div>
-            </div>
+            </x-ui.card>
 
             @if($quotation->status === 'revision_requested')
-                <div class="alert alert-warning small">
-                    <i class="bi bi-arrow-repeat me-1"></i>
+                <x-ui.alert tone="warning" class="tw-mt-4">
                     Purchasing requested a revision for this quotation. Update the price, estimated delivery, and validity date before resubmitting.
-                </div>
-                <div class="d-grid gap-2">
-                    <a href="{{ route('supplier.quotations.create', $quotation->purchaseRequisition) }}" class="btn btn-warning text-dark fw-semibold">
-                        <i class="bi bi-pencil-square me-1"></i> Revise Quotation
-                    </a>
+                </x-ui.alert>
+                <div class="tw-mt-3 tw-grid tw-gap-2">
+                    <x-ui.button :href="route('supplier.quotations.create', $quotation->purchaseRequisition)" variant="secondary"><x-slot:leading><i class="bi bi-pencil-square"></i></x-slot:leading>Revise Quotation</x-ui.button>
                     @if($conversation)
-                        <a href="{{ route('supplier.conversations.show', $conversation) }}" class="btn btn-outline-primary" data-open-chat-conversation="{{ $conversation->getRouteKey() }}">
-                            <i class="bi bi-chat-dots me-1"></i> Open Revision Chat
-                        </a>
+                        <x-ui.button :href="route('supplier.conversations.show', $conversation)" variant="ghost" data-open-chat-conversation="{{ $conversation->getRouteKey() }}"><x-slot:leading><i class="bi bi-chat-dots"></i></x-slot:leading>Open Revision Chat</x-ui.button>
                     @endif
                 </div>
             @elseif($quotation->status === 'rejected')
-                <div class="alert alert-dark small">
-                    <i class="bi bi-x-circle-fill me-1"></i> This quotation was not selected by the ADASI Purchasing team.
-                </div>
+                <x-ui.alert tone="error" class="tw-mt-4">This quotation was not selected by the ADASI Purchasing team.</x-ui.alert>
             @elseif($quotation->status === 'accepted')
-                <div class="alert alert-success small">
-                    <i class="bi bi-check-circle-fill me-1"></i> This quotation was selected by the ADASI Purchasing team.
-                </div>
+                <x-ui.alert tone="success" class="tw-mt-4">This quotation was selected by the ADASI Purchasing team.</x-ui.alert>
             @else
-                <div class="alert alert-info small">
-                    <i class="bi bi-info-circle-fill me-1"></i> Your quotation has been recorded and is waiting for evaluation by the ADASI Purchasing team.
-                </div>
+                <x-ui.alert class="tw-mt-4">Your quotation has been recorded and is waiting for evaluation by the ADASI Purchasing team.</x-ui.alert>
             @endif
-        </div>
+        </aside>
     </div>
+</div>
 @endsection
