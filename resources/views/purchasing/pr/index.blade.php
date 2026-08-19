@@ -32,7 +32,7 @@
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-semibold">Requisition List Material</h5>
         <div class="d-flex gap-2">
-            <a href="{{ route('purchasing.export.requisitions') }}" class="btn btn-success btn-sm"
+            <a href="{{ route('purchasing.export.requisitions') }}" class="btn btn-success btn-sm" data-async-export
                 id="exportRequisitionsBtn" data-export-url="{{ route('purchasing.export.requisitions') }}">
                 <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
             </a>

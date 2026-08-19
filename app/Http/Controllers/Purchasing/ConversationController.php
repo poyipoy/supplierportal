@@ -90,7 +90,7 @@ class ConversationController extends Controller
         if (request()->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'conversation_id' => $conversation->id,
+                'conversation_id' => $conversation->getRouteKey(),
             ]);
         }
 
@@ -130,7 +130,7 @@ class ConversationController extends Controller
         if (request()->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'conversation_id' => $conversation->id,
+                'conversation_id' => $conversation->getRouteKey(),
             ]);
         }
 

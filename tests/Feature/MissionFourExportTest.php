@@ -6,7 +6,9 @@ use App\Exports\PurchaseOrdersExport;
 use App\Exports\PurchaseRequisitionDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
+use App\Jobs\ProcessExportJob;
 use App\Models\ExchangeRate;
+use App\Models\ExportJob;
 use App\Models\Period;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
@@ -15,6 +17,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -108,10 +111,16 @@ class MissionFourExportTest extends TestCase
         $this->assertSame(['REQ/08/2026/401'], $detailRows->pluck(0)->unique()->values()->all());
         $this->assertNotContains('REQ/08/2026/402', $detailRows->pluck(0)->all());
 
+        Queue::fake();
+
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.export.requisitions.detail', $target))
-            ->assertOk()
-            ->assertHeader('content-disposition');
+            ->assertRedirect();
+
+        $queued = ExportJob::query()->latest('id')->firstOrFail();
+        $this->assertSame(PurchaseRequisitionDetailExport::class, $queued->export_class);
+        $this->assertSame([$target->id], $queued->export_args);
+        Queue::assertPushed(ProcessExportJob::class, fn (ProcessExportJob $job) => $job->exportJobId === $queued->id);
 
         $this->actingAs($this->supplierA)
             ->get(route('purchasing.export.requisitions.detail', $target))
@@ -222,16 +231,21 @@ class MissionFourExportTest extends TestCase
         $this->assertSame('Submitted At', $emptySheet->getCell('Q1')->getValue());
 
         Carbon::setTestNow('2026-08-03 10:11:12');
-        Excel::fake();
+        Queue::fake();
 
         try {
-            $this->actingAs($this->purchasing)
-                ->get(route('purchasing.export.quotations', $filters))
-                ->assertOk();
+            $urlFilters = $filters;
+            $urlFilters['supplier_id'] = $this->supplierA;
 
-            Excel::assertDownloaded('rekap_quotations_20260803_101112.xlsx', function (QuotationsExport $download) use ($quotation) {
-                return $download->collection()->pluck(0)->unique()->all() === [$quotation->purchaseRequisition->pr_number];
-            });
+            $this->actingAs($this->purchasing)
+                ->get(route('purchasing.export.quotations', $urlFilters))
+                ->assertRedirect();
+
+            $queued = ExportJob::query()->latest('id')->firstOrFail();
+            $this->assertSame(QuotationsExport::class, $queued->export_class);
+            $this->assertSame('rekap_quotations_20260803_101112.xlsx', $queued->file_name);
+            $this->assertSame($this->supplierA->id, $queued->export_args[0]['supplier_id']);
+            Queue::assertPushed(ProcessExportJob::class, fn (ProcessExportJob $job) => $job->exportJobId === $queued->id);
         } finally {
             Carbon::setTestNow();
         }
@@ -273,25 +287,32 @@ class MissionFourExportTest extends TestCase
         ))->collection());
 
         Carbon::setTestNow('2026-08-03 11:12:13');
-        Excel::fake();
+        Queue::fake();
 
         try {
             $this->actingAs($this->supplierA)
-                ->get(route('supplier.export.quotations', ['supplier_id' => $this->supplierB->id]))
-                ->assertOk();
+                ->get(route('supplier.export.quotations', ['supplier_id' => $this->supplierB]))
+                ->assertRedirect();
 
-            Excel::assertDownloaded('quotation_supplier_all_20260803_111213.xlsx', function (QuotationsExport $download) {
-                return $download->collection()->pluck(2)->unique()->values()->all() === ['Alpha Steel'];
-            });
+            $queued = ExportJob::query()->latest('id')->firstOrFail();
+            $this->assertSame(QuotationsExport::class, $queued->export_class);
+            $this->assertSame('quotation_supplier_all_20260803_111213.xlsx', $queued->file_name);
+            $this->assertSame([], $queued->export_args[0]);
+            $this->assertSame($this->supplierA->id, $queued->export_args[1]);
+            $this->assertTrue($queued->export_args[2]);
+            Queue::assertPushed(ProcessExportJob::class, fn (ProcessExportJob $job) => $job->exportJobId === $queued->id);
         } finally {
             Carbon::setTestNow();
         }
+
+        $this->withSession(['auth_absolute_started_at' => now()->timestamp]);
 
         $this->actingAs($this->supplierA)
             ->get(route('purchasing.export.quotations'))
             ->assertForbidden();
 
-        $this->actingAs($this->purchasing)
+        $this->flushSession()
+            ->actingAs($this->purchasing)
             ->get(route('supplier.export.quotations'))
             ->assertForbidden();
 

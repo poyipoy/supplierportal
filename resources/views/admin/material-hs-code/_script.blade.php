@@ -33,7 +33,6 @@ $(function () {
         columns: [
             { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
             { data: 'material_code', name: 'material_code' },
-            { data: 'aliases_display', name: 'aliases_display', orderable: false },
             { data: 'raw_category', name: 'raw_category', defaultContent: '-' },
             { data: 'hs_category', name: 'hs_category', defaultContent: '-' },
             { data: 'density_profile', name: 'density_profile' },
@@ -105,7 +104,6 @@ $(function () {
         $('#materialHsCategory').val(material.hs_category || '');
         $('#materialDensity').val(material.density_profile || 'steel');
         $('#materialManufacturer').val(material.manufacturer_scope || 'unknown');
-        $('#materialAliases').val((material.aliases || []).join('\n'));
         $('#materialActive').prop('checked', material.is_active === true || material.is_active === 1);
         materialModal.show();
     }
@@ -177,7 +175,6 @@ $(function () {
         setMethod($('#ruleFormMethod'), 'PUT');
         $('#ruleRecordId').val(rule.id);
         $('#ruleModalTitle').text('Edit HS Code Rule');
-        $('#ruleKey').val(rule.rule_key || '');
         $('#ruleHsCode').val(rule.hs_code || '');
         $('#ruleCategory').val(rule.material_category);
         $('#ruleShape').val(rule.shape);
@@ -239,41 +236,82 @@ $(function () {
         if (qualityLoaded) return;
         qualityLoaded = true;
         $.getJSON(@json(route('admin.master-data-quality.index'))).done((report) => {
+            const summary = report.summary || {};
+            const attention = report.needs_attention || {};
+            const referenceNotes = report.reference_notes || {};
             const cards = [
-                ['Materials', report.counts.materials, 'bi-boxes'],
-                ['Unmapped', report.counts.unmapped_materials, 'bi-question-circle'],
-                ['Active Rules', report.counts.active_rules, 'bi-check-circle'],
-                ['Inactive Rules', report.counts.inactive_rules, 'bi-pause-circle'],
-                ['Source Entries', report.counts.source_rule_entries, 'bi-file-earmark-pdf'],
-                ['Blocking Conflicts', report.counts.blocking_conflicts, 'bi-exclamation-octagon']
+                ['Materials', summary.materials, 'bi-boxes', 'text-primary'],
+                ['With HS Mapping', summary.materials_with_hs_mapping, 'bi-diagram-3', 'text-success'],
+                ['Needs HS Mapping', summary.materials_needing_hs_mapping, 'bi-question-circle', 'text-warning'],
+                ['Active HS Rules', summary.active_hs_rules, 'bi-check-circle', 'text-success'],
+                ['Needs Review', summary.rules_needing_review, 'bi-exclamation-circle', 'text-danger']
             ];
             const $cards = $('#qualityCards').empty();
-            cards.forEach(([label, value, icon]) => {
-                $('<div class="col-md-4 col-xl-2">').append(
-                    $('<div class="border rounded p-3 h-100">').append(
-                        $('<div class="small text-muted">').append($('<i>').addClass(`bi ${icon} me-1`)).append(document.createTextNode(label)),
+            cards.forEach(([label, value, icon, colorClass]) => {
+                $('<div class="col-sm-6 col-lg">').append(
+                    $('<div class="border rounded-3 p-3 h-100">').append(
+                        $('<div class="small text-muted">').append($('<i>').addClass(`bi ${icon} ${colorClass} me-1`).attr('aria-hidden', 'true')).append(document.createTextNode(label)),
                         $('<div class="fs-4 fw-bold mt-1">').text(value)
                     )
                 ).appendTo($cards);
             });
-            $('#unmappedMaterials').text((report.unmapped_materials || []).join(', ') || '-');
-            const $conflicts = $('#resolvedConflicts').empty();
-            (report.resolved_source_conflicts || []).forEach((item) => $('<div class="mb-2">').text(`${item.hs_code} - ${item.notes}`).appendTo($conflicts));
-            if (!$conflicts.children().length) $conflicts.text('-');
-            const $overlaps = $('#qualityOverlaps').empty();
-            (report.overlaps || []).forEach((item) => $('<tr>')
-                .append($('<td>').text(item.left), $('<td>').text(item.right), $('<td>').text(`${item.category} / ${item.shape}`), $('<td>').text(item.codes.join(', ')), $('<td>').text(item.type))
-                .appendTo($overlaps));
-            if (!$overlaps.children().length) $overlaps.append('<tr><td colspan="5" class="text-muted">No overlaps.</td></tr>');
-            $('#categoriesWithoutRules').text((report.categories_without_rules || []).join(', ') || '-');
-            $('#unreachableRuleCategories').text((report.unreachable_rule_categories || []).join(', ') || '-');
-            $('#unreachableReferenceMaterials').text((report.unreachable_reference_materials || []).join(', ') || '-');
+            renderTagList('#unmappedMaterials', attention.materials_without_hs_mapping, 'All materials have an HS mapping.');
+            renderTagList('#categoriesWithoutRules', attention.categories_without_active_hs_rules, 'Every mapped category has an active HS rule.');
+            renderRulesNeedingReview(attention.rules_needing_review || []);
+
+            const duplicateCoverage = referenceNotes.duplicate_rule_coverage || {};
+            $('#duplicateRuleCoverage').text(duplicateCoverage.message || 'No duplicate rule coverage was found.');
+            renderInactiveRulesForReference(referenceNotes.inactive_rules_kept_for_reference || []);
+            renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, 'All active rule categories are used by current materials.');
+            renderTagList('#referenceOnlyMaterials', referenceNotes.reference_only_materials, 'None.');
             $('#qualityLoading').addClass('d-none');
             $('#qualityContent').removeClass('d-none');
         }).fail(() => {
             qualityLoaded = false;
             $('#qualityLoading').html('<div class="alert alert-danger">Data Quality could not be loaded.</div>');
         });
+    }
+
+    function renderTagList(selector, values, emptyMessage) {
+        const $container = $(selector).empty();
+        if (!Array.isArray(values) || values.length === 0) {
+            $('<span class="text-muted">').text(emptyMessage).appendTo($container);
+            return;
+        }
+
+        const $tags = $('<div class="d-flex flex-wrap gap-2">');
+        values.forEach((value) => $('<span class="badge text-bg-light border text-dark fw-normal">').text(value).appendTo($tags));
+        $tags.appendTo($container);
+    }
+
+    function renderRulesNeedingReview(items) {
+        const $container = $('#rulesNeedingReview').empty();
+        if (!items.length) {
+            $('<div class="text-success">').append($('<i class="bi bi-check-circle me-1" aria-hidden="true">'), document.createTextNode('No active rules need review.')).appendTo($container);
+            return;
+        }
+
+        items.forEach((item) => {
+            const $item = $('<div class="border rounded-3 bg-light p-3 mb-2">');
+            $('<div class="fw-semibold">').text(`${item.category} / ${item.shape}`).appendTo($item);
+            $('<div class="text-muted mt-1">').text(item.message).appendTo($item);
+            $('<div class="mt-2">').append($('<span class="small fw-semibold me-2">').text('HS Codes:'), document.createTextNode((item.hs_codes || []).join(', '))).appendTo($item);
+            $item.appendTo($container);
+        });
+    }
+
+    function renderInactiveRulesForReference(items) {
+        const $container = $('#inactiveRulesForReference').empty();
+        if (!items.length) {
+            $('<span class="text-muted">').text('None.').appendTo($container);
+            return;
+        }
+
+        const $list = $('<ul class="list-unstyled mb-0">');
+        items.forEach((item) => $('<li class="mb-2">')
+            .append($('<span class="font-monospace me-1">').text(item.hs_code), document.createTextNode(item.note ? `— ${item.note}` : '— Kept inactive for reference.'))
+            .appendTo($list));
+        $list.appendTo($container);
     }
 
     $('button[data-bs-target="#data-quality"]').on('shown.bs.tab', loadQuality);

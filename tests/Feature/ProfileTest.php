@@ -18,7 +18,12 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->get('/profile');
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertSee('Profile &amp; Security', false)
+            ->assertSee('Personal Information')
+            ->assertSee('Two-Factor Authentication')
+            ->assertSee('Other Devices')
+            ->assertSee('Danger Zone');
     }
 
     public function test_profile_information_can_be_updated(): void

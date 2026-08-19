@@ -2,14 +2,17 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Admin\AuthAuditLogController;
 use App\Http\Controllers\Admin\ExchangeRateController;
 use App\Http\Controllers\Admin\HsCodeRuleController;
 use App\Http\Controllers\Admin\MaterialHsCodeController;
 use App\Http\Controllers\Admin\MaterialMasterController;
 use App\Http\Controllers\Admin\PurchaseRequisitionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UserTwoFactorController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ConversationMessageController;
+use App\Http\Controllers\ExportDownloadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Purchasing\ConversationController;
@@ -35,6 +38,7 @@ use App\Http\Controllers\Supplier\QuotationController;
 use App\Http\Controllers\Supplier\SupplierController;
 use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
+use App\Models\PurchaseRequisition;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -64,8 +68,16 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->middleware('throttle:auth.credentials')->name('profile.destroy');
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
+
+    Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
+        Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
+        Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
+        Route::get('/exports/{exportJob}/download', [ExportDownloadController::class, 'download'])->name('exports.download');
+    });
+
     // Notifications
     Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -103,8 +115,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/hs-code-rules/{hsCodeRule}/status', [HsCodeRuleController::class, 'status'])->name('hs-code-rules.status');
     Route::get('/requisitions/{requisition}', [PurchaseRequisitionController::class, 'show'])->name('requisitions.show');
     Route::post('/kurs/update', [AdminController::class, 'updateKurs'])->name('kurs.update');
+    Route::get('/auth-audit-logs', [AuthAuditLogController::class, 'index'])->name('auth-audit-logs.index');
+    Route::get('/auth-audit-logs/data', [AuthAuditLogController::class, 'data'])->name('auth-audit-logs.data');
 
     // Manajemen User & Kurs
+    Route::delete('/users/{user}/two-factor', [UserTwoFactorController::class, 'destroy'])
+        ->middleware(['password.confirm', 'throttle:auth.security-action'])->name('users.two-factor.destroy');
     Route::resource('users', UserController::class);
     Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'store']);
 
@@ -165,7 +181,9 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/comparison/vs-best', [PriceComparisonController::class, 'vsBestPrice'])->name('comparison.vs-best');
     Route::get('/comparison/vs-best/data', [PriceComparisonController::class, 'vsBestPriceData'])->name('comparison.vs-best.data');
     Route::get('/comparison/{pr_id}', function ($pr_id) {
-        return redirect()->route('purchasing.comparison.inter-supplier', ['pr_id' => $pr_id]);
+        $requisition = PurchaseRequisition::findOrFail($pr_id);
+
+        return redirect()->route('purchasing.comparison.inter-supplier', ['pr_id' => $requisition]);
     })->name('comparison.show');
     // Laporan
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

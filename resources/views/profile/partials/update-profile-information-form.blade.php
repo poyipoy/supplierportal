@@ -1,63 +1,53 @@
 <section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            Profileee Information
-        </h2>
+    <p class="text-muted small mb-4">Keep this information accurate so Purchasing, Suppliers, and QC can identify your account correctly.</p>
 
-        <p class="mt-1 text-sm text-gray-600">
-            Update your account's profile information and email address.
-        </p>
-    </header>
-
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}">
+    <form id="send-verification" method="POST" action="{{ route('verification.send') }}">
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+    <form method="POST" action="{{ route('profile.update') }}">
         @csrf
-        @method('patch')
+        @method('PATCH')
 
-        <div>
-            <x-input-label for="name" :value="'Name'" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
+        <div class="row g-3">
+            <div class="col-12">
+                <label for="name" class="form-label fw-medium">Name</label>
+                <input id="name" name="name" type="text"
+                    class="form-control @error('name') is-invalid @enderror"
+                    value="{{ old('name', $user->name) }}" maxlength="255" autocomplete="name" required autofocus>
+                @error('name')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="col-12">
+                <label for="email" class="form-label fw-medium">Email</label>
+                <input id="email" name="email" type="email"
+                    class="form-control @error('email') is-invalid @enderror"
+                    value="{{ old('email', $user->email) }}" maxlength="255" autocomplete="username" required>
+                @error('email')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+
+                @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
+                    <div class="alert alert-warning py-2 px-3 small mt-3 mb-0">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <span>Your email address has not been verified.</span>
+                            <button form="send-verification" class="btn btn-sm btn-outline-warning" type="submit">
+                                Send verification email
+                            </button>
+                        </div>
+                    </div>
+                @endif
+            </div>
         </div>
 
-        <div>
-            <x-input-label for="email" :value="'Email'" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-gray-800">
-                        Your email address is unverified.
-
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Click here to re-send the verification email.
-                        </button>
-                    </p>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
-                            A new verification link has been sent to your email address.
-                        </p>
-                    @endif
-                </div>
-            @endif
-        </div>
-
-        <div class="flex items-center gap-4">
-            <x-primary-button>Save</x-primary-button>
-
+        <div class="d-flex align-items-center gap-3 mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check2 me-1"></i>Save Profile
+            </button>
             @if (session('status') === 'profile-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >Saved.</p>
+                <span class="small text-success"><i class="bi bi-check-circle me-1"></i>Profile saved.</span>
             @endif
         </div>
     </form>

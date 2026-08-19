@@ -9,6 +9,7 @@ use App\Services\Materials\HsCodeRuleConflictDetector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -16,13 +17,14 @@ class HsCodeRuleController extends Controller
 {
     public function data(Request $request): JsonResponse
     {
-        $query = HsCodeRule::query()->orderBy('priority')->orderBy('rule_key');
+        $query = HsCodeRule::query()->orderBy('priority')->orderBy('id');
         $query->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')->toString()));
         $query->when($request->filled('category'), fn ($q) => $q->where('material_category', $request->string('category')->toString()));
         $query->when($request->filled('shape'), fn ($q) => $q->where('shape', $request->string('shape')->toString()));
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
+            ->removeColumn('rule_key')
             ->addColumn('conditions_display', fn (HsCodeRule $rule) => e($this->conditionSummary($rule->conditions)))
             ->addColumn('status_badge', fn (HsCodeRule $rule) => match ($rule->status) {
                 HsCodeRule::STATUS_ACTIVE => '<span class="badge bg-success">Active</span>',
@@ -35,7 +37,6 @@ class HsCodeRuleController extends Controller
             ->addColumn('action', function (HsCodeRule $rule) {
                 $payload = e(json_encode([
                     'id' => $rule->id,
-                    'rule_key' => $rule->rule_key,
                     'hs_code' => $rule->hs_code,
                     'material_category' => $rule->material_category,
                     'shape' => $rule->shape,
@@ -45,9 +46,9 @@ class HsCodeRuleController extends Controller
                     'notes' => $rule->notes,
                 ], JSON_THROW_ON_ERROR));
 
-                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-rule" data-rule="'.$payload.'"><i class="bi bi-pencil"></i></button> '
-                    .'<button type="button" class="btn btn-sm '.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'btn-outline-secondary' : 'btn-outline-success').' btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'">'
-                    .'<i class="bi '.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'bi-pause-circle' : 'bi-play-circle').'"></i></button>';
+                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-rule" data-rule="'.$payload.'" aria-label="Edit HS Code rule" title="Edit HS Code rule"><i class="bi bi-pencil" aria-hidden="true"></i></button> '
+                    .'<button type="button" class="btn btn-sm '.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'btn-outline-secondary' : 'btn-outline-success').' btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'" aria-label="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate HS Code rule' : 'Activate HS Code rule').'" title="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate HS Code rule' : 'Activate HS Code rule').'">'
+                    .'<i class="bi '.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'bi-pause-circle' : 'bi-play-circle').'" aria-hidden="true"></i></button>';
             })
             ->rawColumns(['status_badge', 'action'])
             ->toJson();
@@ -92,12 +93,27 @@ class HsCodeRuleController extends Controller
 
     private function payload(array $validated, bool $creating): array
     {
-        return [
-            ...collect($validated)->except('conditions_json')->all(),
+        $payload = [
+            ...collect($validated)->except(['conditions_json', 'rule_key'])->all(),
             'source_refs' => $validated['source_refs'] ?? [['source' => 'admin', 'user_id' => auth()->id()]],
-            $creating ? 'created_by' : 'updated_by' => auth()->id(),
             'updated_by' => auth()->id(),
         ];
+
+        if ($creating) {
+            $payload['rule_key'] = $this->newInternalRuleKey();
+            $payload['created_by'] = auth()->id();
+        }
+
+        return $payload;
+    }
+
+    private function newInternalRuleKey(): string
+    {
+        do {
+            $key = 'rule-'.strtolower((string) Str::ulid());
+        } while (HsCodeRule::query()->where('rule_key', $key)->exists());
+
+        return $key;
     }
 
     private function guardActivation(HsCodeRule $rule, HsCodeRuleConflictDetector $conflicts): void

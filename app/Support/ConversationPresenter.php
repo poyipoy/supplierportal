@@ -62,7 +62,7 @@ class ConversationPresenter
                     'is_expired' => $quotation->isExpired(),
                     'show_url' => self::quotationUrl($viewer, $quotation),
                     'edit_url' => $viewer->role === 'supplier' && Route::has('supplier.quotations.create')
-                        ? route('supplier.quotations.create', $quotation->pr_id)
+                        ? route('supplier.quotations.create', $quotation->purchaseRequisition)
                         : null,
                 ] : null,
             ];
@@ -117,7 +117,7 @@ class ConversationPresenter
                 'label' => 'Open Revision Form',
                 'icon' => 'bi-arrow-repeat',
                 'type' => 'link',
-                'url' => route('supplier.quotations.create', $quotation->pr_id),
+                'url' => route('supplier.quotations.create', $quotation->purchaseRequisition),
                 'variant' => 'warning',
             ]];
         }
@@ -262,7 +262,7 @@ class ConversationPresenter
     {
         if ($conversation->conversable_type === PurchaseRequisition::class) {
             if ($viewer->role === 'purchasing' && Route::has('purchasing.requisitions.show')) {
-                return route('purchasing.requisitions.show', $conversation->conversable_id);
+                return route('purchasing.requisitions.show', $conversation->conversable);
             }
 
             if ($viewer->role === 'supplier' && $quotation && Route::has('supplier.quotations.show')) {
@@ -275,7 +275,7 @@ class ConversationPresenter
                 ? 'supplier.purchase-orders.show'
                 : 'purchasing.purchase-orders.show';
 
-            return Route::has($route) ? route($route, $conversation->conversable_id) : null;
+            return Route::has($route) ? route($route, $conversation->conversable) : null;
         }
 
         return null;
@@ -287,7 +287,7 @@ class ConversationPresenter
             ? 'supplier.quotations.show'
             : 'purchasing.quotations.show';
 
-        return Route::has($route) ? route($route, $quotation->id) : null;
+        return Route::has($route) ? route($route, $quotation) : null;
     }
 
     private static function supplierName(?User $supplier): string

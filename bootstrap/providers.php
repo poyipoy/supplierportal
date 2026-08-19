@@ -1,10 +1,15 @@
 <?php
 
 use App\Providers\AppServiceProvider;
+use App\Providers\AuthSecurityServiceProvider;
+use Maatwebsite\Excel\ExcelServiceProvider;
+use Vinkla\Hashids\HashidsServiceProvider;
+use Yajra\DataTables\DataTablesServiceProvider;
 
 return [
     AppServiceProvider::class,
-    Vinkla\Hashids\HashidsServiceProvider::class,
-    Yajra\DataTables\DataTablesServiceProvider::class,
-    Maatwebsite\Excel\ExcelServiceProvider::class,
+    AuthSecurityServiceProvider::class,
+    HashidsServiceProvider::class,
+    DataTablesServiceProvider::class,
+    ExcelServiceProvider::class,
 ];

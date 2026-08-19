@@ -15,7 +15,9 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->get('/login');
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertSee('Forgot password?')
+            ->assertSee(route('password.request'), false);
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -67,6 +69,6 @@ class AuthenticationTest extends TestCase
         $response = $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
-        $response->assertRedirect('/');
+        $response->assertRedirect(route('login'));
     }
 }

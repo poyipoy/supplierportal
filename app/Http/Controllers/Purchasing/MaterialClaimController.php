@@ -58,7 +58,7 @@ class MaterialClaimController extends Controller
             ->addColumn('action', function ($po) {
                 $lastInspection = $po->qcInspections->first();
                 if ($lastInspection) {
-                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection->id).'" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Create Claim</a>';
+                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection).'" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Create Claim</a>';
                 }
 
                 return '-';
@@ -92,7 +92,7 @@ class MaterialClaimController extends Controller
                     StatusHelper::claimLabel($c->status)
                 );
             })
-            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c->id).'" class="btn btn-sm btn-outline-primary">Details</a>')
+            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c).'" class="btn btn-sm btn-outline-primary">Details</a>')
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
             ->make(true);
     }
@@ -184,7 +184,7 @@ class MaterialClaimController extends Controller
             );
         }
 
-        $showParameters = [$claim->id];
+        $showParameters = [$claim];
         if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
             $showParameters['return_url'] = $request->input('return_url');
         }

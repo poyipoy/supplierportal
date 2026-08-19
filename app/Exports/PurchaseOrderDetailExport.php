@@ -7,10 +7,10 @@ use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PurchaseOrderDetailExport implements FromCollection, WithHeadings, ShouldAutoSize
+class PurchaseOrderDetailExport implements FromCollection, WithColumnWidths, WithHeadings
 {
     public function __construct(
         private readonly int $purchaseOrderId,
@@ -152,6 +152,38 @@ class PurchaseOrderDetailExport implements FromCollection, WithHeadings, ShouldA
             'QC Inspected At',
             'Claim Status',
             'Claim Updated At',
+        ];
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 22,
+            'B' => 22,
+            'C' => 25,
+            'D' => 12,
+            'E' => 30,
+            'F' => 16,
+            'G' => 19,
+            'H' => 15,
+            'I' => 15,
+            'J' => 16,
+            'K' => 16,
+            'L' => 16,
+            'M' => 18,
+            'N' => 17,
+            'O' => 21,
+            'P' => 18,
+            'Q' => 18,
+            'R' => 30,
+            'S' => 17,
+            'T' => 17,
+            'U' => 20,
+            'V' => 17,
+            'W' => 17,
+            'X' => 21,
+            'Y' => 17,
+            'Z' => 21,
         ];
     }
 }

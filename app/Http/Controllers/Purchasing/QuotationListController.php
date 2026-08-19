@@ -25,10 +25,13 @@ class QuotationListController extends Controller
      */
     public function index(Request $request)
     {
+        $supplierFilter = $this->resolveSupplierFilter($request->query('supplier_id'));
+
         $request->validate([
             'date_from' => 'nullable|date_format:Y-m',
             'date_to' => 'nullable|date_format:Y-m',
             'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
+            'supplier_id' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($request->filled('date_from') && $request->filled('date_to') && $request->date_to < $request->date_from) {
@@ -59,8 +62,8 @@ class QuotationListController extends Controller
         }
 
         // Filter: Supplier
-        if ($request->filled('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
+        if ($supplierFilter) {
+            $query->where('supplier_id', $supplierFilter->getKey());
         }
 
         // Filter: Status
@@ -80,6 +83,20 @@ class QuotationListController extends Controller
         $suppliers = User::where('role', 'supplier')->orderBy('name')->get();
 
         return view('purchasing.quotations.index', compact('quotations', 'suppliers'));
+    }
+
+    private function resolveSupplierFilter(mixed $value): ?User
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        abort_unless(is_string($value) && ! ctype_digit($value), 404);
+
+        $supplier = (new User)->resolveRouteBinding($value);
+        abort_unless($supplier instanceof User && $supplier->role === 'supplier', 404);
+
+        return $supplier;
     }
 
     /**
@@ -239,7 +256,7 @@ class QuotationListController extends Controller
             'Purchasing requested a quotation revision for PR :pr_number.',
         );
 
-        $showParameters = [$quotation->id];
+        $showParameters = [$quotation];
         if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
             $showParameters['return_url'] = $request->input('return_url');
         }

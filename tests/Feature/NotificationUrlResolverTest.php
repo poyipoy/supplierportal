@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Conversation;
+use App\Models\ExportJob;
 use App\Models\MaterialClaim;
 use App\Models\Period;
 use App\Models\PurchaseOrder;
@@ -14,6 +15,7 @@ use App\Notifications\SystemNotification;
 use App\Services\NotificationUrlResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -111,6 +113,103 @@ class NotificationUrlResolverTest extends TestCase
 
         $foreign = $this->notification($otherSupplier, ['url' => '#', 'conversation_id' => $conversation->id, 'claim_id' => $claim->id]);
         $this->assertSame(route('supplier.dashboard', absolute: false), $resolver->resolve($foreign, $otherSupplier));
+    }
+
+    public function test_numeric_legacy_paths_are_canonicalized_without_metadata(): void
+    {
+        [, $purchasing, $supplier, $qc, , , $po] = $this->procurementData();
+        $inspection = QcInspection::create([
+            'po_id' => $po->id,
+            'inspected_by' => $qc->id,
+            'status' => 'ng',
+            'inspected_at' => now(),
+        ]);
+        $claim = MaterialClaim::create([
+            'inspection_id' => $inspection->id,
+            'po_id' => $po->id,
+            'submitted_by' => $purchasing->id,
+            'supplier_id' => $supplier->id,
+            'status' => 'pending',
+            'description' => 'Legacy URL claim',
+        ]);
+        $conversation = Conversation::create([
+            'conversable_type' => PurchaseOrder::class,
+            'conversable_id' => $po->id,
+            'purchasing_user_id' => $purchasing->id,
+            'supplier_user_id' => $supplier->id,
+            'status' => Conversation::STATUS_OPEN,
+        ]);
+        $resolver = app(NotificationUrlResolver::class);
+
+        $cases = [
+            [$purchasing, "/purchasing/conversations/{$conversation->id}?tab=messages#latest", route('purchasing.conversations.show', $conversation, absolute: false).'?tab=messages#latest'],
+            [$supplier, "/supplier/conversations/{$conversation->id}", route('supplier.conversations.show', $conversation, absolute: false)],
+            [$purchasing, "/purchasing/purchase-orders/{$po->id}", route('purchasing.purchase-orders.show', $po, absolute: false)],
+            [$supplier, "/supplier/purchase-orders/{$po->id}", route('supplier.purchase-orders.show', $po, absolute: false)],
+            [$purchasing, "/purchasing/claims/{$claim->id}", route('purchasing.claims.show', $claim, absolute: false)],
+            [$supplier, "/supplier/claims/{$claim->id}", route('supplier.claims.show', $claim, absolute: false)],
+            [$purchasing, "/purchasing/claims/create/{$inspection->id}", route('purchasing.claims.create', $inspection, absolute: false)],
+            [$qc, "/qc/inspections/{$po->id}/create", route('qc.inspections.create', $po, absolute: false)],
+        ];
+
+        foreach ($cases as [$user, $legacyUrl, $expected]) {
+            $notification = $this->notification($user, ['url' => $legacyUrl]);
+            $resolved = $resolver->resolve($notification, $user);
+
+            $this->assertSame($expected, $resolved);
+        }
+
+        $missing = $this->notification($supplier, ['url' => '/supplier/conversations/999999']);
+        $this->assertSame(route('supplier.dashboard', absolute: false), $resolver->resolve($missing, $supplier));
+    }
+
+    public function test_export_urls_are_owner_scoped_and_canonicalized_to_hashids(): void
+    {
+        [, $purchasing] = $this->procurementData();
+        $otherSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        Storage::fake('private');
+        $exportJob = ExportJob::create([
+            'user_id' => $purchasing->id,
+            'label' => 'Notification export',
+            'export_class' => 'App\\Exports\\RequisitionsExport',
+            'export_args' => [null, null, null],
+            'file_name' => 'notification-export.xlsx',
+            'file_path' => 'exports/'.$purchasing->id.'/notification/notification-export.xlsx',
+            'disk' => 'private',
+            'status' => ExportJob::STATUS_COMPLETED,
+            'completed_at' => now(),
+            'expires_at' => now()->addDay(),
+        ]);
+        Storage::disk('private')->put($exportJob->file_path, 'export contents');
+        $resolver = app(NotificationUrlResolver::class);
+
+        $legacyOwnUrl = $this->notification($purchasing, [
+            'url' => '/exports/'.$exportJob->id.'/download?source=notification',
+        ]);
+        $resolved = $resolver->resolve($legacyOwnUrl, $purchasing);
+
+        $this->assertSame(
+            route('exports.download', $exportJob, absolute: false).'?source=notification',
+            $resolved,
+        );
+        $this->assertStringNotContainsString('/exports/'.$exportJob->id.'/download', $resolved);
+
+        $queued = ExportJob::create([
+            'user_id' => $purchasing->id,
+            'label' => 'Queued export',
+            'export_class' => 'App\\Exports\\RequisitionsExport',
+            'export_args' => [null, null, null],
+            'file_name' => 'queued.xlsx',
+            'disk' => 'private',
+            'status' => ExportJob::STATUS_QUEUED,
+        ]);
+        $fallback = $this->notification($purchasing, ['url' => '#', 'export_job_id' => $queued->id]);
+        $this->assertSame(route('exports.index', absolute: false), $resolver->resolve($fallback, $purchasing));
+
+        $crossUserUrl = $this->notification($otherSupplier, [
+            'url' => route('exports.download', $exportJob, absolute: false),
+        ]);
+        $this->assertSame(route('supplier.dashboard', absolute: false), $resolver->resolve($crossUserUrl, $otherSupplier));
     }
 
     public function test_admin_requisition_detail_is_read_only(): void

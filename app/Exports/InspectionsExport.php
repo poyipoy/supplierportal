@@ -3,32 +3,114 @@
 namespace App\Exports;
 
 use App\Models\QcInspection;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Models\QcItem;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithMapping;
 
-class InspectionsExport implements FromCollection, WithHeadings, ShouldAutoSize
+class InspectionsExport implements FromQuery, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
 {
-    protected $startDate, $endDate, $status;
-    public function __construct($startDate = null, $endDate = null, $status = null) { $this->startDate = $startDate; $this->endDate = $endDate; $this->status = $status; }
+    protected $startDate;
 
-    public function collection()
+    protected $endDate;
+
+    protected $status;
+
+    public function __construct($startDate = null, $endDate = null, $status = null)
     {
-        $q = QcInspection::with(['purchaseOrder.supplier', 'items.prItem'])->orderBy('inspected_at', 'desc');
-        if ($this->startDate) $q->whereDate('inspected_at', '>=', $this->startDate);
-        if ($this->endDate) $q->whereDate('inspected_at', '<=', $this->endDate);
-        if ($this->status) $q->where('status', $this->status);
-        $rows = collect();
-        foreach ($q->get() as $insp) {
-            foreach ($insp->items as $item) {
-                $pi = $item->prItem;
-                $specD = $pi ? collect([$pi->shape, $pi->dimension_label !== '-' ? $pi->dimension_label : null])->filter()->implode(' | ') : '-';
-                $dimA = collect([$item->actual_thickness ? "T:{$item->actual_thickness}" : null, $item->actual_width ? "W:{$item->actual_width}" : null, $item->actual_length ? "L:{$item->actual_length}" : null])->filter()->implode(' | ') ?: '-';
-                $rows->push([optional($insp->purchaseOrder)->po_number ?? '-', optional(optional($insp->purchaseOrder)->supplier)->name ?? '-', optional($pi)->material_name ?? '-', $specD, $dimA, strtoupper($item->status), strtoupper($insp->status), $insp->inspected_at ? $insp->inspected_at->format('d/m/Y H:i') : '-']);
-            }
-        }
-        return $rows;
+        $this->startDate = $startDate;
+        $this->endDate = $endDate;
+        $this->status = $status;
     }
 
-    public function headings(): array { return ['PO Number', 'Supplier', 'Material', 'Requested Specification', 'Actual Dimensions', 'Item Status', 'Inspection Status', 'Inspection Date']; }
+    public function query(): Builder
+    {
+        $query = QcItem::query()->with([
+            'inspection.purchaseOrder.supplier',
+            'prItem',
+        ]);
+
+        if ($this->startDate) {
+            $dateFrom = Carbon::parse($this->startDate)->startOfDay();
+            $query->whereHas('inspection', fn (Builder $inspection) => $inspection->where('inspected_at', '>=', $dateFrom));
+        }
+
+        if ($this->endDate) {
+            $dateToExclusive = Carbon::parse($this->endDate)->addDay()->startOfDay();
+            $query->whereHas('inspection', fn (Builder $inspection) => $inspection->where('inspected_at', '<', $dateToExclusive));
+        }
+
+        if ($this->status) {
+            $query->whereHas('inspection', fn (Builder $inspection) => $inspection->where('status', $this->status));
+        }
+
+        $inspectionDate = QcInspection::query()
+            ->select('inspected_at')
+            ->whereColumn('qc_inspections.id', 'qc_items.inspection_id')
+            ->limit(1);
+
+        return $query->orderByDesc($inspectionDate)->orderBy('id');
+    }
+
+    public function map($item): array
+    {
+        $inspection = $item->inspection;
+        $prItem = $item->prItem;
+        $requestedSpecification = $prItem
+            ? collect([
+                $prItem->shape,
+                $prItem->dimension_label !== '-' ? $prItem->dimension_label : null,
+            ])->filter()->implode(' | ')
+            : '-';
+        $actualDimensions = collect([
+            $item->actual_thickness ? "T:{$item->actual_thickness}" : null,
+            $item->actual_width ? "W:{$item->actual_width}" : null,
+            $item->actual_length ? "L:{$item->actual_length}" : null,
+        ])->filter()->implode(' | ') ?: '-';
+
+        return [
+            $inspection?->purchaseOrder?->po_number ?? '-',
+            $inspection?->purchaseOrder?->supplier?->name ?? '-',
+            $prItem?->material_name ?? '-',
+            $requestedSpecification,
+            $actualDimensions,
+            strtoupper((string) $item->status),
+            strtoupper((string) $inspection?->status),
+            $inspection?->inspected_at?->format('d/m/Y H:i') ?? '-',
+        ];
+    }
+
+    public function collection(): Collection
+    {
+        return $this->query()->get()->map(fn (QcItem $item) => $this->map($item));
+    }
+
+    public function chunkSize(): int
+    {
+        return 500;
+    }
+
+    public function headings(): array
+    {
+        return ['PO Number', 'Supplier', 'Material', 'Requested Specification', 'Actual Dimensions', 'Item Status', 'Inspection Status', 'Inspection Date'];
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 22,
+            'B' => 25,
+            'C' => 30,
+            'D' => 38,
+            'E' => 34,
+            'F' => 15,
+            'G' => 18,
+            'H' => 20,
+        ];
+    }
 }

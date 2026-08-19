@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\Conversation;
+use App\Models\ExportJob;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
+use App\Models\QcInspection;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -31,7 +33,10 @@ class NotificationUrlResolver
             }
 
             if ($this->isAllowedRoute($storedUrl, $notification->id, $user)) {
-                return $storedUrl;
+                $canonicalUrl = $this->canonicalizeAllowedUrl($storedUrl, $user);
+                if ($canonicalUrl !== null) {
+                    return $canonicalUrl;
+                }
             }
         }
 
@@ -85,6 +90,18 @@ class NotificationUrlResolver
         }
 
         $name = (string) $matched->getName();
+        $parameters = $matched->parameters();
+
+        if ($name === 'exports.index') {
+            return true;
+        }
+
+        if ($name === 'exports.download') {
+            $exportJob = $this->resolveModel(ExportJob::class, $parameters['exportJob'] ?? null);
+
+            return $exportJob !== null && (int) $exportJob->user_id === (int) $user->id;
+        }
+
         if ($name === '' || ! Str::startsWith($name, $user->role.'.')) {
             return false;
         }
@@ -92,8 +109,6 @@ class NotificationUrlResolver
         if ($user->role !== 'supplier') {
             return true;
         }
-
-        $parameters = $matched->parameters();
 
         if (Str::startsWith($name, 'supplier.quotations.')) {
             if (isset($parameters['pr_id'])) {
@@ -136,7 +151,140 @@ class NotificationUrlResolver
 
         $pr = $this->resolveModel(PurchaseRequisition::class, $matches[1]);
 
-        return $this->purchaseRequisitionUrl($pr, $user);
+        $canonicalUrl = $this->purchaseRequisitionUrl($pr, $user);
+
+        return $canonicalUrl ? $this->appendCanonicalQueryAndFragment($canonicalUrl, $url, $user) : null;
+    }
+
+    private function canonicalizeAllowedUrl(string $url, User $user): ?string
+    {
+        try {
+            $matched = Route::getRoutes()->match(Request::create($url, 'GET'));
+        } catch (NotFoundHttpException|MethodNotAllowedHttpException) {
+            return null;
+        }
+
+        $name = (string) $matched->getName();
+        $parameters = $matched->parameters();
+        $binding = $this->canonicalRouteBinding($name);
+        $canonicalPath = (string) (parse_url($url, PHP_URL_PATH) ?: '/');
+
+        if ($binding !== null) {
+            [$parameter, $modelClass] = $binding;
+            $model = $this->resolveModel($modelClass, $parameters[$parameter] ?? null);
+
+            if (! $model) {
+                return null;
+            }
+
+            $canonicalPath = $this->route($name, $model);
+            if ($canonicalPath === null) {
+                return null;
+            }
+        }
+
+        return $this->appendCanonicalQueryAndFragment($canonicalPath, $url, $user);
+    }
+
+    /** @return array{0: string, 1: class-string<Model>}|null */
+    private function canonicalRouteBinding(string $name): ?array
+    {
+        return match ($name) {
+            'exports.download' => ['exportJob', ExportJob::class],
+
+            'admin.requisitions.show',
+            'purchasing.requisitions.show',
+            'purchasing.requisitions.edit' => ['requisition', PurchaseRequisition::class],
+
+            'purchasing.export.requisitions.detail' => ['purchaseRequisition', PurchaseRequisition::class],
+
+            'purchasing.quotations.show' => ['id', Quotation::class],
+            'supplier.quotations.show' => ['quotation', Quotation::class],
+            'purchasing.purchase-orders.create' => ['quotation_id', Quotation::class],
+            'purchasing.export.quotations.detail',
+            'supplier.export.quotations.detail' => ['quotation', Quotation::class],
+
+            'supplier.quotations.create',
+            'supplier.quotations.import-template' => ['pr_id', PurchaseRequisition::class],
+            'purchasing.comparison.show' => ['pr_id', PurchaseRequisition::class],
+
+            'purchasing.purchase-orders.show',
+            'supplier.purchase-orders.show' => ['id', PurchaseOrder::class],
+            'purchasing.export.purchase-orders.detail',
+            'supplier.export.purchase-orders.detail' => ['purchaseOrder', PurchaseOrder::class],
+            'qc.inspections.create' => ['po_id', PurchaseOrder::class],
+
+            'purchasing.claims.create' => ['inspection_id', QcInspection::class],
+            'purchasing.claims.show' => ['claim', MaterialClaim::class],
+            'supplier.claims.show' => ['id', MaterialClaim::class],
+            'qc.inspections.show' => ['id', QcInspection::class],
+
+            'purchasing.conversations.show',
+            'supplier.conversations.show' => ['id', Conversation::class],
+
+            'admin.users.show',
+            'admin.users.edit' => ['user', User::class],
+            default => null,
+        };
+    }
+
+    private function appendCanonicalQueryAndFragment(string $path, string $sourceUrl, User $user): ?string
+    {
+        $parts = parse_url($sourceUrl);
+        if ($parts === false) {
+            return null;
+        }
+
+        parse_str((string) ($parts['query'] ?? ''), $query);
+        $queryModels = [
+            'pr_id' => PurchaseRequisition::class,
+            'supplier_id' => User::class,
+            'supplier' => User::class,
+            'user_id' => User::class,
+        ];
+
+        foreach ($queryModels as $key => $modelClass) {
+            if (! array_key_exists($key, $query) || $query[$key] === '') {
+                continue;
+            }
+
+            if (! is_scalar($query[$key])) {
+                return null;
+            }
+
+            $model = $this->resolveModel($modelClass, $query[$key]);
+            if (! $model) {
+                return null;
+            }
+
+            if (in_array($key, ['supplier_id', 'supplier'], true)
+                && (! $model instanceof User || $model->role !== 'supplier')) {
+                return null;
+            }
+
+            if ($user->role === 'supplier') {
+                if ($model instanceof PurchaseRequisition && ! $model->isVisibleToSupplier($user->id)) {
+                    return null;
+                }
+
+                if ($model instanceof User && $model->id !== $user->id) {
+                    return null;
+                }
+            }
+
+            $query[$key] = $model->getRouteKey();
+        }
+
+        $canonical = $path;
+        if ($query !== []) {
+            $canonical .= '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+        }
+
+        if (isset($parts['fragment']) && $parts['fragment'] !== '') {
+            $canonical .= '#'.$parts['fragment'];
+        }
+
+        return $canonical;
     }
 
     private function fallback(DatabaseNotification $notification, User $user): ?string
@@ -150,6 +298,9 @@ class NotificationUrlResolver
         ]);
 
         if ($url = $this->conversationUrl($data['conversation_id'] ?? null, $user)) {
+            return $url;
+        }
+        if ($url = $this->exportJobUrl($data['export_job_id'] ?? null, $user)) {
             return $url;
         }
         if ($url = $this->quotationUrl($data['quotation_id'] ?? null, $user)) {
@@ -253,6 +404,21 @@ class NotificationUrlResolver
             'purchasing' => $this->route('purchasing.conversations.show', $conversation),
             default => null,
         };
+    }
+
+    private function exportJobUrl(mixed $id, User $user): ?string
+    {
+        $exportJob = $this->resolveModel(ExportJob::class, $id);
+
+        if (! $exportJob || (int) $exportJob->user_id !== (int) $user->id) {
+            return null;
+        }
+
+        if ($exportJob->isDownloadable()) {
+            return $this->route('exports.download', $exportJob);
+        }
+
+        return Route::has('exports.index') ? route('exports.index', absolute: false) : null;
     }
 
     /** @template TModel of Model */

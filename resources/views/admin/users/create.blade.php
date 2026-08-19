@@ -34,14 +34,14 @@
 
                         <div class="mb-3">
                             <label class="form-label small fw-medium text-muted">Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required minlength="8">
+                            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required minlength="12" maxlength="255" autocomplete="new-password">
                             <small class="text-muted">Minimum 8 characters.</small>
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label small fw-medium text-muted">Confirm Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password_confirmation" class="form-control" required minlength="8">
+                            <input type="password" name="password_confirmation" class="form-control" required minlength="12" maxlength="255" autocomplete="new-password">
                         </div>
 
                         <div class="mb-3">

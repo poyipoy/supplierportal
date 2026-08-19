@@ -61,6 +61,10 @@
                 class="sidebar-link {{ request()->routeIs('purchasing.reports.*') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-bar-graph"></i> <span>Report</span>
             </a>
+            <a href="{{ route('exports.index') }}"
+                class="sidebar-link {{ request()->routeIs('exports.*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-spreadsheet"></i> <span>Export Saya</span>
+            </a>
 
             {{-- ═══════════════════════════════════════════
             SUPPLIER
@@ -93,6 +97,10 @@
                 class="sidebar-link {{ request()->routeIs('supplier.price-history.*') ? 'active' : '' }}">
                 <i class="bi bi-graph-up-arrow"></i> <span>Price History</span>
             </a>
+            <a href="{{ route('exports.index') }}"
+                class="sidebar-link {{ request()->routeIs('exports.*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-spreadsheet"></i> <span>Export Saya</span>
+            </a>
 
             <div class="sidebar-heading">Information</div>
             <a href="{{ route('supplier.announcements.index') }}"
@@ -113,6 +121,10 @@
             <a href="{{ route('qc.inspections.index') }}"
                 class="sidebar-link {{ request()->routeIs('qc.inspections.*') ? 'active' : '' }}">
                 <i class="bi bi-clipboard-check"></i> <span>QC Inspection</span>
+            </a>
+            <a href="{{ route('exports.index') }}"
+                class="sidebar-link {{ request()->routeIs('exports.*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-spreadsheet"></i> <span>Export Saya</span>
             </a>
 
             {{-- ═══════════════════════════════════════════
@@ -136,6 +148,10 @@
             <a href="{{ route('admin.material-hs-code.index') }}"
                 class="sidebar-link {{ request()->routeIs('admin.material-hs-code.*', 'admin.material-masters.*', 'admin.hs-code-rules.*', 'admin.master-data-quality.*') ? 'active' : '' }}">
                 <i class="bi bi-boxes"></i> <span>Master Material &amp; HS Code</span>
+            </a>
+            <a href="{{ route('admin.auth-audit-logs.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.auth-audit-logs.*') ? 'active' : '' }}">
+                <i class="bi bi-shield-check"></i> <span>Authentication Audit</span>
             </a>
 
             <div class="sidebar-heading">Content</div>

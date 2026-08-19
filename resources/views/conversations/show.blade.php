@@ -179,7 +179,7 @@
 
 @push('scripts')
 <script>
-    const conversationId = {{ $conversation->id }};
+    const conversationId = @json($conversation->getRouteKey());
     const myId = {{ auth()->id() }};
     const chatContainer = document.getElementById('chat-messages');
     const emptyState = document.getElementById('empty-state');

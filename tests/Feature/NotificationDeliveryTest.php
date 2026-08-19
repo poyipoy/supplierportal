@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Conversation;
+use App\Models\MaterialClaim;
 use App\Models\MaterialMaster;
 use App\Models\Period;
 use App\Models\PoDocument;
@@ -344,15 +345,16 @@ class NotificationDeliveryTest extends TestCase
         $claimCreated = $supplier->notifications()->latest()->firstOrFail();
         $this->assertSame('claim.created', $claimCreated->data['event']);
         $claimId = $claimCreated->data['claim_id'];
+        $claim = MaterialClaim::findOrFail($claimId);
 
-        $this->actingAs($supplier)->post(route('supplier.claims.respond', $claimId), [
+        $this->actingAs($supplier)->post(route('supplier.claims.respond', $claim), [
             'supplier_response' => 'Replacement approved',
         ])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertTrue($purchasing->notifications()->get()->contains(
             fn ($notification) => $notification->data['event'] === 'claim.responded',
         ));
 
-        $this->actingAs($purchasing)->post(route('purchasing.claims.resolve', $claimId))
+        $this->actingAs($purchasing)->post(route('purchasing.claims.resolve', $claim))
             ->assertRedirect();
         $this->assertTrue($supplier->notifications()->get()->contains(
             fn ($notification) => $notification->data['event'] === 'claim.resolved',

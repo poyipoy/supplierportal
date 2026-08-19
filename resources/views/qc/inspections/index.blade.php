@@ -18,7 +18,7 @@
                 </button>
             </li>
         </ul>
-        <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center d-none" id="inspectionExportLink">
+        <a href="{{ route('qc.export.inspections', request()->all()) }}" class="btn btn-success btn-sm align-self-center d-none" id="inspectionExportLink" data-async-export>
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
     </div>

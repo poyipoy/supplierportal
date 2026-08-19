@@ -49,7 +49,7 @@
                 <select name="supplier_id" class="form-select form-select-sm" id="historicalSupplierSelect" required>
                     <option value="">Select Supplier</option>
                     @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}" {{ (string) $selectedSupplierId === (string) $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
+                        <option value="{{ $supplier->getRouteKey() }}" {{ $selectedSupplierId === $supplier->getRouteKey() ? 'selected' : '' }}>{{ $supplier->name }}</option>
                     @endforeach
                 </select>
             </div>

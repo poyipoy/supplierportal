@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Exports\PurchaseOrderDetailExport;
 use App\Exports\PurchaseOrdersExport;
 use App\Exports\QuotationDetailExport;
+use App\Jobs\ProcessExportJob;
 use App\Models\ExchangeRate;
+use App\Models\ExportJob;
 use App\Models\MaterialClaim;
 use App\Models\Period;
 use App\Models\PoDocument;
@@ -16,6 +18,7 @@ use App\Models\Quotation;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -95,15 +98,26 @@ class DetailExportSecurityTest extends TestCase
         $this->assertSame(DataType::TYPE_NUMERIC, $sheet->getCell('N2')->getDataType());
         $this->assertSame(DataType::TYPE_NUMERIC, $sheet->getCell('R2')->getDataType());
 
+        Queue::fake();
+
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.export.quotations.detail', $quotation))
-            ->assertOk();
+            ->assertRedirect();
+        $purchasingJob = ExportJob::query()->latest('id')->firstOrFail();
+        $this->assertSame(QuotationDetailExport::class, $purchasingJob->export_class);
+        $this->assertSame([$quotation->id], $purchasingJob->export_args);
+
         $this->actingAs($this->supplierA)
             ->get(route('supplier.export.quotations.detail', $quotation))
-            ->assertOk();
+            ->assertRedirect();
+        $supplierJob = ExportJob::query()->latest('id')->firstOrFail();
+        $this->assertSame([$quotation->id, $this->supplierA->id, false], $supplierJob->export_args);
+
         $this->actingAs($this->supplierB)
             ->get(route('supplier.export.quotations.detail', $quotation))
             ->assertForbidden();
+
+        Queue::assertPushed(ProcessExportJob::class, 2);
     }
 
     public function test_consolidated_po_detail_contains_all_items_and_latest_statuses(): void
@@ -175,15 +189,26 @@ class DetailExportSecurityTest extends TestCase
         $this->assertIsFloat($rows->first()[12]);
         $this->assertSame('Verified', $rows->first()[18]);
 
+        Queue::fake();
+
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.export.purchase-orders.detail', $po))
-            ->assertOk();
+            ->assertRedirect();
+        $purchasingJob = ExportJob::query()->latest('id')->firstOrFail();
+        $this->assertSame(PurchaseOrderDetailExport::class, $purchasingJob->export_class);
+        $this->assertSame([$po->id], $purchasingJob->export_args);
+
         $this->actingAs($this->supplierA)
             ->get(route('supplier.export.purchase-orders.detail', $po))
-            ->assertOk();
+            ->assertRedirect();
+        $supplierJob = ExportJob::query()->latest('id')->firstOrFail();
+        $this->assertSame([$po->id, $this->supplierA->id], $supplierJob->export_args);
+
         $this->actingAs($this->supplierB)
             ->get(route('supplier.export.purchase-orders.detail', $po))
             ->assertForbidden();
+
+        Queue::assertPushed(ProcessExportJob::class, 2);
     }
 
     public function test_supplier_po_list_ignores_spoofed_supplier(): void
@@ -195,28 +220,39 @@ class DetailExportSecurityTest extends TestCase
         $otherQuotation = $this->createQuotation($otherPr, $this->supplierB);
         $otherPo = $this->createPo($otherQuotation, 'PO/08/2026/522');
 
-        Excel::fake();
+        $scopedRows = (new PurchaseOrdersExport($this->supplierA->id))->collection()->pluck(0)->all();
+        $this->assertContains($ownPo->po_number, $scopedRows);
+        $this->assertNotContains($otherPo->po_number, $scopedRows);
+
+        Queue::fake();
         $this->actingAs($this->supplierA)
-            ->get(route('supplier.export.purchase-orders', ['supplier_id' => $this->supplierB->id]))
-            ->assertOk();
+            ->get(route('supplier.export.purchase-orders', ['supplier_id' => $this->supplierB]))
+            ->assertRedirect();
 
-        Excel::assertDownloaded('rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx', function (PurchaseOrdersExport $download) use ($ownPo, $otherPo) {
-            $numbers = $download->collection()->pluck(0)->all();
-
-            return in_array($ownPo->po_number, $numbers, true)
-                && ! in_array($otherPo->po_number, $numbers, true);
-        });
+        $queued = ExportJob::query()->latest('id')->firstOrFail();
+        $this->assertSame(PurchaseOrdersExport::class, $queued->export_class);
+        $this->assertSame($this->supplierA->id, $queued->export_args[0]);
+        Queue::assertPushed(ProcessExportJob::class, fn (ProcessExportJob $job) => $job->exportJobId === $queued->id);
     }
 
-    public function test_export_confirmation_uses_single_global_download_guard(): void
+    public function test_async_export_controls_use_the_global_no_refresh_downloader(): void
     {
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $script = file_get_contents(public_path('assets/js/async-export.js'));
 
-        $this->assertStringContainsString('window.exportConfirmationOpen', $layout);
+        $this->assertStringContainsString("asset('assets/js/async-export.js')", $layout);
+        $this->assertStringContainsString('window.fetch(requestUrl', $script);
+        $this->assertStringContainsString('const blob = await response.blob()', $script);
+        $this->assertStringContainsString('window.URL.createObjectURL(blob)', $script);
+        $this->assertStringContainsString("document.addEventListener('click'", $script);
+        $this->assertStringNotContainsString("document.createElement('iframe')", $script);
+        $this->assertStringNotContainsString('window.location.href', $script);
         $this->assertStringContainsString('this.href = exportUrl.toString()', file_get_contents(resource_path('views/supplier/po/index.blade.php')));
-        $this->assertStringNotContainsString('window.location.assign', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
-        $this->assertStringNotContainsString('window.location.assign', file_get_contents(resource_path('views/purchasing/po/index.blade.php')));
-        $this->assertStringNotContainsString('window.location.assign', file_get_contents(resource_path('views/supplier/quotations/period.blade.php')));
+        $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
+        $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/reports/index.blade.php')));
+        $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/supplier/price-history/historical.blade.php')));
+        $this->assertStringNotContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/pr/_import_controls.blade.php')));
+        $this->assertStringNotContainsString('data-async-export', file_get_contents(resource_path('views/supplier/quotations/_import_controls.blade.php')));
     }
 
     private function createPr(string $number, array $items = []): PurchaseRequisition

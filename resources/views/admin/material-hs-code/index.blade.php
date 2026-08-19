@@ -26,7 +26,7 @@
                 </div>
                 <div class="table-responsive">
                     <table id="materialsTable" class="table table-hover align-middle w-100" style="font-size:.85rem">
-                        <thead class="table-light"><tr><th>No</th><th>Material</th><th>Aliases</th><th>Raw Category</th><th>HS Category</th><th>Density</th><th>Manufacturer</th><th>Status</th><th>Source</th><th>Action</th></tr></thead>
+                        <thead class="table-light"><tr><th>No</th><th>Material</th><th>Raw Category</th><th>HS Category</th><th>Density</th><th>Manufacturer</th><th>Status</th><th>Source</th><th>Action</th></tr></thead>
                     </table>
                 </div>
             </div>
@@ -52,12 +52,23 @@
                 <div id="qualityContent" class="d-none">
                     <div class="row g-3 mb-4" id="qualityCards"></div>
                     <div class="row g-3">
-                        <div class="col-lg-6"><div class="border rounded p-3 h-100"><h6>Unmapped Materials</h6><div id="unmappedMaterials" class="small text-muted"></div></div></div>
-                        <div class="col-lg-6"><div class="border rounded p-3 h-100"><h6>Resolved Source Conflicts</h6><div id="resolvedConflicts" class="small text-muted"></div></div></div>
-                        <div class="col-12"><div class="border rounded p-3"><h6>Rule Overlaps</h6><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Rule A</th><th>Rule B</th><th>Category / Shape</th><th>Codes</th><th>Type</th></tr></thead><tbody id="qualityOverlaps"></tbody></table></div></div></div>
-                        <div class="col-md-6"><div class="alert alert-warning mb-0"><strong>Categories without rules:</strong> <span id="categoriesWithoutRules">-</span></div></div>
-                        <div class="col-md-6"><div class="alert alert-info mb-0"><strong>Unreachable rule categories:</strong> <span id="unreachableRuleCategories">-</span></div></div>
-                        <div class="col-12"><div class="alert alert-secondary mb-0"><strong>Reference-only materials absent from the selected master source:</strong> <span id="unreachableReferenceMaterials">-</span></div></div>
+                        <div class="col-lg-7">
+                            <section class="border rounded-3 p-3 h-100" aria-labelledby="qualityAttentionTitle">
+                                <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-exclamation-circle text-warning fs-5" aria-hidden="true"></i><div><h6 class="mb-0" id="qualityAttentionTitle">Needs attention</h6><p class="small text-muted mb-0">Review only the items that can affect an automatic HS Code result.</p></div></div>
+                                <div class="mb-3"><div class="fw-semibold small mb-2">Materials without HS mapping</div><div id="unmappedMaterials" class="small"></div></div>
+                                <div class="mb-3"><div class="fw-semibold small mb-2">Categories without active HS rules</div><div id="categoriesWithoutRules" class="small"></div></div>
+                                <div><div class="fw-semibold small mb-2">Rules needing review</div><div id="rulesNeedingReview" class="small"></div></div>
+                            </section>
+                        </div>
+                        <div class="col-lg-5">
+                            <section class="border rounded-3 p-3 h-100" aria-labelledby="qualityReferenceTitle">
+                                <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-info-circle text-primary fs-5" aria-hidden="true"></i><div><h6 class="mb-0" id="qualityReferenceTitle">Reference notes</h6><p class="small text-muted mb-0">Useful context that does not require an immediate change.</p></div></div>
+                                <div class="mb-3"><div class="fw-semibold small mb-1">Duplicate rule coverage</div><div id="duplicateRuleCoverage" class="small text-muted"></div></div>
+                                <div class="mb-3"><div class="fw-semibold small mb-1">Inactive rules kept for reference</div><div id="inactiveRulesForReference" class="small"></div></div>
+                                <div class="mb-3"><div class="fw-semibold small mb-1">Rule categories not used by current materials</div><div id="unusedRuleCategories" class="small"></div></div>
+                                <div><div class="fw-semibold small mb-1">Reference-only materials</div><div id="referenceOnlyMaterials" class="small"></div></div>
+                            </section>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -377,7 +377,7 @@
                     };
 
                     const loadConversation = (conversationId) => {
-                        activeConversationId = Number(conversationId);
+                        activeConversationId = String(conversationId);
                         messagesEl.innerHTML = `
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm me-1"></div>

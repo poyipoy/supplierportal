@@ -40,7 +40,7 @@
                 <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
                 <div>
                     <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
-                    <a href="{{ route('purchasing.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1">
+                    <a href="{{ route('purchasing.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1" data-async-export>
                         <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                     </a>
                     <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order" data-pdf-confirm>

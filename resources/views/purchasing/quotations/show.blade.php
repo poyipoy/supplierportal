@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $relatedPrBaseUrl = route('purchasing.requisitions.show', $quotation->purchaseRequisition->id);
+    $relatedPrBaseUrl = route('purchasing.requisitions.show', $quotation->purchaseRequisition);
     $relatedPrPath = parse_url($relatedPrBaseUrl, PHP_URL_PATH);
     $returnUrl = request(\App\Support\PurchasingNavigation::RETURN_URL_KEY);
     $returnPath = is_string($returnUrl) ? parse_url($returnUrl, PHP_URL_PATH) : null;
@@ -14,7 +14,7 @@
     )
         ? $returnUrl
         : route('purchasing.requisitions.show', [
-            $quotation->purchaseRequisition->id,
+            $quotation->purchaseRequisition,
             \App\Support\PurchasingNavigation::RETURN_URL_KEY => \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index'),
         ]);
 @endphp
@@ -38,7 +38,7 @@
                 <h6 class="mb-0 fw-bold">Quotation Information</h6>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge {{ $quotation->statusBadgeClass() }} text-uppercase px-3 py-2">{{ $quotation->statusLabel() }}</span>
-                    <a href="{{ route('purchasing.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success">
+                    <a href="{{ route('purchasing.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success" data-async-export>
                         <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                     </a>
                 </div>
@@ -232,7 +232,7 @@
             </div>
             <div class="card-body">
                 @if($chatAvailable)
-                    <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $quotation->purchaseRequisition->id, 'supplier_id' => $quotation->supplier_id]) }}" method="POST" data-chat-start-form>
+                    <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $quotation->purchaseRequisition, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form>
                         @csrf
                         <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                         <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center gap-2" style="background-color: var(--adasi-blue);">
@@ -341,7 +341,7 @@
                         Waiting for the supplier to resubmit the revised quotation.
                     </div>
                 @elseif($quotation->first_purchase_order)
-                    <div class="alert alert-success small mb-2"><i class="bi bi-check-circle me-1"></i>PO already created: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order->id) }}" class="fw-bold">{{ $quotation->first_purchase_order->po_number }}</a></div>
+                    <div class="alert alert-success small mb-2"><i class="bi bi-check-circle me-1"></i>PO already created: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order) }}" class="fw-bold">{{ $quotation->first_purchase_order->po_number }}</a></div>
                 @endif
                 <a href="{{ $relatedPrUrl }}" class="btn btn-outline-secondary w-100 btn-sm">
                     <i class="bi bi-clipboard-data me-1"></i> View Related PR

@@ -52,13 +52,21 @@ class DecodeHashids
         'purchasing.periods.',
         'purchasing.po-documents.',
         'purchasing.pr-items.',
-        'purchasing.pdf.',
+    ];
+
+    /** Routes with an intentional raw integer parameter. */
+    protected const PLAIN_ROUTE_NAMES = [
+        'verification.verify',
     ];
 
     public function handle(Request $request, Closure $next)
     {
         if ($route = $request->route()) {
             $routeName = $route->getName() ?? '';
+
+            if (in_array($routeName, self::PLAIN_ROUTE_NAMES, true)) {
+                return $next($request);
+            }
 
             // Skip decoding entirely for routes that use plain-integer models
             foreach (self::PLAIN_ROUTE_PREFIXES as $prefix) {
@@ -75,20 +83,32 @@ class DecodeHashids
                     continue;
                 }
 
-                // Skip if it is already a plain integer — never try to decode a raw numeric string
-                // (this prevents Hashids from accidentally mapping '5' → wrong ID)
-                if (!is_string($value) || ctype_digit($value)) {
+                // Implicit bindings are already model objects when this middleware runs.
+                if (! is_string($value)) {
                     continue;
                 }
 
-                $decoded = Hashids::decode($value);
-                if (!empty($decoded)) {
-                    $route->setParameter($key, $decoded[0]);
+                if (ctype_digit($value)) {
+                    abort(404);
                 }
+
+                try {
+                    $decoded = Hashids::decode($value);
+                } catch (\Throwable) {
+                    $decoded = [];
+                }
+
+                abort_unless(
+                    count($decoded) === 1
+                    && (int) $decoded[0] > 0
+                    && Hashids::encode((int) $decoded[0]) === $value,
+                    404
+                );
+
+                $route->setParameter($key, (int) $decoded[0]);
             }
         }
 
         return $next($request);
     }
 }
-

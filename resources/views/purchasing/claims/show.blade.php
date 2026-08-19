@@ -148,7 +148,7 @@
                     @endforeach
                 </ul>
                 <div class="p-3 text-center border-top">
-                    <a href="{{ route('qc.inspections.show', $claim->inspection_id) }}" target="_blank" class="btn btn-sm btn-light w-100">View Details Report QC</a>
+                    <a href="{{ route('qc.inspections.show', $claim->inspection) }}" target="_blank" class="btn btn-sm btn-light w-100">View Details Report QC</a>
                 </div>
             </div>
         </div>

@@ -5,13 +5,28 @@ namespace App\Exports;
 use App\Models\PurchaseOrder;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PurchaseOrdersExport implements FromCollection, WithHeadings, ShouldAutoSize
+class PurchaseOrdersExport implements FromQuery, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
 {
-    protected $supplierId, $startDate, $endDate, $poNumber, $status, $search;
+    protected $supplierId;
+
+    protected $startDate;
+
+    protected $endDate;
+
+    protected $poNumber;
+
+    protected $status;
+
+    protected $search;
 
     public function __construct(
         $supplierId = null,
@@ -29,9 +44,9 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings, ShouldAutoSi
         $this->search = $search;
     }
 
-    public function collection()
+    public function query(): Builder
     {
-        $q = PurchaseOrder::with([
+        $q = PurchaseOrder::query()->with([
             'supplier',
             'quotations.purchaseRequisition.period',
             'quotations.items.prItem',
@@ -43,11 +58,11 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings, ShouldAutoSi
         }
 
         if ($this->startDate) {
-            $q->whereDate('created_at', '>=', $this->startDate);
+            $q->where('created_at', '>=', Carbon::parse($this->startDate)->startOfDay());
         }
 
         if ($this->endDate) {
-            $q->whereDate('created_at', '<=', $this->endDate);
+            $q->where('created_at', '<', Carbon::parse($this->endDate)->addDay()->startOfDay());
         }
 
         if ($poNumber = trim((string) $this->poNumber)) {
@@ -55,12 +70,12 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings, ShouldAutoSi
         }
 
         if ($this->status === 'overdue') {
-            $q->where(function ($query) {
+            $q->where(function (Builder $query) {
                 $query->where('status', 'overdue')
-                    ->orWhere(function ($activeQuery) {
+                    ->orWhere(function (Builder $activeQuery) {
                         $activeQuery->where('status', 'active')
                             ->whereNotNull('estimated_arrival')
-                            ->whereDate('estimated_arrival', '<', today())
+                            ->where('estimated_arrival', '<', today()->startOfDay())
                             ->whereNull('actual_arrival');
                     });
             });
@@ -69,53 +84,80 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings, ShouldAutoSi
         }
 
         if ($search = trim((string) $this->search)) {
-            $q->where(function ($query) use ($search) {
+            $q->where(function (Builder $query) use ($search) {
                 $query->where('po_number', 'like', '%'.$search.'%')
-                    ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('quotations.purchaseRequisition.period', fn ($period) => $period->where('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('quotations.purchaseRequisition', fn ($pr) => $pr->where('pr_number', 'like', '%'.$search.'%'))
+                    ->orWhereHas('supplier', fn (Builder $supplier) => $supplier->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('quotations.purchaseRequisition.period', fn (Builder $period) => $period->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('quotations.purchaseRequisition', fn (Builder $pr) => $pr->where('pr_number', 'like', '%'.$search.'%'))
                     ->orWhere('notes', 'like', '%'.$search.'%')
                     ->orWhere('status', 'like', '%'.$search.'%')
                     ->orWhere('estimated_arrival', 'like', '%'.$search.'%');
             });
         }
 
-        $rows = collect();
+        return $q->orderByDesc('id');
+    }
 
-        foreach ($q->lazyByIdDesc(500) as $po) {
-            $prNumbers = $po->pr_reference;
-            $materials = $po->quotations->flatMap(fn($qt) => $qt->items->map(fn($i) => optional($i->prItem)->material_name))->filter()->implode(', ') ?: '-';
-            $totalAmount = (float) $po->quotations->sum(fn($qt) => $qt->items->sum('amount'));
-            $currency = $po->currency ?? '-';
+    public function map($po): array
+    {
+        $prNumbers = $po->pr_reference;
+        $materials = $po->quotations
+            ->flatMap(fn ($quotation) => $quotation->items->map(fn ($item) => $item->prItem?->material_name))
+            ->filter()
+            ->implode(', ') ?: '-';
+        $totalAmount = (float) $po->quotations->sum(fn ($quotation) => $quotation->items->sum('amount'));
+        $currency = $po->currency ?? '-';
+        $totalIdr = 0.0;
 
-            $totalIdr = 0.0;
-            foreach ($po->quotations as $qt) {
-                $rate = $qt->exchange_rate;
-                $rateVal = (float) ($rate?->rate_to_idr ?? 0);
-                foreach ($qt->items as $item) {
-                    $totalIdr += (float) $item->amount * $rateVal;
-                }
+        foreach ($po->quotations as $quotation) {
+            $rate = (float) ($quotation->exchange_rate?->rate_to_idr ?? 0);
+            foreach ($quotation->items as $item) {
+                $totalIdr += (float) $item->amount * $rate;
             }
-
-            $rows->push([
-                SpreadsheetCellSanitizer::text($po->po_number),
-                SpreadsheetCellSanitizer::text($prNumbers),
-                SpreadsheetCellSanitizer::text(optional($po->supplier)->name),
-                SpreadsheetCellSanitizer::text($materials),
-                SpreadsheetCellSanitizer::text($currency),
-                $totalAmount,
-                $totalIdr,
-                $po->estimated_arrival?->format('Y-m-d') ?? '-',
-                SpreadsheetCellSanitizer::text($po->notes),
-                SpreadsheetCellSanitizer::text(StatusHelper::poLabel($po->status, $po->is_overdue)),
-            ]);
         }
 
-        return $rows;
+        return [
+            SpreadsheetCellSanitizer::text($po->po_number),
+            SpreadsheetCellSanitizer::text($prNumbers),
+            SpreadsheetCellSanitizer::text($po->supplier?->name),
+            SpreadsheetCellSanitizer::text($materials),
+            SpreadsheetCellSanitizer::text($currency),
+            $totalAmount,
+            $totalIdr,
+            $po->estimated_arrival?->format('Y-m-d') ?? '-',
+            SpreadsheetCellSanitizer::text($po->notes),
+            SpreadsheetCellSanitizer::text(StatusHelper::poLabel($po->status, $po->is_overdue)),
+        ];
+    }
+
+    public function collection(): Collection
+    {
+        return $this->query()->get()->map(fn (PurchaseOrder $po) => $this->map($po));
+    }
+
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function headings(): array
     {
         return ['PO Number', 'PR Number', 'Supplier', 'Material', 'Currency', 'Total Amount', 'Total IDR', 'Est. Arrival', 'Remark', 'Status'];
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 22,
+            'B' => 28,
+            'C' => 25,
+            'D' => 40,
+            'E' => 12,
+            'F' => 16,
+            'G' => 18,
+            'H' => 16,
+            'I' => 30,
+            'J' => 16,
+        ];
     }
 }

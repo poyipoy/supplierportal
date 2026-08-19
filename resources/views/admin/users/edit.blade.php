@@ -37,10 +37,10 @@
                             <label class="form-label small fw-bold text-dark"><i class="bi bi-key"></i> Change Password</label>
                             <p class="small text-muted mb-2">Leave blank if you do not want to change the password.</p>
                             
-                            <input type="password" name="password" class="form-control mb-2 @error('password') is-invalid @enderror" placeholder="Password Baru (min. 8 karakter)">
+                            <input type="password" name="password" class="form-control mb-2 @error('password') is-invalid @enderror" placeholder="New password (minimum 12 characters)" minlength="12" maxlength="255" autocomplete="new-password">
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             
-                            <input type="password" name="password_confirmation" class="form-control" placeholder="Confirm New Password">
+                            <input type="password" name="password_confirmation" class="form-control" placeholder="Confirm New Password" minlength="12" maxlength="255" autocomplete="new-password">
                         </div>
 
                         <div class="mb-3">
@@ -106,6 +106,22 @@
             </form>
         </div>
     </div>
+
+    @if ($user->hasTwoFactorAuthentication() && $user->id !== auth()->id())
+        <div class="card border-warning shadow-sm mt-3">
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h6 class="fw-bold mb-1"><i class="bi bi-shield-lock me-1"></i>Two-Factor Authentication</h6>
+                    <p class="text-muted small mb-0">Reset only when this user has lost access to the authenticator and every recovery code.</p>
+                </div>
+                <form method="POST" action="{{ route('admin.users.two-factor.destroy', $user) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-outline-warning">Reset MFA</button>
+                </form>
+            </div>
+        </div>
+    @endif
 @endsection
 
 @push('scripts')

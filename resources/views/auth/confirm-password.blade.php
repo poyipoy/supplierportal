@@ -1,27 +1,36 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        This is a secure area of the application. Please confirm your password before continuing.
+@extends('layouts.auth')
+
+@section('title', 'Confirm Password - ADASI Supplier Portal')
+
+@section('content')
+    <div class="auth-logo text-center mb-4">
+        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="Logo ADASI" style="width:72px; height:auto; margin-bottom:1rem;">
+        <h4 class="fw-bold text-dark mb-1">ADASI Supplier Portal</h4>
+        <p>Protected action</p>
     </div>
 
-    <form method="POST" action="{{ route('password.confirm') }}">
+    <div class="mb-4">
+        <h1 class="h4 fw-bold mb-2">Confirm your password</h1>
+        <p class="text-muted small mb-0">For your security, enter your current password before continuing.</p>
+    </div>
+
+    <form method="POST" action="{{ route('password.confirm') }}" novalidate>
         @csrf
 
-        <!-- Password -->
-        <div>
-            <x-input-label for="password" :value="'Password'" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        <div class="mb-4">
+            <label for="password" class="form-label fw-medium" style="font-size:0.875rem;">Current Password</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
+                <input id="password" type="password" name="password"
+                    class="form-control @error('password') is-invalid @enderror"
+                    placeholder="Enter your password" autocomplete="current-password" maxlength="255" required autofocus>
+            </div>
+            @error('password')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
         </div>
 
-        <div class="flex justify-end mt-4">
-            <x-primary-button>
-                Confirm
-            </x-primary-button>
-        </div>
+        <button type="submit" class="btn btn-login w-100">Confirm and Continue</button>
     </form>
-</x-guest-layout>
+    <p class="auth-footer mb-0">&copy; {{ now()->year }} ADASI Supplier Portal</p>
+@endsection

@@ -44,12 +44,6 @@ class SaveHsCodeRuleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'rule_key' => [
-                'required',
-                'string',
-                'max:150',
-                Rule::unique('hs_code_rules', 'rule_key')->ignore($this->route('hsCodeRule')),
-            ],
             'hs_code' => ['required', 'regex:/^\d{4}\.\d{2}\.\d{2}$/'],
             'material_category' => ['required', Rule::in(MaterialMaster::HS_CATEGORIES)],
             'shape' => ['required', Rule::in(PrItem::SHAPES)],

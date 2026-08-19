@@ -27,6 +27,8 @@ class PurchaseOrderController extends Controller
      */
     public function index(Request $request)
     {
+        $supplierFilter = $this->resolveSupplierFilter($request->query('supplier_id'));
+
         $query = PurchaseOrder::with([
             'supplier',
             'quotations.purchaseRequisition.period',
@@ -58,8 +60,8 @@ class PurchaseOrderController extends Controller
             }
         }
 
-        if ($request->filled('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
+        if ($supplierFilter) {
+            $query->where('supplier_id', $supplierFilter->getKey());
         }
 
         if ($request->ajax()) {
@@ -151,6 +153,20 @@ class PurchaseOrderController extends Controller
         $suppliers = User::where('role', 'supplier')->get();
 
         return view('purchasing.po.index', compact('suppliers'));
+    }
+
+    private function resolveSupplierFilter(mixed $value): ?User
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        abort_unless(is_string($value) && ! ctype_digit($value), 404);
+
+        $supplier = (new User)->resolveRouteBinding($value);
+        abort_unless($supplier instanceof User && $supplier->role === 'supplier', 404);
+
+        return $supplier;
     }
 
     /**
@@ -318,7 +334,7 @@ class PurchaseOrderController extends Controller
                 );
             }
 
-            $showParameters = [$po->id];
+            $showParameters = [$po];
             if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
                 $showParameters['return_url'] = $request->input('return_url');
             }

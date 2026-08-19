@@ -27,11 +27,16 @@
         </div>
 
         <div class="mb-3">
-            <label for="password" class="form-label fw-medium" style="font-size:0.875rem;">Password</label>
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-1">
+                <label for="password" class="form-label fw-medium mb-0" style="font-size:0.875rem;">Password</label>
+                <a href="{{ route('password.request') }}" class="small text-decoration-none fw-medium">
+                    Forgot password?
+                </a>
+            </div>
             <div class="input-group">
                 <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
                 <input type="password" name="password" id="password"
-                    class="form-control border-end-0 @error('password') is-invalid @enderror" placeholder="********" autocomplete="current-password" required>
+                    class="form-control border-end-0 @error('password') is-invalid @enderror" placeholder="********" autocomplete="current-password" maxlength="255" required>
                 <button class="btn btn-password-toggle" type="button" id="togglePassword">
                     <i class="bi bi-eye"></i>
                 </button>
@@ -49,6 +54,15 @@
             </label>
         </div>
 
+        @if ($turnstileRequired && $turnstileSiteKey)
+            <div class="mb-3">
+                <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}"></div>
+                @error('cf-turnstile-response')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+        @endif
+
         <button type="submit" class="btn btn-login w-100">
             <i class="bi bi-box-arrow-in-right me-2"></i>Login
         </button>
@@ -59,6 +73,9 @@
     </div>
 @endsection
 @section('scripts')
+@if ($turnstileRequired && $turnstileSiteKey)
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const togglePassword = document.getElementById('togglePassword');

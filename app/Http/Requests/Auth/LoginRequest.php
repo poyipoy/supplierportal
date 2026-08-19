@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests\Auth;
 
-use Illuminate\Auth\Events\Lockout;
+use App\Enums\TurnstileStatus;
+use App\Events\AuthSecurityEvent;
+use App\Models\User;
+use App\Services\Auth\LoginRateLimiter;
+use App\Services\Auth\TurnstileVerifier;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -22,6 +25,10 @@ class LoginRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->merge([
+            'email' => Str::lower(trim($this->string('email')->toString())),
+        ]);
+
         if ($this->has('remember')) {
             $this->merge([
                 'remember' => $this->boolean('remember'),
@@ -37,9 +44,10 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
             'remember' => ['nullable', 'boolean'],
+            'cf-turnstile-response' => ['nullable', 'string', 'max:2048'],
         ];
     }
 
@@ -48,42 +56,43 @@ class LoginRequest extends FormRequest
      *
      * @throws ValidationException
      */
-    public function authenticate(): void
+    public function authenticate(LoginRateLimiter $limiter, TurnstileVerifier $turnstile): User
     {
-        $this->ensureIsNotRateLimited();
+        $email = $limiter->normalizedEmail($this->string('email')->toString());
+        $limiter->ensureNotLimited($this, $email);
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        if ($limiter->requiresTurnstile($this, $email) && $turnstile->configured()) {
+            $status = $turnstile->verify($this);
 
-            throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
-            ]);
+            if ($status === TurnstileStatus::Invalid) {
+                $limiter->hit($this, $email);
+                $this->session()->flash('auth_turnstile_required', true);
+                event(new AuthSecurityEvent('captcha_failed', email: $email));
+
+                throw ValidationException::withMessages(['email' => trans('auth.failed')]);
+            }
         }
 
-        RateLimiter::clear($this->throttleKey());
-    }
+        if (! Auth::guard('web')->once([
+            'email' => $email,
+            'password' => $this->string('password')->toString(),
+            'is_active' => true,
+        ])) {
+            $limiter->hit($this, $email);
+            $this->session()->flash('auth_turnstile_required', $limiter->requiresTurnstile($this, $email));
 
-    /**
-     * Ensure the login request is not rate limited.
-     *
-     * @throws ValidationException
-     */
-    public function ensureIsNotRateLimited(): void
-    {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            return;
+            throw ValidationException::withMessages(['email' => trans('auth.failed')]);
         }
 
-        event(new Lockout($this));
+        $user = Auth::guard('web')->user();
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        if (! $user instanceof User) {
+            throw ValidationException::withMessages(['email' => trans('auth.failed')]);
+        }
 
-        throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
-        ]);
+        $limiter->clearAfterSuccess($this, $email);
+
+        return $user;
     }
 
     /**
@@ -91,6 +100,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return hash('sha256', Str::lower(trim($this->string('email')->toString())).'|'.$this->ip());
     }
 }

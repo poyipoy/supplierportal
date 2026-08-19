@@ -33,7 +33,7 @@
                 @endphp
                 <div>
                     <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
-                    <a href="{{ route('supplier.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1">
+                    <a href="{{ route('supplier.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1" data-async-export>
                         <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                     </a>
                     <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order" data-pdf-confirm>

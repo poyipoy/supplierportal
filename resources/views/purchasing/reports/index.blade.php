@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div class="card-body">
-                <form action="{{ route('purchasing.export.requisitions') }}" method="GET">
+                <form action="{{ route('purchasing.export.requisitions') }}" method="GET" data-async-export>
                     <div class="mb-3">
                         <label class="form-label small fw-medium text-muted">Filter Period</label>
                         <select name="period_id" class="form-select">
@@ -63,13 +63,13 @@
                 </div>
             </div>
             <div class="card-body">
-                <form action="{{ route('purchasing.export.purchase-orders') }}" method="GET">
+                <form action="{{ route('purchasing.export.purchase-orders') }}" method="GET" data-async-export>
                     <div class="mb-3">
                         <label class="form-label small fw-medium text-muted">Filter Supplier</label>
                         <select name="supplier_id" class="form-select">
                             <option value="">-- All Supplier --</option>
                             @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                <option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>
                             @endforeach
                         </select>
                     </div>

@@ -16,10 +16,8 @@ class SaveMaterialMasterRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $aliases = preg_split('/[\r\n,]+/', (string) $this->input('aliases_text', ''), -1, PREG_SPLIT_NO_EMPTY);
         $this->merge([
             'normalized_code' => app(MaterialCodeNormalizer::class)->normalize($this->input('material_code')),
-            'aliases' => array_values(array_map('trim', $aliases ?: [])),
         ]);
     }
 
@@ -38,9 +36,6 @@ class SaveMaterialMasterRequest extends FormRequest
             'density_profile' => ['required', Rule::in(MaterialMaster::DENSITY_PROFILES)],
             'manufacturer_scope' => ['required', Rule::in(MaterialMaster::MANUFACTURER_SCOPES)],
             'is_active' => ['required', 'boolean'],
-            'aliases_text' => ['nullable', 'string', 'max:2000'],
-            'aliases' => ['nullable', 'array'],
-            'aliases.*' => ['nullable', 'string', 'max:100', 'distinct:ignore_case'],
         ];
     }
 }

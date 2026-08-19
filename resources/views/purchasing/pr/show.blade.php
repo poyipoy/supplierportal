@@ -15,7 +15,7 @@
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">{{ $pr->pr_number ?? 'Requisition Draft' }}</h6>
                 <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('purchasing.export.requisitions.detail', $pr) }}" class="btn btn-success btn-sm">
+                    <a href="{{ route('purchasing.export.requisitions.detail', $pr) }}" class="btn btn-success btn-sm" data-async-export>
                         <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                     </a>
                     <x-status-badge type="pr" :status="$pr->status" size="lg" />
@@ -175,11 +175,11 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ route('purchasing.quotations.show', [$quotation->id, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()]) }}" class="btn btn-outline-primary">
+                                                <a href="{{ route('purchasing.quotations.show', [$quotation, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()]) }}" class="btn btn-outline-primary">
                                                     <i class="bi bi-eye me-1"></i> View Details
                                                 </a>
                                                 @if($submittedQuotationCount >= 2)
-                                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.comparison.inter-supplier', ['pr_id' => $pr->id]) }}" class="btn btn-outline-success">
+                                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.comparison.inter-supplier', ['pr_id' => $pr]) }}" class="btn btn-outline-success">
                                                         <i class="bi bi-bar-chart me-1"></i> Bandingkan
                                                     </a>
                                                 @endif
@@ -246,7 +246,7 @@
             <div class="card-body">
                 <div class="d-grid gap-2">
                     @foreach($pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->unique('supplier_id') as $quotation)
-                        <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr->id, 'supplier_id' => $quotation->supplier_id]) }}" method="POST" data-chat-start-form>
+                        <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form>
                             @csrf
                             <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                             <button type="submit" class="btn btn-outline-primary w-100 text-start">

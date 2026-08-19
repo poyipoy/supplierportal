@@ -23,7 +23,7 @@
                     <h6 class="mb-0 fw-bold">Material Price Details</h6>
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
-                        <a href="{{ route('supplier.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success">
+                        <a href="{{ route('supplier.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success" data-async-export>
                             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                         </a>
                     </div>
@@ -176,11 +176,11 @@
                     Purchasing requested a revision for this quotation. Update the price, estimated delivery, and validity date before resubmitting.
                 </div>
                 <div class="d-grid gap-2">
-                    <a href="{{ route('supplier.quotations.create', $quotation->purchaseRequisition->id) }}" class="btn btn-warning text-dark fw-semibold">
+                    <a href="{{ route('supplier.quotations.create', $quotation->purchaseRequisition) }}" class="btn btn-warning text-dark fw-semibold">
                         <i class="bi bi-pencil-square me-1"></i> Revise Quotation
                     </a>
                     @if($conversation)
-                        <a href="{{ route('supplier.conversations.show', $conversation) }}" class="btn btn-outline-primary" data-open-chat-conversation="{{ $conversation->id }}">
+                        <a href="{{ route('supplier.conversations.show', $conversation) }}" class="btn btn-outline-primary" data-open-chat-conversation="{{ $conversation->getRouteKey() }}">
                             <i class="bi bi-chat-dots me-1"></i> Open Revision Chat
                         </a>
                     @endif

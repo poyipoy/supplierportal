@@ -150,6 +150,14 @@
                     <hr class="dropdown-divider">
                 </li>
                 <li>
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
+                        <i class="bi bi-person-gear me-2"></i>Profile &amp; Security
+                    </a>
+                </li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="dropdown-item text-danger">

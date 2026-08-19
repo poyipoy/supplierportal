@@ -27,21 +27,24 @@ trait HasHashids
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        // If a specific field is defined, fall back to default behavior
-        if ($field) {
-            return parent::resolveRouteBinding($value, $field);
+        if ($field !== null && $field !== $this->getRouteKeyName()) {
+            return null;
         }
 
-        // Decode the hashid
-        $decoded = Hashids::decode($value);
-        $id = $decoded[0] ?? null;
+        if (! is_string($value) || ctype_digit($value)) {
+            return null;
+        }
 
-        if (! $id) {
-            // Fallback: If the value is a plain numeric ID (e.g., from old emails or hardcoded JS URLs)
-            if (is_numeric($value) && ctype_digit(strval($value))) {
-                return $this->where($this->getRouteKeyName(), $value)->first();
-            }
-            return null; // Invalid hashid and not a plain integer
+        try {
+            $decoded = Hashids::decode($value);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $id = count($decoded) === 1 ? (int) $decoded[0] : null;
+
+        if (! $id || Hashids::encode($id) !== $value) {
+            return null;
         }
 
         return $this->where($this->getRouteKeyName(), $id)->first();

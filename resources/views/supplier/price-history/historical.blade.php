@@ -67,7 +67,7 @@
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold">Search Filters</h6>
         @if($selectedMaterialName)
-        <a href="{{ route('supplier.price-history.export', request()->all()) }}" class="btn btn-sm btn-success">
+        <a href="{{ route('supplier.price-history.export', request()->all()) }}" class="btn btn-sm btn-success" data-async-export>
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
         @endif
@@ -463,7 +463,7 @@ function historicalResultShellHtml(materialName) {
 
     document.querySelector('.card-header.bg-white.py-3.d-flex.justify-content-between.align-items-center').innerHTML = `
         <h6 class="mb-0 fw-bold">Search Filters</h6>
-        <a href="${exportUrl.toString()}" class="btn btn-sm btn-success">
+        <a href="${exportUrl.toString()}" class="btn btn-sm btn-success" data-async-export>
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
     `;
@@ -707,7 +707,7 @@ function renderPayload(payload) {
 
          document.querySelector('.card-header.bg-white.py-3.d-flex.justify-content-between.align-items-center').innerHTML = `
              <h6 class="mb-0 fw-bold">Search Filters</h6>
-             <a href="${exportUrl.toString()}" class="btn btn-sm btn-success">
+             <a href="${exportUrl.toString()}" class="btn btn-sm btn-success" data-async-export>
                  <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
              </a>
          `;

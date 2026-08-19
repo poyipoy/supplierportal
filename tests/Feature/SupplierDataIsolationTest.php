@@ -147,7 +147,7 @@ class SupplierDataIsolationTest extends TestCase
         $dataA = $this->createFullDataChainFor($this->supplierA);
 
         $response = $this->actingAs($this->supplierA)
-            ->get(route('supplier.quotations.show', $dataA['quotation']->id));
+            ->get(route('supplier.quotations.show', $dataA['quotation']));
 
         $response->assertStatus(200);
     }
@@ -157,7 +157,7 @@ class SupplierDataIsolationTest extends TestCase
         $dataB = $this->createFullDataChainFor($this->supplierB);
 
         $response = $this->actingAs($this->supplierA)
-            ->get(route('supplier.quotations.show', $dataB['quotation']->id));
+            ->get(route('supplier.quotations.show', $dataB['quotation']));
 
         $response->assertStatus(403);
     }
@@ -171,7 +171,7 @@ class SupplierDataIsolationTest extends TestCase
         $dataA = $this->createFullDataChainFor($this->supplierA);
 
         $response = $this->actingAs($this->supplierA)
-            ->get(route('supplier.purchase-orders.show', $dataA['po']->id));
+            ->get(route('supplier.purchase-orders.show', $dataA['po']));
 
         $response->assertStatus(200);
     }
@@ -181,7 +181,7 @@ class SupplierDataIsolationTest extends TestCase
         $dataB = $this->createFullDataChainFor($this->supplierB);
 
         $response = $this->actingAs($this->supplierA)
-            ->get(route('supplier.purchase-orders.show', $dataB['po']->id));
+            ->get(route('supplier.purchase-orders.show', $dataB['po']));
 
         $response->assertStatus(403);
     }
@@ -195,7 +195,7 @@ class SupplierDataIsolationTest extends TestCase
         $dataA = $this->createFullDataChainFor($this->supplierA);
 
         $response = $this->actingAs($this->supplierA)
-            ->get(route('supplier.claims.show', $dataA['claim']->id));
+            ->get(route('supplier.claims.show', $dataA['claim']));
 
         $response->assertStatus(200);
     }
@@ -205,7 +205,7 @@ class SupplierDataIsolationTest extends TestCase
         $dataB = $this->createFullDataChainFor($this->supplierB);
 
         $response = $this->actingAs($this->supplierA)
-            ->get(route('supplier.claims.show', $dataB['claim']->id));
+            ->get(route('supplier.claims.show', $dataB['claim']));
 
         $response->assertStatus(403);
     }

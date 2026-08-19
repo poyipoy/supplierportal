@@ -119,7 +119,7 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold">Quotation List</h5>
             <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('purchasing.export.quotations', request()->only(['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency'])) }}"
+                <a href="{{ route('purchasing.export.quotations', request()->only(['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency'])) }}" data-async-export
                     class="btn btn-success btn-sm" id="exportQuotationsBtn"
                     data-export-url="{{ route('purchasing.export.quotations') }}">
                     <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
@@ -165,7 +165,7 @@
                     <select name="supplier_id" class="form-select form-select-sm">
                         <option value="">All Supplier</option>
                         @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" {{ request('supplier_id') == $supplier->id ? 'selected' : '' }}>
+                            <option value="{{ $supplier->getRouteKey() }}" {{ request('supplier_id') === $supplier->getRouteKey() ? 'selected' : '' }}>
                                 {{ $supplier->name }}
                             </option>
                         @endforeach
@@ -253,7 +253,7 @@
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q->id) }}"
+                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q) }}"
                                         class="btn btn-sm btn-outline-info py-0 px-2">
                                         <i class="bi bi-eye me-1"></i>Detail
                                     </a>

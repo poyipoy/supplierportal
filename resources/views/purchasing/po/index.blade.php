@@ -7,7 +7,7 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-semibold">Purchase Order List</h5>
-        <a href="{{ route('purchasing.export.purchase-orders') }}" class="btn btn-success btn-sm"
+        <a href="{{ route('purchasing.export.purchase-orders') }}" class="btn btn-success btn-sm" data-async-export
             id="exportPurchaseOrdersBtn" data-export-url="{{ route('purchasing.export.purchase-orders') }}">
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
         </a>
@@ -41,7 +41,7 @@
                 <select id="filter_supplier" class="form-select form-select-sm">
                     <option value="">All Supplier</option>
                     @foreach($suppliers as $s)
-                        <option value="{{ $s->id }}">{{ $s->name }}</option>
+                        <option value="{{ $s->getRouteKey() }}">{{ $s->name }}</option>
                     @endforeach
                 </select>
             </div>

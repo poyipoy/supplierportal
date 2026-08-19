@@ -23,7 +23,7 @@ final class MaterialDataQualityService
     public function report(): array
     {
         $materials = MaterialMaster::query()->orderBy('material_code')->get();
-        $rules = HsCodeRule::query()->orderBy('priority')->orderBy('rule_key')->get();
+        $rules = HsCodeRule::query()->orderBy('priority')->orderBy('id')->get();
         $activeRules = $rules->where('status', HsCodeRule::STATUS_ACTIVE)->values();
         $overlaps = [];
 
@@ -43,52 +43,70 @@ final class MaterialDataQualityService
 
                 $sameCode = $left->hs_code === $right->hs_code;
                 $overlaps[] = [
-                    'left' => $left->rule_key,
-                    'right' => $right->rule_key,
                     'category' => $left->material_category,
                     'shape' => $left->shape,
-                    'codes' => array_values(array_unique([$left->hs_code, $right->hs_code])),
+                    'hs_codes' => array_values(array_unique([$left->hs_code, $right->hs_code])),
+                    'same_code' => $sameCode,
                     'same_priority' => $left->priority === $right->priority,
-                    'type' => $leftConditions->exactlyEquals($rightConditions)
-                        ? ($sameCode ? 'exact_duplicate' : 'exact_conflict')
-                        : ($sameCode ? 'same_code_overlap' : 'priority_overlap'),
                 ];
             }
         }
 
         $mappedCategories = $materials->pluck('hs_category')->filter()->unique();
         $ruleCategories = $activeRules->pluck('material_category')->unique();
-        $sourceEntries = $rules->flatMap(function (HsCodeRule $rule) {
-            return collect($rule->source_refs)->flatMap(fn (array $ref) => $ref['entries'] ?? []);
-        })->unique()->count();
+        $duplicateCoverage = collect($overlaps)
+            ->where('same_code', true)
+            ->values();
+        $rulesNeedingReview = collect($overlaps)
+            ->filter(fn (array $overlap) => ! $overlap['same_code'] && $overlap['same_priority'])
+            ->map(fn (array $overlap) => [
+                'category' => $this->categoryLabel($overlap['category']),
+                'shape' => $overlap['shape'],
+                'hs_codes' => $overlap['hs_codes'],
+                'message' => 'Two active rules can match the same dimensions and return different HS Codes.',
+            ])
+            ->values();
 
         return [
-            'counts' => [
+            'summary' => [
                 'materials' => $materials->count(),
-                'mapped_materials' => $materials->whereNotNull('hs_category')->count(),
-                'unmapped_materials' => $materials->whereNull('hs_category')->count(),
-                'active_rules' => $rules->where('status', HsCodeRule::STATUS_ACTIVE)->count(),
-                'inactive_rules' => $rules->where('status', HsCodeRule::STATUS_INACTIVE)->count(),
-                'conflict_rules' => $rules->where('status', HsCodeRule::STATUS_CONFLICT)->count(),
-                'source_rule_entries' => $sourceEntries,
-                'same_code_overlaps' => collect($overlaps)->whereIn('type', ['exact_duplicate', 'same_code_overlap'])->count(),
-                'blocking_conflicts' => collect($overlaps)
-                    ->whereIn('type', ['exact_conflict', 'priority_overlap'])
-                    ->where('same_priority', true)
-                    ->count(),
+                'materials_with_hs_mapping' => $materials->whereNotNull('hs_category')->count(),
+                'materials_needing_hs_mapping' => $materials->whereNull('hs_category')->count(),
+                'active_hs_rules' => $activeRules->count(),
+                'rules_needing_review' => $rulesNeedingReview->count(),
             ],
-            'unmapped_materials' => $materials->whereNull('hs_category')->pluck('material_code')->values(),
-            'categories_without_rules' => $mappedCategories->diff($ruleCategories)->values(),
-            'unreachable_rule_categories' => $ruleCategories->diff($mappedCategories)->values(),
-            'unreachable_reference_materials' => self::UNREACHABLE_REFERENCE_MATERIALS,
-            'overlaps' => $overlaps,
-            'resolved_source_conflicts' => $rules
-                ->where('status', HsCodeRule::STATUS_INACTIVE)
-                ->map(fn (HsCodeRule $rule) => [
-                    'rule_key' => $rule->rule_key,
-                    'hs_code' => $rule->hs_code,
-                    'notes' => $rule->notes,
-                ])->values(),
+            'needs_attention' => [
+                'materials_without_hs_mapping' => $materials->whereNull('hs_category')->pluck('material_code')->values(),
+                'categories_without_active_hs_rules' => $mappedCategories
+                    ->diff($ruleCategories)
+                    ->map(fn (string $category) => $this->categoryLabel($category))
+                    ->values(),
+                'rules_needing_review' => $rulesNeedingReview,
+            ],
+            'reference_notes' => [
+                'duplicate_rule_coverage' => [
+                    'count' => $duplicateCoverage->count(),
+                    'message' => $duplicateCoverage->isEmpty()
+                        ? 'All active rules currently cover distinct ranges.'
+                        : 'Some active rules cover the same range and return the same HS Code. No action is required.',
+                ],
+                'inactive_rules_kept_for_reference' => $rules
+                    ->where('status', HsCodeRule::STATUS_INACTIVE)
+                    ->map(fn (HsCodeRule $rule) => [
+                        'hs_code' => $rule->hs_code,
+                        'note' => $rule->notes ?: 'Kept inactive for reference.',
+                    ])->values(),
+                'rule_categories_not_used_by_materials' => $ruleCategories
+                    ->diff($mappedCategories)
+                    ->map(fn (string $category) => $this->categoryLabel($category))
+                    ->values(),
+                'reference_only_materials' => self::UNREACHABLE_REFERENCE_MATERIALS,
+            ],
         ];
+    }
+
+    private function categoryLabel(string $category): string
+    {
+        return ucwords(str_replace('_', ' ', $category));
     }
 }

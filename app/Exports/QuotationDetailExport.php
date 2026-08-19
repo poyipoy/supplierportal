@@ -6,10 +6,11 @@ use App\Models\Quotation;
 use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-class QuotationDetailExport implements FromCollection, WithHeadings, ShouldAutoSize
+class QuotationDetailExport implements FromCollection, WithColumnWidths, WithHeadings
 {
     public function __construct(
         private readonly int $quotationId,
@@ -117,5 +118,35 @@ class QuotationDetailExport implements FromCollection, WithHeadings, ShouldAutoS
             'Item Notes',
             'MTC Attachment Count',
         ]);
+    }
+
+    public function columnWidths(): array
+    {
+        $widths = [
+            'A' => 22,
+            'B' => 18,
+            'C' => 25,
+            'D' => 12,
+            'E' => 19,
+            'F' => 21,
+            'G' => 18,
+            'H' => 18,
+            'I' => 24,
+            'J' => 32,
+        ];
+
+        $itemWidths = [30, 16, 19, 38, 18, 38, 15, 15, 16, 16, 18, 18, 30, 20];
+        $columnIndex = $this->includeReviewerNotes ? 12 : 11;
+
+        if ($this->includeReviewerNotes) {
+            $widths['K'] = 30;
+        }
+
+        foreach ($itemWidths as $width) {
+            $widths[Coordinate::stringFromColumnIndex($columnIndex)] = $width;
+            $columnIndex++;
+        }
+
+        return $widths;
     }
 }

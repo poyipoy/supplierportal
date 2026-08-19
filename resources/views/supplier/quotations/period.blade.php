@@ -13,7 +13,7 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-semibold">Purchase Requisition List</h5>
-        <a href="{{ route('supplier.export.quotations', ['period_id' => $period->id]) }}"
+        <a href="{{ route('supplier.export.quotations', ['period_id' => $period->id]) }}" data-async-export
             class="btn btn-success btn-sm" id="exportSupplierQuotationsBtn"
             data-export-url="{{ route('supplier.export.quotations') }}">
             <i class="bi bi-file-earmark-excel me-1"></i> Export Excel

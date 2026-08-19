@@ -109,7 +109,7 @@ class PurchasingNavigation
         }
 
         if (Str::startsWith($url, '/')) {
-            return true;
+            return ! self::containsLegacyNumericIdentifier($url);
         }
 
         $parsed = parse_url($url);
@@ -119,7 +119,8 @@ class PurchasingNavigation
         }
 
         return ($parsed['host'] ?? null) === request()->getHost()
-            && in_array($parsed['scheme'] ?? request()->getScheme(), ['http', 'https'], true);
+            && in_array($parsed['scheme'] ?? request()->getScheme(), ['http', 'https'], true)
+            && ! self::containsLegacyNumericIdentifier($url);
     }
 
     public static function listRoutePaths(): array
@@ -145,5 +146,36 @@ class PurchasingNavigation
         }
 
         return self::isListRoute($routeName) ? $routeName : null;
+    }
+
+    private static function containsLegacyNumericIdentifier(string $url): bool
+    {
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+
+        if (preg_match(
+            '~^/purchasing/(?:requisitions|quotations|purchase-orders|claims|conversations|comparison)(?:/[^/?#]*)*/\d+(?:/|$)~',
+            $path
+        )) {
+            return true;
+        }
+
+        if (preg_match(
+            '~^/(?:purchasing/export/(?:requisitions|quotations|purchase-orders)|shared/pdf/(?:purchase-order|qc-inspection))/\d+(?:/|$)~',
+            $path
+        )) {
+            return true;
+        }
+
+        parse_str((string) (parse_url($url, PHP_URL_QUERY) ?: ''), $query);
+
+        foreach (['pr_id', 'supplier_id', 'supplier', 'user_id'] as $key) {
+            $value = $query[$key] ?? null;
+
+            if (is_scalar($value) && ctype_digit((string) $value)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

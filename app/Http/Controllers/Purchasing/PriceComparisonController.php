@@ -10,12 +10,16 @@ use App\Models\PrItem;
 use App\Models\User;
 use App\Support\PurchasingNavigation;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
 class PriceComparisonController extends Controller
 {
+    /** @var array<class-string<Model>, array<string, Model>> */
+    private array $routeModelCache = [];
+
     /**
      * View 1: Antar Supplier - menampilkan semua penawaran (quotation items) 
      * dalam satu PR secara side-by-side.
@@ -56,7 +60,7 @@ class PriceComparisonController extends Controller
             }
 
             return [
-                'id' => (string) $pr->id,
+                'id' => $pr->getRouteKey(),
                 'label' => $label,
                 'prNumber' => $pr->pr_number ?? 'DRAFT',
                 'period' => $pr->period->name ?? '-',
@@ -67,12 +71,13 @@ class PriceComparisonController extends Controller
         })->values();
 
         if ($request->filled('pr_id')) {
-            $selectedPr = PurchaseRequisition::with(['items', 'period'])->find($request->pr_id);
+            $selectedPr = $this->resolveHashedQueryModel(PurchaseRequisition::class, $request->query('pr_id'));
+            $selectedPr->loadMissing(['items', 'period']);
 
             if ($selectedPr) {
-                $selectedPrOption = $eligiblePrOptions->firstWhere('id', (string) $selectedPr->id);
+                $selectedPrOption = $eligiblePrOptions->firstWhere('id', $selectedPr->getRouteKey());
                 $selectedPrOption ??= [
-                    'id' => (string) $selectedPr->id,
+                    'id' => $selectedPr->getRouteKey(),
                     'label' => ($selectedPr->pr_number ?? 'DRAFT') . ' - ' . ($selectedPr->period->name ?? '-'),
                 ];
                 $comparisonItems = $selectedPr->items->values();
@@ -175,7 +180,10 @@ class PriceComparisonController extends Controller
     public function historical(Request $request)
     {
         $suppliers = User::where('role', 'supplier')->orderBy('name')->get();
-        $selectedSupplierId = $request->input('supplier_id', $request->input('supplier'));
+        $selectedSupplierValue = $request->query('supplier_id', $request->query('supplier'));
+        $selectedSupplier = $this->resolveSupplierQuery($selectedSupplierValue);
+        $selectedSupplierId = $selectedSupplier?->getRouteKey();
+        $selectedSupplierKey = $selectedSupplier?->getKey();
         $selectedMaterialName = $request->input('material_name');
         $periodView = $request->input('period_view', 'monthly') === 'yearly' ? 'yearly' : 'monthly';
         $range = $this->normalizeHistoricalRange($periodView, $request->input('range'));
@@ -183,9 +191,7 @@ class PriceComparisonController extends Controller
         $yearlyRangeOptions = $this->historicalRangeOptions('yearly');
         $rangeOptions = $this->historicalRangeOptions($periodView);
         $dateFrom = $this->dateFromRange($range);
-        $selectedSupplier = $selectedSupplierId ? $suppliers->firstWhere('id', (int) $selectedSupplierId) : null;
-
-        $materials = $this->historicalMaterialsForSupplier($selectedSupplierId);
+        $materials = $this->historicalMaterialsForSupplier($selectedSupplierKey);
 
         if ($selectedSupplierId && $selectedMaterialName && ! $materials->pluck('name')->contains($selectedMaterialName)) {
             $selectedMaterialName = null;
@@ -205,10 +211,10 @@ class PriceComparisonController extends Controller
             }
         }
 
-        if ($selectedSupplierId && $selectedMaterialName) {
+        if ($selectedSupplierKey && $selectedMaterialName) {
             [$chartData, $tableData] = $periodView === 'yearly'
-                ? $this->buildYearlyHistoricalData($selectedSupplierId, $selectedMaterialName, $dateFrom, $dimensionFilters)
-                : $this->buildMonthlyHistoricalData($selectedSupplierId, $selectedMaterialName, $dateFrom, $dimensionFilters);
+                ? $this->buildYearlyHistoricalData($selectedSupplierKey, $selectedMaterialName, $dateFrom, $dimensionFilters)
+                : $this->buildMonthlyHistoricalData($selectedSupplierKey, $selectedMaterialName, $dateFrom, $dimensionFilters);
 
             if ($tableData->isEmpty()) {
                 $chartData = null;
@@ -251,10 +257,11 @@ class PriceComparisonController extends Controller
 
     public function historicalMaterials(Request $request)
     {
-        $supplierId = $request->input('supplier_id', $request->input('supplier'));
+        $supplierValue = $request->query('supplier_id', $request->query('supplier'));
+        $supplier = $this->resolveSupplierQuery($supplierValue);
 
         return response()->json([
-            'materials' => $this->historicalMaterialsForSupplier($supplierId)->values(),
+            'materials' => $this->historicalMaterialsForSupplier($supplier?->getKey())->values(),
         ]);
     }
 
@@ -308,7 +315,11 @@ class PriceComparisonController extends Controller
                 $this->applyVsBestKeywordFilter($query, $keyword);
             })
             ->addColumn('material_display', function ($row) use ($returnUrl) {
-                $prUrl = $this->routeWithReturn('purchasing.requisitions.show', $row->current_pr_id, $returnUrl);
+                $prUrl = $this->routeWithReturn(
+                    'purchasing.requisitions.show',
+                    $this->routeModel(PurchaseRequisition::class, $row->current_pr_id),
+                    $returnUrl
+                );
 
                 return '<div class="fw-bold">' . e($row->material_name) . '</div>'
                     . '<div class="text-muted small">Qty: ' . number_format((int) ($row->quantity ?? 1), 0, ',', '.') . '</div>'
@@ -330,7 +341,11 @@ class PriceComparisonController extends Controller
                     . '<div class="text-muted small">' . e($row->best_supplier ?: '-') . '</div>';
 
                 if ($row->best_pr_id) {
-                    $bestPrUrl = $this->routeWithReturn('purchasing.requisitions.show', $row->best_pr_id, $returnUrl);
+                    $bestPrUrl = $this->routeWithReturn(
+                        'purchasing.requisitions.show',
+                        $this->routeModel(PurchaseRequisition::class, $row->best_pr_id),
+                        $returnUrl
+                    );
                     $html .= '<a href="' . e($bestPrUrl) . '" class="small text-primary text-decoration-none">'
                         . e($row->best_pr_number ?: '-')
                         . '<i class="bi bi-arrow-right-short ms-1"></i></a>';
@@ -359,13 +374,21 @@ class PriceComparisonController extends Controller
                     . '</span><div class="text-muted small mt-1">' . e($status['recommendation']) . '</div>';
             })
             ->addColumn('action', function ($row) use ($returnUrl) {
-                $currentQuotationUrl = $this->routeWithReturn('purchasing.quotations.show', $row->current_quotation_id, $returnUrl);
+                $currentQuotationUrl = $this->routeWithReturn(
+                    'purchasing.quotations.show',
+                    $this->routeModel(Quotation::class, $row->current_quotation_id),
+                    $returnUrl
+                );
                 $html = '<div class="btn-group btn-group-sm" role="group">'
                     . '<a href="' . e($currentQuotationUrl) . '" class="btn btn-outline-primary" title="Lihat penawaran saat ini">'
                     . '<i class="bi bi-file-earmark-text"></i></a>';
 
                 if ($row->best_quotation_id) {
-                    $bestQuotationUrl = $this->routeWithReturn('purchasing.quotations.show', $row->best_quotation_id, $returnUrl);
+                    $bestQuotationUrl = $this->routeWithReturn(
+                        'purchasing.quotations.show',
+                        $this->routeModel(Quotation::class, $row->best_quotation_id),
+                        $returnUrl
+                    );
                     $html .= '<a href="' . e($bestQuotationUrl) . '" class="btn btn-outline-success" title="Lihat penawaran terbaik histori">'
                         . '<i class="bi bi-trophy"></i></a>';
                 }
@@ -620,6 +643,43 @@ class PriceComparisonController extends Controller
             'icon' => 'bi-info-circle',
             'recommendation' => 'Safe, check context',
         ];
+    }
+
+    /** @param class-string<Model> $modelClass */
+    private function resolveHashedQueryModel(string $modelClass, mixed $value): Model
+    {
+        abort_unless(is_string($value) && $value !== '' && ! ctype_digit($value), 404);
+
+        try {
+            $model = (new $modelClass)->resolveRouteBinding($value);
+        } catch (\Throwable) {
+            $model = null;
+        }
+
+        abort_unless($model instanceof Model, 404);
+
+        return $model;
+    }
+
+    private function resolveSupplierQuery(mixed $value): ?User
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $supplier = $this->resolveHashedQueryModel(User::class, $value);
+        abort_unless($supplier instanceof User && $supplier->role === 'supplier', 404);
+
+        return $supplier;
+    }
+
+    /** @param class-string<Model> $modelClass */
+    private function routeModel(string $modelClass, mixed $id): Model
+    {
+        $cacheKey = (string) $id;
+
+        return $this->routeModelCache[$modelClass][$cacheKey]
+            ??= $modelClass::query()->findOrFail($id);
     }
 
     private function routeWithReturn(string $routeName, mixed $parameters, string $returnUrl): string

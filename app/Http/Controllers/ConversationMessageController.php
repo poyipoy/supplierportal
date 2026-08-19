@@ -318,7 +318,7 @@ class ConversationMessageController extends Controller
         $latestMessage = $conversation->latestMessage;
 
         return [
-            'id' => $conversation->id,
+            'id' => $conversation->getRouteKey(),
             'context_label' => $conversation->context_label,
             'context_type' => $conversation->conversable_type === PurchaseRequisition::class ? 'PR' : 'PO',
             'partner_name' => $this->displayName($partner),

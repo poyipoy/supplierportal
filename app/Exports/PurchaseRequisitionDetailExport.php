@@ -5,10 +5,10 @@ namespace App\Exports;
 use App\Models\PurchaseRequisition;
 use App\Support\SpreadsheetCellSanitizer;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PurchaseRequisitionDetailExport implements FromCollection, WithHeadings, ShouldAutoSize
+class PurchaseRequisitionDetailExport implements FromCollection, WithColumnWidths, WithHeadings
 {
     public function __construct(private readonly int $prId) {}
 
@@ -38,5 +38,19 @@ class PurchaseRequisitionDetailExport implements FromCollection, WithHeadings, S
     public function headings(): array
     {
         return ['PR Number', 'HS Code', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'Remark'];
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 22,
+            'B' => 16,
+            'C' => 30,
+            'D' => 38,
+            'E' => 10,
+            'F' => 15,
+            'G' => 15,
+            'H' => 30,
+        ];
     }
 }

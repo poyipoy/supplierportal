@@ -7,12 +7,13 @@ use App\Exports\PurchaseOrdersExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Http\Controllers\Controller;
+use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
+use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Maatwebsite\Excel\Facades\Excel;
 
 class ExportController extends Controller
 {
@@ -31,16 +32,23 @@ class ExportController extends Controller
             ])],
             'search' => ['nullable', 'string', 'max:255'],
         ]);
+        if (isset($filters['period_id'])) {
+            $filters['period_id'] = (int) $filters['period_id'];
+        }
 
         $scope = ! empty($filters['period_id']) ? 'period_'.$filters['period_id'] : 'all';
 
-        return Excel::download(
-            new QuotationsExport($filters, (int) auth()->id(), true),
-            'quotation_supplier_'.$scope.'_'.now()->format('Ymd_His').'.xlsx'
+        $exportJob = ExportDispatcher::dispatch(
+            'Rekap Quotation Supplier',
+            QuotationsExport::class,
+            [$filters, (int) auth()->id(), true],
+            'quotation_supplier_'.$scope.'_'.now()->format('Ymd_His').'.xlsx',
         );
+
+        return $this->dispatchResponse($request, $exportJob);
     }
 
-    public function quotationDetail(Quotation $quotation)
+    public function quotationDetail(Request $request, Quotation $quotation)
     {
         abort_unless(
             (int) $quotation->supplier_id === (int) auth()->id(),
@@ -48,10 +56,14 @@ class ExportController extends Controller
             'You do not have access to this quotation.'
         );
 
-        return Excel::download(
-            new QuotationDetailExport((int) $quotation->getKey(), (int) auth()->id(), false),
-            'detail_quotation_'.$quotation->getKey().'_'.now()->format('Ymd_His').'.xlsx'
+        $exportJob = ExportDispatcher::dispatch(
+            'Detail Quotation Supplier',
+            QuotationDetailExport::class,
+            [(int) $quotation->getKey(), (int) auth()->id(), false],
+            'detail_quotation_'.$quotation->getKey().'_'.now()->format('Ymd_His').'.xlsx',
         );
+
+        return $this->dispatchResponse($request, $exportJob);
     }
 
     public function purchaseOrders(Request $request)
@@ -70,20 +82,24 @@ class ExportController extends Controller
             ]);
         }
 
-        return Excel::download(
-            new PurchaseOrdersExport(
+        $exportJob = ExportDispatcher::dispatch(
+            'Rekap Purchase Order Supplier',
+            PurchaseOrdersExport::class,
+            [
                 (int) auth()->id(),
                 $filters['start_date'] ?? null,
                 $filters['end_date'] ?? null,
                 $filters['po_number'] ?? null,
                 $filters['status'] ?? null,
                 $filters['search'] ?? null,
-            ),
-            'rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx'
+            ],
+            'rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx',
         );
+
+        return $this->dispatchResponse($request, $exportJob);
     }
 
-    public function purchaseOrderDetail(PurchaseOrder $purchaseOrder)
+    public function purchaseOrderDetail(Request $request, PurchaseOrder $purchaseOrder)
     {
         abort_unless(
             (int) $purchaseOrder->supplier_id === (int) auth()->id(),
@@ -91,9 +107,29 @@ class ExportController extends Controller
             'You do not have access to this purchase order.'
         );
 
-        return Excel::download(
-            new PurchaseOrderDetailExport((int) $purchaseOrder->getKey(), (int) auth()->id()),
-            'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx'
+        $exportJob = ExportDispatcher::dispatch(
+            'Detail Purchase Order Supplier',
+            PurchaseOrderDetailExport::class,
+            [(int) $purchaseOrder->getKey(), (int) auth()->id()],
+            'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx',
         );
+
+        return $this->dispatchResponse($request, $exportJob);
+    }
+
+    private function dispatchResponse(Request $request, ExportJob $exportJob)
+    {
+        $message = 'Permintaan export diterima. File akan terunduh otomatis ketika siap.';
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'export_job_id' => $exportJob->getRouteKey(),
+                'exports_url' => route('exports.index', absolute: false),
+                'status_url' => route('exports.status', $exportJob, absolute: false),
+            ], 202);
+        }
+
+        return back()->with('info', $message);
     }
 }

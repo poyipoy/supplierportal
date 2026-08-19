@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Yajra\DataTables\Facades\DataTables;
 
 class UserController extends Controller
@@ -24,30 +27,32 @@ class UserController extends Controller
             return DataTables::eloquent($query)
                 ->addIndexColumn()
                 ->addColumn('name_display', function ($user) {
-                    $html = '<div class="fw-medium">' . e($user->name) . '</div>';
+                    $html = '<div class="fw-medium">'.e($user->name).'</div>';
                     if ($user->role === 'supplier' && $user->supplier) {
-                        $html .= '<small class="text-muted"><i class="bi bi-building me-1"></i>' . e($user->supplier->company_name) . '</small>';
+                        $html .= '<small class="text-muted"><i class="bi bi-building me-1"></i>'.e($user->supplier->company_name).'</small>';
                     }
+
                     return $html;
                 })
                 ->addColumn('role_badge', function ($user) {
-                    return match($user->role) {
+                    return match ($user->role) {
                         'admin' => '<span class="badge bg-danger text-uppercase">Admin</span>',
                         'purchasing' => '<span class="badge bg-primary text-uppercase">Purchasing</span>',
                         'supplier' => '<span class="badge bg-info text-dark text-uppercase">Supplier</span>',
                         'qc' => '<span class="badge bg-warning text-dark text-uppercase">QC</span>',
-                        default => '<span class="badge bg-secondary text-uppercase">' . e($user->role) . '</span>',
+                        default => '<span class="badge bg-secondary text-uppercase">'.e($user->role).'</span>',
                     };
                 })
-                ->addColumn('status_badge', fn($user) => $user->is_active
+                ->addColumn('status_badge', fn ($user) => $user->is_active
                     ? '<span class="badge bg-success bg-opacity-10 text-success border border-success">Active</span>'
                     : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Inactive</span>')
-                ->addColumn('created_date', fn($user) => $user->created_at->format('d M Y'))
+                ->addColumn('created_date', fn ($user) => $user->created_at->format('d M Y'))
                 ->addColumn('action', function ($user) {
-                    $html = '<a href="' . route('admin.users.edit', $user) . '" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>';
+                    $html = '<a href="'.route('admin.users.edit', $user).'" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>';
                     if ($user->id !== auth()->id()) {
-                        $html .= ' <form action="' . route('admin.users.destroy', $user) . '" method="POST" class="d-inline delete-form">' . csrf_field() . method_field('DELETE') . '<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
+                        $html .= ' <form action="'.route('admin.users.destroy', $user).'" method="POST" class="d-inline delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete"><i class="bi bi-trash"></i></button></form>';
                     }
+
                     return $html;
                 })
                 ->rawColumns(['name_display', 'role_badge', 'status_badge', 'action'])
@@ -73,10 +78,10 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'string', Password::defaults(), 'confirmed'],
             'role' => 'required|in:admin,purchasing,supplier,qc',
             'is_active' => 'boolean',
-            
+
             // Supplier specific fields
             'company_name' => 'required_if:role,supplier|nullable|string|max:255',
             'address' => 'required_if:role,supplier|nullable|string',
@@ -90,7 +95,7 @@ class UserController extends Controller
 
             $user = User::create([
                 'name' => $request->name,
-                'email' => $request->email,
+                'email' => Str::lower(trim($request->email)),
                 'password' => Hash::make($request->password),
                 'role' => $request->role,
                 'is_active' => $request->has('is_active') ? true : false,
@@ -109,10 +114,11 @@ class UserController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', "User successfully added.");
+            return redirect()->route('admin.users.index')->with('success', 'User successfully added.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withInput()->with('error', "An error occurred: {$e->getMessage()}");
         }
     }
@@ -123,6 +129,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $user->load('supplier');
+
         return view('admin.users.edit', compact('user'));
     }
 
@@ -134,10 +141,10 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
             'role' => 'required|in:admin,purchasing,supplier,qc',
             'is_active' => 'boolean',
-            
+
             // Supplier specific fields
             'company_name' => 'required_if:role,supplier|nullable|string|max:255',
             'address' => 'required_if:role,supplier|nullable|string',
@@ -149,18 +156,30 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
+            $oldRole = $user->role;
+            $oldActive = (bool) $user->is_active;
+            $passwordChanged = $request->filled('password');
             $data = [
                 'name' => $request->name,
-                'email' => $request->email,
+                'email' => Str::lower(trim($request->email)),
                 'role' => $request->role,
                 'is_active' => $request->has('is_active') ? true : false,
             ];
 
-            if ($request->filled('password')) {
+            if ($passwordChanged) {
                 $data['password'] = Hash::make($request->password);
             }
 
-            $user->update($data);
+            $securityChanged = $passwordChanged
+                || $oldRole !== $request->role
+                || $oldActive !== $request->has('is_active');
+
+            if ($securityChanged) {
+                $data['auth_session_version'] = ((int) $user->auth_session_version) + 1;
+                $data['remember_token'] = Str::random(60);
+            }
+
+            $user->forceFill($data)->save();
 
             if ($request->role === 'supplier') {
                 Supplier::updateOrCreate(
@@ -175,7 +194,7 @@ class UserController extends Controller
                 );
             } else {
                 // If role changed from supplier to something else, we might want to delete the supplier record,
-                // but for safety, we can just leave it or soft delete if applicable. 
+                // but for safety, we can just leave it or soft delete if applicable.
                 // We will delete it to keep data clean.
                 if ($user->supplier) {
                     $user->supplier()->delete();
@@ -184,10 +203,32 @@ class UserController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', "Data user successfully updated.");
+            if ($oldActive && ! $user->is_active) {
+                event(new AuthSecurityEvent('account_deactivated', $user, metadata: [
+                    'actor_user_id' => auth()->id(),
+                ]));
+            }
+
+            if ($oldRole !== $user->role) {
+                event(new AuthSecurityEvent('role_changed', $user, metadata: [
+                    'actor_user_id' => auth()->id(),
+                    'old_role' => $oldRole,
+                    'new_role' => $user->role,
+                ]));
+            }
+
+            if ($passwordChanged) {
+                event(new AuthSecurityEvent('password_changed', $user, metadata: [
+                    'actor_user_id' => auth()->id(),
+                    'reason' => 'admin_update',
+                ]));
+            }
+
+            return redirect()->route('admin.users.index')->with('success', 'Data user successfully updated.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withInput()->with('error', "An error occurred: {$e->getMessage()}");
         }
     }
@@ -198,7 +239,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', "You cannot delete your own account.");
+            return back()->with('error', 'You cannot delete your own account.');
         }
 
         try {
@@ -208,11 +249,12 @@ class UserController extends Controller
             }
             $user->delete();
             DB::commit();
-            
-            return redirect()->route('admin.users.index')->with('success', "User successfully deleted.");
+
+            return redirect()->route('admin.users.index')->with('success', 'User successfully deleted.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', "Failed to delete user. Make sure there is no tightly related data.");
+
+            return back()->with('error', 'Failed to delete user. Make sure there is no tightly related data.');
         }
     }
 }

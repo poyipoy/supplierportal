@@ -37,72 +37,88 @@ class AdminMaterialHsCodeTest extends TestCase
             ->get(route('admin.material-hs-code.index'))
             ->assertOk()
             ->assertSeeText('Master Material & HS Code')
-            ->assertSeeText('Data Quality');
-        $this->actingAs($this->admin)
+            ->assertSeeText('Data Quality')
+            ->assertDontSeeText('Aliases')
+            ->assertDontSeeText('Stable Rule Key');
+        $materialTable = $this->actingAs($this->admin)
             ->getJson(route('admin.material-masters.data'))
             ->assertOk()
-            ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data'])
+            ->json('data');
+        $this->assertStringNotContainsString('aliases_display', json_encode($materialTable, JSON_THROW_ON_ERROR));
         $this->actingAs($this->admin)
             ->getJson(route('admin.hs-code-rules.data'))
             ->assertOk()
             ->assertJsonStructure(['data']);
 
-        $this->actingAs($this->admin)
+        $qualityResponse = $this->actingAs($this->admin)
             ->getJson(route('admin.master-data-quality.index'))
             ->assertOk()
-            ->assertJsonPath('counts.materials', 84)
-            ->assertJsonPath('counts.mapped_materials', 64)
-            ->assertJsonPath('counts.unmapped_materials', 20)
-            ->assertJsonPath('counts.active_rules', 19)
-            ->assertJsonPath('counts.inactive_rules', 2)
-            ->assertJsonPath('counts.source_rule_entries', 30)
-            ->assertJsonPath('counts.blocking_conflicts', 0)
-            ->assertJsonFragment(['unreachable_rule_categories' => ['strip_steel']])
-            ->assertJsonFragment(['unreachable_reference_materials' => ['S35C', 'Q345D', 'Q235', 'A3', 'WEARPLATE']]);
+            ->assertJsonPath('summary.materials', 84)
+            ->assertJsonPath('summary.materials_with_hs_mapping', 64)
+            ->assertJsonPath('summary.materials_needing_hs_mapping', 20)
+            ->assertJsonPath('summary.active_hs_rules', 19)
+            ->assertJsonPath('summary.rules_needing_review', 0)
+            ->assertJsonFragment(['rule_categories_not_used_by_materials' => ['Strip Steel']])
+            ->assertJsonFragment(['reference_only_materials' => ['S35C', 'Q345D', 'Q235', 'A3', 'WEARPLATE']]);
+
+        $report = $qualityResponse->json();
+        $this->assertArrayNotHasKey('overlaps', $report);
+        $reportJson = json_encode($report, JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('"rule_key"', $reportJson);
+        $this->assertStringNotContainsString('"type"', $reportJson);
     }
 
-    public function test_admin_material_crud_normalizes_aliases_and_rejects_cross_catalog_collisions(): void
+    public function test_admin_material_crud_keeps_legacy_aliases_read_only(): void
     {
+        $legacyMaterial = MaterialMaster::create([
+            'material_code' => 'LEGACY-MATERIAL',
+            'normalized_code' => 'LEGACY-MATERIAL',
+            'raw_category' => 'Legacy category',
+            'hs_category' => 'alloy_steel',
+            'density_profile' => 'steel',
+            'manufacturer_scope' => 'unknown',
+            'is_active' => true,
+        ]);
+        $legacyMaterial->aliases()->create([
+            'alias' => 'Legacy Alias',
+            'normalized_alias' => 'LEGACY ALIAS',
+            'source_note' => 'Existing source data',
+        ]);
+
         $this->actingAs($this->admin)
             ->post(route('admin.material-masters.store'), $this->materialPayload([
                 'material_code' => '  ab-1.2  ',
-                'aliases_text' => "AB ONE\nab   alt",
+                'aliases_text' => 'Ignored Alias Input',
             ]))
             ->assertRedirect(route('admin.material-hs-code.index').'#materials')
             ->assertSessionHasNoErrors();
 
         $material = MaterialMaster::query()->where('normalized_code', 'AB-1.2')->firstOrFail();
         $this->assertSame($this->admin->id, $material->created_by);
-        $this->assertSame(['AB ALT', 'AB ONE'], $material->aliases()->orderBy('normalized_alias')->pluck('normalized_alias')->all());
-        $this->assertSame($material->id, app(MaterialResolver::class)->resolveExact(' ab   one ')?->id);
-        $this->assertNull(app(MaterialResolver::class)->resolveExact('AB ON'));
+        $this->assertCount(0, $material->aliases);
 
         $this->actingAs($this->admin)
-            ->put(route('admin.material-masters.update', $material), $this->materialPayload([
-                'material_code' => $material->material_code,
+            ->put(route('admin.material-masters.update', $legacyMaterial), $this->materialPayload([
+                'material_code' => $legacyMaterial->material_code,
                 'raw_category' => 'Updated Admin Category',
-                'aliases_text' => "AB ONE\nAB ALT",
+                'aliases_text' => 'Attempted Replacement Alias',
             ]))
             ->assertRedirect(route('admin.material-hs-code.index').'#materials')
             ->assertSessionHasNoErrors();
-        $this->assertSame('Updated Admin Category', $material->fresh()->raw_category);
-        $this->assertSame($this->admin->id, $material->fresh()->updated_by);
+        $this->assertSame('Updated Admin Category', $legacyMaterial->fresh()->raw_category);
+        $this->assertSame($this->admin->id, $legacyMaterial->fresh()->updated_by);
+        $this->assertSame(['LEGACY ALIAS'], $legacyMaterial->aliases()->pluck('normalized_alias')->all());
+        $this->assertSame($legacyMaterial->id, app(MaterialResolver::class)->resolveExact(' legacy alias ')?->id);
+        $this->assertDatabaseMissing('material_aliases', ['normalized_alias' => 'ATTEMPTED REPLACEMENT ALIAS']);
 
         $this->actingAs($this->admin)
             ->post(route('admin.material-masters.store'), $this->materialPayload([
-                'material_code' => 'ab alt',
-                'aliases_text' => null,
+                'material_code' => 'legacy alias',
             ]))
             ->assertSessionHasErrors('material_code');
 
         $scm = MaterialMaster::query()->where('material_code', 'SCM440')->firstOrFail();
-        $this->actingAs($this->admin)
-            ->put(route('admin.material-masters.update', $material), $this->materialPayload([
-                'material_code' => $material->material_code,
-                'aliases_text' => 'SCM440',
-            ]))
-            ->assertSessionHasErrors('aliases_text');
-
         $this->actingAs($this->admin)
             ->patchJson(route('admin.material-masters.status', $scm), ['is_active' => false])
             ->assertOk()
@@ -128,31 +144,27 @@ class AdminMaterialHsCodeTest extends TestCase
 
         $this->actingAs($this->admin)
             ->post(route('admin.hs-code-rules.store'), $this->rulePayload([
-                'rule_key' => 'admin-blocking-overlap',
+                'rule_key' => 'client-provided-blocking-key',
                 'conditions_json' => json_encode($conditions, JSON_THROW_ON_ERROR),
             ]))
             ->assertSessionHasErrors('conditions');
-        $this->assertDatabaseMissing('hs_code_rules', ['rule_key' => 'admin-blocking-overlap']);
+        $this->assertDatabaseMissing('hs_code_rules', ['hs_code' => '9999.99.99']);
 
         $this->actingAs($this->admin)
             ->post(route('admin.hs-code-rules.store'), $this->rulePayload([
-                'rule_key' => 'admin-priority-override',
+                'rule_key' => 'client-provided-rule-key',
                 'priority' => 50,
                 'conditions_json' => json_encode($conditions, JSON_THROW_ON_ERROR),
             ]))
             ->assertRedirect(route('admin.material-hs-code.index').'#rules')
             ->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('hs_code_rules', [
-            'rule_key' => 'admin-priority-override',
-            'hs_code' => '9999.99.99',
-            'priority' => 50,
-            'status' => HsCodeRule::STATUS_ACTIVE,
-        ]);
-
-        $priorityOverride = HsCodeRule::query()->where('rule_key', 'admin-priority-override')->firstOrFail();
+        $priorityOverride = HsCodeRule::query()->where('hs_code', '9999.99.99')->firstOrFail();
+        $this->assertStringStartsWith('rule-', $priorityOverride->rule_key);
+        $this->assertNotSame('client-provided-rule-key', $priorityOverride->rule_key);
+        $originalRuleKey = $priorityOverride->rule_key;
         $this->actingAs($this->admin)
             ->put(route('admin.hs-code-rules.update', $priorityOverride), $this->rulePayload([
-                'rule_key' => $priorityOverride->rule_key,
+                'rule_key' => 'attempted-replacement-key',
                 'priority' => 50,
                 'notes' => 'Updated by Admin',
                 'conditions_json' => json_encode($conditions, JSON_THROW_ON_ERROR),
@@ -161,6 +173,13 @@ class AdminMaterialHsCodeTest extends TestCase
             ->assertSessionHasNoErrors();
         $this->assertSame('Updated by Admin', $priorityOverride->fresh()->notes);
         $this->assertSame($this->admin->id, $priorityOverride->fresh()->updated_by);
+        $this->assertSame($originalRuleKey, $priorityOverride->fresh()->rule_key);
+
+        $ruleTable = $this->actingAs($this->admin)
+            ->getJson(route('admin.hs-code-rules.data'))
+            ->assertOk()
+            ->json('data');
+        $this->assertStringNotContainsString($originalRuleKey, json_encode($ruleTable, JSON_THROW_ON_ERROR));
 
         $inactive = HsCodeRule::create([
             'rule_key' => 'admin-inactive-conflict',
@@ -183,6 +202,51 @@ class AdminMaterialHsCodeTest extends TestCase
             ->delete('/admin/hs-code-rules/'.$inactive->id)
             ->assertStatus(405);
         $this->assertDatabaseHas('hs_code_rules', ['id' => $inactive->id]);
+    }
+
+    public function test_data_quality_summarizes_duplicate_coverage_and_surfaces_rules_needing_review(): void
+    {
+        $existing = HsCodeRule::query()->where('status', HsCodeRule::STATUS_ACTIVE)->firstOrFail();
+        HsCodeRule::create([
+            'rule_key' => 'test-quality-duplicate-coverage',
+            'hs_code' => $existing->hs_code,
+            'material_category' => $existing->material_category,
+            'shape' => $existing->shape,
+            'conditions' => $existing->conditions,
+            'priority' => $existing->priority,
+            'status' => HsCodeRule::STATUS_ACTIVE,
+            'source_refs' => [],
+        ]);
+
+        $duplicateResponse = $this->actingAs($this->admin)
+            ->getJson(route('admin.master-data-quality.index'))
+            ->assertOk();
+        $this->assertGreaterThan(0, $duplicateResponse->json('reference_notes.duplicate_rule_coverage.count'));
+        $this->assertStringContainsString('No action is required.', $duplicateResponse->json('reference_notes.duplicate_rule_coverage.message'));
+        $this->assertSame(0, $duplicateResponse->json('summary.rules_needing_review'));
+
+        HsCodeRule::create([
+            'rule_key' => 'test-quality-needs-review',
+            'hs_code' => '9999.99.99',
+            'material_category' => $existing->material_category,
+            'shape' => $existing->shape,
+            'conditions' => $existing->conditions,
+            'priority' => $existing->priority,
+            'status' => HsCodeRule::STATUS_ACTIVE,
+            'source_refs' => [],
+        ]);
+
+        $reviewResponse = $this->actingAs($this->admin)
+            ->getJson(route('admin.master-data-quality.index'))
+            ->assertOk();
+        $this->assertGreaterThan(0, $reviewResponse->json('summary.rules_needing_review'));
+        $review = $reviewResponse->json('needs_attention.rules_needing_review.0');
+        $this->assertArrayHasKey('category', $review);
+        $this->assertArrayHasKey('shape', $review);
+        $this->assertArrayHasKey('hs_codes', $review);
+        $this->assertArrayHasKey('message', $review);
+        $this->assertArrayNotHasKey('rule_key', $review);
+        $this->assertArrayNotHasKey('type', $review);
     }
 
     public function test_purchasing_search_returns_only_active_materials_and_other_roles_are_denied(): void
@@ -223,7 +287,6 @@ class AdminMaterialHsCodeTest extends TestCase
             'density_profile' => 'steel',
             'manufacturer_scope' => 'unknown',
             'is_active' => 1,
-            'aliases_text' => null,
             'form_context' => 'material',
         ], $overrides);
     }
@@ -231,7 +294,6 @@ class AdminMaterialHsCodeTest extends TestCase
     private function rulePayload(array $overrides = []): array
     {
         return array_replace([
-            'rule_key' => 'admin-rule',
             'hs_code' => '99999999',
             'material_category' => 'alloy_steel',
             'shape' => 'Round',

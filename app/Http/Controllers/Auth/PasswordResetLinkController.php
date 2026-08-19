@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class PasswordResetLinkController extends Controller
 {
@@ -21,31 +22,23 @@ class PasswordResetLinkController extends Controller
 
     /**
      * Handle an incoming password reset link request.
-     *
-     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'email', 'max:255'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            Password::sendResetLink($request->only('email'));
+        } catch (TransportExceptionInterface $exception) {
+            // Do not reveal a delivery failure to the requester and do not log the
+            // reset token, password, or email address.
+            Log::warning('Password reset email delivery failed.', [
+                'exception_class' => $exception::class,
+            ]);
+        }
 
-        $message = match ($status) {
-            Password::RESET_LINK_SENT => 'Password reset link has been sent to your email.',
-            Password::INVALID_USER => 'We could not find a user with that email address.',
-            default => 'Failed to send password reset link.',
-        };
-
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', $message)
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => $message]);
+        return back()->with('status', 'If an account is available, password reset instructions have been sent.');
     }
 }

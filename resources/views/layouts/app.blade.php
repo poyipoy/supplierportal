@@ -1322,53 +1322,8 @@
         });
     </script>
 
-    {{-- Global Script untuk Export Preview --}}
-    <script>
-        document.addEventListener('click', function (e) {
-            const exportBtn = e.target.closest('a[href*="/export/"]');
-            if (!exportBtn) {
-                return;
-            }
-
-            e.preventDefault();
-
-            // One open confirmation belongs to one click. Repeated clicks while
-            // SweetAlert is visible must not open another dialog or download.
-            if (window.exportConfirmationOpen) {
-                return;
-            }
-
-            window.exportConfirmationOpen = true;
-
-            let recordsTotal = 'all';
-            if (typeof $ !== 'undefined' && $.fn.dataTable) {
-                const tables = $.fn.dataTable.tables(true);
-                if (tables.length > 0) {
-                    const info = $(tables[0]).DataTable().page.info();
-                    recordsTotal = info.recordsTotal;
-                }
-            }
-
-            AdasiAlert.confirm({
-                title: 'Confirm Export',
-                text: `You will export ${recordsTotal} rows of data to Excel. This process may take some time. Continue?`,
-                type: 'info',
-                confirmTone: 'success',
-                confirmText: 'Yes, Export',
-                cancelText: 'Cancel'
-            }).then((result) => {
-                window.exportConfirmationOpen = false;
-
-                if (result.isConfirmed) {
-                    window.isExporting = true;
-                    window.location.href = exportBtn.href;
-                    setTimeout(() => window.isExporting = false, 3000);
-                }
-            }).catch(() => {
-                window.exportConfirmationOpen = false;
-            });
-        });
-    </script>
+    {{-- Async export: server-side generation, automatic download, no page refresh. --}}
+    <script src="{{ asset('assets/js/async-export.js') }}?v={{ file_exists(public_path('assets/js/async-export.js')) ? filemtime(public_path('assets/js/async-export.js')) : '1' }}"></script>
 
     {{-- Global Script untuk PDF Preview --}}
     <script>
@@ -1454,31 +1409,44 @@
     </script>
 
     @php
-        $reverbClient = config('reverb.client', []);
-        $reverbClientReady = config('broadcasting.default') === 'reverb'
-            && filled($reverbClient['key'] ?? null)
-            && filled($reverbClient['host'] ?? null)
-            && filled($reverbClient['port'] ?? null)
-            && in_array($reverbClient['scheme'] ?? null, ['http', 'https'], true);
-    @endphp
-    @auth
-        @if($reverbClientReady)
-        <!-- Laravel Echo + Pusher JS (untuk Reverb WebSocket) -->
+    $pusherClient = config('broadcasting.connections.pusher', []);
+    $pusherOptions = $pusherClient['options'] ?? [];
+
+    $pusherClientReady = config('broadcasting.default') === 'pusher'
+        && filled($pusherClient['key'] ?? null)
+        && filled($pusherOptions['cluster'] ?? null);
+@endphp
+
+@auth
+    @if($pusherClientReady)
+        <!-- Laravel Echo + Pusher Channels -->
         <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js"></script>
+
         <script>
             (() => {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-                const userId = document.querySelector('meta[name="user-id"]')?.content;
-                const readUrlBase = @json(url('/notifications/__NOTIFICATION_ID__/read'));
-                const allowedCategories = new Set(@json(array_keys(\App\Support\NotificationCategory::options())));
+                const csrfToken =
+                    document.querySelector('meta[name="csrf-token"]')?.content;
+
+                const userId =
+                    document.querySelector('meta[name="user-id"]')?.content;
+
+                const readUrlBase =
+                    @json(url('/notifications/__NOTIFICATION_ID__/read'));
+
+                const allowedCategories = new Set(
+                    @json(array_keys(\App\Support\NotificationCategory::options()))
+                );
 
                 if (!window.Echo || !window.Pusher || !csrfToken || !userId) {
                     return;
                 }
 
                 const readUrlFor = (id) => id
-                    ? readUrlBase.replace('__NOTIFICATION_ID__', encodeURIComponent(String(id)))
+                    ? readUrlBase.replace(
+                        '__NOTIFICATION_ID__',
+                        encodeURIComponent(String(id))
+                    )
                     : null;
 
                 const markReadAndRedirect = async (readUrl) => {
@@ -1494,17 +1462,26 @@
                                 'X-Requested-With': 'XMLHttpRequest',
                             },
                         });
-                        const data = response.ok ? await response.json() : null;
+
+                        const data = response.ok
+                            ? await response.json()
+                            : null;
+
                         if (data?.redirect) {
                             window.location.href = data.redirect;
                         }
                     } catch (error) {
-                        // Polling remains the fallback when real-time handling fails.
+                        // Polling tetap menjadi fallback.
                     }
                 };
 
-                const createNotificationItem = (notification, category, readUrl) => {
+                const createNotificationItem = (
+                    notification,
+                    category,
+                    readUrl
+                ) => {
                     const item = document.createElement('div');
+
                     item.className = 'notification-item bg-light';
                     item.setAttribute('role', 'button');
                     item.dataset.notificationItem = '';
@@ -1516,92 +1493,225 @@
 
                     const row = document.createElement('div');
                     row.className = 'd-flex gap-3';
+
                     const iconWrap = document.createElement('div');
-                    iconWrap.className = 'bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0';
-                    iconWrap.style.cssText = 'width:34px;height:34px;';
+
+                    iconWrap.className =
+                        'bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0';
+
+                    iconWrap.style.cssText =
+                        'width:34px;height:34px;';
+
                     const icon = document.createElement('i');
-                    const iconName = String(notification.icon || 'bi-bell').split(/\s+/).find((part) => /^bi-[a-z0-9-]+$/.test(part)) || 'bi-bell';
-                    icon.className = `bi ${iconName} text-primary`;
+
+                    const iconName = String(
+                        notification.icon || 'bi-bell'
+                    )
+                        .split(/\s+/)
+                        .find(
+                            (part) =>
+                                /^bi-[a-z0-9-]+$/.test(part)
+                        ) || 'bi-bell';
+
+                    icon.className =
+                        `bi ${iconName} text-primary`;
+
                     iconWrap.append(icon);
 
-                    const content = document.createElement('div');
-                    content.className = 'min-w-0 flex-grow-1';
-                    const heading = document.createElement('div');
-                    heading.className = 'd-flex justify-content-between gap-2';
-                    const title = document.createElement('div');
-                    title.className = 'fw-semibold small text-truncate';
-                    title.textContent = String(notification.title || 'Notification');
-                    const newBadge = document.createElement('span');
-                    newBadge.className = 'badge bg-danger flex-shrink-0';
+                    const content =
+                        document.createElement('div');
+
+                    content.className =
+                        'min-w-0 flex-grow-1';
+
+                    const heading =
+                        document.createElement('div');
+
+                    heading.className =
+                        'd-flex justify-content-between gap-2';
+
+                    const title =
+                        document.createElement('div');
+
+                    title.className =
+                        'fw-semibold small text-truncate';
+
+                    title.textContent =
+                        String(
+                            notification.title ||
+                            'Notification'
+                        );
+
+                    const newBadge =
+                        document.createElement('span');
+
+                    newBadge.className =
+                        'badge bg-danger flex-shrink-0';
+
                     newBadge.style.fontSize = '.55rem';
                     newBadge.dataset.notificationNewBadge = '';
                     newBadge.textContent = 'New';
+
                     heading.append(title, newBadge);
 
-                    const message = document.createElement('div');
+                    const message =
+                        document.createElement('div');
+
                     message.className = 'text-muted';
                     message.style.fontSize = '.76rem';
-                    message.textContent = String(notification.message || '-');
-                    const time = document.createElement('div');
-                    time.className = 'text-muted mt-2';
+
+                    message.textContent =
+                        String(
+                            notification.message || '-'
+                        );
+
+                    const time =
+                        document.createElement('div');
+
+                    time.className =
+                        'text-muted mt-2';
+
                     time.style.fontSize = '.68rem';
                     time.textContent = 'Just now';
-                    content.append(heading, message, time);
+
+                    content.append(
+                        heading,
+                        message,
+                        time
+                    );
+
                     row.append(iconWrap, content);
                     item.append(row);
 
                     return item;
                 };
 
-                const insertNotification = (notification, readUrl) => {
-                    const category = allowedCategories.has(notification.category) && notification.category !== 'all'
-                        ? notification.category
-                        : 'other';
+                const insertNotification = (
+                    notification,
+                    readUrl
+                ) => {
+                    const category =
+                        allowedCategories.has(
+                            notification.category
+                        ) &&
+                        notification.category !== 'all'
+                            ? notification.category
+                            : 'other';
 
-                    ['all', category].forEach((paneCategory) => {
-                        const pane = document.querySelector(`#notif-pane-${paneCategory}`);
-                        if (!pane || pane.querySelector(`[data-notification-id="${CSS.escape(String(notification.id))}"]`)) return;
+                    ['all', category].forEach(
+                        (paneCategory) => {
+                            const pane =
+                                document.querySelector(
+                                    `#notif-pane-${paneCategory}`
+                                );
 
-                        pane.querySelector('.text-center.text-muted.py-5')?.remove();
-                        pane.prepend(createNotificationItem(notification, category, readUrl));
-                    });
+                            if (
+                                !pane ||
+                                pane.querySelector(
+                                    `[data-notification-id="${CSS.escape(
+                                        String(notification.id)
+                                    )}"]`
+                                )
+                            ) {
+                                return;
+                            }
+
+                            pane
+                                .querySelector(
+                                    '.text-center.text-muted.py-5'
+                                )
+                                ?.remove();
+
+                            pane.prepend(
+                                createNotificationItem(
+                                    notification,
+                                    category,
+                                    readUrl
+                                )
+                            );
+                        }
+                    );
                 };
 
                 try {
                     window.Echo = new Echo({
-                        broadcaster: 'reverb',
-                        key: @json($reverbClient['key']),
-                        wsHost: @json($reverbClient['host']),
-                        wsPort: @json((int) $reverbClient['port']),
-                        wssPort: @json((int) $reverbClient['port']),
-                        forceTLS: @json(($reverbClient['scheme'] ?? 'http') === 'https'),
-                        enabledTransports: ['ws', 'wss'],
-                        authEndpoint: '/broadcasting/auth',
-                        auth: { headers: { 'X-CSRF-TOKEN': csrfToken } },
-                    });
+                        broadcaster: 'pusher',
 
-                    window.Echo.private('App.Models.User.' + userId).notification((notification) => {
-                        const readUrl = readUrlFor(notification.id);
-                        if (!readUrl) return;
+                        key: @json($pusherClient['key']),
 
-                        insertNotification(notification, readUrl);
-                        updateBadges();
+                        cluster: @json(
+                            $pusherOptions['cluster']
+                        ),
 
-                        if (window.AdasiAlert) {
-                            AdasiAlert.notification({
-                                title: notification.title || 'New Notification',
-                                text: notification.message || '',
-                                onClick: () => markReadAndRedirect(readUrl),
-                            });
+                        forceTLS: true,
+
+                        enabledTransports: [
+                            'ws',
+                            'wss'
+                        ],
+
+                        authEndpoint:
+                            '/broadcasting/auth',
+
+                        auth: {
+                            headers: {
+                                'X-CSRF-TOKEN':
+                                    csrfToken
+                            }
                         }
                     });
+
+                    window.Echo
+                        .private(
+                            'App.Models.User.' + userId
+                        )
+                        .notification(
+                            (notification) => {
+                                const readUrl =
+                                    readUrlFor(
+                                        notification.id
+                                    );
+
+                                if (!readUrl) return;
+
+                                insertNotification(
+                                    notification,
+                                    readUrl
+                                );
+
+                                updateBadges();
+
+                                if (window.AdasiAlert) {
+                                    AdasiAlert.notification({
+                                        title:
+                                            notification.title ||
+                                            'New Notification',
+
+                                        text:
+                                            notification.message ||
+                                            '',
+
+                                        onClick: () =>
+                                            markReadAndRedirect(
+                                                readUrl
+                                            ),
+                                    });
+                                }
+                            }
+                        );
+
                 } catch (error) {
+                    console.error(
+                        'Pusher/Echo initialization failed:',
+                        error
+                    );
+
                     window.Echo = null;
                 }
             })();
         </script>
-        @endif
-    @endauth
+    @endif
+@endauth
 
     @stack('scripts')
 </body>
