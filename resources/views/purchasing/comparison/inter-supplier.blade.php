@@ -32,9 +32,8 @@
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
-                    <div class="list-group position-absolute w-100 shadow-sm d-none"
-                         id="comparisonPrSuggestions"
-                         style="z-index: 1050; max-height: 260px; overflow-y: auto;"></div>
+                    <div class="list-group position-absolute w-100 shadow-sm d-none tw-z-[1050] tw-max-h-[260px] tw-overflow-y-auto"
+                         id="comparisonPrSuggestions"></div>
                 </div>
                 <div class="form-text">Type to display PR options, then select one option.</div>
             </div>
@@ -136,7 +135,7 @@
 
     {{-- Tabel Side-by-Side --}}
     <x-ui.data-table :title="'Comparison Table - ' . $selectedPr->pr_number" description="Lowest converted price per material is highlighted for fast review.">
-                <table class="table table-bordered table-hover align-middle mb-0" style="font-size:.8rem">
+                <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs">
                     <thead class="table-light text-center">
                         <tr>
                             <th rowspan="2" class="align-middle">Material</th>
@@ -146,7 +145,7 @@
                             @foreach($comparison['suppliers'] as $sup)
                                 <th colspan="2" class="text-center">
                                     {{ $sup['name'] }}
-                                    <div><span class="badge bg-{{ $sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'danger' : 'primary') }}" style="font-size:.55rem">{{ strtoupper($sup['status']) }}</span></div>
+                                    <div><span class="badge bg-{{ $sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'danger' : 'primary') }} tw-text-[.55rem]">{{ strtoupper($sup['status']) }}</span></div>
                                 </th>
                             @endforeach
                         </tr>

@@ -26,7 +26,7 @@
             {{-- PR Not Responded --}}
             <x-ui.data-table title="Requisitions Awaiting Your Quotation" description="These open opportunities still need a supplier response.">
                 <x-slot:toolbar><x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm">View All</x-ui.button></x-slot:toolbar>
-                        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                        <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
                             <thead class="table-light">
                                 <tr>
                                     <th>PR No.</th>
@@ -60,7 +60,7 @@
             {{-- PO Terbaru --}}
             <x-ui.data-table title="Latest Purchase Orders" description="Recent orders and claim actions visible to your supplier account." class="tw-mt-6">
                 <x-slot:toolbar><x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm">All PO</x-ui.button></x-slot:toolbar>
-                        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                        <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
                             <thead class="table-light">
                                 <tr>
                                     <th>PO No.</th>
@@ -122,7 +122,7 @@
                             <h6 class="mb-1 small fw-bold"><a href="{{ route('supplier.announcements.show', $ann->id) }}"
                                     class="text-decoration-none">{{ $ann->title }}</a></h6>
                             <div class="text-muted small mb-2">{{ Str::limit($ann->content, 80) }}</div>
-                            <small class="text-muted" style="font-size:.7rem"><i
+                            <small class="text-muted tw-text-ui-xs"><i
                                     class="bi bi-clock me-1"></i>{{ $ann->published_at->diffForHumans() }}</small>
                         </div>
                     @empty

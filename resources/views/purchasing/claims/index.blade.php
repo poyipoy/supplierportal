@@ -27,7 +27,7 @@
             <div class="tab-pane fade show active" id="action" role="tabpanel">
                 <x-ui.alert class="tw-mb-4">The PO list below has been inspected by QC with an NG result. Submit a claim to the relevant supplier.</x-ui.alert>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="actionTable" style="width: 100%;">
+                    <table class="table table-hover align-middle w-100" id="actionTable">
                         <thead class="table-light">
                             <tr>
                                 <th>Number PO</th>
@@ -45,7 +45,7 @@
             {{-- Tab: History Claim --}}
             <div class="tab-pane fade" id="history" role="tabpanel">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="historyTable" style="width: 100%;">
+                    <table class="table table-hover align-middle w-100" id="historyTable">
                         <thead class="table-light">
                             <tr>
                                 <th>Claim ID</th>

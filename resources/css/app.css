@@ -455,6 +455,21 @@
         font-size: var(--ui-font-size-sm);
         padding: .75rem 1rem;
     }
+
+    .qc-spec-grid,
+    .qc-dimension-grid {
+        display: grid;
+        gap: .75rem;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+
+    .qc-spec-box {
+        background: var(--md-surface-container-low);
+        border: 1px solid var(--md-outline-variant);
+        border-radius: var(--md-shape-sm);
+        min-height: 64px;
+        padding: .65rem .75rem;
+    }
 }
 
 @keyframes ui-spin {
@@ -495,5 +510,12 @@
 
     .topbar-user-chip {
         padding-inline-end: .25rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .qc-spec-grid,
+    .qc-dimension-grid {
+        grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
     }
 }

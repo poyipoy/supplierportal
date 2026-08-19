@@ -30,7 +30,7 @@
                         <div class="mb-3">
                             <label class="form-label small fw-medium text-muted">Password <span class="text-danger">*</span></label>
                             <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required minlength="12" maxlength="255" autocomplete="new-password">
-                            <small class="text-muted">Minimum 8 characters.</small>
+                            <small class="text-muted">Minimum 12 characters.</small>
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -58,7 +58,7 @@
                     </div>
 
                     {{-- Dinamis untuk Supplier --}}
-                    <div class="col-md-6" id="supplier-fields" style="display: none;">
+                    <div class="col-md-6" id="supplier-fields" hidden>
                         <h6 class="text-info fw-bold mb-3 border-bottom pb-2">Company Details (Supplier)</h6>
 
                         <div class="mb-3">
@@ -110,11 +110,11 @@
 
         function toggleSupplierFields() {
             if (roleSelect.value === 'supplier') {
-                supplierFields.style.display = 'block';
+                supplierFields.hidden = false;
                 // Toggle required
                 supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.setAttribute('required', 'required'));
             } else {
-                supplierFields.style.display = 'none';
+                supplierFields.hidden = true;
                 // Remove required
                 supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.removeAttribute('required'));
             }

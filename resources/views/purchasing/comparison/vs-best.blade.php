@@ -40,7 +40,7 @@
 </x-ui.card>
 
 <x-ui.data-table title="Price Benchmark Details" description="Server-side results are ordered by the largest potential difference.">
-            <table class="table table-hover align-middle mb-0" id="vsBestTable" style="font-size:.85rem; width:100%;">
+            <table class="table table-hover align-middle mb-0 w-100 tw-text-ui-sm" id="vsBestTable">
                 <thead class="table-light text-center">
                     <tr>
                         <th class="text-start">Material</th>

@@ -7,7 +7,7 @@
     <x-ui.page-header title="User Management" description="Manage role assignment, account status, and supplier profile access." eyebrow="Admin" />
     <x-ui.data-table title="User List" description="Search and administer registered portal users.">
         <x-slot:toolbar><x-ui.button :href="route('admin.users.create')" size="sm"><x-slot:leading><i class="bi bi-plus-lg"></i></x-slot:leading>Add User</x-ui.button></x-slot:toolbar>
-                <table class="table table-hover align-middle" id="usersTable" style="font-size: 0.9rem; width: 100%;">
+                <table class="table table-hover align-middle w-100 tw-text-ui-sm" id="usersTable">
                     <thead class="table-light">
                         <tr>
                             <th>No</th>

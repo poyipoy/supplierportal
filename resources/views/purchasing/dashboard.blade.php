@@ -137,7 +137,7 @@
             <x-slot:toolbar>
                 <x-ui.button :href="route('purchasing.requisitions.index')" variant="ghost" size="sm">View all</x-ui.button>
             </x-slot:toolbar>
-                    <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                    <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
                         <thead class="table-light"><tr><th>PR No.</th><th>Period</th><th>Status</th><th></th></tr></thead>
                         <tbody>
                             @forelse($prTerbaru as $pr)
@@ -182,7 +182,7 @@
                     $lastRateUpdated = $latestRates->filter()->sortByDesc('valid_from')->first()?->valid_from;
                 @endphp
                 @if($lastRateUpdated)
-                    <div class="text-muted text-center mt-2" style="font-size:.7rem">Latest exchange rate update: {{ $lastRateUpdated->format('d M Y') }}</div>
+                    <div class="text-muted text-center mt-2 tw-text-ui-xs">Latest exchange rate update: {{ $lastRateUpdated->format('d M Y') }}</div>
                 @endif
         </x-ui.card>
     </div>
@@ -191,7 +191,7 @@
             <x-slot:toolbar>
                 <x-ui.button :href="route('purchasing.purchase-orders.index')" variant="ghost" size="sm">View all PO</x-ui.button>
             </x-slot:toolbar>
-                    <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                    <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
                         <thead class="table-light"><tr><th>PO No.</th><th>Supplier</th><th>Estimated Arrival</th><th>Status</th><th></th></tr></thead>
                         <tbody>
                             @forelse($poTerdekat as $po)

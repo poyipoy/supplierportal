@@ -58,9 +58,8 @@
                 value="{{ $itemData['material_name'] ?? '' }}"
             >
             <div
-                class="material-search-results list-group shadow d-none"
+                class="material-search-results list-group shadow d-none tw-fixed tw-z-[1060] tw-max-h-[220px] tw-overflow-y-auto"
                 role="listbox"
-                style="position: fixed; z-index: 1060; max-height: 220px; overflow-y: auto;"
             ></div>
         </div>
         @error("items.{$index}.material_master_id")

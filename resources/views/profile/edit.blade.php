@@ -20,7 +20,7 @@
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-bottom py-3">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                            <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
                                 <i class="bi bi-person"></i>
                             </span>
                             <div>
@@ -37,7 +37,7 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom py-3">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                            <span class="rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
                                 <i class="bi bi-key"></i>
                             </span>
                             <div>
@@ -56,7 +56,7 @@
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-bottom py-3">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                            <span class="rounded-circle bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
                                 <i class="bi bi-shield-lock"></i>
                             </span>
                             <div>
@@ -73,7 +73,7 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom py-3">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                            <span class="rounded-circle bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
                                 <i class="bi bi-laptop"></i>
                             </span>
                             <div>

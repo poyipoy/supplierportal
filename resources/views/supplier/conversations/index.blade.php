@@ -6,7 +6,7 @@
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Negotiation with Purchasing" description="Open conversations tied to your supplier's PR and PO context." eyebrow="Supplier Portal" />
     <x-ui.data-table title="Negotiation Chats" description="Unread state and response timing help prioritize follow-up.">
-                <table class="table table-hover align-middle datatable" style="font-size: 0.9rem;">
+                <table class="table table-hover align-middle datatable tw-text-ui-sm">
                     <thead class="table-light">
                         <tr>
                             <th>Document Context</th>

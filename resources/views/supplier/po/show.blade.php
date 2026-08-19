@@ -67,7 +67,7 @@
 
         {{-- Material Table --}}
         <x-ui.data-table title="Material Details" description="Commercial values are grouped by your related quotation and PR reference.">
-                    <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                    <table class="table table-bordered align-middle mb-0 tw-text-ui-sm">
                         <thead class="table-light text-center">
                             <tr>
                                 <th>No</th>
@@ -117,7 +117,7 @@
                                             @if($quotation->purchaseRequisition)
                                                 <a href="{{ route('supplier.quotations.show', $quotation) }}" class="text-primary text-decoration-none" title="Open related PR detail">
                                                     {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
-                                                    <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
+                                                    <i class="bi bi-box-arrow-up-right ms-1 tw-text-ui-xs"></i>
                                                 </a>
                                             @else
                                                 -
@@ -125,7 +125,7 @@
                                         </td>
                                         <td>
                                             @if($poRemark !== '')
-                                                <span class="d-inline-block text-truncate" style="max-width: 220px;" title="{{ $poRemark }}">
+                                                <span class="d-inline-block text-truncate tw-max-w-[220px]" title="{{ $poRemark }}">
                                                     {{ \Illuminate\Support\Str::limit($poRemark, 80) }}
                                                 </span>
                                             @else

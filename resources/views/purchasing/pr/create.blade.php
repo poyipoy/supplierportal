@@ -88,27 +88,27 @@
                 <table class="table table-bordered table-sm align-middle pr-items-table" id="itemsTable">
                     <caption class="visually-hidden">Required material entry table with adaptive dimension columns</caption>
                     <colgroup>
-                        <col style="width: 300px;">
+                        <col class="tw-w-[300px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 125px;">
+                        <col class="tw-w-[125px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 80px;">
+                        <col class="tw-w-20">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 120px;">
-                        <col style="width: 120px;">
-                        <col style="width: 120px;">
+                        <col class="tw-w-[120px]">
+                        <col class="tw-w-[120px]">
+                        <col class="tw-w-[120px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 145px;">
+                        <col class="tw-w-[145px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 190px;">
+                        <col class="tw-w-[190px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 72px;">
+                        <col class="tw-w-[72px]">
                     </colgroup>
                     <thead class="table-light text-center">
                         <tr class="pr-group-header">

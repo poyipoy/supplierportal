@@ -60,7 +60,7 @@
                             @foreach($prs as $pr)
                                 <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="text-primary text-decoration-none me-2">
                                     {{ $pr->pr_number ?? '-' }}
-                                    <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
+                                    <i class="bi bi-box-arrow-up-right ms-1 tw-text-ui-xs"></i>
                                 </a>
                             @endforeach
                             @if($prs->count() > 1)
@@ -109,7 +109,7 @@
 
         {{-- Material Table - Grouped per Quotation/PR --}}
         <x-ui.data-table title="Material Details" description="Grouped by quotation and reference PR." id="sec-material" class="tw-mt-6 tw-scroll-mt-20">
-                    <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                    <table class="table table-bordered align-middle mb-0 tw-text-ui-sm">
                         <thead class="table-light text-center">
                             <tr>
                                 <th>No</th>
@@ -157,7 +157,7 @@
                                     <tr>
                                         <td class="text-center">{{ $globalNo++ }}</td>
                                         <td class="fw-medium">{{ $item->prItem->material_name }}</td>
-                                        <td class="text-center" style="font-size: 0.8rem;">
+                                        <td class="text-center tw-text-ui-xs">
                                             @if($item->prItem->shape)
                                                 <span class="badge bg-light text-dark border">{{ $item->prItem->shape }}</span><br>
                                                 <span class="text-muted">{{ $item->prItem->dimension_label }}</span>
@@ -175,7 +175,7 @@
                                             @if($quotation->purchaseRequisition)
                                                 <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none" title="Open PR detail">
                                                     {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
-                                                    <i class="bi bi-box-arrow-up-right ms-1" style="font-size: .7rem;"></i>
+                                                    <i class="bi bi-box-arrow-up-right ms-1 tw-text-ui-xs"></i>
                                                 </a>
                                             @else
                                                 -
@@ -183,7 +183,7 @@
                                         </td>
                                         <td>
                                             @if($poRemark !== '')
-                                                <span class="d-inline-block text-truncate" style="max-width: 220px;" title="{{ $poRemark }}">
+                                                <span class="d-inline-block text-truncate tw-max-w-[220px]" title="{{ $poRemark }}">
                                                     {{ \Illuminate\Support\Str::limit($poRemark, 80) }}
                                                 </span>
                                             @else
@@ -218,7 +218,7 @@
         @endphp
 
         @if($latestInspection)
-            <div class="card border-0 shadow-sm mt-4" id="sec-inspection" style="scroll-margin-top: 80px;">
+            <div class="card border-0 shadow-sm mt-4 tw-scroll-mt-20" id="sec-inspection">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">QC Inspection Report</h6>
                     <span class="badge {{ $latestInspection->status === 'ng' ? 'bg-danger' : 'bg-success' }} text-uppercase px-3 py-2">
@@ -260,8 +260,8 @@
                         <div class="row g-2">
                             @foreach($latestInspection->attachments as $att)
                                 <div class="col-6 col-md-4 col-lg-3">
-                                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm bg-light" style="height: 120px;">
-                                        <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100" style="object-fit: cover;">
+                                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm bg-light tw-h-[120px]">
+                                        <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                                     </a>
                                 </div>
                             @endforeach
@@ -300,7 +300,7 @@
         </div>
 
         @if($po->status === 'claim_needed')
-            <div class="card border-danger shadow-sm mb-4" id="sec-claim" style="scroll-margin-top: 80px;">
+            <div class="card border-danger shadow-sm mb-4 tw-scroll-mt-20" id="sec-claim">
                 <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-danger">
                         <i class="bi bi-exclamation-octagon me-2"></i>Material Claim
@@ -332,18 +332,18 @@
             </div>
         @endif
 
-        <div class="card border-0 shadow-sm mb-4" id="sec-timeline" style="scroll-margin-top: 80px;">
+        <div class="card border-0 shadow-sm mb-4 tw-scroll-mt-20" id="sec-timeline">
             <div class="card-header bg-white py-3">
                 <h6 class="mb-0 fw-bold">Timeline</h6>
             </div>
             <div class="card-body p-4">
                 <div class="position-relative">
-                    <div class="position-absolute h-100 border-start" style="left: 10px; top: 0; border-color: var(--md-outline-variant) !important;"></div>
+                    <div class="position-absolute h-100 border-start tw-start-[10px] tw-top-0 tw-border-outline-variant"></div>
 
                     {{-- PO Created --}}
                     <div class="position-relative mb-4 ps-4">
-                        <div class="position-absolute bg-primary rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 text-primary fw-bold" style="font-size: 0.85rem;">PO Created</h6>
+                        <div class="position-absolute bg-primary rounded-circle tw-start-0 tw-top-0 tw-h-5 tw-w-5"></div>
+                        <h6 class="mb-1 text-primary fw-bold tw-text-ui-sm">PO Created</h6>
                         <div class="small text-muted">{{ $po->created_at->format('d M Y, H:i') }}</div>
                     </div>
 
@@ -351,8 +351,8 @@
                     @foreach($po->documents->sortBy('updated_at') as $doc)
                         @if($doc->status !== 'pending')
                         <div class="position-relative mb-4 ps-4">
-                            <div class="position-absolute bg-info rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                            <h6 class="mb-1 text-info fw-bold" style="font-size: 0.85rem;">
+                            <div class="position-absolute bg-info rounded-circle tw-start-0 tw-top-0 tw-h-5 tw-w-5"></div>
+                            <h6 class="mb-1 text-info fw-bold tw-text-ui-sm">
                                 @php
                                     $docLabels = [
                                         'invoice' => 'Invoice',
@@ -370,15 +370,15 @@
 
                     {{-- Est. Arrival --}}
                     <div class="position-relative mb-4 ps-4">
-                        <div class="position-absolute {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'bg-warning' : 'bg-secondary' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Estimated Arrival</h6>
+                        <div class="position-absolute {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'bg-warning' : 'bg-secondary' }} rounded-circle tw-start-0 tw-top-0 tw-h-5 tw-w-5"></div>
+                        <h6 class="mb-1 {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning fw-bold' : 'text-muted' }} tw-text-ui-sm">Estimated Arrival</h6>
                         <div class="small text-muted">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}</div>
                     </div>
 
                     {{-- Actual Arrival --}}
                     <div class="position-relative ps-4">
-                        <div class="position-absolute {{ $po->actual_arrival ? 'bg-success' : 'bg-light border' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 {{ $po->actual_arrival ? 'text-success fw-bold' : 'text-muted' }}" style="font-size: 0.85rem;">Material Arrived</h6>
+                        <div class="position-absolute {{ $po->actual_arrival ? 'bg-success' : 'bg-light border' }} rounded-circle tw-start-0 tw-top-0 tw-h-5 tw-w-5"></div>
+                        <h6 class="mb-1 {{ $po->actual_arrival ? 'text-success fw-bold' : 'text-muted' }} tw-text-ui-sm">Material Arrived</h6>
                         @if($po->actual_arrival)
                             <div class="small text-muted">{{ $po->actual_arrival->format('d M Y') }}</div>
                         @endif
@@ -399,7 +399,7 @@
 </div>
 
 {{-- SECTION B - Import Document Tracking --}}
-<div class="card border-0 shadow-sm mb-5" id="sec-document" style="scroll-margin-top: 80px;">
+<div class="card border-0 shadow-sm mb-5 tw-scroll-mt-20" id="sec-document">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold">
             Import Document Tracking
@@ -409,7 +409,7 @@
     </div>
     <div class="card-body">
         {{-- Progress Bar --}}
-        <div class="progress mb-4" style="height: 8px;">
+        <div class="progress mb-4 tw-h-2">
             <div class="progress-bar bg-success" role="progressbar" id="docProgressBar"
                  style="width: {{ $totalDocs > 0 ? ($completedDocs/$totalDocs*100) : 0 }}%"></div>
         </div>
@@ -486,7 +486,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnSaveDocStatus">
+                <button type="button" class="btn btn-primary" id="btnSaveDocStatus">
                     <span class="spinner-border spinner-border-sm d-none me-1" id="docSpinner"></span>
                     Save
                 </button>

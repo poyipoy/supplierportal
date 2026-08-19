@@ -8,7 +8,7 @@
     <x-ui.page-header title="Material Claims" description="Review and respond to NG material claims assigned to your supplier account." eyebrow="Supplier Portal" />
     <x-ui.alert tone="warning">Claims with <strong>PENDING</strong> status require your response before the deadline.</x-ui.alert>
     <x-ui.data-table title="Claims from ADASI" description="The list is scoped to your supplier account and its purchase orders.">
-            <table class="table table-hover align-middle" id="claimTable" style="width: 100%;">
+            <table class="table table-hover align-middle w-100" id="claimTable">
                 <thead class="table-light">
                     <tr>
                         <th>Claim ID</th>

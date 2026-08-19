@@ -104,7 +104,7 @@
             :title="'Material Price Details (' . $quotation->items->count() . ' Item)'"
             description="Requested specifications, supplier availability, and exchange-rate snapshot in one review table."
         >
-                    <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                    <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
                         <thead class="table-light text-center">
                             <tr>
                                  <th>No</th>
@@ -143,7 +143,7 @@
                                      <td>
                                          <div class="fw-medium">{{ $item->prItem->material_name ?? '-' }}</div>
                                         @if($item->prItem && $item->prItem->shape)
-                                            <span class="badge bg-light text-dark border" style="font-size:.65rem">{{ $item->prItem->shape }}</span>
+                                            <span class="badge bg-light text-dark border tw-text-ui-xs">{{ $item->prItem->shape }}</span>
                                              <div class="text-muted small">{{ $item->prItem->dimension_label }}</div>
                                          @endif
                                          @if($item->prItem?->remark)
@@ -151,7 +151,7 @@
                                          @endif
                                      </td>
                                      @php($availability = $item->availability_comparison)
-                                     <td class="text-start small" style="min-width: 230px;">
+                                     <td class="text-start small tw-min-w-[230px]">
                                          <div class="border rounded p-2 bg-light mb-2">
                                              <div class="text-muted fw-semibold mb-1"><i class="bi bi-building me-1"></i>Requested by Purchasing</div>
                                              <div>Qty: {{ number_format($quantity, 0) }}</div>

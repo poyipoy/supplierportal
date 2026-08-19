@@ -1,6 +1,6 @@
 # UI Redesign Progress
 
-Last updated: `2026-08-20 01:18:12 +07:00`
+Last updated: `2026-08-20 01:28:04 +07:00`
 
 ## Recovery state
 
@@ -22,22 +22,23 @@ Last updated: `2026-08-20 01:18:12 +07:00`
 | UI-03 Purchasing PR Pilot | PASS | `39818d3` | `UI-03-PR-PILOT-RESULT.md` | Complete |
 | UI-04 Remaining Purchasing | PASS | `fcc31ad` | `UI-04-PURCHASING-RESULT.md` | Complete |
 | UI-05 Supplier | PASS | `d5bdfc1` | `UI-05-SUPPLIER-RESULT.md` | Complete |
-| UI-06 QC + Admin + Auth | PASS | pending local checkpoint | `UI-06-QC-ADMIN-AUTH-RESULT.md` | Complete |
-| UI-07 Compatibility Cleanup | IN_PROGRESS | — | — | Inventory dependencies and remove only proven duplication |
-| UI-08 Visual QA + Fixes | NOT_STARTED | — | — | Retry browser once; static QA otherwise |
+| UI-06 QC + Admin + Auth | PASS | `be04e47` | `UI-06-QC-ADMIN-AUTH-RESULT.md` | Complete |
+| UI-07 Compatibility Cleanup | PASS | pending local checkpoint | `UI-07-COMPATIBILITY-CLEANUP-RESULT.md` | Complete |
+| UI-08 Visual QA + Fixes | IN_PROGRESS | — | — | Retry browser once; static QA otherwise |
 | UI-09 Final Audit + Report | NOT_STARTED | — | — | Final verification and report |
 
 ## Latest verification
 
 | Check | Result |
 |---|---|
-| `npm.cmd run build` | PASS — CSS 33.69 kB, JS 95.72 kB |
+| `npm.cmd run build` | PASS — CSS 35.22 kB, JS 95.72 kB |
 | `php artisan view:cache` | PASS |
 | UI-02 targeted tests | PASS — 13 tests, 67 assertions |
 | UI-03 targeted tests | PASS — 51 tests, 540 assertions |
 | UI-04 targeted batches | PASS — quotation 15/233; comparison 11/200; PO 27/370; claim 20/180 |
 | UI-05 targeted batches | PASS — quotation 15/190; import/history 26/232; PO/claim 23/282 |
 | UI-06 targeted batches | PASS — Auth 74/488; Admin/HS 10/160; isolation/Hashid 8/128 |
+| UI-07 targeted batch | PASS — 41 passed, 8 risky, 464 assertions |
 | `php artisan test` | 179 passed, 25 risky, 1 known pre-existing failure, 2182 assertions |
 | HTTP login/assets/manifest smoke | PASS |
 | Browser screenshots | BLOCKED — no browser available |
@@ -53,4 +54,4 @@ Last updated: `2026-08-20 01:18:12 +07:00`
 
 ## Resume instruction
 
-Resume from `UI-07 Compatibility Cleanup`. Do not repeat packages marked `PASS` unless a later verification proves a regression.
+Resume from `UI-08 Visual QA + Fixes`. Do not repeat packages marked `PASS` unless a later verification proves a regression.

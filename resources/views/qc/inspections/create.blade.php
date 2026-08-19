@@ -3,32 +3,6 @@
 @section('title', 'Start QC Inspection: ' . $po->po_number . ' - ADASI Portal')
 @section('page-title', 'QC Inspection Material')
 
-@push('styles')
-<style>
-    .qc-spec-grid,
-    .qc-dimension-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: .75rem;
-    }
-
-    @media (min-width: 992px) {
-        .qc-spec-grid,
-        .qc-dimension-grid {
-            grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
-        }
-    }
-
-    .qc-spec-box {
-        border: 1px solid var(--md-outline-variant);
-        border-radius: .5rem;
-        padding: .65rem .75rem;
-        background: var(--md-surface-container-low);
-        min-height: 64px;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Inspect ' . $po->po_number" description="Compare each requested specification with actual measurements, mark OK/NG, and attach evidence for every NG item." eyebrow="QC">
@@ -131,7 +105,7 @@
                     <div class="col-md-7 ps-md-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold small text-primary text-uppercase mb-0">Input Aktual</h6>
-                            <div class="text-end" style="min-width: 150px;">
+                            <div class="text-end tw-min-w-[150px]">
                                 @php $itemStatus = old('items.' . $index . '.status', 'ok'); @endphp
                                 <div class="small text-muted mb-1">Status</div>
                                 <div class="form-check form-switch d-inline-flex align-items-center gap-2 mb-0">

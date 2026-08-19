@@ -154,7 +154,7 @@
         <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
                     <thead class="table-light text-center" id="historicalTableHead">
                         @if($periodView === 'yearly')
                             <tr>
@@ -222,7 +222,7 @@
 @else
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center py-5 text-muted">
-            <i class="bi bi-graph-up" style="font-size:3rem;opacity:.5"></i>
+            <i class="bi bi-graph-up tw-text-[3rem] tw-opacity-50"></i>
             <p class="mt-3 mb-0">Select the material above to view your historical price trend.</p>
         </div>
     </div>
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = `
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center py-5 text-muted">
-                    <i class="bi bi-graph-up" style="font-size:3rem;opacity:.5"></i>
+                    <i class="bi bi-graph-up tw-text-[3rem] tw-opacity-50"></i>
                     <p class="mt-3 mb-0">${escapeOptionText(message)}</p>
                 </div>
             </div>
@@ -434,7 +434,7 @@ function emptyHistorycalResultHtml(message, alertClass = 'card') {
     return `
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center py-5 text-muted">
-                <i class="bi bi-graph-up" style="font-size:3rem;opacity:.5"></i>
+                <i class="bi bi-graph-up tw-text-[3rem] tw-opacity-50"></i>
                 <p class="mt-3 mb-0">${escapeHtml(message)}</p>
             </div>
         </div>
@@ -490,7 +490,7 @@ function historicalResultShellHtml(materialName) {
             <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
+                    <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
                         <thead class="table-light text-center" id="historicalTableHead"></thead>
                         <tbody id="historicalTableBody"></tbody>
                     </table>

@@ -17,7 +17,7 @@
             <x-ui.card title="Quality Ratio" class="tw-h-full">
                 <div class="tw-flex tw-items-center tw-justify-center">
                     @if($totalInspections > 0)
-                        <div style="width:220px;height:220px;"><canvas id="qualityChart"></canvas></div>
+                        <div class="tw-h-[220px] tw-w-[220px]"><canvas id="qualityChart"></canvas></div>
                     @else
                         <div class="text-muted text-center">No inspection data available.</div>
                     @endif

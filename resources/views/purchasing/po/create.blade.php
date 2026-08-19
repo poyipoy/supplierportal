@@ -68,7 +68,7 @@
                         ];
                     }
                 @endphp
-                <label class="list-group-item d-flex align-items-center gap-3 py-3 consolidate-item" for="oq_{{ $oq->id }}" style="cursor: pointer;">
+                <label class="list-group-item d-flex align-items-center gap-3 py-3 consolidate-item tw-cursor-pointer" for="oq_{{ $oq->id }}">
                     <input type="checkbox" class="form-check-input consolidate-check" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)'>
                     <div class="flex-grow-1">
                         <div class="fw-medium">{{ $oq->purchaseRequisition->pr_number ?? '-' }}</div>
@@ -97,7 +97,7 @@
 {{-- Material Breakdown --}}
 <x-ui.data-table title="Material Breakdown" description="Selected quotations are combined here before the PO is submitted.">
     <x-slot:toolbar><x-ui.status-chip tone="info" id="totalItemCount">{{ $quotation->items->count() }} item</x-ui.status-chip></x-slot:toolbar>
-            <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+            <table class="table table-bordered align-middle mb-0 tw-text-ui-sm">
                 <thead class="table-light text-center">
                     <tr>
                         <th>No</th>

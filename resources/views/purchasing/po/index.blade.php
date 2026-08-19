@@ -145,9 +145,9 @@
             const supplierText = $('#filter_supplier option:selected').val() ? $('#filter_supplier option:selected').text().trim() : null;
             
             const chips = [];
-            if (poText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">No. PO: ${poText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#filter_po_number').val(''); reloadPoTablePreservingCursor();"></i></span>`);
-            if (statusText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Status: ${statusText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#filter_status').val('').trigger('change')"></i></span>`);
-            if (supplierText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Supplier: ${supplierText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#filter_supplier').val('').trigger('change')"></i></span>`);
+            if (poText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">No. PO: ${poText} <i class="bi bi-x-circle ms-1 tw-cursor-pointer" onclick="$('#filter_po_number').val(''); reloadPoTablePreservingCursor();"></i></span>`);
+            if (statusText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Status: ${statusText} <i class="bi bi-x-circle ms-1 tw-cursor-pointer" onclick="$('#filter_status').val('').trigger('change')"></i></span>`);
+            if (supplierText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Supplier: ${supplierText} <i class="bi bi-x-circle ms-1 tw-cursor-pointer" onclick="$('#filter_supplier').val('').trigger('change')"></i></span>`);
             
             const $container = $('#filterChips');
             const $resetBtn = $('#resetFilter');

@@ -44,8 +44,8 @@
                     <div class="row g-2">
                         @foreach($claim->inspection->attachments as $att)
                             <div class="col-4 col-md-3 col-lg-2">
-                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm" style="height: 100px;">
-                                    <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100" style="object-fit: cover;">
+                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm tw-h-[100px]">
+                                    <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                                 </a>
                             </div>
                         @endforeach

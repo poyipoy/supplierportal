@@ -21,7 +21,7 @@
                         <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
                         <x-ui.button :href="route('supplier.export.quotations.detail', $quotation)" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
                     </div></x-slot:toolbar>
-                        <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                        <table class="table table-bordered align-middle mb-0 tw-text-ui-sm">
                             <thead class="table-light text-center">
                                 <tr>
                                      <th width="5%">No</th>
@@ -53,7 +53,7 @@
                                         <td class="text-center">{{ $index + 1 }}</td>
                                          <td>
                                             <div class="fw-bold">{{ $item->prItem->material_name }}</div>
-                                            <div class="text-muted" style="font-size: 0.75rem;">
+                                            <div class="text-muted tw-text-ui-xs">
                                                 @if($item->prItem->shape)
                                                     {{ $item->prItem->shape }}: {{ $item->prItem->dimension_label }}
                                                 @else

@@ -13,7 +13,7 @@
 </div>
 
 <x-ui.data-table title="Materials and Latest Price" description="Server-side results include your latest converted price, range, submission date, and status.">
-            <table class="table table-hover align-middle mb-0 w-100" id="overviewTable" style="font-size:.85rem">
+            <table class="table table-hover align-middle mb-0 w-100 tw-text-ui-sm" id="overviewTable">
                 <thead class="table-light">
                     <tr>
                         <th>Material</th>
@@ -21,7 +21,7 @@
                         <th>Price Terakhir (IDR) & Range Price</th>
                         <th>Submit Date Terakhir</th>
                         <th>Latest Status</th>
-                        <th class="text-center" style="width: 120px;">Action</th>
+                        <th class="text-center tw-w-[120px]">Action</th>
                     </tr>
                 </thead>
             </table>
@@ -29,17 +29,7 @@
 </div>
 @endsection
 
-@push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-<style>
-    .dataTables_wrapper .dataTables_length select { padding-right: 2rem; }
-    #overviewTable th { white-space: nowrap; }
-</style>
-@endpush
-
 @push('scripts')
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script>
     $(document).ready(function() {
         $('#overviewTable').DataTable({

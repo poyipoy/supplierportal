@@ -57,7 +57,7 @@
                     </div>
 
                     {{-- Dinamis untuk Supplier --}}
-                    <div class="col-md-6" id="supplier-fields" style="display: none;">
+                    <div class="col-md-6" id="supplier-fields" hidden>
                         <h6 class="text-info fw-bold mb-3 border-bottom pb-2">Company Details (Supplier)</h6>
 
                         <div class="mb-3">
@@ -124,10 +124,10 @@
 
         function toggleSupplierFields() {
             if (roleSelect.value === 'supplier') {
-                supplierFields.style.display = 'block';
+                supplierFields.hidden = false;
                 supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.setAttribute('required', 'required'));
             } else {
-                supplierFields.style.display = 'none';
+                supplierFields.hidden = true;
                 supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.removeAttribute('required'));
             }
         }

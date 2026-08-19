@@ -358,25 +358,25 @@
                 <table class="table table-bordered align-middle mb-0 quotation-items-table">
                     <caption class="visually-hidden">Supplier quotation entry table with requested material, availability, pricing, notes, and MTC fields</caption>
                     <colgroup>
-                        <col style="width: var(--quotation-number-width);">
-                        <col style="width: var(--quotation-material-width);">
+                        <col class="tw-w-[var(--quotation-number-width)]">
+                        <col class="tw-w-[var(--quotation-material-width)]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 315px;">
+                        <col class="tw-w-[315px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 80px;">
-                        <col style="width: 120px;">
-                        <col style="width: 135px;">
+                        <col class="tw-w-20">
+                        <col class="tw-w-[120px]">
+                        <col class="tw-w-[135px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 165px;">
-                        <col style="width: 165px;">
-                        <col style="width: 165px;">
+                        <col class="tw-w-[165px]">
+                        <col class="tw-w-[165px]">
+                        <col class="tw-w-[165px]">
                     </colgroup>
                     <colgroup>
-                        <col style="width: 220px;">
-                        <col style="width: 240px;">
+                        <col class="tw-w-[220px]">
+                        <col class="tw-w-[240px]">
                     </colgroup>
                     <thead class="table-light text-center">
                         <tr class="quotation-group-header">
@@ -416,7 +416,7 @@
                                 <td class="text-center quotation-sticky-number quotation-number">{{ $index + 1 }}</td>
                                 <td class="quotation-sticky-material">
                                      <div class="fw-bold">{{ $item->material_name }}</div>
-                                     <div class="text-muted" style="font-size: 0.75rem;">
+                                     <div class="text-muted tw-text-ui-xs">
                                         @if($item->hs_code) HS: {{ $item->hs_code }} | @endif
                                         @if($item->shape)
                                             {{ $item->shape }}: {{ $item->dimension_label }}
@@ -630,7 +630,7 @@
 
                     <div id="quotationImportPreviewPanel" class="d-none">
                         <div class="fw-semibold mb-2">Parsed Item Preview</div>
-                        <div class="table-responsive border rounded" style="max-height: 330px;">
+                        <div class="table-responsive border rounded tw-max-h-[330px]">
                             <table class="table table-sm table-striped align-middle mb-0">
                                 <thead class="table-light sticky-top">
                                     <tr>

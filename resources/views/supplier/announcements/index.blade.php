@@ -11,7 +11,7 @@
                         <h5 class="mb-0 fw-bold"><a href="{{ route('supplier.announcements.show', $ann->id) }}" class="text-decoration-none text-primary">{{ $ann->title }}</a></h5>
                         <small class="text-muted">{{ $ann->published_at->format('d M Y, H:i') }}</small>
                     </div>
-                    <div class="text-muted mb-3" style="font-size:.9rem">{{ Str::limit($ann->content, 200) }}</div>
+                    <div class="text-muted mb-3 tw-text-ui-sm">{{ Str::limit($ann->content, 200) }}</div>
                     <x-ui.button :href="route('supplier.announcements.show', $ann->id)" variant="ghost" size="sm">Read More<x-slot:trailing><i class="bi bi-arrow-right"></i></x-slot:trailing></x-ui.button>
                 </div>
             @empty

@@ -27,7 +27,7 @@
             {{-- Tab: Waiting for Inspection --}}
             <div class="tab-pane fade show active" id="waiting" role="tabpanel">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="waitingTable" style="width: 100%;">
+                    <table class="table table-hover align-middle w-100" id="waitingTable">
                         <thead class="table-light">
                             <tr>
                                 <th>PO No.</th>
@@ -66,7 +66,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="historyTable" style="width: 100%;">
+                    <table class="table table-hover align-middle w-100" id="historyTable">
                         <thead class="table-light">
                             <tr>
                                 <th>PO No.</th>

@@ -84,7 +84,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
+                <table class="table table-bordered align-middle mb-0 tw-text-ui-sm">
                     <thead class="table-light text-center">
                         <tr>
                             <th>Parameter</th>
@@ -144,8 +144,8 @@
             <div class="row g-3">
                 @foreach($inspection->attachments as $att)
                     <div class="col-6 col-md-4 col-lg-3">
-                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm" style="height: 150px;">
-                            <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100" style="object-fit: cover;">
+                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm tw-h-[150px]">
+                            <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                         </a>
                     </div>
                 @endforeach
