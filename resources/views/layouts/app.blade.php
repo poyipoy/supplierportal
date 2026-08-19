@@ -250,7 +250,7 @@
             background-color: var(--md-surface);
             box-shadow: var(--md-elevation-1);
             z-index: 1000;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width var(--ui-motion-standard) var(--ui-easing-standard), transform var(--ui-motion-standard) var(--ui-easing-standard);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -262,7 +262,7 @@
 
         .sidebar-brand {
             padding: 1.5rem;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--md-outline-variant);
             display: flex;
             align-items: center;
             height: 70px;
@@ -290,7 +290,7 @@
             font-size: 0.75rem;
             text-transform: uppercase;
             font-weight: 600;
-            color: #999;
+            color: var(--md-on-surface-variant);
             margin-top: 1rem;
             white-space: nowrap;
         }
@@ -364,7 +364,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: margin-inline-start var(--ui-motion-standard) var(--ui-easing-standard);
         }
 
         .main-wrapper.expanded {
@@ -377,6 +377,7 @@
             height: 70px;
             padding: 0 2rem;
             box-shadow: var(--md-elevation-1);
+            border-bottom: 1px solid var(--md-outline-variant);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -736,23 +737,23 @@
         }
 
         .role-badge-admin {
-            background-color: #e0e7ff;
-            color: #3730a3;
+            background-color: var(--md-primary-container);
+            color: var(--md-on-primary-container);
         }
 
         .role-badge-purchasing {
-            background-color: #dcfce7;
-            color: #166534;
+            background-color: var(--md-success-container);
+            color: var(--md-on-success-container);
         }
 
         .role-badge-supplier {
-            background-color: #fef08a;
-            color: #854d0e;
+            background-color: var(--md-warning-container);
+            color: var(--md-on-warning-container);
         }
 
         .role-badge-qc {
-            background-color: #fee2e2;
-            color: #991b1b;
+            background-color: var(--md-error-container);
+            color: var(--md-on-error-container);
         }
 
         /* Global Table Styling */
@@ -1277,7 +1278,7 @@
                 left: 0;
                 width: 100%;
                 height: 100vh;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, var(--md-scrim-opacity));
                 z-index: 998;
             }
 
@@ -1327,7 +1328,13 @@
     @stack('styles')
 </head>
 
-<body>
+<body
+    x-data="adasiShell"
+    x-on:ui-sidebar-toggle.window="toggleSidebar()"
+    x-on:keydown.escape.window="closeMobileSidebar()"
+    x-effect="document.body.classList.toggle('ui-nav-open', mobileOpen)"
+>
+    <a href="#main-content" class="ui-skip-link">Langsung ke konten utama</a>
     @php
         $initNotifCount = 0;
         $initChatCount = 0;
@@ -1355,18 +1362,26 @@
     @include('partials.sidebar')
 
     {{-- Mobile Overlay --}}
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div
+        class="sidebar-overlay"
+        id="sidebarOverlay"
+        x-bind:class="{ 'show': mobileOpen }"
+        x-on:click="closeMobileSidebar()"
+        aria-hidden="true"
+    ></div>
 
     {{-- Main Wrapper --}}
-    <div class="main-wrapper" id="mainWrapper">
+    <div class="main-wrapper" id="mainWrapper" x-bind:class="{ 'expanded': desktopCollapsed }">
         {{-- Navbar --}}
         @include('partials.navbar')
 
         {{-- Content Area --}}
-        <div class="content-area">
-            @include('partials.alerts')
-            @yield('content')
-        </div>
+        <main class="content-area" id="main-content" tabindex="-1">
+            <div class="content-container">
+                @include('partials.alerts')
+                @yield('content')
+            </div>
+        </main>
     </div>
 
     @include('partials.chat-drawer')
@@ -1486,36 +1501,6 @@
 
     <!-- Custom JS -->
     <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainWrapper = document.getElementById('mainWrapper');
-            const overlay = document.getElementById('sidebarOverlay');
-
-            if (window.innerWidth > 992) {
-                // Desktop: Toggle collapsed state
-                sidebar.classList.toggle('collapsed');
-                mainWrapper.classList.toggle('expanded');
-
-                // Save preference to localStorage
-                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-            } else {
-                // Mobile: Toggle slide-in menu
-                sidebar.classList.toggle('show');
-                overlay.classList.toggle('show');
-            }
-        }
-
-        // Apply saved preference on load
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.innerWidth > 992) {
-                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-                if (isCollapsed) {
-                    document.getElementById('sidebar').classList.add('collapsed');
-                    document.getElementById('mainWrapper').classList.add('expanded');
-                }
-            }
-        });
-
         @auth
             function updateBadges() {
                 // Notification badge

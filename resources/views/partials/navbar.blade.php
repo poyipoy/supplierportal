@@ -1,33 +1,49 @@
 <nav class="top-navbar d-flex align-items-center justify-content-between">
     {{-- Left: Mobile toggle + Page title --}}
     <div class="d-flex align-items-center gap-3">
-        <button class="btn btn-sm btn-outline-secondary sidebar-toggle" onclick="toggleSidebar()">
-            <i class="bi bi-list"></i>
-        </button>
-        <h6 class="mb-0 fw-semibold text-dark">@yield('page-title', 'Dashboard')</h6>
+        <x-ui.icon-button
+            icon="bi-list"
+            label="Buka atau tutup navigasi"
+            size="sm"
+            class="sidebar-toggle"
+            x-on:click="$dispatch('ui-sidebar-toggle')"
+            x-bind:aria-expanded="viewportIsDesktop ? (!desktopCollapsed).toString() : mobileOpen.toString()"
+            aria-controls="sidebar"
+        />
+        <p class="topbar-page-title">@yield('page-title', 'Dashboard')</p>
     </div>
 
     {{-- Right: User info + Logout --}}
     <div class="d-flex align-items-center gap-3">
         {{-- Chat Icon (Only for Purchasing and Supplier) --}}
         @if(in_array(auth()->user()->role, ['purchasing', 'supplier']))
-            <a href="{{ route(auth()->user()->role . '.conversations.index') }}" class="btn btn-sm btn-light position-relative" title="Chat & Negotiation" data-chat-drawer>
-                <i class="bi bi-chat-dots" style="font-size:1.2rem;"></i>
-                <span class="chat-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $initChatCount > 0 ? '' : 'd-none' }}" style="font-size:0.6rem;">
-                    {{ $initChatCount }}
-                </span>
-            </a>
+            <x-ui.icon-button
+                :href="route(auth()->user()->role . '.conversations.index')"
+                icon="bi-chat-dots"
+                label="Chat & Negotiation"
+                size="sm"
+                data-chat-drawer
+            >
+                <x-slot:badge>
+                    <span class="chat-badge topbar-counter {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
+                </x-slot:badge>
+            </x-ui.icon-button>
         @endif
 
         {{-- Notification Icon --}}
         <div class="dropdown">
-            <button class="btn btn-sm btn-light position-relative" type="button" title="Notifications"
-                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                <i class="bi bi-bell" style="font-size:1.2rem;"></i>
-                <span class="notif-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $initNotifCount > 0 ? '' : 'd-none' }}" style="font-size:0.6rem;">
-                    {{ $initNotifCount }}
-                </span>
-            </button>
+            <x-ui.icon-button
+                icon="bi-bell"
+                label="Notifications"
+                size="sm"
+                data-bs-toggle="dropdown"
+                data-bs-auto-close="outside"
+                aria-expanded="false"
+            >
+                <x-slot:badge>
+                    <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}">{{ $initNotifCount }}</span>
+                </x-slot:badge>
+            </x-ui.icon-button>
             <div class="dropdown-menu dropdown-menu-end notification-dropdown">
                 <div class="notification-panel">
                     <div class="notification-menu nav nav-pills" role="tablist" aria-label="Kategori notification">
@@ -135,10 +151,9 @@
 
         {{-- User Dropdown --}}
         <div class="dropdown">
-            <button class="btn btn-sm btn-light dropdown-toggle d-flex align-items-center gap-2" type="button"
-                data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-person-circle" style="font-size:1.2rem;"></i>
-                <span class="d-none d-sm-inline">{{ auth()->user()->name }}</span>
+            <button class="topbar-user-trigger dropdown-toggle" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu pengguna">
+                <x-ui.user-chip :name="auth()->user()->name" :meta="auth()->user()->email" class="topbar-user-chip" />
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li>
