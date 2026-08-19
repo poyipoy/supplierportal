@@ -22,15 +22,15 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
+    <body class="tw-font-sans tw-text-on-surface tw-antialiased">
+        <div class="tw-flex tw-min-h-screen tw-flex-col tw-items-center tw-bg-background tw-pt-6 sm:tw-justify-center sm:tw-pt-0">
             <div>
                 <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    <x-application-logo class="tw-h-20 tw-w-20 tw-fill-current tw-text-on-surface-variant" />
                 </a>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+            <div class="tw-mt-6 tw-w-full tw-overflow-hidden tw-bg-surface tw-px-6 tw-py-4 tw-shadow-ui-1 sm:tw-max-w-md sm:tw-rounded-ui-md">
                 @include('partials.alerts')
                 {{ $slot }}
             </div>

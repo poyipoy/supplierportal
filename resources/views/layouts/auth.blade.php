@@ -24,6 +24,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
+    {{-- Shared Tailwind token foundation + Alpine entry --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <style>
         :root {
             --adasi-blue: #1F5FA6;

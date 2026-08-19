@@ -1,6 +1,6 @@
 # UI Redesign Progress
 
-Last updated: `2026-08-19 23:43:02 +07:00`
+Last updated: `2026-08-19 23:53:50 +07:00`
 
 ## Recovery state
 
@@ -16,8 +16,8 @@ Last updated: `2026-08-19 23:43:02 +07:00`
 
 | Package | Status | Checkpoint | Evidence | Next action |
 |---|---|---|---|---|
-| UI-00 Audit + Baseline | PASS | pending local package commit | `UI-00-AUDIT.md` | Commit audit, then start UI-01 |
-| UI-01 Design Foundation | NOT_STARTED | — | — | Token bridge, Tailwind hybrid safety, Vite activation |
+| UI-00 Audit + Baseline | PASS | `b69f620` | `UI-00-AUDIT.md` | Complete |
+| UI-01 Design Foundation | PASS | pending local package commit | `UI-01-FOUNDATION-RESULT.md` | Commit foundation, then start UI-02 |
 | UI-02 Components + Shell | NOT_STARTED | — | — | Build `x-ui.*`, then migrate shell |
 | UI-03 Purchasing PR Pilot | NOT_STARTED | — | — | Automatic architecture gate |
 | UI-04 Remaining Purchasing | NOT_STARTED | — | — | Start only after UI-03 gate |
