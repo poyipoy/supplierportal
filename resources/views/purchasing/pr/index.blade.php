@@ -24,77 +24,88 @@
         height: 2.25rem;
         padding: 0;
     }
+
+    .pr-filter-reset--active {
+        background: var(--md-error-container) !important;
+        color: var(--md-on-error-container) !important;
+    }
 </style>
 @endpush
 
 @section('content')
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">Requisition List Material</h5>
-        <div class="d-flex gap-2">
-            <a href="{{ route('purchasing.export.requisitions') }}" class="btn btn-success btn-sm" data-async-export
-                id="exportRequisitionsBtn" data-export-url="{{ route('purchasing.export.requisitions') }}">
-                <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-            </a>
-            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create') }}" class="btn btn-primary btn-sm" style="background-color: var(--adasi-blue); border-color: var(--adasi-blue);">
-                <i class="bi bi-plus-circle me-1"></i> Create New Requisition
-            </a>
-        </div>
-    </div>
-    <div class="card-body">
-        
-        {{-- Filter Form --}}
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <label for="period_id" class="form-label small fw-medium">Filter Period</label>
-                <select name="period_id" id="period_id" class="form-select form-select-sm">
-                    <option value="">All Period</option>
-                    @foreach($periods as $period)
-                        <option value="{{ $period->id }}">
-                            {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label for="status" class="form-label small fw-medium">Filter Status</label>
-                <select name="status" id="status" class="form-select form-select-sm">
-                    <option value="">All Status</option>
-                    <option value="draft">Draft</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="rejected">Rejected</option>
-                    <option value="bidding">Bidding</option>
-                    <option value="completed">Completed</option>
-                </select>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="button" class="btn btn-light btn-sm w-100" id="resetFilter">Reset Filter</button>
-            </div>
-        </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Purchase Requisition"
+        eyebrow="Purchasing"
+        description="Create, filter, and monitor material requisitions across active procurement periods."
+    >
+        <x-slot:actions>
+            <x-ui.button
+                :href="route('purchasing.export.requisitions')"
+                variant="secondary"
+                size="sm"
+                data-async-export
+                id="exportRequisitionsBtn"
+                :data-export-url="route('purchasing.export.requisitions')"
+            >
+                <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                Export Excel
+            </x-ui.button>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
+                <x-slot:leading><i class="bi bi-plus-circle" aria-hidden="true"></i></x-slot:leading>
+                Create Requisition
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-        <div id="filterChips" class="d-flex flex-wrap gap-2 mb-3 d-none">
-            {{-- Filter chips will be rendered here by JS --}}
-        </div>
+    <x-ui.data-table
+        title="Requisition list"
+        description="Search the live list or narrow it by period and workflow status."
+    >
+        <x-slot:filters>
+            <x-ui.select name="period_id" id="period_id" label="Period" class="tw-w-full shell:tw-w-72">
+                <option value="">All periods</option>
+                @foreach($periods as $period)
+                    <option value="{{ $period->id }}">
+                        {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
+                    </option>
+                @endforeach
+            </x-ui.select>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle" id="prTable">
-                <thead class="table-light text-center">
-                    <tr>
-                        <th>No</th>
-                        <th>PR No.</th>
-                        <th>Period</th>
-                        <th>Created By</th>
-                        <th>Amount Supplier</th>
-                        <th>Amount Item</th>
-                        <th>Status</th>
-                        <th>Date Created</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+            <x-ui.select name="status" id="status" label="Status" class="tw-w-full shell:tw-w-56">
+                <option value="">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="submitted">Submitted</option>
+                <option value="rejected">Rejected</option>
+                <option value="bidding">Bidding</option>
+                <option value="completed">Completed</option>
+            </x-ui.select>
+
+            <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset tw-w-full shell:tw-w-auto">
+                <x-slot:leading><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></x-slot:leading>
+                Reset filters
+            </x-ui.button>
+
+            <div id="filterChips" class="d-none tw-basis-full tw-flex-wrap tw-gap-2" aria-live="polite"></div>
+        </x-slot:filters>
+
+        <table class="table table-hover align-middle" id="prTable">
+            <thead class="table-light text-center">
+                <tr>
+                    <th>No</th>
+                    <th>PR No.</th>
+                    <th>Period</th>
+                    <th>Created By</th>
+                    <th>Suppliers</th>
+                    <th>Items</th>
+                    <th>Status</th>
+                    <th>Date Created</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </x-ui.data-table>
 </div>
 @endsection
 
@@ -144,19 +155,35 @@
             const periodText = $('#period_id option:selected').val() ? $('#period_id option:selected').text().trim() : null;
             const statusText = $('#status option:selected').val() ? $('#status option:selected').text().trim() : null;
             
+            const createChip = (label, targetId) => {
+                const $chip = $('<span>', {
+                    class: 'tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-full tw-bg-primary-container tw-px-3 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-text-primary-container-foreground'
+                });
+                const $remove = $('<button>', {
+                    type: 'button',
+                    class: 'ui-focus-ring tw-inline-flex tw-h-6 tw-w-6 tw-items-center tw-justify-center tw-rounded-ui-full hover:tw-bg-surface',
+                    'aria-label': `Remove ${label} filter`
+                }).append($('<i>', { class: 'bi bi-x', 'aria-hidden': 'true' }));
+
+                $remove.on('click', () => $(`#${targetId}`).val('').trigger('change'));
+                $chip.append(document.createTextNode(label), $remove);
+
+                return $chip;
+            };
+
             const chips = [];
-            if (periodText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Period: ${periodText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#period_id').val('').trigger('change')"></i></span>`);
-            if (statusText) chips.push(`<span class="badge bg-primary rounded-pill d-flex align-items-center gap-1 px-3 py-2 fw-normal">Status: ${statusText} <i class="bi bi-x-circle ms-1" style="cursor:pointer" onclick="$('#status').val('').trigger('change')"></i></span>`);
-            
+            if (periodText) chips.push(createChip(`Period: ${periodText}`, 'period_id'));
+            if (statusText) chips.push(createChip(`Status: ${statusText}`, 'status'));
+
             const $container = $('#filterChips');
             const $resetBtn = $('#resetFilter');
-            
+
             if (chips.length > 0) {
-                $container.html(chips.join('')).removeClass('d-none');
-                $resetBtn.removeClass('btn-light').addClass('btn-danger text-white');
+                $container.empty().append(chips).removeClass('d-none').addClass('tw-flex');
+                $resetBtn.addClass('pr-filter-reset--active');
             } else {
-                $container.empty().addClass('d-none');
-                $resetBtn.removeClass('btn-danger text-white').addClass('btn-light');
+                $container.empty().addClass('d-none').removeClass('tw-flex');
+                $resetBtn.removeClass('pr-filter-reset--active');
             }
         }
 

@@ -9,19 +9,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-7">
-                        <label for="prImportFile" class="form-label fw-medium">Spreadsheet File</label>
-                        <input type="file" id="prImportFile" class="form-control" accept=".xlsx,.xls,.csv">
-                        <div class="form-text">XLSX, XLS, or CSV; maximum 10 MB and 1,000 data rows.</div>
-                    </div>
-                    <div class="col-md-5">
-                        <label for="prImportMode" class="form-label fw-medium">Import Mode</label>
-                        <select id="prImportMode" class="form-select">
+                <div class="tw-grid tw-gap-4 md:tw-grid-cols-[minmax(0,1.4fr)_minmax(14rem,1fr)]">
+                    <x-ui.file-upload
+                        name="import_file"
+                        id="prImportFile"
+                        label="Spreadsheet file"
+                        helper="XLSX, XLS, or CSV; maximum 10 MB and 1,000 data rows."
+                        accept=".xlsx,.xls,.csv"
+                    />
+                    <x-ui.select name="import_mode" id="prImportMode" label="Import mode">
                             <option value="replace" selected>Replace Current Rows</option>
                             <option value="append">Append to Current Rows</option>
-                        </select>
-                    </div>
+                    </x-ui.select>
                 </div>
 
                 <div id="prImportResult" class="d-none mt-4">
@@ -39,7 +38,7 @@
 
                     <div id="prImportPreviewPanel" class="d-none">
                         <div class="fw-semibold mb-2">Parsed Row Preview</div>
-                        <div class="table-responsive border rounded" style="max-height: 330px;">
+                        <div class="pr-import-preview table-responsive border rounded">
                             <table class="table table-sm table-striped align-middle mb-0">
                                 <thead class="table-light sticky-top">
                                     <tr>
@@ -59,18 +58,28 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-outline-primary" id="btnParsePrImport">
+                <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">Cancel</x-ui.button>
+                <x-ui.button type="button" variant="secondary" id="btnParsePrImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="prImportSpinner"></span>
                     Parse &amp; Validate
-                </button>
-                <button type="button" class="btn btn-primary" id="btnApplyPrImport" disabled>
+                </x-ui.button>
+                <x-ui.button type="button" id="btnApplyPrImport" disabled>
                     <i class="bi bi-check2-circle me-1"></i> Apply to Form
-                </button>
+                </x-ui.button>
             </div>
         </div>
     </div>
 </div>
+
+@once
+    @push('styles')
+        <style>
+            .pr-import-preview {
+                max-height: 20.625rem;
+            }
+        </style>
+    @endpush
+@endonce
 
 @push('scripts')
 <script>

@@ -7,13 +7,43 @@
     $modalId = $modalId ?? 'supplierPickerModal';
 @endphp
 
-<div class="supplier-picker" data-supplier-picker>
-    <label class="form-label fw-medium">Select Supplier</label>
-    <button type="button" class="btn btn-outline-primary w-100 d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}">
-        <span><i class="bi bi-people me-1"></i> Select Supplier</span>
-        <span class="badge bg-primary supplier-selected-count">{{ $selectedSupplierCount > 0 ? $selectedSupplierCount : 'All' }}</span>
-    </button>
-    <div class="form-text supplier-selected-summary" data-empty-text="All Registered Suppliers">
+@once
+    @push('styles')
+        <style>
+            .supplier-option-list {
+                max-height: 22.5rem;
+                overflow-y: auto;
+            }
+
+            .supplier-option {
+                cursor: pointer;
+                transition: background-color var(--ui-motion-fast) var(--ui-easing-standard);
+            }
+
+            .supplier-option:hover {
+                background: var(--md-surface-container-low);
+            }
+        </style>
+    @endpush
+@endonce
+
+<div class="supplier-picker tw-grid tw-gap-1.5" data-supplier-picker>
+    <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Select supplier</span>
+    <x-ui.button
+        type="button"
+        variant="secondary"
+        class="tw-w-full tw-justify-between"
+        data-bs-toggle="modal"
+        data-bs-target="#{{ $modalId }}"
+        aria-describedby="{{ $modalId }}Summary"
+    >
+        <x-slot:leading><i class="bi bi-people" aria-hidden="true"></i></x-slot:leading>
+        Select supplier
+        <x-slot:trailing>
+            <span class="supplier-selected-count tw-inline-flex tw-min-w-7 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-primary tw-px-2 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-primary-foreground">{{ $selectedSupplierCount > 0 ? $selectedSupplierCount : 'All' }}</span>
+        </x-slot:trailing>
+    </x-ui.button>
+    <div id="{{ $modalId }}Summary" class="supplier-selected-summary tw-text-ui-xs tw-text-on-surface-variant" data-empty-text="All Registered Suppliers">
         All Registered Suppliers
     </div>
     @error('supplier_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
@@ -38,19 +68,15 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <button type="button" class="btn btn-sm btn-outline-primary supplier-select-all">
-                                Select All
-                            </button>
+                            <x-ui.button type="button" variant="secondary" size="sm" class="supplier-select-all">Select all</x-ui.button>
                         </div>
                         <div class="col-auto">
-                            <button type="button" class="btn btn-sm btn-outline-secondary supplier-clear-all">
-                                Delete Selection
-                            </button>
+                            <x-ui.button type="button" variant="ghost" size="sm" class="supplier-clear-all">Clear selection</x-ui.button>
                         </div>
                     </div>
 
                     <div class="border rounded-3 overflow-hidden">
-                        <div class="supplier-option-list" style="max-height: 360px; overflow-y: auto;">
+                        <div class="supplier-option-list">
                             @forelse($suppliers as $supplier)
                                 @php
                                     $supplierName = $supplier->supplier->company_name ?? $supplier->name;
@@ -76,10 +102,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" data-bs-dismiss="modal">
-                        Save Selection
-                    </button>
+                    <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">Close</x-ui.button>
+                    <x-ui.button type="button" data-bs-dismiss="modal">Save selection</x-ui.button>
                 </div>
             </div>
         </div>

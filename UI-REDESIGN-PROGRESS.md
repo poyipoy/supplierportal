@@ -1,6 +1,6 @@
 # UI Redesign Progress
 
-Last updated: `2026-08-20 00:11:14 +07:00`
+Last updated: `2026-08-20 00:26:16 +07:00`
 
 ## Recovery state
 
@@ -18,8 +18,8 @@ Last updated: `2026-08-20 00:11:14 +07:00`
 |---|---|---|---|---|
 | UI-00 Audit + Baseline | PASS | `b69f620` | `UI-00-AUDIT.md` | Complete |
 | UI-01 Design Foundation | PASS | `620c584` | `UI-01-FOUNDATION-RESULT.md` | Complete |
-| UI-02 Components + Shell | PASS | pending local checkpoint | `UI-02-COMPONENTS-SHELL-RESULT.md` | Complete |
-| UI-03 Purchasing PR Pilot | NOT_STARTED | — | — | Automatic architecture gate |
+| UI-02 Components + Shell | PASS | `6c60943` | `UI-02-COMPONENTS-SHELL-RESULT.md` | Complete |
+| UI-03 Purchasing PR Pilot | PASS | pending local checkpoint | `UI-03-PR-PILOT-RESULT.md` | Architecture gate passed; continue UI-04 |
 | UI-04 Remaining Purchasing | NOT_STARTED | — | — | Start only after UI-03 gate |
 | UI-05 Supplier | NOT_STARTED | — | — | Reuse proven patterns |
 | UI-06 QC + Admin + Auth | NOT_STARTED | — | — | Reuse proven patterns |
@@ -31,9 +31,10 @@ Last updated: `2026-08-20 00:11:14 +07:00`
 
 | Check | Result |
 |---|---|
-| `npm.cmd run build` | PASS — CSS 27.61 kB, JS 95.72 kB |
+| `npm.cmd run build` | PASS — CSS 28.59 kB, JS 95.72 kB |
 | `php artisan view:cache` | PASS |
 | UI-02 targeted tests | PASS — 13 tests, 67 assertions |
+| UI-03 targeted tests | PASS — 51 tests, 540 assertions |
 | `php artisan test` | 204 passed, 1 known pre-existing failure, 2173 assertions |
 | HTTP login/assets/manifest smoke | PASS |
 | Browser screenshots | BLOCKED — no browser available |

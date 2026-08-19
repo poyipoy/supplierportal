@@ -3,295 +3,371 @@
 @section('title', 'Material Requisition Details - ADASI Portal')
 @section('page-title', 'Requisition Details Material')
 
+@push('styles')
+<style>
+    .pr-detail-list > div {
+        border-bottom: 1px solid var(--md-outline-variant);
+        display: grid;
+        gap: .35rem;
+        padding-block: .85rem;
+    }
+
+    .pr-detail-list > div:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .pr-detail-list > div:first-child {
+        padding-top: 0;
+    }
+
+    .pr-detail-list dt {
+        color: var(--md-on-surface-variant);
+        font-size: var(--ui-font-size-xs);
+        font-weight: 700;
+        letter-spacing: .025em;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .pr-detail-list dd {
+        color: var(--md-on-surface);
+        margin: 0;
+        min-width: 0;
+    }
+
+    .pr-best-quotation > * {
+        background: var(--md-success-container) !important;
+        color: var(--md-on-success-container);
+    }
+
+    .pr-timeline {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        position: relative;
+    }
+
+    .pr-timeline::before {
+        background: var(--md-outline-variant);
+        content: '';
+        inset-block: .6rem 1.25rem;
+        inset-inline-start: .6rem;
+        position: absolute;
+        width: 1px;
+    }
+
+    .pr-timeline-item {
+        min-height: 3.5rem;
+        padding-inline-start: 2.25rem;
+        position: relative;
+    }
+
+    .pr-timeline-marker {
+        background: var(--md-surface);
+        border: 2px solid var(--md-outline-strong);
+        border-radius: var(--md-shape-full);
+        height: 1.25rem;
+        inset-block-start: .15rem;
+        inset-inline-start: 0;
+        position: absolute;
+        width: 1.25rem;
+        z-index: 1;
+    }
+
+    .pr-timeline-item.is-complete .pr-timeline-marker {
+        background: var(--md-primary);
+        border-color: var(--md-primary);
+        box-shadow: inset 0 0 0 3px var(--md-surface);
+    }
+
+    .pr-timeline-item.is-current .pr-timeline-marker {
+        background: var(--md-warning);
+        border-color: var(--md-warning);
+        box-shadow: inset 0 0 0 3px var(--md-surface);
+    }
+
+    @media (min-width: 768px) {
+        .pr-detail-list > div {
+            grid-template-columns: minmax(9rem, .7fr) minmax(0, 1.3fr);
+        }
+    }
+</style>
+@endpush
+
 @section('content')
-<x-breadcrumb :items="[
-    'Dashboard' => route('purchasing.dashboard'),
-    'Purchase Requisition' => route('purchasing.requisitions.index'),
-    ($pr->pr_number ?? 'Draft') => '#'
-]" />
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ $pr->pr_number ?? 'Requisition Draft' }}</h6>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('purchasing.export.requisitions.detail', $pr) }}" class="btn btn-success btn-sm" data-async-export>
-                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-                    </a>
-                    <x-status-badge type="pr" :status="$pr->status" size="lg" />
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted small">Period</div>
-                    <div class="col-md-8 fw-medium">{{ $pr->period->name }} ({{ str_pad($pr->period->month, 2, '0', STR_PAD_LEFT) }}/{{ $pr->period->year }})</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted small">Date Created</div>
-                    <div class="col-md-8 fw-medium">{{ $pr->created_at->format('d F Y, H:i') }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted small">Created By</div>
-                    <div class="col-md-8 fw-medium">{{ $pr->creator->name ?? '-' }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted small">Supplier Diundang</div>
-                    <div class="col-md-8">
-                        @if($pr->invitedSuppliers->isEmpty())
-                            <span class="badge bg-light text-dark border">All Supplier</span>
-                        @else
-                            <div class="d-flex flex-wrap gap-1">
-                                @foreach($pr->invitedSuppliers as $supplier)
-                                    <span class="badge bg-primary">
-                                        {{ $supplier->supplier->company_name ?? $supplier->name }}
-                                    </span>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-4 text-muted small">Additional Notes</div>
-                    <div class="col-md-8 fw-medium">
-                        @if($pr->notes)
-                            {{ $pr->notes }}
-                        @else
-                            <em class="text-muted">No notes</em>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
+@php
+    $hasReachedSubmitted = in_array($pr->status, ['submitted', 'rejected', 'bidding', 'completed'], true);
+    $hasReachedBidding = in_array($pr->status, ['bidding', 'completed'], true);
+@endphp
 
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Material List ({{ $pr->items->count() }} Item)</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-center" style="font-size: 0.8rem;">
+<div class="tw-grid tw-gap-6">
+    <x-ui.breadcrumb :items="[
+        'Dashboard' => route('purchasing.dashboard'),
+        'Purchase Requisition' => \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index'),
+        ($pr->pr_number ?? 'Draft') => null,
+    ]" />
+
+    <x-ui.page-header
+        :title="$pr->pr_number ?? 'Requisition draft'"
+        eyebrow="Purchase requisition"
+        description="Review material requirements, invited suppliers, quotation responses, and workflow progress."
+    >
+        <x-slot:actions>
+            <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="secondary" size="sm" data-async-export>
+                <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                Export Excel
+            </x-ui.button>
+            <x-status-badge type="pr" :status="$pr->status" size="lg" />
+        </x-slot:actions>
+    </x-ui.page-header>
+
+    <div class="tw-grid tw-items-start tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+        <div class="tw-grid tw-min-w-0 tw-gap-6">
+            <x-ui.card title="Requisition overview" description="Core procurement context and supplier audience.">
+                <dl class="pr-detail-list tw-m-0">
+                    <div>
+                        <dt>Period</dt>
+                        <dd class="tw-font-semibold">{{ $pr->period->name }} ({{ str_pad($pr->period->month, 2, '0', STR_PAD_LEFT) }}/{{ $pr->period->year }})</dd>
+                    </div>
+                    <div>
+                        <dt>Date created</dt>
+                        <dd class="ui-tabular-nums tw-font-medium">{{ $pr->created_at->format('d F Y, H:i') }}</dd>
+                    </div>
+                    <div>
+                        <dt>Created by</dt>
+                        <dd class="tw-font-medium">{{ $pr->creator->name ?? '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt>Invited suppliers</dt>
+                        <dd>
+                            @if($pr->invitedSuppliers->isEmpty())
+                                <span class="tw-inline-flex tw-rounded-ui-full tw-bg-surface-container tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold">All registered suppliers</span>
+                            @else
+                                <div class="tw-flex tw-flex-wrap tw-gap-1.5">
+                                    @foreach($pr->invitedSuppliers as $supplier)
+                                        <span class="tw-inline-flex tw-rounded-ui-full tw-bg-primary-container tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-primary-container-foreground">
+                                            {{ $supplier->supplier->company_name ?? $supplier->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Additional notes</dt>
+                        <dd>
+                            @if($pr->notes)
+                                <span class="tw-whitespace-pre-line">{{ $pr->notes }}</span>
+                            @else
+                                <span class="tw-text-on-surface-variant">No notes</span>
+                            @endif
+                        </dd>
+                    </div>
+                </dl>
+            </x-ui.card>
+
+            <x-ui.data-table
+                :title="'Material list (' . $pr->items->count() . ' items)'"
+                description="Calculated unit and total weights are shown with their HS-code resolution source."
+            >
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>No</th>
+                            <th>HS Code</th>
+                            <th>Material Name</th>
+                            <th>Shape &amp; Dimensions (mm)</th>
+                            <th>Qty</th>
+                            <th>KG / Unit</th>
+                            <th>Total Weight (Kg)</th>
+                            <th>Remark</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pr->items as $index => $item)
                             <tr>
-                                <th>No</th>
-                                <th>HS Code</th>
-                                <th>Material Name</th>
-                                <th>Shape & Dimensions (mm)</th>
-                                <th>Qty</th>
-                                <th>KG / Unit</th>
-                                <th>Total Weight (Kg)</th>
-                                <th>Remark</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($pr->items as $index => $item)
-                                <tr>
-                                    <td class="text-center">{{ $index + 1 }}</td>
-                                    <td class="text-center">
-                                        <div>{{ $item->hs_code ?? '-' }}</div>
+                                <td class="text-center ui-tabular-nums">{{ $index + 1 }}</td>
+                                <td class="text-center">
+                                    <div class="tw-font-medium">{{ $item->hs_code ?? '-' }}</div>
+                                    <div class="tw-mt-1">
                                         @if($item->hs_code_source === 'manual')
-                                            <span class="badge bg-warning text-dark">Manual</span>
+                                            <x-ui.status-chip tone="warning">Manual</x-ui.status-chip>
                                         @elseif($item->hs_code_resolution_status === 'matched')
-                                            <span class="badge bg-success">Auto</span>
+                                            <x-ui.status-chip tone="success">Auto</x-ui.status-chip>
                                         @elseif($item->hs_code_source === 'legacy')
-                                            <span class="badge bg-secondary">Legacy</span>
+                                            <x-ui.status-chip tone="neutral">Legacy</x-ui.status-chip>
                                         @else
-                                            <span class="badge bg-secondary">{{ str_replace('_', ' ', $item->hs_code_resolution_status ?? 'unresolved') }}</span>
+                                            <x-ui.status-chip tone="neutral">{{ str_replace('_', ' ', $item->hs_code_resolution_status ?? 'unresolved') }}</x-ui.status-chip>
                                         @endif
-                                    </td>
-                                    <td class="fw-medium">{{ $item->material_name }}</td>
-                                    <td class="text-center" style="font-size: 0.85rem;">
-                                        @if($item->shape)
-                                            <span class="badge bg-light text-dark border">{{ $item->shape }}</span><br>
-                                            <span class="text-muted">{{ $item->dimension_label }}</span>
-                                        @else
-                                            -
+                                    </div>
+                                </td>
+                                <td class="fw-medium">{{ $item->material_name }}</td>
+                                <td class="text-center">
+                                    @if($item->shape)
+                                        <span class="tw-inline-flex tw-rounded-ui-full tw-bg-surface-container tw-px-2 tw-py-1 tw-text-ui-xs tw-font-semibold">{{ $item->shape }}</span>
+                                        <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ $item->dimension_label }}</div>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
+                                <td class="text-end ui-tabular-nums">{{ number_format($item->weight_needed, 4) }}</td>
+                                <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->total_weight, 4) }}</td>
+                                <td>{{ $item->remark ?: '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </x-ui.data-table>
+
+            <x-ui.data-table
+                title="Incoming quotations"
+                :description="$quotations->count() . ' supplier responses associated with this requisition.'"
+                :empty="$quotations->isEmpty()"
+            >
+                <x-slot:emptyState>
+                    <x-ui.empty-state
+                        icon="bi-inbox"
+                        title="No quotations received"
+                        description="Supplier responses will appear here after a quotation is submitted."
+                    />
+                </x-slot:emptyState>
+
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Supplier</th>
+                            <th>Currency</th>
+                            <th>Total Price</th>
+                            <th>Estimated IDR</th>
+                            <th>Est. Delivery</th>
+                            <th>Date Submitted</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($quotations as $quotation)
+                            @php
+                                $isLowest = $lowestTotalIdr !== null
+                                    && $quotation->total_idr !== null
+                                    && abs((float) $quotation->total_idr - (float) $lowestTotalIdr) < 0.01;
+                                $supplierName = $quotation->supplier->supplier->company_name ?? $quotation->supplier->name ?? '-';
+                            @endphp
+                            <tr class="{{ $isLowest ? 'pr-best-quotation' : '' }}">
+                                <td class="fw-medium">{{ $supplierName }}</td>
+                                <td class="text-center"><x-ui.status-chip tone="neutral">{{ $quotation->currency }}</x-ui.status-chip></td>
+                                <td class="text-end ui-tabular-nums">{{ number_format($quotation->total_amount, 2, ',', '.') }}</td>
+                                <td class="text-end fw-bold ui-tabular-nums">
+                                    @if($quotation->total_idr !== null)
+                                        Rp {{ number_format($quotation->total_idr, 0, ',', '.') }}
+                                        @if($isLowest)<i class="bi bi-check-circle-fill tw-ms-1 tw-text-success" aria-label="Lowest estimated total"></i>@endif
+                                    @else
+                                        <span class="tw-text-on-surface-variant">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center ui-tabular-nums">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
+                                <td class="text-center ui-tabular-nums">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}</td>
+                                <td class="text-center"><x-status-badge type="quotation" :status="$quotation->status" /></td>
+                                <td>
+                                    <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2">
+                                        <x-ui.button
+                                            :href="route('purchasing.quotations.show', [$quotation, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()])"
+                                            variant="ghost"
+                                            size="sm"
+                                        >
+                                            <x-slot:leading><i class="bi bi-eye" aria-hidden="true"></i></x-slot:leading>
+                                            View details
+                                        </x-ui.button>
+                                        @if($submittedQuotationCount >= 2)
+                                            <x-ui.button
+                                                :href="\App\Support\PurchasingNavigation::toRoute('purchasing.comparison.inter-supplier', ['pr_id' => $pr])"
+                                                variant="secondary"
+                                                size="sm"
+                                            >
+                                                <x-slot:leading><i class="bi bi-bar-chart" aria-hidden="true"></i></x-slot:leading>
+                                                Compare
+                                            </x-ui.button>
                                         @endif
-                                    </td>
-                                    <td class="text-center fw-bold">{{ number_format($item->quantity_value, 0) }}</td>
-                                    <td class="text-center">{{ number_format($item->weight_needed, 4) }}</td>
-                                    <td class="text-center fw-bold text-primary">{{ number_format($item->total_weight, 4) }}</td>
-                                    <td>{{ $item->remark ?: '-' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </x-ui.data-table>
+        </div>
+
+        <aside class="tw-grid tw-gap-6" aria-label="Requisition actions and progress">
+            <x-ui.card title="Action & status" description="Available actions follow creator ownership and workflow state.">
+                <div class="tw-grid tw-gap-4">
+                    @if($pr->created_by !== auth()->id())
+                        <x-ui.alert tone="info" title="Read-only access">
+                            You are viewing a requisition created by {{ $pr->creator->name ?? 'another purchasing user' }}. Edit and delete actions are only available to the PR creator.
+                        </x-ui.alert>
+                    @elseif($pr->status === 'draft')
+                        <x-ui.alert tone="info" title="Draft requisition">Edit any incomplete details, then submit when the material list is ready.</x-ui.alert>
+                        <div class="tw-grid tw-gap-2">
+                            <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr)" variant="secondary">Edit draft</x-ui.button>
+                            <form action="{{ route('purchasing.requisitions.submit', $pr) }}" method="POST">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="return_url" value="{{ request('return_url') }}">
+                                <x-ui.button type="button" class="btn-submit tw-w-full">Submit requisition</x-ui.button>
+                            </form>
+                        </div>
+                    @elseif($pr->status === 'rejected')
+                        <x-ui.alert tone="error" title="Revision required">The requisition was rejected by Admin. Review the notes and revise it before resubmitting.</x-ui.alert>
+                        <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr)" variant="danger">Revise &amp; resubmit</x-ui.button>
+                    @else
+                        <x-ui.alert tone="success" title="Processing started">This requisition has been processed and can no longer be edited.</x-ui.alert>
+                    @endif
+
+                    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index') }}" class="ui-focus-ring tw-justify-self-center tw-rounded-ui-xs tw-text-ui-sm tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">
+                        <i class="bi bi-arrow-left tw-me-1" aria-hidden="true"></i>Back to list
+                    </a>
                 </div>
-            </div>
-        </div>
+            </x-ui.card>
 
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">Incoming Quotations</h6>
-                <span class="badge bg-primary rounded-pill">{{ $quotations->count() }}</span>
-            </div>
-            <div class="card-body p-0">
-                @if($quotations->isEmpty())
-                    <div class="alert alert-info mb-0 rounded-0 border-0">
-                        <i class="bi bi-info-circle me-1"></i> No quotations received from the supplier yet.
+            @if($pr->quotations && $pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->count() > 0)
+                <x-ui.card title="Negotiation & chat" description="Open the supplier thread without leaving this requisition.">
+                    <div class="tw-grid tw-gap-2">
+                        @foreach($pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->unique('supplier_id') as $quotation)
+                            <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form>
+                                @csrf
+                                <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
+                                <x-ui.button type="submit" variant="ghost" class="tw-w-full tw-justify-start">
+                                    <x-slot:leading><i class="bi bi-chat-dots" aria-hidden="true"></i></x-slot:leading>
+                                    {{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}
+                                </x-ui.button>
+                            </form>
+                        @endforeach
                     </div>
-                @else
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                            <thead class="table-light text-center">
-                                <tr>
-                                    <th>Supplier</th>
-                                    <th>Currency</th>
-                                    <th>Total Price</th>
-                                    <th>Estimated IDR</th>
-                                    <th>Est. Delivery</th>
-                                    <th>Date Submitted</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($quotations as $quotation)
-                                    @php
-                                        $isLowest = $lowestTotalIdr !== null
-                                            && $quotation->total_idr !== null
-                                            && abs((float) $quotation->total_idr - (float) $lowestTotalIdr) < 0.01;
-                                        $supplierName = $quotation->supplier->supplier->company_name ?? $quotation->supplier->name ?? '-';
-                                    @endphp
-                                    <tr class="{{ $isLowest ? 'table-success' : '' }}">
-                                        <td class="fw-medium">{{ $supplierName }}</td>
-                                        <td class="text-center"><span class="badge bg-dark">{{ $quotation->currency }}</span></td>
-                                        <td class="text-end">{{ number_format($quotation->total_amount, 2, ',', '.') }}</td>
-                                        <td class="text-end fw-bold {{ $isLowest ? 'text-success' : 'text-primary' }}">
-                                            @if($quotation->total_idr !== null)
-                                                Rp {{ number_format($quotation->total_idr, 0, ',', '.') }}
-                                                @if($isLowest)<i class="bi bi-check-circle-fill ms-1"></i>@endif
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            {{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}
-                                        </td>
-                                        <td class="text-center">
-                                            {{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}
-                                        </td>
-                                        <td class="text-center">
-                                            <x-status-badge type="quotation" :status="$quotation->status" />
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ route('purchasing.quotations.show', [$quotation, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()]) }}" class="btn btn-outline-primary">
-                                                    <i class="bi bi-eye me-1"></i> View Details
-                                                </a>
-                                                @if($submittedQuotationCount >= 2)
-                                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.comparison.inter-supplier', ['pr_id' => $pr]) }}" class="btn btn-outline-success">
-                                                        <i class="bi bi-bar-chart me-1"></i> Bandingkan
-                                                    </a>
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
+                </x-ui.card>
+            @endif
 
-    <div class="col-lg-4">
-        {{-- Status / Action Card --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Action & Status</h6>
-            </div>
-            <div class="card-body">
-                @if($pr->created_by !== auth()->id())
-                    <div class="alert alert-info small mb-0">
-                        <i class="bi bi-eye-fill me-1"></i> You are viewing a requisition created by {{ $pr->creator->name ?? 'another purchasing user' }}. Edit and delete actions are only available to the PR creator.
-                    </div>
-                @elseif($pr->status === 'draft')
-                    <div class="alert alert-secondary small">
-                        <i class="bi bi-info-circle me-1"></i> This requisition is still in draft status. Please edit and submit when finished.
-                    </div>
-                    <div class="d-grid gap-2">
-                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr) }}" class="btn btn-outline-primary">Edit Draft</a>
-                        <form action="{{ route('purchasing.requisitions.submit', $pr) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                            <button type="button" class="btn btn-primary w-100 btn-submit" style="background-color: var(--adasi-blue);">Submit Requisition</button>
-                        </form>
-                    </div>
-                @elseif($pr->status === 'rejected')
-                    <div class="alert alert-danger small">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Requisition rejected by Admin. Please check notes and revise.
-                    </div>
-                    <div class="d-grid gap-2">
-                        <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr) }}" class="btn btn-danger">Revise & Resubmit</a>
-                    </div>
-                @else
-                    <div class="alert alert-success small mb-0">
-                        <i class="bi bi-check-circle-fill me-1"></i> Requisition has been processed and can no longer be edited.
-                    </div>
-                @endif
-                <div class="mt-3 text-center">
-                    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index') }}" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i>Back to List</a>
-                </div>
-            </div>
-        </div>
-
-        {{-- Chat Suppliers --}}
-        @if($pr->quotations && $pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->count() > 0)
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Negotiation & Chat</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    @foreach($pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->unique('supplier_id') as $quotation)
-                        <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form>
-                            @csrf
-                            <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
-                            <button type="submit" class="btn btn-outline-primary w-100 text-start">
-                                <i class="bi bi-chat-dots me-2"></i> {{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}
-                            </button>
-                        </form>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-        @endif
-
-        {{-- Timeline Card --}}
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Timeline</h6>
-            </div>
-            <div class="card-body p-4">
-                <div class="position-relative">
-                    <div class="position-absolute h-100 border-start" style="left: 10px; top: 0; border-color: var(--md-outline-variant) !important;"></div>
-                    
-                    {{-- Created --}}
-                    <div class="position-relative mb-4 ps-4">
-                        <div class="position-absolute bg-primary rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 text-primary fw-bold" style="font-size: 0.9rem;">Created (Draft)</h6>
-                        <div class="small text-muted">{{ $pr->created_at->format('d M Y, H:i') }}</div>
-                    </div>
-
-                    {{-- Submitted --}}
-                    <div class="position-relative mb-4 ps-4">
-                        <div class="position-absolute {{ in_array($pr->status, ['submitted', 'rejected', 'bidding', 'completed']) ? 'bg-primary' : 'bg-light border' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 {{ in_array($pr->status, ['submitted', 'rejected', 'bidding', 'completed']) ? 'text-primary fw-bold' : 'text-muted' }}" style="font-size: 0.9rem;">Submitted</h6>
-                        @if(in_array($pr->status, ['submitted', 'rejected', 'bidding', 'completed']))
-                            <div class="small text-muted">{{ $pr->updated_at->format('d M Y, H:i') }}</div>
+            <x-ui.card title="Timeline" description="High-level requisition workflow progress.">
+                <ol class="pr-timeline">
+                    <li class="pr-timeline-item is-complete">
+                        <span class="pr-timeline-marker" aria-hidden="true"></span>
+                        <div class="tw-text-ui-sm tw-font-semibold tw-text-primary">Created (draft)</div>
+                        <time class="ui-tabular-nums tw-text-ui-xs tw-text-on-surface-variant" datetime="{{ $pr->created_at->toIso8601String() }}">{{ $pr->created_at->format('d M Y, H:i') }}</time>
+                    </li>
+                    <li class="pr-timeline-item {{ $hasReachedSubmitted ? 'is-complete' : '' }}">
+                        <span class="pr-timeline-marker" aria-hidden="true"></span>
+                        <div class="tw-text-ui-sm tw-font-semibold {{ $hasReachedSubmitted ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}">Submitted</div>
+                        @if($hasReachedSubmitted)
+                            <time class="ui-tabular-nums tw-text-ui-xs tw-text-on-surface-variant" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $pr->updated_at->format('d M Y, H:i') }}</time>
                         @endif
-                    </div>
-
-                    {{-- Bidding --}}
-                    <div class="position-relative mb-4 ps-4">
-                        <div class="position-absolute {{ in_array($pr->status, ['bidding', 'completed']) ? 'bg-warning' : 'bg-light border' }} rounded-circle" style="width: 20px; height: 20px; left: 0; top: 0;"></div>
-                        <h6 class="mb-1 {{ in_array($pr->status, ['bidding', 'completed']) ? 'text-warning text-dark fw-bold' : 'text-muted' }}" style="font-size: 0.9rem;">Quotation Supplier (Bidding)</h6>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    </li>
+                    <li class="pr-timeline-item {{ $hasReachedBidding ? 'is-current' : '' }}">
+                        <span class="pr-timeline-marker" aria-hidden="true"></span>
+                        <div class="tw-text-ui-sm tw-font-semibold {{ $hasReachedBidding ? 'tw-text-warning-container-foreground' : 'tw-text-on-surface-variant' }}">Supplier quotation (bidding)</div>
+                    </li>
+                </ol>
+            </x-ui.card>
+        </aside>
     </div>
 </div>
 @endsection
