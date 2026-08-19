@@ -3,92 +3,67 @@
 @section('page-title', 'Report & Export')
 
 @section('content')
-<div class="row g-4">
-    {{-- Card 1: Report Purchase Requisition --}}
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-bottom-0">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                        <i class="bi bi-clipboard-data text-primary fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold">Purchase Requisition</h6>
-                        <small class="text-muted">Export rekap PR beserta status dan item</small>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('purchasing.export.requisitions') }}" method="GET" data-async-export>
-                    <div class="mb-3">
-                        <label class="form-label small fw-medium text-muted">Filter Period</label>
-                        <select name="period_id" class="form-select">
-                            <option value="">-- All Period --</option>
-                            @foreach($periods as $period)
-                                <option value="{{ $period->id }}">{{ $period->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-medium text-muted">Filter Status</label>
-                        <select name="status" class="form-select">
-                            <option value="">-- All Status --</option>
-                            <option value="draft">Draft</option>
-                            <option value="submitted">Submitted</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="bidding">Bidding</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-outline-success w-100 fw-medium">
-                        <i class="bi bi-file-earmark-excel me-2"></i>Download Excel
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Reports & exports"
+        eyebrow="Purchasing"
+        description="Generate filtered Excel reports without leaving or refreshing the current page."
+    />
 
-    {{-- Card 2: Report Purchase Order --}}
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-bottom-0">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="bg-success bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                        <i class="bi bi-receipt text-success fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold">Purchase Order (PO)</h6>
-                        <small class="text-muted">Export data PO dan status arrival</small>
-                    </div>
+    <div class="tw-grid tw-gap-6 lg:tw-grid-cols-2">
+        <x-ui.card
+            title="Purchase requisitions"
+            description="Export PR records with their periods, workflow status, and material totals."
+            class="tw-h-full"
+        >
+            <form action="{{ route('purchasing.export.requisitions') }}" method="GET" data-async-export class="tw-grid tw-gap-5">
+                <x-ui.select name="period_id" label="Period">
+                    <option value="">All periods</option>
+                    @foreach($periods as $period)
+                        <option value="{{ $period->id }}">{{ $period->name }}</option>
+                    @endforeach
+                </x-ui.select>
+
+                <x-ui.select name="status" label="Status">
+                    <option value="">All statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="bidding">Bidding</option>
+                    <option value="completed">Completed</option>
+                </x-ui.select>
+
+                <x-ui.button type="submit" variant="secondary" class="tw-w-full">
+                    <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                    Download Excel
+                </x-ui.button>
+            </form>
+        </x-ui.card>
+
+        <x-ui.card
+            title="Purchase orders"
+            description="Export PO records by supplier and date range, including arrival status."
+            class="tw-h-full"
+        >
+            <form action="{{ route('purchasing.export.purchase-orders') }}" method="GET" data-async-export class="tw-grid tw-gap-5">
+                <x-ui.select name="supplier_id" label="Supplier">
+                    <option value="">All suppliers</option>
+                    @foreach($suppliers as $supplier)
+                        <option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>
+                    @endforeach
+                </x-ui.select>
+
+                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                    <x-ui.input name="start_date" type="date" label="Start date" />
+                    <x-ui.input name="end_date" type="date" label="End date" />
                 </div>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('purchasing.export.purchase-orders') }}" method="GET" data-async-export>
-                    <div class="mb-3">
-                        <label class="form-label small fw-medium text-muted">Filter Supplier</label>
-                        <select name="supplier_id" class="form-select">
-                            <option value="">-- All Supplier --</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="row g-2 mb-4">
-                        <div class="col-6">
-                            <label class="form-label small fw-medium text-muted">Date Mulai</label>
-                            <input type="date" name="start_date" class="form-control">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-medium text-muted">Date Completed</label>
-                            <input type="date" name="end_date" class="form-control">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-outline-success w-100 fw-medium">
-                        <i class="bi bi-file-earmark-excel me-2"></i>Download Excel
-                    </button>
-                </form>
-            </div>
-        </div>
+
+                <x-ui.button type="submit" variant="secondary" class="tw-w-full">
+                    <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                    Download Excel
+                </x-ui.button>
+            </form>
+        </x-ui.card>
     </div>
 </div>
 @endsection

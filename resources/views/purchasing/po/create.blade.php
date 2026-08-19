@@ -4,18 +4,19 @@
 @section('page-title', 'Create Purchase Order')
 
 @section('content')
-<div class="mb-3">
-    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Create Purchase Order"
+        :description="'Build a PO from ' . ($quotation->purchaseRequisition->pr_number ?? 'the selected quotation') . ' without changing its approved commercial snapshot.'"
+        eyebrow="Purchasing"
+    >
+        <x-slot:actions>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
 {{-- Summary Card --}}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold">Primary Quotation Summary</h6>
-    </div>
-    <div class="card-body">
+<x-ui.card title="Primary Quotation Summary" description="The supplier, currency, and exchange rate are fixed by the accepted quotation.">
         <div class="row mb-3">
             <div class="col-md-3 text-muted small">Supplier</div>
             <div class="col-md-9 fw-medium">{{ $quotation->supplier->name }}</div>
@@ -42,19 +43,12 @@
                 @endif
             </div>
         </div>
-    </div>
-</div>
+</x-ui.card>
 
 {{-- Consolidation: Additional Quotations --}}
 @if($otherQuotations->count() > 0)
-<div class="card border-0 shadow-sm mb-4 border-start border-4 border-primary">
-    <div class="card-header bg-white py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-layers me-2 text-primary"></i>Combine Other PRs into This PO</h6>
-            <span class="badge bg-primary rounded-pill">{{ $otherQuotations->count() }} available</span>
-        </div>
-    </div>
-    <div class="card-body">
+<x-ui.card title="Combine Other PRs into This PO" description="Only compatible quotations from the same supplier and currency are available.">
+    <x-slot:actions><x-ui.status-chip tone="info">{{ $otherQuotations->count() }} available</x-ui.status-chip></x-slot:actions>
         <p class="text-muted small mb-3">
             Check other quotations from <strong>{{ $quotation->supplier->name }}</strong> ({{ $quotation->currency }}) that should be combined into one Purchase Order.
         </p>
@@ -97,18 +91,12 @@
                 </label>
             @endforeach
         </div>
-    </div>
-</div>
+</x-ui.card>
 @endif
 
 {{-- Material Breakdown --}}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">Breakdown Material</h6>
-        <span class="badge bg-primary rounded-pill" id="totalItemCount">{{ $quotation->items->count() }} item</span>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
+<x-ui.data-table title="Material Breakdown" description="Selected quotations are combined here before the PO is submitted.">
+    <x-slot:toolbar><x-ui.status-chip tone="info" id="totalItemCount">{{ $quotation->items->count() }} item</x-ui.status-chip></x-slot:toolbar>
             <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
                 <thead class="table-light text-center">
                     <tr>
@@ -152,9 +140,7 @@
                     </tr>
                 </tfoot>
             </table>
-        </div>
-    </div>
-</div>
+</x-ui.data-table>
 
 {{-- PO Form --}}
 <form action="{{ route('purchasing.purchase-orders.store') }}" method="POST" id="poForm">
@@ -165,35 +151,20 @@
     {{-- Additional quotations added dynamically --}}
     <div id="additionalQuotationInputs"></div>
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold">Purchase Order Information</h6>
+    <x-ui.card title="Purchase Order Information" description="Set the expected arrival and add an optional note for operational follow-up.">
+        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <x-ui.input type="date" name="estimated_arrival" label="Estimated Arrival Material" required />
+            <x-ui.textarea name="notes" label="PO Notes" :rows="2" placeholder="Optional..." />
         </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-medium">Estimated Arrival Material <span class="text-danger">*</span></label>
-                    <input type="date" name="estimated_arrival" class="form-control @error('estimated_arrival') is-invalid @enderror" value="{{ old('estimated_arrival') }}" required>
-                    @error('estimated_arrival') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <label class="form-label fw-medium">Notes PO</label>
-                    <textarea name="notes" class="form-control" rows="2" placeholder="Optional...">{{ old('notes') }}</textarea>
-                </div>
-            </div>
-        </div>
-    </div>
+    </x-ui.card>
 
-    <div class="d-flex justify-content-end gap-2 mb-5">
-        <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="btn btn-light">Cancel</a>
-        <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="btnCreatePo">
-            <i class="bi bi-check-circle me-1"></i> Create Purchase Order
-        </button>
+    <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
+        <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost">Cancel</x-ui.button>
+        <x-ui.button type="button" id="btnCreatePo"><x-slot:leading><i class="bi bi-check-circle"></i></x-slot:leading>Create Purchase Order</x-ui.button>
     </div>
 </form>
 
+</div>
 @endsection
 
 @php

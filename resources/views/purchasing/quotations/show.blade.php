@@ -28,22 +28,33 @@
     $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($quotation->validity_period);
 @endphp
 
-<div class="mb-3"><a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index') }}" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Back to Quotation List</a></div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Quotation Details"
+        :description="'Review ' . ($quotation->purchaseRequisition->pr_number ?? 'quotation') . ' from ' . $supplierDisplayName . ' before taking the next workflow action.'"
+        eyebrow="Purchasing"
+    >
+        <x-slot:actions>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
+                <x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>
+                Back to Quotation List
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-<div class="row g-4">
-    <div class="col-lg-8">
+<div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+    <div class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         {{-- Info Quotation --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">Quotation Information</h6>
-                <div class="d-flex align-items-center gap-2">
+        <x-ui.card title="Quotation Information">
+            <x-slot:actions>
+                <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <span class="badge {{ $quotation->statusBadgeClass() }} text-uppercase px-3 py-2">{{ $quotation->statusLabel() }}</span>
-                    <a href="{{ route('purchasing.export.quotations.detail', $quotation) }}" class="btn btn-sm btn-outline-success" data-async-export>
-                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-                    </a>
+                    <x-ui.button :href="route('purchasing.export.quotations.detail', $quotation)" variant="secondary" size="sm" data-async-export>
+                        <x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>
+                        Export Excel
+                    </x-ui.button>
                 </div>
-            </div>
-            <div class="card-body">
+            </x-slot:actions>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="mb-3"><span class="text-muted small d-block">PR No.</span><span class="fw-bold text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</span></div>
@@ -69,15 +80,13 @@
                     </div>
                 </div>
                 @if($quotation->status === 'revision_requested')
-                    <div class="alert alert-warning small mb-0">
-                        <i class="bi bi-arrow-repeat me-1"></i>
+                    <x-ui.alert tone="warning" class="tw-mt-2">
                         Revision has already been requested. The supplier needs to resubmit the quotation with a new validity date.
-                    </div>
+                    </x-ui.alert>
                 @elseif($quotation->isExpired())
-                    <div class="alert alert-danger small mb-0">
-                        <i class="bi bi-exclamation-triangle me-1"></i>
+                    <x-ui.alert tone="error" class="tw-mt-2">
                         The quotation validity has expired. Ask the supplier to resubmit the quotation before creating a PO.
-                    </div>
+                    </x-ui.alert>
                 @endif
                 @if($quotation->general_notes)
                     <div class="mt-2 p-3 bg-light rounded small"><i class="bi bi-chat-left-text me-1"></i> {{ $quotation->general_notes }}</div>
@@ -88,16 +97,13 @@
                         {{ $quotation->reviewer_notes }}
                     </div>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- Item + Price Table --}}
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Material Price Details ({{ $quotation->items->count() }} Item)</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
+        <x-ui.data-table
+            :title="'Material Price Details (' . $quotation->items->count() . ' Item)'"
+            description="Requested specifications, supplier availability, and exchange-rate snapshot in one review table."
+        >
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
                         <thead class="table-light text-center">
                             <tr>
@@ -206,154 +212,135 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-        </div>
+        </x-ui.data-table>
     </div>
 
-    <div class="col-lg-4">
+    <aside class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         {{-- Info Supplier --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold"><i class="bi bi-building me-1"></i> Supplier</h6></div>
-            <div class="card-body">
+        <x-ui.card title="Supplier">
                 <h5 class="fw-bold mb-1">{{ $supplierDisplayName }}</h5>
                 <p class="text-muted small mb-2">{{ $quotation->supplier->email }}</p>
                 @if($quotation->supplier->supplier)
                     <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>{{ $quotation->supplier->supplier->address ?? '-' }}</div>
                     <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- Negotiation & Chat --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-1"></i> Negotiation & Chat</h6>
-            </div>
-            <div class="card-body">
+        <x-ui.card title="Negotiation & Chat">
                 @if($chatAvailable)
                     <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $quotation->purchaseRequisition, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form>
                         @csrf
                         <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
-                        <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center gap-2" style="background-color: var(--adasi-blue);">
-                            <span class="text-truncate"><i class="bi bi-chat-dots me-2"></i> Chat with {{ $supplierDisplayName }}</span>
-                            <i class="bi bi-chevron-right flex-shrink-0"></i>
-                        </button>
+                        <x-ui.button type="submit" class="tw-w-full tw-justify-between">
+                            <x-slot:leading><i class="bi bi-chat-dots"></i></x-slot:leading>
+                            Chat with {{ $supplierDisplayName }}
+                            <x-slot:trailing><i class="bi bi-chevron-right"></i></x-slot:trailing>
+                        </x-ui.button>
                     </form>
                     <div class="mt-3 text-muted small">
                         Use this chat to clarify price, lead time, quotation validity, or supporting documents before creating a PO.
                     </div>
                 @else
-                    <div class="alert alert-secondary small mb-0">
-                        <i class="bi bi-info-circle me-1"></i>
+                    <x-ui.alert>
                         Chat is available after the quotation is submitted by the supplier or accepted.
-                    </div>
+                    </x-ui.alert>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- Exchange Rate --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">
-                    <i class="bi bi-currency-exchange me-1"></i> Conversion Rate
-                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Historycal total uses the exchange rate snapshot of this quotation, not the latest rate."></i>
-                </h6>
-            </div>
-            <div class="card-body text-center">
+        <x-ui.card title="Conversion Rate" description="Historical totals use this quotation's exchange-rate snapshot, not the latest rate.">
+            <div class="tw-text-center">
                 @if($quotationRate)
-                    <div class="p-3 bg-light rounded">
+                    <div class="tw-rounded-ui-sm tw-bg-surface-low tw-p-4">
                         <div class="text-muted small mb-1">{{ $quotation->currency }} → IDR</div>
-                        <h4 class="fw-bold text-primary mb-0">Rp {{ number_format($quotationRate->rate_to_idr, 0, ',', '.') }}</h4>
-                        <div class="text-muted mt-1" style="font-size:.7rem">quotation exchange rate: {{ $quotationRate->valid_from->format('d M Y') }}</div>
+                        <div class="tw-mt-1 tw-text-ui-xl tw-font-semibold tw-text-primary ui-tabular-nums">Rp {{ number_format($quotationRate->rate_to_idr, 0, ',', '.') }}</div>
+                        <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Quotation exchange rate: {{ $quotationRate->valid_from->format('d M Y') }}</div>
                         @if($latestRate && $latestRate->id !== $quotationRate->id)
-                            <div class="text-muted mt-2 pt-2 border-top" style="font-size:.7rem">
+                            <div class="tw-mt-3 tw-border-t tw-border-outline-variant tw-pt-3 tw-text-ui-xs tw-text-on-surface-variant">
                                 Latest exchange rate: Rp {{ number_format($latestRate->rate_to_idr, 0, ',', '.') }}<br>
                                 <span>Not used for historical totals.</span>
                             </div>
                         @endif
                     </div>
                 @else
-                    <div class="alert alert-warning small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>quotation exchange rate {{ $quotation->currency }} is not available yet.</div>
+                    <x-ui.alert tone="warning">Quotation exchange rate {{ $quotation->currency }} is not available yet.</x-ui.alert>
                 @endif
             </div>
-        </div>
+        </x-ui.card>
 
         {{-- Action --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Action</h6></div>
-            <div class="card-body">
+        <x-ui.card title="Actions" description="Available actions follow the current quotation state.">
                 @if($quotation->status === 'submitted' && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
-                    <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="mb-2">
+                    <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="tw-mb-3">
                         @csrf
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-check-circle me-1"></i> Accept Quotation
-                        </button>
+                        <x-ui.button type="submit" class="tw-w-full">
+                            <x-slot:leading><i class="bi bi-check-circle"></i></x-slot:leading>
+                            Accept Quotation
+                        </x-ui.button>
                     </form>
 
-                    <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="mb-2" id="requestRevisionForm">
+                    <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-3 tw-grid tw-gap-3" id="requestRevisionForm">
                         @csrf
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                        <label for="revisionNote" class="form-label small fw-medium">Revision Notes</label>
-                        <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Example: Please revise the price, lead time, MTC, or payment terms.">{{ old('revision_note') }}</textarea>
-                        <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">
-                            <i class="bi bi-arrow-repeat me-1"></i> Request Revision
-                        </button>
+                        <x-ui.textarea name="revision_note" id="revisionNote" label="Revision Notes" :rows="3" maxlength="1000" required placeholder="Example: Please revise the price, lead time, MTC, or payment terms." />
+                        <x-ui.button type="submit" variant="secondary" class="tw-w-full">
+                            <x-slot:leading><i class="bi bi-arrow-repeat"></i></x-slot:leading>
+                            Request Revision
+                        </x-ui.button>
                     </form>
 
-                    <form action="{{ route('purchasing.quotations.reject', $quotation) }}" method="POST" class="mb-3">
+                    <form action="{{ route('purchasing.quotations.reject', $quotation) }}" method="POST" class="tw-mb-3 tw-grid tw-gap-3">
                         @csrf
-                        <label class="form-label small fw-medium">Rejection Notes</label>
-                        <textarea name="reviewer_notes" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required placeholder="Required if the quotation is rejected.">{{ old('reviewer_notes') }}</textarea>
-                        <button type="submit" class="btn btn-outline-danger w-100">
-                            <i class="bi bi-x-circle me-1"></i> Reject Quotation
-                        </button>
+                        <x-ui.textarea name="reviewer_notes" label="Rejection Notes" :rows="3" maxlength="1000" required placeholder="Required if the quotation is rejected." />
+                        <x-ui.button type="submit" variant="danger" class="tw-w-full">
+                            <x-slot:leading><i class="bi bi-x-circle"></i></x-slot:leading>
+                            Reject Quotation
+                        </x-ui.button>
                     </form>
                 @endif
 
                 @if($canCreatePo)
-                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation) }}" class="btn btn-primary w-100 mb-2" style="background-color: var(--adasi-blue);">
-                        <i class="bi bi-receipt me-1"></i> Create PO from This Quotation
-                    </a>
+                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation)" class="tw-mb-3 tw-w-full">
+                        <x-slot:leading><i class="bi bi-receipt"></i></x-slot:leading>
+                        Create PO from This Quotation
+                    </x-ui.button>
                 @elseif($quotation->status === 'submitted' && $quotation->isExpired())
                     @if($canRequestRevision)
-                        <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="mb-2" id="requestRevisionForm">
+                        <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-3 tw-grid tw-gap-3" id="requestRevisionForm">
                             @csrf
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                            <div class="alert alert-warning small mb-2">
-                                <i class="bi bi-clock-history me-1"></i>
+                            <x-ui.alert tone="warning">
                                 The validity date has passed. Ask the supplier to resubmit the quotation before creating a PO.
-                            </div>
-                            <label for="revisionNote" class="form-label small fw-medium">Revision Notes</label>
-                            <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" placeholder="Example: Please update the validity date, lead time, and latest price.">{{ old('revision_note') }}</textarea>
-                            <button type="submit" class="btn btn-warning w-100 fw-semibold text-dark">
-                                <i class="bi bi-arrow-repeat me-1"></i> Request Quotation Revision
-                            </button>
+                            </x-ui.alert>
+                            <x-ui.textarea name="revision_note" id="revisionNote" label="Revision Notes" :rows="3" maxlength="1000" placeholder="Example: Please update the validity date, lead time, and latest price." />
+                            <x-ui.button type="submit" variant="secondary" class="tw-w-full">
+                                <x-slot:leading><i class="bi bi-arrow-repeat"></i></x-slot:leading>
+                                Request Quotation Revision
+                            </x-ui.button>
                         </form>
                     @else
-                        <button type="button" class="btn btn-outline-danger w-100 mb-2" disabled>
-                            <i class="bi bi-lock me-1"></i> Quotation Expired
-                        </button>
+                        <x-ui.button disabled variant="danger" class="tw-mb-3 tw-w-full">
+                            <x-slot:leading><i class="bi bi-lock"></i></x-slot:leading>
+                            Quotation Expired
+                        </x-ui.button>
                     @endif
                 @elseif($quotation->status === 'revision_requested')
-                    <div class="alert alert-warning small mb-2">
-                        <i class="bi bi-hourglass-split me-1"></i>
+                    <x-ui.alert tone="warning" class="tw-mb-3">
                         Waiting for the supplier to resubmit the revised quotation.
-                    </div>
+                    </x-ui.alert>
                 @elseif($quotation->first_purchase_order)
-                    <div class="alert alert-success small mb-2"><i class="bi bi-check-circle me-1"></i>PO already created: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order) }}" class="fw-bold">{{ $quotation->first_purchase_order->po_number }}</a></div>
+                    <x-ui.alert tone="success" class="tw-mb-3">PO already created: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order) }}" class="tw-font-semibold tw-underline">{{ $quotation->first_purchase_order->po_number }}</a></x-ui.alert>
                 @endif
-                <a href="{{ $relatedPrUrl }}" class="btn btn-outline-secondary w-100 btn-sm">
-                    <i class="bi bi-clipboard-data me-1"></i> View Related PR
-                </a>
-            </div>
-        </div>
+                <x-ui.button :href="$relatedPrUrl" variant="ghost" size="sm" class="tw-w-full">
+                    <x-slot:leading><i class="bi bi-clipboard-data"></i></x-slot:leading>
+                    View Related PR
+                </x-ui.button>
+        </x-ui.card>
 
         {{-- Attachments --}}
         @if($quotation->attachments->count() > 0)
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold"><i class="bi bi-paperclip me-1"></i> Attachments ({{ $quotation->attachments->count() }})</h6></div>
-            <div class="card-body p-0">
+        <x-ui.card :title="'Attachments (' . $quotation->attachments->count() . ')'" padding="none">
                 <div class="list-group list-group-flush">
                     @foreach($quotation->attachments as $att)
                         <a href="{{ route('attachments.show', $att->id) }}" class="list-group-item list-group-item-action py-2 px-3 small d-flex justify-content-between align-items-center" target="_blank">
@@ -362,10 +349,10 @@
                         </a>
                     @endforeach
                 </div>
-            </div>
-        </div>
+        </x-ui.card>
         @endif
-    </div>
+    </aside>
+</div>
 </div>
 @endsection
 

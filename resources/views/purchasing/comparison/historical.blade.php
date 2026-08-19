@@ -35,14 +35,15 @@
 </style>
 @endpush
 
-<ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Inter-Supplier</a></li>
-    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historical</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Best Price</a></li>
-</ul>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Historical Price Analysis"
+        description="Trace supplier price movement by material, period, and matching dimensions."
+        eyebrow="Purchasing"
+    />
+    <x-purchasing.comparison-tabs active="historical" />
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
+<x-ui.card title="Historical Filters" description="Choose a supplier and material; dimension filters narrow exact specifications.">
         <form method="GET" action="{{ route('purchasing.comparison.historical') }}" class="row g-3 align-items-end" id="historicalFilterForm">
             <div class="col-md-4">
                 <label class="form-label small fw-bold">Supplier</label>
@@ -109,13 +110,12 @@
                         <input type="number" step="0.01" name="length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
                     </div>
                     <div class="col-md-2 d-flex align-items-end flex-grow-1">
-                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Apply</button>
+                        <x-ui.button type="submit" size="sm" class="tw-w-full"><x-slot:leading><i class="bi bi-search"></i></x-slot:leading>Apply</x-ui.button>
                     </div>
                 </div>
             </div>
         </form>
-    </div>
-</div>
+</x-ui.card>
 
 <div id="historicalResults">
 @if($chartData)
@@ -233,6 +233,7 @@
         </div>
     </div>
 @endif
+</div>
 </div>
 @endsection
 

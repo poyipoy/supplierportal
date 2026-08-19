@@ -8,67 +8,38 @@
 @endphp
 
 @section('content')
-<ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Inter-Supplier</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historical</a></li>
-    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Best Price</a></li>
-</ul>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Current vs Best Price"
+        description="Prioritize price gaps against the historical best after exchange-rate conversion."
+        eyebrow="Purchasing"
+    />
+    <x-purchasing.comparison-tabs active="vs-best" />
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-            <div>
-                <h6 class="mb-1 fw-bold"><i class="bi bi-trophy me-1"></i> Current Price vs Historical Best Price</h6>
-                <div class="text-muted small">Comparison uses IDR/kg price after exchange rate conversion. Competitive status is safe if maximum difference is {{ $formatNumber($competitiveThreshold) }}%.</div>
+<x-ui.card
+    title="Current Price vs Historical Best Price"
+    :description="'Comparison uses IDR/kg after exchange-rate conversion. Competitive is within ' . $formatNumber($competitiveThreshold) . '%.'"
+>
+    <x-slot:actions>
+        <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="tw-flex tw-flex-wrap tw-items-end tw-gap-3">
+            <x-ui.input type="month" name="date_from" label="From Month" :value="$dateFromInput" />
+            <x-ui.input type="month" name="date_to" label="To Month" :value="$dateToInput" />
+            <div class="tw-flex tw-gap-2">
+                <x-ui.button type="submit" size="sm"><x-slot:leading><i class="bi bi-filter"></i></x-slot:leading>Apply Filter</x-ui.button>
+                <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-counterclockwise"></i></x-slot:leading>Reset</x-ui.button>
             </div>
-            <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap gap-3 align-items-end">
-                <div>
-                    <label class="form-label small fw-medium mb-1">From Month</label>
-                    <input type="month" name="date_from" value="{{ $dateFromInput }}" class="form-control form-control-sm" style="width: auto;">
-                </div>
-                <div>
-                    <label class="form-label small fw-medium mb-1">To Month</label>
-                    <input type="month" name="date_to" value="{{ $dateToInput }}" class="form-control form-control-sm" style="width: auto;">
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-filter me-1"></i>Apply Filter</button>
-                    <a href="{{ route('purchasing.comparison.vs-best') }}" class="btn btn-sm btn-light"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</a>
-                </div>
-            </form>
-        </div>
+        </form>
+    </x-slot:actions>
+
+    <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
+        <x-ui.metric-card label="Total Compared Data" :value="$summary['total_rows']" icon="bi-list-check" tone="neutral" value-id="vsBestTotalRows" />
+        <x-ui.metric-card label="Competitive / Safe" :value="$summary['competitive_count']" icon="bi-shield-check" tone="success" value-id="vsBestCompetitiveCount" />
+        <x-ui.metric-card label="Above History" :value="$summary['above_count']" icon="bi-graph-up-arrow" tone="warning" value-id="vsBestAboveCount" />
+        <x-ui.metric-card label="Potential Total Difference" :value="$formatRupiah($summary['total_potential_difference_idr'])" icon="bi-cash-stack" tone="primary" value-id="vsBestPotentialTotal" />
     </div>
+</x-ui.card>
 
-    <div class="card-body border-bottom">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-light h-100">
-                    <div class="text-muted small">Total Compared Data</div>
-                    <div class="fs-4 fw-bold text-dark" id="vsBestTotalRows">{{ $summary['total_rows'] }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-success bg-opacity-10 h-100">
-                    <div class="text-muted small">Competitive / Safe</div>
-                    <div class="fs-4 fw-bold text-success" id="vsBestCompetitiveCount">{{ $summary['competitive_count'] }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-warning bg-opacity-10 h-100">
-                    <div class="text-muted small">Above History</div>
-                    <div class="fs-4 fw-bold text-warning" id="vsBestAboveCount">{{ $summary['above_count'] }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="p-3 rounded bg-primary bg-opacity-10 h-100">
-                    <div class="text-muted small">Potential Total Difference</div>
-                    <div class="fs-4 fw-bold text-primary" id="vsBestPotentialTotal">{{ $formatRupiah($summary['total_potential_difference_idr']) }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card-body">
-        <div class="table-responsive">
+<x-ui.data-table title="Price Benchmark Details" description="Server-side results are ordered by the largest potential difference.">
             <table class="table table-hover align-middle mb-0" id="vsBestTable" style="font-size:.85rem; width:100%;">
                 <thead class="table-light text-center">
                     <tr>
@@ -83,8 +54,7 @@
                 </thead>
                 <tbody></tbody>
             </table>
-        </div>
-    </div>
+</x-ui.data-table>
 </div>
 @endsection
 

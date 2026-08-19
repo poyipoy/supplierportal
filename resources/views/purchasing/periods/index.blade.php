@@ -3,34 +3,38 @@
 @section('page-title', 'Period Management')
 
 @section('content')
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Quotation Period List</h6>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
-                        <i class="bi bi-plus-lg"></i> Add Period
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="periodsTable" style="font-size: 0.9rem; width: 100%;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Name Period</th>
-                                    <th>Month</th>
-                                    <th>Year</th>
-                                    <th>Status</th>
-                                    <th>Created By</th>
-                                    <th class="text-end">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="tw-grid tw-gap-6">
+        <x-ui.page-header
+            title="Quotation periods"
+            eyebrow="Purchasing"
+            description="Open and close the periods that control when purchase requisitions and supplier quotations can be created."
+        >
+            <x-slot:actions>
+                <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <x-slot:leading><i class="bi bi-plus-lg" aria-hidden="true"></i></x-slot:leading>
+                    Add period
+                </x-ui.button>
+            </x-slot:actions>
+        </x-ui.page-header>
+
+        <x-ui.data-table
+            title="Period list"
+            description="Search and maintain the month, year, and availability state for each quotation period."
+        >
+            <table class="table table-hover align-middle" id="periodsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Period name</th>
+                        <th>Month</th>
+                        <th>Year</th>
+                        <th>Status</th>
+                        <th>Created By</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </x-ui.data-table>
     </div>
 
     <!-- Create Modal -->
@@ -44,38 +48,27 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Name Period</label>
-                            <input type="text" name="name" class="form-control" placeholder="Contoh: Period Mei 2026" required>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Month</label>
-                                <select name="month" class="form-select" required>
+                        <div class="tw-grid tw-gap-4">
+                            <x-ui.input name="name" label="Period name" placeholder="Example: May 2026 period" required />
+                            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                                <x-ui.select name="month" label="Month" required>
                                     @for($m=1; $m<=12; $m++)
                                         <option value="{{ $m }}" {{ now()->month == $m ? 'selected' : '' }}>
                                             {{ date('F', mktime(0, 0, 0, $m, 1)) }}
                                         </option>
                                     @endfor
-                                </select>
+                                </x-ui.select>
+                                <x-ui.input name="year" type="number" label="Year" :value="now()->year" min="2000" required />
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Year</label>
-                                <input type="number" name="year" class="form-control" value="{{ now()->year }}" min="2000" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select" required>
+                            <x-ui.select name="status" label="Status" helper="PR can only be created in a period with Open status." required>
                                 <option value="open">Open (Menerima Quotation)</option>
                                 <option value="closed">Closed (Completed)</option>
-                            </select>
-                            <div class="form-text">PR can only be created in a period with Open status.</div>
+                            </x-ui.select>
                         </div>
                     </div>
                     <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Period</button>
+                        <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">Cancel</x-ui.button>
+                        <x-ui.button type="submit">Save period</x-ui.button>
                     </div>
                 </form>
             </div>
@@ -94,35 +87,25 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Name Period</label>
-                            <input type="text" name="name" id="editName" class="form-control" required>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Month</label>
-                                <select name="month" id="editMonth" class="form-select" required>
+                        <div class="tw-grid tw-gap-4">
+                            <x-ui.input name="name" id="editName" label="Period name" required />
+                            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                                <x-ui.select name="month" id="editMonth" label="Month" required>
                                     @for($m=1; $m<=12; $m++)
                                         <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
                                     @endfor
-                                </select>
+                                </x-ui.select>
+                                <x-ui.input name="year" id="editYear" type="number" label="Year" min="2000" required />
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Year</label>
-                                <input type="number" name="year" id="editYear" class="form-control" min="2000" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <select name="status" id="editStatus" class="form-select" required>
+                            <x-ui.select name="status" id="editStatus" label="Status" required>
                                 <option value="open">Open (Menerima Quotation)</option>
                                 <option value="closed">Closed (Completed)</option>
-                            </select>
+                            </x-ui.select>
                         </div>
                     </div>
                     <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">Cancel</x-ui.button>
+                        <x-ui.button type="submit">Save changes</x-ui.button>
                     </div>
                 </form>
             </div>

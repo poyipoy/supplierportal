@@ -115,35 +115,46 @@
 @endpush
 
 @section('content')
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold">Quotation List</h5>
-            <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('purchasing.export.quotations', request()->only(['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency'])) }}" data-async-export
-                    class="btn btn-success btn-sm" id="exportQuotationsBtn"
-                    data-export-url="{{ route('purchasing.export.quotations') }}">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-                </a>
-                <span class="badge bg-primary" id="quotationCountBadge">{{ $quotations->total() }} Quotation</span>
-            </div>
-        </div>
-        <div class="card-body">
+    <div class="tw-grid tw-gap-6">
+        <x-ui.page-header
+            title="Supplier quotations"
+            eyebrow="Purchasing"
+            description="Review submitted supplier offers, validity, currency, and workflow status across requisitions."
+        />
+
+        <x-ui.data-table title="Quotation list" description="Filters update this list without a full-page refresh.">
+            <x-slot:toolbar>
+                <x-ui.button
+                    :href="route('purchasing.export.quotations', request()->only(['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency']))"
+                    variant="secondary"
+                    size="sm"
+                    data-async-export
+                    id="exportQuotationsBtn"
+                    :data-export-url="route('purchasing.export.quotations')"
+                >
+                    <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                    Export Excel
+                </x-ui.button>
+                <x-ui.status-chip tone="info" id="quotationCountBadge">{{ $quotations->total() }} quotations</x-ui.status-chip>
+            </x-slot:toolbar>
+
+            <x-slot:filters>
             {{-- Filter --}}
             @error('date_to')
-                <div class="alert alert-danger small">
-                    <i class="bi bi-exclamation-triangle me-1"></i>{{ $message }}
-                </div>
+                <x-ui.alert tone="error" class="tw-basis-full">{{ $message }}</x-ui.alert>
             @enderror
 
             <form method="GET" action="{{ route('purchasing.quotations.index') }}"
-                class="quotation-filter row g-3 mb-4 align-items-end" id="quotationFilterForm">
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label small fw-medium">PR No.</label>
-                    <input type="text" name="pr_number" class="form-control form-control-sm"
-                        value="{{ request('pr_number') }}" placeholder="REQ/MM/YYYY/XXX">
-                </div>
-                <div class="col-lg-4 col-md-12">
-                    <label class="form-label small fw-medium">Rentang Date</label>
+                class="quotation-filter tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-12 xl:tw-items-end" id="quotationFilterForm">
+                <x-ui.input
+                    name="pr_number"
+                    label="PR number"
+                    :value="request('pr_number')"
+                    placeholder="REQ/MM/YYYY/XXX"
+                    class="xl:tw-col-span-2"
+                />
+                <div class="tw-grid tw-gap-1.5 md:tw-col-span-2 xl:tw-col-span-4">
+                    <label class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Date range</label>
                     <div class="date-range-control" id="quotationDateRangeControl">
                         <div class="date-range-segment">
                             <span class="date-range-label">Dari</span>
@@ -157,53 +168,43 @@
                                 placeholder="MM/YYYY" aria-label="Sampai date" aria-describedby="quotationDateError">
                         </div>
                     </div>
-                    <div class="form-text text-danger d-none" id="quotationDateError" aria-live="polite">Date akhir not
-                        End date cannot be before start date.</div>
+                    <div class="d-none tw-text-ui-xs tw-font-medium tw-text-error" id="quotationDateError" aria-live="polite">End date cannot be before start date.</div>
                 </div>
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label small fw-medium">Supplier</label>
-                    <select name="supplier_id" class="form-select form-select-sm">
+                <x-ui.select name="supplier_id" label="Supplier" :value="request('supplier_id')" class="xl:tw-col-span-2">
                         <option value="">All Supplier</option>
                         @foreach($suppliers as $supplier)
                             <option value="{{ $supplier->getRouteKey() }}" {{ request('supplier_id') === $supplier->getRouteKey() ? 'selected' : '' }}>
                                 {{ $supplier->name }}
                             </option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-lg-1 col-md-6">
-                    <label class="form-label small fw-medium">Status</label>
-                    <select name="status" class="form-select form-select-sm">
+                </x-ui.select>
+                <x-ui.select name="status" label="Status" :value="request('status')" class="xl:tw-col-span-1">
                         <option value="">All Status</option>
                         <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
                         <option value="revision_requested" {{ request('status') == 'revision_requested' ? 'selected' : '' }}>
                             Needs Revision</option>
                         <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>Accepted</option>
                         <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                    </select>
-                </div>
-                <div class="col-lg-1 col-md-6">
-                    <label class="form-label small fw-medium">Currency</label>
-                    <select name="currency" class="form-select form-select-sm">
+                </x-ui.select>
+                <x-ui.select name="currency" label="Currency" :value="request('currency')" class="xl:tw-col-span-1">
                         <option value="">All</option>
                         @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                             <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ $currency }}</option>
                         @endforeach
-                    </select>
-                </div>
-                <div class="col-lg-2 col-md-6">
-                    <a href="{{ route('purchasing.quotations.index') }}" class="btn btn-outline-secondary btn-sm w-100">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
-                    </a>
-                </div>
+                </x-ui.select>
+                <x-ui.button :href="route('purchasing.quotations.index')" variant="ghost" size="sm" class="tw-w-full xl:tw-col-span-2">
+                    <x-slot:leading><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></x-slot:leading>
+                    Reset filters
+                </x-ui.button>
             </form>
+            </x-slot:filters>
 
             {{-- Tabel --}}
             <div class="table-responsive" id="quotationTableContainer">
-                <table class="table table-hover align-middle" style="font-size:.85rem">
+                <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th width="4%">No</th>
+                            <th>No</th>
                             <th>Supplier</th>
                             <th>PR No.</th>
                             <th>Period</th>
@@ -224,8 +225,7 @@
                                 <td>{{ $quotations->firstItem() + $i }}</td>
                                 <td class="fw-medium">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                                            style="width:32px;height:32px;">
+                                        <div class="tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-primary-container">
                                             <i class="bi bi-building text-primary small"></i>
                                         </div>
                                         {{ $q->supplier->name }}
@@ -237,8 +237,7 @@
                                 <td class="text-center"><span class="badge bg-dark">{{ $q->currency }}</span></td>
                                 <td class="text-center">{{ $q->items->count() }}</td>
                                 <td class="text-center">
-                                    <span class="badge {{ $q->statusBadgeClass() }} text-uppercase"
-                                        style="font-size:.65rem">{{ $q->statusLabel() }}</span>
+                                    <span class="badge {{ $q->statusBadgeClass() }} text-uppercase">{{ $q->statusLabel() }}</span>
                                 </td>
                                 <td>{{ $q->submitted_at ? $q->submitted_at->format('d M Y, H:i') : '-' }}</td>
                                 <td>
@@ -253,27 +252,26 @@
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q) }}"
-                                        class="btn btn-sm btn-outline-info py-0 px-2">
-                                        <i class="bi bi-eye me-1"></i>Detail
-                                    </a>
+                                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q)" variant="ghost" size="sm">
+                                        <x-slot:leading><i class="bi bi-eye" aria-hidden="true"></i></x-slot:leading>
+                                        Detail
+                                    </x-ui.button>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center text-muted py-4"><i class="bi bi-inbox"
-                                        style="font-size:2rem"></i>
-                                    <p class="mt-2 mb-0">No quotations received yet.</p>
-                                </td>
+                                <td colspan="10"><x-ui.empty-state icon="bi-inbox" title="No quotations received" description="Submitted supplier quotations will appear here." /></td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <div class="quotation-pagination mt-3" id="quotationPaginationContainer">
-                {{ $quotations->onEachSide(1)->links('pagination::bootstrap-5') }}
-            </div>
-        </div>
+            <x-slot:pagination>
+                <div class="quotation-pagination tw-w-full" id="quotationPaginationContainer">
+                    {{ $quotations->onEachSide(1)->links('pagination::bootstrap-5') }}
+                </div>
+            </x-slot:pagination>
+        </x-ui.data-table>
     </div>
 @endsection
 

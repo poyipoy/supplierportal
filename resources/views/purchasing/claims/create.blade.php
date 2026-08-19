@@ -4,11 +4,10 @@
 @section('page-title', 'Claim Submission Form')
 
 @section('content')
-<div class="mb-3">
-    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.claims.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to Claim List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Submit Material Claim" :description="'Create a supplier claim from the NG inspection for ' . $inspection->purchaseOrder->po_number . '.'" eyebrow="Purchasing">
+        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Claim List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
 <form action="{{ route('purchasing.claims.store') }}" method="POST" id="claimForm">
     @csrf
@@ -18,48 +17,24 @@
     <div class="row g-4">
         <div class="col-lg-7">
             {{-- Form Claim --}}
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">Claim Details</h6>
+            <x-ui.card title="Claim Details" description="Describe the issue, expected resolution, and response deadline clearly.">
+                <div class="tw-grid tw-gap-4">
+                    <x-ui.textarea name="description" label="Problem Description" :rows="4" required placeholder="Explain in detail which material has a problem and why..." />
+                    <x-ui.textarea name="resolution_expected" label="Expected Resolution" :rows="3" required placeholder="Example: replacement goods, refund, etc." />
+                    <x-ui.input type="date" name="deadline" label="Response Deadline" :min="date('Y-m-d', strtotime('+1 day'))" helper="Give reasonable time for the supplier to respond to this claim." required />
                 </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Problem Description <span class="text-danger">*</span></label>
-                        <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="4" required placeholder="Explain in detail which material has a problem and why..."></textarea>
-                        @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Expected Resolution <span class="text-danger">*</span></label>
-                        <textarea name="resolution_expected" class="form-control @error('resolution_expected') is-invalid @enderror" rows="3" required placeholder="Example: replacement goods, refund, etc."></textarea>
-                        @error('resolution_expected') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div>
+            </x-ui.card>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Response Deadline <span class="text-danger">*</span></label>
-                        <input type="date" name="deadline" class="form-control @error('deadline') is-invalid @enderror" min="{{ date('Y-m-d', strtotime('+1 day')) }}" required>
-                        <div class="form-text small text-muted">Give reasonable time for the supplier to respond to this claim.</div>
-                        @error('deadline') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-end gap-2 mb-5">
-                <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.claims.index') }}" class="btn btn-light">Cancel</a>
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-send me-1"></i> Send Claim to Supplier
-                </button>
+            <div class="tw-mt-4 tw-flex tw-flex-wrap tw-justify-end tw-gap-2">
+                <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost">Cancel</x-ui.button>
+                <x-ui.button type="submit" variant="danger"><x-slot:leading><i class="bi bi-send"></i></x-slot:leading>Send Claim to Supplier</x-ui.button>
             </div>
         </div>
 
         <div class="col-lg-5">
             {{-- QC Reference Info --}}
-            <div class="card border-0 shadow-sm mb-4 bg-light">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">QC Inspection Reference</h6>
-                    <a href="{{ route('qc.inspections.show', $inspection) }}" target="_blank" class="btn btn-sm btn-outline-info">QC Details</a>
-                </div>
-                <div class="card-body">
+            <x-ui.card title="QC Inspection Reference" variant="tonal">
+                <x-slot:actions><x-ui.button :href="route('qc.inspections.show', $inspection)" target="_blank" variant="ghost" size="sm">QC Details</x-ui.button></x-slot:actions>
                     <div class="mb-2">
                         <div class="text-muted small">Number PO</div>
                         <div class="fw-bold">{{ $inspection->purchaseOrder->po_number }}</div>
@@ -98,9 +73,9 @@
                         </div>
                         <div class="form-text small mt-2">These photos will automatically be attached to the supplier page.</div>
                     @endif
-                </div>
-            </div>
+            </x-ui.card>
         </div>
     </div>
 </form>
+</div>
 @endsection

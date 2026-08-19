@@ -9,21 +9,16 @@
     'Material Claim' => route('purchasing.claims.index'),
     'Claim #' . $claim->id => '#'
 ]" />
-<div class="mb-3">
-    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.claims.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to Claim List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Material claim for ' . $claim->purchaseOrder->po_number . ' from ' . $claim->purchaseOrder->supplier->name . '.'" eyebrow="Material Claim Details">
+        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Claim List</x-ui.button></x-slot:actions>
+    </x-ui.page-header>
 
-<div class="row g-4">
-    <div class="col-lg-8">
+<div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+    <div class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         {{-- Claim Details --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">Claim #{{ $claim->id }}</h6>
-                <x-status-badge type="claim" :status="$claim->status" size="lg" />
-            </div>
-            <div class="card-body">
+        <x-ui.card :title="'Claim #' . $claim->id">
+            <x-slot:actions><x-status-badge type="claim" :status="$claim->status" size="lg" /></x-slot:actions>
                 <div class="row mb-3">
                     <div class="col-md-3 text-muted small">Number PO</div>
                     <div class="col-md-9 fw-bold">{{ $claim->purchaseOrder->po_number }}</div>
@@ -65,16 +60,11 @@
                         @endforeach
                     </div>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- Supplier Response --}}
         @if($claim->status !== 'pending')
-        <div class="card border-0 shadow-sm mb-4 border-start border-4 border-info">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Supplier Response</h6>
-            </div>
-            <div class="card-body">
+        <x-ui.card title="Supplier Response" variant="tonal">
                 <div class="mb-2 text-muted small">Responded at: {{ $claim->updated_at->format('d M Y, H:i') }}</div>
                 <div class="p-3 bg-light rounded border mb-3">
                     {{ $claim->supplier_response ?? 'No response text.' }}
@@ -93,50 +83,30 @@
                         @endforeach
                     </div>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
         @endif
 
     </div>
 
-    <div class="col-lg-4">
+    <aside class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
         {{-- Action Card --}}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Claim Action</h6>
-            </div>
-            <div class="card-body">
+        <x-ui.card title="Claim Action" description="Actions are available only for the current claim state.">
                 @if($claim->status === 'pending')
-                    <div class="alert alert-warning small">
-                        <i class="bi bi-hourglass-split me-1"></i> Waiting for the supplier response. Deadline: {{ $claim->deadline->format('d M Y') }}
-                    </div>
+                    <x-ui.alert tone="warning">Waiting for the supplier response. Deadline: {{ $claim->deadline->format('d M Y') }}</x-ui.alert>
                 @elseif($claim->status === 'responded')
-                    <div class="alert alert-info small">
-                        <i class="bi bi-reply-fill me-1"></i> Supplier has provided a response. Is the solution acceptable?
-                    </div>
+                    <x-ui.alert class="tw-mb-3">Supplier has provided a response. Is the solution acceptable?</x-ui.alert>
                     <form action="{{ route('purchasing.claims.resolve', $claim) }}" method="POST">
                         @csrf
-                        <button type="submit" class="btn btn-success w-100 mb-2">
-                            <i class="bi bi-check2-circle me-1"></i> Mark Completed (Resolved)
-                        </button>
+                        <x-ui.button type="submit" class="tw-mb-2 tw-w-full"><x-slot:leading><i class="bi bi-check2-circle"></i></x-slot:leading>Mark Completed (Resolved)</x-ui.button>
                     </form>
-                    <button type="button" class="btn btn-outline-danger w-100 disabled" title="Escalation feature is not active yet">
-                        <i class="bi bi-exclamation-triangle me-1"></i> Escalation
-                    </button>
+                    <x-ui.button disabled variant="danger" class="tw-w-full" title="Escalation feature is not active yet"><x-slot:leading><i class="bi bi-exclamation-triangle"></i></x-slot:leading>Escalation</x-ui.button>
                 @elseif($claim->status === 'resolved')
-                    <div class="alert alert-success small mb-0">
-                        <i class="bi bi-check-circle-fill me-1"></i> This claim has been declared completed and resolved.
-                    </div>
+                    <x-ui.alert tone="success">This claim has been declared completed and resolved.</x-ui.alert>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- QC Reference --}}
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Item Material NG</h6>
-            </div>
-            <div class="card-body p-0">
+        <x-ui.card title="NG Material Items" padding="none">
                 <ul class="list-group list-group-flush">
                     @foreach($claim->inspection->items->where('status', 'ng') as $item)
                         <li class="list-group-item small">
@@ -148,10 +118,10 @@
                     @endforeach
                 </ul>
                 <div class="p-3 text-center border-top">
-                    <a href="{{ route('qc.inspections.show', $claim->inspection) }}" target="_blank" class="btn btn-sm btn-light w-100">View Details Report QC</a>
+                    <x-ui.button :href="route('qc.inspections.show', $claim->inspection)" target="_blank" variant="ghost" size="sm" class="tw-w-full">View QC Report Details</x-ui.button>
                 </div>
-            </div>
-        </div>
-    </div>
+        </x-ui.card>
+    </aside>
+</div>
 </div>
 @endsection

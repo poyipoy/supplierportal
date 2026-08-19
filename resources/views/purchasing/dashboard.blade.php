@@ -52,97 +52,45 @@
 @endpush
 
 @section('content')
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Purchasing dashboard"
+        eyebrow="Operations overview"
+        description="Track requisitions, quotation response, active orders, arrivals, and items that need attention."
+    >
+        <x-slot:actions>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
+                <x-slot:leading><i class="bi bi-plus-circle" aria-hidden="true"></i></x-slot:leading>
+                Create requisition
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
 {{-- Insight & Anomaly Alerts --}}
 @php
     $hasInsights = ($poStatusDist['overdue'] ?? 0) > 0 || $menungguPenawaran > 0 || ($poStatusDist['waiting_qc'] ?? 0) > 0;
 @endphp
 @if($hasInsights)
-<div class="row mb-4 animate-fade-in">
-    <div class="col-12">
-        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-3 mb-0" style="background-color: var(--md-warning-container); border-left: 4px solid var(--md-warning) !important;">
-            <div class="bg-warning bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                <i class="bi bi-lightbulb-fill fs-4 text-warning"></i>
-            </div>
-            <div>
-                <h6 class="fw-bold mb-1 text-dark">Action Required</h6>
-                <p class="mb-0 text-muted small">
+    <x-ui.alert tone="warning" title="Action required" class="animate-fade-in">
+        <div class="tw-flex tw-flex-wrap tw-gap-x-2 tw-gap-y-1">
                     @if(($poStatusDist['overdue'] ?? 0) > 0) <span class="text-danger fw-semibold"><i class="bi bi-exclamation-circle"></i> {{ $poStatusDist['overdue'] }} overdue PO</span> have passed their estimated date. @endif
                     @if($menungguPenawaran > 0) <span class="text-warning fw-semibold ms-1"><i class="bi bi-clock"></i> {{ $menungguPenawaran }} PR</span> have not received any quotations yet. @endif
                     @if(($poStatusDist['waiting_qc'] ?? 0) > 0) <span class="text-primary fw-semibold ms-1"><i class="bi bi-box-seam"></i> {{ $poStatusDist['waiting_qc'] }} PO</span> are waiting for QC inspection. @endif
-                </p>
-            </div>
         </div>
-    </div>
-</div>
+    </x-ui.alert>
 @endif
 
 {{-- Card Statistik (Clickable) --}}
-<div class="row g-4 mb-4 animate-fade-in">
-    <div class="col-md-6 col-xl-3">
-        <a href="{{ route('purchasing.requisitions.index', ['status' => 'submitted']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">ACTIVE REQUISITIONS</div><h3 class="fw-bold mb-0">{{ $prAktif }}</h3></div>
-                    <div class="position-relative">
-                        <div class="bg-primary bg-opacity-10 rounded-circle p-3"><i class="bi bi-clipboard-data text-primary fs-4"></i></div>
-                        <i class="bi bi-arrow-right kpi-arrow text-primary position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-6 col-xl-3">
-        <a href="{{ route('purchasing.requisitions.index', ['status' => 'bidding']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">WAITING FOR QUOTATION</div><h3 class="fw-bold mb-0 text-warning">{{ $menungguPenawaran }}</h3></div>
-                    <div class="position-relative">
-                        <div class="bg-warning bg-opacity-10 rounded-circle p-3"><i class="bi bi-hourglass-split text-warning fs-4"></i></div>
-                        <i class="bi bi-arrow-right kpi-arrow text-warning position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-6 col-xl-3">
-        <a href="{{ route('purchasing.purchase-orders.index', ['status' => 'active']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">ACTIVE PO</div><h3 class="fw-bold mb-0 text-success">{{ $poBerjalan }}</h3></div>
-                    <div class="position-relative">
-                        <div class="bg-success bg-opacity-10 rounded-circle p-3"><i class="bi bi-receipt text-success fs-4"></i></div>
-                        <i class="bi bi-arrow-right kpi-arrow text-success position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-6 col-xl-3">
-        <a href="{{ route('purchasing.purchase-orders.index', ['arrival' => 'this_week']) }}" class="kpi-card card border-0 shadow-sm h-100 border-start border-4 border-info">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><div class="text-muted small fw-medium mb-1">ARRIVING THIS WEEK</div><h3 class="fw-bold mb-0 text-info">{{ $materialMingguIni }}</h3></div>
-                    <div class="position-relative">
-                        <div class="bg-info bg-opacity-10 rounded-circle p-3"><i class="bi bi-truck text-info fs-4"></i></div>
-                        <i class="bi bi-arrow-right kpi-arrow text-info position-absolute" style="bottom:-2px;right:-2px;font-size:.7rem"></i>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
+<div class="animate-fade-in tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
+    <x-ui.metric-card label="Active requisitions" :value="$prAktif" icon="bi-clipboard-data" :href="route('purchasing.requisitions.index', ['status' => 'submitted'])" />
+    <x-ui.metric-card label="Waiting for quotation" :value="$menungguPenawaran" icon="bi-hourglass-split" tone="warning" :href="route('purchasing.requisitions.index', ['status' => 'bidding'])" />
+    <x-ui.metric-card label="Active PO" :value="$poBerjalan" icon="bi-receipt" tone="success" :href="route('purchasing.purchase-orders.index', ['status' => 'active'])" />
+    <x-ui.metric-card label="Arriving this week" :value="$materialMingguIni" icon="bi-truck" tone="info" :href="route('purchasing.purchase-orders.index', ['arrival' => 'this_week'])" />
 </div>
 
 {{-- Quick operational checks --}}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
-            <h6 class="mb-0 fw-bold">Needs Review</h6>
-            <div class="text-muted small">Operational summary that needs Purchasing attention.</div>
-        </div>
-        <span class="badge bg-light text-muted border">Quick Wins</span>
-    </div>
-    <div class="card-body">
+<x-ui.card title="Needs review" description="Operational checks that may need Purchasing attention.">
+    <x-slot:actions><x-ui.status-chip tone="neutral">Quick checks</x-ui.status-chip></x-slot:actions>
         <div class="operational-check-grid">
             @foreach($operationalChecks as $check)
                 <a href="{{ $check['url'] }}" class="operational-check-item">
@@ -164,41 +112,31 @@
                 </a>
             @endforeach
         </div>
-    </div>
-</div>
+</x-ui.card>
 
 {{-- Grafik --}}
-<div class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Purchase Requisition per Month</h6></div>
-            <div class="card-body"><canvas id="prChart" height="260"></canvas></div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Distribusi Status PO</h6></div>
-            <div class="card-body d-flex align-items-center justify-content-center">
+<div class="tw-grid tw-gap-6 lg:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+    <x-ui.card title="Purchase requisitions per month" description="Monthly creation volume for the current reporting window." class="tw-min-w-0">
+        <div class="tw-h-[16.25rem]"><canvas id="prChart"></canvas></div>
+    </x-ui.card>
+    <x-ui.card title="PO status distribution" description="Current purchase-order workload by state." class="tw-min-w-0">
+            <div class="tw-flex tw-min-h-[16.25rem] tw-items-center tw-justify-center">
                 @if(count($poStatusDist) > 0)
-                    <div style="width:220px;height:220px;"><canvas id="poDonut"></canvas></div>
+                    <div class="tw-h-[13.75rem] tw-w-[13.75rem]"><canvas id="poDonut"></canvas></div>
                 @else
-                    <div class="text-muted text-center small">No data available PO.</div>
+                    <x-ui.empty-state icon="bi-pie-chart" title="No PO status data" description="Status distribution will appear after purchase orders are created." />
                 @endif
             </div>
-        </div>
-    </div>
+    </x-ui.card>
 </div>
 
 {{-- Table + Exchange Rate --}}
-<div class="row g-4">
-    <div class="col-lg-5">
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">Latest 5 PRs</h6>
-                <a href="{{ route('purchasing.requisitions.index') }}" class="btn btn-sm btn-light">All</a>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
+<div class="tw-grid tw-items-start tw-gap-6 lg:tw-grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+    <div class="tw-grid tw-gap-6">
+        <x-ui.data-table title="Latest 5 PRs" description="Most recently created requisitions.">
+            <x-slot:toolbar>
+                <x-ui.button :href="route('purchasing.requisitions.index')" variant="ghost" size="sm">View all</x-ui.button>
+            </x-slot:toolbar>
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
                         <thead class="table-light"><tr><th>PR No.</th><th>Period</th><th>Status</th><th></th></tr></thead>
                         <tbody>
@@ -212,19 +150,21 @@
                             @empty<tr><td colspan="4" class="text-center text-muted py-3">No data available.</td></tr>@endforelse
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </div>
+        </x-ui.data-table>
         {{-- Exchange Rate --}}
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">
+        <x-ui.card>
+            <x-slot:header>
+                <h2 class="tw-m-0 tw-text-ui-lg tw-font-semibold tw-text-on-surface">
                     <i class="bi bi-currency-exchange me-1"></i> Today Exchange Rate
                     <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="The latest exchange rate is used for new input. Quotation and PO history keep their own exchange rate snapshots."></i>
-                </h6>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#kursModal"><i class="bi bi-pencil-square"></i> Update</button>
-            </div>
-            <div class="card-body">
+                </h2>
+            </x-slot:header>
+            <x-slot:actions>
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal">
+                    <x-slot:leading><i class="bi bi-pencil-square" aria-hidden="true"></i></x-slot:leading>
+                    Update
+                </x-ui.button>
+            </x-slot:actions>
                 <div class="row g-3">
                     @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                         @php
@@ -244,17 +184,13 @@
                 @if($lastRateUpdated)
                     <div class="text-muted text-center mt-2" style="font-size:.7rem">Latest exchange rate update: {{ $lastRateUpdated->format('d M Y') }}</div>
                 @endif
-            </div>
-        </div>
+        </x-ui.card>
     </div>
-    <div class="col-lg-7">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">PO - Nearest Arrival</h6>
-                <a href="{{ route('purchasing.purchase-orders.index') }}" class="btn btn-sm btn-light">All PO</a>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
+    <div>
+        <x-ui.data-table title="Nearest PO arrivals" description="Active orders with the closest estimated arrival dates.">
+            <x-slot:toolbar>
+                <x-ui.button :href="route('purchasing.purchase-orders.index')" variant="ghost" size="sm">View all PO</x-ui.button>
+            </x-slot:toolbar>
                     <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
                         <thead class="table-light"><tr><th>PO No.</th><th>Supplier</th><th>Estimated Arrival</th><th>Status</th><th></th></tr></thead>
                         <tbody>
@@ -269,10 +205,9 @@
                             @empty<tr><td colspan="5" class="text-center text-muted py-3">No active PO.</td></tr>@endforelse
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </div>
+        </x-ui.data-table>
     </div>
+</div>
 </div>
 
 {{-- Exchange Rate Modal --}}

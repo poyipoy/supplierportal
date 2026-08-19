@@ -3,17 +3,17 @@
 @section('page-title', 'Price Comparison')
 
 @section('content')
-{{-- Tabs --}}
-<ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item"><a class="nav-link active" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier') }}"><i class="bi bi-people me-1"></i> Inter-Supplier</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.historical') }}"><i class="bi bi-graph-up me-1"></i> Historical</a></li>
-    <li class="nav-item"><a class="nav-link" href="{{ \App\Support\PurchasingNavigation::listUrl('purchasing.comparison.vs-best') }}"><i class="bi bi-trophy me-1"></i> vs Best Price</a></li>
-</ul>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Price Comparison"
+        description="Compare supplier offers for a PR, inspect historical movement, and benchmark current prices."
+        eyebrow="Purchasing"
+    />
+    <x-purchasing.comparison-tabs active="inter-supplier" />
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="row g-3 align-items-end" id="interSupplierFilterForm">
-            <div class="col-md-9">
+<x-ui.card title="Select Purchase Requisition" description="Eligible PRs have at least two supplier quotations.">
+        <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="tw-grid tw-gap-4 md:tw-grid-cols-[minmax(0,1fr)_auto] md:tw-items-end" id="interSupplierFilterForm">
+            <div>
                 <label class="form-label small fw-bold">Select Purchase Requisition (PR with minimum 2 quotations)</label>
                 <div class="position-relative">
                     <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
@@ -38,12 +38,14 @@
                 </div>
                 <div class="form-text">Type to display PR options, then select one option.</div>
             </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary btn-sm w-100" style="background-color:var(--adasi-blue)"><i class="bi bi-search me-1"></i>Compare</button>
+            <div>
+                <x-ui.button type="submit" size="sm" class="tw-w-full md:tw-w-auto">
+                    <x-slot:leading><i class="bi bi-search"></i></x-slot:leading>
+                    Compare
+                </x-ui.button>
             </div>
         </form>
-    </div>
-</div>
+</x-ui.card>
 
 @if($comparison)
     @php
@@ -115,10 +117,9 @@
     @endif
 
     {{-- Grafik Batang --}}
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3 d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart me-1"></i> Price Comparison Chart per Material (IDR/Kg)</h6>
-            <div style="min-width: 240px;">
+    <x-ui.card title="Price Comparison Chart per Material (IDR/Kg)">
+        <x-slot:actions>
+            <div class="tw-min-w-60">
                 <label class="form-label small fw-bold mb-1">Material</label>
                 <select class="form-select form-select-sm" id="comparisonMaterialFilter">
                     <option value="">All Material</option>
@@ -127,19 +128,14 @@
                     @endforeach
                 </select>
             </div>
-        </div>
-        <div class="card-body">
+        </x-slot:actions>
+        <div class="tw-min-h-[280px]">
             <canvas id="comparisonChart" height="280"></canvas>
         </div>
-    </div>
+    </x-ui.card>
 
     {{-- Tabel Side-by-Side --}}
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-table me-1"></i> Comparison Table - {{ $selectedPr->pr_number }}</h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
+    <x-ui.data-table :title="'Comparison Table - ' . $selectedPr->pr_number" description="Lowest converted price per material is highlighted for fast review.">
                 <table class="table table-bordered table-hover align-middle mb-0" style="font-size:.8rem">
                     <thead class="table-light text-center">
                         <tr>
@@ -202,19 +198,15 @@
                         @endforeach
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </div>
+    </x-ui.data-table>
 @elseif(request('pr_id'))
-    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> No data found for the selected PR.</div>
+    <x-ui.alert tone="warning">No data found for the selected PR.</x-ui.alert>
 @else
-    <div class="card border-0 shadow-sm">
-        <div class="card-body text-center py-5 text-muted">
-            <i class="bi bi-bar-chart-line" style="font-size:3rem;opacity:.5"></i>
-            <p class="mt-3 mb-0">Select a PR above to view the price comparison between suppliers.</p>
-        </div>
-    </div>
+    <x-ui.card padding="none">
+        <x-ui.empty-state icon="bi-bar-chart-line" title="Select a PR to compare" description="Choose an eligible purchase requisition above to compare supplier prices." />
+    </x-ui.card>
 @endif
+</div>
 @endsection
 
 @push('scripts')

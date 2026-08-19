@@ -4,27 +4,27 @@
 @section('page-title', 'Purchase Order')
 
 @section('content')
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-semibold">Purchase Order List</h5>
-        <a href="{{ route('purchasing.export.purchase-orders') }}" class="btn btn-success btn-sm" data-async-export
-            id="exportPurchaseOrdersBtn" data-export-url="{{ route('purchasing.export.purchase-orders') }}">
-            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-        </a>
-    </div>
-    <div class="card-body">
-        {{-- Filters --}}
-        <div class="row g-3 mb-4">
-            <div class="col-lg-3 col-md-6">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Purchase Orders" description="Track supplier, reference PRs, arrival targets, and workflow status." eyebrow="Purchasing" />
+
+    <x-ui.data-table title="Purchase Order List" description="Use the filters to narrow server-side results without changing the workflow state.">
+        <x-slot:toolbar>
+            <x-ui.button :href="route('purchasing.export.purchase-orders')" variant="secondary" size="sm" data-async-export id="exportPurchaseOrdersBtn" :data-export-url="route('purchasing.export.purchase-orders')">
+                <x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel
+            </x-ui.button>
+        </x-slot:toolbar>
+        <x-slot:filters>
+        <div class="tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-4">
+            <div>
                 <label class="form-label small fw-medium">PO No.</label>
                 <div class="input-group input-group-sm">
                     <input type="text" id="filter_po_number" class="form-control" placeholder="PO/MM/YYYY/XXX">
-                    <button type="button" class="btn btn-primary" style="background-color: var(--adasi-blue);" id="searchPoBtn">
+                    <button type="button" class="btn btn-primary" id="searchPoBtn" aria-label="Search PO number">
                         <i class="bi bi-search"></i>
                     </button>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div>
                 <label class="form-label small fw-medium">Status</label>
                 <select id="filter_status" class="form-select form-select-sm">
                     <option value="">All Status</option>
@@ -36,7 +36,7 @@
                     <option value="cancelled">Cancelled</option>
                 </select>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div>
                 <label class="form-label small fw-medium">Supplier</label>
                 <select id="filter_supplier" class="form-select form-select-sm">
                     <option value="">All Supplier</option>
@@ -45,16 +45,16 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-lg-3 col-md-6 d-flex align-items-end">
-                <button type="button" class="btn btn-light btn-sm w-100" id="resetFilter">Reset</button>
+            <div class="tw-flex tw-items-end">
+                <x-ui.button type="button" variant="ghost" size="sm" class="tw-w-full" id="resetFilter"><x-slot:leading><i class="bi bi-arrow-counterclockwise"></i></x-slot:leading>Reset</x-ui.button>
             </div>
         </div>
+        </x-slot:filters>
 
         <div id="filterChips" class="d-flex flex-wrap gap-2 mb-3 d-none">
             {{-- Filter chips will be rendered here by JS --}}
         </div>
 
-        <div class="table-responsive">
             <table class="table table-hover align-middle" id="poTable">
                 <thead class="table-light">
                     <tr>
@@ -71,8 +71,7 @@
                 </thead>
                 <tbody></tbody>
             </table>
-        </div>
-    </div>
+    </x-ui.data-table>
 </div>
 @endsection
 

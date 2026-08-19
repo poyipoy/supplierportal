@@ -9,14 +9,18 @@
     'Purchase Orders' => route('purchasing.purchase-orders.index'),
     $po->po_number => '#'
 ]" />
-<div class="mb-3">
-    <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index') }}" class="text-decoration-none text-muted small">
-        <i class="bi bi-arrow-left me-1"></i> Back to PO List
-    </a>
-</div>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        :title="$po->po_number"
+        :description="'Purchase order for ' . $po->supplier->name . ' with arrival, QC, document, and claim tracking.'"
+        eyebrow="Purchase Order Details"
+    >
+        <x-slot:actions>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to PO List</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-<div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 15px; z-index: 1020; background: var(--md-surface); backdrop-filter: blur(10px);">
-    <div class="card-body p-2">
+<div class="tw-sticky tw-top-4 tw-z-sticky tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-p-2 tw-shadow-ui-2">
         <ul class="nav nav-pills nav-fill small fw-medium" id="po-section-nav">
             <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-info">Info</a></li>
             <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-material">Material</a></li>
@@ -29,26 +33,19 @@
             @endif
             <li class="nav-item"><a class="nav-link rounded-pill text-muted" href="#sec-timeline">Timeline</a></li>
         </ul>
-    </div>
 </div>
 
 {{-- SECTION A - PO Info --}}
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
-        <div class="card border-0 shadow-sm" id="sec-info" style="scroll-margin-top: 80px;">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold">{{ $po->po_number }}</h6>
-                <div>
+        <x-ui.card :title="$po->po_number" id="sec-info" class="tw-scroll-mt-20">
+            <x-slot:actions>
+                <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
-                    <a href="{{ route('purchasing.export.purchase-orders.detail', $po) }}" class="btn btn-sm btn-outline-success me-1" data-async-export>
-                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-                    </a>
-                    <a href="{{ route('shared.pdf.purchase-order', $po) }}" class="btn btn-sm btn-outline-danger" target="_blank" title="Print Purchase Order" data-pdf-confirm>
-                        <i class="bi bi-file-earmark-pdf"></i> Print PDF
-                    </a>
+                    <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
+                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><x-slot:leading><i class="bi bi-file-earmark-pdf"></i></x-slot:leading>Print PDF</x-ui.button>
                 </div>
-            </div>
-            <div class="card-body">
+            </x-slot:actions>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Supplier</div>
                     <div class="col-md-8 fw-medium">{{ $po->supplier->name }}</div>
@@ -108,16 +105,10 @@
                     <div class="col-md-4 text-muted small">Remark</div>
                     <div class="col-md-8">{{ $po->notes ?: '-' }}</div>
                 </div>
-            </div>
-        </div>
+        </x-ui.card>
 
         {{-- Material Table - Grouped per Quotation/PR --}}
-        <div class="card border-0 shadow-sm mt-4" id="sec-material" style="scroll-margin-top: 80px;">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold">Material Details</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
+        <x-ui.data-table title="Material Details" description="Grouped by quotation and reference PR." id="sec-material" class="tw-mt-6 tw-scroll-mt-20">
                     <table class="table table-bordered align-middle mb-0" style="font-size: 0.85rem;">
                         <thead class="table-light text-center">
                             <tr>
@@ -212,9 +203,7 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-        </div>
+        </x-ui.data-table>
 
         @php
             $latestInspection = $po->qcInspections->sortByDesc('inspected_at')->first();
@@ -476,6 +465,8 @@
             @endforeach
         </div>
     </div>
+</div>
+
 </div>
 
 {{-- Update Document Modal --}}

@@ -4,8 +4,10 @@
 @section('page-title', 'Material Claim')
 
 @section('content')
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white pt-3 pb-0 border-bottom-0">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header title="Material Claims" description="Submit claims for NG inspections and follow supplier resolution status." eyebrow="Purchasing" />
+<x-ui.card padding="none" class="ui-data-table">
+    <div class="tw-border-b tw-border-outline-variant tw-px-4 tw-pt-3 shell:tw-px-5">
         <ul class="nav nav-tabs border-bottom-0" id="claimTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-medium px-4 pb-3" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab">
@@ -19,13 +21,11 @@
             </li>
         </ul>
     </div>
-    <div class="card-body border-top">
+    <div class="tw-p-4 shell:tw-p-5">
         <div class="tab-content" id="claimTabsContent">
             {{-- Tab: Perlu Tindakan --}}
             <div class="tab-pane fade show active" id="action" role="tabpanel">
-                <div class="alert alert-info small mb-4">
-                    <i class="bi bi-info-circle-fill me-1"></i> The PO list below has been inspected by QC and has an NG (Not Good) status. Please submit a claim to the relevant supplier.
-                </div>
+                <x-ui.alert class="tw-mb-4">The PO list below has been inspected by QC with an NG result. Submit a claim to the relevant supplier.</x-ui.alert>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle" id="actionTable" style="width: 100%;">
                         <thead class="table-light">
@@ -66,6 +66,7 @@
             </div>
         </div>
     </div>
+</x-ui.card>
 </div>
 @endsection
 
