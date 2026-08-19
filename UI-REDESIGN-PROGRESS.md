@@ -1,6 +1,6 @@
 # UI Redesign Progress
 
-Last updated: `2026-08-20 01:46:25 +07:00`
+Last updated: `2026-08-20 01:52:16 +07:00`
 
 ## Recovery state
 
@@ -24,8 +24,8 @@ Last updated: `2026-08-20 01:46:25 +07:00`
 | UI-05 Supplier | PASS | `d5bdfc1` | `UI-05-SUPPLIER-RESULT.md` | Complete |
 | UI-06 QC + Admin + Auth | PASS | `be04e47` | `UI-06-QC-ADMIN-AUTH-RESULT.md` | Complete |
 | UI-07 Compatibility Cleanup | PASS | `19ab6c0` | `UI-07-COMPATIBILITY-CLEANUP-RESULT.md` | Complete |
-| UI-08 Visual QA + Fixes | PASS | pending local checkpoint | `UI-08-QA-RESULT.md` | Complete with `VISUAL_QA_BLOCKED` |
-| UI-09 Final Audit + Report | IN_PROGRESS | — | — | Final verification and overnight report |
+| UI-08 Visual QA + Fixes | PASS | `7dbeaa7` | `UI-08-QA-RESULT.md` | Complete with `VISUAL_QA_BLOCKED` |
+| UI-09 Final Audit + Report | PASS | final report checkpoint | `UI-REDESIGN-OVERNIGHT-RESULT.md` | Mission complete; browser review remains |
 
 ## Latest verification
 
@@ -41,7 +41,7 @@ Last updated: `2026-08-20 01:46:25 +07:00`
 | UI-07 targeted batch | PASS — 41 passed, 8 risky, 464 assertions |
 | UI-08 targeted batch | PASS — 28 passed, 7 risky, 343 assertions |
 | `php artisan test` | 179 passed, 25 risky, 1 known pre-existing failure, 2182 assertions |
-| HTTP login/assets/manifest smoke | PASS |
+| HTTP login/assets/role-guard smoke | PASS — login/assets 200; four guest role dashboards 302 |
 | Browser screenshots | BLOCKED — no browser available |
 | Backend/schema guardrail | PASS — no guarded file or database change |
 
@@ -55,4 +55,4 @@ Last updated: `2026-08-20 01:46:25 +07:00`
 
 ## Resume instruction
 
-Resume from `UI-09 Final Audit + Report`. Do not repeat packages marked `PASS` unless final verification proves a regression.
+All repository-verifiable work packages are complete. Review `UI-REDESIGN-OVERNIGHT-RESULT.md`; the next required activity is the browser-enabled authenticated visual/interaction matrix, not a package restart.
