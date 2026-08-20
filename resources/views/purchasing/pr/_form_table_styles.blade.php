@@ -1,4 +1,9 @@
 <style>
+    /* Keep the period control at its intrinsic height when the notes field is taller. */
+    .pr-period-field {
+        align-self: start;
+    }
+
     .pr-material-toolbar {
         gap: .75rem;
     }

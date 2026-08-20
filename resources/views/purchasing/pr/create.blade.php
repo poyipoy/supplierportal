@@ -33,7 +33,7 @@
             <input type="hidden" name="supplier_selection_present" value="1">
 
             <div class="tw-grid tw-gap-5 shell:tw-grid-cols-3">
-                <x-ui.select name="period_id" id="period_id" label="Quotation period" required>
+                <x-ui.select name="period_id" id="period_id" label="Quotation period" class="pr-period-field" required>
                         <option value="">-- Select Period --</option>
                         @foreach($periods as $period)
                             <option value="{{ $period->id }}" {{ old('period_id') == $period->id ? 'selected' : '' }}>
