@@ -38,5 +38,10 @@
 ## HARD-06: Performance Baseline
 - Status: Not started
 
+## HARD-07: Investigate `window.exportConfirmationOpen` Test Failure
+- Status: **PASS**
+- **Findings**: The `CustomAdasiAlertTest::test_export_confirmation_retains_the_single_download_guard` was failing because the `window.exportConfirmationOpen` global JavaScript snippet in `layouts/app.blade.php` was accidentally removed during the redesign. This snippet is a security/behavioral guard to prevent duplicate export downloads.
+- **Repairs**: Restored the missing `window.exportConfirmationOpen` script block inside `resources/views/layouts/app.blade.php` right next to the `pdfConfirmationOpen` guard. Verified test suite now passes for `CustomAdasiAlertTest`.
+
 ## HARD-07: Technical Debt Assessment
 - Status: Not started

@@ -1685,6 +1685,47 @@
         });
     </script>
 
+    {{-- Global Script untuk Excel Export Preview --}}
+    <script>
+        document.addEventListener('click', function (e) {
+            const exportBtn = e.target.closest('a[href*="/export/"][data-export-confirm]');
+            if (!exportBtn || e.defaultPrevented || e.button !== 0) {
+                return;
+            }
+
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                return;
+            }
+
+            e.preventDefault();
+
+            if (window.exportConfirmationOpen) {
+                return;
+            }
+
+            window.exportConfirmationOpen = true;
+
+            let recordsTotal = 'all';
+
+            AdasiAlert.confirm({
+                title: 'Export Data to Excel?',
+                text: 'The data will be exported based on current filters. Do you want to continue?',
+                confirmText: 'Yes, Export',
+                cancelText: 'Cancel'
+            }).then((result) => {
+                window.exportConfirmationOpen = false;
+
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                window.location.href = exportBtn.href;
+            }).catch(() => {
+                window.exportConfirmationOpen = false;
+            });
+        });
+    </script>
+
     {{-- Keyboard Shortcuts --}}
     <script>
         document.addEventListener('keydown', function (e) {
