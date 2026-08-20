@@ -248,7 +248,7 @@
             left: 0;
             background-color: var(--md-surface);
             box-shadow: var(--md-elevation-1);
-            z-index: 1000;
+            z-index: var(--ui-z-drawer);
             transition: width var(--ui-motion-standard) var(--ui-easing-standard), transform var(--ui-motion-standard) var(--ui-easing-standard);
             display: flex;
             flex-direction: column;
@@ -370,7 +370,6 @@
             margin-left: var(--sidebar-width-collapsed);
         }
 
-        /* Top Navbar */
         .top-navbar {
             background-color: var(--md-surface);
             height: 70px;
@@ -382,7 +381,7 @@
             justify-content: space-between;
             position: sticky;
             top: 0;
-            z-index: 999;
+            z-index: var(--ui-z-sticky);
         }
 
         /* Material global component styling */
@@ -713,6 +712,7 @@
             padding: 2rem;
             flex-grow: 1;
             animation: fadeInContent 0.25s ease-out;
+            scroll-margin-top: 70px;
         }
 
         @keyframes fadeInContent {
@@ -1252,7 +1252,7 @@
         }
 
         /* Responsive */
-        @media (max-width: 992px) {
+        @media (max-width: 991.98px) {
             .sidebar {
                 transform: translateX(-100%);
                 width: var(--sidebar-width) !important;
@@ -1278,7 +1278,7 @@
                 width: 100%;
                 height: 100vh;
                 background: var(--ui-dialog-scrim);
-                z-index: 998;
+                z-index: 1039;
             }
 
             .sidebar-overlay.show {
