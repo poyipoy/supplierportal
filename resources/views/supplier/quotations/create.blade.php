@@ -279,7 +279,8 @@
 
     .quotation-additional-grid {
         display: grid;
-        gap: .6rem .85rem;
+        align-items: start;
+        gap: .75rem;
         grid-template-columns: minmax(0, min(100%, 280px));
     }
 
@@ -290,7 +291,14 @@
     @media (min-width: 768px) {
         .quotation-additional-grid {
             grid-template-columns: repeat(2, minmax(0, 280px));
-            max-width: 580px;
+            max-width: 860px;
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .quotation-additional-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            max-width: 1120px;
         }
     }
 
