@@ -16,7 +16,7 @@
             </div>
             <div class="tw-flex tw-flex-wrap tw-justify-between tw-gap-3">
                 <x-ui.button :href="route('admin.announcements.index')" variant="ghost">Cancel</x-ui.button>
-                <x-ui.button type="submit"><x-slot:leading><i class="bi bi-save"></i></x-slot:leading>Save Announcement</x-ui.button>
+                <x-ui.button type="submit"><i class="bi bi-save"></i> Save Announcement</x-ui.button>
             </div>
         </form>
     </x-ui.card>

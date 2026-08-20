@@ -59,7 +59,7 @@
                 value="{{ $itemData['material_name'] ?? '' }}"
             >
             <div
-                class="material-search-results list-group shadow d-none tw-fixed tw-z-[1060] tw-max-h-[220px] tw-overflow-y-auto"
+                class="material-search-results list-group shadow-sm d-none tw-absolute tw-left-0 tw-top-full tw-mt-1 tw-w-full tw-bg-surface tw-z-[1000] tw-max-h-[220px] tw-overflow-y-auto tw-rounded-md tw-border tw-border-outline-variant"
                 role="listbox"
             ></div>
         </div>

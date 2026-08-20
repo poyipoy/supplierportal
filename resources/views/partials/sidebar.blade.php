@@ -77,8 +77,8 @@
 
             <div class="sidebar-heading">Administration</div>
             <x-ui.sidebar-item :href="route('admin.users.index')" icon="bi-people" :active="request()->routeIs('admin.users.*')" label="User Management">User Management</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('admin.exchange-rates.index')" icon="bi-currency-exchange" :active="request()->routeIs('admin.exchange-rates.*')" label="Exchange Rate Management">Exchange Rate Management</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('admin.material-hs-code.index')" icon="bi-boxes" :active="request()->routeIs('admin.material-hs-code.*', 'admin.material-masters.*', 'admin.hs-code-rules.*', 'admin.master-data-quality.*')" label="Master Material & HS Code">Master Material &amp; HS Code</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('admin.exchange-rates.index')" icon="bi-currency-exchange" :active="request()->routeIs('admin.exchange-rates.*')" label="Exchange Rate Management">Exchange Rate</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('admin.material-hs-code.index')" icon="bi-boxes" :active="request()->routeIs('admin.material-hs-code.*', 'admin.material-masters.*', 'admin.hs-code-rules.*', 'admin.master-data-quality.*')" label="Master Material & HS Code">Material &amp; HS Code</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('admin.auth-audit-logs.index')" icon="bi-shield-check" :active="request()->routeIs('admin.auth-audit-logs.*')" label="Authentication Audit">Authentication Audit</x-ui.sidebar-item>
 
             <div class="sidebar-heading">Content</div>

@@ -5,6 +5,14 @@
 
 @push('styles')
 <style>
+    .quotation-page,
+    .quotation-form,
+    .quotation-entry-card,
+    .quotation-table-shell {
+        max-width: 100%;
+        min-width: 0;
+    }
+
     .quotation-entry-card {
         overflow: hidden;
     }
@@ -37,13 +45,24 @@
 
     .quotation-table-scroll {
         --quotation-number-width: 52px;
-        --quotation-material-width: 260px;
+        --quotation-material-width: 280px;
+        display: block;
         max-width: 100%;
         overflow-x: auto;
+        overflow-y: hidden;
         overscroll-behavior-inline: contain;
+        padding-bottom: .25rem;
         position: relative;
         scrollbar-color: var(--md-on-surface-variant) var(--md-surface-container);
+        scrollbar-gutter: stable;
         scrollbar-width: thin;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .quotation-table-scroll:focus-visible {
+        outline: 2px solid var(--md-primary);
+        outline-offset: -2px;
     }
 
     .quotation-table-scroll::-webkit-scrollbar {
@@ -57,22 +76,52 @@
     .quotation-table-scroll::-webkit-scrollbar-thumb {
         background: var(--md-on-surface-variant);
         border: 2px solid var(--md-surface-container);
-        border-radius: 999px;
+        border-radius: var(--md-shape-full);
+    }
+
+    .quotation-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: var(--md-on-surface);
+    }
+
+    .quotation-scroll-hint {
+        align-items: center;
+        background: var(--md-surface-container-low);
+        border-bottom: 1px solid var(--md-outline-variant);
+        color: var(--md-on-surface-variant);
+        display: flex;
+        font-size: .72rem;
+        gap: .4rem;
+        min-height: 32px;
+        padding: .35rem .75rem;
     }
 
     .quotation-items-table {
+        background-color: var(--md-surface);
         border: 0 !important;
         border-collapse: separate !important;
         border-spacing: 0;
         font-size: .82rem;
-        min-width: calc(var(--quotation-number-width) + var(--quotation-material-width) + 1605px);
-        table-layout: fixed;
-        width: 100% !important;
+        max-width: none !important;
+        min-width: 1957px !important;
+        table-layout: fixed !important;
+        width: 1957px !important;
     }
 
     .quotation-items-table th,
     .quotation-items-table td {
+        background-color: var(--md-surface);
         padding: .7rem .6rem;
+    }
+
+    .quotation-col-number { width: 52px; }
+    .quotation-col-material { width: 280px; }
+    .quotation-col-availability { width: 320px; }
+    .quotation-col-qty { width: 80px; }
+    .quotation-col-weight { width: 130px; }
+    .quotation-col-total-weight { width: 140px; }
+    .quotation-col-commercial { width: 165px; }
+    .quotation-col-notes { width: 220px; }
+    .quotation-col-mtc { width: 240px; }
     }
 
     .quotation-items-table .quotation-group-header th {
@@ -99,30 +148,34 @@
     .quotation-items-table .quotation-group-item {
         left: 0;
         position: sticky;
-        width: calc(var(--quotation-number-width) + var(--quotation-material-width));
+        width: 332px;
+        min-width: 332px;
         z-index: 12 !important;
     }
 
     .quotation-items-table .quotation-sticky-number {
-        background: var(--md-surface);
+        background-color: var(--md-surface) !important;
+        border-right: 1px solid var(--md-outline) !important;
         left: 0;
-        min-width: var(--quotation-number-width);
+        min-width: 52px;
+        width: 52px;
         position: sticky;
-        width: var(--quotation-number-width);
+        z-index: 5;
     }
 
     .quotation-items-table .quotation-sticky-material {
-        background: var(--md-surface);
-        left: var(--quotation-number-width);
-        min-width: var(--quotation-material-width);
+        background-color: var(--md-surface) !important;
+        border-right: 1px solid var(--md-outline) !important;
+        left: 52px;
+        min-width: 280px;
+        width: 280px;
         position: sticky;
-        width: var(--quotation-material-width);
         z-index: 6;
     }
 
     .quotation-items-table thead .quotation-sticky-number,
     .quotation-items-table thead .quotation-sticky-material {
-        background: var(--md-surface-container-low) !important;
+        background-color: var(--md-surface-container-low) !important;
         z-index: 11;
     }
 
@@ -131,13 +184,14 @@
     }
 
     .quotation-items-table tbody .quotation-sticky-material {
-        box-shadow: 6px 0 10px -9px rgba(var(--md-on-surface-rgb), .75);
+        box-shadow: none !important;
         z-index: 6;
     }
 
+    .quotation-items-table tbody tr:hover > td,
     .quotation-items-table tbody tr:hover > .quotation-sticky-number,
     .quotation-items-table tbody tr:hover > .quotation-sticky-material {
-        background: rgba(var(--md-primary-rgb), .05);
+        background-color: var(--md-surface-container-low) !important;
     }
 
     .quotation-items-table .form-control,
@@ -223,6 +277,23 @@
         transition: background-color .2s ease;
     }
 
+    .quotation-additional-grid {
+        display: grid;
+        gap: .75rem 1rem;
+        grid-template-columns: minmax(0, min(100%, 340px));
+    }
+
+    .quotation-additional-grid > * {
+        min-width: 0;
+    }
+
+    @media (min-width: 768px) {
+        .quotation-additional-grid {
+            grid-template-columns: repeat(2, minmax(0, 340px));
+            max-width: 696px;
+        }
+    }
+
     @media (max-width: 991.98px) {
         .quotation-entry-toolbar {
             align-items: flex-start !important;
@@ -291,7 +362,7 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="quotation-page tw-grid tw-min-w-0 tw-max-w-full tw-gap-6">
     <x-ui.page-header
         :title="$quotation?->status === 'revision_requested' ? 'Revise Quotation' : 'Create Quotation'"
         :description="'Complete availability, commercial values, and supporting MTC files for ' . ($pr->pr_number ?? 'this requisition') . '.'"
@@ -315,7 +386,7 @@
     <x-ui.alert tone="warning" title="Quotation Revision Requested">Purchasing asked this quotation to be resubmitted. Update the price, estimated delivery, validity date, and notes if needed.</x-ui.alert>
 @endif
 
-<form id="quotationForm" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data">
+<form id="quotationForm" class="quotation-form" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="action" id="formAction" value="draft">
 
@@ -353,30 +424,34 @@
                 <i class="bi bi-exclamation-triangle me-1"></i>
                 Exchange rate for <span id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</span> is not available yet. Contact Admin before submitting the final quotation.
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive quotation-table-scroll">
+        <div class="card-body p-0 quotation-table-shell">
+            <div id="quotationTableScrollHint" class="quotation-scroll-hint">
+                <i class="bi bi-arrows" aria-hidden="true"></i>
+                <span>Geser tabel secara horizontal untuk melihat seluruh kolom.</span>
+            </div>
+            <div class="table-responsive quotation-table-scroll" role="region" tabindex="0" aria-label="Material quotation price entry" aria-describedby="quotationTableScrollHint">
                 <table class="table table-bordered align-middle mb-0 quotation-items-table">
                     <caption class="visually-hidden">Supplier quotation entry table with requested material, availability, pricing, notes, and MTC fields</caption>
                     <colgroup>
-                        <col class="tw-w-[var(--quotation-number-width)]">
-                        <col class="tw-w-[var(--quotation-material-width)]">
+                        <col class="quotation-col-number">
+                        <col class="quotation-col-material">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[315px]">
+                        <col class="quotation-col-availability">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-20">
-                        <col class="tw-w-[120px]">
-                        <col class="tw-w-[135px]">
+                        <col class="quotation-col-qty">
+                        <col class="quotation-col-weight">
+                        <col class="quotation-col-total-weight">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[165px]">
-                        <col class="tw-w-[165px]">
-                        <col class="tw-w-[165px]">
+                        <col class="quotation-col-commercial">
+                        <col class="quotation-col-commercial">
+                        <col class="quotation-col-commercial">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[220px]">
-                        <col class="tw-w-[240px]">
+                        <col class="quotation-col-notes">
+                        <col class="quotation-col-mtc">
                     </colgroup>
                     <thead class="table-light text-center">
                         <tr class="quotation-group-header">
@@ -571,8 +646,8 @@
         </div>
     </div>
 
-    <x-ui.card title="Additional Information" description="These dates and terms are required for Purchasing evaluation.">
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+    <x-ui.card class="quotation-additional-card" padding="sm" title="Additional Information" description="These dates and terms are required for Purchasing evaluation.">
+        <div class="quotation-additional-grid">
             <x-ui.input type="date" name="estimated_delivery" label="Estimated Delivery Time" :value="optional($quotation?->estimated_delivery)->format('Y-m-d')" required />
             <x-ui.input type="date" name="validity_period" id="validityPeriod" label="Quotation Valid Until" :value="optional($quotation?->validity_period)->format('Y-m-d')" :min="now()->toDateString()" helper="Required for final submission. Prices and terms remain valid until this date." />
             <x-ui.textarea name="payment_terms" label="Payment Terms" :rows="2" maxlength="100" required placeholder="Example: TT 30 Days" :value="$quotation->payment_terms ?? 'TT 30 Days'" />

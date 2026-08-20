@@ -105,4 +105,27 @@ BLADE;
         $this->assertStringContainsString('Active', $html);
         $this->assertNoCompilerLeakage($html);
     }
+
+    public function test_auth_views_render_without_compiler_leakage(): void
+    {
+        $views = [
+            'auth.login',
+            'auth.forgot-password',
+            'auth.confirm-password',
+            'auth.verify-email',
+            'auth.rate-limited',
+        ];
+
+        foreach ($views as $view) {
+            $html = view($view, [
+                'returnUrl' => '/dashboard',
+                'returnLabel' => 'Return to Dashboard',
+                'turnstileRequired' => false,
+                'turnstileSiteKey' => null,
+                'errors' => new \Illuminate\Support\ViewErrorBag(),
+            ])->render();
+
+            $this->assertNoCompilerLeakage($html);
+        }
+    }
 }

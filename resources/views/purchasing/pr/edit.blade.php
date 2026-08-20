@@ -101,27 +101,27 @@
                 <table class="table table-bordered table-sm align-middle pr-items-table" id="itemsTable">
                     <caption class="visually-hidden">Required material entry table with adaptive dimension columns</caption>
                     <colgroup>
-                        <col class="tw-w-[300px]">
+                        <col style="width: 300px; min-width: 300px;">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[125px]">
+                        <col style="width: 130px; min-width: 130px;">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-20">
+                        <col style="width: 80px; min-width: 80px;">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[120px]">
-                        <col class="tw-w-[120px]">
-                        <col class="tw-w-[120px]">
+                        <col style="width: 130px; min-width: 130px;">
+                        <col style="width: 130px; min-width: 130px;">
+                        <col style="width: 130px; min-width: 130px;">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[145px]">
+                        <col style="width: 150px; min-width: 150px;">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[190px]">
+                        <col style="width: 220px; min-width: 220px;">
                     </colgroup>
                     <colgroup>
-                        <col class="tw-w-[72px]">
+                        <col style="width: 72px; min-width: 72px;">
                     </colgroup>
                     <thead class="table-light text-center">
                         <tr class="pr-group-header">
@@ -252,6 +252,17 @@
                 event.preventDefault();
             }
         });
+
+        // Enable horizontal scroll on mouse wheel for PR items table
+        const prScroll = document.querySelector('.pr-form-table-scroll');
+        if (prScroll) {
+            prScroll.addEventListener('wheel', function(e) {
+                if (e.deltaY !== 0 && this.scrollWidth > this.clientWidth) {
+                    this.scrollLeft += e.deltaY;
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
     });
 </script>
 @endpush

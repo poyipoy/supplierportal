@@ -110,7 +110,7 @@
                         <input type="number" step="0.01" name="length" id="purchasing-history-length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
                     </div>
                     <div class="col-md-2 d-flex align-items-end flex-grow-1">
-                        <x-ui.button type="submit" size="sm" class="tw-w-full"><x-slot:leading><i class="bi bi-search"></i></x-slot:leading>Apply</x-ui.button>
+                        <x-ui.button type="submit" size="sm" class="tw-w-full"><i class="bi bi-search"></i> Apply</x-ui.button>
                     </div>
                 </div>
             </div>

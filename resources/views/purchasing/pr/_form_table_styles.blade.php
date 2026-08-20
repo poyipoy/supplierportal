@@ -4,27 +4,38 @@
     }
 
     .pr-form-table-scroll {
-        border: 1px solid var(--md-outline);
+        border: 1px solid var(--md-outline-variant);
         border-radius: .65rem;
+        display: block;
+        width: 100%;
         max-width: 100%;
-        overflow-x: auto;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         position: relative;
-        scrollbar-color: var(--md-on-surface-variant) var(--md-surface-container);
-        scrollbar-width: thin;
+        scrollbar-color: #64748B #E2E8F0;
+        scrollbar-width: auto;
+        padding-bottom: 12px;
     }
 
     .pr-form-table-scroll::-webkit-scrollbar {
-        height: 10px;
+        height: 12px !important;
+        display: block !important;
     }
 
     .pr-form-table-scroll::-webkit-scrollbar-track {
-        background: var(--md-surface-container);
+        background: #E2E8F0 !important;
+        border-radius: 6px;
     }
 
     .pr-form-table-scroll::-webkit-scrollbar-thumb {
-        background: var(--md-on-surface-variant);
-        border: 2px solid var(--md-surface-container);
-        border-radius: 999px;
+        background: #64748B !important;
+        border: 2px solid #E2E8F0;
+        border-radius: 6px;
+    }
+
+    .pr-form-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: #334155 !important;
     }
 
     #itemsTable.pr-items-table {
@@ -33,19 +44,23 @@
         border-spacing: 0;
         font-size: .82rem;
         margin-bottom: 0;
-        min-width: 1320px;
+        min-width: 1342px !important;
+        width: 1342px !important;
         table-layout: fixed;
-        width: 100% !important;
+        background-color: var(--md-surface, #ffffff);
     }
 
     #itemsTable.pr-items-table th,
     #itemsTable.pr-items-table td {
         padding: .65rem .55rem;
+        background-color: var(--md-surface, #ffffff);
     }
 
     #itemsTable.pr-items-table thead th {
+        background-color: var(--md-surface-container-low, #f1f5f9) !important;
         line-height: 1.25;
         vertical-align: middle !important;
+        border-bottom: 1px solid var(--md-outline-variant) !important;
     }
 
     #itemsTable.pr-items-table .pr-group-header th {
@@ -55,8 +70,9 @@
     }
 
     #itemsTable.pr-items-table .pr-sticky-material {
-        background: var(--md-surface);
-        border-right: 1px solid var(--md-outline) !important;
+        background-color: var(--md-surface, #ffffff) !important;
+        border-right: 1px solid var(--md-outline-variant) !important;
+        box-shadow: none !important;
         left: 0;
         position: sticky;
         width: 300px;
@@ -64,47 +80,56 @@
     }
 
     #itemsTable.pr-items-table thead .pr-sticky-material {
-        background: var(--md-surface-container) !important;
+        background-color: var(--md-surface-container, #e2e8f0) !important;
+        box-shadow: none !important;
         z-index: 10;
     }
 
     #itemsTable.pr-items-table tbody .pr-sticky-material {
-        box-shadow: 5px 0 9px -8px rgba(var(--md-on-surface-rgb), .65);
+        box-shadow: none !important;
         z-index: 6;
     }
 
     #itemsTable.pr-items-table .pr-sticky-action {
-        background: var(--md-surface);
+        background-color: var(--md-surface, #ffffff) !important;
+        border-left: 1px solid var(--md-outline-variant) !important;
+        box-shadow: none !important;
         position: sticky;
         right: 0;
         width: 72px;
     }
 
     #itemsTable.pr-items-table thead .pr-sticky-action {
-        background: var(--md-surface-container) !important;
+        background-color: var(--md-surface-container, #e2e8f0) !important;
+        box-shadow: none !important;
         z-index: 10;
     }
 
     #itemsTable.pr-items-table tbody .pr-sticky-action {
-        box-shadow: -5px 0 9px -8px rgba(var(--md-on-surface-rgb), .65);
+        box-shadow: none !important;
         z-index: 4;
     }
 
+    #itemsTable.pr-items-table tbody tr:hover > td,
     #itemsTable.pr-items-table tbody tr:hover > .pr-sticky-material,
     #itemsTable.pr-items-table tbody tr:hover > .pr-sticky-action {
-        background: rgba(var(--md-primary-rgb), .05);
+        background-color: var(--md-surface-container-lowest, #f8f9fc) !important;
     }
 
     #itemsTable.pr-items-table .form-control,
     #itemsTable.pr-items-table .form-select,
     #itemsTable.pr-items-table .input-group-text {
         min-height: 38px;
+        background-color: var(--md-surface);
+        border: 1px solid var(--md-outline);
+        box-shadow: none !important;
+        border-radius: var(--md-shape-xs);
     }
 
     #itemsTable.pr-items-table .form-control:focus,
     #itemsTable.pr-items-table .form-select:focus {
         border-color: var(--md-primary);
-        box-shadow: 0 0 0 .18rem rgba(var(--md-primary-rgb), .14);
+        box-shadow: 0 0 0 var(--ui-focus-ring-width) rgba(var(--md-primary-rgb), .14) !important;
         position: relative;
         z-index: 2;
     }

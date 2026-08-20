@@ -22,8 +22,8 @@
     </x-ui.alert>
 
     <div class="tw-mt-6 tw-grid tw-gap-3 sm:tw-grid-cols-2">
-        <x-ui.button type="button" variant="ghost" id="go-back"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Go Back</x-ui.button>
-        <x-ui.button :href="$returnUrl"><x-slot:leading><i class="bi bi-person-circle"></i></x-slot:leading>{{ $returnLabel }}</x-ui.button>
+        <x-ui.button type="button" variant="ghost" id="go-back"><i class="bi bi-arrow-left" aria-hidden="true"></i> Go Back</x-ui.button>
+        <x-ui.button :href="$returnUrl"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ $returnLabel }}</x-ui.button>
     </div>
     <p class="tw-m-0 tw-mt-5 tw-text-ui-xs tw-text-on-surface-variant">If the issue continues, please contact your system administrator.</p>
 </div>

@@ -35,7 +35,7 @@
                                 <x-ui.icon-button icon="bi-pencil" label="Edit announcement" :href="route('admin.announcements.edit', $ann->id)" variant="secondary" size="sm" />
                                 <form action="{{ route('admin.announcements.destroy', $ann->id) }}" method="POST">
                                     @csrf @method('DELETE')
-                                    <x-ui.button type="submit" variant="danger" size="sm" icon-only label="Delete announcement" onclick='return confirm(@json('Are you sure you want to delete?'))'>
+                                    <x-ui.button type="submit" variant="danger" size="sm" icon-only label="Delete announcement" onclick="return confirm(@json('Are you sure you want to delete?'))">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </x-ui.button>
                                 </form>

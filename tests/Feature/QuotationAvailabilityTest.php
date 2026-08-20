@@ -153,7 +153,7 @@ class QuotationAvailabilityTest extends TestCase
             ->assertSee('quotation-sticky-material', false)
             ->assertSee('border-right: 1px solid var(--md-outline) !important', false)
             ->assertSee('border-collapse: separate !important', false)
-            ->assertSee('width: 100% !important', false)
+            ->assertSee('min-width: 1957px !important', false)
             ->assertSee('quotation-calculated', false)
             ->assertSee('mtc-file-input', false);
 

@@ -12,7 +12,7 @@
 <form method="POST" action="{{ route('two-factor.challenge') }}" class="tw-mt-6 tw-grid tw-gap-4">
     @csrf
     <x-ui.input name="code" id="code" type="text" label="Authentication code" inputmode="text" autocomplete="one-time-code" maxlength="32" class="[&_input]:tw-text-center [&_input]:tw-font-mono [&_input]:tw-text-ui-lg [&_input]:tw-tracking-wider" required autofocus />
-    <x-ui.button type="submit" class="tw-w-full"><x-slot:leading><i class="bi bi-shield-check"></i></x-slot:leading>Verify</x-ui.button>
+    <x-ui.button type="submit" class="tw-w-full"><i class="bi bi-shield-check" aria-hidden="true"></i> Verify</x-ui.button>
 </form>
 
 <p class="tw-m-0 tw-mt-5 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">This challenge expires after 10 minutes.</p>

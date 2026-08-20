@@ -14,7 +14,7 @@
 </div>
 
 <div class="tw-mt-5 tw-grid tw-gap-3">
-    <x-ui.button type="button" variant="secondary" class="tw-w-full" id="copyRecoveryCodes"><x-slot:leading><i class="bi bi-clipboard"></i></x-slot:leading>Copy Codes</x-ui.button>
+    <x-ui.button type="button" variant="secondary" class="tw-w-full" id="copyRecoveryCodes"><i class="bi bi-clipboard"></i> Copy Codes</x-ui.button>
     <x-ui.button :href="route('profile.edit')" class="tw-w-full">I Have Saved These Codes</x-ui.button>
 </div>
 @endsection
