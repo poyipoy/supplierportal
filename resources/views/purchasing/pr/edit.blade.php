@@ -251,9 +251,22 @@
         const prScroll = document.querySelector('.pr-form-table-scroll');
         if (prScroll) {
             prScroll.addEventListener('wheel', function(e) {
-                if (e.deltaY !== 0 && this.scrollWidth > this.clientWidth) {
-                    this.scrollLeft += e.deltaY;
-                    e.preventDefault();
+                if (e.deltaY === 0 || this.scrollWidth <= this.clientWidth) {
+                    return;
+                }
+
+                const maxScrollLeft = this.scrollWidth - this.clientWidth;
+                const currentScrollLeft = this.scrollLeft;
+                const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, currentScrollLeft + e.deltaY));
+                const consumedDelta = nextScrollLeft - currentScrollLeft;
+                const remainingDelta = e.deltaY - consumedDelta;
+
+                this.scrollLeft = nextScrollLeft;
+                e.preventDefault();
+
+                // Once the table reaches an edge, pass the remaining wheel delta to the page.
+                if (remainingDelta !== 0) {
+                    window.scrollBy({ top: remainingDelta, left: 0, behavior: 'auto' });
                 }
             }, { passive: false });
         }

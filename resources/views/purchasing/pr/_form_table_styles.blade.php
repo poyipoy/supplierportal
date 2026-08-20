@@ -16,6 +16,7 @@
         max-width: 100%;
         overflow-x: auto !important;
         overflow-y: hidden;
+        overscroll-behavior: auto;
         -webkit-overflow-scrolling: touch;
         position: relative;
         scrollbar-color: #64748B #E2E8F0;
