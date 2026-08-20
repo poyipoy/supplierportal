@@ -249,6 +249,10 @@
         const prScroll = document.querySelector('.pr-form-table-scroll');
         if (prScroll) {
             prScroll.addEventListener('wheel', function(e) {
+                if (e.target.closest?.('.material-search-results')) {
+                    return;
+                }
+
                 if (e.deltaY === 0 || this.scrollWidth <= this.clientWidth) {
                     return;
                 }

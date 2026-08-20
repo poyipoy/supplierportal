@@ -3,9 +3,11 @@
 
     const selector = '[data-async-export]';
     const activeExports = new Map();
+    const trackedExportJobs = new Map();
     const pollIntervalMs = 1000;
     const pollTimeoutMs = 660000;
     const maxConsecutivePollFailures = 5;
+    const completedExportRetentionMs = 30000;
     let confirmationOpen = false;
 
     document.documentElement.dataset.asyncExportReady = 'true';
@@ -28,6 +30,11 @@
         || isAsyncExportUrl(control instanceof HTMLFormElement ? control.action : control.href);
 
     const notify = (type, title, text) => {
+        if (window.AdasiToast) {
+            window.AdasiToast.show({ type, title, message: text });
+            return;
+        }
+
         if (window.AdasiAlert) {
             if (type === 'error') {
                 window.AdasiAlert.error({ title, text });
@@ -41,6 +48,69 @@
         if (type === 'error') {
             window.alert(`${title}\n\n${text}`);
         }
+    };
+
+    const exportActions = (exportsUrl) => exportsUrl ? [{
+        label: 'View jobs',
+        variant: 'primary',
+        url: exportsUrl,
+    }] : [];
+
+    const createStartingToast = () => {
+        if (!window.AdasiToast) return null;
+
+        return window.AdasiToast.progress({
+            title: 'Starting export',
+            message: 'Submitting the export request...',
+            progressLabel: 'Starting',
+        });
+    };
+
+    const normalizeExportJobId = (value) => value === null || value === undefined
+        ? ''
+        : String(value);
+
+    const removeExpiredTrackedJobs = () => {
+        const now = Date.now();
+
+        trackedExportJobs.forEach((expiresAt, exportJobId) => {
+            if (expiresAt !== Infinity && expiresAt <= now) {
+                trackedExportJobs.delete(exportJobId);
+            }
+        });
+    };
+
+    const trackExportJob = (exportJobId) => {
+        const normalizedId = normalizeExportJobId(exportJobId);
+        if (normalizedId) trackedExportJobs.set(normalizedId, Infinity);
+    };
+
+    const releaseTrackedExportJob = (exportJobId, retainBriefly = false) => {
+        const normalizedId = normalizeExportJobId(exportJobId);
+        if (!normalizedId) return;
+
+        if (retainBriefly) {
+            trackedExportJobs.set(normalizedId, Date.now() + completedExportRetentionMs);
+            return;
+        }
+
+        trackedExportJobs.delete(normalizedId);
+    };
+
+    const isTrackingNotification = (notification = {}) => {
+        if (!['export.completed', 'export.failed'].includes(notification.event)) {
+            return false;
+        }
+
+        removeExpiredTrackedJobs();
+
+        const exportJobId = normalizeExportJobId(notification.export_job_id);
+        return exportJobId !== '' && trackedExportJobs.has(exportJobId);
+    };
+
+    const updateExportToast = (state, changes) => {
+        if (state.toastId && window.AdasiToast?.update(state.toastId, changes)) return;
+        notify(changes.type || 'info', changes.title || 'Export update', changes.message || '');
     };
 
     const recordsTotal = () => {
@@ -205,19 +275,21 @@
     const pollStatus = (state) => {
         let consecutiveFailures = 0;
 
-        const finish = () => {
+        const finish = (retainNotificationSuppression = false) => {
             activeExports.delete(state.requestUrl);
+            releaseTrackedExportJob(state.exportJobId, retainNotificationSuppression);
             setBusy(state.control, false);
         };
 
         const poll = async () => {
             if (Date.now() - state.startedAt >= pollTimeoutMs) {
                 finish();
-                notify(
-                    'warning',
-                    'Export masih diproses',
-                    'Pemantauan otomatis dihentikan. File tetap dapat diunduh melalui notifikasi atau menu Export Saya.'
-                );
+                updateExportToast(state, {
+                    type: 'warning',
+                    title: 'Export is still processing',
+                    message: 'Automatic monitoring has stopped. The file will remain available in Export Saya.',
+                    autoClose: 0,
+                });
                 return;
             }
 
@@ -246,44 +318,78 @@
                                 payload.file_name,
                                 payload.id || state.exportJobId
                             );
-                            finish();
-                            notify('success', 'Export selesai', 'File Excel berhasil diunduh otomatis.');
+                            finish(true);
+                            updateExportToast(state, {
+                                type: 'success',
+                                title: 'Export completed',
+                                message: 'The Excel file was downloaded automatically.',
+                                progress: 100,
+                                progressLabel: 'Completed',
+                                autoClose: 4000,
+                            });
                         } catch (error) {
-                            finish();
-                            notify(
-                                'error',
-                                'Download otomatis gagal',
-                                error instanceof Error ? error.message : 'Silakan unduh file melalui menu Export Saya.'
-                            );
+                            finish(true);
+                            updateExportToast(state, {
+                                type: 'error',
+                                title: 'Automatic download failed',
+                                message: error instanceof Error ? error.message : 'Download the file from Export Saya.',
+                                autoClose: 0,
+                            });
                         }
                     } else {
-                        finish();
-                        notify('error', 'File tidak tersedia', payload.message || 'File export tidak dapat diunduh.');
+                        finish(true);
+                        updateExportToast(state, {
+                            type: 'error',
+                            title: 'Export file is unavailable',
+                            message: payload.message || 'The export file cannot be downloaded.',
+                            autoClose: 0,
+                        });
                     }
                     return;
                 }
 
                 if (payload.status === 'failed') {
-                    finish();
-                    notify('error', 'Export gagal', payload.message || 'Export gagal diproses. Silakan coba lagi.');
+                    finish(true);
+                    updateExportToast(state, {
+                        type: 'error',
+                        title: 'Export could not be completed',
+                        message: payload.message || 'Try the export again or review Export Saya.',
+                        autoClose: 0,
+                    });
                     return;
                 }
 
                 if (payload.status !== 'queued' && payload.status !== 'processing') {
                     finish();
-                    notify('error', 'Status export tidak valid', 'Silakan periksa menu Export Saya.');
+                    updateExportToast(state, {
+                        type: 'error',
+                        title: 'Export status is unavailable',
+                        message: 'Review the job in Export Saya.',
+                        autoClose: 0,
+                    });
                     return;
+                }
+
+                if (payload.status !== state.lastStatus) {
+                    state.lastStatus = payload.status;
+                    updateExportToast(state, {
+                        title: payload.status === 'processing' ? 'Export in progress' : 'Export queued',
+                        message: payload.message || 'The export is continuing in the background.',
+                        progressLabel: payload.status === 'processing' ? 'Preparing file' : 'Waiting for processing',
+                        indeterminate: true,
+                    });
                 }
             } catch (error) {
                 consecutiveFailures += 1;
 
                 if (consecutiveFailures >= maxConsecutivePollFailures) {
                     finish();
-                    notify(
-                        'warning',
-                        'Status export tidak dapat diperbarui',
-                        'File tetap dapat diunduh melalui notifikasi atau menu Export Saya setelah selesai.'
-                    );
+                    updateExportToast(state, {
+                        type: 'warning',
+                        title: 'Export status could not be refreshed',
+                        message: 'The file will remain available in Export Saya after processing.',
+                        autoClose: 0,
+                    });
                     return;
                 }
             }
@@ -300,7 +406,17 @@
             return;
         }
 
-        activeExports.set(requestUrl, true);
+        const state = {
+            control,
+            requestUrl,
+            exportJobId: null,
+            statusUrl: null,
+            toastId: createStartingToast(),
+            lastStatus: 'starting',
+            startedAt: Date.now(),
+        };
+
+        activeExports.set(requestUrl, state);
         setBusy(control, true);
 
         try {
@@ -322,20 +438,40 @@
                 throw new Error('Respons export tidak lengkap.');
             }
 
-            notify('info', 'Permintaan export diterima', payload.message || 'File akan terunduh otomatis ketika siap.');
-            pollStatus({
-                control,
-                requestUrl,
-                exportJobId: payload.export_job_id,
-                statusUrl: payload.status_url,
-                startedAt: Date.now(),
-            });
+            state.exportJobId = payload.export_job_id;
+            state.statusUrl = payload.status_url;
+            state.lastStatus = 'queued';
+            trackExportJob(state.exportJobId);
+
+            if (state.toastId) {
+                updateExportToast(state, {
+                    title: 'Export queued',
+                    message: payload.message || 'The export will continue in the background.',
+                    progressLabel: 'Waiting for processing',
+                    indeterminate: true,
+                    actions: exportActions(payload.exports_url),
+                });
+            } else {
+                notify('info', 'Export queued', payload.message || 'The file will download automatically when ready.');
+            }
+
+            pollStatus(state);
         } catch (error) {
             activeExports.delete(requestUrl);
+            releaseTrackedExportJob(state.exportJobId);
             setBusy(control, false);
-            notify('error', 'Export gagal dimulai', error instanceof Error ? error.message : 'Permintaan export tidak dapat diproses.');
+            updateExportToast(state, {
+                type: 'error',
+                title: 'Export gagal dimulai',
+                message: error instanceof Error ? error.message : 'Permintaan export tidak dapat diproses.',
+                autoClose: 0,
+            });
         }
     };
+
+    window.AdasiAsyncExport = Object.freeze({
+        isTrackingNotification,
+    });
 
     const confirmAndStart = async (control) => {
         if (confirmationOpen) {

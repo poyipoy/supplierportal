@@ -1385,6 +1385,7 @@
     </div>
 
     @include('partials.chat-drawer')
+    <x-ui.toast-container context="app" />
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1411,6 +1412,22 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         // ADASI Loader — Inject overlay ke body
+        const isDataTableRequest = (options = {}) => {
+            const data = options.data;
+
+            if (data && typeof data === 'object') {
+                return Object.prototype.hasOwnProperty.call(data, 'draw');
+            }
+
+            return typeof data === 'string' && /(?:^|&)draw(?:=|%5B|\[)/i.test(data);
+        };
+
+        $.ajaxPrefilter((options) => {
+            if (isDataTableRequest(options)) {
+                options.global = false;
+            }
+        });
+
         $(function () {
             // Buat overlay loader sekali saja
             $('body').append(
@@ -1990,6 +2007,91 @@
                     );
                 };
 
+                const isExportLifecycleNotification = (
+                    notification
+                ) => [
+                    'export.completed',
+                    'export.failed',
+                ].includes(notification.event) &&
+                    Boolean(notification.export_job_id);
+
+                const shouldSuppressTransientNotification = (
+                    notification
+                ) => Boolean(
+                    window.AdasiAsyncExport
+                        ?.isTrackingNotification?.(notification)
+                );
+
+                const showTransientNotification = (
+                    notification,
+                    readUrl
+                ) => {
+                    if (shouldSuppressTransientNotification(notification)) {
+                        return;
+                    }
+
+                    if (window.AdasiToast) {
+                        AdasiToast.show({
+                            type: 'message',
+                            title:
+                                notification.title ||
+                                'New Notification',
+                            message:
+                                notification.message ||
+                                '',
+                            timestamp: 'Just now',
+                            icon:
+                                notification.icon ||
+                                'bi-bell-fill',
+                            actions: [
+                                {
+                                    label: 'Dismiss',
+                                    variant: 'secondary',
+                                },
+                                {
+                                    label: 'View',
+                                    variant: 'primary',
+                                    onClick: () =>
+                                        markReadAndRedirect(
+                                            readUrl
+                                        ),
+                                },
+                            ],
+                        });
+                    } else if (window.AdasiAlert) {
+                        AdasiAlert.notification({
+                            title:
+                                notification.title ||
+                                'New Notification',
+                            text:
+                                notification.message ||
+                                '',
+                            onClick: () =>
+                                markReadAndRedirect(
+                                    readUrl
+                                ),
+                        });
+                    }
+                };
+
+                const deliverTransientNotification = (
+                    notification,
+                    readUrl
+                ) => {
+                    if (isExportLifecycleNotification(notification)) {
+                        window.setTimeout(
+                            () => showTransientNotification(
+                                notification,
+                                readUrl
+                            ),
+                            750
+                        );
+                        return;
+                    }
+
+                    showTransientNotification(notification, readUrl);
+                };
+
                 try {
                     window.Echo = new Echo({
                         broadcaster: 'pusher',
@@ -2037,23 +2139,10 @@
                                 );
 
                                 updateBadges();
-
-                                if (window.AdasiAlert) {
-                                    AdasiAlert.notification({
-                                        title:
-                                            notification.title ||
-                                            'New Notification',
-
-                                        text:
-                                            notification.message ||
-                                            '',
-
-                                        onClick: () =>
-                                            markReadAndRedirect(
-                                                readUrl
-                                            ),
-                                    });
-                                }
+                                deliverTransientNotification(
+                                    notification,
+                                    readUrl
+                                );
                             }
                         );
 

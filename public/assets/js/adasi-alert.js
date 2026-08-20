@@ -139,6 +139,27 @@
     const toast = (rawOptions) => {
         const options = asOptions(rawOptions);
         const type = asText(options.type, 'info');
+
+        if (window.AdasiToast) {
+            const actions = typeof options.onClick === 'function'
+                ? [{
+                    label: asText(options.actionLabel, 'View'),
+                    variant: 'primary',
+                    onClick: options.onClick,
+                }]
+                : options.actions;
+            const id = window.AdasiToast.show({
+                type,
+                title: asText(options.title, ''),
+                message: asText(options.text ?? options.message, ''),
+                timestamp: options.timestamp,
+                autoClose: Number(options.duration) > 0 ? Number(options.duration) : undefined,
+                actions,
+            });
+
+            return Promise.resolve({ ...fallbackResult(), id });
+        }
+
         if (!SweetAlert) return Promise.resolve(fallbackResult());
 
         const popupClasses = ['adasi-alert-toast'];
@@ -200,7 +221,14 @@
                 duration: Number(element.dataset.duration) || undefined,
             };
 
-            if (type === 'error') {
+            if (window.AdasiToast) {
+                window.AdasiToast.show({
+                    type,
+                    title: options.title,
+                    message: options.text,
+                    autoClose: options.duration,
+                });
+            } else if (type === 'error') {
                 AdasiAlert.error(options);
             } else {
                 AdasiAlert.toast({ ...options, type });

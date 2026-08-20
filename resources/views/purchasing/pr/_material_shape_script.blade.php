@@ -40,17 +40,22 @@ function positionMaterialSearchResults($row) {
     const panelHeight = Math.min($panel[0].scrollHeight || 220, 220);
     const fitsBelow = rect.bottom + gap + panelHeight <= window.innerHeight - viewportPadding;
     const fitsAbove = rect.top - gap - panelHeight >= viewportPadding;
-    const top = !fitsBelow && fitsAbove
-        ? rect.top - panelHeight - gap
-        : rect.bottom + gap;
+    const opensAbove = !fitsBelow && fitsAbove;
     const left = Math.min(
         Math.max(rect.left, viewportPadding),
         Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
     );
 
     $panel.css({
+        bottom: opensAbove
+            ? `${Math.max(viewportPadding, window.innerHeight - rect.top + gap)}px`
+            : 'auto',
         left: `${left}px`,
-        top: `${Math.max(viewportPadding, top)}px`,
+        top: opensAbove
+            ? 'auto'
+            : `${Math.max(viewportPadding, rect.bottom + gap)}px`,
+        position: 'fixed',
+        zIndex: 1080,
         width: `${width}px`,
     });
 }
@@ -66,6 +71,10 @@ function repositionVisibleMaterialSearchResults() {
 
 function canonicalDimensionInput($row, field) {
     return $row.find(`.dimension-canonical-input[data-dimension-canonical-field="${field}"]`);
+}
+
+function setMaterialSearchOpen($row, open) {
+    $row.find('.pr-sticky-material').toggleClass('material-search-open', open);
 }
 
 function updateMaterialDimensionHeaders() {
@@ -136,6 +145,7 @@ function selectMaterialInRow($row, material) {
     $row.find('.material-master-id').val(material.id);
     $row.find('.material-master-search').val(material.material_code || material.text || '');
     $row.find('.material-search-results').empty().addClass('d-none');
+    setMaterialSearchOpen($row, false);
     $row.find('.hs-code-manual-override').val('0');
     $row.find('.weight-manual-override').val('0');
     scheduleMaterialPreview($row, 0);
@@ -155,6 +165,7 @@ function renderMaterialSearchResults($row, results) {
                 .appendTo($panel);
         });
     }
+    setMaterialSearchOpen($row, true);
     $panel.removeClass('d-none');
     positionMaterialSearchResults($row);
 }
@@ -359,13 +370,19 @@ $(document).on('input change', '.material-quantity', function() {
 
 $(document).on('click', function(event) {
     if (!$(event.target).closest('.material-master-search, .material-search-results').length) {
-        $('.material-search-results').addClass('d-none');
+        $('.material-search-results').each(function() {
+            const $panel = $(this);
+            $panel.addClass('d-none');
+            setMaterialSearchOpen($panel.closest('tr'), false);
+        });
     }
 });
 
 $(document).on('keydown', '.material-master-search', function(event) {
     if (event.key === 'Escape') {
-        $(this).closest('tr').find('.material-search-results').addClass('d-none');
+        const $row = $(this).closest('tr');
+        $row.find('.material-search-results').addClass('d-none');
+        setMaterialSearchOpen($row, false);
     }
 });
 

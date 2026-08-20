@@ -35,6 +35,7 @@
                 {{ $slot }}
             </div>
         </div>
+        <x-ui.toast-container />
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
         <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
     </body>
