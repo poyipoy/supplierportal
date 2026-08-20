@@ -50,8 +50,8 @@
         border-spacing: 0;
         font-size: .82rem;
         margin-bottom: 0;
-        min-width: 1602px !important;
-        width: 1602px !important;
+        min-width: 1372px !important;
+        width: 1372px !important;
         table-layout: fixed;
         background-color: var(--md-surface, #ffffff);
     }
@@ -144,6 +144,28 @@
         background: var(--md-surface-container-low) !important;
     }
 
+    #itemsTable.pr-items-table .pr-dimension-slot {
+        display: grid;
+        gap: .35rem;
+        min-height: 76px;
+    }
+
+    #itemsTable.pr-items-table .pr-dimension-slot-label {
+        color: var(--md-on-surface-variant);
+        display: block;
+        font-size: .68rem;
+        font-weight: 600;
+        line-height: 1.2;
+        min-height: 1.65em;
+        overflow-wrap: anywhere;
+        text-align: start;
+    }
+
+    #itemsTable.pr-items-table .pr-dimension-slot-cell.is-disabled .pr-dimension-slot-label {
+        color: var(--md-on-surface-variant);
+        opacity: .75;
+    }
+
     #itemsTable.pr-items-table .dimension-input,
     #itemsTable.pr-items-table .material-quantity,
     #itemsTable.pr-items-table .weight-unit-display {
@@ -193,6 +215,10 @@
         #itemsTable.pr-items-table .form-select,
         #itemsTable.pr-items-table .input-group-text {
             min-height: 44px;
+        }
+
+        #itemsTable.pr-items-table .pr-dimension-slot {
+            min-height: 82px;
         }
     }
 

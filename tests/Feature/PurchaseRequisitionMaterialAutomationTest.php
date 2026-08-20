@@ -64,11 +64,9 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.create'))
             ->assertOk()
-            ->assertSee('Thickness (mm)')
-            ->assertSee('Width (mm)')
-            ->assertSee('Outer Diameter (mm)')
-            ->assertSee('Inner Diameter (mm)')
-            ->assertSee('Length (mm)')
+            ->assertSee('Dimension 1 (mm)')
+            ->assertSee('Dimension 2 (mm)')
+            ->assertSee('Dimension 3 (mm)')
             ->assertSee('KG / Unit (kg)')
             ->assertSee('pr-sticky-material', false)
             ->assertSee('pr-sticky-action', false)
@@ -76,9 +74,11 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertSee('border-collapse: separate !important', false)
             ->assertSee('width: 100%;', false)
             ->assertSee('dimension-input', false)
-            ->assertSee('data-dimension-field="d_outer"', false)
+            ->assertSee('data-dimension-slot="1"', false)
+            ->assertSee('data-dimension-slot-header="3"', false)
+            ->assertSee('data-dimension-canonical-field="d_outer"', false)
             ->assertDontSee('dimension-source-input', false)
-            ->assertDontSee('data-dimension-slot', false);
+            ->assertSee('data-dimension-slot-cell', false);
 
         $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
         $pr = PurchaseRequisition::create([
@@ -104,7 +104,78 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertDontSee('Not used')
             ->assertSee('name="items[0][d_outer]"', false)
             ->assertSee('data-dimension-field="d_outer"', false)
+            ->assertSee('data-dimension-slot="1"', false)
+            ->assertSee('data-dimension-slot="2"', false)
+            ->assertSee('data-dimension-slot="3"', false)
+            ->assertSee('data-dimension-canonical-field="d_outer"', false)
             ->assertSee('is-disabled', false);
+    }
+
+    public function test_dimension_slots_render_shape_labels_for_mixed_rows(): void
+    {
+        $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
+        $pr = PurchaseRequisition::create([
+            'period_id' => $this->period->id,
+            'created_by' => $this->purchasing->id,
+            'status' => 'draft',
+        ]);
+
+        $pr->items()->createMany([
+            [
+                'material_master_id' => $scm->id,
+                'material_name' => $scm->material_code,
+                'quantity' => 1,
+                'shape' => 'Flat',
+                'thickness' => 10,
+                'width' => 100,
+                'length' => 1000,
+                'weight_needed' => 10,
+            ],
+            [
+                'material_master_id' => $scm->id,
+                'material_name' => $scm->material_code,
+                'quantity' => 1,
+                'shape' => 'Round',
+                'd_outer' => 100,
+                'length' => 1000,
+                'weight_needed' => 10,
+            ],
+            [
+                'material_master_id' => $scm->id,
+                'material_name' => $scm->material_code,
+                'quantity' => 1,
+                'shape' => 'Hollow',
+                'd_inner' => 60,
+                'd_outer' => 100,
+                'length' => 1000,
+                'weight_needed' => 10,
+            ],
+            [
+                'material_master_id' => $scm->id,
+                'material_name' => $scm->material_code,
+                'quantity' => 1,
+                'shape' => null,
+                'weight_needed' => 10,
+            ],
+        ]);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.requisitions.edit', $pr))
+            ->assertOk()
+            ->assertSee('Dimension 1 (mm)')
+            ->assertSee('Thickness (mm)')
+            ->assertSee('Width (mm)')
+            ->assertSee('Outer Diameter')
+            ->assertSee('Inner Diameter')
+            ->assertSee('data-dimension-canonical-field="thickness"', false)
+            ->assertSee('data-dimension-canonical-field="d_inner"', false)
+            ->assertSee('data-dimension-canonical-field="d_outer"', false)
+            ->assertSee('data-dimension-canonical-field="width"', false)
+            ->assertSee('data-dimension-canonical-field="length"', false)
+            ->assertSee('data-dimension-field-cell=""', false)
+            ->assertSee('aria-label="Dimension 1 unavailable"', false)
+            ->assertSee('materialDimensionSlotCount', false)
+            ->assertSee('updateMaterialDimensionHeaders', false);
     }
 
     public function test_submitted_item_is_recomputed_and_valid_auto_match_cannot_be_overridden(): void

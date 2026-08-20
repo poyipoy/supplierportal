@@ -13,12 +13,17 @@
     $unitKg = (float) ($itemData['weight_needed'] ?? 0);
     $quantity = (int) ($itemData['quantity'] ?? 1);
     $shapeValue = $itemData['shape'] ?? null;
-    $dimensionColumns = [
-        ['field' => 'thickness', 'label' => 'Thickness'],
-        ['field' => 'width', 'label' => 'Width'],
-        ['field' => 'd_outer', 'label' => 'Outer Diameter'],
-        ['field' => 'd_inner', 'label' => 'Inner Diameter'],
-        ['field' => 'length', 'label' => 'Length'],
+    $dimensionSlots = array_pad(
+        App\Models\PrItem::relevantDimensionFields($shapeValue),
+        3,
+        null,
+    );
+    $dimensionLabels = [
+        'thickness' => 'Thickness',
+        'd_inner' => 'Inner Diameter',
+        'd_outer' => 'Outer Diameter',
+        'width' => 'Width',
+        'length' => 'Length',
     ];
 @endphp
 <tr class="item-row">
@@ -27,6 +32,15 @@
             <input type="hidden" name="items[{{ $index }}][id]" value="{{ $itemData['id'] }}">
         @endif
         <input type="hidden" name="items[{{ $index }}][material_master_id]" class="material-master-id" value="{{ $itemData['material_master_id'] ?? '' }}">
+        @foreach(\App\Models\PrItem::DIMENSION_FIELDS as $dimensionField)
+            <input
+                type="hidden"
+                name="items[{{ $index }}][{{ $dimensionField }}]"
+                class="dimension-canonical-input"
+                data-dimension-canonical-field="{{ $dimensionField }}"
+                value="{{ $itemData[$dimensionField] ?? '' }}"
+            >
+        @endforeach
         <div class="position-relative">
             <input
                 type="text"
@@ -72,27 +86,40 @@
         <input type="number" step="1" min="1" name="items[{{ $index }}][quantity]" class="form-control form-control-sm text-center material-quantity" required value="{{ $quantity }}" aria-label="Material quantity">
         @error("items.{$index}.quantity") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
-    @foreach($dimensionColumns as $dimension)
+    @foreach($dimensionSlots as $slotIndex => $dimensionField)
         @php
-            $dimensionField = $dimension['field'];
-            $dimensionLabel = $dimension['label'];
-            $dimensionRelevant = in_array($dimensionField, \App\Models\PrItem::relevantDimensionFields($shapeValue), true);
+            $slot = $slotIndex + 1;
+            $dimensionRelevant = $dimensionField !== null;
+            $dimensionLabel = $dimensionField
+                ? ($dimensionLabels[$dimensionField] ?? ucfirst(str_replace('_', ' ', $dimensionField)))
+                : "Dimension {$slot}";
         @endphp
-        <td class="pr-dimension-cell {{ $dimensionRelevant ? '' : 'is-disabled' }}" data-dimension-field-cell="{{ $dimensionField }}">
-            <input
-                id="item-{{ $index }}-{{ $dimensionField }}"
-                type="number"
-                step="0.0001"
-                min="0.0001"
-                name="items[{{ $index }}][{{ $dimensionField }}]"
-                class="form-control form-control-sm text-end dimension-input"
-                data-dimension-field="{{ $dimensionField }}"
-                aria-label="{{ $dimensionLabel }} in millimeters"
-                placeholder="&mdash;"
-                value="{{ $itemData[$dimensionField] ?? '' }}"
-                {{ $dimensionRelevant ? '' : 'disabled' }}
-            >
-            @error("items.{$index}.{$dimensionField}") <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+        <td
+            class="pr-dimension-cell pr-dimension-slot-cell {{ $dimensionRelevant ? '' : 'is-disabled' }}"
+            data-dimension-slot-cell="{{ $slot }}"
+            data-dimension-field-cell="{{ $dimensionField ?? '' }}"
+        >
+            <div class="pr-dimension-slot">
+                <span class="pr-dimension-slot-label" data-dimension-slot-label="{{ $slot }}">
+                    {{ $dimensionLabel }}{{ $dimensionRelevant ? ' (mm)' : '' }}
+                </span>
+                <input
+                    id="item-{{ $index }}-dimension-slot-{{ $slot }}"
+                    type="number"
+                    step="0.0001"
+                    min="0.0001"
+                    class="form-control form-control-sm text-end dimension-input"
+                    data-dimension-slot="{{ $slot }}"
+                    data-dimension-field="{{ $dimensionField ?? '' }}"
+                    aria-label="{{ $dimensionRelevant ? $dimensionLabel . ' in millimeters' : 'Dimension ' . $slot . ' unavailable' }}"
+                    placeholder="&mdash;"
+                    value="{{ $dimensionField ? ($itemData[$dimensionField] ?? '') : '' }}"
+                    {{ $dimensionRelevant ? '' : 'disabled' }}
+                >
+                @if($dimensionField)
+                    @error("items.{$index}.{$dimensionField}") <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                @endif
+            </div>
         </td>
     @endforeach
     <td>

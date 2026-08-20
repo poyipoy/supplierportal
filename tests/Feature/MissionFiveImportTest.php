@@ -279,10 +279,11 @@ class MissionFiveImportTest extends TestCase
             ->assertSee('Replace Current Rows')
             ->assertSee('Append to Current Rows')
             ->assertSee('dimension-input', false)
-            ->assertSee('data-dimension-field="thickness"', false)
+            ->assertSee('data-dimension-slot="1"', false)
+            ->assertSee('data-dimension-canonical-field="thickness"', false)
             ->assertDontSee('dimension-source-input', false)
             ->assertDontSee('data-active-dimension-field', false)
-            ->assertDontSee('Dimension 1')
+            ->assertSee('Dimension 1')
             ->assertSee('prImportPreviewUrl', false);
 
         $this->actingAs($this->purchasing)

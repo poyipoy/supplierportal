@@ -91,11 +91,9 @@
                         <col style="width: 300px; min-width: 300px;">
                         <col style="width: 130px; min-width: 130px;">
                         <col style="width: 80px; min-width: 80px;">
-                        <col style="width: 120px; min-width: 120px;">
-                        <col style="width: 120px; min-width: 120px;">
-                        <col style="width: 140px; min-width: 140px;">
-                        <col style="width: 140px; min-width: 140px;">
-                        <col style="width: 130px; min-width: 130px;">
+                        <col data-dimension-slot-col="1" style="width: 140px; min-width: 140px;">
+                        <col data-dimension-slot-col="2" style="width: 140px; min-width: 140px;">
+                        <col data-dimension-slot-col="3" style="width: 140px; min-width: 140px;">
                         <col style="width: 150px; min-width: 150px;">
                         <col style="width: 220px; min-width: 220px;">
                         <col style="width: 72px; min-width: 72px;">
@@ -105,11 +103,9 @@
                             <th scope="col" class="pr-sticky-material">Master Material &amp; HS Code <span class="text-danger">*</span></th>
                             <th scope="col">Shape</th>
                             <th scope="col">Qty <span class="text-danger">*</span></th>
-                            <th scope="col">Thickness (mm)</th>
-                            <th scope="col">Width (mm)</th>
-                            <th scope="col">Outer Diameter (mm)</th>
-                            <th scope="col">Inner Diameter (mm)</th>
-                            <th scope="col">Length (mm)</th>
+                            <th scope="col" data-dimension-slot-header="1">Dimension 1 (mm)</th>
+                            <th scope="col" data-dimension-slot-header="2">Dimension 2 (mm)</th>
+                            <th scope="col" data-dimension-slot-header="3">Dimension 3 (mm)</th>
                             <th scope="col">KG / Unit (kg)</th>
                             <th scope="col">Remark</th>
                             <th scope="col" class="pr-sticky-action">Action</th>
@@ -164,6 +160,7 @@
         applyMaterialShapeRules($('#itemsBody tr.item-row').last(), true);
         resetMaterialPreview($('#itemsBody tr.item-row').last());
         itemIndex++;
+        updateMaterialDimensionHeaders();
         checkRowCount();
     }
 
@@ -175,6 +172,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $(btn).closest('tr').remove();
+                updateMaterialDimensionHeaders();
                 checkRowCount();
             }
         });
