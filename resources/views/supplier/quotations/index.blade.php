@@ -7,7 +7,7 @@
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Quotation Periods" description="Choose a period to review open requisitions and your quotation history." eyebrow="Supplier Portal" />
     <x-ui.data-table title="Select Period" description="Counts show only requisitions and quotations available to your supplier account.">
-        <x-slot:toolbar><x-ui.button :href="route('supplier.export.quotations')" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export All History</x-ui.button></x-slot:toolbar>
+        <x-slot:toolbar><x-ui.button :href="route('supplier.export.quotations')" variant="secondary" size="sm" data-async-export><i class="bi bi-file-earmark-excel"></i> Export All History</x-ui.button></x-slot:toolbar>
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
@@ -50,7 +50,7 @@
                                 @endif
                             </td>
                             <td class="text-end pe-4">
-                                <x-ui.button :href="route('supplier.quotations.period', $period->id)" size="sm">View Requisitions<x-slot:trailing><i class="bi bi-arrow-right"></i></x-slot:trailing></x-ui.button>
+                                <x-ui.button :href="route('supplier.quotations.period', $period->id)" size="sm">View Requisitions <i class="bi bi-arrow-right"></i></x-ui.button>
                             </td>
                         </tr>
                     @empty

@@ -48,11 +48,11 @@
                 id="exportRequisitionsBtn"
                 :data-export-url="route('purchasing.export.requisitions')"
             >
-                <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> 
                 Export Excel
             </x-ui.button>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
-                <x-slot:leading><i class="bi bi-plus-circle" aria-hidden="true"></i></x-slot:leading>
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> 
                 Create Requisition
             </x-ui.button>
         </x-slot:actions>
@@ -82,7 +82,7 @@
             </x-ui.select>
 
             <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset tw-w-full shell:tw-w-auto">
-                <x-slot:leading><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></x-slot:leading>
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> 
                 Reset filters
             </x-ui.button>
 

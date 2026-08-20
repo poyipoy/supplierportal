@@ -297,7 +297,7 @@
         :description="'Complete availability, commercial values, and supporting MTC files for ' . ($pr->pr_number ?? 'this requisition') . '.'"
         eyebrow="Supplier Portal"
     >
-        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Requisition List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Requisition List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <x-ui.card title="Purchase Requisition Details" description="Reference information supplied by Purchasing; quotation inputs remain supplier-owned.">
@@ -582,7 +582,7 @@
 
     <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
         <x-ui.button type="button" variant="secondary" onclick="submitForm('draft')">{{ $quotation?->status === 'revision_requested' ? 'Save Revision' : 'Save Draft' }}</x-ui.button>
-        <x-ui.button type="button" onclick="confirmSubmit()"><x-slot:leading><i class="bi bi-send-check"></i></x-slot:leading>{{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}</x-ui.button>
+        <x-ui.button type="button" onclick="confirmSubmit()"><i class="bi bi-send-check"></i> {{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}</x-ui.button>
     </div>
 </form>
 

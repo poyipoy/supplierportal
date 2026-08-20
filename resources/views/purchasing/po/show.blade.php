@@ -16,7 +16,7 @@
         eyebrow="Purchase Order Details"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to PO List</x-ui.button>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to PO List</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -42,8 +42,8 @@
             <x-slot:actions>
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
-                    <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
-                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><x-slot:leading><i class="bi bi-file-earmark-pdf"></i></x-slot:leading>Print PDF</x-ui.button>
+                    <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button>
+                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><i class="bi bi-file-earmark-pdf"></i> Print PDF</x-ui.button>
                 </div>
             </x-slot:actions>
                 <div class="row mb-2">

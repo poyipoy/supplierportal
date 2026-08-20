@@ -5,7 +5,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Add User" description="Create a role-scoped account and collect supplier company details only when applicable." eyebrow="Admin">
-        <x-slot:actions><x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to User List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to User List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
     <x-ui.card title="New User Form" description="Passwords require at least 12 characters; role controls the available portal surface.">
@@ -95,7 +95,7 @@
                 </div>
 
                 <div class="tw-mt-5 tw-flex tw-justify-end">
-                    <x-ui.button type="submit"><x-slot:leading><i class="bi bi-save"></i></x-slot:leading>Save New User</x-ui.button>
+                    <x-ui.button type="submit"><i class="bi bi-save"></i> Save New User</x-ui.button>
                 </div>
             </form>
     </x-ui.card>

@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Respond to the claim for ' . $claim->purchaseOrder->po_number . ' before the stated deadline.'" eyebrow="Supplier Portal">
-        <x-slot:actions><x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Claim List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Claim List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -62,7 +62,7 @@
                         <x-ui.input type="file" name="attachments[]" label="Supporting Documents/Photos (Optional)" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" helper="Official letter, transfer evidence, or replacement receipt; max 10MB per file." :error="$errors->first('attachments.*')" />
 
                         <div class="tw-flex tw-justify-end">
-                            <x-ui.button type="button" id="btnSubmitRespond"><x-slot:leading><i class="bi bi-send"></i></x-slot:leading>Send Response</x-ui.button>
+                            <x-ui.button type="button" id="btnSubmitRespond"><i class="bi bi-send"></i> Send Response</x-ui.button>
                         </div>
                     </form>
                 @else

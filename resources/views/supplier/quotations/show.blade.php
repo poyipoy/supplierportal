@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Quotation — ' . ($quotation->purchaseRequisition->pr_number ?? '-')" description="Review your submitted prices, supporting MTC files, and Purchasing feedback." eyebrow="Supplier Portal">
-        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $quotation->purchaseRequisition->period_id)" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Requisition List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $quotation->purchaseRequisition->period_id)" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Requisition List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
     <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -19,7 +19,7 @@
             <x-ui.data-table title="Material Price Details" description="Values reflect your quotation's stored exchange-rate snapshot.">
                 <x-slot:toolbar><div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                         <span class="badge {{ $quotation->statusBadgeClass() }} px-3 py-2 text-uppercase">{{ $quotation->statusLabel() }}</span>
-                        <x-ui.button :href="route('supplier.export.quotations.detail', $quotation)" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
+                        <x-ui.button :href="route('supplier.export.quotations.detail', $quotation)" variant="secondary" size="sm" data-async-export><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button>
                     </div></x-slot:toolbar>
                         <table class="table table-bordered align-middle mb-0 tw-text-ui-sm">
                             <thead class="table-light text-center">
@@ -159,9 +159,9 @@
                     Purchasing requested a revision for this quotation. Update the price, estimated delivery, and validity date before resubmitting.
                 </x-ui.alert>
                 <div class="tw-mt-3 tw-grid tw-gap-2">
-                    <x-ui.button :href="route('supplier.quotations.create', $quotation->purchaseRequisition)" variant="secondary"><x-slot:leading><i class="bi bi-pencil-square"></i></x-slot:leading>Revise Quotation</x-ui.button>
+                    <x-ui.button :href="route('supplier.quotations.create', $quotation->purchaseRequisition)" variant="secondary"><i class="bi bi-pencil-square"></i> Revise Quotation</x-ui.button>
                     @if($conversation)
-                        <x-ui.button :href="route('supplier.conversations.show', $conversation)" variant="ghost" data-open-chat-conversation="{{ $conversation->getRouteKey() }}"><x-slot:leading><i class="bi bi-chat-dots"></i></x-slot:leading>Open Revision Chat</x-ui.button>
+                        <x-ui.button :href="route('supplier.conversations.show', $conversation)" variant="ghost" data-open-chat-conversation="{{ $conversation->getRouteKey() }}"><i class="bi bi-chat-dots"></i> Open Revision Chat</x-ui.button>
                     @endif
                 </div>
             @elseif($quotation->status === 'rejected')

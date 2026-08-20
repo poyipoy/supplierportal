@@ -36,7 +36,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
-                <x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>
+                <i class="bi bi-arrow-left"></i> 
                 Back to Quotation List
             </x-ui.button>
         </x-slot:actions>
@@ -50,7 +50,7 @@
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <span class="badge {{ $quotation->statusBadgeClass() }} text-uppercase px-3 py-2">{{ $quotation->statusLabel() }}</span>
                     <x-ui.button :href="route('purchasing.export.quotations.detail', $quotation)" variant="secondary" size="sm" data-async-export>
-                        <x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>
+                        <i class="bi bi-file-earmark-excel"></i> 
                         Export Excel
                     </x-ui.button>
                 </div>
@@ -233,9 +233,9 @@
                         @csrf
                         <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                         <x-ui.button type="submit" class="tw-w-full tw-justify-between">
-                            <x-slot:leading><i class="bi bi-chat-dots"></i></x-slot:leading>
+                            <i class="bi bi-chat-dots"></i> 
                             Chat with {{ $supplierDisplayName }}
-                            <x-slot:trailing><i class="bi bi-chevron-right"></i></x-slot:trailing>
+                             <i class="bi bi-chevron-right"></i>
                         </x-ui.button>
                     </form>
                     <div class="mt-3 text-muted small">
@@ -275,7 +275,7 @@
                     <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="tw-mb-3">
                         @csrf
                         <x-ui.button type="submit" class="tw-w-full">
-                            <x-slot:leading><i class="bi bi-check-circle"></i></x-slot:leading>
+                            <i class="bi bi-check-circle"></i> 
                             Accept Quotation
                         </x-ui.button>
                     </form>
@@ -285,7 +285,7 @@
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                         <x-ui.textarea name="revision_note" id="revisionNote" label="Revision Notes" :rows="3" maxlength="1000" required placeholder="Example: Please revise the price, lead time, MTC, or payment terms." />
                         <x-ui.button type="submit" variant="secondary" class="tw-w-full">
-                            <x-slot:leading><i class="bi bi-arrow-repeat"></i></x-slot:leading>
+                            <i class="bi bi-arrow-repeat"></i> 
                             Request Revision
                         </x-ui.button>
                     </form>
@@ -294,7 +294,7 @@
                         @csrf
                         <x-ui.textarea name="reviewer_notes" label="Rejection Notes" :rows="3" maxlength="1000" required placeholder="Required if the quotation is rejected." />
                         <x-ui.button type="submit" variant="danger" class="tw-w-full">
-                            <x-slot:leading><i class="bi bi-x-circle"></i></x-slot:leading>
+                            <i class="bi bi-x-circle"></i> 
                             Reject Quotation
                         </x-ui.button>
                     </form>
@@ -302,7 +302,7 @@
 
                 @if($canCreatePo)
                     <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation)" class="tw-mb-3 tw-w-full">
-                        <x-slot:leading><i class="bi bi-receipt"></i></x-slot:leading>
+                        <i class="bi bi-receipt"></i> 
                         Create PO from This Quotation
                     </x-ui.button>
                 @elseif($quotation->status === 'submitted' && $quotation->isExpired())
@@ -315,13 +315,13 @@
                             </x-ui.alert>
                             <x-ui.textarea name="revision_note" id="revisionNote" label="Revision Notes" :rows="3" maxlength="1000" placeholder="Example: Please update the validity date, lead time, and latest price." />
                             <x-ui.button type="submit" variant="secondary" class="tw-w-full">
-                                <x-slot:leading><i class="bi bi-arrow-repeat"></i></x-slot:leading>
+                                <i class="bi bi-arrow-repeat"></i> 
                                 Request Quotation Revision
                             </x-ui.button>
                         </form>
                     @else
                         <x-ui.button disabled variant="danger" class="tw-mb-3 tw-w-full">
-                            <x-slot:leading><i class="bi bi-lock"></i></x-slot:leading>
+                            <i class="bi bi-lock"></i> 
                             Quotation Expired
                         </x-ui.button>
                     @endif
@@ -333,7 +333,7 @@
                     <x-ui.alert tone="success" class="tw-mb-3">PO already created: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order) }}" class="tw-font-semibold tw-underline">{{ $quotation->first_purchase_order->po_number }}</a></x-ui.alert>
                 @endif
                 <x-ui.button :href="$relatedPrUrl" variant="ghost" size="sm" class="tw-w-full">
-                    <x-slot:leading><i class="bi bi-clipboard-data"></i></x-slot:leading>
+                    <i class="bi bi-clipboard-data"></i> 
                     View Related PR
                 </x-ui.button>
         </x-ui.card>

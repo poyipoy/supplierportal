@@ -7,7 +7,7 @@
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="My Purchase Orders" description="Track only purchase orders issued to your supplier account." eyebrow="Supplier Portal" />
     <x-ui.data-table title="Received Purchase Orders" description="Search, export, and open order details without exposing other suppliers' data.">
-        <x-slot:toolbar><x-ui.button :href="route('supplier.export.purchase-orders')" variant="secondary" size="sm" data-async-export id="exportSupplierPurchaseOrdersBtn" :data-export-url="route('supplier.export.purchase-orders')"><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button></x-slot:toolbar>
+        <x-slot:toolbar><x-ui.button :href="route('supplier.export.purchase-orders')" variant="secondary" size="sm" data-async-export id="exportSupplierPurchaseOrdersBtn" :data-export-url="route('supplier.export.purchase-orders')"><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button></x-slot:toolbar>
             <table class="table table-hover align-middle" id="poTable">
                 <thead class="table-light">
                     <tr>

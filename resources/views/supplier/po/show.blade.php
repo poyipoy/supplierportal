@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="$po->po_number" description="Review order details, material values, claim actions, and read-only import document status." eyebrow="Supplier Portal">
-        <x-slot:actions><x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to PO List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to PO List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -30,8 +30,8 @@
                 @endphp
                 <x-slot:actions><div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
-                    <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><x-slot:leading><i class="bi bi-file-earmark-excel"></i></x-slot:leading>Export Excel</x-ui.button>
-                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><x-slot:leading><i class="bi bi-file-earmark-pdf"></i></x-slot:leading>Print PDF</x-ui.button>
+                    <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button>
+                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><i class="bi bi-file-earmark-pdf"></i> Print PDF</x-ui.button>
                 </div></x-slot:actions>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Reference (No. PR)</div>
@@ -173,12 +173,12 @@
                         <p class="small text-muted mb-3">
                             ADASI submitted a claim for this PO. Please provide a response and supporting attachments.
                         </p>
-                        <x-ui.button :href="route('supplier.claims.show', $pendingClaim)" variant="danger" class="tw-w-full tw-justify-between"><x-slot:leading><i class="bi bi-reply"></i></x-slot:leading>Claim Response<x-slot:trailing><i class="bi bi-chevron-right"></i></x-slot:trailing></x-ui.button>
+                        <x-ui.button :href="route('supplier.claims.show', $pendingClaim)" variant="danger" class="tw-w-full tw-justify-between"><i class="bi bi-reply"></i> Claim Response <i class="bi bi-chevron-right"></i></x-ui.button>
                     @else
                         <p class="small text-muted mb-3">
                             This PO has a material claim history. Open claim details to view status and response.
                         </p>
-                        <x-ui.button :href="route('supplier.claims.show', $latestClaim)" variant="ghost" class="tw-w-full tw-justify-between"><x-slot:leading><i class="bi bi-exclamation-octagon"></i></x-slot:leading>View Material Claim<x-slot:trailing><i class="bi bi-chevron-right"></i></x-slot:trailing></x-ui.button>
+                        <x-ui.button :href="route('supplier.claims.show', $latestClaim)" variant="ghost" class="tw-w-full tw-justify-between"><i class="bi bi-exclamation-octagon"></i> View Material Claim <i class="bi bi-chevron-right"></i></x-ui.button>
                     @endif
             </x-ui.card>
         @endif

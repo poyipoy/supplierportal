@@ -25,8 +25,8 @@
             <x-ui.input type="month" name="date_from" label="From Month" :value="$dateFromInput" />
             <x-ui.input type="month" name="date_to" label="To Month" :value="$dateToInput" />
             <div class="tw-flex tw-gap-2">
-                <x-ui.button type="submit" size="sm"><x-slot:leading><i class="bi bi-filter"></i></x-slot:leading>Apply Filter</x-ui.button>
-                <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-counterclockwise"></i></x-slot:leading>Reset</x-ui.button>
+                <x-ui.button type="submit" size="sm"><i class="bi bi-filter"></i> Apply Filter</x-ui.button>
+                <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</x-ui.button>
             </div>
         </form>
     </x-slot:actions>

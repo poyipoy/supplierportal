@@ -132,7 +132,7 @@
                     id="exportQuotationsBtn"
                     :data-export-url="route('purchasing.export.quotations')"
                 >
-                    <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                    <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> 
                     Export Excel
                 </x-ui.button>
                 <x-ui.status-chip tone="info" id="quotationCountBadge">{{ $quotations->total() }} quotations</x-ui.status-chip>
@@ -193,7 +193,7 @@
                         @endforeach
                 </x-ui.select>
                 <x-ui.button :href="route('purchasing.quotations.index')" variant="ghost" size="sm" class="tw-w-full xl:tw-col-span-2">
-                    <x-slot:leading><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></x-slot:leading>
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> 
                     Reset filters
                 </x-ui.button>
             </form>
@@ -253,7 +253,7 @@
                                 </td>
                                 <td class="text-end">
                                     <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q)" variant="ghost" size="sm">
-                                        <x-slot:leading><i class="bi bi-eye" aria-hidden="true"></i></x-slot:leading>
+                                        <i class="bi bi-eye" aria-hidden="true"></i> 
                                         Detail
                                     </x-ui.button>
                                 </td>

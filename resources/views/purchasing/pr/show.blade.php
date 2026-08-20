@@ -115,7 +115,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="secondary" size="sm" data-async-export>
-                <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> 
                 Export Excel
             </x-ui.button>
             <x-status-badge type="pr" :status="$pr->status" size="lg" />
@@ -277,7 +277,7 @@
                                             variant="ghost"
                                             size="sm"
                                         >
-                                            <x-slot:leading><i class="bi bi-eye" aria-hidden="true"></i></x-slot:leading>
+                                            <i class="bi bi-eye" aria-hidden="true"></i> 
                                             View details
                                         </x-ui.button>
                                         @if($submittedQuotationCount >= 2)
@@ -286,7 +286,7 @@
                                                 variant="secondary"
                                                 size="sm"
                                             >
-                                                <x-slot:leading><i class="bi bi-bar-chart" aria-hidden="true"></i></x-slot:leading>
+                                                <i class="bi bi-bar-chart" aria-hidden="true"></i> 
                                                 Compare
                                             </x-ui.button>
                                         @endif
@@ -338,7 +338,7 @@
                                 @csrf
                                 <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                                 <x-ui.button type="submit" variant="ghost" class="tw-w-full tw-justify-start">
-                                    <x-slot:leading><i class="bi bi-chat-dots" aria-hidden="true"></i></x-slot:leading>
+                                    <i class="bi bi-chat-dots" aria-hidden="true"></i> 
                                     {{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}
                                 </x-ui.button>
                             </form>

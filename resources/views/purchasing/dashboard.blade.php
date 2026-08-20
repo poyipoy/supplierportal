@@ -60,7 +60,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
-                <x-slot:leading><i class="bi bi-plus-circle" aria-hidden="true"></i></x-slot:leading>
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> 
                 Create requisition
             </x-ui.button>
         </x-slot:actions>
@@ -161,7 +161,7 @@
             </x-slot:header>
             <x-slot:actions>
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal">
-                    <x-slot:leading><i class="bi bi-pencil-square" aria-hidden="true"></i></x-slot:leading>
+                    <i class="bi bi-pencil-square" aria-hidden="true"></i> 
                     Update
                 </x-ui.button>
             </x-slot:actions>

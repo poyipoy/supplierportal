@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Inspection — ' . $inspection->purchaseOrder->po_number" description="Review requested-versus-actual measurements, item outcomes, and NG evidence." eyebrow="QC">
-        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Inspection List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Inspection List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 {{-- Header Card --}}
@@ -22,7 +22,7 @@
                 @else
                     <span class="badge bg-danger fs-6 px-3 py-2 me-2">STATUS: NG</span>
                 @endif
-                <x-ui.button :href="route('shared.pdf.qc-inspection', $inspection)" variant="danger" size="sm" target="_blank" title="Print QC Report" data-pdf-confirm><x-slot:leading><i class="bi bi-file-earmark-pdf"></i></x-slot:leading>Print PDF</x-ui.button>
+                <x-ui.button :href="route('shared.pdf.qc-inspection', $inspection)" variant="danger" size="sm" target="_blank" title="Print QC Report" data-pdf-confirm><i class="bi bi-file-earmark-pdf"></i> Print PDF</x-ui.button>
             </div></x-slot:actions>
         <div class="row g-3">
             <div class="col-md-3">
@@ -167,7 +167,7 @@
                     <div class="text-danger small mt-1">{{ $message }}</div>
                 @enderror
                 <div class="tw-mt-3 tw-flex tw-justify-end">
-                    <x-ui.button type="submit" variant="danger" size="sm"><x-slot:leading><i class="bi bi-upload"></i></x-slot:leading>Upload Photo</x-ui.button>
+                    <x-ui.button type="submit" variant="danger" size="sm"><i class="bi bi-upload"></i> Upload Photo</x-ui.button>
                 </div>
             </form>
         @endif

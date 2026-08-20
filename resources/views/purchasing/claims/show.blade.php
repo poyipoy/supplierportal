@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Material claim for ' . $claim->purchaseOrder->po_number . ' from ' . $claim->purchaseOrder->supplier->name . '.'" eyebrow="Material Claim Details">
-        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Claim List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Claim List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -97,9 +97,9 @@
                     <x-ui.alert class="tw-mb-3">Supplier has provided a response. Is the solution acceptable?</x-ui.alert>
                     <form action="{{ route('purchasing.claims.resolve', $claim) }}" method="POST">
                         @csrf
-                        <x-ui.button type="submit" class="tw-mb-2 tw-w-full"><x-slot:leading><i class="bi bi-check2-circle"></i></x-slot:leading>Mark Completed (Resolved)</x-ui.button>
+                        <x-ui.button type="submit" class="tw-mb-2 tw-w-full"><i class="bi bi-check2-circle"></i> Mark Completed (Resolved)</x-ui.button>
                     </form>
-                    <x-ui.button disabled variant="danger" class="tw-w-full" title="Escalation feature is not active yet"><x-slot:leading><i class="bi bi-exclamation-triangle"></i></x-slot:leading>Escalation</x-ui.button>
+                    <x-ui.button disabled variant="danger" class="tw-w-full" title="Escalation feature is not active yet"><i class="bi bi-exclamation-triangle"></i> Escalation</x-ui.button>
                 @elseif($claim->status === 'resolved')
                     <x-ui.alert tone="success">This claim has been declared completed and resolved.</x-ui.alert>
                 @endif

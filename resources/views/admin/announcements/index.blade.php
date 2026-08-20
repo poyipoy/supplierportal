@@ -7,7 +7,7 @@
     <x-ui.page-header title="Announcements" description="Create, publish, and maintain portal-wide notices." eyebrow="Admin">
         <x-slot:actions>
             <x-ui.button :href="route('admin.announcements.create')" size="sm">
-                <x-slot:leading><i class="bi bi-plus-circle"></i></x-slot:leading>
+                <i class="bi bi-plus-circle"></i> 
                 Create Announcement
             </x-ui.button>
         </x-slot:actions>

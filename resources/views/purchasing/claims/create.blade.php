@@ -6,7 +6,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Submit Material Claim" :description="'Create a supplier claim from the NG inspection for ' . $inspection->purchaseOrder->po_number . '.'" eyebrow="Purchasing">
-        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Claim List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Claim List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <form action="{{ route('purchasing.claims.store') }}" method="POST" id="claimForm">
@@ -27,7 +27,7 @@
 
             <div class="tw-mt-4 tw-flex tw-flex-wrap tw-justify-end tw-gap-2">
                 <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost">Cancel</x-ui.button>
-                <x-ui.button type="submit" variant="danger"><x-slot:leading><i class="bi bi-send"></i></x-slot:leading>Send Claim to Supplier</x-ui.button>
+                <x-ui.button type="submit" variant="danger"><i class="bi bi-send"></i> Send Claim to Supplier</x-ui.button>
             </div>
         </div>
 

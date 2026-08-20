@@ -47,7 +47,7 @@
             </tbody>
         </table>
         <x-slot:pagination>
-            <div class="tw-flex tw-justify-end"><x-ui.button :href="route('admin.dashboard')" variant="ghost"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Dashboard</x-ui.button></div>
+            <div class="tw-flex tw-justify-end"><x-ui.button :href="route('admin.dashboard')" variant="ghost"><i class="bi bi-arrow-left"></i> Back to Dashboard</x-ui.button></div>
         </x-slot:pagination>
     </x-ui.data-table>
 </div>

@@ -6,7 +6,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Inspect ' . $po->po_number" description="Compare each requested specification with actual measurements, mark OK/NG, and attach evidence for every NG item." eyebrow="QC">
-        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><x-slot:leading><i class="bi bi-arrow-left"></i></x-slot:leading>Back to Inspection List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Inspection List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 {{-- Info PO Header --}}
@@ -147,7 +147,7 @@
 
     <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
         <x-ui.button :href="route('qc.inspections.index')" variant="ghost">Cancel</x-ui.button>
-        <x-ui.button type="button" id="btnSubmit"><x-slot:leading><i class="bi bi-save"></i></x-slot:leading>Save Inspection Results</x-ui.button>
+        <x-ui.button type="button" id="btnSubmit"><i class="bi bi-save"></i> Save Inspection Results</x-ui.button>
     </div>
 </form>
 </div>

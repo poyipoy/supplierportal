@@ -49,7 +49,7 @@
             <x-ui.card title="Exchange Rate Management">
                 <x-slot:actions>
                     <x-ui.button size="sm" variant="secondary" data-bs-toggle="modal" data-bs-target="#kursModal">
-                        <x-slot:leading><i class="bi bi-plus-lg"></i></x-slot:leading>
+                        <i class="bi bi-plus-lg"></i> 
                         Update Exchange Rate
                     </x-ui.button>
                 </x-slot:actions>
@@ -90,7 +90,7 @@
 
             <x-ui.card title="Quick Links" variant="tonal">
                 <x-ui.button :href="route('admin.announcements.index')" variant="ghost" size="sm" class="tw-w-full tw-justify-start">
-                    <x-slot:leading><i class="bi bi-megaphone"></i></x-slot:leading>
+                    <i class="bi bi-megaphone"></i> 
                     Announcement Management
                 </x-ui.button>
             </x-ui.card>
