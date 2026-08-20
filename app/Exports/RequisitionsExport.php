@@ -32,6 +32,7 @@ class RequisitionsExport implements FromQuery, WithColumnWidths, WithCustomChunk
         $q = PrItem::query()->with([
             'purchaseRequisition.period',
             'purchaseRequisition.creator',
+            'purchaseRequisition.items',
         ]);
 
         if ($this->periodId) {
@@ -59,6 +60,7 @@ class RequisitionsExport implements FromQuery, WithColumnWidths, WithCustomChunk
     public function map($item): array
     {
         $pr = $item->purchaseRequisition;
+        $prTotalKg = $pr?->items?->sum(fn (PrItem $prItem) => $prItem->total_weight) ?? 0;
         $spec = collect([
             $item->shape,
             $item->dimension_label !== '-' ? $item->dimension_label : null,
@@ -66,12 +68,13 @@ class RequisitionsExport implements FromQuery, WithColumnWidths, WithCustomChunk
 
         return [
             SpreadsheetCellSanitizer::text($pr?->pr_number, 'DRAFT'),
-            SpreadsheetCellSanitizer::text($pr?->period?->name),
+            SpreadsheetCellSanitizer::text($pr?->period?->display_label ?? $pr?->period?->name),
             SpreadsheetCellSanitizer::text($item->material_name),
             SpreadsheetCellSanitizer::text($spec),
             $item->quantity_value,
             (float) $item->weight_needed,
             (float) $item->total_weight,
+            (float) $prTotalKg,
             SpreadsheetCellSanitizer::text($item->remark),
             SpreadsheetCellSanitizer::text(strtoupper((string) $pr?->status)),
             $pr?->created_at?->format('Y-m-d H:i:s') ?? '-',
@@ -90,7 +93,7 @@ class RequisitionsExport implements FromQuery, WithColumnWidths, WithCustomChunk
 
     public function headings(): array
     {
-        return ['PR Number', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'Remark', 'Status', 'Date Created'];
+        return ['PR Number', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark', 'Status', 'Date Created'];
     }
 
     public function columnWidths(): array
@@ -103,9 +106,10 @@ class RequisitionsExport implements FromQuery, WithColumnWidths, WithCustomChunk
             'E' => 10,
             'F' => 15,
             'G' => 15,
-            'H' => 30,
-            'I' => 15,
-            'J' => 21,
+            'H' => 15,
+            'I' => 30,
+            'J' => 15,
+            'K' => 21,
         ];
     }
 }

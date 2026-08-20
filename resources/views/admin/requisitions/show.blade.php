@@ -16,7 +16,7 @@
 
     <x-ui.card title="Requisition Summary">
         <dl class="tw-m-0 tw-grid tw-gap-4 md:tw-grid-cols-2">
-            <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Period</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->period->name ?? '-' }}</dd></div>
+            <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Period</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->period->display_label ?? $pr->period->name ?? '-' }}</dd></div>
             <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Created By</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->creator->name ?? '-' }}</dd></div>
             <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Date Created</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ $pr->created_at?->format('d F Y, H:i') ?? '-' }}</dd></div>
             <div><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Status</dt><dd class="tw-m-0 tw-mt-1 tw-font-medium">{{ ucwords(str_replace('_', ' ', $pr->status)) }}</dd></div>

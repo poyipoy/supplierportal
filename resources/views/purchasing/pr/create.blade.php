@@ -37,7 +37,7 @@
                         <option value="">-- Select Period --</option>
                         @foreach($periods as $period)
                             <option value="{{ $period->id }}" {{ old('period_id') == $period->id ? 'selected' : '' }}>
-                                {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
+                                {{ $period->display_label }}
                             </option>
                         @endforeach
                 </x-ui.select>
@@ -86,28 +86,18 @@
 
                 <div class="table-responsive pr-form-table-scroll">
                 <table class="table table-bordered table-sm align-middle pr-items-table" id="itemsTable">
-                    <caption class="visually-hidden">Required material entry table with adaptive dimension columns</caption>
+                    <caption class="visually-hidden">Required material entry table with shape-aware dimension columns</caption>
                     <colgroup>
                         <col style="width: 300px; min-width: 300px;">
-                    </colgroup>
-                    <colgroup>
                         <col style="width: 130px; min-width: 130px;">
-                    </colgroup>
-                    <colgroup>
                         <col style="width: 80px; min-width: 80px;">
-                    </colgroup>
-                    <colgroup>
+                        <col style="width: 120px; min-width: 120px;">
+                        <col style="width: 120px; min-width: 120px;">
+                        <col style="width: 140px; min-width: 140px;">
+                        <col style="width: 140px; min-width: 140px;">
                         <col style="width: 130px; min-width: 130px;">
-                        <col style="width: 130px; min-width: 130px;">
-                        <col style="width: 130px; min-width: 130px;">
-                    </colgroup>
-                    <colgroup>
                         <col style="width: 150px; min-width: 150px;">
-                    </colgroup>
-                    <colgroup>
                         <col style="width: 220px; min-width: 220px;">
-                    </colgroup>
-                    <colgroup>
                         <col style="width: 72px; min-width: 72px;">
                     </colgroup>
                     <thead class="table-light text-center">
@@ -115,7 +105,11 @@
                             <th scope="col" class="pr-sticky-material">Master Material &amp; HS Code <span class="text-danger">*</span></th>
                             <th scope="col">Shape</th>
                             <th scope="col">Qty <span class="text-danger">*</span></th>
-                            <th colspan="3" scope="colgroup">Dimensions (mm)</th>
+                            <th scope="col">Thickness (mm)</th>
+                            <th scope="col">Width (mm)</th>
+                            <th scope="col">Outer Diameter (mm)</th>
+                            <th scope="col">Inner Diameter (mm)</th>
+                            <th scope="col">Length (mm)</th>
                             <th scope="col">KG / Unit (kg)</th>
                             <th scope="col">Remark</th>
                             <th scope="col" class="pr-sticky-action">Action</th>

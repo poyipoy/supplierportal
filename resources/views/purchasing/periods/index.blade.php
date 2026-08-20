@@ -19,13 +19,13 @@
 
         <x-ui.data-table
             title="Period list"
-            description="Search and maintain the month, year, and availability state for each quotation period."
+            description="Search and maintain annual procurement periods and their availability state. Legacy monthly records remain visible for history."
         >
             <table class="table table-hover align-middle" id="periodsTable">
                 <thead class="table-light">
                     <tr>
                         <th>Period name</th>
-                        <th>Month</th>
+                        <th>Scope</th>
                         <th>Year</th>
                         <th>Status</th>
                         <th>Created By</th>
@@ -49,15 +49,7 @@
                     </div>
                     <div class="modal-body">
                         <div class="tw-grid tw-gap-4">
-                            <x-ui.input name="name" label="Period name" placeholder="Example: May 2026 period" required />
                             <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
-                                <x-ui.select name="month" label="Month" required>
-                                    @for($m=1; $m<=12; $m++)
-                                        <option value="{{ $m }}" {{ now()->month == $m ? 'selected' : '' }}>
-                                            {{ date('F', mktime(0, 0, 0, $m, 1)) }}
-                                        </option>
-                                    @endfor
-                                </x-ui.select>
                                 <x-ui.input name="year" type="number" label="Year" :value="now()->year" min="2000" required />
                             </div>
                             <x-ui.select name="status" label="Status" helper="PR can only be created in a period with Open status." required>
@@ -90,7 +82,8 @@
                         <div class="tw-grid tw-gap-4">
                             <x-ui.input name="name" id="editName" label="Period name" required />
                             <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
-                                <x-ui.select name="month" id="editMonth" label="Month" required>
+                                <x-ui.select name="month" id="editMonth" label="Scope (legacy month optional)" helper="Leave Annual for a year-based procurement period.">
+                                    <option value="">Annual</option>
                                     @for($m=1; $m<=12; $m++)
                                         <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
                                     @endfor

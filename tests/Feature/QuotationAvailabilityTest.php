@@ -6,6 +6,7 @@ use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
+use App\Models\ExchangeRate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -167,6 +168,126 @@ class QuotationAvailabilityTest extends TestCase
             ->assertOk()
             ->assertSee('Requested vs Offered')
             ->assertSee('Not Specified');
+    }
+
+    public function test_amount_uses_fresh_manual_weight_and_quantity_for_draft_and_revision(): void
+    {
+        $pr = $this->createRequisition([[
+            'quantity' => 3,
+            'weight_needed' => 4.125,
+            'weight_calculation_status' => PrItem::WEIGHT_STATUS_MANUAL,
+        ]]);
+
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0]['price_per_kg'] = 2.25;
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $quotationItem = Quotation::where('pr_id', $pr->id)
+            ->where('supplier_id', $this->supplier->id)
+            ->firstOrFail()
+            ->items()
+            ->firstOrFail();
+
+        $this->assertSame('27.8438', $quotationItem->amount);
+
+        // Simulate a PR quantity/weight update after the draft was first saved.
+        // The quotation controller must not use a cached relation for the next save.
+        $prItem = $pr->items->firstOrFail();
+        $prItem->update([
+            'quantity' => 4,
+            'weight_needed' => 5.5,
+        ]);
+        $payload['items'][0]['price_per_kg'] = 3;
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $this->assertSame(
+            '66.0000',
+            Quotation::where('pr_id', $pr->id)
+                ->where('supplier_id', $this->supplier->id)
+                ->firstOrFail()
+                ->items()
+                ->firstOrFail()
+                ->amount,
+        );
+    }
+
+    public function test_submitted_amount_is_server_authoritative_and_idr_snapshot_is_available(): void
+    {
+        ExchangeRate::create([
+            'currency' => 'USD',
+            'rate_to_idr' => 16000,
+            'valid_from' => now()->subDay(),
+            'created_by' => $this->purchasing->id,
+        ]);
+
+        $pr = $this->createRequisition([[
+            'quantity' => 2,
+            'weight_needed' => 7.5,
+            'weight_calculation_status' => PrItem::WEIGHT_STATUS_MANUAL,
+        ]]);
+        $payload = $this->quotationPayload($pr);
+        $payload['action'] = 'submitted';
+        $payload['items'][0]['price_per_kg'] = 4.2;
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)
+            ->where('supplier_id', $this->supplier->id)
+            ->firstOrFail();
+        $item = $quotation->items()->firstOrFail();
+
+        $this->assertSame('63.0000', $item->amount);
+        $this->assertNotNull($quotation->submitted_at);
+        $this->assertNotNull($quotation->exchange_rate_id);
+        $this->assertSame(1008000.0, round((float) $item->amount * 16000, 1));
+    }
+
+    public function test_quotation_detail_recovers_an_eligible_legacy_zero_amount_for_display(): void
+    {
+        $pr = $this->createRequisition();
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $item = $quotation->items()->firstOrFail();
+        $item->update(['amount' => 0]);
+
+        $this->actingAs($this->supplier)
+            ->get(route('supplier.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee('50.00');
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee('50.00');
+    }
+
+    public function test_zero_amount_repair_command_is_dry_run_until_explicitly_enabled(): void
+    {
+        $pr = $this->createRequisition([
+            ['weight_needed' => 10],
+            ['weight_needed' => 0],
+        ]);
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $quotation->items()->update(['amount' => 0]);
+
+        $this->artisan('quotations:repair-zero-amounts')
+            ->assertExitCode(0);
+
+        $this->assertSame(['0.0000', '0.0000'], $quotation->items()->orderBy('id')->pluck('amount')->all());
+
+        $this->artisan('quotations:repair-zero-amounts', ['--execute' => true])
+            ->assertExitCode(0);
+
+        $amounts = $quotation->items()->orderBy('id')->pluck('amount')->all();
+        $this->assertSame('50.0000', $amounts[0]);
+        $this->assertSame('0.0000', $amounts[1]);
     }
 
     public function test_supplier_cannot_submit_items_from_another_pr_or_replace_existing_items(): void

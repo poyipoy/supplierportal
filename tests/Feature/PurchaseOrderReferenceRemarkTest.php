@@ -185,9 +185,10 @@ class PurchaseOrderReferenceRemarkTest extends TestCase
         $requisitionExport = new RequisitionsExport($this->period->id);
         $requisitionRow = $requisitionExport->collection()->first();
 
-        $this->assertSame('Remark', $requisitionExport->headings()[7]);
+        $this->assertSame('PR Total KG', $requisitionExport->headings()[7]);
         $this->assertSame("'@Formula Material", $requisitionRow[2]);
-        $this->assertSame("'=PR item remark", $requisitionRow[7]);
+        $this->assertSame(200.0, $requisitionRow[7]);
+        $this->assertSame("'=PR item remark", $requisitionRow[8]);
 
         $poExport = new PurchaseOrdersExport($this->supplierA->id);
         $poRow = $poExport->collection()->first();

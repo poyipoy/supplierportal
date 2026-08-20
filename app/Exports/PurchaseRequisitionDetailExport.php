@@ -15,8 +15,9 @@ class PurchaseRequisitionDetailExport implements FromCollection, WithColumnWidth
     public function collection()
     {
         $pr = PurchaseRequisition::with(['period', 'items'])->findOrFail($this->prId);
+        $prTotalKg = $pr->items->sum(fn ($prItem) => $prItem->total_weight);
 
-        return $pr->items->map(function ($item) use ($pr) {
+        return $pr->items->map(function ($item) use ($pr, $prTotalKg) {
             $specification = collect([
                 $item->shape,
                 $item->dimension_label !== '-' ? $item->dimension_label : null,
@@ -30,6 +31,7 @@ class PurchaseRequisitionDetailExport implements FromCollection, WithColumnWidth
                 $item->quantity_value,
                 (float) $item->weight_needed,
                 (float) $item->total_weight,
+                (float) $prTotalKg,
                 SpreadsheetCellSanitizer::text($item->remark),
             ];
         });
@@ -37,7 +39,7 @@ class PurchaseRequisitionDetailExport implements FromCollection, WithColumnWidth
 
     public function headings(): array
     {
-        return ['PR Number', 'HS Code', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'Remark'];
+        return ['PR Number', 'HS Code', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark'];
     }
 
     public function columnWidths(): array
@@ -50,7 +52,8 @@ class PurchaseRequisitionDetailExport implements FromCollection, WithColumnWidth
             'E' => 10,
             'F' => 15,
             'G' => 15,
-            'H' => 30,
+            'H' => 15,
+            'I' => 30,
         ];
     }
 }

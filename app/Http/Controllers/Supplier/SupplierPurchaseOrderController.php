@@ -19,7 +19,7 @@ class SupplierPurchaseOrderController extends Controller
         $query = PurchaseOrder::with([
             'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
-            'quotations.items',
+            'quotations.items.prItem',
             'materialClaims',
         ])
             ->where('supplier_id', auth()->id())
@@ -29,7 +29,7 @@ class SupplierPurchaseOrderController extends Controller
             return DataTables::eloquent($query)
                 ->addColumn('po_number_display', fn($po) => $po->po_number)
                 ->addColumn('period_name', function ($po) {
-                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequisition?->period?->name)->filter()->unique();
+                    $periods = $po->quotations->map(fn($q) => $q->purchaseRequisition?->period?->display_label)->filter()->unique();
                     return $periods->count() > 1
                         ? $periods->first() . ' +' . ($periods->count() - 1)
                         : ($periods->first() ?? '-');
@@ -51,7 +51,7 @@ class SupplierPurchaseOrderController extends Controller
                     foreach ($po->quotations as $quotation) {
                         $rate = $quotation->exchange_rate;
                         foreach ($quotation->items as $item) {
-                            $totalIdr += $item->amount * ($rate ? $rate->rate_to_idr : 1);
+                            $totalIdr += $item->resolved_amount * ($rate ? $rate->rate_to_idr : 1);
                         }
                     }
                     return 'Rp ' . number_format($totalIdr, 0, ',', '.');

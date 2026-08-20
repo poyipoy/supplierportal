@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Requisition List: ' . $period->name . ' - ADASI Portal')
-@section('page-title', 'Purchase Requisition' . ': ' . $period->name)
+@section('title', 'Requisition List: ' . $period->display_label . ' - ADASI Portal')
+@section('page-title', 'Purchase Requisition' . ': ' . $period->display_label)
 
 @section('content')
 <div class="tw-grid tw-gap-6">
-    <x-ui.page-header :title="'Purchase Requisitions — ' . $period->name" description="Review requisitions and continue only the quotations assigned to your supplier account." eyebrow="Supplier Portal">
+    <x-ui.page-header :title="'Purchase Requisitions — ' . $period->display_label" description="Review requisitions and continue only the quotations assigned to your supplier account." eyebrow="Supplier Portal">
         <x-slot:actions><x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Period List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 

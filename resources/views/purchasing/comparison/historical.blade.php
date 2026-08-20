@@ -173,7 +173,7 @@
                                 <th>Supplier</th>
                                 <th>Price/Kg</th>
                                 <th>Total Price IDR</th>
-                                <th>Date Submitted</th>
+                                <th>PO Date</th>
                                 <th>% Change</th>
                             </tr>
                         @endif
@@ -208,8 +208,8 @@
                                     </td>
                                     <td class="text-end text-primary fw-bold">{{ $row['total_idr'] ? 'Rp ' . number_format($row['total_idr'], 0, ',', '.') : '-' }}</td>
                                     <td class="text-center">
-                                        @if(!empty($row['submitted_at_display']))
-                                            {{ $row['submitted_at_display'] }}
+                                        @if(!empty($row['purchase_order_at_display']))
+                                            {{ $row['purchase_order_at_display'] }}
                                         @else
                                             <span class="badge bg-secondary">Draft</span>
                                         @endif
@@ -704,7 +704,7 @@ function renderTable(payload) {
             <th>Supplier</th>
             <th>Price/Kg</th>
             <th>Total Price IDR</th>
-            <th>Date Submitted</th>
+            <th>PO Date</th>
             <th>% Change</th>
         </tr>
     `;
@@ -718,7 +718,7 @@ function renderTable(payload) {
             <td class="text-center">${escapeHtml(row.supplier || '-')}</td>
             <td class="text-end">${formatNumber(row.price_per_kg)} <span class="badge bg-dark ms-1">${escapeHtml(row.currency)}</span></td>
             <td class="text-end text-primary fw-bold">${formatRupiah(row.total_idr)}</td>
-            <td class="text-center">${row.submitted_at_display ? escapeHtml(row.submitted_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
+            <td class="text-center">${row.purchase_order_at_display ? escapeHtml(row.purchase_order_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
             <td class="text-center">${changeHtml(row.change_pct)}</td>
         </tr>
     `).join('');

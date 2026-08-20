@@ -15,7 +15,7 @@ class ReportController extends Controller
     public function index()
     {
         // Data master untuk dropdown filter form export
-        $periods = Period::orderByDesc('year')->orderByDesc('month')->get();
+        $periods = Period::orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
         $suppliers = User::where('role', 'supplier')->orderBy('name')->get();
 
         return view('purchasing.reports.index', compact('periods', 'suppliers'));

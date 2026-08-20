@@ -43,11 +43,11 @@ class QuotationDetailExport implements FromCollection, WithColumnWidths, WithHea
             $requestedDimensions = $prItem?->dimension_label;
             $offeredDimensions = $item->available_dimension_label;
             $pricePerKg = (float) $item->price_per_kg;
-            $amount = (float) $item->amount;
+            $amount = $item->resolved_amount;
 
             $row = [
                 SpreadsheetCellSanitizer::text($pr?->pr_number),
-                SpreadsheetCellSanitizer::text($pr?->period?->name),
+                SpreadsheetCellSanitizer::text($pr?->period?->display_label ?? $pr?->period?->name),
                 SpreadsheetCellSanitizer::text($supplierName),
                 SpreadsheetCellSanitizer::text(strtoupper((string) $quotation->currency)),
                 SpreadsheetCellSanitizer::text($quotation->statusLabel()),

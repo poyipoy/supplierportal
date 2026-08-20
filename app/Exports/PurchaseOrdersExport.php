@@ -105,14 +105,14 @@ class PurchaseOrdersExport implements FromQuery, WithColumnWidths, WithCustomChu
             ->flatMap(fn ($quotation) => $quotation->items->map(fn ($item) => $item->prItem?->material_name))
             ->filter()
             ->implode(', ') ?: '-';
-        $totalAmount = (float) $po->quotations->sum(fn ($quotation) => $quotation->items->sum('amount'));
+        $totalAmount = (float) $po->quotations->sum(fn ($quotation) => $quotation->items->sum(fn ($item) => $item->resolved_amount));
         $currency = $po->currency ?? '-';
         $totalIdr = 0.0;
 
         foreach ($po->quotations as $quotation) {
             $rate = (float) ($quotation->exchange_rate?->rate_to_idr ?? 0);
             foreach ($quotation->items as $item) {
-                $totalIdr += (float) $item->amount * $rate;
+                $totalIdr += $item->resolved_amount * $rate;
             }
         }
 

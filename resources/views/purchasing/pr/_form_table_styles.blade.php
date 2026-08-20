@@ -44,8 +44,8 @@
         border-spacing: 0;
         font-size: .82rem;
         margin-bottom: 0;
-        min-width: 1342px !important;
-        width: 1342px !important;
+        min-width: 1602px !important;
+        width: 1602px !important;
         table-layout: fixed;
         background-color: var(--md-surface, #ffffff);
     }
@@ -134,38 +134,27 @@
         z-index: 2;
     }
 
-    #itemsTable.pr-items-table .dimension-slot-label {
-        color: var(--md-on-surface-variant);
-        display: block;
-        font-size: .69rem;
-        font-weight: 700;
-        line-height: 1.2;
-        margin-bottom: .35rem;
-        min-height: 1.7em;
-        text-transform: none;
+    #itemsTable.pr-items-table .pr-dimension-cell.is-disabled {
+        background: var(--md-surface-container-low) !important;
     }
 
-    #itemsTable.pr-items-table .dimension-slot-content {
-        position: relative;
-        top: -.7rem;
-    }
-
-    #itemsTable.pr-items-table .dimension-slot-empty {
-        align-items: center;
-        background: var(--md-surface-container-low);
-        border: 1px dashed var(--md-outline);
-        border-radius: .375rem;
-        color: var(--md-on-surface-variant);
-        display: flex;
-        font-size: 1rem;
-        justify-content: center;
-        min-height: 38px;
-    }
-
-    #itemsTable.pr-items-table .dimension-slot-input,
+    #itemsTable.pr-items-table .dimension-input,
     #itemsTable.pr-items-table .material-quantity,
     #itemsTable.pr-items-table .weight-unit-display {
         font-variant-numeric: tabular-nums;
+    }
+
+    #itemsTable.pr-items-table .dimension-input:disabled {
+        background: var(--md-surface-container-low) !important;
+        border-style: dashed;
+        color: var(--md-on-surface-variant);
+        cursor: not-allowed;
+        opacity: 1;
+    }
+
+    #itemsTable.pr-items-table .dimension-input::placeholder {
+        color: var(--md-on-surface-variant);
+        opacity: 1;
     }
 
     #itemsTable.pr-items-table .hs-status-badge {

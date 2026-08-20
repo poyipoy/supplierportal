@@ -16,6 +16,18 @@ class Period extends Model
         'created_by',
     ];
 
+    public function getIsAnnualAttribute(): bool
+    {
+        return $this->month === null;
+    }
+
+    public function getDisplayLabelAttribute(): string
+    {
+        return $this->is_annual
+            ? (string) $this->year
+            : "{$this->name} (".str_pad((string) $this->month, 2, '0', STR_PAD_LEFT)."/{$this->year})";
+    }
+
     // ─── Relationships ───
 
     public function creator(): BelongsTo

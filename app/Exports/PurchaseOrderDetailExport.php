@@ -89,7 +89,7 @@ class PurchaseOrderDetailExport implements FromCollection, WithColumnWidths, Wit
                 $documentStatus
             ) {
                 $prItem = $item->prItem;
-                $amount = (float) $item->amount;
+                $amount = $item->resolved_amount;
 
                 return [
                     SpreadsheetCellSanitizer::text($po->po_number),

@@ -7,7 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SavePurchaseRequisitionRequest;
 use App\Imports\PrItemsImport;
 use App\Models\Period;
+use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
+use App\Models\Quotation;
+use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
@@ -38,6 +41,21 @@ class PurchaseRequisitionController extends Controller
         if ($request->ajax()) {
             $query = PurchaseRequisition::with(['period', 'items', 'creator'])
                 ->withCount('invitedSuppliers')
+                ->select('purchase_requisitions.*')
+                ->selectSub(
+                    PrItem::query()
+                        ->selectRaw('COALESCE(SUM(COALESCE(pr_items.weight_needed, 0) * CASE WHEN pr_items.quantity IS NULL OR pr_items.quantity < 1 THEN 1 ELSE pr_items.quantity END), 0)')
+                        ->whereColumn('pr_items.pr_id', 'purchase_requisitions.id'),
+                    'total_kg',
+                )
+                ->selectSub(
+                    Quotation::query()
+                        ->selectRaw('COUNT(DISTINCT quotations.supplier_id)')
+                        ->whereColumn('quotations.pr_id', 'purchase_requisitions.id')
+                        ->whereNotNull('quotations.submitted_at')
+                        ->whereNull('quotations.deleted_at'),
+                    'submitted_supplier_count',
+                )
                 ->orderBy('created_at', 'desc');
 
             if ($request->filled('period_id')) {
@@ -51,9 +69,10 @@ class PurchaseRequisitionController extends Controller
             return DataTables::eloquent($query)
                 ->addIndexColumn()
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
-                ->addColumn('period_name', fn ($pr) => $pr->period->name ?? '-')
+                ->addColumn('period_name', fn ($pr) => $pr->period->display_label ?? '-')
                 ->addColumn('creator_name', fn ($pr) => $pr->creator->name ?? '-')
                 ->addColumn('item_count', fn ($pr) => $pr->items->count().' Item')
+                ->addColumn('total_kg', fn ($pr) => number_format((float) $pr->total_kg, 4, '.', ',').' kg')
                 ->addColumn('supplier_count', fn ($pr) => $pr->invited_suppliers_count)
                 ->addColumn('status_badge', function ($pr) {
                     $badgeClass = match ($pr->status) {
@@ -73,7 +92,13 @@ class PurchaseRequisitionController extends Controller
                         default => ucwords(str_replace('_', ' ', $pr->status)),
                     };
 
-                    return '<span class="badge '.$badgeClass.' text-uppercase" style="font-size: 0.7rem;">'.$statusLabel.'</span>';
+                    $responseChip = '';
+                    if ($pr->status === 'bidding') {
+                        $count = (int) ($pr->submitted_supplier_count ?? 0);
+                        $responseChip = ' <span class="badge rounded-pill bg-light text-dark border ms-1" title="'.e($count.' supplier quotations submitted').'" aria-label="'.e($count.' supplier quotations submitted').'">'.$count.'</span>';
+                    }
+
+                    return '<span class="badge '.$badgeClass.' text-uppercase" style="font-size: 0.7rem;">'.$statusLabel.'</span>'.$responseChip;
                 })
                 ->addColumn('created_date', fn ($pr) => $pr->created_at->format('d M Y, H:i'))
                 ->addColumn('action', function ($pr) {
@@ -101,7 +126,7 @@ class PurchaseRequisitionController extends Controller
                 ->make(true);
         }
 
-        $periods = Period::orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+        $periods = Period::orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
 
         return view('purchasing.pr.index', compact('periods'));
     }
@@ -111,7 +136,7 @@ class PurchaseRequisitionController extends Controller
      */
     public function create()
     {
-        $periods = Period::where('status', 'open')->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+        $periods = Period::where('status', 'open')->orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
         $suppliers = User::where('role', 'supplier')
             ->where('is_active', true)
             ->with('supplier')
@@ -268,17 +293,19 @@ class PurchaseRequisitionController extends Controller
 
         $quotations = $pr->quotations->map(function ($quotation) {
             $quotation->total_amount = $quotation->items->sum(function ($item) {
-                $weight = optional($item->prItem)->total_weight ?? 0;
-
-                return (float) $item->price_per_kg * (float) $weight;
+                return $item->prItem
+                    ? QuotationItem::calculateAmount($item->prItem, $item->price_per_kg)
+                    : 0;
             });
 
             $rate = $quotation->exchange_rate;
             $quotation->total_idr = $rate
                 ? $quotation->items->sum(function ($item) use ($rate) {
-                    $weight = optional($item->prItem)->total_weight ?? 0;
+                    $amount = $item->prItem
+                        ? QuotationItem::calculateAmount($item->prItem, $item->price_per_kg)
+                        : 0;
 
-                    return (float) $item->price_per_kg * (float) $weight * (float) $rate->rate_to_idr;
+                    return $amount * (float) $rate->rate_to_idr;
                 })
                 : null;
 
@@ -290,13 +317,20 @@ class PurchaseRequisitionController extends Controller
             ->filter(fn ($total) => $total !== null && $total > 0)
             ->min();
 
-        $submittedQuotationCount = $quotations->where('status', 'submitted')->count();
+        $submittedQuotationCount = Quotation::query()
+            ->where('pr_id', $pr->id)
+            ->whereNotNull('submitted_at')
+            ->whereNull('deleted_at')
+            ->distinct('supplier_id')
+            ->count('supplier_id');
+        $totalKg = $pr->items->sum(fn ($item) => $item->total_weight);
 
         return view('purchasing.pr.show', compact(
             'pr',
             'quotations',
             'lowestTotalIdr',
-            'submittedQuotationCount'
+            'submittedQuotationCount',
+            'totalKg',
         ));
     }
 
@@ -314,7 +348,7 @@ class PurchaseRequisitionController extends Controller
 
         $periods = Period::where('status', 'open')
             ->orWhere('id', $pr->period_id) // Allow keeping current period even if closed
-            ->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+            ->orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
 
         $suppliers = User::where('role', 'supplier')
             ->where('is_active', true)

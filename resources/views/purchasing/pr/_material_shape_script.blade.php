@@ -1,4 +1,4 @@
-const materialDimensionSlots = {
+const materialDimensionFields = {
     Flat: [
         { field: 'thickness', label: 'Thickness' },
         { field: 'width', label: 'Width' },
@@ -66,48 +66,22 @@ function repositionVisibleMaterialSearchResults() {
 function applyMaterialShapeRules(row, clearIrrelevant = true) {
     const $row = $(row);
     const shape = $row.find('.material-shape-select').val();
-    const slots = materialDimensionSlots[shape] || [];
-    const relevantFields = slots.map((slot) => slot.field);
+    const relevantFields = (materialDimensionFields[shape] || []).map((dimension) => dimension.field);
 
     allMaterialDimensions.forEach((field) => {
         const isRelevant = relevantFields.includes(field);
-        const $source = $row.find(`[data-dimension-field="${field}"]`);
+        const $input = $row.find(`.dimension-input[data-dimension-field="${field}"]`);
+        const $cell = $row.find(`[data-dimension-field-cell="${field}"]`);
 
         if (!isRelevant && clearIrrelevant) {
-            $source.val('');
-        }
-    });
-
-    for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
-        const definition = slots[slotIndex] || null;
-        const $slot = $row.find(`[data-dimension-slot="${slotIndex}"]`);
-        const $label = $slot.find('.dimension-slot-label');
-        const $control = $slot.find('.dimension-slot-control');
-        const $empty = $slot.find('.dimension-slot-empty');
-        const $input = $slot.find('.dimension-slot-input');
-
-        if (!definition) {
-            $label.text('');
-            $input
-                .val('')
-                .prop('disabled', true)
-                .attr('data-active-dimension-field', '')
-                .attr('aria-label', 'Dimension not used');
-            $control.addClass('d-none');
-            $empty.removeClass('d-none');
-            continue;
+            $input.val('');
         }
 
-        const $source = $row.find(`[data-dimension-field="${definition.field}"]`);
-        $label.text(definition.label);
         $input
-            .val($source.val())
-            .prop('disabled', false)
-            .attr('data-active-dimension-field', definition.field)
-            .attr('aria-label', `${definition.label} in millimeters`);
-        $control.removeClass('d-none');
-        $empty.addClass('d-none');
-    }
+            .prop('disabled', !isRelevant)
+            .attr('aria-disabled', isRelevant ? 'false' : 'true');
+        $cell.toggleClass('is-disabled', !isRelevant);
+    });
 }
 
 function resetMaterialPreview($row) {
@@ -279,7 +253,7 @@ function scheduleMaterialPreview($row, delay = 300) {
 function initializeMaterialShapeRows() {
     $('#itemsBody tr.item-row').each(function() {
         $(this).data('selected-material-name', $(this).find('.material-master-search').val());
-        applyMaterialShapeRules(this, false);
+        applyMaterialShapeRules(this, true);
         if ($(this).find('.material-master-id').val()) {
             scheduleMaterialPreview($(this), 0);
         } else {
@@ -330,10 +304,6 @@ $(document).on('input change', '.weight-unit-display', function() {
 
 $(document).on('input change', '.dimension-input', function() {
     const $row = $(this).closest('tr');
-    const activeField = $(this).attr('data-active-dimension-field');
-    if (activeField) {
-        $row.find(`[data-dimension-field="${activeField}"]`).val($(this).val());
-    }
     resetManualWeightOverride($row);
     scheduleMaterialPreview($row);
 });

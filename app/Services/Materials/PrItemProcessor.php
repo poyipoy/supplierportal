@@ -129,11 +129,6 @@ final class PrItemProcessor
             if (! $weight->isCalculated() || ($weight->unitKg ?? 0) <= 0) {
                 $errors['weight_needed'] = $weight->message;
             }
-            if ($storedHsCode === null) {
-                $errors['manual_hs_code'] = $hsCode->status === 'insufficient_data'
-                    ? 'Complete the shape and dimensions before resolving the HS Code.'
-                    : 'Select or enter a valid manual HS Code before submitting.';
-            }
         }
 
         $data = [

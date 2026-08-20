@@ -64,18 +64,21 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.create'))
             ->assertOk()
-            ->assertSee('Dimensions (mm)')
-            ->assertDontSee('Dimension 1')
-            ->assertDontSee('Dimension 2')
-            ->assertDontSee('Dimension 3')
+            ->assertSee('Thickness (mm)')
+            ->assertSee('Width (mm)')
+            ->assertSee('Outer Diameter (mm)')
+            ->assertSee('Inner Diameter (mm)')
+            ->assertSee('Length (mm)')
             ->assertSee('KG / Unit (kg)')
             ->assertSee('pr-sticky-material', false)
             ->assertSee('pr-sticky-action', false)
-            ->assertSee('border-right: 1px solid var(--md-outline) !important', false)
+            ->assertSee('border-right: 1px solid var(--md-outline-variant) !important', false)
             ->assertSee('border-collapse: separate !important', false)
-            ->assertSee('width: 100% !important', false)
-            ->assertSee('dimension-source-input', false)
-            ->assertSee("{ field: 'd_outer', label: 'Outer Diameter' }", false);
+            ->assertSee('width: 100%;', false)
+            ->assertSee('dimension-input', false)
+            ->assertSee('data-dimension-field="d_outer"', false)
+            ->assertDontSee('dimension-source-input', false)
+            ->assertDontSee('data-dimension-slot', false);
 
         $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
         $pr = PurchaseRequisition::create([
@@ -99,10 +102,9 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertSee('Outer Diameter')
             ->assertSee('Length')
             ->assertDontSee('Not used')
-            ->assertSee('data-active-dimension-field="d_outer"', false)
             ->assertSee('name="items[0][d_outer]"', false)
-            ->assertSee('dimension-slot-content', false)
-            ->assertSee('data-dimension-slot="2"', false);
+            ->assertSee('data-dimension-field="d_outer"', false)
+            ->assertSee('is-disabled', false);
     }
 
     public function test_submitted_item_is_recomputed_and_valid_auto_match_cannot_be_overridden(): void
@@ -183,6 +185,54 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
         $this->assertNull($item->hs_code_rule_id);
     }
 
+    public function test_valid_submission_allows_unresolved_hs_code_without_fabricating_a_value(): void
+    {
+        $material = MaterialMaster::where('material_code', 'F3RV')->firstOrFail();
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.requisitions.store'), $this->payload('submitted', [[
+                'material_master_id' => $material->id,
+                'quantity' => 2,
+                'shape' => 'Flat',
+                'thickness' => 10,
+                'width' => 100,
+                'length' => 1000,
+            ]]))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $pr = PurchaseRequisition::firstOrFail();
+        $item = $pr->items()->firstOrFail();
+
+        $this->assertSame('submitted', $pr->status);
+        $this->assertNull($item->hs_code);
+        $this->assertSame('unmapped_material', $item->hs_code_resolution_status);
+        $this->assertSame('auto', $item->hs_code_source);
+        $this->assertGreaterThan(0, $item->total_weight);
+    }
+
+    public function test_valid_draft_preserves_unresolved_hs_code_as_null(): void
+    {
+        $material = MaterialMaster::where('material_code', 'F3RV')->firstOrFail();
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.requisitions.store'), $this->payload('draft', [[
+                'material_master_id' => $material->id,
+                'quantity' => 1,
+                'shape' => 'Round',
+                'd_outer' => 50,
+                'length' => 500,
+            ]]))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $item = PurchaseRequisition::firstOrFail()->items()->firstOrFail();
+
+        $this->assertNull($item->hs_code);
+        $this->assertSame('unmapped_material', $item->hs_code_resolution_status);
+        $this->assertGreaterThan(0, (float) $item->weight_needed);
+    }
+
     public function test_manual_hs_is_rejected_for_insufficient_data_or_noncanonical_format(): void
     {
         $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
@@ -193,7 +243,7 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
                 'quantity' => 1,
                 'manual_hs_code' => '72284090',
             ]]))
-            ->assertSessionHasErrors(['items.0.shape', 'items.0.manual_hs_code']);
+            ->assertSessionHasErrors(['items.0.shape']);
         $this->assertDatabaseCount('purchase_requisitions', 0);
 
         $unmapped = MaterialMaster::where('material_code', 'F3RV')->firstOrFail();

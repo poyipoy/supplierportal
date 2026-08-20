@@ -40,7 +40,7 @@
                                 @forelse($prBelumRespons as $pr)
                                     <tr>
                                         <td class="fw-bold">{{ $pr->pr_number ?? '-' }}</td>
-                                        <td>{{ $pr->period->name }}</td>
+                                        <td>{{ $pr->period->display_label ?? $pr->period->name }}</td>
                                         <td>{{ $pr->items->count() }} Item</td>
                                         <td>{{ $pr->created_at->format('d M Y') }}</td>
                                         <td class="text-end"><a href="{{ route('supplier.quotations.create', $pr) }}"
@@ -83,7 +83,7 @@
                                     @endphp
                                     <tr>
                                         <td class="fw-bold">{{ $po->po_number }}</td>
-                                        <td>{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequisition)->period)->name)->filter()->first() ?? '-' }}
+                                        <td>{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequisition)->period)->display_label)->filter()->first() ?? '-' }}
                                         </td>
                                         <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" />
                                         </td>

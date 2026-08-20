@@ -264,7 +264,7 @@
                 </div>
 
                 <div class="info-label">Period</div>
-                <div class="info-value">{{ $prs->map(fn($pr) => $pr->period->name ?? '-')->unique()->implode(', ') }}</div>
+                <div class="info-value">{{ $prs->map(fn($pr) => $pr->period->display_label ?? $pr->period->name ?? '-')->unique()->implode(', ') }}</div>
 
                 <div class="info-label">Created By</div>
                 <div class="info-value">{{ $po->creator->name ?? '-' }}</div>
@@ -315,7 +315,7 @@
                     @endif
                     @foreach($quotation->items as $item)
                         @php
-                            $totalFx = $item->amount;
+                            $totalFx = $item->resolved_amount;
                             $totalIdr = $totalFx * ($rate ? $rate->rate_to_idr : 1);
                             $grandTotalFx += $totalFx;
                             $grandTotalIdr += $totalIdr;

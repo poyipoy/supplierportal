@@ -58,7 +58,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="mb-3"><span class="text-muted small d-block">PR No.</span><span class="fw-bold text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</span></div>
-                        <div class="mb-3"><span class="text-muted small d-block">Period</span><span class="fw-medium">{{ $quotation->purchaseRequisition->period->name ?? '-' }}</span></div>
+                        <div class="mb-3"><span class="text-muted small d-block">Period</span><span class="fw-medium">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }}</span></div>
                         <div class="mb-3"><span class="text-muted small d-block">Currency</span><span class="badge bg-dark">{{ $quotation->currency }}</span></div>
                     </div>
                     <div class="col-md-6">
@@ -132,7 +132,7 @@
                                     $weight = $item->prItem ? (float)$item->prItem->weight_needed : 0;
                                     $totalWeight = $item->prItem ? (float)$item->prItem->total_weight : $weight;
                                     $pricePerKg = (float)$item->price_per_kg;
-                                    $amount = (float)$item->amount;
+                                    $amount = $item->resolved_amount;
                                     $priceIdr = $rateValue !== null ? $pricePerKg * $rateValue : null;
                                     $amountIdr = $rateValue !== null ? $amount * $rateValue : null;
                                     $totalOriginal += $amount;

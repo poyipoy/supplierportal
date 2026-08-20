@@ -106,8 +106,9 @@
                                 @endif
                                 @foreach($quotation->items as $item)
                                     @php
-                                        $idr = $item->amount * ($rate ? $rate->rate_to_idr : 1);
-                                        $totalAmount += $item->amount;
+                                        $amount = $item->resolved_amount;
+                                        $idr = $amount * ($rate ? $rate->rate_to_idr : 1);
+                                        $totalAmount += $amount;
                                         $totalIdr += $idr;
                                     @endphp
                                     <tr>
@@ -136,7 +137,7 @@
                                         <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                                         <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
-                                        <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
+                                        <td class="text-end fw-medium">{{ number_format($amount, 2) }}</td>
                                         <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
                                     </tr>
                                 @endforeach

@@ -49,7 +49,7 @@ class PriceComparisonController extends Controller
         $eligiblePrOptions = $eligiblePrs->map(function ($pr) {
             $label = ($pr->pr_number ?? 'DRAFT')
                 . ' - '
-                . ($pr->period->name ?? '-')
+                . ($pr->period->display_label ?? $pr->period->name ?? '-')
                 . ' ('
                 . $pr->quotations->count()
                 . ' penawaran)';
@@ -63,7 +63,7 @@ class PriceComparisonController extends Controller
                 'id' => $pr->getRouteKey(),
                 'label' => $label,
                 'prNumber' => $pr->pr_number ?? 'DRAFT',
-                'period' => $pr->period->name ?? '-',
+                'period' => $pr->period->display_label ?? $pr->period->name ?? '-',
                 'quotationCount' => $pr->quotations->count(),
                 'previewMaterials' => $previewMaterials,
                 'search' => strtolower($label),
@@ -78,7 +78,7 @@ class PriceComparisonController extends Controller
                 $selectedPrOption = $eligiblePrOptions->firstWhere('id', $selectedPr->getRouteKey());
                 $selectedPrOption ??= [
                     'id' => $selectedPr->getRouteKey(),
-                    'label' => ($selectedPr->pr_number ?? 'DRAFT') . ' - ' . ($selectedPr->period->name ?? '-'),
+                    'label' => ($selectedPr->pr_number ?? 'DRAFT') . ' - ' . ($selectedPr->period->display_label ?? $selectedPr->period->name ?? '-'),
                 ];
                 $comparisonItems = $selectedPr->items->values();
                 $materialOptions = $comparisonItems;
@@ -115,7 +115,9 @@ class PriceComparisonController extends Controller
                             'quotation_item_id' => $quotationItem?->id,
                             'price_per_kg' => $pricePerKg,
                             'price_idr' => $priceIdr,
-                            'amount' => $quotationItem ? (float) $quotationItem->amount : null,
+                            'amount' => $quotationItem && $quotationItem->prItem
+                                ? QuotationItem::calculateAmount($quotationItem->prItem, $quotationItem->price_per_kg)
+                                : ($quotationItem ? (float) $quotationItem->amount : null),
                             'currency' => $quotation->currency,
                             'detail_url' => $quotationItem
                                 ? PurchasingNavigation::toRoute('purchasing.quotations.show', $quotation)
@@ -410,34 +412,39 @@ class PriceComparisonController extends Controller
 
     private function buildVsBestQuery(?Carbon $dateFrom = null, ?Carbon $dateTo = null)
     {
-        $historyStatuses = ['submitted', 'accepted', 'rejected'];
         $currentStatuses = ['submitted', 'accepted'];
-        $historyPriceIdr = '(history_items.price_per_kg * history_rate.rate_to_idr)';
+        $historyPriceIdr = '(history_items.price_per_kg * COALESCE(history_po_rate.rate_to_idr, history_quote_rate.rate_to_idr, 1))';
         $currentPriceIdr = '(current_items.price_per_kg * current_rate.rate_to_idr)';
-        $bestPriceIdr = '(best_items.price_per_kg * best_rate.rate_to_idr)';
+        $bestPriceIdr = '(best_items.price_per_kg * COALESCE(best_po_rate.rate_to_idr, best_quote_rate.rate_to_idr, 1))';
         $diffIdrPerKg = "($currentPriceIdr - $bestPriceIdr)";
         $diffPercent = "CASE WHEN $bestPriceIdr > 0 AND $currentPriceIdr IS NOT NULL THEN (($diffIdrPerKg / $bestPriceIdr) * 100) ELSE NULL END";
-        $currentTotalWeight = '(current_pr_items.weight_needed * COALESCE(current_pr_items.quantity, 1))';
+        $currentTotalWeight = '(current_pr_items.weight_needed * CASE WHEN current_pr_items.quantity IS NULL OR current_pr_items.quantity < 1 THEN 1 ELSE current_pr_items.quantity END)';
         $potentialDifference = "CASE WHEN $currentPriceIdr IS NOT NULL AND $bestPriceIdr IS NOT NULL THEN GREATEST(0, $diffIdrPerKg) * $currentTotalWeight ELSE NULL END";
 
         $bestPriceByMaterial = DB::table('quotation_items as history_items')
+            ->join('po_quotations as history_po_links', 'history_items.quotation_id', '=', 'history_po_links.quotation_id')
+            ->join('purchase_orders as history_pos', 'history_po_links.po_id', '=', 'history_pos.id')
             ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
-            ->join('exchange_rates as history_rate', 'history_quotes.exchange_rate_id', '=', 'history_rate.id')
+            ->leftJoin('exchange_rates as history_po_rate', 'history_pos.exchange_rate_id', '=', 'history_po_rate.id')
+            ->leftJoin('exchange_rates as history_quote_rate', 'history_quotes.exchange_rate_id', '=', 'history_quote_rate.id')
             ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
-            ->whereIn('history_quotes.status', $historyStatuses)
+            ->whereNull('history_pos.deleted_at')
             ->whereNull('history_quotes.deleted_at')
             ->selectRaw('history_pr_items.material_name, MIN(' . $historyPriceIdr . ') as best_price_idr')
             ->groupBy('history_pr_items.material_name');
 
         $bestItemByMaterial = DB::table('quotation_items as history_items')
+            ->join('po_quotations as history_po_links', 'history_items.quotation_id', '=', 'history_po_links.quotation_id')
+            ->join('purchase_orders as history_pos', 'history_po_links.po_id', '=', 'history_pos.id')
             ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
-            ->join('exchange_rates as history_rate', 'history_quotes.exchange_rate_id', '=', 'history_rate.id')
+            ->leftJoin('exchange_rates as history_po_rate', 'history_pos.exchange_rate_id', '=', 'history_po_rate.id')
+            ->leftJoin('exchange_rates as history_quote_rate', 'history_quotes.exchange_rate_id', '=', 'history_quote_rate.id')
             ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
             ->joinSub($bestPriceByMaterial, 'best_price', function ($join) use ($historyPriceIdr) {
                 $join->on('best_price.material_name', '=', 'history_pr_items.material_name')
                     ->whereRaw('ABS((' . $historyPriceIdr . ') - best_price.best_price_idr) < 0.0001');
             })
-            ->whereIn('history_quotes.status', $historyStatuses)
+            ->whereNull('history_pos.deleted_at')
             ->whereNull('history_quotes.deleted_at')
             ->selectRaw('best_price.material_name, MIN(history_items.id) as best_item_id')
             ->groupBy('best_price.material_name');
@@ -445,7 +452,7 @@ class PriceComparisonController extends Controller
         $query = DB::table('quotation_items as current_items')
             ->join('quotations as current_quotes', 'current_items.quotation_id', '=', 'current_quotes.id')
             ->join('pr_items as current_pr_items', 'current_items.pr_item_id', '=', 'current_pr_items.id')
-            ->join('purchase_requirements as current_pr', 'current_pr_items.pr_id', '=', 'current_pr.id')
+            ->join('purchase_requisitions as current_pr', 'current_pr_items.pr_id', '=', 'current_pr.id')
             ->leftJoin('users as current_supplier', 'current_quotes.supplier_id', '=', 'current_supplier.id')
             ->leftJoin('exchange_rates as current_rate', 'current_quotes.exchange_rate_id', '=', 'current_rate.id')
             ->leftJoinSub($bestItemByMaterial, 'best_choice', function ($join) {
@@ -454,9 +461,12 @@ class PriceComparisonController extends Controller
             ->leftJoin('quotation_items as best_items', 'best_choice.best_item_id', '=', 'best_items.id')
             ->leftJoin('quotations as best_quotes', 'best_items.quotation_id', '=', 'best_quotes.id')
             ->leftJoin('users as best_supplier', 'best_quotes.supplier_id', '=', 'best_supplier.id')
-            ->leftJoin('exchange_rates as best_rate', 'best_quotes.exchange_rate_id', '=', 'best_rate.id')
+            ->leftJoin('po_quotations as best_po_links', 'best_items.quotation_id', '=', 'best_po_links.quotation_id')
+            ->leftJoin('purchase_orders as best_pos', 'best_po_links.po_id', '=', 'best_pos.id')
+            ->leftJoin('exchange_rates as best_po_rate', 'best_pos.exchange_rate_id', '=', 'best_po_rate.id')
+            ->leftJoin('exchange_rates as best_quote_rate', 'best_quotes.exchange_rate_id', '=', 'best_quote_rate.id')
             ->leftJoin('pr_items as best_pr_items', 'best_items.pr_item_id', '=', 'best_pr_items.id')
-            ->leftJoin('purchase_requirements as best_pr', 'best_pr_items.pr_id', '=', 'best_pr.id')
+            ->leftJoin('purchase_requisitions as best_pr', 'best_pr_items.pr_id', '=', 'best_pr.id')
             ->whereIn('current_quotes.status', $currentStatuses)
             ->whereNull('current_quotes.deleted_at')
             ->select([
@@ -476,13 +486,13 @@ class PriceComparisonController extends Controller
                 'best_items.quotation_id as best_quotation_id',
                 'best_items.price_per_kg as best_price',
                 'best_quotes.currency as best_currency',
-                'best_quotes.submitted_at as best_submitted_at',
+                'best_pos.created_at as best_submitted_at',
                 'best_supplier.name as best_supplier',
                 'best_pr.id as best_pr_id',
                 'best_pr.pr_number as best_pr_number',
             ])
             ->selectRaw($currentPriceIdr . ' as current_price_idr')
-            ->selectRaw('(current_items.amount * current_rate.rate_to_idr) as current_total_idr')
+            ->selectRaw('('.$currentPriceIdr.' * '.$currentTotalWeight.') as current_total_idr')
             ->selectRaw($currentTotalWeight . ' as total_weight')
             ->selectRaw($bestPriceIdr . ' as best_price_idr')
             ->selectRaw($diffIdrPerKg . ' as diff_idr_per_kg')
@@ -701,9 +711,9 @@ class PriceComparisonController extends Controller
             ->distinct()
             ->whereNotNull('material_name')
             ->where('material_name', '<>', '')
-            ->whereHas('quotationItems.quotation', function ($q) use ($supplierId) {
-                $q->where('supplier_id', $supplierId)
-                    ->whereIn('status', ['submitted', 'accepted', 'rejected']);
+            ->whereHas('quotationItems.quotation.purchaseOrders', function ($q) use ($supplierId) {
+                $q->where('purchase_orders.supplier_id', $supplierId)
+                    ->whereNull('purchase_orders.deleted_at');
             })
             ->orderBy('material_name')
             ->get()
@@ -764,16 +774,23 @@ class PriceComparisonController extends Controller
     private function buildMonthlyHistoricalData($supplierId, string $materialName, $dateFrom, array $dimensionFilters = []): array
     {
         $items = QuotationItem::query()
-            ->select('quotation_items.*')
+            ->select([
+                'quotation_items.*',
+                'purchase_orders.id as history_po_id',
+                'purchase_orders.po_number as history_po_number',
+                'purchase_orders.created_at as history_po_created_at',
+            ])
+            ->selectRaw('COALESCE(history_po_rates.rate_to_idr, history_quote_rates.rate_to_idr) as history_rate_to_idr')
+            ->join('po_quotations', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
+            ->join('purchase_orders', 'po_quotations.po_id', '=', 'purchase_orders.id')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
-            ->where('quotations.supplier_id', $supplierId)
-            ->whereIn('quotations.status', ['submitted', 'accepted', 'rejected'])
-            ->whereHas('prItem', function ($q) use ($materialName, $dimensionFilters) {
-                $q->where('material_name', $materialName);
-                foreach ($dimensionFilters as $field => $val) {
-                    $q->where($field, $val);
-                }
-            })
+            ->leftJoin('exchange_rates as history_po_rates', 'purchase_orders.exchange_rate_id', '=', 'history_po_rates.id')
+            ->leftJoin('exchange_rates as history_quote_rates', 'quotations.exchange_rate_id', '=', 'history_quote_rates.id')
+            ->join('pr_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
+            ->where('purchase_orders.supplier_id', $supplierId)
+            ->whereNull('purchase_orders.deleted_at')
+            ->whereNull('quotations.deleted_at')
+            ->where('pr_items.material_name', $materialName)
             ->with([
                 'quotation.supplier',
                 'quotation.purchaseRequisition.period',
@@ -783,40 +800,44 @@ class PriceComparisonController extends Controller
                 },
             ]);
 
+        foreach ($dimensionFilters as $field => $val) {
+            $items->where("pr_items.{$field}", $val);
+        }
+
         if ($dateFrom) {
-            $items->where('quotations.submitted_at', '>=', $dateFrom);
+            $items->where('purchase_orders.created_at', '>=', $dateFrom);
         }
 
         $items = $items
-            ->orderByRaw('YEAR(quotations.submitted_at) ASC')
-            ->orderByRaw('MONTH(quotations.submitted_at) ASC')
-            ->orderBy('quotations.submitted_at', 'asc')
+            ->orderBy('purchase_orders.created_at', 'asc')
             ->orderBy('quotation_items.id', 'asc')
             ->get();
 
         $tableData = $items->map(function ($item) {
             $period = optional(optional($item->quotation->purchaseRequisition)->period);
-            $rate = $item->quotation->exchange_rate;
-            $priceIdr = $rate ? round((float) $item->price_per_kg * (float) $rate->rate_to_idr, 0) : null;
-            $totalIdr = $rate ? round((float) $item->amount * (float) $rate->rate_to_idr, 0) : null;
+            $rate = $item->history_rate_to_idr;
+            $priceIdr = $rate !== null ? round((float) $item->price_per_kg * (float) $rate, 0) : null;
+            $totalAmount = $item->prItem
+                ? QuotationItem::calculateAmount($item->prItem, $item->price_per_kg)
+                : (float) $item->amount;
+            $totalIdr = $rate !== null ? round($totalAmount * (float) $rate, 0) : null;
             $purchaseRequisition = $item->prItem?->purchaseRequisition;
-            $submittedAt = $item->quotation->submitted_at;
-            $periodYear = (int) ($period->year ?? 0);
-            $periodMonth = (int) ($period->month ?? 0);
-            $periodSort = $submittedAt
-                ? $submittedAt->format('Y-m-d H:i:s') . '-' . str_pad((string) $item->id, 10, '0', STR_PAD_LEFT)
-                : (
-                    $periodYear > 0 && $periodMonth > 0
-                        ? sprintf('%04d-%02d-00 00:00:00-%010d', $periodYear, $periodMonth, (int) $item->id)
-                        : sprintf('9999-99-99 99:99:99-%010d', (int) $item->id)
-                );
-            $periodLabel = $submittedAt
-                ? $submittedAt->format('M Y')
-                : ($period->name ?? 'Unknown');
+            $purchaseAt = $item->history_po_created_at
+                ? Carbon::parse($item->history_po_created_at)
+                : null;
+            $quotationSubmittedAt = $item->quotation->submitted_at;
+            $periodSort = $purchaseAt
+                ? $purchaseAt->format('Y-m-d H:i:s') . '-' . str_pad((string) $item->id, 10, '0', STR_PAD_LEFT)
+                : sprintf('9999-99-99 99:99:99-%010d', (int) $item->id);
+            $periodLabel = $purchaseAt?->format('M Y') ?? ($period->display_label ?? $period->name ?? 'Unknown');
 
             return [
                 'period' => $periodLabel,
                 'period_sort' => $periodSort,
+                'purchase_order_id' => (int) $item->history_po_id,
+                'purchase_order_number' => $item->history_po_number,
+                'purchase_order_at' => $purchaseAt?->toIso8601String(),
+                'purchase_order_at_display' => $purchaseAt?->format('d M Y'),
                 'pr_id' => $purchaseRequisition?->id,
                 'pr_number' => $purchaseRequisition?->pr_number ?? '-',
                 'pr_url' => $purchaseRequisition
@@ -829,8 +850,9 @@ class PriceComparisonController extends Controller
                 'total_idr' => $totalIdr,
                 'min_idr' => null,
                 'max_idr' => null,
-                'submitted_at' => $submittedAt?->toIso8601String(),
-                'submitted_at_display' => $submittedAt?->format('d M Y'),
+                'submitted_at' => $purchaseAt?->toIso8601String(),
+                'submitted_at_display' => $purchaseAt?->format('d M Y'),
+                'quotation_submitted_at' => $quotationSubmittedAt?->toIso8601String(),
             ];
         })->sortBy('period_sort', SORT_NATURAL)->values();
 
@@ -847,11 +869,15 @@ class PriceComparisonController extends Controller
     private function buildYearlyHistoricalData($supplierId, string $materialName, $dateFrom, array $dimensionFilters = []): array
     {
         $query = QuotationItem::query()
+            ->join('po_quotations', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
+            ->join('purchase_orders', 'po_quotations.po_id', '=', 'purchase_orders.id')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
-            ->join('exchange_rates', 'quotations.exchange_rate_id', '=', 'exchange_rates.id')
+            ->leftJoin('exchange_rates as history_po_rates', 'purchase_orders.exchange_rate_id', '=', 'history_po_rates.id')
+            ->leftJoin('exchange_rates as history_quote_rates', 'quotations.exchange_rate_id', '=', 'history_quote_rates.id')
             ->join('pr_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
-            ->where('quotations.supplier_id', $supplierId)
-            ->whereIn('quotations.status', ['submitted', 'accepted', 'rejected'])
+            ->where('purchase_orders.supplier_id', $supplierId)
+            ->whereNull('purchase_orders.deleted_at')
+            ->whereNull('quotations.deleted_at')
             ->where('pr_items.material_name', $materialName);
 
         foreach ($dimensionFilters as $field => $val) {
@@ -859,19 +885,19 @@ class PriceComparisonController extends Controller
         }
 
         if ($dateFrom) {
-            $query->where('quotations.submitted_at', '>=', $dateFrom);
+            $query->where('purchase_orders.created_at', '>=', $dateFrom);
         }
 
         $rows = $query
+            ->select([])
             ->selectRaw('
-                YEAR(quotations.submitted_at) as period_year,
-                AVG(quotation_items.price_per_kg * exchange_rates.rate_to_idr) as avg_idr,
-                MIN(quotation_items.price_per_kg * exchange_rates.rate_to_idr) as min_idr,
-                MAX(quotation_items.price_per_kg * exchange_rates.rate_to_idr) as max_idr
+                YEAR(purchase_orders.created_at) as period_year,
+                AVG(quotation_items.price_per_kg * COALESCE(history_po_rates.rate_to_idr, history_quote_rates.rate_to_idr, 1)) as avg_idr,
+                MIN(quotation_items.price_per_kg * COALESCE(history_po_rates.rate_to_idr, history_quote_rates.rate_to_idr, 1)) as min_idr,
+                MAX(quotation_items.price_per_kg * COALESCE(history_po_rates.rate_to_idr, history_quote_rates.rate_to_idr, 1)) as max_idr
             ')
-            ->whereNotNull('quotations.submitted_at')
-            ->groupByRaw('YEAR(quotations.submitted_at)')
-            ->orderByRaw('YEAR(quotations.submitted_at) ASC')
+            ->groupByRaw('YEAR(purchase_orders.created_at)')
+            ->orderByRaw('YEAR(purchase_orders.created_at) ASC')
             ->get();
 
         $tableData = $rows->map(function ($row) {

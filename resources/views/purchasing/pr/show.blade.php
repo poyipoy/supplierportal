@@ -119,6 +119,13 @@
                 Export Excel
             </x-ui.button>
             <x-status-badge type="pr" :status="$pr->status" size="lg" />
+            @if($pr->status === 'bidding')
+                <span
+                    class="tw-inline-flex tw-items-center tw-rounded-ui-full tw-bg-surface-container tw-px-3 tw-py-2 tw-text-ui-sm tw-font-semibold ui-tabular-nums"
+                    title="{{ $submittedQuotationCount }} supplier quotations submitted"
+                    aria-label="{{ $submittedQuotationCount }} supplier quotations submitted"
+                >{{ $submittedQuotationCount }}</span>
+            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -128,7 +135,7 @@
                 <dl class="pr-detail-list tw-m-0">
                     <div>
                         <dt>Period</dt>
-                        <dd class="tw-font-semibold">{{ $pr->period->name }} ({{ str_pad($pr->period->month, 2, '0', STR_PAD_LEFT) }}/{{ $pr->period->year }})</dd>
+                        <dd class="tw-font-semibold">{{ $pr->period->display_label }}</dd>
                     </div>
                     <div>
                         <dt>Date created</dt>
@@ -137,6 +144,10 @@
                     <div>
                         <dt>Created by</dt>
                         <dd class="tw-font-medium">{{ $pr->creator->name ?? '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt>Total requested weight</dt>
+                        <dd class="ui-tabular-nums tw-font-semibold tw-text-primary">{{ number_format((float) $totalKg, 4, '.', ',') }} kg</dd>
                     </div>
                     <div>
                         <dt>Invited suppliers</dt>

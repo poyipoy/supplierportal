@@ -143,7 +143,7 @@
                             @forelse($prTerbaru as $pr)
                             <tr>
                                 <td class="fw-bold">{{ $pr->pr_number ?? 'DRAFT' }}</td>
-                                <td>{{ $pr->period->name }}</td>
+                                <td>{{ $pr->period->display_label ?? $pr->period->name }}</td>
                                 <td><x-status-badge type="pr" :status="$pr->status" /></td>
                                 <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
                             </tr>

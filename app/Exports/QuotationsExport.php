@@ -97,13 +97,13 @@ class QuotationsExport implements FromQuery, WithColumnWidths, WithCustomChunkSi
             ?: $quotation?->supplier?->name;
         $rate = (float) ($quotation?->exchange_rate?->rate_to_idr ?? 0);
         $prItem = $item->prItem;
-        $amount = (float) $item->amount;
+        $amount = $item->resolved_amount;
         $requestedDimensions = $prItem?->dimension_label;
         $offeredDimensions = $item->available_dimension_label;
 
         return [
             SpreadsheetCellSanitizer::text($quotation?->purchaseRequisition?->pr_number),
-            SpreadsheetCellSanitizer::text($quotation?->purchaseRequisition?->period?->name),
+            SpreadsheetCellSanitizer::text($quotation?->purchaseRequisition?->period?->display_label ?? $quotation?->purchaseRequisition?->period?->name),
             SpreadsheetCellSanitizer::text($supplierName),
             SpreadsheetCellSanitizer::text(strtoupper((string) $quotation?->currency)),
             SpreadsheetCellSanitizer::text($prItem?->material_name),

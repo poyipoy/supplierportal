@@ -67,7 +67,7 @@
                 <option value="">All periods</option>
                 @foreach($periods as $period)
                     <option value="{{ $period->id }}">
-                        {{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})
+                        {{ $period->display_label }}
                     </option>
                 @endforeach
             </x-ui.select>
@@ -98,6 +98,7 @@
                     <th>Created By</th>
                     <th>Suppliers</th>
                     <th>Items</th>
+                    <th>Total KG</th>
                     <th>Status</th>
                     <th>Date Created</th>
                     <th>Action</th>
@@ -129,6 +130,7 @@
                 { data: 'creator_name', name: 'creator.name' },
                 { data: 'supplier_count', name: 'invited_suppliers_count', searchable: false, className: 'text-center' },
                 { data: 'item_count', name: 'item_count', searchable: false },
+                { data: 'total_kg', name: 'total_kg', searchable: false, className: 'text-end ui-tabular-nums' },
                 { data: 'status_badge', name: 'status', searchable: false },
                 { data: 'created_date', name: 'created_at' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }

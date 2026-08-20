@@ -46,8 +46,9 @@ class QuotationController extends Controller
             ->orWhereHas('purchaseRequisitions.quotations', function ($query) use ($supplierId) {
                 $query->where('supplier_id', $supplierId);
             })
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
+            ->orderByDesc('year')
+            ->orderByRaw('month IS NULL DESC')
+            ->orderByDesc('month')
             ->get();
 
         // Count PRs for each period
@@ -383,11 +384,15 @@ class QuotationController extends Controller
             $quotation->items()->delete();
 
             // Save the validated, exact PR item set without trusting request indexes or IDs.
-            $prItemsById = $pr->items->keyBy('id');
+            // Re-query each item so a long-lived/cached PR relation can never
+            // produce an amount from stale weight or quantity values.
             foreach ($validated['items'] as $index => $itemData) {
                 /** @var PrItem $prItem */
-                $prItem = $prItemsById->get((int) $itemData['pr_item_id']);
-                $amount = $itemData['price_per_kg'] * $prItem->total_weight;
+                $prItem = PrItem::query()
+                    ->whereKey((int) $itemData['pr_item_id'])
+                    ->where('pr_id', $pr->id)
+                    ->firstOrFail();
+                $amount = QuotationItem::calculateAmount($prItem, $itemData['price_per_kg']);
 
                 $quotationItem = $quotation->items()->create([
                     'pr_item_id' => $prItem->id,

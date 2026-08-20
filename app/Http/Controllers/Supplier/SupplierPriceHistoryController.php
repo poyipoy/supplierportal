@@ -153,37 +153,44 @@ class SupplierPriceHistoryController extends Controller
     private function getOverviewStats($supplierId): array
     {
         $baseQuery = DB::table('quotation_items')
+            ->join('po_quotations', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
+            ->join('purchase_orders', 'po_quotations.po_id', '=', 'purchase_orders.id')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
             ->join('pr_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
-            ->where('quotations.supplier_id', $supplierId)
-            ->whereIn('quotations.status', ['submitted', 'accepted', 'rejected'])
+            ->where('purchase_orders.supplier_id', $supplierId)
+            ->whereNull('purchase_orders.deleted_at')
             ->whereNull('quotations.deleted_at');
 
         return [
             'total_materials' => (clone $baseQuery)->distinct('pr_items.material_name')->count('pr_items.material_name'),
-            'total_quotations' => (clone $baseQuery)->count(),
+            'total_quotations' => (clone $baseQuery)
+                ->selectRaw('COUNT(DISTINCT CONCAT(purchase_orders.id, ":", quotation_items.id)) as aggregate')
+                ->value('aggregate'),
         ];
     }
 
     private function getOverviewData(Request $request, $supplierId)
     {
-        $priceIdr = '(quotation_items.price_per_kg * COALESCE(exchange_rates.rate_to_idr, 1))';
+        $priceIdr = '(quotation_items.price_per_kg * COALESCE(po_rates.rate_to_idr, quotation_rates.rate_to_idr, 1))';
 
         $rows = DB::table('quotation_items')
+            ->join('po_quotations', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
+            ->join('purchase_orders', 'po_quotations.po_id', '=', 'purchase_orders.id')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
-            ->leftJoin('exchange_rates', 'quotations.exchange_rate_id', '=', 'exchange_rates.id')
+            ->leftJoin('exchange_rates as po_rates', 'purchase_orders.exchange_rate_id', '=', 'po_rates.id')
+            ->leftJoin('exchange_rates as quotation_rates', 'quotations.exchange_rate_id', '=', 'quotation_rates.id')
             ->join('pr_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
-            ->where('quotations.supplier_id', $supplierId)
-            ->whereIn('quotations.status', ['submitted', 'accepted', 'rejected'])
+            ->where('purchase_orders.supplier_id', $supplierId)
+            ->whereNull('purchase_orders.deleted_at')
             ->whereNull('quotations.deleted_at')
             ->select([
                 'pr_items.material_name',
-                DB::raw('COUNT(*) as total_quotations'),
+                DB::raw('COUNT(DISTINCT CONCAT(purchase_orders.id, ":", quotation_items.id)) as total_quotations'),
                 DB::raw("MIN($priceIdr) as min_price_idr"),
                 DB::raw("MAX($priceIdr) as max_price_idr"),
-                DB::raw("CAST(SUBSTRING_INDEX(GROUP_CONCAT($priceIdr ORDER BY quotations.submitted_at DESC SEPARATOR '|'), '|', 1) AS DECIMAL(20,4)) as latest_price_idr"),
-                DB::raw("SUBSTRING_INDEX(GROUP_CONCAT(quotations.status ORDER BY quotations.submitted_at DESC SEPARATOR '|'), '|', 1) as latest_status"),
-                DB::raw('MAX(quotations.submitted_at) as last_submitted_at'),
+                DB::raw("CAST(SUBSTRING_INDEX(GROUP_CONCAT($priceIdr ORDER BY purchase_orders.created_at DESC SEPARATOR '|'), '|', 1) AS DECIMAL(20,4)) as latest_price_idr"),
+                DB::raw("SUBSTRING_INDEX(GROUP_CONCAT(quotations.status ORDER BY purchase_orders.created_at DESC SEPARATOR '|'), '|', 1) as latest_status"),
+                DB::raw('MAX(purchase_orders.created_at) as last_submitted_at'),
             ])
             ->groupBy('pr_items.material_name')
             ->get();
@@ -222,9 +229,9 @@ class SupplierPriceHistoryController extends Controller
             ->distinct()
             ->whereNotNull('material_name')
             ->where('material_name', '<>', '')
-            ->whereHas('quotationItems.quotation', function ($query) use ($supplierId) {
-                $query->where('supplier_id', $supplierId)
-                    ->whereIn('status', ['submitted', 'accepted', 'rejected']);
+            ->whereHas('quotationItems.quotation.purchaseOrders', function ($query) use ($supplierId) {
+                $query->where('purchase_orders.supplier_id', $supplierId)
+                    ->whereNull('purchase_orders.deleted_at');
             })
             ->orderBy('material_name')
             ->get()

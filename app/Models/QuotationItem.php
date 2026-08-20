@@ -10,6 +10,40 @@ class QuotationItem extends Model
 {
     public const AVAILABILITY_TOLERANCE = 0.0001;
 
+    /**
+     * Calculate the authoritative quotation amount from the requested PR
+     * quantity and unit weight. Supplier-provided amount fields are never
+     * accepted as input for this calculation.
+     */
+    public static function calculateAmount(PrItem $prItem, mixed $pricePerKg): float
+    {
+        return round(
+            (float) $pricePerKg * $prItem->total_weight,
+            4,
+            PHP_ROUND_HALF_UP,
+        );
+    }
+
+    /**
+     * Keep legacy snapshots intact while preventing eligible zero rows from
+     * rendering as zero when the requested PR weight is available.
+     */
+    public function getResolvedAmountAttribute(): float
+    {
+        $storedAmount = (float) $this->amount;
+
+        if ($storedAmount > 0) {
+            return $storedAmount;
+        }
+
+        $prItem = $this->prItem;
+        if (! $prItem || (float) $this->price_per_kg <= 0 || $prItem->total_weight <= 0) {
+            return $storedAmount;
+        }
+
+        return self::calculateAmount($prItem, $this->price_per_kg);
+    }
+
     protected $fillable = [
         'quotation_id',
         'pr_item_id',

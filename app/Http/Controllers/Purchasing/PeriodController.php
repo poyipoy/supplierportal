@@ -15,11 +15,14 @@ class PeriodController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Period::with('creator')->orderByDesc('year')->orderByDesc('month');
+            $query = Period::with('creator')
+                ->orderByDesc('year')
+                ->orderByRaw('month IS NULL DESC')
+                ->orderByDesc('month');
 
             return DataTables::eloquent($query)
                 ->addColumn('name_display', fn($p) => $p->name)
-                ->addColumn('month_display', fn($p) => date('F', mktime(0, 0, 0, $p->month, 1)) . ' (' . $p->month . ')')
+                ->addColumn('month_display', fn($p) => $p->is_annual ? 'Annual' : date('F', mktime(0, 0, 0, $p->month, 1)) . ' (' . $p->month . ')')
                 ->addColumn('year_display', fn($p) => $p->year)
                 ->addColumn('status_badge', fn($p) => $p->status === 'open'
                     ? '<span class="badge bg-success text-uppercase">Open</span>'
@@ -29,7 +32,7 @@ class PeriodController extends Controller
                     return '<button class="btn btn-sm btn-outline-primary btn-edit" 
                         data-id="' . $p->id . '" 
                         data-name="' . e($p->name) . '" 
-                        data-month="' . $p->month . '" 
+                        data-month="' . ($p->month ?? '') . '"
                         data-year="' . $p->year . '" 
                         data-status="' . $p->status . '"><i class="bi bi-pencil"></i> Edit</button>';
                 })
@@ -46,24 +49,25 @@ class PeriodController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'month' => 'required|integer|min:1|max:12',
+            'name' => 'nullable|string|max:255',
+            'month' => 'nullable|integer|min:1|max:12',
             'year' => 'required|integer|min:2000',
             'status' => 'required|in:open,closed',
         ]);
 
-        // Check if period already exists
-        $exists = Period::where('month', $request->month)
-            ->where('year', $request->year)
+        $exists = Period::where('year', $request->year)
+            ->when($request->filled('month'), fn ($query) => $query->where('month', $request->month), fn ($query) => $query->whereNull('month'))
             ->exists();
 
         if ($exists) {
-            return back()->with('error', 'A period for the selected month and year already exists.');
+            return back()->with('error', $request->filled('month')
+                ? 'A period for the selected month and year already exists.'
+                : 'An annual period for the selected year already exists.');
         }
 
         Period::create([
-            'name' => $request->name,
-            'month' => $request->month,
+            'name' => $request->filled('name') ? trim($request->name) : 'Period '.$request->year,
+            'month' => $request->filled('month') ? (int) $request->month : null,
             'year' => $request->year,
             'status' => $request->status,
             'created_by' => auth()->id(),
@@ -80,27 +84,29 @@ class PeriodController extends Controller
         $period = Period::findOrFail($id);
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'month' => 'required|integer|min:1|max:12',
+            'name' => 'nullable|string|max:255',
+            'month' => 'nullable|integer|min:1|max:12',
             'year' => 'required|integer|min:2000',
             'status' => 'required|in:open,closed',
         ]);
 
         // Check uniqueness if changed
         if ($request->month != $period->month || $request->year != $period->year) {
-            $exists = Period::where('month', $request->month)
-                ->where('year', $request->year)
+            $exists = Period::where('year', $request->year)
+                ->when($request->filled('month'), fn ($query) => $query->where('month', $request->month), fn ($query) => $query->whereNull('month'))
                 ->where('id', '!=', $period->id)
                 ->exists();
 
             if ($exists) {
-                return back()->with('error', 'A period for the selected month and year already exists.');
+                return back()->with('error', $request->filled('month')
+                    ? 'A period for the selected month and year already exists.'
+                    : 'An annual period for the selected year already exists.');
             }
         }
 
         $period->update([
-            'name' => $request->name,
-            'month' => $request->month,
+            'name' => $request->filled('name') ? trim($request->name) : ($period->name ?: 'Period '.$request->year),
+            'month' => $request->filled('month') ? (int) $request->month : null,
             'year' => $request->year,
             'status' => $request->status,
         ]);

@@ -167,7 +167,7 @@
                         @else
                             <tr>
                                 <th>PR No.</th>
-                                <th>Date Submitted</th>
+                                <th>PO Date</th>
                                 <th>Status</th>
                                 <th>Price/Kg</th>
                                 <th>Currency</th>
@@ -196,8 +196,8 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        @if(!empty($row['submitted_at_display']))
-                                            {{ $row['submitted_at_display'] }}
+                                        @if(!empty($row['purchase_order_at_display']))
+                                            {{ $row['purchase_order_at_display'] }}
                                         @else
                                             <span class="badge bg-secondary">Draft</span>
                                         @endif
@@ -643,7 +643,7 @@ function renderTable(payload) {
     head.innerHTML = `
         <tr>
             <th>PR No.</th>
-            <th>Date Submitted</th>
+            <th>PO Date</th>
             <th>Status</th>
             <th>Price/Kg</th>
             <th>Currency</th>
@@ -656,7 +656,7 @@ function renderTable(payload) {
             <td class="text-center fw-medium">
                 ${row.pr_url ? `<a href="${row.pr_url}" class="text-decoration-none hover-underline text-primary" target="_blank">${escapeHtml(row.pr_number || '-')}</a>` : escapeHtml(row.pr_number || '-')}
             </td>
-            <td class="text-center">${row.submitted_at_display ? escapeHtml(row.submitted_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
+            <td class="text-center">${row.purchase_order_at_display ? escapeHtml(row.purchase_order_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
             <td class="text-center">${row.status_badge || '-'}</td>
             <td class="text-end">${formatNumber(row.price_per_kg)}</td>
             <td class="text-center"><span class="badge bg-dark">${escapeHtml(row.currency)}</span></td>

@@ -27,7 +27,7 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-3 text-muted small">Period</div>
-            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequisition->period->name }}</div>
+            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name }}</div>
         </div>
         <div class="row mb-3">
             <div class="col-md-3 text-muted small">Currency</div>
@@ -63,7 +63,7 @@
                             'weight_unit' => (float)$i->prItem->weight_needed,
                             'weight' => (float)$i->prItem->total_weight,
                             'price' => (float)$i->price_per_kg,
-                            'amount' => (float)$i->amount,
+                            'amount' => $i->resolved_amount,
                             'rate' => (float)($oq->exchange_rate?->rate_to_idr ?? 0),
                         ];
                     }
@@ -73,7 +73,7 @@
                     <div class="flex-grow-1">
                         <div class="fw-medium">{{ $oq->purchaseRequisition->pr_number ?? '-' }}</div>
                         <div class="text-muted small">
-                            {{ $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ $oq->items->count() }} item
+                            {{ $oq->purchaseRequisition->period->display_label ?? $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ $oq->items->count() }} item
                             @if($oq->exchange_rate)
                                 &bull; Exchange rate: Rp {{ number_format($oq->exchange_rate->rate_to_idr, 0, ',', '.') }}
                             @endif
@@ -115,8 +115,9 @@
                     @php $totalAmount = 0; $totalIdr = 0; $no = 1; @endphp
                     @foreach($quotation->items as $item)
                         @php
-                            $idr = $item->amount * ($rate ? $rate->rate_to_idr : 1);
-                            $totalAmount += $item->amount;
+                            $amount = $item->resolved_amount;
+                            $idr = $amount * ($rate ? $rate->rate_to_idr : 1);
+                            $totalAmount += $amount;
                             $totalIdr += $idr;
                         @endphp
                         <tr>
@@ -127,7 +128,7 @@
                             <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                             <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                             <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
-                            <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
+                            <td class="text-end fw-medium">{{ number_format($amount, 2) }}</td>
                             <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
@@ -177,7 +178,7 @@
             'weight_unit' => (float)$i->prItem->weight_needed,
             'weight' => (float)$i->prItem->total_weight,
             'price' => (float)$i->price_per_kg,
-            'amount' => (float)$i->amount,
+            'amount' => $i->resolved_amount,
             'rate' => (float)($rate?->rate_to_idr ?? 0),
         ];
     }

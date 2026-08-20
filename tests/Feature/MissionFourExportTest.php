@@ -100,7 +100,8 @@ class MissionFourExportTest extends TestCase
 
         $this->assertCount(2, $listRows);
         $this->assertSame("'=Formula Material", $listRows->first()[2]);
-        $this->assertSame("'+Formula Remark", $listRows->first()[7]);
+        $this->assertSame(400.0, $listRows->first()[7]);
+        $this->assertSame("'+Formula Remark", $listRows->first()[8]);
         $this->assertIsInt($listRows->first()[4]);
         $this->assertIsFloat($listRows->first()[5]);
 

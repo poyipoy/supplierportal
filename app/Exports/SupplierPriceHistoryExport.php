@@ -69,7 +69,7 @@ class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, Wi
 
         return [
             'No. PR',
-            'Date Submitted',
+            'PO Date',
             'Status',
             'Price/Kg',
             'Currency',

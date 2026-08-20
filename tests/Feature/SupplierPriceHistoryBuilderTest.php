@@ -6,6 +6,7 @@ use App\Exports\SupplierPriceHistoryExport;
 use App\Models\ExchangeRate;
 use App\Models\Period;
 use App\Models\PurchaseRequisition;
+use App\Models\PurchaseOrder;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Support\SupplierPriceHistoryBuilder;
@@ -107,13 +108,70 @@ class SupplierPriceHistoryBuilderTest extends TestCase
         $this->assertSame($lateQuotation->currency, $exportRows->last()[4]);
         $this->assertSame([
             'No. PR',
-            'Date Submitted',
+            'PO Date',
             'Status',
             'Price/Kg',
             'Currency',
             'IDR Price',
             '% Change',
         ], $export->headings());
+    }
+
+    public function test_history_requires_a_po_and_buckets_on_po_created_at(): void
+    {
+        [$quotation, $item] = $this->createQuotedItem($this->supplier, 11, '2025-08-15 09:00:00', 2.5, 1000);
+        $purchaseOrder = $quotation->purchaseOrders()->firstOrFail();
+        $purchaseOrder->forceFill([
+            'created_at' => '2026-12-10 14:30:00',
+            'updated_at' => '2026-12-10 14:30:00',
+        ])->saveQuietly();
+
+        $builder = app(SupplierPriceHistoryBuilder::class);
+        [, $rows] = $builder->build(
+            $this->supplier->id,
+            'Cold Rolled Coil',
+            'monthly',
+            null,
+            ['thickness' => 2.5, 'width' => 1000],
+        );
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('Dec 2026', $rows->first()['period']);
+        $this->assertSame('10 Dec 2026', $rows->first()['purchase_order_at_display']);
+        $this->assertSame($purchaseOrder->id, $rows->first()['purchase_order_id']);
+        $this->assertSame($item->id, $quotation->items()->firstOrFail()->pr_item_id);
+
+        $quotation->purchaseOrders()->detach();
+
+        [, $withoutPo] = $builder->build(
+            $this->supplier->id,
+            'Cold Rolled Coil',
+            'monthly',
+            null,
+            ['thickness' => 2.5, 'width' => 1000],
+        );
+
+        $this->assertCount(0, $withoutPo);
+    }
+
+    public function test_vs_best_price_uses_po_backed_history_without_sql_alias_errors(): void
+    {
+        $this->createQuotedItem($this->supplier, 10, '2025-08-15 09:00:00', 2.5, 1000);
+        $this->createQuotedItem($this->supplier, 12, '2026-02-15 09:00:00', 2.5, 1000);
+
+        $response = $this->actingAs($this->purchasing)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json'])
+            ->getJson(route('purchasing.comparison.vs-best.data', [
+                'date_from' => '2025-01',
+                'date_to' => '2026-12',
+                'draw' => 1,
+                'start' => 0,
+                'length' => 10,
+            ]))
+            ->assertOk();
+
+        $this->assertGreaterThan(0, $response->json('recordsTotal'));
+        $this->assertSame(160000.0, (float) $response->json('data.0.best_price_idr'));
     }
 
     private function createQuotedItem(
@@ -153,6 +211,20 @@ class SupplierPriceHistoryBuilderTest extends TestCase
             'price_per_kg' => $price,
             'amount' => $price * 100,
         ]);
+
+        $purchaseOrder = PurchaseOrder::create([
+            'supplier_id' => $supplier->id,
+            'currency' => 'USD',
+            'exchange_rate_id' => $this->rate->id,
+            'po_number' => 'PO/PH/'.str_pad((string) $this->sequence, 3, '0', STR_PAD_LEFT),
+            'status' => 'completed',
+            'created_by' => $this->purchasing->id,
+        ]);
+        $purchaseOrder->forceFill([
+            'created_at' => $submittedAt,
+            'updated_at' => $submittedAt,
+        ])->saveQuietly();
+        $purchaseOrder->quotations()->attach($quotation->id);
 
         return [$quotation, $item];
     }

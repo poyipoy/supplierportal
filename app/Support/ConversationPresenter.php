@@ -297,7 +297,7 @@ class ConversationPresenter
 
     private static function quotationTotal(Quotation $quotation): string
     {
-        $amount = $quotation->items->sum(fn ($item) => (float) $item->amount);
+        $amount = $quotation->items->sum(fn ($item) => $item->resolved_amount);
 
         return number_format($amount, 2, ',', '.') . ' ' . $quotation->currency;
     }

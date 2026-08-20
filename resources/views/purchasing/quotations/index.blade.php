@@ -233,7 +233,7 @@
                                 </td>
                                 <td><span class="fw-bold text-primary">{{ $q->purchaseRequisition->pr_number ?? '-' }}</span>
                                 </td>
-                                <td>{{ $q->purchaseRequisition->period->name ?? '-' }}</td>
+                                <td>{{ $q->purchaseRequisition->period->display_label ?? $q->purchaseRequisition->period->name ?? '-' }}</td>
                                 <td class="text-center"><span class="badge bg-dark">{{ $q->currency }}</span></td>
                                 <td class="text-center">{{ $q->items->count() }}</td>
                                 <td class="text-center">

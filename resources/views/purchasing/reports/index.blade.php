@@ -20,7 +20,7 @@
                 <x-ui.select name="period_id" label="Period">
                     <option value="">All periods</option>
                     @foreach($periods as $period)
-                        <option value="{{ $period->id }}">{{ $period->name }}</option>
+                        <option value="{{ $period->id }}">{{ $period->display_label }}</option>
                     @endforeach
                 </x-ui.select>
 

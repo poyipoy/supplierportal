@@ -279,8 +279,8 @@
 
     .quotation-additional-grid {
         display: grid;
-        gap: .75rem 1rem;
-        grid-template-columns: minmax(0, min(100%, 340px));
+        gap: .6rem .85rem;
+        grid-template-columns: minmax(0, min(100%, 280px));
     }
 
     .quotation-additional-grid > * {
@@ -289,8 +289,8 @@
 
     @media (min-width: 768px) {
         .quotation-additional-grid {
-            grid-template-columns: repeat(2, minmax(0, 340px));
-            max-width: 696px;
+            grid-template-columns: repeat(2, minmax(0, 280px));
+            max-width: 580px;
         }
     }
 
@@ -374,7 +374,7 @@
 <x-ui.card title="Purchase Requisition Details" description="Reference information supplied by Purchasing; quotation inputs remain supplier-owned.">
         <div class="row">
             <div class="col-md-2 text-muted small">Period</div>
-            <div class="col-md-10 fw-medium">{{ $pr->period->name }} ({{ str_pad($pr->period->month, 2, '0', STR_PAD_LEFT) }}/{{ $pr->period->year }})</div>
+            <div class="col-md-10 fw-medium">{{ $pr->period->display_label }}</div>
         </div>
         <div class="row mt-2">
             <div class="col-md-2 text-muted small">Notes PR</div>

@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="tw-grid tw-gap-6">
-    <x-ui.page-header title="Quotation Price History" description="Monitor only the materials and quotations submitted by your supplier account." eyebrow="Supplier Portal" />
+    <x-ui.page-header title="Purchase Price History" description="Monitor only material prices attached to your supplier purchase orders." eyebrow="Supplier Portal" />
     <x-supplier.price-history-tabs active="overview" />
 
 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
@@ -12,14 +12,14 @@
     <x-ui.metric-card label="Quotation Items" :value="number_format($stats['total_quotations'] ?? 0, 0, ',', '.')" icon="bi-file-earmark-check" tone="success" />
 </div>
 
-<x-ui.data-table title="Materials and Latest Price" description="Server-side results include your latest converted price, range, submission date, and status.">
+<x-ui.data-table title="Materials and Latest Price" description="Server-side results include your latest converted price, range, latest PO date, and quotation status.">
             <table class="table table-hover align-middle mb-0 w-100 tw-text-ui-sm" id="overviewTable">
                 <thead class="table-light">
                     <tr>
                         <th>Material</th>
                         <th>Total Quotations</th>
                         <th>Price Terakhir (IDR) & Range Price</th>
-                        <th>Submit Date Terakhir</th>
+                        <th>Last PO Date</th>
                         <th>Latest Status</th>
                         <th class="text-center tw-w-[120px]">Action</th>
                     </tr>

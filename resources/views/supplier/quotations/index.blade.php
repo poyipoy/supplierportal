@@ -22,7 +22,7 @@
                 <tbody>
                     @forelse($periods as $period)
                         <tr>
-                            <td class="fw-medium ps-3">{{ $period->name }} ({{ str_pad($period->month, 2, '0', STR_PAD_LEFT) }}/{{ $period->year }})</td>
+                            <td class="fw-medium ps-3">{{ $period->display_label }}</td>
                             <td class="text-center">
                                 <span class="badge {{ $period->status === 'open' ? 'bg-success' : 'bg-secondary' }}">
                                     {{ strtoupper($period->status) }}

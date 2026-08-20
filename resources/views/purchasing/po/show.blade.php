@@ -72,7 +72,7 @@
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Period</div>
                     <div class="col-md-8 fw-medium">
-                        @php $periods = $prs->map(fn($pr) => $pr->period->name ?? '-')->unique(); @endphp
+                        @php $periods = $prs->map(fn($pr) => $pr->period?->display_label ?? '-')->unique(); @endphp
                         {{ $periods->implode(', ') }}
                     </div>
                 </div>
@@ -140,7 +140,7 @@
                                             <i class="bi bi-folder2 me-1"></i>
                                             {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
-                                                ({{ $quotation->purchaseRequisition->period->name ?? '-' }})
+                                                ({{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }})
                                                 @if($rate)
                                                     &bull; Exchange rate: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
                                                 @endif
@@ -150,8 +150,9 @@
                                 @endif
                                 @foreach($quotation->items as $item)
                                     @php
-                                        $idr = $item->amount * ($rate ? $rate->rate_to_idr : 1);
-                                        $grandTotalAmount += $item->amount;
+                                        $amount = $item->resolved_amount;
+                                        $idr = $amount * ($rate ? $rate->rate_to_idr : 1);
+                                        $grandTotalAmount += $amount;
                                         $grandTotalIdr += $idr;
                                     @endphp
                                     <tr>
@@ -169,7 +170,7 @@
                                         <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                                         <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
                                         <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
-                                        <td class="text-end fw-medium">{{ number_format($item->amount, 2) }}</td>
+                                        <td class="text-end fw-medium">{{ number_format($amount, 2) }}</td>
                                         <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
                                         <td class="text-nowrap">
                                             @if($quotation->purchaseRequisition)
