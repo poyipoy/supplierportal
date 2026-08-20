@@ -56,3 +56,29 @@ Last updated: `2026-08-20 01:52:16 +07:00`
 ## Resume instruction
 
 All repository-verifiable work packages are complete. Review `UI-REDESIGN-OVERNIGHT-RESULT.md`; the next required activity is the browser-enabled authenticated visual/interaction matrix, not a package restart.
+
+## Procurement Revision Mission — 2026-08-20
+
+This section records the follow-on procurement revision executed from the repository state above. The prior UI package ledger remains unchanged.
+
+| Package | Status | Evidence |
+|---|---|---|
+| REV-01 HS nullable submission | PASS | `PurchaseRequisitionMaterialAutomationTest` unresolved-HS coverage |
+| REV-02 separate dynamic dimension fields | PASS | direct `dimension-input` contract, import regression updated |
+| REV-03 server-authoritative quotation amount | PASS | fresh PR-item lookup, shared formula helper, zero-repair command, display fallback |
+| REV-04 PR Total KG | PASS | AJAX list, detail summary, list/detail exports |
+| REV-05 annual period + PO-backed history | PASS | nullable-month migration, annual selectors, PO joins/date coverage |
+| REV-06 bidding supplier count | PASS | distinct submitted supplier count with draft/non-bidding coverage |
+| REV-07 regression + final verification | PASS | 223 tests / 2309 assertions, build, view cache, diff check |
+
+Recovery facts for this mission:
+
+- Starting commit: `140b3b8` (`UI updates`)
+- Current branch at recovery: `master` (no branch switch performed)
+- Local checkpoints: `bded026` and `d69e4bf`
+- Browser visual QA: `MANUAL_VISUAL_QA_REQUIRED`; no browser runtime or screenshot evidence was available
+- Database migration: `2026_08_20_000001_make_period_month_nullable_for_annual_periods` is `Ran` locally
+- MCP: Material Design 3 spacing, contrast, and state-layer references plus Coolors tonal/contrast/palette checks were actually used
+- Guides: `design`, `ui-styling`, and `ui-ux-pro-max` were read; the ui-ux-pro-max helper script was unavailable, so its embedded guidance was applied directly
+
+See `PROCUREMENT-REVISION-RESULT.md` for the complete evidence and guardrail audit.
