@@ -26,7 +26,7 @@
                     
                     @if($role === 'admin')
                         <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                            Dashboard Admin
+                            Admin Dashboard
                         </x-nav-link>
                         <x-nav-link href="#">User Management</x-nav-link>
                     @elseif($role === 'purchasing')
@@ -101,7 +101,7 @@
             
             @if($role === 'admin')
                 <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                    Dashboard Admin
+                    Admin Dashboard
                 </x-responsive-nav-link>
             @elseif($role === 'purchasing')
                 <x-responsive-nav-link :href="route('purchasing.dashboard')" :active="request()->routeIs('purchasing.dashboard')">

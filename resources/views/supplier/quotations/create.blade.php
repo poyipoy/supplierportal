@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Quotation Price Form - ADASI Portal')
-@section('page-title', 'Form Quotation Price')
+@section('page-title', 'Create Quotation')
 
 @push('styles')
 <style>
@@ -13,48 +13,13 @@
         min-width: 0;
     }
 
-    .quotation-entry-card {
-        overflow: hidden;
-    }
-
-    .quotation-entry-toolbar {
-        gap: 1rem;
-    }
-
-    .quotation-toolbar-heading {
-        min-width: 230px;
-    }
-
-    .quotation-toolbar-actions {
-        align-items: center;
-        display: flex;
-        flex-wrap: wrap;
-        gap: .5rem;
-        justify-content: flex-end;
-    }
-
-    .quotation-currency-control {
-        align-items: center;
-        display: flex;
-        gap: .5rem;
-    }
-
-    .quotation-currency-field {
-        width: 110px;
-    }
-
     .quotation-table-scroll {
-        --quotation-number-width: 52px;
-        --quotation-material-width: 280px;
         display: block;
         max-width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
         overscroll-behavior-inline: contain;
-        padding-bottom: .25rem;
         position: relative;
-        scrollbar-color: var(--md-on-surface-variant) var(--md-surface-container);
-        scrollbar-gutter: stable;
         scrollbar-width: thin;
         width: 100%;
         -webkit-overflow-scrolling: touch;
@@ -65,42 +30,10 @@
         outline-offset: -2px;
     }
 
-    .quotation-table-scroll::-webkit-scrollbar {
-        height: 10px;
-    }
-
-    .quotation-table-scroll::-webkit-scrollbar-track {
-        background: var(--md-surface-container);
-    }
-
-    .quotation-table-scroll::-webkit-scrollbar-thumb {
-        background: var(--md-on-surface-variant);
-        border: 2px solid var(--md-surface-container);
-        border-radius: var(--md-shape-full);
-    }
-
-    .quotation-table-scroll::-webkit-scrollbar-thumb:hover {
-        background: var(--md-on-surface);
-    }
-
-    .quotation-scroll-hint {
-        align-items: center;
-        background: var(--md-surface-container-low);
-        border-bottom: 1px solid var(--md-outline-variant);
-        color: var(--md-on-surface-variant);
-        display: flex;
-        font-size: .72rem;
-        gap: .4rem;
-        min-height: 32px;
-        padding: .35rem .75rem;
-    }
-
     .quotation-items-table {
-        background-color: var(--md-surface);
-        border: 0 !important;
         border-collapse: separate !important;
         border-spacing: 0;
-        font-size: .82rem;
+        font-size: var(--ui-font-size-sm);
         max-width: none !important;
         min-width: 1957px !important;
         table-layout: fixed !important;
@@ -109,34 +42,40 @@
 
     .quotation-items-table th,
     .quotation-items-table td {
-        background-color: var(--md-surface);
-        padding: .7rem .6rem;
+        padding: 0.65rem 0.55rem;
     }
 
-    .quotation-col-number { width: 52px; }
+    .quotation-col-number { width: 50px; }
     .quotation-col-material { width: 280px; }
-    .quotation-col-availability { width: 320px; }
+    .quotation-col-availability { width: 310px; }
     .quotation-col-qty { width: 80px; }
-    .quotation-col-weight { width: 130px; }
-    .quotation-col-total-weight { width: 140px; }
-    .quotation-col-commercial { width: 165px; }
+    .quotation-col-weight { width: 120px; }
+    .quotation-col-total-weight { width: 130px; }
+    .quotation-col-commercial { width: 160px; }
     .quotation-col-notes { width: 220px; }
-    .quotation-col-mtc { width: 240px; }
-    }
+    .quotation-col-mtc { width: 230px; }
 
     .quotation-items-table .quotation-group-header th {
-        background: var(--md-primary-container) !important;
-        border-bottom: 1px solid var(--md-outline) !important;
-        color: var(--md-on-primary-container) !important;
-        height: 38px;
+        background: var(--md-primary) !important;
+        color: var(--md-on-primary) !important;
+        font-size: var(--ui-font-size-xs);
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        height: 36px;
+        position: sticky;
         top: 0;
         z-index: 8;
     }
 
     .quotation-items-table .quotation-field-header th {
         background: var(--md-surface-container-low) !important;
-        height: 48px;
-        top: 38px;
+        color: var(--md-on-surface-variant) !important;
+        font-size: var(--ui-font-size-xs);
+        font-weight: 600;
+        height: 44px;
+        position: sticky;
+        top: 36px;
         z-index: 8;
     }
 
@@ -148,8 +87,8 @@
     .quotation-items-table .quotation-group-item {
         left: 0;
         position: sticky;
-        width: 332px;
-        min-width: 332px;
+        width: 330px;
+        min-width: 330px;
         z-index: 12 !important;
     }
 
@@ -157,8 +96,8 @@
         background-color: var(--md-surface) !important;
         border-right: 1px solid var(--md-outline) !important;
         left: 0;
-        min-width: 52px;
-        width: 52px;
+        min-width: 50px;
+        width: 50px;
         position: sticky;
         z-index: 5;
     }
@@ -166,7 +105,7 @@
     .quotation-items-table .quotation-sticky-material {
         background-color: var(--md-surface) !important;
         border-right: 1px solid var(--md-outline) !important;
-        left: 52px;
+        left: 50px;
         min-width: 280px;
         width: 280px;
         position: sticky;
@@ -179,24 +118,10 @@
         z-index: 11;
     }
 
-    .quotation-items-table tbody .quotation-sticky-number {
-        z-index: 5;
-    }
-
-    .quotation-items-table tbody .quotation-sticky-material {
-        box-shadow: none !important;
-        z-index: 6;
-    }
-
     .quotation-items-table tbody tr:hover > td,
     .quotation-items-table tbody tr:hover > .quotation-sticky-number,
     .quotation-items-table tbody tr:hover > .quotation-sticky-material {
-        background-color: var(--md-surface-container-low) !important;
-    }
-
-    .quotation-items-table .form-control,
-    .quotation-items-table .form-select {
-        min-height: 38px;
+        background-color: var(--md-surface-container) !important;
     }
 
     .quotation-items-table .quotation-editable {
@@ -206,526 +131,505 @@
 
     .quotation-items-table .quotation-editable:focus {
         border-color: var(--md-primary);
-        box-shadow: 0 0 0 .18rem rgba(var(--md-primary-rgb), .14);
-        position: relative;
-        z-index: 2;
+        box-shadow: 0 0 0 var(--ui-focus-ring-width) rgba(var(--md-primary-rgb), .15);
     }
 
     .quotation-items-table .quotation-calculated {
-        background: var(--md-surface-container) !important;
+        background: var(--md-surface-container-low) !important;
         border-color: var(--md-outline-variant);
         color: var(--md-on-surface);
+        font-weight: 600;
         cursor: default;
     }
 
-    .quotation-number {
-        font-variant-numeric: tabular-nums;
-    }
-
     .quotation-item-notes {
-        min-height: 88px;
-        line-height: 1.35;
+        min-height: 80px;
+        font-size: var(--ui-font-size-xs);
         resize: vertical;
-    }
-
-    .availability-panel {
-        min-width: 315px;
     }
 
     .availability-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(112px, 1fr));
-        gap: .5rem;
+        grid-template-columns: repeat(2, minmax(110px, 1fr));
+        gap: 0.35rem;
     }
 
     .availability-field-label {
         display: block;
-        margin-bottom: .2rem;
+        margin-bottom: 0.15rem;
         color: var(--md-on-surface-variant);
-        font-size: .68rem;
+        font-size: var(--ui-font-size-xs);
         font-weight: 600;
+        text-transform: uppercase;
     }
 
     .mtc-upload {
         background: var(--md-surface-container-low);
         border: 1px solid var(--md-outline-variant);
-        border-radius: .5rem;
-        padding: .65rem;
-    }
-
-    .mtc-file-button {
-        align-items: center;
-        display: inline-flex;
-        min-height: 36px;
-    }
-
-    .mtc-file-input:focus-visible + .mtc-file-button {
-        border-color: var(--md-primary);
-        box-shadow: 0 0 0 .2rem rgba(var(--md-primary-rgb), .18);
+        border-radius: var(--md-shape-sm);
+        padding: 0.5rem;
     }
 
     .mtc-file-name {
         color: var(--md-on-surface-variant);
-        font-size: .72rem;
-        line-height: 1.35;
-        margin-top: .4rem;
+        font-size: var(--ui-font-size-xs);
+        margin-top: 0.3rem;
         overflow-wrap: anywhere;
     }
 
     .availability-copied .availability-panel {
         background-color: var(--md-success-container) !important;
-        transition: background-color .2s ease;
-    }
-
-    .quotation-additional-grid {
-        display: grid;
-        align-items: start;
-        gap: .75rem;
-        grid-template-columns: minmax(0, min(100%, 280px));
-    }
-
-    .quotation-additional-grid > * {
-        min-width: 0;
-    }
-
-    @media (min-width: 768px) {
-        .quotation-additional-grid {
-            grid-template-columns: repeat(2, minmax(0, 280px));
-            max-width: 860px;
-        }
-    }
-
-    @media (min-width: 1200px) {
-        .quotation-additional-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            max-width: 1120px;
-        }
-    }
-
-    @media (max-width: 991.98px) {
-        .quotation-entry-toolbar {
-            align-items: flex-start !important;
-        }
-
-        .quotation-toolbar-actions {
-            justify-content: flex-start;
-        }
-    }
-
-    @media (max-width: 767.98px) {
-        .quotation-entry-toolbar {
-            align-items: stretch !important;
-            flex-direction: column;
-        }
-
-        .quotation-toolbar-actions {
-            align-items: stretch;
-            flex-direction: column;
-            width: 100%;
-        }
-
-        .quotation-toolbar-actions > .btn,
-        .quotation-toolbar-actions > .dropdown,
-        .quotation-toolbar-actions > .btn-group {
-            width: 100%;
-        }
-
-        .quotation-toolbar-actions > .btn-group > .btn {
-            width: 100%;
-        }
-
-        .quotation-currency-control {
-            justify-content: space-between;
-            width: 100%;
-        }
-
-        .quotation-currency-field {
-            width: min(180px, 55vw);
-        }
-
-        .quotation-currency-control .form-select {
-            min-height: 44px;
-            width: 100% !important;
-        }
-
-        .quotation-table-scroll {
-            --quotation-number-width: 44px;
-            --quotation-material-width: 200px;
-        }
-
-        .quotation-items-table .form-control,
-        .quotation-items-table .form-select {
-            min-height: 44px;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .quotation-items-table *,
-        .quotation-table-scroll * {
-            scroll-behavior: auto !important;
-            transition: none !important;
-        }
+        transition: background-color 0.2s ease;
     }
 </style>
 @endpush
 
 @section('content')
-<div class="quotation-page tw-grid tw-min-w-0 tw-max-w-full tw-gap-6">
+<div class="quotation-page tw-grid tw-min-w-0 tw-max-w-full tw-gap-4">
+    {{-- Breadcrumb & Compact Page Header --}}
+    <x-ui.breadcrumb :items="[
+        'Dashboard' => route('supplier.dashboard'),
+        'Quotation Periods' => route('supplier.quotations.index'),
+        ($pr->period->display_label ?? 'Requisitions') => route('supplier.quotations.period', $pr->period_id),
+        ($quotation?->status === 'revision_requested' ? 'Revise Quotation' : 'Submit Quotation') => null,
+    ]" />
+
     <x-ui.page-header
         :title="$quotation?->status === 'revision_requested' ? 'Revise Quotation' : 'Create Quotation'"
-        :description="'Complete availability, commercial values, and supporting MTC files for ' . ($pr->pr_number ?? 'this requisition') . '.'"
-        eyebrow="Supplier Portal"
+        eyebrow="Supplier Proposal Entry"
+        :description="'Provide pricing, availability parameters, and technical MTC files for ' . ($pr->pr_number ?? 'this requisition') . '.'"
     >
-        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Requisition List</x-ui.button></x-slot:actions>
+        <x-slot:meta>
+            @if($quotation?->status === 'revision_requested')
+                <span class="ui-status-chip ui-status-chip--warning">
+                    <x-ui.icon name="rotate-ccw" size="sm" class="me-1" />Revision Requested
+                </span>
+            @else
+                <span class="ui-status-chip ui-status-chip--neutral">
+                    <x-ui.icon name="square-pen" size="sm" class="me-1" />New Offer
+                </span>
+            @endif
+        </x-slot:meta>
+        <x-slot:actions>
+            <x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>Back to Requisitions</span>
+            </x-ui.button>
+        </x-slot:actions>
     </x-ui.page-header>
 
-<x-ui.card title="Purchase Requisition Details" description="Reference information supplied by Purchasing; quotation inputs remain supplier-owned.">
-        <div class="row">
-            <div class="col-md-2 text-muted small">Period</div>
-            <div class="col-md-10 fw-medium">{{ $pr->period->display_label }}</div>
-        </div>
-        <div class="row mt-2">
-            <div class="col-md-2 text-muted small">Notes PR</div>
-            <div class="col-md-10">{{ $pr->notes ?? '-' }}</div>
-        </div>
-</x-ui.card>
+    {{-- Main Sectioned Form --}}
+    <form id="quotationForm" class="quotation-form" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <input type="hidden" name="action" id="formAction" value="draft">
 
-@if($quotation?->status === 'revision_requested')
-    <x-ui.alert tone="warning" title="Quotation Revision Requested">Purchasing asked this quotation to be resubmitted. Update the price, estimated delivery, validity date, and notes if needed.</x-ui.alert>
-@endif
-
-<form id="quotationForm" class="quotation-form" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data">
-    @csrf
-    <input type="hidden" name="action" id="formAction" value="draft">
-
-    <div class="card border-0 shadow-sm mb-4 quotation-entry-card">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap quotation-entry-toolbar">
-            <div class="quotation-toolbar-heading">
-                <h6 class="mb-0 fw-bold">
-                    Material Price Entry
-                    <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><x-ui.icon name="cloud-check" class="me-1" />Draft Auto-saved</span>
-                </h6>
-                <div class="small text-muted mt-1">Review the requested specifications, then complete your availability and commercial offer.</div>
-            </div>
-            <div class="quotation-toolbar-actions">
-                @include('supplier.quotations._import_controls')
-                <button type="button" id="copyAllRequested" class="btn btn-sm btn-outline-secondary">
-                    <x-ui.icon name="clipboard-check" class="me-1" /> Copy All Requested Values
-                </button>
-                <div class="quotation-currency-control">
-                    <label for="quotationCurrency" class="small fw-semibold text-muted mb-0">Currency</label>
-                    <div class="quotation-currency-field">
-                        <select name="currency" id="quotationCurrency" class="form-select form-select-sm @error('currency') is-invalid @enderror" required>
-                            <option value="" disabled @selected($supplierCurrency === '')>Select</option>
-                            @foreach($currencyOptions as $currency)
-                                <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
-                            @endforeach
-                        </select>
-                        @error('currency')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+        <div class="tw-grid tw-gap-5">
+            {{-- Section 1: Procurement Context --}}
+            <x-ui.form-section
+                title="Procurement Context"
+                description="General requisition parameters and notes established by ADASI Purchasing."
+            >
+                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Procurement Period</div>
+                        <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $pr->period->display_label }}</div>
+                    </div>
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Requisition Reference</div>
+                        <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">{{ $pr->pr_number ?? 'PR -' }}</div>
+                    </div>
+                    <div class="sm:tw-col-span-2 lg:tw-col-span-1 tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Purchasing Instructions</div>
+                        <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $pr->notes ?: 'No additional notes provided.' }}</div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div id="currencyRateWarning" class="alert alert-warning rounded-0 border-0 border-top border-bottom mb-0 small {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
-                <x-ui.icon name="triangle-alert" class="me-1" />
-                Exchange rate for <span id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</span> is not available yet. Contact Admin before submitting the final quotation.
-        </div>
-        <div class="card-body p-0 quotation-table-shell">
-            <div id="quotationTableScrollHint" class="quotation-scroll-hint">
-                <x-ui.icon name="move" />
-                <span>Scroll horizontally to review all columns.</span>
-            </div>
-            <div class="table-responsive quotation-table-scroll" role="region" tabindex="0" aria-label="Material quotation price entry" aria-describedby="quotationTableScrollHint">
-                <table class="table table-bordered align-middle mb-0 quotation-items-table">
-                    <caption class="visually-hidden">Supplier quotation entry table with requested material, availability, pricing, notes, and MTC fields</caption>
-                    <colgroup>
-                        <col class="quotation-col-number">
-                        <col class="quotation-col-material">
-                    </colgroup>
-                    <colgroup>
-                        <col class="quotation-col-availability">
-                    </colgroup>
-                    <colgroup>
-                        <col class="quotation-col-qty">
-                        <col class="quotation-col-weight">
-                        <col class="quotation-col-total-weight">
-                    </colgroup>
-                    <colgroup>
-                        <col class="quotation-col-commercial">
-                        <col class="quotation-col-commercial">
-                        <col class="quotation-col-commercial">
-                    </colgroup>
-                    <colgroup>
-                        <col class="quotation-col-notes">
-                        <col class="quotation-col-mtc">
-                    </colgroup>
-                    <thead class="table-light text-center">
-                        <tr class="quotation-group-header">
-                            <th colspan="2" scope="colgroup" class="quotation-group-item">Item</th>
-                            <th scope="colgroup">Supplier Offer</th>
-                            <th colspan="3" scope="colgroup">Requested</th>
-                            <th colspan="3" scope="colgroup">Commercial</th>
-                            <th colspan="2" scope="colgroup">Supporting</th>
-                        </tr>
-                        <tr class="quotation-field-header">
-                            <th scope="col" class="quotation-sticky-number">No</th>
-                            <th scope="col" class="quotation-sticky-material">Material &amp; Specification</th>
-                            <th scope="col" class="availability-panel">Supplier Availability</th>
-                            <th scope="col">Qty</th>
-                            <th scope="col">Weight/Unit (kg)</th>
-                            <th scope="col">Total Weight (kg)</th>
-                            <th scope="col">Price/KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
-                            <th scope="col">Amount (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
-                            <th scope="col">Est. IDR</th>
-                            <th scope="col">Notes Item</th>
-                            <th scope="col">MTC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($pr->items as $index => $item)
-                            @php
-                                $qItem = null;
-                                if ($quotation) {
-                                    $qItem = $quotation->items->where('pr_item_id', $item->id)->first();
-                                }
-                                 $oldPrice = old("items.{$index}.price_per_kg", $qItem ? $qItem->price_per_kg : '');
-                                 $oldNotes = old("items.{$index}.notes", $qItem ? $qItem->notes : '');
-                                 $mtcAttachment = $qItem?->attachments?->first();
-                                 $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($item->shape);
-                             @endphp
-                            <tr>
-                                <td class="text-center quotation-sticky-number quotation-number">{{ $index + 1 }}</td>
-                                <td class="quotation-sticky-material">
-                                     <div class="fw-bold">{{ $item->material_name }}</div>
-                                     <div class="text-muted tw-text-ui-xs">
-                                        @if($item->hs_code) HS: {{ $item->hs_code }} | @endif
-                                        @if($item->shape)
-                                            {{ $item->shape }}: {{ $item->dimension_label }}
-                                        @else
-                                             -
-                                         @endif
-                                     </div>
-                                     <div class="small text-muted mt-2"><x-ui.icon name="building" class="me-1" />Requested by Purchasing</div>
-                                     @if($item->remark)
-                                         <div class="small mt-1 text-break"><span class="text-muted">Remark:</span> {{ $item->remark }}</div>
-                                     @endif
-                                     <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
-                                     <input type="hidden" class="item-weight" value="{{ $item->total_weight }}">
-                                     @error("items.{$index}.pr_item_id")
-                                         <div class="text-danger small mt-1">{{ $message }}</div>
-                                     @enderror
-                                 </td>
-                                 <td class="availability-panel">
-                                     <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                                         <span class="small fw-semibold text-primary"><x-ui.icon name="package" class="me-1" />Offered by Supplier</span>
-                                         <button
-                                             type="button"
-                                             class="btn btn-sm btn-outline-secondary py-0 copy-from-pr-btn"
-                                             data-requested-qty="{{ $item->quantity_value }}"
-                                             data-requested-thickness="{{ $item->thickness ?? '' }}"
-                                             data-requested-d-inner="{{ $item->d_inner ?? '' }}"
-                                             data-requested-d-outer="{{ $item->d_outer ?? '' }}"
-                                             data-requested-width="{{ $item->width ?? '' }}"
-                                             data-requested-length="{{ $item->length ?? '' }}"
-                                             title="Copy requested quantity and relevant dimensions"
-                                         >
-                                             <x-ui.icon name="clipboard-check" /> Copy
-                                         </button>
-                                     </div>
-                                     <div class="availability-grid">
-                                         <div>
-                                             <label class="availability-field-label" for="availableQty{{ $index }}">Qty</label>
-                                             <input
-                                                 id="availableQty{{ $index }}"
-                                                 type="number"
-                                                 min="1"
-                                                 step="1"
-                                                 name="items[{{ $index }}][available_qty]"
-                                                 class="form-control form-control-sm availability-input quotation-editable quotation-number @error("items.{$index}.available_qty") is-invalid @enderror"
-                                                 data-availability-field="qty"
-                                                 value="{{ old("items.{$index}.available_qty", $qItem?->available_qty) }}"
-                                             >
-                                             @error("items.{$index}.available_qty")
-                                                 <div class="invalid-feedback">{{ $message }}</div>
-                                             @enderror
-                                         </div>
-                                         @foreach($relevantDimensions as $dimension)
-                                             <div>
-                                                 <label class="availability-field-label" for="available{{ ucfirst(str_replace('_', '', $dimension)) }}{{ $index }}">
-                                                     {{ \App\Models\PrItem::DIMENSION_LABELS[$dimension] }}
-                                                 </label>
-                                                 <input
-                                                     id="available{{ ucfirst(str_replace('_', '', $dimension)) }}{{ $index }}"
-                                                     type="number"
-                                                     min="0"
-                                                     step="0.0001"
-                                                     name="items[{{ $index }}][available_{{ $dimension }}]"
-                                                     class="form-control form-control-sm availability-input quotation-editable quotation-number @error("items.{$index}.available_{$dimension}") is-invalid @enderror"
-                                                     data-availability-field="{{ $dimension }}"
-                                                     value="{{ old("items.{$index}.available_{$dimension}", $qItem?->{'available_'.$dimension}) }}"
-                                                 >
-                                                 @error("items.{$index}.available_{$dimension}")
-                                                     <div class="invalid-feedback">{{ $message }}</div>
-                                                 @enderror
-                                             </div>
-                                         @endforeach
-                                     </div>
-                                 </td>
-                                 <td class="text-end fw-medium quotation-number">{{ number_format($item->quantity_value, 0) }}</td>
-                                <td class="text-end quotation-number">{{ number_format($item->weight_needed, 2) }}</td>
-                                <td class="text-end fw-semibold text-primary quotation-number">{{ number_format($item->total_weight, 2) }}</td>
-                                <td>
-                                    <input
-                                        type="number"
-                                        step="0.0001"
-                                        min="0.01"
-                                        name="items[{{ $index }}][price_per_kg]"
-                                        class="form-control form-control-sm price-input text-end quotation-editable quotation-number @error("items.{$index}.price_per_kg") is-invalid @enderror"
-                                        value="{{ $oldPrice }}"
-                                        aria-label="Price per kilogram for {{ $item->material_name }}"
-                                        required
-                                    >
-                                    @error("items.{$index}.price_per_kg")
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm amount-display text-end quotation-calculated quotation-number" aria-label="Calculated amount for {{ $item->material_name }}" readonly>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm idr-display text-end quotation-calculated quotation-number" aria-label="Estimated IDR for {{ $item->material_name }}" readonly>
-                                </td>
-                                <td>
-                                    <textarea
-                                        name="items[{{ $index }}][notes]"
-                                        class="form-control form-control-sm quotation-item-notes quotation-editable @error("items.{$index}.notes") is-invalid @enderror"
-                                        rows="3"
-                                        aria-label="Item notes for {{ $item->material_name }}"
-                                        placeholder="Optional, e.g. price tolerance, MOQ, or material notes"
-                                    >{{ $oldNotes }}</textarea>
-                                    @error("items.{$index}.notes")
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </td>
-                                <td>
-                                    <div class="mtc-upload @error("items.{$index}.mtc_file") border-danger @enderror">
-                                        <input
-                                            id="mtcFile{{ $index }}"
-                                            type="file"
-                                            name="items[{{ $index }}][mtc_file]"
-                                            class="visually-hidden mtc-file-input @error("items.{$index}.mtc_file") is-invalid @enderror"
-                                            accept=".pdf,.jpg,.jpeg,.png"
-                                        >
-                                        <label for="mtcFile{{ $index }}" class="btn btn-sm btn-outline-primary mtc-file-button">
-                                            <x-ui.icon name="paperclip" class="me-1" /> Choose MTC File
-                                        </label>
-                                        <div
-                                            class="mtc-file-name"
-                                            data-default-name="{{ $mtcAttachment?->file_name ?? 'No file selected' }}"
-                                            aria-live="polite"
-                                        >{{ $mtcAttachment?->file_name ?? 'No file selected' }}</div>
-                                        @if($mtcAttachment)
-                                            <a href="{{ route('attachments.show', $mtcAttachment->id) }}" class="small d-inline-flex align-items-center gap-1 mt-2 text-decoration-none" target="_blank" rel="noopener">
-                                                <x-ui.icon name="external-link" />
-                                                View current file
-                                            </a>
-                                        @endif
-                                        <div class="form-text small">Optional, PDF/JPG/PNG, max. 5MB.</div>
-                                    </div>
-                                    @error("items.{$index}.mtc_file")
-                                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                                    @enderror
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot class="table-light fw-bold">
-                        <tr>
-                            <td colspan="7" class="text-end">TOTAL</td>
-                            <td class="text-end" id="totalAmount">0.00</td>
-                            <td class="text-end text-primary" id="totalIdr">0</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
 
-    <x-ui.card class="quotation-additional-card" padding="sm" title="Additional Information" description="These dates and terms are required for Purchasing evaluation.">
-        <div class="quotation-additional-grid">
-            <x-ui.input type="date" name="estimated_delivery" label="Estimated Delivery Time" :value="optional($quotation?->estimated_delivery)->format('Y-m-d')" required />
-            <x-ui.input type="date" name="validity_period" id="validityPeriod" label="Quotation Valid Until" :value="optional($quotation?->validity_period)->format('Y-m-d')" :min="now()->toDateString()" helper="Required for final submission. Prices and terms remain valid until this date." />
-            <x-ui.textarea name="payment_terms" label="Payment Terms" :rows="2" maxlength="100" required placeholder="Example: TT 30 Days" :value="$quotation->payment_terms ?? 'TT 30 Days'" />
-            <x-ui.textarea name="general_notes" label="General Notes" :rows="2" placeholder="Optional..." :value="$quotation->general_notes ?? ''" />
+                @if($quotation?->status === 'revision_requested')
+                    <x-ui.alert tone="warning" title="Quotation Revision Requested" class="tw-mt-3">
+                        Purchasing asked this quotation to be resubmitted. Update unit prices, delivery schedule, validity date, or specifications before submitting again.
+                    </x-ui.alert>
+                @endif
+            </x-ui.form-section>
+
+            {{-- Section 2: Material Pricing & Availability Matrix --}}
+            <x-ui.form-section
+                title="Material Commercial Offer"
+                description="Specify your availability, dimensions, price per kg, and attach MTC certificates."
+            >
+                <x-slot:actions>
+                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                        {{-- Autosave Indicator --}}
+                        <span id="autoSaveBadge" class="ui-status-chip ui-status-chip--success d-none">
+                            <x-ui.icon name="check" size="sm" class="me-1" />Draft Saved
+                        </span>
+
+                        {{-- Import Controls --}}
+                        @include('supplier.quotations._import_controls')
+
+                        {{-- Copy All Requested --}}
+                        <x-ui.button type="button" id="copyAllRequested" variant="outline" size="sm">
+                            <x-ui.icon name="clipboard-check" size="sm" />
+                            <span>Copy All Requested Values</span>
+                        </x-ui.button>
+
+                        {{-- Currency Select --}}
+                        <div class="d-flex align-items-center tw-gap-1.5 ps-2 border-start">
+                            <label for="quotationCurrency" class="small fw-semibold tw-text-on-surface mb-0">Currency:</label>
+                            <select name="currency" id="quotationCurrency" class="form-select form-select-sm fw-bold @error('currency') is-invalid @enderror" style="width: 100px;" required>
+                                <option value="" disabled @selected($supplierCurrency === '')>Select</option>
+                                @foreach($currencyOptions as $currency)
+                                    <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
+                                @endforeach
+                            </select>
+                            @error('currency')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </x-slot:actions>
+
+                <x-ui.alert id="currencyRateWarning" tone="warning" title="Exchange Rate Required" class="tw-mb-2 {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
+                    Exchange rate for <strong id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</strong> is not recorded in master exchange rates. Contact Admin before final submission.
+                </x-ui.alert>
+
+                {{-- Material Entry Table --}}
+                <div class="border rounded overflow-hidden">
+                    <div id="quotationTableScrollHint" class="tw-bg-surface-low border-bottom px-3 tw-py-1.5 tw-text-on-surface-variant tw-text-ui-xs d-flex align-items-center tw-gap-1.5">
+                    <x-ui.icon name="move-horizontal" size="sm" />
+                        <span>Scroll horizontally to review all availability and commercial columns.</span>
+                    </div>
+
+                    <div class="table-responsive quotation-table-scroll" role="region" tabindex="0" aria-label="Material quotation price entry" aria-describedby="quotationTableScrollHint">
+                        <table class="table table-bordered align-middle mb-0 quotation-items-table tw-text-ui-xs">
+                            <caption class="visually-hidden">Supplier quotation entry table</caption>
+                            <colgroup>
+                                <col class="quotation-col-number">
+                                <col class="quotation-col-material">
+                                <col class="quotation-col-availability">
+                                <col class="quotation-col-qty">
+                                <col class="quotation-col-weight">
+                                <col class="quotation-col-total-weight">
+                                <col class="quotation-col-commercial">
+                                <col class="quotation-col-commercial">
+                                <col class="quotation-col-commercial">
+                                <col class="quotation-col-notes">
+                                <col class="quotation-col-mtc">
+                            </colgroup>
+                            <thead class="table-light text-center">
+                                <tr class="quotation-group-header">
+                                    <th colspan="2" scope="colgroup" class="quotation-group-item">Item</th>
+                                    <th scope="colgroup">Supplier Offer</th>
+                                    <th colspan="3" scope="colgroup">Requested</th>
+                                    <th colspan="3" scope="colgroup">Commercial</th>
+                                    <th colspan="2" scope="colgroup">Supporting</th>
+                                </tr>
+                                <tr class="quotation-field-header">
+                                    <th scope="col" class="quotation-sticky-number">No</th>
+                                    <th scope="col" class="quotation-sticky-material">Material &amp; Specification</th>
+                                    <th scope="col" class="availability-panel">Supplier Availability</th>
+                                    <th scope="col">Qty</th>
+                                    <th scope="col">Weight/Unit (kg)</th>
+                                    <th scope="col">Total Weight (kg)</th>
+                                    <th scope="col">Price/KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>) <span class="text-danger">*</span></th>
+                                    <th scope="col">Amount (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
+                                    <th scope="col">Est. IDR</th>
+                                    <th scope="col">Notes Item</th>
+                                    <th scope="col">MTC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($pr->items as $index => $item)
+                                    @php
+                                        $qItem = null;
+                                        if ($quotation) {
+                                            $qItem = $quotation->items->where('pr_item_id', $item->id)->first();
+                                        }
+                                        $oldPrice = old("items.{$index}.price_per_kg", $qItem ? $qItem->price_per_kg : '');
+                                        $oldNotes = old("items.{$index}.notes", $qItem ? $qItem->notes : '');
+                                        $mtcAttachment = $qItem?->attachments?->first();
+                                        $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($item->shape);
+                                    @endphp
+                                    <tr>
+                                        <td class="text-center quotation-sticky-number tw-text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
+                                        <td class="quotation-sticky-material">
+                                            <div class="fw-bold tw-text-on-surface">{{ $item->material_name }}</div>
+                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">
+                                                @if($item->hs_code) <span class="fw-semibold">HS:</span> {{ $item->hs_code }} &bull; @endif
+                                                @if($item->shape)
+                                                    {{ $item->shape }}: {{ $item->dimension_label }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </div>
+                                            @if($item->remark)
+                                                <div class="tw-text-on-surface-variant tw-text-ui-xs mt-1"><span class="fw-semibold">Remark:</span> {{ $item->remark }}</div>
+                                            @endif
+                                            <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
+                                            <input type="hidden" class="item-weight" value="{{ $item->total_weight }}">
+                                            @error("items.{$index}.pr_item_id")
+                                                <div class="text-danger small mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </td>
+                                        <td class="availability-panel">
+                                            <div class="d-flex justify-content-between align-items-center gap-2 tw-mb-1.5">
+                                                <span class="tw-text-ui-xs fw-semibold text-primary"><x-ui.icon name="package" size="sm" class="me-1" />Offered Specs</span>
+                                                <x-ui.button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    class="copy-from-pr-btn"
+                                                    data-requested-qty="{{ $item->quantity_value }}"
+                                                    data-requested-thickness="{{ $item->thickness !== null ? (float) $item->thickness : '' }}"
+                                                    data-requested-d-inner="{{ $item->d_inner !== null ? (float) $item->d_inner : '' }}"
+                                                    data-requested-d-outer="{{ $item->d_outer !== null ? (float) $item->d_outer : '' }}"
+                                                    data-requested-width="{{ $item->width !== null ? (float) $item->width : '' }}"
+                                                    data-requested-length="{{ $item->length !== null ? (float) $item->length : '' }}"
+                                                    title="Copy requested quantity and dimensions"
+                                                >
+                                                        <x-ui.icon name="clipboard-check" size="sm" /> Copy
+                                                </x-ui.button>
+                                            </div>
+                                            <div class="availability-grid">
+                                                <div>
+                                                    <label class="availability-field-label" for="availableQty{{ $index }}">Qty</label>
+                                                    <input
+                                                        id="availableQty{{ $index }}"
+                                                        type="number"
+                                                        min="1"
+                                                        step="1"
+                                                        name="items[{{ $index }}][available_qty]"
+                                                        class="form-control form-control-sm availability-input quotation-editable ui-tabular-nums @error("items.{$index}.available_qty") is-invalid @enderror"
+                                                        data-availability-field="qty"
+                                                        value="{{ old("items.{$index}.available_qty", $qItem?->available_qty) }}"
+                                                    >
+                                                    @error("items.{$index}.available_qty")
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                                @foreach($relevantDimensions as $dimension)
+                                                    <div>
+                                                        <label class="availability-field-label" for="available{{ ucfirst(str_replace('_', '', $dimension)) }}{{ $index }}">
+                                                            {{ \App\Models\PrItem::DIMENSION_LABELS[$dimension] }}
+                                                        </label>
+                                                        <input
+                                                            id="available{{ ucfirst(str_replace('_', '', $dimension)) }}{{ $index }}"
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.0001"
+                                                            name="items[{{ $index }}][available_{{ $dimension }}]"
+                                                            class="form-control form-control-sm availability-input quotation-editable ui-tabular-nums @error("items.{$index}.available_{$dimension}") is-invalid @enderror"
+                                                            data-availability-field="{{ $dimension }}"
+                                                            value="{{ old("items.{$index}.available_{$dimension}", $qItem?->{'available_'.$dimension}) }}"
+                                                        >
+                                                        @error("items.{$index}.available_{$dimension}")
+                                                            <div class="invalid-feedback">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </td>
+                                        <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
+                                        <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->weight_needed, 2) }}</td>
+                                        <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->total_weight, 2) }}</td>
+                                        <td>
+                                            <input
+                                                type="number"
+                                                step="0.0001"
+                                                min="0.01"
+                                                name="items[{{ $index }}][price_per_kg]"
+                                                class="form-control form-control-sm price-input text-end quotation-editable ui-tabular-nums @error("items.{$index}.price_per_kg") is-invalid @enderror"
+                                                value="{{ $oldPrice }}"
+                                                aria-label="Price per kilogram for {{ $item->material_name }}"
+                                                placeholder="0.0000"
+                                                required
+                                            >
+                                            @error("items.{$index}.price_per_kg")
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm amount-display text-end quotation-calculated ui-tabular-nums" aria-label="Calculated amount for {{ $item->material_name }}" readonly>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm idr-display text-end quotation-calculated ui-tabular-nums" aria-label="Estimated IDR for {{ $item->material_name }}" readonly>
+                                        </td>
+                                        <td>
+                                            <textarea
+                                                name="items[{{ $index }}][notes]"
+                                                class="form-control form-control-sm quotation-item-notes quotation-editable @error("items.{$index}.notes") is-invalid @enderror"
+                                                rows="2"
+                                                aria-label="Item notes for {{ $item->material_name }}"
+                                                placeholder="Optional tolerances, MOQ, or notes..."
+                                            >{{ $oldNotes }}</textarea>
+                                            @error("items.{$index}.notes")
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </td>
+                                        <td>
+                                            <div class="mtc-upload @error("items.{$index}.mtc_file") border-danger @enderror">
+                                                <input
+                                                    id="mtcFile{{ $index }}"
+                                                    type="file"
+                                                    name="items[{{ $index }}][mtc_file]"
+                                                    class="visually-hidden mtc-file-input @error("items.{$index}.mtc_file") is-invalid @enderror"
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                >
+                                                <label for="mtcFile{{ $index }}" class="ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-w-full tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container">
+                                                        <x-ui.icon name="paperclip" size="sm" class="me-1" /> Choose MTC File
+                                                </label>
+                                                <div
+                                                    class="mtc-file-name text-truncate"
+                                                    data-default-name="{{ $mtcAttachment?->file_name ?? 'No file selected' }}"
+                                                    aria-live="polite"
+                                                >{{ $mtcAttachment?->file_name ?? 'No file selected' }}</div>
+                                                @if($mtcAttachment)
+                                                    <a href="{{ route('attachments.show', $mtcAttachment->id) }}" class="tw-text-ui-xs d-inline-flex align-items-center gap-1 mt-1 text-decoration-none" target="_blank" rel="noopener">
+                                                            <x-ui.icon name="external-link" size="sm" />
+                                                        View file
+                                                    </a>
+                                                @endif
+                                                <div class="tw-text-outline tw-text-ui-xs tw-mt-0.5">PDF/JPG/PNG, max 5MB.</div>
+                                            </div>
+                                            @error("items.{$index}.mtc_file")
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot class="table-light fw-bold border-top">
+                                <tr>
+                                    <td colspan="7" class="text-end tw-text-on-surface">GRAND TOTAL:</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums" id="totalAmount">0.00</td>
+                                    <td class="text-end text-primary ui-tabular-nums fs-6" id="totalIdr">Rp 0</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </x-ui.form-section>
+
+            {{-- Section 3: Commercial Terms & Logistics --}}
+            <x-ui.form-section
+                title="Commercial Terms and Logistics"
+                description="Specify estimated delivery timeline, proposal validity duration, and payment arrangements."
+            >
+                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                    <x-ui.input
+                        type="date"
+                        name="estimated_delivery"
+                        label="Estimated Material Delivery Time"
+                        :value="optional($quotation?->estimated_delivery)->format('Y-m-d')"
+                        required
+                    />
+                    <x-ui.input
+                        type="date"
+                        name="validity_period"
+                        id="validityPeriod"
+                        label="Quotation Valid Until"
+                        :value="optional($quotation?->validity_period)->format('Y-m-d')"
+                        :min="now()->toDateString()"
+                        helper="Required for final submission. Prices remain firm until this date."
+                    />
+                    <x-ui.textarea
+                        name="payment_terms"
+                        label="Payment Terms"
+                        :rows="2"
+                        maxlength="100"
+                        required
+                        placeholder="Example: TT 30 Days after BL date"
+                        :value="$quotation->payment_terms ?? 'TT 30 Days'"
+                    />
+                    <x-ui.textarea
+                        name="general_notes"
+                        label="General Supplier Notes"
+                        :rows="2"
+                        placeholder="Optional instructions or terms..."
+                        :value="$quotation->general_notes ?? ''"
+                    />
+                </div>
+            </x-ui.form-section>
         </div>
-    </x-ui.card>
 
-    <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
-        <x-ui.button type="button" variant="secondary" onclick="submitForm('draft')">{{ $quotation?->status === 'revision_requested' ? 'Save Revision' : 'Save Draft' }}</x-ui.button>
-        <x-ui.button type="button" onclick="confirmSubmit()"><x-ui.icon name="send" /> {{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}</x-ui.button>
-    </div>
-</form>
+        {{-- Sticky Action Bar --}}
+        <x-ui.action-bar class="tw-mt-6">
+            <x-slot:left>
+                <x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm">
+                    <x-ui.icon name="arrow-left" size="sm" />
+                    <span>Cancel</span>
+                </x-ui.button>
+            </x-slot:left>
 
+            <x-slot:right>
+                <x-ui.button type="button" variant="secondary" size="sm" onclick="submitForm('draft')">
+                    <span>{{ $quotation?->status === 'revision_requested' ? 'Save Revision Draft' : 'Save Draft' }}</span>
+                </x-ui.button>
+                <x-ui.button type="button" size="sm" onclick="confirmSubmit()">
+                    <x-ui.icon name="send" size="sm" />
+                    <span>{{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Submit Final Quotation' }}</span>
+                </x-ui.button>
+            </x-slot:right>
+        </x-ui.action-bar>
+    </form>
 </div>
 
+{{-- Excel Import Modal --}}
 <div class="modal fade" id="quotationImportModal" tabindex="-1" aria-labelledby="quotationImportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h5 class="modal-title" id="quotationImportModalLabel">Import Quotation Items from Excel</h5>
-                    <div class="small text-muted">Imported values are mapped by PR Item ID and are not saved automatically.</div>
+                    <h6 class="modal-title fw-bold" id="quotationImportModalLabel">Import Quotation Items from Spreadsheet</h6>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs">Imported values are mapped by PR Item ID and are not committed to database until saved.</div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="row g-3">
                     <div class="col-md-7">
-                        <label for="quotationImportFile" class="form-label fw-medium">Spreadsheet File</label>
-                        <input type="file" id="quotationImportFile" class="form-control" accept=".xlsx,.xls,.csv">
-                        <div class="form-text">Use the template for this PR. XLSX, XLS, or CSV; maximum 10 MB and 1,000 data rows.</div>
+                        <label for="quotationImportFile" class="form-label small fw-semibold tw-text-on-surface">Spreadsheet File (.xlsx, .xls, .csv)</label>
+                        <input type="file" id="quotationImportFile" class="form-control form-control-sm" accept=".xlsx,.xls,.csv">
+                        <div class="form-text tw-text-ui-xs">Use the template for this PR. Max 10 MB and 1,000 data rows.</div>
                     </div>
                     <div class="col-md-5">
-                        <label for="quotationImportMode" class="form-label fw-medium">Import Mode</label>
-                        <select id="quotationImportMode" class="form-select" aria-describedby="quotationImportModeHelp">
+                        <label for="quotationImportMode" class="form-label small fw-semibold tw-text-on-surface">Import Mode</label>
+                        <select id="quotationImportMode" class="form-select form-select-sm" aria-describedby="quotationImportModeHelp">
                             <option value="fill_empty" selected>Fill Empty Fields Only</option>
                             <option value="replace">Replace Imported Fields</option>
                         </select>
-                        <div id="quotationImportModeHelp" class="form-text">Choose how validated Excel values update the current quotation.</div>
+                        <div id="quotationImportModeHelp" class="form-text tw-text-ui-xs">Choose how validated Excel values update the current quotation.</div>
                     </div>
                 </div>
 
-                <div id="quotationImportResult" class="d-none mt-4">
-                    <div id="quotationImportSummary" class="alert alert-light border py-2 mb-3"></div>
+                <div id="quotationImportResult" class="d-none mt-3">
+                    <div id="quotationImportSummary" class="tw-mb-2.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
 
-                    <div id="quotationImportWarningsPanel" class="alert alert-warning d-none">
-                        <div class="fw-semibold mb-1"><x-ui.icon name="triangle-alert" class="me-1" />Warnings</div>
-                        <ul id="quotationImportWarnings" class="mb-0 small ps-3"></ul>
+                    <div id="quotationImportWarningsPanel" class="d-none tw-mb-2.5 tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
+                        <div class="fw-bold mb-1"><x-ui.icon name="triangle-alert" size="sm" class="me-1" />Warnings</div>
+                        <ul id="quotationImportWarnings" class="mb-0 ps-3"></ul>
                     </div>
 
-                    <div id="quotationImportErrorsPanel" class="alert alert-danger d-none">
-                        <div class="fw-semibold mb-1"><x-ui.icon name="x-circle" class="me-1" />Import Errors</div>
-                        <ul id="quotationImportErrors" class="mb-0 small ps-3"></ul>
+                    <div id="quotationImportErrorsPanel" class="d-none tw-mb-2.5 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-px-3 tw-py-2 tw-text-ui-xs tw-text-error-container-foreground" role="alert">
+                        <div class="fw-bold mb-1"><x-ui.icon name="circle-x" size="sm" class="me-1" />Import Errors</div>
+                        <ul id="quotationImportErrors" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="quotationImportPreviewPanel" class="d-none">
-                        <div class="fw-semibold mb-2">Parsed Item Preview</div>
-                        <div class="table-responsive border rounded tw-max-h-[330px]">
-                            <table class="table table-sm table-striped align-middle mb-0">
+                        <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mb-1.5">Parsed Item Preview</div>
+                        <div class="table-responsive border rounded tw-max-h-64">
+                            <table class="table table-sm table-striped align-middle mb-0 tw-text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th>PR Item ID</th>
-                                        <th>Price/Kg</th>
-                                        <th>Available Qty</th>
-                                        <th>Thickness</th>
-                                        <th>Inner D.</th>
-                                        <th>Outer D.</th>
-                                        <th>Width</th>
-                                        <th>Length</th>
-                                        <th>Notes</th>
+                                        <th scope="col">PR Item ID</th>
+                                        <th scope="col">Price/Kg</th>
+                                        <th scope="col">Available Qty</th>
+                                        <th scope="col">Thickness</th>
+                                        <th scope="col">Inner D.</th>
+                                        <th scope="col">Outer D.</th>
+                                        <th scope="col">Width</th>
+                                        <th scope="col">Length</th>
+                                        <th scope="col">Notes</th>
                                     </tr>
                                 </thead>
                                 <tbody id="quotationImportPreviewBody"></tbody>
@@ -734,23 +638,21 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-outline-primary" id="btnParseQuotationImport">
+            <div class="modal-footer tw-bg-surface-low border-top">
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" id="btnParseQuotationImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="quotationImportSpinner"></span>
                     Parse &amp; Validate
-                </button>
-                <button type="button" class="btn btn-primary" id="btnApplyQuotationImport" disabled>
-                    <x-ui.icon name="circle-check" class="me-1" /> Apply to Form
-                </button>
+                </x-ui.button>
+                <x-ui.button type="button" size="sm" id="btnApplyQuotationImport" disabled>
+                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> Apply to Form
+                </x-ui.button>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Exchange rate data for JS --}}
 <div id="exchangeRates" class="d-none"></div>
-
 @endsection
 
 @push('scripts')
@@ -793,7 +695,7 @@
 
         $('#quotationImportResult').removeClass('d-none');
         $('#quotationImportSummary').text(
-            `Total: ${summary.total || 0} | Valid: ${summary.valid || 0} | Invalid: ${summary.invalid || 0}`
+            `Total Rows: ${summary.total || 0} | Valid: ${summary.valid || 0} | Invalid: ${summary.invalid || 0}`
         );
 
         const $warnings = $('#quotationImportWarnings').empty();
@@ -838,14 +740,14 @@
             return;
         }
 
-        const file = document.getElementById('quotationImportFile').files[0];
+        const fileInput = document.getElementById('quotationImportFile');
+        const file = fileInput.files[0];
         if (!file) {
-            AdasiAlert.warning({
-                title: 'File Required',
-                text: 'Select an XLSX, XLS, or CSV file first.'
-            });
+            fileInput.setCustomValidity('Select an XLSX, XLS, or CSV file before continuing.');
+            fileInput.reportValidity();
             return;
         }
+        fileInput.setCustomValidity('');
 
         const formData = new FormData();
         formData.append('_token', @json(csrf_token()));
@@ -935,7 +837,7 @@
         AdasiToast.show({
             type: 'success',
             title: 'Import Applied',
-            message: `${changedFields} field(s) across ${importedItems} item(s) were applied. Review the quotation before saving.`,
+            message: `${changedFields} field(s) across ${importedItems} item(s) applied.`,
             autoClose: 2400
         });
     }
@@ -949,7 +851,7 @@
         if (mode === 'replace' && quotationImportWouldOverwrite()) {
             AdasiAlert.confirmDanger({
                 title: 'Replace existing item values?',
-                text: 'Imported values, including blank optional fields, will replace values currently entered for matching PR items.',
+                text: 'Imported values will replace values currently entered for matching items.',
                 confirmText: 'Yes, Replace Fields',
                 cancelText: 'Cancel'
             }).then((result) => {
@@ -979,7 +881,7 @@
         const idr = amount * selectedRate();
 
         row.find('.amount-display').val(amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
-        row.find('.idr-display').val(Math.round(idr).toLocaleString('id-ID'));
+        row.find('.idr-display').val('Rp ' + Math.round(idr).toLocaleString('id-ID'));
 
         return { amount, idr };
     }
@@ -998,29 +900,70 @@
         $('#totalIdr').text('Rp ' + Math.round(totalIdr).toLocaleString('id-ID'));
     }
 
-    $('.price-input').on('input', function() {
-        calculateTotal();
-    });
+    const requestedValueAttributes = {
+        qty: 'data-requested-qty',
+        thickness: 'data-requested-thickness',
+        d_inner: 'data-requested-d-inner',
+        d_outer: 'data-requested-d-outer',
+        width: 'data-requested-width',
+        length: 'data-requested-length',
+    };
 
-    function copyRequestedValues(button) {
-        const row = button.closest('tr');
-        const values = {
-            qty: button.dataset.requestedQty,
-            thickness: button.dataset.requestedThickness,
-            d_inner: button.dataset.requestedDInner,
-            d_outer: button.dataset.requestedDOuter,
-            width: button.dataset.requestedWidth,
-            length: button.dataset.requestedLength,
-        };
+    function copyButtonElement(candidate) {
+        const button = candidate?.currentTarget || candidate;
+
+        if (button?.jquery) {
+            return button[0] || null;
+        }
+
+        return button && typeof button.closest === 'function' ? button : null;
+    }
+
+    function normalizedRequestedValue(rawValue) {
+        const value = String(rawValue ?? '').trim();
+
+        if (value === '') {
+            return '';
+        }
+
+        const numericValue = Number(value);
+
+        if (!Number.isFinite(numericValue)) {
+            return value;
+        }
+
+        return Number.isInteger(numericValue)
+            ? String(numericValue)
+            : String(Number(numericValue.toFixed(4)));
+    }
+
+    window.copyRequestedValues = function(candidate) {
+        const button = copyButtonElement(candidate);
+        const row = button?.closest('tr');
+
+        if (!row) {
+            return false;
+        }
+
         let copied = false;
 
-        Object.entries(values).forEach(([field, value]) => {
-            const input = row.querySelector(`[data-availability-field="${field}"]`);
-            if (input && value !== undefined && value !== '') {
-                input.value = value;
-                $(input).trigger('input');
-                copied = true;
+        Object.entries(requestedValueAttributes).forEach(([field, attribute]) => {
+            const value = normalizedRequestedValue(button.getAttribute(attribute));
+
+            if (value === '') {
+                return;
             }
+
+            const input = row.querySelector(`[data-availability-field="${field}"]`);
+
+            if (!input) {
+                return;
+            }
+
+            input.value = value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            copied = true;
         });
 
         if (copied) {
@@ -1029,19 +972,65 @@
         }
 
         return copied;
-    }
+    };
+
+    window.copyAllRequestedValues = function() {
+        let copiedRows = 0;
+
+        document.querySelectorAll('.copy-from-pr-btn').forEach((button) => {
+            if (window.copyRequestedValues(button)) {
+                copiedRows++;
+            }
+        });
+
+        if (copiedRows > 0) {
+            showCopyFeedback(`Copied requested values for ${copiedRows} item(s).`);
+        }
+
+        return copiedRows;
+    };
 
     function showCopyFeedback(message) {
-        if (window.AdasiToast) {
-            AdasiToast.show({
+        if (window.AdasiToast && typeof window.AdasiToast.success === 'function') {
+            window.AdasiToast.success(message, {
+                title: 'Values Copied',
+                autoClose: 2000
+            });
+        } else if (window.AdasiToast && typeof window.AdasiToast.show === 'function') {
+            window.AdasiToast.show({
                 type: 'success',
-                title: message,
-                autoClose: 1800
+                title: 'Values Copied',
+                message: message,
+                autoClose: 2000
             });
         }
     }
 
+    document.addEventListener('click', function(event) {
+        const target = event.target;
+        const button = target && typeof target.closest === 'function'
+            ? target.closest('#copyAllRequested, .copy-from-pr-btn')
+            : null;
+
+        if (!button) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (button.id === 'copyAllRequested') {
+            window.copyAllRequestedValues();
+            return;
+        }
+
+        if (window.copyRequestedValues(button)) {
+            showCopyFeedback('Requested values copied to row.');
+        }
+    });
+
     $(document).ready(function() {
+        $('.price-input').on('input', calculateTotal);
         $('#btnParseQuotationImport').on('click', parseQuotationImport);
         $('#btnApplyQuotationImport').on('click', applyQuotationImport);
         $('.mtc-file-input').on('change', function() {
@@ -1049,6 +1038,7 @@
             const $fileName = $(this).closest('.mtc-upload').find('.mtc-file-name');
             $fileName.text(fileName || $fileName.data('default-name') || 'No file selected');
         });
+
         $('#quotationImportModal').on('hidden.bs.modal', function() {
             if (quotationImportRequestInFlight) {
                 return;
@@ -1071,26 +1061,24 @@
         }
 
         $('#quotationCurrency').on('change', refreshCurrencyState);
-        $('.copy-from-pr-btn').on('click', function() {
-            if (copyRequestedValues(this)) {
-                showCopyFeedback('Requested values copied. Review before saving.');
-            }
-        });
 
-        $('#copyAllRequested').on('click', function() {
-            let copiedRows = 0;
-            $('.copy-from-pr-btn').each(function() {
-                if (copyRequestedValues(this)) {
-                    copiedRows++;
-                }
-            });
-
-            if (copiedRows > 0) {
-                showCopyFeedback(`Requested values copied for ${copiedRows} item(s). Review before saving.`);
-            }
-        });
         refreshCurrencyState();
-        calculateTotal(); // initial calculation if pre-filled
+        calculateTotal();
+
+        // Horizontal wheel scroll
+        const qScroll = document.querySelector('.quotation-table-scroll');
+        if (qScroll) {
+            qScroll.addEventListener('wheel', function(e) {
+                if (e.deltaY === 0 || this.scrollWidth <= this.clientWidth) return;
+                const maxScroll = this.scrollWidth - this.clientWidth;
+                const nextScroll = Math.max(0, Math.min(maxScroll, this.scrollLeft + e.deltaY));
+                const consumed = nextScroll - this.scrollLeft;
+                const remaining = e.deltaY - consumed;
+                this.scrollLeft = nextScroll;
+                e.preventDefault();
+                if (remaining !== 0) window.scrollBy({ top: remaining, left: 0, behavior: 'auto' });
+            }, { passive: false });
+        }
     });
 
     function submitForm(action) {
@@ -1099,7 +1087,6 @@
     }
 
     function confirmSubmit() {
-        // Validate required fields visually
         let isValid = true;
         $('#quotationForm').find('input[required], select[required], #validityPeriod').each(function() {
             if (!$(this).val()) {
@@ -1111,22 +1098,20 @@
         });
 
         if (!isValid) {
-            AdasiAlert.error({
-                title: 'Error',
-                text: 'Please complete all required fields: Currency, Price, Estimated Delivery Time, and Quotation Valid Until.'
-            });
+            const firstInvalid = document.querySelector('#quotationForm .is-invalid');
+            firstInvalid?.focus();
+            firstInvalid?.reportValidity?.();
             return;
         }
 
         AdasiAlert.confirm({
             title: {!! json_encode($quotation?->status === 'revision_requested' ? 'Resubmit Quotation?' : 'Send Final Quotation?') !!},
-            text: {!! json_encode($quotation?->status === 'revision_requested' ? 'The revised quotation will be sent back to Purchasing for evaluation.' : 'Submitted quotations cannot be changed anymore.') !!},
+            text: {!! json_encode($quotation?->status === 'revision_requested' ? 'The revised quotation will be sent back to Purchasing for evaluation.' : 'Submitted quotations cannot be modified after sending.') !!},
             type: 'warning',
             confirmText: @json($quotation?->status === 'revision_requested' ? 'Yes, Resubmit!' : 'Yes, Send!'),
             cancelText: @json('Cancel')
         }).then((result) => {
             if (result.isConfirmed) {
-                // Clear draft on submit
                 localStorage.removeItem(draftKey);
                 $('#formAction').val('submitted');
                 $('#quotationForm').submit();
@@ -1139,19 +1124,27 @@
     const draftKey = 'quotation_draft_' + prId;
 
     function saveDraft() {
-        const formData = $('#quotationForm').serializeArray();
-        const data = {};
-        $(formData).each(function(index, obj) {
-            if(obj.name !== '_token' && obj.name !== 'action') {
-                data[obj.name] = obj.value;
-            }
-        });
-        localStorage.setItem(draftKey, JSON.stringify(data));
+        $('#autoSaveBadge').removeClass('d-none ui-status-chip--success').addClass('ui-status-chip--neutral').html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
         
-        $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<x-ui.icon name="cloud-check" class="me-1" />Draft Auto-saved');
-        setTimeout(() => {
-            $('#autoSaveBadge').removeClass('d-inline-block').addClass('d-none');
-        }, 2000);
+        try {
+            const formData = $('#quotationForm').serializeArray();
+            const data = {};
+            $(formData).each(function(index, obj) {
+                if(obj.name !== '_token' && obj.name !== 'action') {
+                    data[obj.name] = obj.value;
+                }
+            });
+            localStorage.setItem(draftKey, JSON.stringify(data));
+
+            setTimeout(() => {
+                $('#autoSaveBadge').removeClass('ui-status-chip--neutral').addClass('ui-status-chip--success').text('Draft Saved');
+                setTimeout(() => {
+                    $('#autoSaveBadge').addClass('d-none');
+                }, 2000);
+            }, 300);
+        } catch (e) {
+            $('#autoSaveBadge').removeClass('ui-status-chip--neutral ui-status-chip--success').addClass('ui-status-chip--error').text('Save failed');
+        }
     }
 
     function loadDraft() {
@@ -1165,9 +1158,8 @@
                 }
             }
             calculateTotal();
-            
-            // Show badge permanently if draft loaded
-            $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<x-ui.icon name="cloud-check" class="me-1" />Draft Saved');
+            $('#autoSaveBadge').removeClass('d-none ui-status-chip--error ui-status-chip--neutral').addClass('ui-status-chip--success').text('Draft Restored');
+            setTimeout(() => $('#autoSaveBadge').addClass('d-none'), 3000);
         }
     }
 
@@ -1179,7 +1171,7 @@
         $('#quotationForm input, #quotationForm select, #quotationForm textarea').on('input change', function() {
             isDirty = true;
             clearTimeout(autoSaveTimer);
-            autoSaveTimer = setTimeout(saveDraft, 1000);
+            autoSaveTimer = setTimeout(saveDraft, 1200);
         });
 
         $('#quotationForm').on('submit', function() {

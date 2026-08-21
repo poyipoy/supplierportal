@@ -124,12 +124,12 @@ class PurchaseOrderController extends Controller
                         $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
                         $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
                         if ($activeClaim) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim).'" class="btn btn-sm btn-outline-danger">Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim</a>';
                         } elseif ($latestNgInspection) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection).'" class="btn btn-sm btn-danger">Create Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
                         }
                     }
-                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="btn btn-sm btn-outline-info">Details</a>';
+                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>';
                     $html .= '</div>';
 
                     return $html;

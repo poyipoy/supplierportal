@@ -27,35 +27,43 @@ class UserController extends Controller
             return DataTables::eloquent($query)
                 ->addIndexColumn()
                 ->addColumn('name_display', function ($user) {
-                    $html = '<div class="fw-medium">'.e($user->name).'</div>';
+                    $html = '<div class="fw-semibold text-body">'.e($user->name).'</div>';
                     if ($user->role === 'supplier' && $user->supplier) {
-                        $html .= '<small class="text-muted">'.e($user->supplier->company_name).'</small>';
+                        $html .= '<div class="small text-muted mt-1">'.e($user->supplier->company_name).'</div>';
                     }
 
                     return $html;
                 })
                 ->addColumn('role_badge', function ($user) {
                     return match ($user->role) {
-                        'admin' => '<span class="badge bg-danger text-uppercase">Admin</span>',
-                        'purchasing' => '<span class="badge bg-primary text-uppercase">Purchasing</span>',
-                        'supplier' => '<span class="badge bg-info text-dark text-uppercase">Supplier</span>',
-                        'qc' => '<span class="badge bg-warning text-dark text-uppercase">QC</span>',
-                        default => '<span class="badge bg-secondary text-uppercase">'.e($user->role).'</span>',
+                        'admin' => '<span class="ui-status-chip ui-status-chip--neutral">Admin</span>',
+                        'purchasing' => '<span class="ui-status-chip ui-status-chip--neutral">Purchasing</span>',
+                        'supplier' => '<span class="ui-status-chip ui-status-chip--neutral">Supplier</span>',
+                        'qc' => '<span class="ui-status-chip ui-status-chip--neutral">QC</span>',
+                        default => '<span class="ui-status-chip ui-status-chip--neutral">'.e($user->role).'</span>',
                     };
                 })
                 ->addColumn('status_badge', fn ($user) => $user->is_active
-                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success">Active</span>'
-                    : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Inactive</span>')
+                    ? '<span class="ui-status-chip ui-status-chip--success">Active</span>'
+                    : '<span class="ui-status-chip ui-status-chip--neutral">Inactive</span>')
+                ->addColumn('mfa_badge', fn ($user) => $user->hasTwoFactorAuthentication()
+                    ? '<span class="ui-status-chip ui-status-chip--success">Enabled</span>'
+                    : '<span class="ui-status-chip ui-status-chip--neutral">Not enabled</span>')
                 ->addColumn('created_date', fn ($user) => $user->created_at->format('d M Y'))
                 ->addColumn('action', function ($user) {
-                    $html = '<a href="'.route('admin.users.edit', $user).'" class="btn btn-sm btn-outline-secondary" title="Edit">Edit</a>';
+                    $html = '<div class="d-inline-flex align-items-center gap-1">'
+                        .'<a href="'.route('admin.users.edit', $user).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="Edit '.e($user->name).'">Edit</a>';
                     if ($user->id !== auth()->id()) {
-                        $html .= ' <form action="'.route('admin.users.destroy', $user).'" method="POST" class="d-inline delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Delete">Delete</button></form>';
+                        $html .= '<div class="dropdown">'
+                            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($user->name).'">More</button>'
+                            .'<ul class="dropdown-menu dropdown-menu-end">'
+                            .'<li><form action="'.route('admin.users.destroy', $user).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">Delete user</button></form></li>'
+                            .'</ul></div>';
                     }
 
-                    return $html;
+                    return $html.'</div>';
                 })
-                ->rawColumns(['name_display', 'role_badge', 'status_badge', 'action'])
+                ->rawColumns(['name_display', 'role_badge', 'status_badge', 'mfa_badge', 'action'])
                 ->make(true);
         }
 
@@ -224,7 +232,7 @@ class UserController extends Controller
                 ]));
             }
 
-            return redirect()->route('admin.users.index')->with('success', 'Data user successfully updated.');
+            return redirect()->route('admin.users.index')->with('success', 'User successfully updated.');
 
         } catch (\Exception $e) {
             DB::rollBack();

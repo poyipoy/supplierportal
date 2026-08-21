@@ -356,18 +356,18 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width:25px;">No</th>
-                    <th>Material</th>
-                    <th>Thickness<br>Requested</th>
-                    <th>Thickness<br>Actual</th>
-                    <th>Width<br>Requested</th>
-                    <th>Width<br>Actual</th>
-                    <th>Length<br>Requested</th>
-                    <th>Length<br>Actual</th>
-                    <th>Qty</th>
-                    <th>Weight/Unit<br>Requested</th>
-                    <th>Weight<br>Actual</th>
-                    <th>Status</th>
+                    <th scope="col" style="width:25px;">No</th>
+                    <th scope="col">Material</th>
+                    <th scope="col">Thickness<br>Requested</th>
+                    <th scope="col">Thickness<br>Actual</th>
+                    <th scope="col">Width<br>Requested</th>
+                    <th scope="col">Width<br>Actual</th>
+                    <th scope="col">Length<br>Requested</th>
+                    <th scope="col">Length<br>Actual</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">Weight/Unit<br>Requested</th>
+                    <th scope="col">Weight<br>Actual</th>
+                    <th scope="col">Status</th>
                 </tr>
             </thead>
             <tbody>

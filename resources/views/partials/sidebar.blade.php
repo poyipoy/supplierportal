@@ -31,10 +31,10 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.purchase-orders.index')" icon="receipt" :active="request()->routeIs('purchasing.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
 
             <div class="sidebar-heading">Collaboration</div>
-            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index')" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" label="Negotiation & Chat">
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index')" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" label="Negotiation and Chat">
                 Negotiation &amp; Chat
                 <x-slot:trailing>
-                    <span class="chat-badge badge bg-danger rounded-pill {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
+                    <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
                 </x-slot:trailing>
             </x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.claims.index')" icon="shield-alert" :active="request()->routeIs('purchasing.claims.*')" label="Material Claim">Material Claim</x-ui.sidebar-item>
@@ -50,10 +50,10 @@
             <div class="sidebar-heading">Business</div>
             <x-ui.sidebar-item :href="route('supplier.quotations.index')" icon="calendar-days" :active="request()->routeIs('supplier.quotations.*')" label="Quotation Period">Quotation Period</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('supplier.purchase-orders.index')" icon="receipt" :active="request()->routeIs('supplier.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" label="Negotiation & Chat">
+            <x-ui.sidebar-item :href="route('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" label="Negotiation and Chat">
                 Negotiation &amp; Chat
                 <x-slot:trailing>
-                    <span class="chat-badge badge bg-danger rounded-pill {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
+                    <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
                 </x-slot:trailing>
             </x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('supplier.claims.index')" icon="shield-alert" :active="request()->routeIs('supplier.claims.*')" label="Material Claim">Material Claim</x-ui.sidebar-item>
@@ -76,13 +76,13 @@
             <x-ui.sidebar-item :href="route('admin.dashboard')" icon="gauge" :active="request()->routeIs('admin.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
 
             <div class="sidebar-heading">Administration</div>
-            <x-ui.sidebar-item :href="route('admin.users.index')" icon="users" :active="request()->routeIs('admin.users.*')" label="User Management">User Management</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('admin.exchange-rates.index')" icon="badge-dollar-sign" :active="request()->routeIs('admin.exchange-rates.*')" label="Exchange Rate Management">Exchange Rate</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('admin.material-hs-code.index')" icon="boxes" :active="request()->routeIs('admin.material-hs-code.*', 'admin.material-masters.*', 'admin.hs-code-rules.*', 'admin.master-data-quality.*')" label="Master Material & HS Code">Material &amp; HS Code</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('admin.users.index')" icon="users" :active="request()->routeIs('admin.users.*')" label="Users">Users</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('admin.exchange-rates.index')" icon="badge-dollar-sign" :active="request()->routeIs('admin.exchange-rates.*')" label="Exchange Rates">Exchange Rates</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('admin.material-hs-code.index')" icon="boxes" :active="request()->routeIs('admin.material-hs-code.*', 'admin.material-masters.*', 'admin.hs-code-rules.*', 'admin.master-data-quality.*')" label="Materials and HS Code">Materials and HS Code</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('admin.auth-audit-logs.index')" icon="shield-check" :active="request()->routeIs('admin.auth-audit-logs.*')" label="Authentication Audit">Authentication Audit</x-ui.sidebar-item>
 
             <div class="sidebar-heading">Content</div>
-            <x-ui.sidebar-item :href="route('admin.announcements.index')" icon="megaphone" :active="request()->routeIs('admin.announcements.*')" label="Announcement">Announcement</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('admin.announcements.index')" icon="megaphone" :active="request()->routeIs('admin.announcements.*')" label="Announcements">Announcements</x-ui.sidebar-item>
         @endif
     </nav>
 </aside>

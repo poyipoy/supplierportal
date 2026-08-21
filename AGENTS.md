@@ -18,7 +18,7 @@
 | Layer | Teknologi |
 |---|---|
 | Backend | PHP 8.2.30 + Laravel (MVC) |
-| Frontend | Blade Template + Bootstrap 5 + Bootstrap Icons |
+| Frontend | Blade Template + Bootstrap 5 compatibility layer + prefixed Tailwind utilities |
 | Database | MySQL (Laragon untuk dev) |
 | Interaktivitas | JavaScript / jQuery + AJAX |
 | Grafik | Chart.js / ApexCharts |
@@ -124,7 +124,32 @@ resources/views/
 
 routes/
 └── web.php             semua route dikelompokkan per role dengan middleware
+
+docs/
+├── audits/             laporan audit teknis/non-UI
+├── guides/             panduan operasional dan deployment
+├── plans/              rencana, prompt, dan dokumen persiapan
+└── results/            hasil implementasi teknis/non-UI
+
+UI-REDESIGN-RESULT/     seluruh checkpoint, progress, dan hasil redesign UI
+
+ADASI-UI-REDESIGN-PHASE2-MISSIONS/
+└── ADASI-UI-REDESIGN-PHASE2-MISSIONS/
+    └── *.md             kontrak dan source-of-truth mission Phase 2
 ```
+
+### Struktur Dokumentasi
+
+- Root repository hanya untuk entrypoint wajib seperti `README.md` dan `AGENTS.md`.
+- Simpan audit umum di `docs/audits/`.
+- Simpan panduan operasional atau deployment di `docs/guides/`.
+- Simpan planning, prompt, atau dokumen persiapan di `docs/plans/`.
+- Simpan laporan hasil implementasi non-UI di `docs/results/`.
+- Simpan seluruh laporan, checkpoint, progress, dan hasil final UI di `UI-REDESIGN-RESULT/`.
+- Jangan membuat salinan laporan yang sama di root dan di folder tujuan.
+- Sebelum memindahkan atau menghapus duplikat, bandingkan isi/hash dan pertahankan satu file canonical.
+- Setelah memindahkan dokumen, perbarui semua referensi path relatif yang terkait.
+- Jangan memindahkan kontrak mission Phase 2 dari folder source-of-truth-nya tanpa instruksi eksplisit.
 
 ---
 
@@ -292,10 +317,12 @@ foreach ($request->file('attachments', []) as $file) {
 | Aksen ADASI | `#C0392B` (merah) |
 | Background card | `#F4F6F8` |
 | Font | Inter atau Poppins (Google Fonts) |
-| Ikon | Bootstrap Icons (`bi bi-*`) — jangan campur Font Awesome |
+| Ikon | Lucide melalui `<x-ui.icon>`; jangan gunakan `bi-*` atau `<x-lucide-*>` langsung |
 | Tabel | DataTables.js — wajib untuk tabel dengan banyak baris |
-| Notifikasi | Toast Bootstrap atau SweetAlert2 |
+| Notifikasi | AdasiToast untuk feedback transient; AdasiAlert/SweetAlert hanya untuk konfirmasi, prompt, atau keputusan blocking |
 | Loading state | Spinner pada tombol submit saat proses berjalan |
+
+Bootstrap 5 tetap menjadi compatibility layer. Pertahankan integrasi DataTables, dropdown, modal, offcanvas, atribut `data-bs-*`, serta selector JavaScript lama yang masih load-bearing.
 
 **Struktur layout Blade:**
 

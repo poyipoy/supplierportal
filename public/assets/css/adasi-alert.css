@@ -220,61 +220,6 @@
     width: 2.75rem;
 }
 
-.swal2-popup.adasi-alert-toast {
-    align-items: flex-start;
-    border: 1px solid var(--adasi-alert-border);
-    border-left: 4px solid var(--adasi-alert-primary);
-    border-radius: var(--adasi-alert-shape-md);
-    box-shadow: var(--adasi-alert-elevation-3);
-    font-family: 'Inter', sans-serif;
-    padding: 0.9rem 1rem;
-    width: min(24rem, calc(100vw - 2rem));
-}
-
-.swal2-popup.adasi-alert-toast.swal2-icon-success {
-    border-left-color: var(--adasi-alert-success);
-}
-
-.swal2-popup.adasi-alert-toast.swal2-icon-error {
-    border-left-color: var(--adasi-alert-danger);
-}
-
-.swal2-popup.adasi-alert-toast.swal2-icon-warning {
-    border-left-color: var(--adasi-alert-warning);
-}
-
-.adasi-alert-toast--clickable {
-    cursor: pointer;
-}
-
-.adasi-alert-toast .adasi-alert-title {
-    font-size: 0.925rem;
-    padding-right: 1.75rem;
-    text-align: left;
-}
-
-.adasi-alert-toast .adasi-alert-content {
-    font-size: 0.825rem;
-    margin-top: 0.25rem;
-    text-align: left;
-}
-
-.adasi-alert-toast .adasi-alert-icon {
-    background: transparent !important;
-    height: 1.75rem;
-    margin: 0 0.65rem 0 0;
-    width: 1.75rem;
-}
-
-.adasi-alert-toast .adasi-alert-icon .adasi-alert-icon-glyph {
-    font-size: 1.15rem;
-}
-
-.swal2-timer-progress-bar.adasi-alert-progress {
-    background: currentColor;
-    opacity: 0.25;
-}
-
 .adasi-alert-show {
     animation: adasiAlertIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }

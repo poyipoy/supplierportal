@@ -4,36 +4,43 @@
 @section('page-title', 'Export History')
 
 @section('content')
-<x-ui.page-header
-    title="Export History"
-    description="Review generated files and download completed exports within their three-day retention window."
->
-    <x-slot:actions>
-        @if($hasPending)
-            <span class="ui-status-chip ui-status-chip--info" id="exportPollingState"><x-ui.icon name="refresh-cw" size="sm" />Refreshing status</span>
-        @else
-            <span class="ui-status-chip ui-status-chip--neutral" id="exportPollingState">No active exports</span>
-        @endif
-    </x-slot:actions>
-</x-ui.page-header>
+<div class="tw-grid tw-gap-5">
+    <x-ui.page-header
+        title="Export History"
+        description="Review generated files and download completed exports within their retention window."
+        eyebrow="Data Exports"
+    >
+        <x-slot:meta>
+            @if($hasPending)
+                <x-ui.status-chip tone="info" id="exportPollingState"><x-ui.icon name="refresh-cw" size="sm" />Refreshing status</x-ui.status-chip>
+            @else
+                <x-ui.status-chip tone="neutral" id="exportPollingState">No active exports</x-ui.status-chip>
+            @endif
+        </x-slot:meta>
+    </x-ui.page-header>
 
-<x-ui.data-table title="Generated Files" description="Status updates automatically while an export is queued or processing." class="tw-mt-5">
-            <table class="table table-hover align-middle mb-0">
+    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="export-table-title">
+        <header class="tw-border-b tw-border-outline-variant tw-px-5 tw-py-3">
+            <h2 id="export-table-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Generated Files</h2>
+            <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">Status updates automatically while an export is queued or processing.</p>
+        </header>
+        <div class="ui-data-table__scroll tw-overflow-x-auto">
+            <table class="table table-hover align-middle tw-m-0 tw-w-full tw-text-ui-sm">
                 <thead class="table-light">
                     <tr>
-                        <th>Export</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Completed / Expires</th>
-                        <th class="text-end">Actions</th>
+                        <th scope="col">Export</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Created</th>
+                        <th scope="col">Completed / Expires</th>
+                        <th scope="col" class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="exportJobsTableBody">
                     @forelse($items as $item)
                         <tr>
                             <td>
-                                <div class="fw-semibold">{{ $item['label'] }}</div>
-                                <div class="small text-muted text-break">{{ $item['file_name'] }}</div>
+                                <div class="tw-font-semibold">{{ $item['label'] }}</div>
+                                <div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">{{ $item['file_name'] }}</div>
                             </td>
                             <td>
                                 @php
@@ -46,41 +53,42 @@
                                 @endphp
                                 <x-ui.status-chip :tone="$tone">{{ ucfirst($item['status']) }}</x-ui.status-chip>
                             </td>
-                            <td class="small text-muted">{{ $item['created_at'] ? \Carbon\Carbon::parse($item['created_at'])->format('d M Y H:i') : '-' }}</td>
-                            <td class="small text-muted">
+                            <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">{{ $item['created_at'] ? \Carbon\Carbon::parse($item['created_at'])->format('d M Y H:i') : '-' }}</td>
+                            <td class="tw-text-ui-xs tw-text-on-surface-variant">
                                 @if($item['completed_at'])
-                                    Completed: {{ \Carbon\Carbon::parse($item['completed_at'])->format('d M Y H:i') }}<br>
+                                    <span>Completed: {{ \Carbon\Carbon::parse($item['completed_at'])->format('d M Y H:i') }}</span><br>
                                 @endif
                                 @if($item['expires_at'])
-                                    Expires: {{ \Carbon\Carbon::parse($item['expires_at'])->format('d M Y H:i') }}
+                                    <span>Expires: {{ \Carbon\Carbon::parse($item['expires_at'])->format('d M Y H:i') }}</span>
                                 @else
                                     -
                                 @endif
                             </td>
                             <td class="text-end">
                                 @if($item['download_url'])
-                                    <a href="{{ $item['download_url'] }}" class="btn btn-sm btn-outline-success">
-                                        <x-ui.icon name="download" class="me-1" />Download
+                                    <a href="{{ $item['download_url'] }}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-success/60 tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-success tw-no-underline hover:tw-bg-success/5">
+                                        <x-ui.icon name="download" />Download
                                     </a>
                                 @else
-                                    <span class="text-muted small">-</span>
+                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">-</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-5">
-                                <x-ui.icon name="inbox" size="lg" class="d-block mx-auto mb-2" />No exports have been created.
+                            <td colspan="5" class="tw-py-12 tw-text-center">
+                                <x-empty-state icon="inbox" title="No exports have been created." text="Generated exports will appear here." />
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
-
-    @if($jobs->hasPages())
-        <x-slot:pagination>{{ $jobs->links() }}</x-slot:pagination>
-    @endif
-</x-ui.data-table>
+        </div>
+        @if($jobs->hasPages())
+            <div class="tw-border-t tw-border-outline-variant tw-px-5 tw-py-3">{{ $jobs->links() }}</div>
+        @endif
+    </section>
+</div>
 @endsection
 
 @push('scripts')
@@ -110,22 +118,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderRows = (items) => {
         if (!items.length) {
-            body.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-5"><x-ui.icon name="inbox" size="lg" class="d-block mx-auto mb-2" />No exports have been created.</td></tr>';
+            body.innerHTML = '<tr><td colspan="5" class="tw-py-12 tw-text-center"><div class="tw-text-on-surface-variant"><x-ui.icon name="inbox" class="tw-mb-2" /><div class="tw-text-ui-sm tw-font-medium">No exports have been created.</div></div></td></tr>';
             return;
         }
 
         body.innerHTML = items.map((item) => {
-            const completed = item.completed_at ? `Completed: ${escapeHtml(formatDate(item.completed_at))}<br>` : '';
-            const expiry = item.expires_at ? `Expires: ${escapeHtml(formatDate(item.expires_at))}` : '-';
+            const completed = item.completed_at ? `<span>Completed: ${escapeHtml(formatDate(item.completed_at))}</span><br>` : '';
+            const expiry = item.expires_at ? `<span>Expires: ${escapeHtml(formatDate(item.expires_at))}</span>` : '-';
             const action = item.download_url
-                ? `<a href="${escapeHtml(item.download_url)}" class="btn btn-sm btn-outline-success"><x-ui.icon name="download" class="me-1" />Download</a>`
-                : '<span class="text-muted small">-</span>';
+                ? `<a href="${escapeHtml(item.download_url)}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-success/60 tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-success tw-no-underline hover:tw-bg-success/5"><x-ui.icon name="download" />Download</a>`
+                : '<span class="tw-text-ui-xs tw-text-on-surface-variant">-</span>';
 
             return `<tr>
-                <td><div class="fw-semibold">${escapeHtml(item.label)}</div><div class="small text-muted text-break">${escapeHtml(item.file_name)}</div></td>
+                <td><div class="tw-font-semibold">${escapeHtml(item.label)}</div><div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">${escapeHtml(item.file_name)}</div></td>
                 <td><span class="${badgeClass(item.status)} text-capitalize">${escapeHtml(item.status)}</span></td>
-                <td class="small text-muted">${escapeHtml(formatDate(item.created_at))}</td>
-                <td class="small text-muted">${completed}${expiry}</td>
+                <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">${escapeHtml(formatDate(item.created_at))}</td>
+                <td class="tw-text-ui-xs tw-text-on-surface-variant">${completed}${expiry}</td>
                 <td class="text-end">${action}</td>
             </tr>`;
         }).join('');

@@ -1,45 +1,39 @@
 <section>
-    <p class="text-muted small mb-4">Your new password must contain uppercase and lowercase letters, a number, and a symbol.</p>
-
     <form method="POST" action="{{ route('password.update') }}">
         @csrf
         @method('PUT')
 
-        <div class="row g-3">
-            <div class="col-12">
-                <label for="update_password_current_password" class="form-label fw-medium">Current Password</label>
+        <div class="tw-grid tw-gap-4">
+            <div class="tw-grid tw-gap-1.5">
+                <label for="update_password_current_password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Current password</label>
                 <input id="update_password_current_password" name="current_password" type="password"
-                    class="form-control @error('current_password', 'updatePassword') is-invalid @enderror"
+                    class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->updatePassword->has('current_password') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
                     autocomplete="current-password" maxlength="255" required>
-                @error('current_password', 'updatePassword')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                @error('current_password', 'updatePassword')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
             </div>
 
-            <div class="col-md-6">
-                <label for="update_password_password" class="form-label fw-medium">New Password</label>
-                <input id="update_password_password" name="password" type="password"
-                    class="form-control @error('password', 'updatePassword') is-invalid @enderror"
-                    autocomplete="new-password" minlength="12" maxlength="255" required>
-                @error('password', 'updatePassword')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+                <div class="tw-grid tw-gap-1.5">
+                    <label for="update_password_password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">New password</label>
+                    <input id="update_password_password" name="password" type="password"
+                        class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->updatePassword->has('password') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                        autocomplete="new-password" minlength="12" maxlength="255" required>
+                    @error('password', 'updatePassword')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
+                </div>
 
-            <div class="col-md-6">
-                <label for="update_password_password_confirmation" class="form-label fw-medium">Confirm New Password</label>
-                <input id="update_password_password_confirmation" name="password_confirmation" type="password"
-                    class="form-control" autocomplete="new-password" minlength="12" maxlength="255" required>
+                <div class="tw-grid tw-gap-1.5">
+                    <label for="update_password_password_confirmation" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Confirm new password</label>
+                    <input id="update_password_password_confirmation" name="password_confirmation" type="password"
+                        class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
+                        autocomplete="new-password" minlength="12" maxlength="255" required>
+                </div>
             </div>
         </div>
 
-        <div class="d-flex align-items-center gap-3 mt-4">
-            <button type="submit" class="btn btn-primary">
-                <x-ui.icon name="key" class="me-1" />Update Password
+        <div class="tw-mt-5 tw-flex tw-items-center tw-gap-3">
+            <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-10 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-4 tw-text-ui-sm tw-font-semibold tw-text-primary-foreground hover:tw-brightness-95">
+                <x-ui.icon name="key" />Update Password
             </button>
-            @if (session('status') === 'password-updated')
-                <span class="small text-success"><x-ui.icon name="check-circle" class="me-1" />Password updated.</span>
-            @endif
         </div>
     </form>
 </section>

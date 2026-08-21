@@ -15,75 +15,242 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        .auth-shell {
+            display: grid;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+        }
+        @media (min-width: 1024px) {
+            .auth-shell { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* ── Industrial Image Panel ── */
+        .auth-brand-panel {
+            display: none;
+            position: relative;
+            overflow: hidden;
+            background: var(--md-ref-secondary-950);
+        }
+        @media (min-width: 1024px) {
+            .auth-brand-panel { display: flex; flex-direction: column; justify-content: space-between; }
+        }
+
+        .auth-brand-panel__image {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+        .auth-brand-panel__image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+        .auth-brand-panel__overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(var(--md-scrim-rgb), 0.72) 0%,
+                rgba(var(--md-scrim-rgb), 0.60) 40%,
+                rgba(var(--md-scrim-rgb), 0.82) 100%
+            );
+        }
+
+        .auth-brand-panel__content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            padding: 2rem 2.5rem;
+        }
+        @media (min-width: 1280px) {
+            .auth-brand-panel__content { padding: 2.5rem 3rem; }
+        }
+
+        .auth-brand-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .auth-brand-logo img {
+            height: 2rem;
+            width: auto;
+            flex-shrink: 0;
+        }
+        .auth-brand-logo__text {
+            font-size: var(--ui-font-size-sm);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: rgba(var(--md-on-primary-rgb), 0.92);
+            line-height: 1.3;
+        }
+        .auth-brand-logo__sub {
+            display: block;
+            font-size: var(--ui-font-size-xs);
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            color: rgba(var(--md-on-primary-rgb), 0.55);
+            margin-top: 0.125rem;
+        }
+
+        .auth-brand-headline {
+            max-width: 26rem;
+            margin: auto 0;
+            padding: 2rem 0;
+        }
+        .auth-brand-headline h1 {
+            margin: 0;
+            font-size: var(--ui-font-size-2xl);
+            font-weight: 700;
+            line-height: 1.28;
+            letter-spacing: -0.01em;
+            color: var(--md-on-primary);
+        }
+        .auth-brand-headline p {
+            margin: 0.875rem 0 0;
+            font-size: var(--ui-font-size-sm);
+            line-height: 1.6;
+            color: rgba(var(--md-on-primary-rgb), 0.65);
+            max-width: 22rem;
+        }
+
+        .auth-brand-footer {
+            font-size: var(--ui-font-size-xs);
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(var(--md-on-primary-rgb), 0.38);
+        }
+
+        /* ── Auth Form Panel ── */
+        .auth-form-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 2rem 1.5rem;
+            background: var(--md-background);
+        }
+        @media (min-width: 640px) {
+            .auth-form-panel { padding: 2.5rem; }
+        }
+        @media (min-width: 1024px) {
+            .auth-form-panel { min-height: unset; padding: 3rem 3.5rem; }
+        }
+
+        .auth-form-surface {
+            width: 100%;
+            max-width: 26rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Mobile brand fallback */
+        .auth-mobile-brand {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.625rem;
+            text-decoration: none;
+            color: var(--md-on-surface);
+            margin-bottom: 0.25rem;
+        }
+        .auth-mobile-brand img {
+            height: 2.25rem;
+            width: auto;
+        }
+        .auth-mobile-brand__name {
+            font-weight: 700;
+            font-size: var(--ui-font-size-base);
+            color: var(--md-primary);
+        }
+        .auth-mobile-brand__sub {
+            display: block;
+            font-size: var(--ui-font-size-xs);
+            color: var(--md-on-surface-variant);
+        }
+        @media (min-width: 1024px) {
+            .auth-mobile-brand { display: none; }
+        }
+
+        /* Auth card — clean, flat, no glass */
+        .auth-card {
+            background: var(--md-surface);
+            border: 1px solid var(--md-outline-variant);
+            border-radius: var(--md-shape-sm);
+            padding: 1.75rem;
+        }
+        @media (min-width: 640px) {
+            .auth-card { padding: 2rem 2.25rem; }
+        }
+
+        .auth-footer-copy {
+            text-align: center;
+            font-size: var(--ui-font-size-xs);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--md-on-surface-variant);
+            opacity: 0.6;
+            margin-top: 0.25rem;
+        }
+    </style>
 </head>
 <body class="tw-m-0 tw-min-h-screen tw-bg-surface tw-font-sans tw-text-on-surface tw-antialiased">
-    <main class="tw-min-h-screen tw-w-full tw-grid lg:tw-grid-cols-2">
-        <!-- Left Column: 50% Full-bleed Brand Hero (100vh) -->
-        <aside class="tw-relative tw-hidden lg:tw-flex lg:tw-flex-col lg:tw-justify-between tw-p-10 xl:tw-p-16 tw-text-white tw-overflow-hidden" aria-label="ADASI Supplier Portal information">
-            <!-- Background Image with deep slate gradient overlay -->
-            <div class="tw-absolute tw-inset-0 tw-z-0">
-                <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" class="tw-h-full tw-w-full tw-object-cover">
-                <div class="tw-absolute tw-inset-0 tw-bg-[#0B1C30]/85 tw-mix-blend-multiply"></div>
-                <div class="tw-absolute tw-inset-0 tw-bg-gradient-to-t tw-from-[#0B1C30] tw-via-transparent tw-to-transparent tw-opacity-90"></div>
+    <main class="auth-shell">
+        {{-- Left Column: Industrial Image Panel --}}
+        <aside class="auth-brand-panel" aria-label="ADASI Supplier Portal information">
+            <div class="auth-brand-panel__image">
+                <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager">
+                <div class="auth-brand-panel__overlay"></div>
             </div>
 
-            <!-- Content on top of overlay -->
-            <div class="tw-relative tw-z-10 tw-flex tw-flex-col tw-h-full tw-justify-between">
-                <!-- Top Brand & Badge -->
-                <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center tw-justify-between tw-gap-4">
-                    <div class="tw-inline-flex tw-items-center tw-gap-3">
-                        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo" class="tw-h-11 tw-w-auto">
-                        <div>
-                            <div class="tw-text-ui-lg tw-font-bold tw-tracking-wide tw-text-white">ASTRA DAIDO STEEL INDONESIA</div>
-                            <div class="tw-text-ui-xs tw-text-slate-300">Supplier Portal</div>
-                        </div>
-                    </div>
-                    <div class="tw-inline-flex tw-items-center tw-gap-2 tw-rounded-full tw-bg-emerald-500/20 tw-border tw-border-emerald-500/30 tw-px-3.5 tw-py-1.5 tw-text-emerald-300 tw-backdrop-blur-sm">
-                        <x-ui.icon name="shield-lock" size="sm" />
-                        <span class="tw-text-[11px] tw-font-bold tw-uppercase tw-tracking-widest">Secure Procurement</span>
+            <div class="auth-brand-panel__content">
+                <div class="auth-brand-logo">
+                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo">
+                    <div>
+                        <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
+                        <span class="auth-brand-logo__sub">Supplier Portal</span>
                     </div>
                 </div>
 
-                <!-- Middle Headline & Subtext -->
-                <div class="tw-my-12 lg:tw-my-auto tw-max-w-xl">
-                    <h1 class="tw-m-0 tw-text-3xl lg:tw-text-4xl xl:tw-text-[46px] tw-font-bold tw-leading-tight tw-tracking-tight tw-text-white">
-                        Streamline every step of procurement.
-                    </h1>
-                    <p class="tw-m-0 tw-mt-5 tw-text-ui-base lg:tw-text-ui-lg tw-leading-relaxed tw-text-slate-200/90 tw-max-w-lg">
-                        Manage purchasing activities, supplier responses, and order progress through one integrated portal.
-                    </p>
+                <div class="auth-brand-headline">
+                    <h1>Integrated procurement. One shared platform.</h1>
+                    <p>Manage purchasing activities, supplier collaboration, and order progress in a single portal.</p>
                 </div>
 
-                <!-- Bottom Footnote -->
-                <div>
-                    <span class="tw-text-ui-xs tw-font-semibold tw-tracking-wider tw-text-slate-400 uppercase">
-                        PT. ASTRA DAIDO STEEL INDONESIA
-                    </span>
+                <div class="auth-brand-footer">
+                    PT. Astra Daido Steel Indonesia
                 </div>
             </div>
         </aside>
 
-        <!-- Right Column: 50% Full-height Authentication Section (100vh) -->
-        <section class="tw-w-full tw-flex tw-min-h-screen tw-flex-col tw-items-center tw-justify-center tw-p-6 sm:tw-p-10 lg:tw-p-12 xl:tw-p-16 tw-bg-[#F8FAFC]">
-            <div class="tw-w-full tw-max-w-md tw-flex tw-flex-col tw-gap-6">
-                <!-- Mobile brand fallback -->
-                <a href="{{ route('login') }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-gap-3 tw-rounded-ui-sm tw-text-on-surface tw-no-underline lg:tw-hidden tw-mb-2">
-                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" class="tw-h-10 tw-w-auto">
-                    <span class="tw-text-start">
-                        <span class="tw-block tw-font-bold tw-text-primary">ADASI</span>
-                        <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">Supplier Portal</span>
+        {{-- Right Column: Authentication Form --}}
+        <section class="auth-form-panel">
+            <div class="auth-form-surface">
+                <a href="{{ route('login') }}" class="auth-mobile-brand">
+                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="">
+                    <span>
+                        <span class="auth-mobile-brand__name">ADASI</span>
+                        <span class="auth-mobile-brand__sub">Supplier Portal</span>
                     </span>
                 </a>
 
-                <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-white tw-p-6 tw-shadow-ui-1 sm:tw-p-8">
+                <div class="auth-card">
                     @include('partials.alerts')
                     @yield('content')
                 </div>
 
-                <div class="tw-text-center tw-mt-2">
-                    <span class="tw-text-[12px] tw-tracking-wider tw-uppercase tw-text-on-surface-variant/70">
-                        &copy; {{ now()->year }} PT. Astra Daido Steel Indonesia
-                    </span>
+                <div class="auth-footer-copy">
+                    &copy; {{ now()->year }} PT. Astra Daido Steel Indonesia
                 </div>
             </div>
         </section>

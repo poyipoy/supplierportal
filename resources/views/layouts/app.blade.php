@@ -42,7 +42,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(15, 23, 42, 0.45);
+            background: rgba(var(--md-scrim-rgb), 0.45);
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
             display: none;
@@ -106,7 +106,7 @@
         }
 
         .adasi-loader-text {
-            font-size: 0.8125rem;
+            font-size: var(--ui-font-size-sm);
             font-weight: 700;
             color: var(--md-primary);
             letter-spacing: 0.5px;
@@ -190,7 +190,7 @@
             width: fit-content;
             max-width: 100%;
             line-height: 1.4;
-            font-size: 0.875rem;
+            font-size: var(--ui-font-size-sm);
         }
 
         .chat-message-text {
@@ -214,7 +214,7 @@
             align-items: center;
             color: var(--md-on-surface-variant);
             display: flex;
-            font-size: 0.6875rem;
+            font-size: var(--ui-font-size-xs);
             gap: 0.25rem;
             line-height: 1.2;
             margin-top: 0.25rem;
@@ -240,7 +240,7 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
             max-height: 145px;
             overflow-y: auto;
-            font-size: 0.75rem;
+            font-size: var(--ui-font-size-xs);
         }
 
         .chat-context-field {
@@ -286,15 +286,15 @@
 
         .chat-attachment-link {
             align-items: center;
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(var(--md-on-primary-rgb), 0.16);
+            border: 1px solid rgba(var(--md-on-primary-rgb), 0.28);
             border-radius: var(--md-shape-xs);
             color: inherit;
             display: flex;
             max-width: 100%;
             padding: 0.35rem 0.5rem;
             text-decoration: none;
-            font-size: 0.8125rem;
+            font-size: var(--ui-font-size-sm);
         }
 
         .chat-message-bubble.is-partner .chat-attachment-link {
@@ -306,7 +306,7 @@
         .chat-read-receipt {
             color: var(--md-outline-strong);
             display: inline-flex;
-            font-size: 0.75rem;
+            font-size: var(--ui-font-size-xs);
             line-height: 1;
             vertical-align: -0.05rem;
         }
@@ -333,19 +333,6 @@
             background: var(--md-surface);
             border: 1px solid var(--md-outline-variant);
             border-radius: var(--md-shape-md);
-        }
-
-        .chat-fullpage-card .card-header {
-            min-height: 52px;
-            padding: 0.5rem 1rem !important;
-            border-bottom: 1px solid var(--md-outline-variant);
-            background: var(--md-surface);
-        }
-
-        .chat-fullpage-card .card-footer {
-            padding: 0.6rem 1rem !important;
-            border-top: 1px solid var(--md-outline-variant);
-            background: var(--md-surface);
         }
 
         .chat-fullpage-card #chat-messages {
@@ -385,7 +372,7 @@
 
         .notification-menu-heading {
             color: var(--md-on-surface-variant);
-            font-size: 0.6875rem;
+            font-size: var(--ui-font-size-xs);
             font-weight: 700;
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
@@ -397,7 +384,7 @@
             border-radius: var(--md-shape-xs);
             color: var(--md-on-surface-variant);
             display: flex;
-            font-size: 0.8125rem;
+            font-size: var(--ui-font-size-sm);
             font-weight: 500;
             flex: 0 0 auto;
             gap: 0.5rem;
@@ -445,14 +432,6 @@
 
         .notification-item:hover {
             background: var(--md-surface-container-low);
-        }
-
-        .min-w-0 {
-            min-width: 0;
-        }
-
-        .cursor-pointer {
-            cursor: pointer !important;
         }
 
         @media (max-width: 991.98px) {
@@ -1051,7 +1030,7 @@
                         document.createElement('div');
 
                     content.className =
-                        'min-w-0 flex-grow-1';
+                        'tw-min-w-0 flex-grow-1';
 
                     const heading =
                         document.createElement('div');

@@ -27,13 +27,14 @@ class HsCodeRuleController extends Controller
             ->removeColumn('rule_key')
             ->addColumn('conditions_display', fn (HsCodeRule $rule) => e($this->conditionSummary($rule->conditions)))
             ->addColumn('status_badge', fn (HsCodeRule $rule) => match ($rule->status) {
-                HsCodeRule::STATUS_ACTIVE => '<span class="badge bg-success">Active</span>',
-                HsCodeRule::STATUS_CONFLICT => '<span class="badge bg-danger">Conflict</span>',
-                default => '<span class="badge bg-secondary">Inactive</span>',
+                HsCodeRule::STATUS_ACTIVE => '<span class="ui-status-chip ui-status-chip--success">Active</span>',
+                HsCodeRule::STATUS_CONFLICT => '<span class="ui-status-chip ui-status-chip--error">Conflict</span>',
+                default => '<span class="ui-status-chip ui-status-chip--neutral">Inactive</span>',
             })
             ->addColumn('source_display', fn (HsCodeRule $rule) => e(collect($rule->source_refs)
                 ->map(fn (array $ref) => basename($ref['file'] ?? 'Admin').' #'.implode(',', $ref['entries'] ?? []))
                 ->join('; ') ?: 'Admin'))
+            ->addColumn('updated_date', fn (HsCodeRule $rule) => $rule->updated_at?->format('d M Y') ?? '-')
             ->addColumn('action', function (HsCodeRule $rule) {
                 $payload = e(json_encode([
                     'id' => $rule->id,
@@ -46,9 +47,13 @@ class HsCodeRuleController extends Controller
                     'notes' => $rule->notes,
                 ], JSON_THROW_ON_ERROR));
 
-                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-rule" data-rule="'.$payload.'" aria-label="Edit HS Code rule" title="Edit HS Code rule">Edit</button> '
-                    .'<button type="button" class="btn btn-sm '.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'btn-outline-secondary' : 'btn-outline-success').' btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'" aria-label="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate HS Code rule' : 'Activate HS Code rule').'" title="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate HS Code rule' : 'Activate HS Code rule').'">'
-                    .($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate' : 'Activate').'</button>';
+                $stateLabel = $rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate rule' : 'Activate rule';
+
+                return '<div class="d-inline-flex align-items-center gap-1">'
+                    .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-rule" data-rule="'.$payload.'" aria-label="Edit HS Code rule '.e($rule->hs_code).'">Edit</button>'
+                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for HS Code '.e($rule->hs_code).'">More</button>'
+                    .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'">'.$stateLabel.'</button></li></ul></div>'
+                    .'</div>';
             })
             ->rawColumns(['status_badge', 'action'])
             ->toJson();

@@ -204,7 +204,7 @@ class SupplierPriceHistoryController extends Controller
             ->addColumn('action', function ($row) {
                 $url = route('supplier.price-history.historical', ['material_name' => $row->material_name]);
 
-                return '<a href="'.$url.'" class="btn btn-sm btn-outline-primary">View History</a>';
+                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">View History</a>';
             })
             ->addColumn('price_info', function ($row) {
                 $latest = $row->latest_price_idr ?? 0;

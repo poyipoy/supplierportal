@@ -4,111 +4,136 @@
 @section('page-title', 'Create Purchase Order')
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw-grid tw-gap-4">
+    {{-- Breadcrumb & Compact Page Header --}}
+    <x-ui.breadcrumb :items="[
+        'Purchase Orders' => \App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index'),
+        'Create' => null,
+    ]" />
+
     <x-ui.page-header
         title="Create Purchase Order"
-        :description="'Build a PO from ' . ($quotation->purchaseRequisition->pr_number ?? 'the selected quotation') . ' without changing its approved commercial snapshot.'"
-        eyebrow="Purchasing"
+        eyebrow="Order Processing"
+        :description="'Build an official PO from ' . ($quotation->purchaseRequisition->pr_number ?? 'the accepted quotation') . ' with fixed commercial rates.'"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back</x-ui.button>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>Back to Quotations</span>
+            </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
-{{-- Summary Card --}}
-<x-ui.card title="Primary Quotation Summary" description="The supplier, currency, and exchange rate are fixed by the accepted quotation.">
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted small">Supplier</div>
-            <div class="col-md-9 fw-medium">{{ $quotation->supplier->name }}</div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted small">PR No.</div>
-            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted small">Period</div>
-            <div class="col-md-9 fw-medium">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name }}</div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted small">Currency</div>
-            <div class="col-md-9 fw-medium">{{ $quotation->currency }}</div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted small">Exchange Rate Used</div>
-            <div class="col-md-9 fw-medium">
-                @if($rate)
-                    1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
-                @else
-                    <span class="text-danger">Exchange rate is not available</span>
-                @endif
+    {{-- Section 1: Primary Quotation Snapshot --}}
+    <x-ui.form-section
+        title="Commercial Snapshot"
+        description="The supplier, currency, and exchange rate are locked based on the accepted quotation."
+    >
+        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
+            <div class="p-3 tw-bg-surface-low border rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
+                <div class="fw-bold tw-text-on-surface fs-6 mt-1">{{ $quotation->supplier->name }}</div>
+            </div>
+            <div class="p-3 tw-bg-surface-low border rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Primary PR Reference</div>
+                <div class="fw-bold text-primary fs-6 mt-1">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
+            </div>
+            <div class="p-3 tw-bg-surface-low border rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Procurement Period</div>
+                <div class="fw-semibold tw-text-on-surface fs-6 mt-1">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name }}</div>
+            </div>
+            <div class="p-3 tw-bg-surface-low border rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Locked Currency &amp; Exchange Rate</div>
+                <div class="fw-bold tw-text-on-surface fs-6 mt-1">
+                    <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $quotation->currency }}</span>
+                    @if($rate)
+                        <span class="tw-text-on-surface tw-text-ui-xs tw-font-mono">1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}</span>
+                    @else
+                        <span class="text-danger tw-text-ui-xs">Exchange rate not found</span>
+                    @endif
+                </div>
             </div>
         </div>
-</x-ui.card>
+    </x-ui.form-section>
 
-{{-- Consolidation: Additional Quotations --}}
-@if($otherQuotations->count() > 0)
-<x-ui.card title="Combine Other PRs into This PO" description="Only compatible quotations from the same supplier and currency are available.">
-    <x-slot:actions><x-ui.status-chip tone="info">{{ $otherQuotations->count() }} available</x-ui.status-chip></x-slot:actions>
-        <p class="text-muted small mb-3">
-            Check other quotations from <strong>{{ $quotation->supplier->name }}</strong> ({{ $quotation->currency }}) that should be combined into one Purchase Order.
-        </p>
-        <div class="list-group list-group-flush">
-            @foreach($otherQuotations as $oq)
-                @php
-                    $oqItems = [];
-                    foreach ($oq->items as $i) {
-                        $oqItems[] = [
-                            'material' => $i->prItem->material_name,
-                            'quantity' => (int)$i->prItem->quantity_value,
-                            'weight_unit' => (float)$i->prItem->weight_needed,
-                            'weight' => (float)$i->prItem->total_weight,
-                            'price' => (float)$i->price_per_kg,
-                            'amount' => $i->resolved_amount,
-                            'rate' => (float)($oq->exchange_rate?->rate_to_idr ?? 0),
-                        ];
-                    }
-                @endphp
-                <label class="list-group-item d-flex align-items-center gap-3 py-3 consolidate-item tw-cursor-pointer" for="oq_{{ $oq->id }}">
-                    <input type="checkbox" class="form-check-input consolidate-check" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)'>
-                    <div class="flex-grow-1">
-                        <div class="fw-medium">{{ $oq->purchaseRequisition->pr_number ?? '-' }}</div>
-                        <div class="text-muted small">
-                            {{ $oq->purchaseRequisition->period->display_label ?? $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ $oq->items->count() }} item
-                            @if($oq->exchange_rate)
-                                &bull; Exchange rate: Rp {{ number_format($oq->exchange_rate->rate_to_idr, 0, ',', '.') }}
-                            @endif
-                        </div>
-                    </div>
-                    <div class="text-end">
+    {{-- Section 2: Multi-PR Consolidation (if other compatible quotations exist) --}}
+    @if($otherQuotations->count() > 0)
+        <x-ui.form-section
+            title="Combine Additional PRs"
+            description="Select compatible approved quotations from {{ $quotation->supplier->name }} ({{ $quotation->currency }}) to combine into this PO."
+        >
+            <x-slot:actions>
+                <span class="ui-status-chip ui-status-chip--info">
+                    {{ $otherQuotations->count() }} Compatible Quotations Available
+                </span>
+            </x-slot:actions>
+
+            <div class="border rounded overflow-hidden">
+                <div class="list-group list-group-flush">
+                    @foreach($otherQuotations as $oq)
                         @php
+                            $oqItems = [];
+                            foreach ($oq->items as $i) {
+                                $oqItems[] = [
+                                    'material' => $i->prItem->material_name,
+                                    'quantity' => (int)$i->prItem->quantity_value,
+                                    'weight_unit' => (float)$i->prItem->weight_needed,
+                                    'weight' => (float)$i->prItem->total_weight,
+                                    'price' => (float)$i->price_per_kg,
+                                    'amount' => $i->resolved_amount,
+                                    'rate' => (float)($oq->exchange_rate?->rate_to_idr ?? 0),
+                                ];
+                            }
                             $oqTotal = $oq->items->sum('amount');
                             $oqRate = $oq->exchange_rate;
                             $oqIdr = $oqTotal * ($oqRate ? $oqRate->rate_to_idr : 1);
                         @endphp
-                        <div class="fw-bold small">{{ number_format($oqTotal, 2) }} {{ $oq->currency }}</div>
-                        <div class="text-muted small">≈ Rp {{ number_format($oqIdr, 0, ',', '.') }}</div>
-                    </div>
-                </label>
-            @endforeach
-        </div>
-</x-ui.card>
-@endif
+                        <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 tw-py-2.5 px-3 consolidate-item tw-cursor-pointer" for="oq_{{ $oq->id }}">
+                            <input type="checkbox" class="form-check-input consolidate-check mt-0" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)'>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold tw-text-on-surface tw-text-ui-sm">{{ $oq->purchaseRequisition->pr_number ?? '-' }}</div>
+                                <div class="tw-text-on-surface-variant tw-text-ui-xs">
+                                    {{ $oq->purchaseRequisition->period->display_label ?? $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ $oq->items->count() }} item(s)
+                                    @if($oq->exchange_rate)
+                                        &bull; Rate: Rp {{ number_format($oq->exchange_rate->rate_to_idr, 0, ',', '.') }}
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold tw-text-on-surface tw-text-ui-sm">{{ number_format($oqTotal, 2) }} {{ $oq->currency }}</div>
+                                <div class="tw-text-on-surface-variant tw-text-ui-xs">≈ Rp {{ number_format($oqIdr, 0, ',', '.') }}</div>
+                            </div>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+        </x-ui.form-section>
+    @endif
 
-{{-- Material Breakdown --}}
-<x-ui.data-table title="Material Breakdown" description="Selected quotations are combined here before the PO is submitted.">
-    <x-slot:toolbar><x-ui.status-chip tone="info" id="totalItemCount">{{ $quotation->items->count() }} item</x-ui.status-chip></x-slot:toolbar>
-            <table class="table table-bordered align-middle mb-0 tw-text-ui-sm">
+    {{-- Section 3: Material Breakdown Table --}}
+    <x-ui.form-section
+        title="Material Breakdown"
+        description="Comprehensive item list including consolidated PR lines, quantities, and converted costs."
+    >
+        <x-slot:actions>
+            <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums" id="totalItemCount">
+                {{ $quotation->items->count() }} Item(s)
+            </span>
+        </x-slot:actions>
+
+        <div class="table-responsive border rounded overflow-hidden">
+            <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                 <thead class="table-light text-center">
                     <tr>
-                        <th>No</th>
-                        <th>PR No.</th>
-                        <th>Material</th>
-                        <th>Qty</th>
-                        <th>Weight/Unit (Kg)</th>
-                        <th>Total Weight (Kg)</th>
-                        <th>Price/Kg ({{ $quotation->currency }})</th>
-                        <th>Amount ({{ $quotation->currency }})</th>
-                        <th>Est. IDR</th>
+                        <th scope="col" style="width: 40px;">No</th>
+                        <th scope="col">PR No.</th>
+                        <th scope="col">Material</th>
+                        <th scope="col" class="text-center">Qty</th>
+                        <th scope="col" class="text-end">Weight/Unit (kg)</th>
+                        <th scope="col" class="text-end">Total Weight (kg)</th>
+                        <th scope="col" class="text-end">Price/Kg ({{ $quotation->currency }})</th>
+                        <th scope="col" class="text-end">Amount ({{ $quotation->currency }})</th>
+                        <th scope="col" class="text-end">Est. IDR</th>
                     </tr>
                 </thead>
                 <tbody id="materialTableBody">
@@ -121,50 +146,63 @@
                             $totalIdr += $idr;
                         @endphp
                         <tr>
-                            <td class="text-center">{{ $no++ }}</td>
-                            <td class="fw-medium text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</td>
-                            <td>{{ $item->prItem->material_name }}</td>
-                            <td class="text-center">{{ number_format($item->prItem->quantity_value, 0) }}</td>
-                            <td class="text-center">{{ number_format($item->prItem->weight_needed, 2) }}</td>
-                            <td class="text-center fw-medium text-primary">{{ number_format($item->prItem->total_weight, 2) }}</td>
-                            <td class="text-end">{{ number_format($item->price_per_kg, 4) }}</td>
-                            <td class="text-end fw-medium">{{ number_format($amount, 2) }}</td>
-                            <td class="text-end">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                            <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
+                            <td class="fw-bold text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</td>
+                            <td class="fw-semibold tw-text-on-surface">{{ $item->prItem->material_name }}</td>
+                            <td class="text-center ui-tabular-nums">{{ number_format($item->prItem->quantity_value, 0) }}</td>
+                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->prItem->weight_needed, 2) }}</td>
+                            <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->prItem->total_weight, 2) }}</td>
+                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->price_per_kg, 4) }}</td>
+                            <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
+                            <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp {{ number_format($idr, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
-                <tfoot class="table-light fw-bold">
+                <tfoot class="table-light fw-bold border-top">
                     <tr>
-                        <td colspan="7" class="text-end">GRAND TOTAL</td>
-                        <td class="text-end" id="grandTotalAmount">{{ number_format($totalAmount, 2) }} {{ $quotation->currency }}</td>
-                        <td class="text-end text-primary" id="grandTotalIdr">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
+                        <td colspan="7" class="text-end tw-text-on-surface">GRAND TOTAL</td>
+                        <td class="text-end tw-text-on-surface ui-tabular-nums" id="grandTotalAmount">{{ number_format($totalAmount, 2) }} {{ $quotation->currency }}</td>
+                        <td class="text-end text-primary ui-tabular-nums fs-6" id="grandTotalIdr">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                     </tr>
                 </tfoot>
             </table>
-</x-ui.data-table>
-
-{{-- PO Form --}}
-<form action="{{ route('purchasing.purchase-orders.store') }}" method="POST" id="poForm">
-    @csrf
-    <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-    {{-- Primary quotation always included --}}
-    <input type="hidden" name="quotation_ids[]" value="{{ $quotation->id }}">
-    {{-- Additional quotations added dynamically --}}
-    <div id="additionalQuotationInputs"></div>
-
-    <x-ui.card title="Purchase Order Information" description="Set the expected arrival and add an optional note for operational follow-up.">
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
-            <x-ui.input type="date" name="estimated_arrival" label="Estimated Arrival Material" required />
-            <x-ui.textarea name="notes" label="PO Notes" :rows="2" placeholder="Optional..." />
         </div>
-    </x-ui.card>
+    </x-ui.form-section>
 
-    <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
-        <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost">Cancel</x-ui.button>
-        <x-ui.button type="button" id="btnCreatePo"><x-ui.icon name="check-circle" /> Create Purchase Order</x-ui.button>
-    </div>
-</form>
+    {{-- Section 4: Target Arrival & Order Form --}}
+    <form action="{{ route('purchasing.purchase-orders.store') }}" method="POST" id="poForm">
+        @csrf
+        <input type="hidden" name="return_url" value="{{ request('return_url') }}">
+        <input type="hidden" name="quotation_ids[]" value="{{ $quotation->id }}">
+        <div id="additionalQuotationInputs"></div>
 
+        <x-ui.form-section
+            title="Order Logistics and Remarks"
+            description="Specify the estimated material delivery arrival date and any operational order instructions."
+        >
+            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <x-ui.input type="date" name="estimated_arrival" label="Estimated Arrival Date" required />
+                <x-ui.textarea name="notes" label="Purchase Order Notes / Instructions" :rows="2" placeholder="Optional notes for delivery coordination..." />
+            </div>
+        </x-ui.form-section>
+
+        {{-- Sticky Action Bar --}}
+        <x-ui.action-bar class="tw-mt-6">
+            <x-slot:left>
+                <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
+                    <x-ui.icon name="arrow-left" size="sm" />
+                    <span>Cancel</span>
+                </x-ui.button>
+            </x-slot:left>
+
+            <x-slot:right>
+                <x-ui.button type="button" id="btnCreatePo" size="sm">
+                    <x-ui.icon name="check-circle" size="sm" />
+                    <span>Create Purchase Order</span>
+                </x-ui.button>
+            </x-slot:right>
+        </x-ui.action-bar>
+    </form>
 </div>
 @endsection
 
@@ -186,7 +224,6 @@
 
 @push('scripts')
 <script>
-    // Store primary quotation items for the table
     const primaryItems = @json($primaryItemsData);
     const currency = @json($quotation->currency);
 
@@ -203,7 +240,7 @@
         // Additional checked quotation items
         $('.consolidate-check:checked').each(function() {
             const items = $(this).data('items');
-            const prLabel = $(this).closest('.consolidate-item').find('.fw-medium').text();
+            const prLabel = $(this).closest('.consolidate-item').find('.fw-bold').text().trim();
             items.forEach(item => {
                 allItems.push({
                     pr_number: prLabel,
@@ -227,22 +264,22 @@
             totalAmount += item.amount;
             totalIdr += idr;
             html += `<tr>
-                <td class="text-center">${i + 1}</td>
-                <td class="fw-medium text-primary">${item.pr_number}</td>
-                <td>${item.material}</td>
-                <td class="text-center">${formatNumber(item.quantity, 0)}</td>
-                <td class="text-center">${formatNumber(item.weight_unit, 2)}</td>
-                <td class="text-center fw-medium text-primary">${formatNumber(item.weight, 2)}</td>
-                <td class="text-end">${formatNumber(item.price, 4)}</td>
-                <td class="text-end fw-medium">${formatNumber(item.amount, 2)}</td>
-                <td class="text-end">Rp ${formatNumber(idr, 0)}</td>
+                <td class="text-center tw-text-on-surface-variant ui-tabular-nums">${i + 1}</td>
+                <td class="fw-bold text-primary">${item.pr_number}</td>
+                <td class="fw-semibold tw-text-on-surface">${item.material}</td>
+                <td class="text-center ui-tabular-nums">${formatNumber(item.quantity, 0)}</td>
+                <td class="text-end ui-tabular-nums tw-text-on-surface-variant">${formatNumber(item.weight_unit, 2)}</td>
+                <td class="text-end fw-bold text-primary ui-tabular-nums">${formatNumber(item.weight, 2)}</td>
+                <td class="text-end ui-tabular-nums tw-text-on-surface-variant">${formatNumber(item.price, 4)}</td>
+                <td class="text-end fw-semibold ui-tabular-nums">${formatNumber(item.amount, 2)}</td>
+                <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp ${formatNumber(idr, 0)}</td>
             </tr>`;
         });
 
         $('#materialTableBody').html(html);
         $('#grandTotalAmount').text(formatNumber(totalAmount, 2) + ' ' + currency);
         $('#grandTotalIdr').text('Rp ' + formatNumber(totalIdr, 0));
-        $('#totalItemCount').text(allItems.length + ' item');
+        $('#totalItemCount').text(allItems.length + ' Item(s)');
 
         // Update hidden inputs for additional quotation_ids
         $('#additionalQuotationInputs').empty();
@@ -253,12 +290,10 @@
         });
     }
 
-    // Listen for checkbox changes
     $(document).on('change', '.consolidate-check', function() {
         rebuildTable();
     });
 
-    // Submit confirmation
     $('#btnCreatePo').on('click', function() {
         const checkedCount = $('.consolidate-check:checked').length;
         const totalPr = 1 + checkedCount;

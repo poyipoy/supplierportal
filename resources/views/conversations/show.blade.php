@@ -4,117 +4,112 @@
 
 @section('content')
     <div class="chat-fullpage-shell">
-    <div class="chat-fullpage-back">
+    <div class="tw-mb-2">
         @php
-            $backRoute = auth()->user()->role === 'purchasing' 
-                ? \App\Support\PurchasingNavigation::backUrl('purchasing.conversations.index') 
+            $backRoute = auth()->user()->role === 'purchasing'
+                ? \App\Support\PurchasingNavigation::backUrl('purchasing.conversations.index')
                 : route('supplier.conversations.index');
         @endphp
-        <a href="{{ $backRoute }}" class="text-decoration-none text-muted small">
-            <x-ui.icon name="arrow-left" class="me-1" /> Back to Chat List
+        <a href="{{ $backRoute }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-text-ui-sm tw-font-medium tw-text-on-surface-variant tw-no-underline hover:tw-text-on-surface">
+            <x-ui.icon name="arrow-left" /> Back to Chat List
         </a>
     </div>
 
     @isset($chatContext)
-        <div class="card border-0 shadow-sm chat-fullpage-context">
-            <div class="card-body">
-                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge {{ $chatContext['type'] === 'PO' ? 'bg-success' : 'bg-primary' }}">{{ $chatContext['type'] }}</span>
-                            <h6 class="mb-0 fw-bold">{{ $chatContext['title'] }}</h6>
-                        </div>
-                        <div class="small text-muted">{{ $chatContext['subtitle'] }}</div>
+        <div class="tw-border tw-border-outline-variant tw-bg-surface tw-mb-2">
+            <div class="tw-flex tw-flex-wrap tw-items-start tw-justify-between tw-gap-3 tw-px-4 tw-py-3">
+                <div class="tw-min-w-0">
+                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-0.5">
+                        <x-ui.status-chip :tone="$chatContext['type'] === 'PO' ? 'success' : 'info'" size="sm">{{ $chatContext['type'] }}</x-ui.status-chip>
+                        <span class="tw-text-ui-sm tw-font-semibold tw-truncate">{{ $chatContext['title'] }}</span>
                     </div>
-                    @if($chatContext['url'])
-                        <a href="{{ $chatContext['url'] }}" class="btn btn-sm btn-outline-primary">
-                            <x-ui.icon name="external-link" class="me-1" /> Open Details
-                        </a>
-                    @endif
+                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $chatContext['subtitle'] }}</span>
                 </div>
-                @if(!empty($chatContext['fields']))
-                    <details class="chat-fullpage-context-details mt-2">
-                        <summary class="small fw-semibold text-primary">Context Details</summary>
-                        <div class="row g-2 mt-2">
-                            @foreach($chatContext['fields'] as $field)
-                                <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                                    <div class="border rounded bg-light px-3 py-2 h-100">
-                                        <div class="small text-muted">{{ $field['label'] }}</div>
-                                        <div class="fw-semibold text-truncate">{{ $field['value'] }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </details>
-                @endif
-                @if(!empty($quickActions))
-                    <div class="d-flex flex-wrap gap-2 mt-3" id="chatQuickActions">
-                        @foreach($quickActions as $action)
-                            @if(($action['type'] ?? '') === 'link')
-                                <a href="{{ $action['url'] }}" class="btn btn-sm btn-{{ $action['variant'] ?? 'outline-primary' }}">
-                                    <x-ui.icon :name="$action['icon'] ?? 'arrow-right'" class="me-1" />{{ $action['label'] }}
-                                </a>
-                            @else
-                                <button type="button"
-                                    class="btn btn-sm btn-{{ $action['variant'] ?? 'outline-primary' }}"
-                                    data-chat-action="{{ $action['key'] }}"
-                                    data-chat-action-label="{{ $action['label'] }}"
-                                    data-chat-action-note="{{ !empty($action['requires_note']) ? '1' : '0' }}"
-                                    data-chat-action-type="{{ $action['type'] ?? 'prompt' }}">
-                                    <x-ui.icon :name="$action['icon'] ?? 'zap'" class="me-1" />{{ $action['label'] }}
-                                </button>
-                            @endif
-                        @endforeach
-                    </div>
+                @if($chatContext['url'])
+                    <a href="{{ $chatContext['url'] }}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-primary tw-no-underline hover:tw-bg-surface-low">
+                        <x-ui.icon name="external-link" /> Open Details
+                    </a>
                 @endif
             </div>
+            @if(!empty($chatContext['fields']))
+                <details class="tw-border-t tw-border-outline-variant">
+                    <summary class="tw-cursor-pointer tw-px-4 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-surface-low">Context Details</summary>
+                    <div class="chat-context-grid tw-px-4 tw-pb-3 tw-pt-1">
+                        @foreach($chatContext['fields'] as $field)
+                            <div class="chat-context-field">
+                                <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ $field['label'] }}</div>
+                                <div class="tw-font-semibold tw-truncate">{{ $field['value'] }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </details>
+            @endif
+            @if(!empty($quickActions))
+                <div class="chat-action-panel tw-border-t tw-border-outline-variant tw-px-4 tw-py-2 tw-flex tw-flex-nowrap tw-gap-2 tw-overflow-x-auto" id="chatQuickActions">
+                    @foreach($quickActions as $action)
+                        @if(($action['type'] ?? '') === 'link')
+                            <a href="{{ $action['url'] }}" class="ui-focus-ring tw-inline-flex tw-h-7 tw-shrink-0 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface tw-no-underline hover:tw-bg-surface-low">
+                                <x-ui.icon :name="$action['icon'] ?? 'arrow-right'" />{{ $action['label'] }}
+                            </a>
+                        @else
+                            <button type="button"
+                                class="ui-focus-ring tw-inline-flex tw-h-7 tw-shrink-0 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low"
+                                data-chat-action="{{ $action['key'] }}"
+                                data-chat-action-label="{{ $action['label'] }}"
+                                data-chat-action-note="{{ !empty($action['requires_note']) ? '1' : '0' }}"
+                                data-chat-action-type="{{ $action['type'] ?? 'prompt' }}">
+                                <x-ui.icon :name="$action['icon'] ?? 'zap'" />{{ $action['label'] }}
+                            </button>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
         </div>
     @endisset
 
     @php
         $partner = $conversation->getPartner(auth()->id());
-        $partnerName = $partner->role === 'supplier' 
-            ? ($partner->supplier->company_name ?? $partner->name) 
+        $partnerName = $partner->role === 'supplier'
+            ? ($partner->supplier->company_name ?? $partner->name)
             : $partner->name;
     @endphp
 
-    <div class="card border-0 shadow-sm chat-fullpage-card">
+    <div class="chat-fullpage-card">
         {{-- Chat Header --}}
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-            <div class="d-flex align-items-center gap-3">
-                <div class="chat-fullpage-avatar bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center">
-                    <x-ui.icon name="user" size="lg" />
-                </div>
-                <div>
-                    <h6 class="mb-0 fw-bold">{{ $partnerName }}</h6>
-                    <small class="text-muted">{{ ucfirst($partner->role) }}</small>
+        <div class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-px-4 tw-py-2.5">
+            <div class="tw-flex tw-items-center tw-gap-3 tw-min-w-0">
+                <x-ui.avatar :name="$partnerName" size="sm" />
+                <div class="tw-min-w-0">
+                    <div class="tw-text-ui-sm tw-font-semibold tw-truncate">{{ $partnerName }}</div>
+                    <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ ucfirst($partner->role) }}</div>
                 </div>
             </div>
-            <div>
+            <div class="tw-flex tw-items-center tw-gap-2 tw-shrink-0">
                 @if($conversation->conversable_type === 'App\Models\PurchaseRequisition')
-                    <span class="badge bg-primary text-uppercase px-3 py-2">PR</span>
+                    <x-ui.status-chip tone="info" size="sm">PR</x-ui.status-chip>
                 @else
-                    <span class="badge bg-success text-uppercase px-3 py-2">PO</span>
+                    <x-ui.status-chip tone="success" size="sm">PO</x-ui.status-chip>
                 @endif
-                <span class="fw-bold ms-2">{{ $conversation->context_label }}</span>
+                <span class="tw-text-ui-sm tw-font-semibold">{{ $conversation->context_label }}</span>
             </div>
         </div>
 
         {{-- Chat Body (Scrollable) --}}
-        <div class="card-body bg-light" id="chat-messages" style="flex: 1; overflow-y: auto; padding: 1.5rem;">
+        <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem 1.25rem;">
             @forelse($conversation->messages as $msg)
                 @php $isMe = $msg->sender_id === auth()->id(); @endphp
                 <div class="chat-message-row {{ $isMe ? 'is-me justify-content-end' : 'is-partner justify-content-start' }}" data-message-id="{{ $msg->id }}">
                     <div class="chat-message-stack {{ $isMe ? 'align-items-end' : 'align-items-start' }}">
-                        <div class="chat-message-bubble {{ $isMe ? 'is-me' : 'is-partner' }} shadow-sm">
+                        <div class="chat-message-bubble {{ $isMe ? 'is-me' : 'is-partner' }}">
                             @if($msg->body !== '')
                                 <div class="chat-message-text">{{ $msg->body }}</div>
                             @endif
                             @if($msg->attachments->isNotEmpty())
-                                <div class="d-grid gap-1 mt-2">
+                                <div class="chat-attachment-stack tw-mt-1.5">
                                     @foreach($msg->attachments as $attachment)
-                                        <a href="{{ route('attachments.show', $attachment->id) }}" target="_blank" class="btn btn-sm {{ $isMe ? 'btn-light' : 'btn-outline-primary' }} text-start">
-                                            <x-ui.icon name="paperclip" class="me-1" />{{ $attachment->file_name }}
+                                        <a href="{{ route('attachments.show', $attachment->id) }}" target="_blank" class="chat-attachment-link">
+                                            <x-ui.icon name="paperclip" class="tw-mr-1 tw-shrink-0" />
+                                            <span class="tw-truncate">{{ $attachment->file_name }}</span>
                                         </a>
                                     @endforeach
                                 </div>
@@ -136,20 +131,20 @@
                     </div>
                 </div>
             @empty
-                <div class="text-center text-muted py-5" id="empty-state">
-                    <x-ui.icon name="message-circle-more" size="lg" />
-                    <p class="mt-2">Start a conversation with {{ $partnerName }}</p>
+                <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-12 tw-text-center" id="empty-state">
+                    <x-ui.icon name="message-circle-more" class="tw-text-on-surface-variant tw-mb-2" />
+                    <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">Start a conversation with {{ $partnerName }}</p>
                 </div>
             @endforelse
         </div>
 
         {{-- Chat Form --}}
-        <div class="card-footer bg-white py-3 border-top">
+        <div class="tw-border-t tw-border-outline-variant tw-px-4 tw-py-2.5">
             <form id="chat-form" onsubmit="sendMessage(event)">
                 @if(!empty($messageTemplates))
-                    <div class="dropdown mb-2">
-                        <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <x-ui.icon name="zap" class="me-1" />Message Template
+                    <div class="dropdown tw-mb-2">
+                        <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <x-ui.icon name="zap" />Template
                         </button>
                         <div class="dropdown-menu p-2 chat-template-menu">
                             @foreach($messageTemplates as $template)
@@ -160,14 +155,14 @@
                         </div>
                     </div>
                 @endif
-                <div class="small text-muted mb-2 d-none" id="message-attachments-preview"></div>
-                <div class="d-flex gap-2 align-items-end">
-                    <textarea id="message-body" class="form-control" rows="2" placeholder="Type a message here... (Press Enter to send, Shift+Enter for a new line)" style="resize: none;"></textarea>
-                    <label for="message-attachments" class="btn btn-outline-secondary mb-0" title="Attach file">
+                <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-1.5 d-none" id="message-attachments-preview"></div>
+                <div class="tw-flex tw-gap-2 tw-items-end">
+                    <textarea id="message-body" class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" rows="2" placeholder="Type a message... (Enter to send, Shift+Enter for new line)" aria-label="Message"></textarea>
+                    <label for="message-attachments" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="Attach files" aria-label="Attach files">
                         <x-ui.icon name="paperclip" />
                     </label>
                     <input type="file" id="message-attachments" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
-                    <button type="submit" class="btn btn-primary px-4 py-2" id="btn-send">
+                    <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="btn-send" aria-label="Send message">
                         <x-ui.icon name="send" />
                     </button>
                 </div>
@@ -209,8 +204,8 @@
         }
 
         attachmentPreview.innerHTML = files.map((file) => `
-            <span class="badge bg-light text-dark border me-1 mb-1">
-                <x-ui.icon name="paperclip" class="me-1" />${escapeHtml(file.name)}
+            <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-low tw-px-2 tw-py-0.5 tw-text-ui-xs tw-mr-1 tw-mb-1">
+                <x-ui.icon name="paperclip" />${escapeHtml(file.name)}
             </span>
         `).join('');
         attachmentPreview.classList.remove('d-none');
@@ -232,10 +227,10 @@
     function attachmentHtml(attachments, isMe) {
         if (!attachments || attachments.length === 0) return '';
 
-        return `<div class="d-grid gap-1 mt-2">
+        return `<div class="chat-attachment-stack tw-mt-1.5">
             ${attachments.map((attachment) => `
-                <a href="${escapeHtml(attachment.url)}" target="_blank" class="btn btn-sm ${isMe ? 'btn-light' : 'btn-outline-primary'} text-start">
-                    <x-ui.icon name="paperclip" class="me-1" />${escapeHtml(attachment.name)}
+                <a href="${escapeHtml(attachment.url)}" target="_blank" class="chat-attachment-link">
+                    <x-ui.icon name="paperclip" class="tw-mr-1 tw-shrink-0" /><span class="tw-truncate">${escapeHtml(attachment.name)}</span>
                 </a>
             `).join('')}
         </div>`;
@@ -322,7 +317,7 @@
         const html = `
             <div class="chat-message-row ${isMe ? 'is-me' : 'is-partner'} ${alignClass}" data-message-id="${msg.id}">
                 <div class="chat-message-stack ${colAlignClass}">
-                    <div class="chat-message-bubble ${bubbleClass} shadow-sm">
+                    <div class="chat-message-bubble ${bubbleClass}">
                         ${safeBody ? `<div class="chat-message-text">${safeBody}</div>` : ''}
                         ${attachmentHtml(msg.attachments, isMe)}
                     </div>
@@ -396,9 +391,11 @@
                             autoClose: 1400
                         });
                     })
-                    .catch((error) => AdasiAlert.error({
-                        title: 'Error',
-                        text: error.message || 'The action cannot be processed yet.'
+                    .catch((error) => AdasiToast.show({
+                        type: 'error',
+                        title: 'Action Failed',
+                        message: error.message || 'The action cannot be processed yet.',
+                        autoClose: 4000
                     }))
                     .finally(() => {
                         button.disabled = false;
@@ -445,14 +442,14 @@
             updateReadReceipts(data.read_receipts);
             if (data.messages && data.messages.length > 0) {
                 if (emptyState) emptyState.style.display = 'none';
-                
+
                 let hasNewPartnerMessage = false;
                 data.messages.forEach(msg => {
                     appendMessage(msg, msg.sender_id === myId);
                     lastMessageId = Math.max(lastMessageId, msg.id);
                     if (msg.sender_id !== myId) hasNewPartnerMessage = true;
                 });
-                
+
                 if (hasNewPartnerMessage) {
                     scrollToBottom();
                 }

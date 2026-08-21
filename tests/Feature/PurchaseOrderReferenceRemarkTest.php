@@ -166,8 +166,8 @@ class PurchaseOrderReferenceRemarkTest extends TestCase
             ->assertSeeText('Reference (No. PR)')
             ->assertSeeText('REQ/08/2026/021')
             ->assertSeeText('-PO formula remark')
-            ->assertSee('<th>Reference (No. PR)</th>', false)
-            ->assertSee('<th>Remark</th>', false)
+            ->assertSee('<th scope="col">Reference (No. PR)</th>', false)
+            ->assertSee('<th scope="col">Remark</th>', false)
             ->assertSee('title="-PO formula remark"', false)
             ->assertSee(route('purchasing.requisitions.show', $pr), false);
 
@@ -177,8 +177,8 @@ class PurchaseOrderReferenceRemarkTest extends TestCase
             ->assertSeeText('Reference (No. PR)')
             ->assertSeeText('REQ/08/2026/021')
             ->assertSeeText('-PO formula remark')
-            ->assertSee('<th>Reference (No. PR)</th>', false)
-            ->assertSee('<th>Remark</th>', false)
+            ->assertSee('<th scope="col">Reference (No. PR)</th>', false)
+            ->assertSee('<th scope="col">Remark</th>', false)
             ->assertSee('title="-PO formula remark"', false)
             ->assertSee(route('supplier.quotations.show', $po->quotations()->firstOrFail()), false);
 

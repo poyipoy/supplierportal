@@ -1,14 +1,14 @@
 @auth
     @if(in_array(auth()->user()->role, ['purchasing', 'supplier']))
         <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
-            <div class="offcanvas-header border-bottom bg-white">
-                <div class="d-flex align-items-center gap-2 min-w-0">
-                    <button type="button" class="btn btn-sm btn-light d-none" id="chatDrawerBack" title="Back to Chat List">
+            <div class="offcanvas-header tw-border-b tw-border-outline-variant tw-bg-surface tw-py-3">
+                <div class="d-flex align-items-center gap-2 tw-min-w-0">
+                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="Back to Chat List" aria-label="Back to chat list">
                         <x-ui.icon name="arrow-left" />
                     </button>
-                    <div class="min-w-0">
-                        <h6 class="offcanvas-title fw-bold mb-0 text-truncate" id="chatDrawerTitle">Negotiation & Chat</h6>
-                        <small class="text-muted text-truncate d-block" id="chatDrawerSubtitle">Active conversation list</small>
+                    <div class="tw-min-w-0">
+                        <h6 class="offcanvas-title tw-m-0 tw-text-ui-sm tw-font-semibold tw-truncate" id="chatDrawerTitle">Negotiation & Chat</h6>
+                        <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">Active conversation list</span>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -16,46 +16,46 @@
 
             <div class="offcanvas-body">
                 <div class="chat-drawer-pane" id="chatDrawerListPane">
-                    <div class="p-3 bg-white border-bottom">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><x-ui.icon name="search" /></span>
-                            <input type="search" class="form-control" id="chatDrawerSearch" placeholder="Search partner, PO, or PR">
+                    <div class="tw-border-b tw-border-outline-variant tw-bg-surface tw-p-3">
+                        <div class="tw-relative">
+                            <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-2.5 tw-pointer-events-none tw-text-on-surface-variant"><x-ui.icon name="search" /></div>
+                            <input type="search" class="tw-h-9 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-pl-8 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary" id="chatDrawerSearch" placeholder="Search partner, PO, or PR">
                         </div>
                     </div>
                     <div class="chat-thread-list" id="chatDrawerList">
-                        <div class="text-center text-muted py-5">
-                            <div class="spinner-border spinner-border-sm me-1"></div>
-                            Loading chats...
+                        <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-8 tw-text-on-surface-variant">
+                            <span class="ui-spinner" aria-hidden="true"></span>
+                            <span class="tw-mt-2 tw-text-ui-xs">Loading chats...</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="chat-drawer-pane d-none" id="chatDrawerConversationPane">
-                    <div class="chat-context-panel border-bottom bg-white p-3 d-none" id="chatDrawerContext"></div>
-                    <div class="chat-action-panel border-bottom bg-light p-2 d-none" id="chatDrawerActions"></div>
+                    <div class="chat-context-panel tw-border-b tw-border-outline-variant tw-bg-surface tw-p-3 d-none" id="chatDrawerContext"></div>
+                    <div class="chat-action-panel tw-border-b tw-border-outline-variant tw-bg-surface-low tw-p-2 d-none" id="chatDrawerActions"></div>
                     <div class="chat-message-list p-3" id="chatDrawerMessages"></div>
-                    <div class="bg-white border-top p-3">
+                    <div class="tw-border-t tw-border-outline-variant tw-bg-surface tw-p-3">
                         <form id="chatDrawerForm">
                             <div class="chat-composer-tools d-flex align-items-center justify-content-between gap-2 mb-2">
                                 <div class="dropdown d-none" id="chatDrawerTemplates">
-                                    <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <x-ui.icon name="zap" class="me-1" />Template
+                                    <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <x-ui.icon name="zap" />Template
                                     </button>
                                     <div class="dropdown-menu p-2 chat-template-menu" id="chatDrawerTemplateMenu"></div>
                                 </div>
-                                <div class="small text-muted flex-grow-1 text-end d-none" id="chatDrawerAttachmentList"></div>
+                                <div class="tw-flex-1 tw-text-end tw-text-ui-xs tw-text-on-surface-variant d-none" id="chatDrawerAttachmentList"></div>
                             </div>
-                            <div class="d-flex gap-2 align-items-end">
-                                <textarea class="form-control" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="Type a message..." style="resize: none;"></textarea>
-                                <label class="btn btn-outline-secondary mb-0" for="chatDrawerAttachments" title="Attach file">
+                            <div class="tw-flex tw-gap-2 tw-items-end">
+                                <textarea class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="Type a message..." aria-label="Message"></textarea>
+                                <label class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container tw-mb-0" for="chatDrawerAttachments" title="Attach files" aria-label="Attach files">
                                     <x-ui.icon name="paperclip" />
                                 </label>
                                 <input type="file" class="d-none" id="chatDrawerAttachments" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
-                                <button type="submit" class="btn btn-primary" id="chatDrawerSend" style="background-color: var(--adasi-blue);">
+                                <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="chatDrawerSend" aria-label="Send message">
                                     <x-ui.icon name="send" />
                                 </button>
                             </div>
-                            <div class="form-text small">Enter to send, Shift+Enter for a new line.</div>
+                            <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Enter to send, Shift+Enter for a new line.</div>
                         </form>
                     </div>
                 </div>
@@ -111,6 +111,29 @@
                         .replace(/>/g, '&gt;')
                         .replace(/"/g, '&quot;')
                         .replace(/'/g, '&#039;');
+
+                    const chipClass = (source = '') => {
+                        const value = String(source).toLowerCase();
+                        const base = 'tw-inline-flex tw-items-center tw-rounded-ui-xs tw-border tw-px-2 tw-py-0.5 tw-text-ui-xs tw-font-semibold';
+
+                        if (value.includes('danger')) return `${base} tw-border-error/40 tw-bg-error-container tw-text-error-container-foreground`;
+                        if (value.includes('warning')) return `${base} tw-border-warning/40 tw-bg-warning-container tw-text-warning-container-foreground`;
+                        if (value.includes('success')) return `${base} tw-border-success/40 tw-bg-success-container tw-text-success-container-foreground`;
+                        if (value.includes('primary')) return `${base} tw-border-primary/40 tw-bg-primary-container tw-text-primary-container-foreground`;
+
+                        return `${base} tw-border-outline-variant tw-bg-surface-container tw-text-on-surface-variant`;
+                    };
+
+                    const actionClass = (variant = '') => {
+                        const value = String(variant).toLowerCase();
+                        const base = 'ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-no-underline';
+
+                        if (value.includes('danger')) return `${base} tw-border-error tw-bg-transparent tw-text-error hover:tw-bg-error-container`;
+                        if (value.includes('warning')) return `${base} tw-border-warning tw-bg-warning-container tw-text-warning-container-foreground hover:tw-brightness-95`;
+                        if (value.includes('success')) return `${base} tw-border-transparent tw-bg-success tw-text-success-foreground hover:tw-brightness-95`;
+
+                        return `${base} tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container`;
+                    };
 
                     const normalizeMessage = (message) => {
                         const createdAt = message.created_at ? new Date(message.created_at) : new Date();
@@ -179,15 +202,15 @@
                             <button type="button" class="chat-thread-button" data-chat-conversation-id="${conversation.id}">
                                 <div class="d-flex justify-content-between gap-2 mb-1">
                                     <div class="fw-semibold text-truncate">${escapeHtml(conversation.partner_name)}</div>
-                                    ${conversation.unread_count > 0 ? `<span class="badge bg-danger rounded-pill">${conversation.unread_count}</span>` : ''}
+                                    ${conversation.unread_count > 0 ? `<span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">${conversation.unread_count}</span>` : ''}
                                 </div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span class="badge ${conversation.context_type === 'PR' ? 'bg-primary' : 'bg-success'}">${escapeHtml(conversation.context_type)}</span>
+                                    <span class="${chipClass(conversation.context_type === 'PR' ? 'primary' : 'success')}">${escapeHtml(conversation.context_type)}</span>
                                     <small class="text-muted text-truncate">${escapeHtml(conversation.context_label)}</small>
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 mb-1">
-                                    <span class="badge ${escapeHtml(conversation.status_badge_class || 'bg-secondary')}">${escapeHtml(conversation.status_label || 'Active')}</span>
-                                    ${conversation.sla ? `<span class="badge ${escapeHtml(conversation.sla.class || 'bg-secondary')}">${escapeHtml(conversation.sla.label || '')}</span>` : ''}
+                                    <span class="${chipClass(conversation.status_badge_class)}">${escapeHtml(conversation.status_label || 'Active')}</span>
+                                    ${conversation.sla ? `<span class="${chipClass(conversation.sla.class)}">${escapeHtml(conversation.sla.label || '')}</span>` : ''}
                                 </div>
                                 <div class="small text-muted text-truncate">${escapeHtml(conversation.latest_preview)}</div>
                                 ${conversation.latest_time ? `<div class="small text-muted mt-1">${escapeHtml(conversation.latest_time)}</div>` : ''}
@@ -217,7 +240,7 @@
                             })
                             .catch(() => {
                                 listEl.innerHTML = `
-                                    <div class="alert alert-danger m-3 small">
+                                    <div class="tw-m-3 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-error-container-foreground" role="alert">
                                         Failed to load chat list. Please try again later.
                                     </div>
                                 `;
@@ -240,18 +263,18 @@
 
                         contextEl.innerHTML = `
                             <div class="chat-context-compact d-flex justify-content-between gap-2 align-items-center">
-                                <div class="min-w-0">
-                                    <div class="d-flex align-items-center gap-2 min-w-0">
-                                        <span class="badge ${context.type === 'PO' ? 'bg-success' : 'bg-primary'}">${escapeHtml(context.type || 'DOC')}</span>
+                                <div class="tw-min-w-0">
+                                    <div class="d-flex align-items-center gap-2 tw-min-w-0">
+                                        <span class="${chipClass(context.type === 'PO' ? 'success' : 'primary')}">${escapeHtml(context.type || 'DOC')}</span>
                                         <div class="fw-bold text-truncate">${escapeHtml(context.title || '-')}</div>
                                     </div>
                                     <div class="small text-muted text-truncate mt-1">${escapeHtml(context.subtitle || '')}</div>
                                 </div>
                                 <div class="d-flex gap-1 flex-shrink-0">
-                                    <button type="button" class="btn btn-sm btn-light border" data-chat-context-toggle title="Details">
+                                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant hover:tw-bg-surface-container" data-chat-context-toggle title="Toggle details" aria-label="Toggle context details">
                                         <x-ui.icon name="chevron-down" />
                                     </button>
-                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="btn btn-sm btn-outline-primary" title="Details"><x-ui.icon name="external-link" /></a>` : ''}
+                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="Open details" aria-label="Open context details"><x-ui.icon name="external-link" /></a>` : ''}
                                 </div>
                             </div>
                             <div class="chat-context-grid d-none mt-2" id="chatContextDetail">${fields}</div>
@@ -268,12 +291,12 @@
 
                         actionsEl.innerHTML = actions.map((action) => {
                             if (action.type === 'link') {
-                                return `<a href="${escapeHtml(action.url)}" class="btn btn-sm btn-${escapeHtml(action.variant || 'outline-primary')}">
+                                return `<a href="${escapeHtml(action.url)}" class="${actionClass(action.variant)}">
                                     ${escapeHtml(action.label)}
                                 </a>`;
                             }
 
-                            return `<button type="button" class="btn btn-sm btn-${escapeHtml(action.variant || 'outline-primary')}" data-chat-action="${escapeHtml(action.key)}" data-chat-action-label="${escapeHtml(action.label)}" data-chat-action-note="${action.requires_note ? '1' : '0'}" data-chat-action-type="${escapeHtml(action.type || 'prompt')}">
+                            return `<button type="button" class="${actionClass(action.variant)}" data-chat-action="${escapeHtml(action.key)}" data-chat-action-label="${escapeHtml(action.label)}" data-chat-action-note="${action.requires_note ? '1' : '0'}" data-chat-action-type="${escapeHtml(action.type || 'prompt')}">
                                 ${escapeHtml(action.label)}
                             </button>`;
                         }).join('');
@@ -304,7 +327,7 @@
                         }
 
                         attachmentListEl.innerHTML = files.map((file) => `
-                            <span class="badge bg-light text-dark border me-1 mb-1">
+                            <span class="ui-status-chip ui-status-chip--neutral me-1 mb-1">
                                 <x-ui.icon name="paperclip" class="me-1" />${escapeHtml(file.name)}
                             </span>
                         `).join('');
@@ -357,7 +380,7 @@
                         messagesEl.insertAdjacentHTML('beforeend', `
                             <div class="chat-message-row ${normalized.isMe ? 'is-me' : 'is-partner'} ${wrapperClass}" data-message-id="${normalized.id}">
                                 <div class="chat-message-stack ${alignClass}">
-                                    <div class="chat-message-bubble ${bubbleClass} shadow-sm">
+                                    <div class="chat-message-bubble ${bubbleClass}">
                                         ${normalized.body ? `<div class="chat-message-text">${escapeHtml(normalized.body)}</div>` : ''}
                                         ${renderMessageAttachments(message.attachments)}
                                     </div>
@@ -419,7 +442,7 @@
                             })
                             .catch(() => {
                                 messagesEl.innerHTML = `
-                                    <div class="alert alert-danger m-3 small">
+                                    <div class="tw-m-3 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-error-container-foreground" role="alert">
                                         Failed to load chat details. Please try again later.
                                     </div>
                                 `;
@@ -526,9 +549,11 @@
                                     });
                                 })
                                 .catch((error) => {
-                                    AdasiAlert.error({
-                                        title: 'Error',
-                                        text: error.message || 'The action cannot be processed yet.'
+                                    AdasiToast.show({
+                                        type: 'error',
+                                        title: 'Action Failed',
+                                        message: error.message || 'The action cannot be processed yet.',
+                                        autoClose: 4000
                                     });
                                 })
                                 .finally(() => {
@@ -651,9 +676,11 @@
                                 }
                             })
                             .catch(() => {
-                                AdasiAlert.error({
-                                    title: 'Error',
-                                    text: 'Chat cannot be opened yet. Please try again later.'
+                                AdasiToast.show({
+                                    type: 'error',
+                                    title: 'Unable to Open Chat',
+                                    message: 'Chat cannot be opened yet. Please try again later.',
+                                    autoClose: 4000
                                 });
                             })
                             .finally(() => {
@@ -702,9 +729,11 @@
                                 loadConversations();
                             })
                             .catch(() => {
-                                AdasiAlert.error({
-                                    title: 'Error',
-                                    text: 'Message was not sent. Please try again.'
+                                AdasiToast.show({
+                                    type: 'error',
+                                    title: 'Message Not Sent',
+                                    message: 'The message was not sent. Please try again.',
+                                    autoClose: 4000
                                 });
                            })
                             .finally(() => {

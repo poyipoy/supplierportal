@@ -58,7 +58,7 @@ class MaterialClaimController extends Controller
             ->addColumn('action', function ($po) {
                 $lastInspection = $po->qcInspections->first();
                 if ($lastInspection) {
-                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection).'" class="btn btn-sm btn-danger">Create Claim</a>';
+                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
                 }
 
                 return '-';
@@ -92,7 +92,7 @@ class MaterialClaimController extends Controller
                     StatusHelper::claimLabel($c->status)
                 );
             })
-            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c).'" class="btn btn-sm btn-outline-primary">Details</a>')
+            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>')
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
             ->make(true);
     }

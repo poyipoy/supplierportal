@@ -75,11 +75,13 @@ class CustomAdasiToastTest extends TestCase
 
         $runtime = file_get_contents(public_path('assets/js/adasi-alert.js'));
         $this->assertSame(1, substr_count($runtime, "document.querySelectorAll('[data-adasi-flash]')"));
-        $this->assertStringContainsString('window.AdasiToast.show({', $runtime);
+        $this->assertStringContainsString('window.AdasiToast.show(payload)', $runtime);
+        $this->assertStringContainsString('window.__adasiToastQueue.push(payload)', $runtime);
 
         $partial = file_get_contents(resource_path('views/partials/alerts.blade.php'));
         $this->assertStringContainsString('$errors->any()', $partial);
-        $this->assertStringContainsString('alert alert-danger', $partial);
+        $this->assertStringContainsString('<x-ui.alert tone="error"', $partial);
+        $this->assertStringNotContainsString('alert alert-danger', $partial);
     }
 
     public function test_legacy_transient_alert_calls_delegate_without_removing_blocking_confirmations(): void
@@ -87,7 +89,9 @@ class CustomAdasiToastTest extends TestCase
         $runtime = file_get_contents(public_path('assets/js/adasi-alert.js'));
 
         $this->assertStringContainsString('if (window.AdasiToast)', $runtime);
-        $this->assertStringContainsString('window.AdasiToast.show({', $runtime);
+        $this->assertStringContainsString('window.AdasiToast.show(payload)', $runtime);
+        $this->assertStringContainsString('window.__adasiToastQueue.push(payload)', $runtime);
+        $this->assertStringNotContainsString('toast: true', $runtime);
         $this->assertStringContainsString('confirm: (options) => confirm(options, false)', $runtime);
         $this->assertStringContainsString('confirmDanger: (options) => confirm(options, true)', $runtime);
         $this->assertStringContainsString('prompt: prompt', $runtime);

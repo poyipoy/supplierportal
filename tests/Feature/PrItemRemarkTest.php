@@ -117,7 +117,7 @@ class PrItemRemarkTest extends TestCase
             ->get(route('purchasing.requisitions.index'))
             ->assertOk()
             ->assertSee('<thead class="table-light text-center">', false)
-            ->assertSee('<th>Action</th>', false)
+            ->assertSee('<th scope="col">Action</th>', false)
             ->assertSee("className: 'text-center'", false);
 
         $dataResponse = $this->actingAs($this->purchasing)
@@ -133,8 +133,12 @@ class PrItemRemarkTest extends TestCase
 
         $this->assertStringContainsString('btn-submit-draft', $action);
         $this->assertStringContainsString('Submit', $action);
-        $this->assertStringContainsString('action-button-grid', $action);
-        $this->assertSame(4, substr_count($action, 'action-grid-button'));
+        $this->assertStringContainsString('ui-data-action--primary', $action);
+        $this->assertSame(1, substr_count($action, 'ui-data-action--primary'));
+        $this->assertStringContainsString('dropdown-menu', $action);
+        $this->assertStringContainsString('View details', $action);
+        $this->assertStringContainsString('Edit draft', $action);
+        $this->assertStringContainsString('Delete requisition', $action);
 
         $this->actingAs($otherPurchasing)
             ->put(route('purchasing.requisitions.submit', $pr))

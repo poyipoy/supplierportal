@@ -25,11 +25,12 @@ class MaterialMasterController extends Controller
         return DataTables::eloquent($query)
             ->addIndexColumn()
             ->addColumn('status_badge', fn (MaterialMaster $material) => $material->is_active
-                ? '<span class="badge bg-success">Active</span>'
-                : '<span class="badge bg-secondary">Inactive</span>')
+                ? '<span class="ui-status-chip ui-status-chip--success">Active</span>'
+                : '<span class="ui-status-chip ui-status-chip--neutral">Inactive</span>')
             ->addColumn('source_display', fn (MaterialMaster $material) => e(
                 ($material->source_sheet ?? 'Admin').' row '.($material->source_row ?? '-')
             ))
+            ->addColumn('updated_date', fn (MaterialMaster $material) => $material->updated_at?->format('d M Y') ?? '-')
             ->addColumn('action', function (MaterialMaster $material) {
                 $payload = e(json_encode([
                     'id' => $material->id,
@@ -41,9 +42,13 @@ class MaterialMasterController extends Controller
                     'is_active' => $material->is_active,
                 ], JSON_THROW_ON_ERROR));
 
-                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-material" data-material="'.$payload.'" aria-label="Edit material" title="Edit material">Edit</button> '
-                    .'<button type="button" class="btn btn-sm '.($material->is_active ? 'btn-outline-secondary' : 'btn-outline-success').' btn-toggle-material" data-id="'.$material->id.'" data-active="'.($material->is_active ? '0' : '1').'" aria-label="'.($material->is_active ? 'Deactivate material' : 'Activate material').'" title="'.($material->is_active ? 'Deactivate material' : 'Activate material').'">'
-                    .($material->is_active ? 'Deactivate' : 'Activate').'</button>';
+                $stateLabel = $material->is_active ? 'Deactivate material' : 'Activate material';
+
+                return '<div class="d-inline-flex align-items-center gap-1">'
+                    .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-material" data-material="'.$payload.'" aria-label="Edit material '.e($material->material_code).'">Edit</button>'
+                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($material->material_code).'">More</button>'
+                    .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-material" data-id="'.$material->id.'" data-active="'.($material->is_active ? '0' : '1').'">'.$stateLabel.'</button></li></ul></div>'
+                    .'</div>';
             })
             ->rawColumns(['status_badge', 'action'])
             ->toJson();

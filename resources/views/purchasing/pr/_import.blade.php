@@ -1,54 +1,54 @@
 <div class="modal fade" id="prImportModal" tabindex="-1" aria-labelledby="prImportModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h5 class="modal-title" id="prImportModalLabel">Import PR Materials from Excel</h5>
-                    <div class="small text-muted">The spreadsheet is validated first and will not save data automatically.</div>
+                    <h6 class="modal-title fw-bold" id="prImportModalLabel">Import PR Materials from Spreadsheet</h6>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">Validate your Excel spreadsheet (.xlsx, .xls, .csv) before inserting into the requisition.</div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body tw-p-3.5">
                 <div class="tw-grid tw-gap-4 md:tw-grid-cols-[minmax(0,1.4fr)_minmax(14rem,1fr)]">
                     <x-ui.file-upload
                         name="import_file"
                         id="prImportFile"
-                        label="Spreadsheet file"
-                        helper="XLSX, XLS, or CSV; maximum 10 MB and 1,000 data rows."
+                        label="Spreadsheet File"
+                        helper="XLSX, XLS, or CSV format; maximum 10 MB and up to 1,000 rows."
                         accept=".xlsx,.xls,.csv"
                     />
-                    <x-ui.select name="import_mode" id="prImportMode" label="Import mode">
-                            <option value="replace" selected>Replace Current Rows</option>
-                            <option value="append">Append to Current Rows</option>
+                    <x-ui.select name="import_mode" id="prImportMode" label="Import Mode">
+                        <option value="replace" selected>Replace Current Rows</option>
+                        <option value="append">Append to Current Rows</option>
                     </x-ui.select>
                 </div>
 
                 <div id="prImportResult" class="d-none mt-4">
-                    <div id="prImportSummary" class="alert alert-light border py-2 mb-3"></div>
+                    <div id="prImportSummary" class="tw-mb-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
 
-                    <div id="prImportWarningsPanel" class="alert alert-warning d-none">
-                        <div class="fw-semibold mb-1"><x-ui.icon name="triangle-alert" class="me-1" />Warnings</div>
-                        <ul id="prImportWarnings" class="mb-0 small ps-3"></ul>
+                    <div id="prImportWarningsPanel" class="d-none tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2.5 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
+                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> Warnings</div>
+                        <ul id="prImportWarnings" class="mb-0 ps-3"></ul>
                     </div>
 
-                    <div id="prImportErrorsPanel" class="alert alert-danger d-none">
-                        <div class="fw-semibold mb-1"><x-ui.icon name="x-circle" class="me-1" />Import Errors</div>
-                        <ul id="prImportErrors" class="mb-0 small ps-3"></ul>
+                    <div id="prImportErrorsPanel" class="d-none tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-px-3 tw-py-2.5 tw-text-ui-xs tw-text-error-container-foreground" role="alert">
+                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="circle-x" size="sm" /> Import Errors</div>
+                        <ul id="prImportErrors" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="prImportPreviewPanel" class="d-none">
-                        <div class="fw-semibold mb-2">Parsed Row Preview</div>
+                        <div class="fw-bold tw-text-on-surface tw-text-ui-sm mb-2">Parsed Materials Preview</div>
                         <div class="pr-import-preview table-responsive border rounded">
-                            <table class="table table-sm table-striped align-middle mb-0">
+                            <table class="table table-sm table-striped table-hover align-middle mb-0 tw-text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th>Row</th>
-                                        <th>Material</th>
-                                        <th>HS Result</th>
-                                        <th>Shape</th>
-                                        <th>Qty</th>
-                                        <th>KG/Unit (Auto)</th>
-                                        <th>Remark</th>
+                                        <th scope="col" style="width: 40px;" class="text-center">Row</th>
+                                        <th scope="col">Material</th>
+                                        <th scope="col">HS Code Result</th>
+                                        <th scope="col" class="text-center">Shape</th>
+                                        <th scope="col" class="text-center">Qty</th>
+                                        <th scope="col" class="text-end">KG/Unit</th>
+                                        <th scope="col">Remark</th>
                                     </tr>
                                 </thead>
                                 <tbody id="prImportPreviewBody"></tbody>
@@ -57,14 +57,14 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">Cancel</x-ui.button>
-                <x-ui.button type="button" variant="secondary" id="btnParsePrImport">
+            <div class="modal-footer tw-bg-surface-low border-top">
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" id="btnParsePrImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="prImportSpinner"></span>
                     Parse &amp; Validate
                 </x-ui.button>
-                <x-ui.button type="button" id="btnApplyPrImport" disabled>
-                    <x-ui.icon name="circle-check" class="me-1" /> Apply to Form
+                <x-ui.button type="button" size="sm" id="btnApplyPrImport" disabled>
+                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> Apply to Form
                 </x-ui.button>
             </div>
         </div>
@@ -193,14 +193,14 @@
             return;
         }
 
-        const file = document.getElementById('prImportFile').files[0];
+        const fileInput = document.getElementById('prImportFile');
+        const file = fileInput.files[0];
         if (!file) {
-            AdasiAlert.warning({
-                title: 'File Required',
-                text: 'Select an XLSX, XLS, or CSV file first.'
-            });
+            fileInput.setCustomValidity('Select an XLSX, XLS, or CSV file before continuing.');
+            fileInput.reportValidity();
             return;
         }
+        fileInput.setCustomValidity('');
 
         const formData = new FormData();
         formData.append('_token', @json(csrf_token()));

@@ -11,21 +11,26 @@
         : ($retryAfter > 0 ? $retryAfter.' '.($retryAfter === 1 ? 'second' : 'seconds') : 'a moment');
 @endphp
 
-<div class="tw-text-center" aria-labelledby="rate-limit-title">
-    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-error">429 / Request Limited</p>
-    <x-ui.icon name="shield-alert" size="lg" class="tw-mt-4 tw-text-primary" />
-    <h1 id="rate-limit-title" class="tw-m-0 tw-mt-4 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Please wait a moment</h1>
-    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-leading-6 tw-text-on-surface-variant">To help protect your account, this action is temporarily limited because too many requests were made.</p>
+<div aria-labelledby="rate-limit-title">
+    <header class="tw-mb-5">
+        <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-error">429 / Request limited</p>
+        <h1 id="rate-limit-title" class="tw-m-0 tw-mt-1.5 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">Please wait a moment</h1>
+        <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">To protect your account, this action is temporarily limited due to too many requests.</p>
+    </header>
 
-    <x-ui.alert tone="warning" class="tw-mt-5 tw-text-start">
+    <x-ui.alert tone="warning" class="tw-mb-4">
         Please wait <strong id="retry-countdown" data-seconds="{{ $retryAfter }}">{{ $waitLabel }}</strong> before trying again.
     </x-ui.alert>
 
-    <div class="tw-mt-6 tw-grid tw-gap-3 sm:tw-grid-cols-2">
-        <x-ui.button type="button" variant="ghost" id="go-back"><x-ui.icon name="arrow-left" /> Go Back</x-ui.button>
-        <x-ui.button :href="$returnUrl"><x-ui.icon name="circle-user-round" /> {{ $returnLabel }}</x-ui.button>
+    <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2">
+        <button type="button" id="go-back" class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container">
+            <x-ui.icon name="arrow-left" /> Go Back
+        </button>
+        <a href="{{ $returnUrl }}" class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-primary-foreground tw-no-underline hover:tw-brightness-95">
+            {{ $returnLabel }}
+        </a>
     </div>
-    <p class="tw-m-0 tw-mt-5 tw-text-ui-xs tw-text-on-surface-variant">If the issue continues, please contact your system administrator.</p>
+    <p class="tw-m-0 tw-mt-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">If the issue continues, please contact your system administrator.</p>
 </div>
 @endsection
 

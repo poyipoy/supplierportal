@@ -351,7 +351,7 @@ Run targeted Supplier/quotation/autosave/import tests.
 Create:
 
 ```text
-UI-REDESIGN-PHASE2-M04-SUPPLIER-RESULT.md
+UI-REDESIGN-RESULT/UI-REDESIGN-PHASE2-M04-SUPPLIER-RESULT.md
 ```
 
 Include:

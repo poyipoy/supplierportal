@@ -285,16 +285,16 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th class="text-center" style="width: 30px;">No</th>
-                    <th>Material</th>
-                    <th class="text-center">HS Code</th>
-                    <th class="text-center">Specification</th>
-                    <th class="text-center">Qty</th>
-                    <th class="text-right">Weight/Unit</th>
-                    <th class="text-right">Total Weight</th>
-                    <th class="text-right">Price/kg</th>
-                    <th class="text-right">Total ({{ $po->currency ?? 'USD' }})</th>
-                    <th class="text-right">Total (IDR)</th>
+                    <th scope="col" class="text-center" style="width: 30px;">No</th>
+                    <th scope="col">Material</th>
+                    <th scope="col" class="text-center">HS Code</th>
+                    <th scope="col" class="text-center">Specification</th>
+                    <th scope="col" class="text-center">Qty</th>
+                    <th scope="col" class="text-right">Weight/Unit</th>
+                    <th scope="col" class="text-right">Total Weight</th>
+                    <th scope="col" class="text-right">Price/kg</th>
+                    <th scope="col" class="text-right">Total ({{ $po->currency ?? 'USD' }})</th>
+                    <th scope="col" class="text-right">Total (IDR)</th>
                 </tr>
             </thead>
             <tbody>

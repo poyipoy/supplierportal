@@ -136,7 +136,7 @@ function applyMaterialShapeRules(row, clearIrrelevant = true) {
 function resetMaterialPreview($row) {
     $row.find('.hs-code-display').val('');
     $row.find('.hs-code-manual-override').val('0');
-    $row.find('.hs-status-badge').removeClass('bg-success bg-warning text-dark bg-danger').addClass('bg-secondary').text('Needs more data');
+    $row.find('.hs-status-badge').removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error').addClass('ui-status-chip--neutral').text('Needs more data');
     $row.find('.weight-unit-display').val('0.0000');
     $row.find('.weight-manual-override').val('0');
 }
@@ -239,8 +239,8 @@ function renderMaterialPreview($row, payload) {
 
     $row.find('.hs-code-display').val(selectedCode);
     $row.find('.hs-status-badge')
-        .removeClass('bg-success bg-warning text-dark bg-danger bg-secondary')
-        .addClass(isManual ? 'bg-warning text-dark' : (hs.status === 'matched' ? 'bg-success' : 'bg-secondary'))
+        .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
+        .addClass(isManual ? 'ui-status-chip--warning' : (hs.status === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
         .text(isManual ? 'Manual selection' : (labelMap[hs.status] || hs.status || 'Needs more data'));
 
     $row.find('.hs-code-manual-override').val(isManual ? '1' : '0');
@@ -284,8 +284,8 @@ function requestMaterialPreview($row) {
                 $row.find('.weight-unit-display').val('0.0000');
             }
             $row.find('.hs-status-badge')
-                .removeClass('bg-success bg-warning text-dark bg-secondary')
-                .addClass('bg-danger')
+                .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--neutral')
+                .addClass('ui-status-chip--error')
                 .text('Invalid data');
         })
         .always(() => {

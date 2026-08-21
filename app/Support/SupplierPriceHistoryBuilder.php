@@ -103,14 +103,14 @@ class SupplierPriceHistoryBuilder
     public function statusBadge(string $status): string
     {
         $label = $this->statusLabel($status);
-        $class = match ($status) {
-            'submitted' => 'bg-primary',
-            'accepted' => 'bg-success',
-            'rejected' => 'bg-danger',
-            default => 'bg-secondary',
+        $tone = match ($status) {
+            'submitted' => 'info',
+            'accepted' => 'success',
+            'rejected' => 'error',
+            default => 'neutral',
         };
 
-        return '<span class="badge '.$class.'">'.$label.'</span>';
+        return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($label).'</span>';
     }
 
     /** @return array{0: array<string, mixed>, 1: Collection<int, array<string, mixed>>} */

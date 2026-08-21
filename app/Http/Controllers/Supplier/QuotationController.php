@@ -140,13 +140,13 @@ class QuotationController extends Controller
                     $status = $quotation ? $quotation->status : 'unresponded';
 
                     return match ($status) {
-                        'unresponded' => '<span class="badge bg-danger">Not Responded</span>',
-                        'draft' => '<span class="badge bg-secondary">Draft</span>',
-                        'revision_requested' => '<span class="badge bg-warning text-dark">Revision Requested</span>',
-                        'submitted' => '<span class="badge bg-success">Submitted ('.($quotation->submitted_at?->format('d M Y H:i') ?? '-').')</span>',
-                        'accepted' => '<span class="badge bg-primary">Accepted</span>',
-                        'rejected' => '<span class="badge bg-dark">Rejected</span>',
-                        default => '<span class="badge bg-secondary">'.ucwords($status).'</span>',
+                        'unresponded' => '<span class="ui-status-chip ui-status-chip--error">Not Responded</span>',
+                        'draft' => '<span class="ui-status-chip ui-status-chip--neutral">Draft</span>',
+                        'revision_requested' => '<span class="ui-status-chip ui-status-chip--warning">Revision Requested</span>',
+                        'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at?->format('d M Y H:i') ?? '-').')</span>',
+                        'accepted' => '<span class="ui-status-chip ui-status-chip--info">Accepted</span>',
+                        'rejected' => '<span class="ui-status-chip ui-status-chip--error">Rejected</span>',
+                        default => '<span class="ui-status-chip ui-status-chip--neutral">'.e(ucwords($status)).'</span>',
                     };
                 })
                 ->addColumn('action', function ($pr) {
@@ -154,10 +154,10 @@ class QuotationController extends Controller
                     $status = $quotation ? $quotation->status : 'unresponded';
 
                     $action = match ($status) {
-                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-primary">Create Quotation</a>',
-                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-secondary">Continue</a>',
-                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-warning text-dark">Revise Quotation</a>',
-                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="btn btn-sm btn-outline-success">View</a>' : '-',
+                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Create Quotation</a>',
+                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Continue</a>',
+                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--warning ui-focus-ring">Revise Quotation</a>',
+                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="ui-data-action ui-data-action--primary ui-focus-ring">View</a>' : '-',
                     };
 
                     return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';

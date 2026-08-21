@@ -42,8 +42,10 @@ class CustomAdasiAlertTest extends TestCase
 
         $this->assertStringContainsString('window.AdasiAlert = Object.freeze(AdasiAlert)', $runtime);
         $this->assertStringContainsString('allowOutsideClick: false', $runtime);
-        $this->assertStringContainsString("event.target.closest('.swal2-close')", $runtime);
-        $this->assertStringContainsString("toastElement.setAttribute('aria-live'", $runtime);
+        $this->assertStringContainsString('window.AdasiToast.show(payload)', $runtime);
+        $this->assertStringContainsString('window.__adasiToastQueue.push(payload)', $runtime);
+        $this->assertStringNotContainsString('toast: true', $runtime);
+        $this->assertStringNotContainsString('adasi-alert-toast', $runtime);
     }
 
     public function test_blade_views_do_not_call_sweetalert_directly(): void
@@ -79,7 +81,8 @@ class CustomAdasiAlertTest extends TestCase
 
         $partial = file_get_contents(resource_path('views/partials/alerts.blade.php'));
         $this->assertStringContainsString('$errors->any()', $partial);
-        $this->assertStringContainsString('alert alert-danger', $partial);
+        $this->assertStringContainsString('<x-ui.alert tone="error"', $partial);
+        $this->assertStringNotContainsString('alert alert-danger', $partial);
     }
 
     public function test_export_confirmation_retains_the_single_download_guard(): void

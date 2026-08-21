@@ -28,8 +28,13 @@
         default     => ucwords(str_replace('_', ' ', $status)),
     };
 
-    $fontSize = $size === 'lg' ? 'font-size:.75rem' : 'font-size:.65rem';
-    $padding = $size === 'lg' ? 'px-3 py-2' : '';
+    $tone = str_contains($badgeClass, 'danger')
+        ? 'error'
+        : (str_contains($badgeClass, 'warning')
+            ? 'warning'
+            : (str_contains($badgeClass, 'success')
+                ? 'success'
+                : (str_contains($badgeClass, 'primary') || str_contains($badgeClass, 'info') ? 'info' : 'neutral')));
 @endphp
 
-<span {{ $attributes->merge(['class' => "badge {$badgeClass} text-uppercase {$padding}", 'style' => $fontSize]) }}>{{ $label }}</span>
+<x-ui.status-chip :tone="$tone" :size="$size === 'lg' ? 'md' : 'sm'" {{ $attributes }}>{{ $label }}</x-ui.status-chip>

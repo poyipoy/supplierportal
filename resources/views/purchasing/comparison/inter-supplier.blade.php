@@ -11,10 +11,10 @@
     />
     <x-purchasing.comparison-tabs active="inter-supplier" />
 
-<x-ui.card title="Select Purchase Requisition" description="Eligible PRs have at least two supplier quotations.">
-        <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="tw-grid tw-gap-4 md:tw-grid-cols-[minmax(0,1fr)_auto] md:tw-items-end" id="interSupplierFilterForm">
+    <x-ui.toolbar class="tw-mb-0">
+        <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="tw-grid tw-w-full tw-gap-4 md:tw-grid-cols-[minmax(0,1fr)_auto] md:tw-items-end" id="interSupplierFilterForm">
             <div>
-                <label class="form-label small fw-bold">Select Purchase Requisition (PR with minimum 2 quotations)</label>
+                <label for="comparisonPrSearch" class="form-label small fw-bold">Purchase Requisition</label>
                 <div class="position-relative">
                     <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
                     <div class="input-group input-group-sm">
@@ -25,12 +25,13 @@
                                value="{{ $selectedPrOption['label'] ?? '' }}"
                                placeholder="Type a PR number or period..."
                                autocomplete="off">
-                        <button type="button"
-                                class="btn btn-outline-secondary {{ $selectedPrOption ? '' : 'd-none' }}"
-                                id="comparisonPrClear"
-                                title="Delete">
-                            <x-ui.icon name="x" />
-                        </button>
+                        <x-ui.icon-button
+                            icon="x"
+                            label="Clear PR selection"
+                            size="sm"
+                            id="comparisonPrClear"
+                            class="tw-rounded-none {{ $selectedPrOption ? '' : 'd-none' }}"
+                        />
                     </div>
                     <div class="list-group position-absolute w-100 shadow-sm d-none tw-z-[1050] tw-max-h-[260px] tw-overflow-y-auto"
                          id="comparisonPrSuggestions"></div>
@@ -44,7 +45,7 @@
                 </x-ui.button>
             </div>
         </form>
-</x-ui.card>
+    </x-ui.toolbar>
 
 @if($comparison)
     @php
@@ -90,36 +91,48 @@
         }
     @endphp
 
-    {{-- Summary Card --}}
+    {{-- Commercial overview --}}
     @if(count($validTotals) > 0)
-    <div class="row mb-4">
-        @foreach($validTotals as $qid => $data)
-            <div class="col-md-{{ max(3, floor(12/count($validTotals))) }}">
-                <div class="card border-{{ $recommendedSupId === $qid ? 'success' : '0' }} shadow-sm h-100 {{ $recommendedSupId === $qid ? 'bg-success bg-opacity-10' : '' }}">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <h6 class="fw-bold mb-1">{{ $data['name'] }}</h6>
-                            @if($recommendedSupId === $qid)
-                                <span class="badge bg-success"><x-ui.icon name="star" class="me-1" />Cheapest</span>
-                            @endif
-                        </div>
-                        <div class="text-muted small mb-2">Total Estimated Price</div>
-                        <h5 class="fw-bold {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">Rp {{ number_format($data['total'], 0, ',', '.') }}</h5>
-                        <div class="small mt-2">
-                            <span class="badge bg-light text-dark border">{{ $supplierWins[$qid] }} Cheapest Materials</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endforeach
-    </div>
+        <x-ui.data-table
+            title="Commercial Overview"
+            description="Ranked supplier totals and line-item price leadership for the selected PR."
+        >
+            <table class="table table-hover align-middle mb-0 tw-text-ui-xs">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Supplier</th>
+                        <th scope="col" class="text-end">Estimated Total</th>
+                        <th scope="col" class="text-center">Lowest-Price Items</th>
+                        <th scope="col">Position</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($validTotals as $qid => $data)
+                        <tr>
+                            <td class="fw-semibold tw-text-on-surface">{{ $data['name'] }}</td>
+                            <td class="text-end fw-bold ui-tabular-nums {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">
+                                Rp {{ number_format($data['total'], 0, ',', '.') }}
+                            </td>
+                            <td class="text-center ui-tabular-nums">{{ $supplierWins[$qid] }}</td>
+                            <td>
+                                @if($recommendedSupId === $qid)
+                                    <x-ui.status-chip tone="success" icon="star">Best Total</x-ui.status-chip>
+                                @else
+                                    <x-ui.status-chip tone="neutral">Alternative</x-ui.status-chip>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </x-ui.data-table>
     @endif
 
     {{-- Grafik Batang --}}
     <x-ui.card title="Price Comparison Chart per Material (IDR/Kg)">
         <x-slot:actions>
             <div class="tw-min-w-60">
-                <label class="form-label small fw-bold mb-1">Material</label>
+                <label class="form-label small fw-bold mb-1" for="comparisonMaterialFilter">Material</label>
                 <select class="form-select form-select-sm" id="comparisonMaterialFilter">
                     <option value="">All Material</option>
                     @foreach($materialOptions as $material)
@@ -138,12 +151,12 @@
                 <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs">
                     <thead class="table-light text-center">
                         <tr>
-                            <th rowspan="2" class="align-middle">Material</th>
-                            <th rowspan="2" class="align-middle">Qty</th>
-                            <th rowspan="2" class="align-middle">Weight/Unit (Kg)</th>
-                            <th rowspan="2" class="align-middle">Total Weight (Kg)</th>
+                            <th scope="col" rowspan="2" class="align-middle">Material</th>
+                            <th scope="col" rowspan="2" class="align-middle">Qty</th>
+                            <th scope="col" rowspan="2" class="align-middle">Weight/Unit (Kg)</th>
+                            <th scope="col" rowspan="2" class="align-middle">Total Weight (Kg)</th>
                             @foreach($comparison['suppliers'] as $sup)
-                                <th colspan="2" class="text-center">
+                                <th scope="colgroup" colspan="2" class="text-center">
                                     {{ $sup['name'] }}
                                     <div class="tw-mt-1">
                                         <x-ui.status-chip :tone="$sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'error' : 'info')" size="sm">
@@ -155,8 +168,8 @@
                         </tr>
                         <tr>
                             @foreach($comparison['suppliers'] as $sup)
-                                <th class="text-center small">Price/Kg ({{ $sup['currency'] }})</th>
-                                <th class="text-center small">Price/Kg (IDR)</th>
+                                <th scope="col" class="text-center small">Price/Kg ({{ $sup['currency'] }})</th>
+                                <th scope="col" class="text-center small">Price/Kg (IDR)</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -188,9 +201,7 @@
                                                 <x-ui.icon name="circle-check" class="ms-1" />
                                             @endif
                                             @if($p['detail_url'])
-                                                <a href="{{ $p['detail_url'] }}" class="btn btn-sm btn-link p-0 ms-1" title="Details">
-                                                    <x-ui.icon name="external-link" />
-                                                </a>
+                                                <x-ui.icon-button :href="$p['detail_url']" icon="external-link" label="Open quotation details" size="sm" class="tw-ms-1" />
                                             @endif
                                         </td>
                                     @else
@@ -347,15 +358,44 @@ document.addEventListener('click', (event) => {
 <script>
 const comparisonChartData = @json($chartData);
 const comparisonMaterialIds = @json($chartMaterialIds);
+const comparisonTheme = getComputedStyle(document.documentElement);
+const comparisonColor = (token) => comparisonTheme.getPropertyValue(token).trim();
+const comparisonPalette = [
+    comparisonColor('--md-ref-primary-700'),
+    comparisonColor('--md-ref-primary-500'),
+    comparisonColor('--md-ref-primary-300'),
+    comparisonColor('--md-ref-secondary-700'),
+    comparisonColor('--md-ref-secondary-500'),
+    comparisonColor('--md-ref-secondary-300'),
+];
+comparisonChartData.datasets.forEach((dataset, index) => {
+    dataset.backgroundColor = comparisonPalette[index % comparisonPalette.length];
+    dataset.borderColor = comparisonPalette[index % comparisonPalette.length];
+    dataset.borderWidth = 1;
+});
 const comparisonChart = new Chart(document.getElementById('comparisonChart'), {
     type: 'bar',
     data: JSON.parse(JSON.stringify(comparisonChartData)),
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom' } },
+        animation: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { color: comparisonColor('--md-on-surface-variant'), boxWidth: 10, boxHeight: 10 },
+            },
+        },
         scales: {
-            y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + v.toLocaleString('id-ID') } }
+            x: { grid: { display: false } },
+            y: {
+                beginAtZero: true,
+                grid: { color: comparisonColor('--md-outline-variant') },
+                ticks: {
+                    color: comparisonColor('--md-on-surface-variant'),
+                    callback: v => 'Rp ' + v.toLocaleString('id-ID'),
+                },
+            }
         }
     }
 });

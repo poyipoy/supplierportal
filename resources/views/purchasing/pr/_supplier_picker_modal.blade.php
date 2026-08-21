@@ -11,13 +11,13 @@
     @push('styles')
         <style>
             .supplier-option-list {
-                max-height: 22.5rem;
+                max-height: 24rem;
                 overflow-y: auto;
             }
 
             .supplier-option {
                 cursor: pointer;
-                transition: background-color var(--ui-motion-fast) var(--ui-easing-standard);
+                transition: background-color 0.15s ease;
             }
 
             .supplier-option:hover {
@@ -28,54 +28,57 @@
 @endonce
 
 <div class="supplier-picker tw-grid tw-gap-1.5" data-supplier-picker>
-    <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Select supplier</span>
+    <label class="form-label small fw-semibold tw-text-on-surface mb-0">Supplier Audience</label>
     <x-ui.button
         type="button"
-        variant="secondary"
-        class="tw-w-full tw-justify-between"
+        variant="outline"
+        size="sm"
+        class="tw-w-full tw-justify-between tw-text-start"
         data-bs-toggle="modal"
         data-bs-target="#{{ $modalId }}"
         aria-describedby="{{ $modalId }}Summary"
     >
-        <x-slot:leading><x-ui.icon name="users" /></x-slot:leading>
-        Select supplier
-        <x-slot:trailing>
-            <span class="supplier-selected-count tw-inline-flex tw-min-w-7 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-primary tw-px-2 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-primary-foreground">{{ $selectedSupplierCount > 0 ? $selectedSupplierCount : 'All' }}</span>
-        </x-slot:trailing>
+        <span class="d-inline-flex align-items-center gap-2">
+            <x-ui.icon name="users" size="sm" class="tw-text-on-surface-variant" />
+            <span class="tw-text-on-surface fw-medium">Select invited suppliers</span>
+        </span>
+        <span class="supplier-selected-count ui-status-chip ui-status-chip--info ui-tabular-nums">
+            {{ $selectedSupplierCount > 0 ? $selectedSupplierCount : 'All' }}
+        </span>
     </x-ui.button>
-    <div id="{{ $modalId }}Summary" class="supplier-selected-summary tw-text-ui-xs tw-text-on-surface-variant" data-empty-text="All Registered Suppliers">
+    <div id="{{ $modalId }}Summary" class="supplier-selected-summary tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5" data-empty-text="All Registered Suppliers">
         All Registered Suppliers
     </div>
     @error('supplier_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
     @error('supplier_ids.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
     <div class="modal fade" id="{{ $modalId }}" tabindex="-1" aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title fw-semibold" id="{{ $modalId }}Label">Select Supplier</h5>
-                        <div class="small text-muted">Check the suppliers that will receive this PR quotation invitation.</div>
+                        <h6 class="modal-title fw-bold" id="{{ $modalId }}Label">Select Invited Suppliers</h6>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">Check specific suppliers to invite for this PR, or leave empty to open to all registered suppliers.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body tw-p-3.5">
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col">
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-white"><x-ui.icon name="search" /></span>
-                                <input type="text" class="form-control supplier-search-input" placeholder="Search supplier name, email, or company..." aria-label="Search suppliers">
+                                <span class="input-group-text bg-white tw-text-outline"><x-ui.icon name="search" size="sm" /></span>
+                                <input type="text" class="form-control supplier-search-input" placeholder="Search by supplier name, company, or email..." aria-label="Search suppliers">
                             </div>
                         </div>
                         <div class="col-auto">
-                            <x-ui.button type="button" variant="secondary" size="sm" class="supplier-select-all">Select all</x-ui.button>
+                            <x-ui.button type="button" variant="outline" size="sm" class="supplier-select-all">Select All</x-ui.button>
                         </div>
                         <div class="col-auto">
-                            <x-ui.button type="button" variant="ghost" size="sm" class="supplier-clear-all">Clear selection</x-ui.button>
+                            <x-ui.button type="button" variant="ghost" size="sm" class="supplier-clear-all">Clear All</x-ui.button>
                         </div>
                     </div>
 
-                    <div class="border rounded-3 overflow-hidden">
+                    <div class="border rounded overflow-hidden">
                         <div class="supplier-option-list">
                             @forelse($suppliers as $supplier)
                                 @php
@@ -83,27 +86,24 @@
                                     $supplierEmail = $supplier->email ?? '';
                                     $supplierKey = strtolower($supplierName . ' ' . $supplierEmail . ' ' . ($supplier->name ?? ''));
                                 @endphp
-                                <label class="supplier-option d-flex gap-3 align-items-start p-3 border-bottom mb-0" data-supplier-key="{{ $supplierKey }}">
+                                <label class="supplier-option d-flex gap-3 align-items-start tw-p-2.5 border-bottom mb-0" data-supplier-key="{{ $supplierKey }}">
                                     <input class="form-check-input mt-1 supplier-checkbox" type="checkbox" name="supplier_ids[]" value="{{ $supplier->id }}" data-supplier-name="{{ $supplierName }}" aria-label="Select supplier {{ $supplierName }}" @checked(in_array((string) $supplier->id, $selectedSupplierIds, true))>
                                     <span class="flex-grow-1">
-                                        <span class="d-block fw-semibold">{{ $supplierName }}</span>
-                                        <span class="d-block small text-muted">{{ $supplierEmail ?: $supplier->name }}</span>
+                                        <span class="d-block fw-semibold tw-text-on-surface tw-text-ui-sm">{{ $supplierName }}</span>
+                                        <span class="d-block tw-text-on-surface-variant tw-text-ui-xs">{{ $supplierEmail ?: $supplier->name }}</span>
                                     </span>
                                 </label>
                             @empty
-                                <div class="p-4 text-center text-muted">
-                                    No supplier terdaftar.
+                                <div class="p-4 text-center tw-text-on-surface-variant tw-text-ui-sm">
+                                    No registered suppliers found.
                                 </div>
                             @endforelse
                         </div>
                     </div>
-                    <div class="form-text mt-2">
-                        If no supplier is checked, the PR will be opened to all registered suppliers.
-                    </div>
                 </div>
-                <div class="modal-footer">
-                    <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">Close</x-ui.button>
-                    <x-ui.button type="button" data-bs-dismiss="modal">Save selection</x-ui.button>
+                <div class="modal-footer tw-bg-surface-low border-top">
+                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
+                    <x-ui.button type="button" size="sm" data-bs-dismiss="modal">Apply Selection</x-ui.button>
                 </div>
             </div>
         </div>
@@ -129,7 +129,7 @@
                     return $(this).data('supplier-name');
                 }).get();
                 const visibleNames = names.slice(0, 2).join(', ');
-                const suffix = count > 2 ? ` +${count - 2} supplier lain` : '';
+                const suffix = count > 2 ? ` +${count - 2} other suppliers` : '';
 
                 $picker.find('.supplier-selected-summary').text(visibleNames + suffix);
             }

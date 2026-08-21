@@ -57,13 +57,13 @@ class SupplierPurchaseOrderController extends Controller
                     return 'Rp ' . number_format($totalIdr, 0, ',', '.');
                 })
                 ->addColumn('status_badge', function ($po) {
-                    $badgeClass = match(true) {
-                        $po->is_overdue => 'bg-danger',
-                        $po->status === 'active' => 'bg-primary',
-                        $po->status === 'waiting_qc' => 'bg-warning text-dark',
-                        $po->status === 'claim_needed' => 'bg-danger',
-                        $po->status === 'completed' => 'bg-success',
-                        default => 'bg-secondary'
+                    $tone = match(true) {
+                        $po->is_overdue => 'error',
+                        $po->status === 'active' => 'info',
+                        $po->status === 'waiting_qc' => 'warning',
+                        $po->status === 'claim_needed' => 'error',
+                        $po->status === 'completed' => 'success',
+                        default => 'neutral'
                     };
                     $statusLabel = match(true) {
                         $po->is_overdue => 'Overdue',
@@ -73,7 +73,7 @@ class SupplierPurchaseOrderController extends Controller
                         $po->status === 'completed' => 'Completed',
                         default => ucwords(str_replace('_', ' ', $po->status)),
                     };
-                    return '<span class="badge ' . $badgeClass . ' text-uppercase" style="font-size: 0.7rem;">' . $statusLabel . '</span>';
+                    return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>';
                 })
                 ->addColumn('estimated_date', fn($po) => $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-')
                 ->addColumn('action', function ($po) {
@@ -81,11 +81,11 @@ class SupplierPurchaseOrderController extends Controller
                     $pendingClaim = $po->materialClaims->where('status', 'pending')->sortByDesc('created_at')->first();
                     $latestClaim = $po->materialClaims->sortByDesc('created_at')->first();
                     if ($pendingClaim) {
-                        $html .= '<a href="' . route('supplier.claims.show', $pendingClaim) . '" class="btn btn-sm btn-danger">Claim Response</a>';
+                        $html .= '<a href="' . route('supplier.claims.show', $pendingClaim) . '" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim Response</a>';
                     } elseif ($latestClaim) {
-                        $html .= '<a href="' . route('supplier.claims.show', $latestClaim) . '" class="btn btn-sm btn-outline-danger">View Claim</a>';
+                        $html .= '<a href="' . route('supplier.claims.show', $latestClaim) . '" class="ui-data-action ui-data-action--danger ui-focus-ring">View Claim</a>';
                     }
-                    $html .= '<a href="' . route('supplier.purchase-orders.show', $po) . '" class="btn btn-sm btn-outline-info">Details</a>';
+                    $html .= '<a href="' . route('supplier.purchase-orders.show', $po) . '" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>';
                     $html .= '</div>';
                     return $html;
                 })

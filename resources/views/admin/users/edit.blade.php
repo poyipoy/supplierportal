@@ -3,138 +3,323 @@
 @section('page-title', 'Edit User')
 
 @section('content')
-<div class="tw-grid tw-gap-6">
-    <x-ui.page-header :title="'Edit User — ' . $user->name" description="Update role, account status, credentials, and supplier profile within existing security rules." eyebrow="Admin">
-        <x-slot:actions><x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to User List</x-ui.button></x-slot:actions>
+<div class="tw-grid tw-gap-6 tw-pb-24">
+    <x-ui.breadcrumb :items="['Users' => route('admin.users.index'), $user->name => null]" />
+
+    <x-ui.page-header
+        :title="$user->name"
+        description="Update account identity, role access, status, credentials, and supplier organization details."
+        eyebrow="Admin Users"
+    >
+        <x-slot:meta>
+            <x-ui.status-chip :tone="$user->is_active ? 'success' : 'neutral'">
+                {{ $user->is_active ? 'Active' : 'Inactive' }}
+            </x-ui.status-chip>
+            <x-ui.status-chip tone="info">
+                {{ $user->role === 'qc' ? 'QC' : ucfirst($user->role) }}
+            </x-ui.status-chip>
+        </x-slot:meta>
+        <x-slot:actions>
+            <x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" /> Back to Users
+            </x-ui.button>
+        </x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.card :title="'Edit User Form: ' . $user->name">
-            <form action="{{ route('admin.users.update', $user) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">Informasi Akun</h6>
-                        
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="user-name">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" id="user-name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $user->name) }}" required>
-                            @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
+    <form action="{{ route('admin.users.update', $user) }}" method="POST" id="userEditForm">
+        @csrf
+        @method('PUT')
 
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="user-email">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" name="email" id="user-email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
-                            @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="mb-3 border rounded p-3 bg-light">
-                            <label class="form-label small fw-bold text-dark" for="user-password"><x-ui.icon name="key" /> Change Password</label>
-                            <p class="small text-muted mb-2" id="user-password-help">Leave blank if you do not want to change the password.</p>
-                            
-                            <input type="password" name="password" id="user-password" class="form-control mb-2 @error('password') is-invalid @enderror" placeholder="New password (minimum 12 characters)" minlength="12" maxlength="255" autocomplete="new-password" aria-describedby="user-password-help">
-                            @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            
-                            <label class="tw-sr-only" for="user-password-confirmation">Confirm new password</label>
-                            <input type="password" name="password_confirmation" id="user-password-confirmation" class="form-control" placeholder="Confirm New Password" minlength="12" maxlength="255" autocomplete="new-password">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="role-select">Role (Access Rights) <span class="text-danger">*</span></label>
-                            <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
-                                <option value="">-- Select Role --</option>
-                                <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin</option>
-                                <option value="purchasing" {{ old('role', $user->role) == 'purchasing' ? 'selected' : '' }}>Purchasing</option>
-                                <option value="supplier" {{ old('role', $user->role) == 'supplier' ? 'selected' : '' }}>Supplier</option>
-                                <option value="qc" {{ old('role', $user->role) == 'qc' ? 'selected' : '' }}>Quality Control (QC)</option>
-                            </select>
-                            @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="mb-3 form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
-                            <label class="form-check-label small fw-medium text-muted" for="isActive">Active Account</label>
-                        </div>
-                    </div>
-
-                    {{-- Supplier-specific fields --}}
-                    <div class="col-md-6" id="supplier-fields" hidden>
-                        <h6 class="text-info fw-bold mb-3 border-bottom pb-2">Company Details (Supplier)</h6>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-company-name">Company Name (PT/CV) <span class="text-danger">*</span></label>
-                            <input type="text" name="company_name" id="supplier-company-name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name', $user->supplier->company_name ?? '') }}">
-                            @error('company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-address">Full Address <span class="text-danger">*</span></label>
-                            <textarea name="address" id="supplier-address" class="form-control @error('address') is-invalid @enderror" rows="3">{{ old('address', $user->supplier->address ?? '') }}</textarea>
-                            @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-phone">Phone Number <span class="text-danger">*</span></label>
-                            <input type="text" name="phone" id="supplier-phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $user->supplier->phone ?? '') }}">
-                            @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-npwp">NPWP <span class="text-danger">*</span></label>
-                            <input type="text" name="npwp" id="supplier-npwp" class="form-control @error('npwp') is-invalid @enderror" value="{{ old('npwp', $user->supplier->npwp ?? '') }}">
-                            @error('npwp')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-category">Material Category <span class="text-danger">*</span></label>
-                            <input type="text" name="category" id="supplier-category" class="form-control @error('category') is-invalid @enderror" value="{{ old('category', $user->supplier->category ?? '') }}" placeholder="Contoh: Baja, Plat Besi, dsb">
-                            @error('category')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="tw-mt-5 tw-flex tw-justify-end">
-                    <x-ui.button type="submit"><x-ui.icon name="save" /> Save Changes</x-ui.button>
-                </div>
-            </form>
-    </x-ui.card>
-
-    @if ($user->hasTwoFactorAuthentication() && $user->id !== auth()->id())
-        <x-ui.card title="Two-Factor Authentication" description="Reset only when this user lost both authenticator and recovery-code access." variant="tonal">
-            <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
+        {{-- Section 1: Account Identity --}}
+        <x-ui.form-section
+            title="Account Identity"
+            description="Display name and email address used for portal communications."
+        >
+            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                 <div>
-                    <p class="text-muted small mb-0">Reset only when this user has lost access to the authenticator and every recovery code.</p>
+                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-name">
+                        Full Name <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        name="name"
+                        id="user-name"
+                        class="form-control @error('name') is-invalid @enderror"
+                        value="{{ old('name', $user->name) }}"
+                        required
+                    >
+                    @error('name')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-                <form method="POST" action="{{ route('admin.users.two-factor.destroy', $user) }}">
+
+                <div>
+                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-email">
+                        Email Address <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        type="email"
+                        name="email"
+                        id="user-email"
+                        class="form-control @error('email') is-invalid @enderror"
+                        value="{{ old('email', $user->email) }}"
+                        required
+                    >
+                    @error('email')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </x-ui.form-section>
+
+        {{-- Section 2: Role & Activation Status --}}
+        <x-ui.form-section
+            title="Access Role and Activation"
+            description="Modifying role or status will automatically invalidate existing active sessions for security."
+        >
+            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <div>
+                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="role-select">
+                        Portal Role <span class="text-danger">*</span>
+                    </label>
+                    <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
+                        <option value="">-- Select Access Role --</option>
+                        <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin (Full System Control)</option>
+                        <option value="purchasing" {{ old('role', $user->role) == 'purchasing' ? 'selected' : '' }}>Purchasing (Requisitions &amp; POs)</option>
+                        <option value="supplier" {{ old('role', $user->role) == 'supplier' ? 'selected' : '' }}>Supplier (Bidding &amp; Quotations)</option>
+                        <option value="qc" {{ old('role', $user->role) == 'qc' ? 'selected' : '' }}>Quality Control (Inspections &amp; Claims)</option>
+                    </select>
+                    @error('role')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="tw-flex tw-items-center tw-pt-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
+                        <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="isActive">
+                            Active Account (Allowed to sign in)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </x-ui.form-section>
+
+        {{-- Section 3: Password Update --}}
+        <x-ui.form-section
+            title="Credential Management"
+            description="Leave both password inputs blank if you do not wish to reset the user's password."
+        >
+            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <div>
+                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password">
+                        New Password
+                    </label>
+                    <input
+                        type="password"
+                        name="password"
+                        id="user-password"
+                        class="form-control @error('password') is-invalid @enderror"
+                        minlength="12"
+                        maxlength="255"
+                        autocomplete="new-password"
+                        placeholder="Leave blank to retain current password"
+                    >
+                    <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1 tw-block">Minimum 12 characters if updating.</small>
+                    @error('password')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password-confirmation">
+                        Confirm New Password
+                    </label>
+                    <input
+                        type="password"
+                        name="password_confirmation"
+                        id="user-password-confirmation"
+                        class="form-control"
+                        minlength="12"
+                        maxlength="255"
+                        autocomplete="new-password"
+                        placeholder="Re-enter new password"
+                    >
+                </div>
+            </div>
+        </x-ui.form-section>
+
+        {{-- Section 4: Supplier Profile (Conditional) --}}
+        <div id="supplier-section" class="{{ old('role', $user->role) === 'supplier' ? '' : 'd-none' }}">
+            <x-ui.form-section
+                title="Supplier Organization"
+                description="Company identity, contact details, and material category."
+            >
+                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                    <div>
+                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-company-name">
+                            Company Legal Name (PT / CV / Corp) <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="company_name"
+                            id="supplier-company-name"
+                            class="form-control @error('company_name') is-invalid @enderror"
+                            value="{{ old('company_name', $user->supplier->company_name ?? '') }}"
+                        >
+                        @error('company_name')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-category">
+                            Material Supply Category <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="category"
+                            id="supplier-category"
+                            class="form-control @error('category') is-invalid @enderror"
+                            value="{{ old('category', $user->supplier->category ?? '') }}"
+                            placeholder="e.g. Special Steel, Tool Steel, Rods"
+                        >
+                        @error('category')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-phone">
+                            Phone / Contact Number <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="phone"
+                            id="supplier-phone"
+                            class="form-control @error('phone') is-invalid @enderror"
+                            value="{{ old('phone', $user->supplier->phone ?? '') }}"
+                        >
+                        @error('phone')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-npwp">
+                            Tax ID / NPWP <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="npwp"
+                            id="supplier-npwp"
+                            class="form-control @error('npwp') is-invalid @enderror"
+                            value="{{ old('npwp', $user->supplier->npwp ?? '') }}"
+                        >
+                        @error('npwp')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="sm:tw-col-span-2">
+                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-address">
+                            Registered Office Address <span class="text-danger">*</span>
+                        </label>
+                        <textarea
+                            name="address"
+                            id="supplier-address"
+                            class="form-control @error('address') is-invalid @enderror"
+                            rows="3"
+                        >{{ old('address', $user->supplier->address ?? '') }}</textarea>
+                        @error('address')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </x-ui.form-section>
+        </div>
+
+        {{-- Sticky Action Bar --}}
+        <x-ui.action-bar>
+            <x-slot:left>
+                <span class="tw-text-ui-xs tw-text-on-surface-variant">
+                    Last updated {{ $user->updated_at?->format('d M Y, H:i') ?? '-' }}
+                </span>
+            </x-slot:left>
+            <x-slot:right>
+                <x-ui.button :href="route('admin.users.index')" variant="ghost">
+                    Cancel
+                </x-ui.button>
+                <x-ui.button type="submit">
+                    <x-ui.icon name="check" size="sm" />
+                    Save User Changes
+                </x-ui.button>
+            </x-slot:right>
+        </x-ui.action-bar>
+    </form>
+
+    {{-- Section 5: Security / Two-Factor Authentication Reset (if applicable) --}}
+    @if ($user->hasTwoFactorAuthentication() && $user->id !== auth()->id())
+        <div class="tw-border tw-border-error/40 tw-rounded-ui-sm tw-bg-surface-low tw-p-5">
+            <div class="tw-flex tw-flex-col tw-gap-4 md:tw-flex-row md:tw-items-center md:tw-justify-between">
+                <div>
+                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-error">Two-Factor Authentication Security</h3>
+                    <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
+                        Reset MFA only after confirming the user has permanently lost access to their authenticator device and all recovery keys.
+                    </p>
+                </div>
+                <form method="POST" action="{{ route('admin.users.two-factor.destroy', $user) }}" class="mfa-reset-form tw-shrink-0">
                     @csrf
                     @method('DELETE')
-                    <x-ui.button type="submit" variant="danger">Reset MFA</x-ui.button>
+                    <x-ui.button type="button" variant="danger" class="btn-reset-mfa" size="sm">
+                        <x-ui.icon name="shield-alert" size="sm" /> Reset 2FA Security
+                    </x-ui.button>
                 </form>
             </div>
-        </x-ui.card>
+        </div>
     @endif
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const roleSelect = document.getElementById('role-select');
-        const supplierFields = document.getElementById('supplier-fields');
+        const supplierSection = document.getElementById('supplier-section');
+        const supplierInputs = supplierSection ? supplierSection.querySelectorAll('input, textarea') : [];
 
         function toggleSupplierFields() {
-            if (roleSelect.value === 'supplier') {
-                supplierFields.hidden = false;
-                supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.setAttribute('required', 'required'));
+            if (!roleSelect || !supplierSection) return;
+            const isSupplier = roleSelect.value === 'supplier';
+            if (isSupplier) {
+                supplierSection.classList.remove('d-none');
+                supplierInputs.forEach(input => {
+                    input.removeAttribute('disabled');
+                    input.setAttribute('required', 'required');
+                });
             } else {
-                supplierFields.hidden = true;
-                supplierFields.querySelectorAll('input, textarea, select').forEach(el => el.removeAttribute('required'));
+                supplierSection.classList.add('d-none');
+                supplierInputs.forEach(input => {
+                    input.setAttribute('disabled', 'disabled');
+                    input.removeAttribute('required');
+                });
             }
         }
 
         roleSelect.addEventListener('change', toggleSupplierFields);
-        toggleSupplierFields(); // On load
+        toggleSupplierFields();
+
+        document.querySelector('.btn-reset-mfa')?.addEventListener('click', function () {
+            const form = this.closest('form');
+            AdasiAlert.confirmDanger({
+                title: @json('Reset Two-Factor Authentication?'),
+                text: @json('The user will be required to configure 2FA again upon their next sign-in.'),
+                confirmText: @json('Yes, Reset 2FA'),
+                cancelText: @json('Cancel')
+            }).then((result) => {
+                if (result.isConfirmed) form.submit();
+            });
+        });
     });
 </script>
 @endpush

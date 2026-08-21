@@ -18,7 +18,7 @@
         @endif
 
         @if($eyebrow)
-            <p class="tw-m-0 tw-mb-1 tw-text-[11px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-primary">{{ $eyebrow }}</p>
+            <p class="tw-m-0 tw-mb-1 tw-text-ui-xs tw-font-bold tw-uppercase tw-tracking-wider tw-text-primary">{{ $eyebrow }}</p>
         @endif
 
         <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2.5">

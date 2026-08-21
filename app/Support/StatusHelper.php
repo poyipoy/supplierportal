@@ -6,7 +6,7 @@ use DateTimeInterface;
 use Illuminate\Support\Carbon;
 
 /**
- * Centralized status badge & label helper.
+ * Centralized status presentation and label helper.
  *
  * Replaces repeated match() blocks across controllers and views.
  * Usage: StatusHelper::prBadge($status), StatusHelper::prLabel($status), etc.
@@ -352,7 +352,7 @@ class StatusHelper
     // ─── Generic Helper ───
 
     /**
-     * Render HTML badge span.
+     * Render a semantic status chip.
      *
      * @param  string  $badgeClass  CSS class (e.g., 'bg-success')
      * @param  string  $label       Display text
@@ -361,18 +361,31 @@ class StatusHelper
     public static function badge(string $badgeClass, string $label): string
     {
         $escapedLabel = e($label);
+        $tone = self::semanticTone($badgeClass);
 
-        return '<span class="badge ' . $badgeClass . ' text-uppercase" style="font-size:.65rem">' . $escapedLabel . '</span>';
+        return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.$escapedLabel.'</span>';
     }
 
     public static function badgeWithTooltip(string $badgeClass, string $label, ?string $description = null): string
     {
         $escapedLabel = e($label);
+        $tone = self::semanticTone($badgeClass);
         $tooltip = $description
             ? ' data-bs-toggle="tooltip" data-bs-title="' . e($description) . '"'
             : '';
 
-        return '<span class="badge ' . $badgeClass . ' text-uppercase" style="font-size:.65rem"' . $tooltip . '>' . $escapedLabel . '</span>';
+        return '<span class="ui-status-chip ui-status-chip--'.$tone.'"'.$tooltip.'>'.$escapedLabel.'</span>';
+    }
+
+    private static function semanticTone(string $badgeClass): string
+    {
+        return match (true) {
+            str_contains($badgeClass, 'danger') => 'error',
+            str_contains($badgeClass, 'warning') => 'warning',
+            str_contains($badgeClass, 'success') => 'success',
+            str_contains($badgeClass, 'primary'), str_contains($badgeClass, 'info') => 'info',
+            default => 'neutral',
+        };
     }
 
     private static function asDate(mixed $value): ?Carbon

@@ -1,44 +1,67 @@
 @extends('layouts.app')
 
-@section('title', 'Profile & Security - ADASI Supplier Portal')
-@section('page-title', 'Profile & Security')
+@section('title', 'Profile and Security - ADASI Supplier Portal')
+@section('page-title', 'Profile and Security')
 
 @section('content')
-    <div class="tw-grid tw-gap-6">
-        <x-ui.page-header
-            title="Profile & Security"
-            description="Manage your account information, password, sign-in security, and active sessions."
-            eyebrow="Account"
-        >
-            <x-slot:meta>
-                <x-ui.status-chip tone="info"><x-ui.icon name="user-check" size="sm" />{{ ucfirst($user->role) }} account</x-ui.status-chip>
-            </x-slot:meta>
-        </x-ui.page-header>
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Profile and Security"
+        description="Manage your account information, password, sign-in security, and active sessions."
+        eyebrow="Account"
+    >
+        <x-slot:meta>
+            <x-ui.status-chip tone="neutral"><x-ui.icon name="user-check" size="sm" />{{ ucfirst($user->role) }} account</x-ui.status-chip>
+        </x-slot:meta>
+    </x-ui.page-header>
 
-        <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,1.35fr)_minmax(20rem,1fr)] xl:tw-items-start">
-            <div class="tw-grid tw-gap-6">
-                <x-ui.card title="Personal Information" description="Name and email address for this account.">
-                    @include('profile.partials.update-profile-information-form')
-                </x-ui.card>
-
-                <x-ui.card title="Change Password" description="Use a strong password with at least 12 characters.">
-                    @include('profile.partials.update-password-form')
-                </x-ui.card>
-            </div>
-
-            <div class="tw-grid tw-gap-6">
-                <x-ui.card title="Two-Factor Authentication" description="Optional additional protection for your sign-in.">
-                    @include('profile.partials.two-factor-authentication-form')
-                </x-ui.card>
-
-                <x-ui.card title="Other Devices" description="End access from other active sessions.">
-                    @include('profile.partials.logout-other-devices-form')
-                </x-ui.card>
-            </div>
+    {{-- Primary Account Section --}}
+    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="profile-account-title">
+        <header class="tw-border-b tw-border-outline-variant tw-px-5 tw-py-4">
+            <h2 id="profile-account-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Account Information</h2>
+            <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Keep this information accurate so Purchasing, Suppliers, and QC can identify your account correctly.</p>
+        </header>
+        <div class="tw-p-5">
+            @include('profile.partials.update-profile-information-form')
         </div>
 
-        <x-ui.card title="Danger Zone" description="Permanently delete this account and its eligible data." class="tw-border-error">
+        <div class="tw-border-t tw-border-outline-variant tw-px-5 tw-py-4">
+            <h3 class="tw-m-0 tw-text-ui-sm tw-font-semibold">Change Password</h3>
+            <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Use a strong password with at least 12 characters containing uppercase, lowercase, numbers, and symbols.</p>
+        </div>
+        <div class="tw-px-5 tw-pb-5">
+            @include('profile.partials.update-password-form')
+        </div>
+    </section>
+
+    {{-- Security Section --}}
+    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="profile-security-title">
+        <header class="tw-border-b tw-border-outline-variant tw-px-5 tw-py-4">
+            <h2 id="profile-security-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Sign-In Security</h2>
+            <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Manage two-factor authentication and active sessions.</p>
+        </header>
+
+        <div class="tw-divide-y tw-divide-outline-variant">
+            <div class="tw-p-5">
+                <h3 class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Two-Factor Authentication</h3>
+                @include('profile.partials.two-factor-authentication-form')
+            </div>
+            <div class="tw-p-5">
+                <h3 class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Other Devices</h3>
+                @include('profile.partials.logout-other-devices-form')
+            </div>
+        </div>
+    </section>
+
+    {{-- Danger Zone --}}
+    <section class="tw-border tw-border-error/40 tw-bg-surface" aria-labelledby="profile-danger-title">
+        <header class="tw-border-b tw-border-error/40 tw-px-5 tw-py-4">
+            <h2 id="profile-danger-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-error">Danger Zone</h2>
+            <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Permanently delete this account and its eligible data.</p>
+        </header>
+        <div class="tw-p-5">
             @include('profile.partials.delete-user-form')
-        </x-ui.card>
-    </div>
+        </div>
+    </section>
+</div>
 @endsection

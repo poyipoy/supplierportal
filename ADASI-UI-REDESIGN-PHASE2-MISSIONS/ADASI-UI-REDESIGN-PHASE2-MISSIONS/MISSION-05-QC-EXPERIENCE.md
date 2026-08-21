@@ -307,7 +307,7 @@ Run targeted QC/inspection/evidence tests.
 Create:
 
 ```text
-UI-REDESIGN-PHASE2-M05-QC-RESULT.md
+UI-REDESIGN-RESULT/UI-REDESIGN-PHASE2-M05-QC-RESULT.md
 ```
 
 Include:

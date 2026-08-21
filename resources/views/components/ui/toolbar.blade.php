@@ -4,7 +4,7 @@
 
 <div {{ $attributes->class(['ui-toolbar tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-p-3.5 tw-bg-surface tw-border tw-border-outline-variant tw-rounded-ui-md tw-mb-4', 'ui-toolbar--sticky' => $sticky]) }}>
     @isset($search)
-        <div class="tw-flex-1 tw-min-w-[220px] max-w-md">
+        <div class="tw-flex-1 tw-min-w-[220px] tw-max-w-md">
             {{ $search }}
         </div>
     @endisset

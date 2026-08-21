@@ -10,7 +10,7 @@
 
     .pr-form-table-scroll {
         border: 1px solid var(--md-outline-variant);
-        border-radius: .65rem;
+        border-radius: var(--md-shape-md);
         display: block;
         width: 100%;
         max-width: 100%;
@@ -19,7 +19,7 @@
         overscroll-behavior: auto;
         -webkit-overflow-scrolling: touch;
         position: relative;
-        scrollbar-color: #64748B #E2E8F0;
+        scrollbar-color: var(--md-on-surface-variant) var(--md-outline-variant);
         scrollbar-width: auto;
         padding-bottom: 12px;
     }
@@ -30,40 +30,40 @@
     }
 
     .pr-form-table-scroll::-webkit-scrollbar-track {
-        background: #E2E8F0 !important;
-        border-radius: 6px;
+        background: var(--md-outline-variant) !important;
+        border-radius: var(--md-shape-md);
     }
 
     .pr-form-table-scroll::-webkit-scrollbar-thumb {
-        background: #64748B !important;
-        border: 2px solid #E2E8F0;
-        border-radius: 6px;
+        background: var(--md-on-surface-variant) !important;
+        border: 2px solid var(--md-outline-variant);
+        border-radius: var(--md-shape-md);
     }
 
     .pr-form-table-scroll::-webkit-scrollbar-thumb:hover {
-        background: #334155 !important;
+        background: var(--md-secondary) !important;
     }
 
     #itemsTable.pr-items-table {
         border: 0 !important;
         border-collapse: separate !important;
         border-spacing: 0;
-        font-size: .82rem;
+        font-size: var(--ui-font-size-xs);
         margin-bottom: 0;
         min-width: 1372px !important;
         width: 1372px !important;
         table-layout: fixed;
-        background-color: var(--md-surface, #ffffff);
+        background-color: var(--md-surface);
     }
 
     #itemsTable.pr-items-table th,
     #itemsTable.pr-items-table td {
         padding: .65rem .55rem;
-        background-color: var(--md-surface, #ffffff);
+        background-color: var(--md-surface);
     }
 
     #itemsTable.pr-items-table thead th {
-        background-color: var(--md-surface-container-low, #f1f5f9) !important;
+        background-color: var(--md-surface-container-low) !important;
         line-height: 1.25;
         vertical-align: middle !important;
         border-bottom: 1px solid var(--md-outline-variant) !important;
@@ -76,7 +76,7 @@
     }
 
     #itemsTable.pr-items-table .pr-sticky-material {
-        background-color: var(--md-surface, #ffffff) !important;
+        background-color: var(--md-surface) !important;
         border-right: 1px solid var(--md-outline-variant) !important;
         box-shadow: none !important;
         left: 0;
@@ -86,7 +86,7 @@
     }
 
     #itemsTable.pr-items-table thead .pr-sticky-material {
-        background-color: var(--md-surface-container, #e2e8f0) !important;
+        background-color: var(--md-surface-container) !important;
         box-shadow: none !important;
         z-index: 10;
     }
@@ -101,7 +101,7 @@
     }
 
     #itemsTable.pr-items-table .pr-sticky-action {
-        background-color: var(--md-surface, #ffffff) !important;
+        background-color: var(--md-surface) !important;
         border-left: 1px solid var(--md-outline-variant) !important;
         box-shadow: none !important;
         position: sticky;
@@ -110,7 +110,7 @@
     }
 
     #itemsTable.pr-items-table thead .pr-sticky-action {
-        background-color: var(--md-surface-container, #e2e8f0) !important;
+        background-color: var(--md-surface-container) !important;
         box-shadow: none !important;
         z-index: 10;
     }
@@ -123,7 +123,7 @@
     #itemsTable.pr-items-table tbody tr:hover > td,
     #itemsTable.pr-items-table tbody tr:hover > .pr-sticky-material,
     #itemsTable.pr-items-table tbody tr:hover > .pr-sticky-action {
-        background-color: var(--md-surface-container-lowest, #f8f9fc) !important;
+        background-color: var(--md-surface-container-low) !important;
     }
 
     #itemsTable.pr-items-table .form-control,
@@ -162,7 +162,7 @@
         bottom: calc(100% + .35rem);
         color: var(--md-on-surface-variant);
         display: block;
-        font-size: .68rem;
+        font-size: var(--ui-font-size-xs);
         font-weight: 600;
         left: 0;
         line-height: 1.2;
@@ -198,7 +198,7 @@
     }
 
     #itemsTable.pr-items-table .hs-status-badge {
-        font-size: .67rem;
+        font-size: var(--ui-font-size-xs);
         line-height: 1.25;
         white-space: normal;
     }

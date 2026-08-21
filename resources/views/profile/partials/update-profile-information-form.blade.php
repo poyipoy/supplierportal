@@ -1,6 +1,4 @@
 <section>
-    <p class="text-muted small mb-4">Keep this information accurate so Purchasing, Suppliers, and QC can identify your account correctly.</p>
-
     <form id="send-verification" method="POST" action="{{ route('verification.send') }}">
         @csrf
     </form>
@@ -9,46 +7,37 @@
         @csrf
         @method('PATCH')
 
-        <div class="row g-3">
-            <div class="col-12">
-                <label for="name" class="form-label fw-medium">Name</label>
+        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <div class="tw-grid tw-gap-1.5">
+                <label for="name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Name</label>
                 <input id="name" name="name" type="text"
-                    class="form-control @error('name') is-invalid @enderror"
+                    class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('name') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
                     value="{{ old('name', $user->name) }}" maxlength="255" autocomplete="name" required autofocus>
-                @error('name')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                @error('name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
             </div>
 
-            <div class="col-12">
-                <label for="email" class="form-label fw-medium">Email</label>
+            <div class="tw-grid tw-gap-1.5">
+                <label for="email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Email</label>
                 <input id="email" name="email" type="email"
-                    class="form-control @error('email') is-invalid @enderror"
+                    class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('email') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
                     value="{{ old('email', $user->email) }}" maxlength="255" autocomplete="username" required>
-                @error('email')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                @error('email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
 
                 @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                    <div class="alert alert-warning py-2 px-3 small mt-3 mb-0">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <span>Your email address has not been verified.</span>
-                            <button form="send-verification" class="btn btn-sm btn-outline-warning" type="submit">
-                                Send verification email
-                            </button>
+                    <x-ui.alert tone="warning" class="tw-mt-2">
+                        <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-2">
+                            <span class="tw-text-ui-sm">Your email address has not been verified.</span>
+                            <button form="send-verification" class="tw-text-ui-xs tw-font-semibold tw-text-primary tw-underline" type="submit">Send verification email</button>
                         </div>
-                    </div>
+                    </x-ui.alert>
                 @endif
             </div>
         </div>
 
-        <div class="d-flex align-items-center gap-3 mt-4">
-            <button type="submit" class="btn btn-primary">
-                <x-ui.icon name="check" class="me-1" />Save Profile
+        <div class="tw-mt-5 tw-flex tw-items-center tw-gap-3">
+            <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-10 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-4 tw-text-ui-sm tw-font-semibold tw-text-primary-foreground hover:tw-brightness-95">
+                <x-ui.icon name="check" />Save Profile
             </button>
-            @if (session('status') === 'profile-updated')
-                <span class="small text-success"><x-ui.icon name="check-circle" class="me-1" />Profile saved.</span>
-            @endif
         </div>
     </form>
 </section>

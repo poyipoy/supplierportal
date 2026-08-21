@@ -4,108 +4,156 @@
 @section('page-title', 'Material Claim PO: ' . $claim->purchaseOrder->po_number)
 
 @section('content')
-<x-breadcrumb :items="[
-    'Dashboard' => route('supplier.dashboard'),
-    'Material Claim' => route('supplier.claims.index'),
-    'Claim #' . $claim->id => '#'
-]" />
-<div class="tw-grid tw-gap-6">
-    <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Respond to the claim for ' . $claim->purchaseOrder->po_number . ' before the stated deadline.'" eyebrow="Supplier Portal">
-        <x-slot:actions><x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Claim List</x-ui.button></x-slot:actions>
+<div class="tw-grid tw-gap-4">
+    {{-- Breadcrumb & Compact Page Header --}}
+    <x-ui.breadcrumb :items="[
+        'Dashboard' => route('supplier.dashboard'),
+        'Material Claims' => route('supplier.claims.index'),
+        'Claim #' . $claim->id => null,
+    ]" />
+
+    <x-ui.page-header
+        :title="'Claim #' . $claim->id"
+        eyebrow="Quality Discrepancy"
+        :description="'Review QC defect report and provide official response for order ' . $claim->purchaseOrder->po_number . '.' "
+    >
+        <x-slot:actions>
+            <x-status-badge type="claim" :status="$claim->status" />
+            <x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" />
+                <span>Back to Claims</span>
+            </x-ui.button>
+        </x-slot:actions>
     </x-ui.page-header>
 
-<div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
-    <div class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
-        {{-- Info Claim Demand --}}
-        <x-ui.card title="Claim Request" description="Problem details and evidence submitted by ADASI.">
-            <x-slot:actions><x-status-badge type="claim" :status="$claim->status" size="lg" /></x-slot:actions>
-                
-                <div class="row mb-3">
-                    <div class="col-md-3 text-muted small">Submitted Date</div>
-                    <div class="col-md-9 fw-medium">{{ $claim->created_at->format('d F Y') }}</div>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-3 text-muted small">Deadline Response</div>
-                    <div class="col-md-9 fw-bold text-danger">{{ $claim->deadline->format('d F Y') }}</div>
+    <div class="tw-grid tw-items-start tw-gap-4 xl:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+        {{-- Main Column: Claim Demand & Supplier Response --}}
+        <div class="tw-grid tw-min-w-0 tw-gap-4">
+            {{-- ADASI Claim Demand Information --}}
+            <x-ui.card title="ADASI Claim Request" description="Defect details and expected resolution recorded by Quality Control.">
+                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 mb-3">
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Submitted Date</div>
+                        <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $claim->created_at->format('d F Y') }}</div>
+                    </div>
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Response Deadline</div>
+                        <div class="fw-bold text-danger tw-text-ui-sm tw-mt-0.5 d-flex align-items-center gap-1">
+                        <x-ui.icon name="clock" size="sm" />
+                            <span>{{ $claim->deadline->format('d F Y') }}</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mb-3">
-                    <h6 class="fw-bold small text-muted text-uppercase mb-2">Problem Description (Based on QC Report)</h6>
-                    <div class="p-3 bg-light rounded border">{{ $claim->description }}</div>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase tw-mb-1.5">Problem Description (QC Report)</div>
+                    <div class="p-3 tw-bg-surface-low border rounded tw-text-on-surface tw-text-ui-xs leading-relaxed">
+                        {{ $claim->description }}
+                    </div>
                 </div>
-                
-                <div class="mb-4">
-                    <h6 class="fw-bold small text-muted text-uppercase mb-2">Expected Resolution from ADASI</h6>
-                    <div class="p-3 bg-light rounded border">{{ $claim->resolution_expected }}</div>
+
+                <div class="mb-3">
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase tw-mb-1.5">Expected Resolution from ADASI</div>
+                    <div class="p-3 tw-bg-surface-low border rounded tw-text-on-surface tw-text-ui-xs leading-relaxed">
+                        {{ $claim->resolution_expected }}
+                    </div>
                 </div>
 
                 @if($claim->inspection->attachments->count() > 0)
-                    <h6 class="fw-bold small text-muted text-uppercase mb-2">QC Photo Evidence from ADASI</h6>
-                    <div class="row g-2">
-                        @foreach($claim->inspection->attachments as $att)
-                            <div class="col-4 col-md-3 col-lg-2">
-                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm tw-h-[100px]">
+                    <div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">QC Photographic Evidence from ADASI</div>
+                        <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 md:tw-grid-cols-4 tw-gap-2">
+                            @foreach($claim->inspection->attachments as $att)
+                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="tw-block tw-h-24 tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline-variant tw-transition-opacity hover:tw-opacity-90">
                                     <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                                 </a>
-                            </div>
-                        @endforeach
+                            @endforeach
+                        </div>
                     </div>
                 @endif
-        </x-ui.card>
+            </x-ui.card>
 
-        {{-- Form Response Supplier --}}
-        <x-ui.card title="Supplier Response" description="Your response is final after submission.">
+            {{-- Supplier Response Card / Form --}}
+            <x-ui.card title="Supplier Response and Resolution" description="Your response is committed upon submission.">
                 @if($claim->status === 'pending')
-                    <form action="{{ route('supplier.claims.respond', $claim) }}" method="POST" enctype="multipart/form-data" id="respondForm" class="tw-grid tw-gap-4">
+                    <form action="{{ route('supplier.claims.respond', $claim) }}" method="POST" enctype="multipart/form-data" id="respondForm" class="tw-grid tw-gap-3.5">
                         @csrf
-                        <x-ui.textarea name="supplier_response" label="Response & Explanation" :rows="5" required placeholder="Write your response or agreed resolution..." />
-                        <x-ui.input type="file" name="attachments[]" label="Supporting Documents/Photos (Optional)" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" helper="Official letter, transfer evidence, or replacement receipt; max 10MB per file." :error="$errors->first('attachments.*')" />
+                        <x-ui.textarea
+                            name="supplier_response"
+                            label="Official Explanation and Proposed Action"
+                            :rows="4"
+                            required
+                            placeholder="Write your root-cause explanation or agreed corrective action (e.g. material replacement schedule, credit note)..."
+                        />
+                        <x-ui.input
+                            type="file"
+                            name="attachments[]"
+                            label="Supporting Evidence / Official Letter (Optional)"
+                            multiple
+                            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                            helper="Official correspondence, replacement tracking, or test analysis; max 10MB per file."
+                            :error="$errors->first('attachments.*')"
+                        />
 
-                        <div class="tw-flex tw-justify-end">
-                            <x-ui.button type="button" id="btnSubmitRespond"><x-ui.icon name="send" /> Send Response</x-ui.button>
+                        <div class="tw-flex tw-justify-end tw-pt-2 border-top">
+                            <x-ui.button type="button" id="btnSubmitRespond">
+                                <x-ui.icon name="send" size="sm" />
+                                <span>Submit Official Response</span>
+                            </x-ui.button>
                         </div>
                     </form>
                 @else
-                    <div class="mb-2 text-muted small">You have responded to this claim on: {{ $claim->updated_at->format('d M Y, H:i') }}</div>
-                    <div class="p-3 bg-light rounded border mb-3">
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs mb-2">
+                        Response submitted on: <strong>{{ $claim->updated_at->format('d M Y, H:i') }}</strong>
+                    </div>
+                    <div class="p-3 tw-bg-surface-low border rounded mb-3 tw-text-on-surface tw-text-ui-xs leading-relaxed">
                         {{ $claim->supplier_response }}
                     </div>
 
                     @if($claim->attachments && $claim->attachments->count() > 0)
-                        <h6 class="fw-bold small text-uppercase text-muted mb-2">Attached Documents/Photos</h6>
-                        <div class="row g-2">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">Attached Supplier Documents</div>
+                        <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-2">
                             @foreach($claim->attachments as $att)
-                                <div class="col-4 col-md-3 col-lg-2">
-                                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded text-center py-3 text-decoration-none shadow-sm h-100 bg-white">
-                                        <x-ui.icon name="file-text" size="lg" class="text-primary d-block mb-1" />
-                                        <span class="small text-truncate d-block px-2">{{ $att->file_name }}</span>
-                                    </a>
-                                </div>
+                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 p-2 text-decoration-none tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface hover:tw-bg-surface-low tw-transition-colors">
+                                    <x-ui.icon name="file-text" size="sm" class="text-primary flex-shrink-0" />
+                                    <span class="tw-text-ui-xs tw-text-on-surface text-truncate">{{ $att->file_name }}</span>
+                                </a>
                             @endforeach
                         </div>
                     @endif
                 @endif
-        </x-ui.card>
-    </div>
+            </x-ui.card>
+        </div>
 
-    <aside class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
-        {{-- Item Material NG --}}
-        <x-ui.card title="Problem Material List" padding="none">
-                <ul class="list-group list-group-flush">
+        {{-- Sidebar Column: Problem Materials & Support --}}
+        <aside class="tw-grid tw-gap-4">
+            <x-ui.card title="Defective Items (QC NG)" padding="none">
+                <div class="list-group list-group-flush">
                     @foreach($claim->inspection->items->where('status', 'ng') as $item)
-                        <li class="list-group-item">
-                            <span class="fw-bold d-block">{{ $item->prItem->material_name }}</span>
+                        <div class="list-group-item p-3">
+                            <div class="fw-bold tw-text-on-surface tw-text-ui-xs">{{ $item->prItem->material_name }}</div>
                             @if($item->notes)
-                                <span class="text-muted small fst-italic">QC Notes: {{ $item->notes }}</span>
+                                <div class="text-danger tw-text-ui-xs mt-1 d-flex align-items-start gap-1">
+                <x-ui.icon name="circle-alert" size="sm" class="tw-mt-0.5 tw-shrink-0" />
+                                    <span>QC Note: {{ $item->notes }}</span>
+                                </div>
                             @endif
-                        </li>
+                        </div>
                     @endforeach
-                </ul>
-        </x-ui.card>
+                </div>
+            </x-ui.card>
 
-        <x-ui.alert>If you need details about actual versus requested specifications, contact the related ADASI Purchasing team.</x-ui.alert>
-    </aside>
-</div>
+            <x-ui.card title="Purchasing Support">
+                <p class="tw-text-on-surface-variant tw-text-ui-xs mb-3">
+                    If you require clarification regarding actual vs nominal dimensional discrepancies, contact the ADASI Purchasing officer.
+                </p>
+                <x-ui.button :href="route('supplier.conversations.index')" variant="outline" size="sm" class="tw-w-full">
+                    <x-ui.icon name="message-square" size="sm" />
+                    <span>Open Negotiation Chat</span>
+                </x-ui.button>
+            </x-ui.card>
+        </aside>
+    </div>
 </div>
 @endsection
 
@@ -119,10 +167,10 @@
         }
 
         AdasiAlert.confirm({
-            title: 'Send Claim Response?',
-            text: "Ensure your response and offered resolution are appropriate. Responses cannot be changed after submission.",
+            title: 'Send Official Response?',
+            text: "Ensure your response and proposed resolution are accurate. Responses cannot be modified once sent.",
             type: 'warning',
-            confirmText: 'Yes, Send!',
+            confirmText: 'Yes, Submit Response!',
             cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {

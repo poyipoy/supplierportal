@@ -58,7 +58,7 @@ class QcInspectionController extends Controller
             ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
             ->addColumn('arrival_date', fn ($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
             ->addColumn('item_count', fn ($po) => $po->quotations->sum('items_count').' Item')
-            ->addColumn('action', fn ($po) => '<a href="'.route('qc.inspections.create', $po).'" class="btn btn-sm btn-primary">Start Inspection</a>')
+            ->addColumn('action', fn ($po) => '<a href="'.route('qc.inspections.create', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Start Inspection</a>')
             ->rawColumns(['action'])
             ->make(true);
     }
@@ -81,7 +81,7 @@ class QcInspectionController extends Controller
                 StatusHelper::qcLabel($i->status)
             ))
             ->addColumn('inspector_name', fn ($i) => $i->inspector->name ?? '-')
-            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="btn btn-sm btn-outline-info">Details</a>')
+            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>')
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }

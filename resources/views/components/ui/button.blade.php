@@ -19,7 +19,7 @@
     ];
 
     $sizes = [
-        'sm' => 'tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-[13px]',
+        'sm' => 'tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs',
         'md' => 'tw-min-h-[var(--ui-control-height-md)] tw-gap-2 tw-px-3.5 tw-py-1.5 tw-text-ui-sm',
     ];
 

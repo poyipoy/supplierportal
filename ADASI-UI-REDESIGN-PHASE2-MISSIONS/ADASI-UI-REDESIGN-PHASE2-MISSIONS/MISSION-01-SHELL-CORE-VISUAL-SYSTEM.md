@@ -477,7 +477,7 @@ Do not use browser automation.
 Create:
 
 ```text
-UI-REDESIGN-PHASE2-M01-SHELL-RESULT.md
+UI-REDESIGN-RESULT/UI-REDESIGN-PHASE2-M01-SHELL-RESULT.md
 ```
 
 Include:

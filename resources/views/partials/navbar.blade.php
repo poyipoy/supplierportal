@@ -1,16 +1,16 @@
 <nav class="top-navbar d-flex align-items-center justify-content-between">
     {{-- Left: Mobile toggle + Page title --}}
-    <div class="d-flex align-items-center gap-2.5 min-w-0">
+    <div class="d-flex align-items-center tw-gap-2.5 tw-min-w-0">
         <x-ui.icon-button
             icon="panel-left"
             label="Toggle sidebar navigation"
             size="sm"
-            class="sidebar-toggle text-slate-600"
+            class="sidebar-toggle tw-text-on-surface-variant"
             x-on:click="$dispatch('ui-sidebar-toggle')"
             x-bind:aria-expanded="viewportIsDesktop ? (!desktopCollapsed).toString() : mobileOpen.toString()"
             aria-controls="sidebar"
         />
-        <div class="vr mx-1 my-2 text-slate-300 d-none d-sm-block" style="height: 18px;"></div>
+        <div class="vr mx-1 my-2 tw-text-outline d-none d-sm-block" style="height: 18px;"></div>
         <p class="topbar-page-title text-truncate">@yield('page-title', 'Dashboard')</p>
     </div>
 
@@ -21,7 +21,7 @@
             <x-ui.icon-button
                 :href="route(auth()->user()->role . '.conversations.index')"
                 icon="message-circle-more"
-                label="Chat & Negotiation"
+                label="Chat and Negotiation"
                 size="sm"
                 data-chat-drawer
             >
@@ -67,18 +67,18 @@
                                     {{ $category['short_label'] }}
                                 </span>
                                 @if(($navbarNotificationCounts[$key] ?? 0) > 0)
-                                    <span class="badge rounded-pill bg-danger" data-notification-category-count="{{ $key }}" data-notification-total="{{ $navbarNotificationTotals[$key] ?? 0 }}">{{ $navbarNotificationCounts[$key] }}</span>
+                                    <span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground" data-notification-category-count="{{ $key }}" data-notification-total="{{ $navbarNotificationTotals[$key] ?? 0 }}">{{ $navbarNotificationCounts[$key] }}</span>
                                 @else
-                                    <span class="badge rounded-pill bg-white text-muted border" data-notification-category-count="{{ $key }}" data-notification-total="{{ $navbarNotificationTotals[$key] ?? 0 }}">{{ $navbarNotificationTotals[$key] ?? 0 }}</span>
+                                    <span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-border tw-border-outline-variant tw-bg-surface tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant" data-notification-category-count="{{ $key }}" data-notification-total="{{ $navbarNotificationTotals[$key] ?? 0 }}">{{ $navbarNotificationTotals[$key] ?? 0 }}</span>
                                 @endif
                             </button>
                         @endforeach
                     </div>
                     <div class="notification-list-pane">
-                        <div class="px-3 py-2 border-bottom bg-white d-flex align-items-center justify-content-between">
+                        <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2">
                             <div>
                                 <div class="fw-bold small">Notifications</div>
-                                <div class="text-muted" style="font-size:.72rem">Grouped by activity type</div>
+                                <div class="tw-text-ui-xs tw-text-on-surface-variant">Grouped by activity type</div>
                             </div>
                             <span class="text-muted small">{{ $navbarNotifications->count() }} {{ \Illuminate\Support\Str::plural('notification', $navbarNotifications->count()) }}</span>
                         </div>
@@ -94,7 +94,7 @@
                                             $notifCategory = $notificationCategories[$notifCategoryKey] ?? $notificationCategories[\App\Support\NotificationCategory::OTHER];
                                         @endphp
                                         <div role="button"
-                                            class="notification-item {{ $notif->read_at ? '' : 'bg-light' }}"
+                                            class="notification-item {{ $notif->read_at ? '' : 'tw-bg-primary-container' }}"
                                             data-notification-item
                                             data-notification-category="{{ $notifCategoryKey }}"
                                             data-notification-unread="{{ $notif->read_at ? '0' : '1' }}"
@@ -103,16 +103,16 @@
                                             style="cursor: pointer;">
                                             <div class="d-flex gap-3">
                                                 <x-ui.icon :name="$notif->data['icon'] ?? $notifCategory['icon']" size="lg" class="text-primary flex-shrink-0 mt-1" />
-                                                <div class="min-w-0 flex-grow-1">
+                                                <div class="tw-min-w-0 flex-grow-1">
                                                     <div class="d-flex justify-content-between gap-2">
                                                         <div class="fw-semibold small text-truncate">{{ $notif->data['title'] ?? 'Notifications' }}</div>
                                                         @if(!$notif->read_at)
-                                                            <span class="badge bg-danger flex-shrink-0" style="font-size:.55rem" data-notification-new-badge>New</span>
+                                                            <span class="tw-shrink-0 tw-rounded-ui-xs tw-bg-error-container tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-font-semibold tw-text-error-container-foreground" data-notification-new-badge>New</span>
                                                         @endif
                                                     </div>
-                                                    <div class="text-muted" style="font-size:.76rem">{{ \Illuminate\Support\Str::limit($notif->data['message'] ?? '-', 92) }}</div>
-                                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-2 text-muted" style="font-size:.68rem">
-                                                        <span class="badge bg-white text-muted border fw-semibold">
+                                                    <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ \Illuminate\Support\Str::limit($notif->data['message'] ?? '-', 92) }}</div>
+                                                    <div class="tw-mt-2 tw-flex tw-flex-wrap tw-items-center tw-gap-2 tw-text-ui-xs tw-text-on-surface-variant">
+                                                        <span class="tw-inline-flex tw-items-center tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-px-2 tw-py-0.5 tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">
                                                             <x-ui.icon :name="$notifCategory['icon']" class="me-1" />{{ $notifCategory['label'] }}
                                                         </span>
                                                         <span><x-ui.icon name="clock" class="me-1" />{{ $notif->created_at->diffForHumans() }}</span>
@@ -124,19 +124,17 @@
                                         <div class="text-center text-muted py-5 px-3">
                                             <x-ui.icon :name="$category['icon']" size="lg" class="tw-opacity-60" />
                                             <div class="fw-semibold mt-2">No {{ strtolower($category['label']) }}</div>
-                                            <div style="font-size:.75rem">{{ $category['description'] }}</div>
+                                <div class="tw-text-ui-xs">{{ $category['description'] }}</div>
                                         </div>
                                     @endforelse
                                 </div>
                             @endforeach
                         </div>
-                        <div class="p-2 border-top bg-white d-flex gap-2">
+                        <div class="tw-flex tw-gap-2 tw-border-t tw-border-outline-variant tw-bg-surface tw-p-2">
                             <form action="{{ route('notifications.mark-all-read') }}" method="POST" class="flex-fill" data-notification-mark-form>
                                 @csrf
                                 <input type="hidden" name="category" value="{{ \App\Support\NotificationCategory::ALL }}" data-notification-category-input>
-                                <button type="submit" class="btn btn-sm btn-primary w-100" style="background-color: var(--adasi-blue);" data-notification-mark-button>
-                                    Mark All as Read
-                                </button>
+                                <x-ui.button type="submit" size="sm" class="tw-w-full" data-notification-mark-button>Mark All as Read</x-ui.button>
                             </form>
                         </div>
                     </div>
@@ -165,7 +163,7 @@
                     <hr class="dropdown-divider my-1">
                 </li>
                 <li>
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item py-1.5 small">
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item tw-py-1.5 small">
                         <x-ui.icon name="user-cog" class="me-2" />Profile &amp; Security
                     </a>
                 </li>
@@ -175,7 +173,7 @@
                 <li>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button type="submit" class="dropdown-item text-danger py-1.5 small">
+                        <button type="submit" class="dropdown-item text-danger tw-py-1.5 small">
                             <x-ui.icon name="log-out" class="me-2" />Logout
                         </button>
                     </form>
@@ -190,10 +188,12 @@
         <script>
             function setNotificationBadgeState(badge, unread, total) {
                 badge.textContent = unread > 0 ? unread : total;
-                badge.classList.toggle('bg-danger', unread > 0);
-                badge.classList.toggle('bg-white', unread <= 0);
-                badge.classList.toggle('text-muted', unread <= 0);
-                badge.classList.toggle('border', unread <= 0);
+                ['tw-bg-error', 'tw-text-error-foreground'].forEach((className) => {
+                    badge.classList.toggle(className, unread > 0);
+                });
+                ['tw-border', 'tw-border-outline-variant', 'tw-bg-surface', 'tw-text-on-surface-variant'].forEach((className) => {
+                    badge.classList.toggle(className, unread <= 0);
+                });
             }
 
             function updateNotificationUnreadBadge(count) {
@@ -234,7 +234,7 @@
                         return;
                     }
 
-                    item.classList.remove('bg-light');
+                    item.classList.remove('tw-bg-primary-container');
                     item.dataset.notificationUnread = '0';
                     item.querySelectorAll('[data-notification-new-badge]').forEach((badge) => badge.remove());
                 });
@@ -288,7 +288,7 @@
 
                 if (button) {
                     button.disabled = true;
-                    button.textContent = 'Memproses...';
+                    button.textContent = 'Processing...';
                 }
 
                 try {

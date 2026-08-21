@@ -75,13 +75,13 @@ class PurchaseRequisitionController extends Controller
                 ->addColumn('total_kg', fn ($pr) => number_format((float) $pr->total_kg, 4, '.', ',').' kg')
                 ->addColumn('supplier_count', fn ($pr) => $pr->invited_suppliers_count)
                 ->addColumn('status_badge', function ($pr) {
-                    $badgeClass = match ($pr->status) {
-                        'draft' => 'bg-secondary',
-                        'submitted' => 'bg-primary',
-                        'rejected' => 'bg-danger',
-                        'bidding' => 'bg-warning text-dark',
-                        'completed' => 'bg-success',
-                        default => 'bg-secondary'
+                    $tone = match ($pr->status) {
+                        'draft' => 'neutral',
+                        'submitted' => 'info',
+                        'rejected' => 'error',
+                        'bidding' => 'warning',
+                        'completed' => 'success',
+                        default => 'neutral'
                     };
                     $statusLabel = match ($pr->status) {
                         'draft' => 'Draft',
@@ -95,32 +95,45 @@ class PurchaseRequisitionController extends Controller
                     $responseChip = '';
                     if ($pr->status === 'bidding') {
                         $count = (int) ($pr->submitted_supplier_count ?? 0);
-                        $responseChip = ' <span class="badge rounded-pill bg-light text-dark border ms-1" title="'.e($count.' supplier quotations submitted').'" aria-label="'.e($count.' supplier quotations submitted').'">'.$count.'</span>';
+                        $responseChip = ' <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums ms-1" title="'.e($count.' supplier quotations submitted').'" aria-label="'.e($count.' supplier quotations submitted').'">'.$count.'</span>';
                     }
 
-                    return '<span class="badge '.$badgeClass.' text-uppercase" style="font-size: 0.7rem;">'.$statusLabel.'</span>'.$responseChip;
+                    return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>'.$responseChip;
                 })
                 ->addColumn('created_date', fn ($pr) => $pr->created_at->format('d M Y, H:i'))
                 ->addColumn('action', function ($pr) {
-                    $actions = [
-                        '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr).'" class="btn btn-sm btn-outline-info action-grid-button" title="Details">View</a>',
-                    ];
+                    $viewUrl = PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr);
+                    $editUrl = PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr);
+                    $canEdit = $pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'], true);
+                    $secondaryActions = [];
 
                     if ($pr->created_by === auth()->id() && $pr->status === 'draft') {
-                        $actions[] = '<form action="'.route('purchasing.requisitions.submit', $pr).'" method="POST" class="draft-submit-form action-grid-form">'
+                        $primaryAction = '<form action="'.route('purchasing.requisitions.submit', $pr).'" method="POST" class="draft-submit-form tw-m-0">'
                             .csrf_field()
                             .method_field('PUT')
-                            .'<button type="button" class="btn btn-sm btn-primary btn-submit-draft action-grid-button" title="Submit Draft">'
+                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="Submit draft '.e($pr->pr_number).'">'
                             .'Submit'
                             .'</button></form>';
+                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">View details</a></li>';
+                        $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">Edit draft</a></li>';
+                    } elseif ($canEdit) {
+                        $primaryAction = '<a href="'.$editUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="Edit '.e($pr->pr_number).'">Edit</a>';
+                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">View details</a></li>';
+                    } else {
+                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="View '.e($pr->pr_number).'">View</a>';
                     }
 
-                    if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
-                        $actions[] = '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr).'" class="btn btn-sm btn-outline-primary action-grid-button" title="Edit">Edit</a>';
-                        $actions[] = '<form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form action-grid-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete action-grid-button" title="Delete">Delete</button></form>';
+                    if ($canEdit) {
+                        $secondaryActions[] = '<li><form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">Delete requisition</button></form></li>';
                     }
 
-                    return '<div class="action-button-grid">'.implode('', $actions).'</div>';
+                    if ($secondaryActions === []) {
+                        return '<div class="d-inline-flex justify-content-end">'.$primaryAction.'</div>';
+                    }
+
+                    return '<div class="d-inline-flex align-items-center justify-content-end gap-1">'.$primaryAction
+                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($pr->pr_number).'">More</button>'
+                        .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
                 ->rawColumns(['status_badge', 'action'])
                 ->make(true);

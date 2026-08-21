@@ -313,7 +313,7 @@ Run targeted auth/profile/notification/conversation/export tests.
 Create:
 
 ```text
-UI-REDESIGN-PHASE2-M07-SHARED-RESULT.md
+UI-REDESIGN-RESULT/UI-REDESIGN-PHASE2-M07-SHARED-RESULT.md
 ```
 
 Include:

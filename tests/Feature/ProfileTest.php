@@ -19,8 +19,8 @@ class ProfileTest extends TestCase
             ->get('/profile');
 
         $response->assertOk()
-            ->assertSee('Profile &amp; Security', false)
-            ->assertSee('Personal Information')
+            ->assertSeeText('Profile and Security')
+            ->assertSee('Account Information')
             ->assertSee('Two-Factor Authentication')
             ->assertSee('Other Devices')
             ->assertSee('Danger Zone');

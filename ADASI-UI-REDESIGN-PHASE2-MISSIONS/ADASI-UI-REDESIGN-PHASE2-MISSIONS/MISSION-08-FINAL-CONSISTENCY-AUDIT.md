@@ -469,7 +469,7 @@ Do not count icon/token/microcopy-only changes as sufficient.
 Create:
 
 ```text
-UI-REDESIGN-PHASE2-FINAL-RESULT.md
+UI-REDESIGN-RESULT/UI-REDESIGN-PHASE2-FINAL-RESULT.md
 ```
 
 Include:

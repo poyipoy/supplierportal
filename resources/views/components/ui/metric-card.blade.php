@@ -6,6 +6,7 @@
     'tone' => 'primary',
     'meta' => null,
     'valueId' => null,
+    'flat' => false,
 ])
 
 @php
@@ -24,8 +25,10 @@
 <{{ $tag }}
     @if($href) href="{{ $href }}" @endif
     {{ $attributes->class([
-        'ui-motion ui-focus-ring tw-flex tw-h-full tw-items-start tw-justify-between tw-gap-4 tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-p-4 tw-text-on-surface tw-no-underline',
-        'hover:tw-border-primary hover:tw-shadow-ui-1' => $href,
+        'ui-motion ui-focus-ring tw-flex tw-h-full tw-items-start tw-justify-between tw-gap-4 tw-bg-surface tw-p-4 tw-text-on-surface tw-no-underline',
+        'tw-rounded-ui-md tw-border tw-border-outline-variant' => !$flat,
+        'hover:tw-border-primary hover:tw-shadow-ui-1' => $href && !$flat,
+        'hover:tw-bg-surface-low' => $href && $flat,
     ]) }}
 >
     <span class="tw-min-w-0">

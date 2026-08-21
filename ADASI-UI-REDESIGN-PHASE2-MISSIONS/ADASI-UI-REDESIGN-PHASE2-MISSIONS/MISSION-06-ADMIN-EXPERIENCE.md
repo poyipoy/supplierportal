@@ -288,7 +288,7 @@ Run targeted Admin/user/master-data tests.
 Create:
 
 ```text
-UI-REDESIGN-PHASE2-M06-ADMIN-RESULT.md
+UI-REDESIGN-RESULT/UI-REDESIGN-PHASE2-M06-ADMIN-RESULT.md
 ```
 
 Include:

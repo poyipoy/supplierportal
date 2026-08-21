@@ -4,124 +4,146 @@
 @section('page-title', 'Material Claim Details')
 
 @section('content')
-<x-breadcrumb :items="[
-    'Dashboard' => route('purchasing.dashboard'),
-    'Material Claim' => route('purchasing.claims.index'),
-    'Claim #' . $claim->id => '#'
-]" />
-<div class="tw-grid tw-gap-6">
-    <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Material claim for ' . $claim->purchaseOrder->po_number . ' from ' . $claim->purchaseOrder->supplier->name . '.'" eyebrow="Material Claim Details">
-        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Claim List</x-ui.button></x-slot:actions>
+<div class="tw-grid tw-gap-4">
+    {{-- Breadcrumb & Compact Page Header --}}
+    <x-ui.breadcrumb :items="[
+        'Dashboard' => route('purchasing.dashboard'),
+        'Material Claims' => route('purchasing.claims.index'),
+        'Claim #' . $claim->id => null,
+    ]" />
+
+    <x-ui.page-header
+        :title="'Claim #' . $claim->id"
+        eyebrow="Material Claim Details"
+        :description="'Material claim for ' . $claim->purchaseOrder->po_number . ' from ' . $claim->purchaseOrder->supplier->name . '.'"
+    >
+        <x-slot:actions>
+            <x-status-badge type="claim" :status="$claim->status" size="lg" />
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>Back to Claim List</span>
+            </x-ui.button>
+        </x-slot:actions>
     </x-ui.page-header>
 
-<div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
-    <div class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
-        {{-- Claim Details --}}
-        <x-ui.card :title="'Claim #' . $claim->id">
-            <x-slot:actions><x-status-badge type="claim" :status="$claim->status" size="lg" /></x-slot:actions>
-                <div class="row mb-3">
-                    <div class="col-md-3 text-muted small">Number PO</div>
-                    <div class="col-md-9 fw-bold">{{ $claim->purchaseOrder->po_number }}</div>
+    <div class="tw-grid tw-items-start tw-gap-4 lg:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+        {{-- Main Column --}}
+        <div class="tw-grid tw-min-w-0 tw-gap-4">
+            {{-- Claim Details Card --}}
+            <x-ui.card :title="'Claim Particulars #' . $claim->id">
+                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4 mb-4">
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Number</div>
+                        <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $claim->purchaseOrder->po_number }}</div>
+                    </div>
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
+                        <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $claim->purchaseOrder->supplier->name }}</div>
+                    </div>
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Submitted By</div>
+                        <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $claim->submitter->name }}</div>
+                        <div class="tw-text-outline tw-text-ui-xs">{{ $claim->created_at->format('d M Y, H:i') }}</div>
+                    </div>
+                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Response Deadline</div>
+                        <div class="fw-bold text-danger tw-text-ui-sm tw-mt-0.5">{{ $claim->deadline->format('d F Y') }}</div>
+                    </div>
                 </div>
-                <div class="row mb-3">
-                    <div class="col-md-3 text-muted small">Supplier</div>
-                    <div class="col-md-9 fw-medium">{{ $claim->purchaseOrder->supplier->name }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-3 text-muted small">Submitted By</div>
-                    <div class="col-md-9 fw-medium">{{ $claim->submitter->name }} <span class="text-muted small">({{ $claim->created_at->format('d M Y, H:i') }})</span></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-3 text-muted small">Deadline</div>
-                    <div class="col-md-9 fw-medium text-danger">{{ $claim->deadline->format('d F Y') }}</div>
-                </div>
-                
-                <hr>
 
                 <div class="mb-4">
-                    <h6 class="fw-bold small text-uppercase text-muted mb-2">Problem Description</h6>
-                    <div class="p-3 bg-light rounded border">{{ $claim->description }}</div>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-1">Problem Description</div>
+                    <div class="p-3 tw-bg-surface-low rounded border tw-text-on-surface tw-text-ui-sm tw-whitespace-pre-line">{{ $claim->description }}</div>
                 </div>
-                
+
                 <div class="mb-4">
-                    <h6 class="fw-bold small text-uppercase text-muted mb-2">Expected Resolution</h6>
-                    <div class="p-3 bg-light rounded border">{{ $claim->resolution_expected }}</div>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-1">Expected Resolution</div>
+                    <div class="p-3 tw-bg-surface-low rounded border tw-text-on-surface tw-text-ui-sm tw-whitespace-pre-line">{{ $claim->resolution_expected }}</div>
                 </div>
 
                 @if($claim->inspection->attachments->count() > 0)
-                    <h6 class="fw-bold small text-uppercase text-muted mb-2">QC Evidence Attachments</h6>
-                    <div class="row g-2">
-                        @foreach($claim->inspection->attachments as $att)
-                            <div class="col-4 col-md-3 col-lg-2">
-                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden shadow-sm tw-h-[100px]">
-                                    <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
-                                </a>
-                            </div>
-                        @endforeach
+                    <div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">QC Evidence Attachments</div>
+                        <div class="row g-2">
+                            @foreach($claim->inspection->attachments as $att)
+                                <div class="col-4 col-md-3 col-lg-2">
+                                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden tw-h-24 tw-bg-surface-low">
+                                        <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
-        </x-ui.card>
+            </x-ui.card>
 
-        {{-- Supplier Response --}}
-        @if($claim->status !== 'pending')
-        <x-ui.card title="Supplier Response" variant="tonal">
-                <div class="mb-2 text-muted small">Responded at: {{ $claim->updated_at->format('d M Y, H:i') }}</div>
-                <div class="p-3 bg-light rounded border mb-3">
-                    {{ $claim->supplier_response ?? 'No response text.' }}
-                </div>
-
-                @if($claim->attachments && $claim->attachments->count() > 0)
-                    <h6 class="fw-bold small text-uppercase text-muted mb-2">Resolution Documents/Photos</h6>
-                    <div class="row g-2">
-                        @foreach($claim->attachments as $att)
-                            <div class="col-4 col-md-3 col-lg-2">
-                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded text-center py-3 text-decoration-none shadow-sm h-100 bg-white">
-                                    <x-ui.icon name="file-text" size="lg" class="text-primary d-block mb-1" />
-                                    <span class="small text-truncate d-block px-2">{{ $att->file_name }}</span>
-                                </a>
-                            </div>
-                        @endforeach
+            {{-- Supplier Response --}}
+            @if($claim->status !== 'pending')
+            <x-ui.card title="Supplier Response and Resolution" description="Formal reply and evidence submitted by supplier.">
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs mb-2">Responded: {{ $claim->updated_at->format('d M Y, H:i') }}</div>
+                    <div class="p-3 tw-bg-surface-low rounded border tw-text-on-surface tw-text-ui-sm tw-whitespace-pre-line mb-3">
+                        {{ $claim->supplier_response ?? 'No written response text provided.' }}
                     </div>
-                @endif
-        </x-ui.card>
-        @endif
 
-    </div>
+                    @if($claim->attachments && $claim->attachments->count() > 0)
+                        <div>
+                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">Supplier Attachments</div>
+                            <div class="row g-2">
+                                @foreach($claim->attachments as $att)
+                                    <div class="col-6 col-md-4">
+                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 tw-p-2.5 border rounded text-decoration-none bg-white hover:tw-bg-surface-low">
+                                            <x-ui.icon name="file-text" size="sm" class="text-primary flex-shrink-0" />
+                                            <span class="tw-text-ui-xs text-truncate tw-text-on-surface fw-medium">{{ $att->file_name }}</span>
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </x-ui.card>
+            @endif
+        </div>
 
-    <aside class="tw-grid tw-min-w-0 tw-content-start tw-gap-6">
-        {{-- Action Card --}}
-        <x-ui.card title="Claim Action" description="Actions are available only for the current claim state.">
+        {{-- Sidebar Column --}}
+        <aside class="tw-grid tw-gap-4">
+            {{-- Action Card --}}
+            <x-ui.card title="Claim Resolution Action" description="Actions based on supplier response state.">
                 @if($claim->status === 'pending')
-                    <x-ui.alert tone="warning">Waiting for the supplier response. Deadline: {{ $claim->deadline->format('d M Y') }}</x-ui.alert>
+                    <x-ui.alert tone="warning" title="Supplier response pending">Response deadline: {{ $claim->deadline->format('d M Y') }}.</x-ui.alert>
                 @elseif($claim->status === 'responded')
-                    <x-ui.alert class="tw-mb-3">Supplier has provided a response. Is the solution acceptable?</x-ui.alert>
+                    <x-ui.alert tone="info" title="Supplier response received" class="tw-mb-3">Review the proposed remedy and mark the claim as resolved if it is satisfactory.</x-ui.alert>
                     <form action="{{ route('purchasing.claims.resolve', $claim) }}" method="POST">
                         @csrf
-                        <x-ui.button type="submit" class="tw-mb-2 tw-w-full"><x-ui.icon name="circle-check" /> Mark Completed (Resolved)</x-ui.button>
+                        <x-ui.button type="submit" size="sm" class="tw-mb-2 tw-w-full">
+                            <x-slot:leading><x-ui.icon name="circle-check" /></x-slot:leading>
+                            Mark as Resolved
+                        </x-ui.button>
                     </form>
-                    <x-ui.button disabled variant="danger" class="tw-w-full" title="Escalation feature is not active yet"><x-ui.icon name="triangle-alert" /> Escalation</x-ui.button>
                 @elseif($claim->status === 'resolved')
-                    <x-ui.alert tone="success">This claim has been declared completed and resolved.</x-ui.alert>
+                    <x-ui.alert tone="success" title="Claim resolved">This claim has been completed and marked as resolved.</x-ui.alert>
                 @endif
-        </x-ui.card>
+            </x-ui.card>
 
-        {{-- QC Reference --}}
-        <x-ui.card title="NG Material Items" padding="none">
+            {{-- QC Reference NG Items --}}
+            <x-ui.card title="Defective Items (NG)" padding="none">
                 <ul class="list-group list-group-flush">
                     @foreach($claim->inspection->items->where('status', 'ng') as $item)
-                        <li class="list-group-item small">
-                            <span class="fw-bold d-block">{{ $item->prItem->material_name }}</span>
+                        <li class="list-group-item py-2 px-3 tw-text-ui-xs">
+                            <span class="fw-bold tw-text-on-surface d-block">{{ $item->prItem->material_name }}</span>
                             @if($item->notes)
-                                <span class="text-muted fst-italic">{{ $item->notes }}</span>
+                                <span class="tw-text-on-surface-variant fst-italic">QC Notes: {{ $item->notes }}</span>
                             @endif
                         </li>
                     @endforeach
                 </ul>
-                <div class="p-3 text-center border-top">
-                    <x-ui.button :href="route('qc.inspections.show', $claim->inspection)" target="_blank" variant="ghost" size="sm" class="tw-w-full">View QC Report Details</x-ui.button>
+                <div class="tw-p-2.5 text-center border-top tw-bg-surface-low">
+                    <x-ui.button :href="route('qc.inspections.show', $claim->inspection)" target="_blank" variant="ghost" size="sm">
+                        <x-ui.icon name="external-link" size="sm" class="me-1" />
+                        View Full QC Inspection Report
+                    </x-ui.button>
                 </div>
-        </x-ui.card>
-    </aside>
-</div>
+            </x-ui.card>
+        </aside>
+    </div>
 </div>
 @endsection

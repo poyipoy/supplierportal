@@ -10,91 +10,98 @@
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header
         title="Notification Center"
-        description="Review persistent workflow updates and account activity."
+        description="Persistent workflow updates and account activity across the portal."
         eyebrow="Activity"
-    />
+    >
+        <x-slot:actions>
+            <form action="{{ route('notifications.mark-all-read') }}" method="POST">
+                @csrf
+                <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-9 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-3 tw-text-ui-sm tw-font-medium tw-text-on-surface hover:tw-bg-surface-container">
+                    <x-ui.icon name="check-check" />Mark All as Read
+                </button>
+            </form>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <div class="tw-grid tw-gap-6 lg:tw-grid-cols-[17rem_minmax(0,1fr)] lg:tw-items-start">
-        <x-ui.card title="Categories" description="Filter by activity type." padding="none">
-            <div class="notification-page-menu tw-p-2">
-                <div class="list-group list-group-flush">
-                    @foreach($categoryOptions as $key => $category)
-                        @php
-                            $counts = $categoryCounts[$key] ?? ['total' => 0, 'unread' => 0];
-                            $url = $key === \App\Support\NotificationCategory::ALL
-                                ? route('notifications.index')
-                                : route('notifications.index', ['category' => $key]);
-                        @endphp
-                        <a href="{{ $url }}" class="list-group-item list-group-item-action {{ $selectedCategory === $key ? 'active' : '' }}">
-                            <span class="d-flex align-items-center gap-2 min-w-0">
-                                <x-ui.icon :name="$category['icon']" class="flex-shrink-0" />
-                                <span class="text-truncate">{{ $category['label'] }}</span>
-                            </span>
-                            <span class="tw-shrink-0 tw-text-ui-xs {{ $counts['unread'] > 0 ? 'tw-font-semibold tw-text-error' : 'tw-text-on-surface-variant' }}">
-                                {{ $counts['unread'] > 0 ? $counts['unread'].' unread / ' : '' }}{{ $counts['total'] }} total
-                            </span>
-                        </a>
-                    @endforeach
-                </div>
+    <div class="tw-grid tw-gap-5 lg:tw-grid-cols-[16rem_minmax(0,1fr)] lg:tw-items-start">
+        {{-- Category Sidebar --}}
+        <nav class="tw-border tw-border-outline-variant tw-bg-surface" aria-label="Notification categories">
+            <div class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+                <h2 class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Categories</h2>
             </div>
-        </x-ui.card>
+            <div class="tw-divide-y tw-divide-outline-variant">
+                @foreach($categoryOptions as $key => $category)
+                    @php
+                        $counts = $categoryCounts[$key] ?? ['total' => 0, 'unread' => 0];
+                        $url = $key === \App\Support\NotificationCategory::ALL
+                            ? route('notifications.index')
+                            : route('notifications.index', ['category' => $key]);
+                        $isActive = $selectedCategory === $key;
+                    @endphp
+                    <a href="{{ $url }}" class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-px-4 tw-py-2.5 tw-text-ui-sm tw-no-underline tw-transition-colors {{ $isActive ? 'tw-bg-primary/5 tw-font-semibold tw-text-primary tw-border-l-2 tw-border-l-primary' : 'tw-text-on-surface hover:tw-bg-surface-low' }}">
+                        <span class="tw-inline-flex tw-items-center tw-gap-2 tw-min-w-0">
+                            <x-ui.icon :name="$category['icon']" class="tw-shrink-0" />
+                            <span class="tw-truncate">{{ $category['label'] }}</span>
+                        </span>
+                        @if($counts['unread'] > 0)
+                            <span class="tw-inline-flex tw-h-5 tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-bold tw-text-error-foreground">{{ $counts['unread'] }}</span>
+                        @elseif($counts['total'] > 0)
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $counts['total'] }}</span>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+        </nav>
 
-        <x-ui.card padding="none">
-            <x-slot:header>
+        {{-- Notification Feed --}}
+        <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="notification-feed-title">
+            <header class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-px-5 tw-py-3">
                 <div>
-                    <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-lg tw-font-semibold">
-                        <x-ui.icon :name="$selectedOption['icon']" class="me-2 text-primary" />{{ $selectedOption['label'] }}
+                    <h2 id="notification-feed-title" class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold">
+                        <x-ui.icon :name="$selectedOption['icon']" class="tw-text-primary" />{{ $selectedOption['label'] }}
                     </h2>
-                    <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ $selectedOption['description'] }}</p>
+                    <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">{{ $selectedOption['description'] }}</p>
                 </div>
-            </x-slot:header>
-            <x-slot:actions>
-                <form action="{{ route('notifications.mark-all-read') }}" method="POST">
-                    @csrf
-                    <x-ui.button type="submit" size="sm" variant="secondary">
-                        <x-ui.icon name="check-check" size="sm" />Mark All as Read
-                    </x-ui.button>
-                </form>
-            </x-slot:actions>
+            </header>
 
-            <div>
-                <div class="list-group list-group-flush">
-                    @forelse($notifications as $notif)
-                        @php
-                            $notifCategoryKey = \App\Support\NotificationCategory::key($notif);
-                            $notifCategory = $categoryOptions[$notifCategoryKey] ?? $categoryOptions[\App\Support\NotificationCategory::OTHER];
-                        @endphp
-                        <a href="{{ route('notifications.read', $notif->id) }}" class="list-group-item list-group-item-action py-3 {{ $notif->read_at ? '' : 'bg-light' }}">
-                            <div class="d-flex gap-3 align-items-start">
-                                <x-ui.icon :name="$notif->data['icon'] ?? $notifCategory['icon']" size="lg" class="text-primary flex-shrink-0 mt-1" />
-                                <div class="min-w-0 flex-grow-1">
-                                    <div class="d-flex justify-content-between gap-2">
-                                        <span class="fw-bold small text-truncate">{{ $notif->data['title'] ?? 'Notifications' }}</span>
-                                        @if(!$notif->read_at)
-                                            <x-ui.status-chip tone="error" size="sm" class="tw-shrink-0">New</x-ui.status-chip>
-                                        @endif
-                                    </div>
-                                    <div class="tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ $notif->data['message'] ?? '-' }}</div>
-                                    <div class="tw-mt-2 tw-flex tw-flex-wrap tw-items-center tw-gap-3 tw-text-ui-xs tw-text-on-surface-variant">
-                                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-font-semibold">
-                                            <x-ui.icon :name="$notifCategory['icon']" class="me-1" />{{ $notifCategory['label'] }}
-                                        </span>
-                                        <span><x-ui.icon name="clock" class="me-1" />{{ $notif->created_at->diffForHumans() }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        <div class="py-4">
-                            <x-empty-state :icon="$selectedOption['icon']" title="No notifications in this category yet." />
+            <div class="tw-divide-y tw-divide-outline-variant">
+                @forelse($notifications as $notif)
+                    @php
+                        $notifCategoryKey = \App\Support\NotificationCategory::key($notif);
+                        $notifCategory = $categoryOptions[$notifCategoryKey] ?? $categoryOptions[\App\Support\NotificationCategory::OTHER];
+                        $isUnread = !$notif->read_at;
+                    @endphp
+                    <a href="{{ route('notifications.read', $notif->id) }}" class="tw-flex tw-gap-3 tw-px-5 tw-py-3 tw-text-on-surface tw-no-underline tw-transition-colors hover:tw-bg-surface-low {{ $isUnread ? 'tw-bg-primary/[0.03]' : '' }}">
+                        <div class="tw-shrink-0 tw-mt-0.5">
+                            <x-ui.icon :name="$notif->data['icon'] ?? $notifCategory['icon']" class="{{ $isUnread ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}" />
                         </div>
-                    @endforelse
-                </div>
+                        <div class="tw-min-w-0 tw-flex-1">
+                            <div class="tw-flex tw-items-start tw-justify-between tw-gap-2">
+                                <span class="tw-text-ui-sm {{ $isUnread ? 'tw-font-semibold' : 'tw-font-medium' }} tw-truncate">{{ $notif->data['title'] ?? 'Notification' }}</span>
+                                <span class="tw-shrink-0 tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">{{ $notif->created_at->diffForHumans(short: true) }}</span>
+                            </div>
+                            <div class="tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant tw-line-clamp-2">{{ $notif->data['message'] ?? '-' }}</div>
+                            <div class="tw-mt-1.5 tw-flex tw-items-center tw-gap-3">
+                                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant">
+                                    <x-ui.icon :name="$notifCategory['icon']" />{{ $notifCategory['label'] }}
+                                </span>
+                                @if($isUnread)
+                                    <span class="tw-inline-flex tw-h-1.5 tw-w-1.5 tw-rounded-full tw-bg-primary" aria-label="Unread"></span>
+                                @endif
+                            </div>
+                        </div>
+                    </a>
+                @empty
+                    <div class="tw-py-12 tw-px-5">
+                        <x-empty-state :icon="$selectedOption['icon']" title="No notifications in this category." text="New activity will appear here when it arrives." />
+                    </div>
+                @endforelse
             </div>
+
             @if($notifications->hasPages())
-                <div class="tw-border-t tw-border-outline-variant tw-p-4">{{ $notifications->links() }}</div>
+                <div class="tw-border-t tw-border-outline-variant tw-px-5 tw-py-3">{{ $notifications->links() }}</div>
             @endif
-        </x-ui.card>
+        </section>
     </div>
 </div>
 @endsection

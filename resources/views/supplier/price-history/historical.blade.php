@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Price Trends - ADASI Portal')
-@section('page-title', 'Price Comparison')
+@section('page-title', 'Material Price Trends')
 
 @section('content')
 @php
@@ -12,55 +12,69 @@
 
     $changeBadge = function ($value) {
         if ($value === null) {
-            return '<span class="text-muted">-</span>';
+            return '<span class="tw-text-outline">-</span>';
         }
 
         if ($value > 0) {
-            return '<span class="text-danger fw-bold">+' . number_format($value, 2, ',', '.') . '%</span>';
+            return '<span class="ui-status-chip ui-status-chip--error ui-tabular-nums">+' . number_format($value, 2, ',', '.') . '%</span>';
         }
 
         if ($value < 0) {
-            return '<span class="text-success fw-bold">−' . number_format(abs($value), 2, ',', '.') . '%</span>';
+            return '<span class="ui-status-chip ui-status-chip--success ui-tabular-nums">−' . number_format(abs($value), 2, ',', '.') . '%</span>';
         }
 
-        return '<span class="text-muted fw-bold">- 0%</span>';
+        return '<span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums">0%</span>';
     };
 @endphp
 
-<div class="tw-grid tw-gap-6">
-    <x-ui.page-header title="Material Price Trends" description="Analyze only your own quotation history by material, period, and matching dimensions." eyebrow="Supplier Portal" />
+<div class="tw-grid tw-gap-4">
+    {{-- Breadcrumb & Compact Page Header --}}
+    <x-ui.breadcrumb :items="[
+        'Dashboard' => route('supplier.dashboard'),
+        'Price History' => route('supplier.price-history.index'),
+        'Price Trends' => null,
+    ]" />
+
+    <x-ui.page-header
+        title="Material Price Trends"
+        eyebrow="Commercial Intelligence"
+        description="Analyze historical pricing trajectories across procurement periods for materials quoted by your company."
+    />
+
+    {{-- Tabs --}}
     <x-supplier.price-history-tabs active="historical" />
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">Search Filters</h6>
-        @if($selectedMaterialName)
-        <a href="{{ route('supplier.price-history.export', request()->all()) }}" class="btn btn-sm btn-success" data-async-export>
-            <x-ui.icon name="file-spreadsheet" class="me-1" /> Export Excel
-        </a>
-        @endif
-    </div>
-    <div class="card-body">
+    {{-- Search & Dimension Filters Card --}}
+        <x-ui.card title="Analytics and Material Selection">
+        <x-slot:actions>
+            @if($selectedMaterialName)
+                <x-ui.button :href="route('supplier.price-history.export', request()->all())" variant="outline" size="sm" data-async-export>
+                    <x-ui.icon name="file-spreadsheet" size="sm" />
+                    <span>Export Analysis</span>
+                </x-ui.button>
+            @endif
+        </x-slot:actions>
+
         <form method="GET" action="{{ route('supplier.price-history.historical') }}" class="row g-3 align-items-end" id="historicalFilterForm">
-            <div class="col-md-6">
-                <label class="form-label small fw-bold">Material</label>
+            <div class="col-md-5 col-lg-5">
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalMaterialSelect">Select Material Specification</label>
                 <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required>
-                    <option value="">Select Material</option>
+                    <option value="">Choose Material...</option>
                     @foreach($materials as $material)
                         <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" {{ $selectedMaterialName === $material['name'] ? 'selected' : '' }}>{{ $material['name'] }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">Time Period</label>
+            <div class="col-md-4 col-lg-3">
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalRangeSelect">Time Horizon</label>
                 <select name="range" class="form-select form-select-sm" id="historicalRangeSelect">
                     @foreach($rangeOptions as $value => $label)
                         <option value="{{ $value }}" {{ $range === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">Tampilan</label>
+            <div class="col-md-3 col-lg-4">
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1">Aggregation Interval</label>
                 <div class="btn-group btn-group-sm w-100" role="group">
                     <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
                     <label class="btn btn-outline-primary" for="periodViewMonthly">Monthly</label>
@@ -70,101 +84,105 @@
                 </div>
             </div>
 
-            <div class="col-12 mt-3 mb-1">
-                <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-bold">
-                    <x-ui.icon name="funnel" /> Dimension Filter (Optional)
+            <div class="col-12 mt-2 mb-0">
+                <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 tw-text-on-surface-variant hover:tw-text-primary">
+                            <x-ui.icon name="sliders-horizontal" size="sm" />
+                    <span>Filter by Target Dimensions (Optional)</span>
+                            <x-ui.icon name="chevron-down" size="sm" />
                 </a>
             </div>
-            <div class="collapse {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
-                <div class="row g-2">
-                    <div class="col-md-2 dimension-field" data-dim="thickness">
-                        <label class="form-label small text-muted" for="supplier-history-thickness">Thickness (mm)</label>
+
+            <div class="collapse col-12 {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
+                <div class="row g-2 p-3 tw-bg-surface-low border rounded mt-1">
+                    <div class="col-6 col-md-2 dimension-field" data-dim="thickness">
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-thickness">Thickness (mm)</label>
                         <input type="number" step="0.01" name="thickness" id="supplier-history-thickness" class="form-control form-control-sm historical-filter-input" value="{{ request('thickness') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="d_inner">
-                        <label class="form-label small text-muted" for="supplier-history-d-inner">D-Inner (mm)</label>
+                    <div class="col-6 col-md-2 dimension-field" data-dim="d_inner">
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-d-inner">D-Inner (mm)</label>
                         <input type="number" step="0.01" name="d_inner" id="supplier-history-d-inner" class="form-control form-control-sm historical-filter-input" value="{{ request('d_inner') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="d_outer">
-                        <label class="form-label small text-muted" for="supplier-history-d-outer">D-Outer (mm)</label>
+                    <div class="col-6 col-md-2 dimension-field" data-dim="d_outer">
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-d-outer">D-Outer (mm)</label>
                         <input type="number" step="0.01" name="d_outer" id="supplier-history-d-outer" class="form-control form-control-sm historical-filter-input" value="{{ request('d_outer') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="width">
-                        <label class="form-label small text-muted" for="supplier-history-width">Width (mm)</label>
+                    <div class="col-6 col-md-2 dimension-field" data-dim="width">
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-width">Width (mm)</label>
                         <input type="number" step="0.01" name="width" id="supplier-history-width" class="form-control form-control-sm historical-filter-input" value="{{ request('width') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="length">
-                        <label class="form-label small text-muted" for="supplier-history-length">Length (mm)</label>
+                    <div class="col-6 col-md-2 dimension-field" data-dim="length">
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-length">Length (mm)</label>
                         <input type="number" step="0.01" name="length" id="supplier-history-length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
                     </div>
-                    <div class="col-md-2 d-flex align-items-end flex-grow-1">
-                        <button type="submit" class="btn btn-primary btn-sm w-100"><x-ui.icon name="search" /> Apply</button>
+                    <div class="col-12 col-md-2 d-flex align-items-end">
+                        <x-ui.button type="submit" size="sm" class="tw-w-full">
+                            <x-ui.icon name="search" size="sm" />
+                            <span>Apply Filters</span>
+                        </x-ui.button>
                     </div>
                 </div>
             </div>
         </form>
-    </div>
-</div>
+    </x-ui.card>
 
-<div id="historicalResults">
-@if($chartData)
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold" id="historicalChartTitle">
-                <x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend: "{{ $selectedMaterialName }}"
-            </h6>
-        </div>
-        <div class="card-body">
-            <canvas id="historicalChart" height="300" role="img" aria-label="Supplier material price history">Supplier material price history chart.</canvas>
-        </div>
-    </div>
+    {{-- Results Container --}}
+    <div id="historicalResults">
+        @if($chartData)
+            {{-- Trend Chart Card --}}
+            <x-ui.card class="mb-4">
+                <x-slot:header>
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <h6 class="mb-0 fw-bold tw-text-ui-sm tw-text-on-surface" id="historicalChartTitle">
+                            <x-ui.icon name="trending-up" size="sm" class="tw-me-1.5 text-primary" />
+                            Price Trend Analysis: <span class="text-primary">{{ $selectedMaterialName }}</span>
+                        </h6>
+                    </div>
+                </x-slot:header>
+                <div class="tw-h-[320px] w-100">
+                    <canvas id="historicalChart" role="img" aria-label="Supplier material price history">Supplier material price history chart.</canvas>
+                </div>
+            </x-ui.card>
 
-    <div class="row g-3 mb-4" id="historicalSummary">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Average change per period</div>
-                    <div class="fs-4 fw-bold {{ ($summary['average_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['average_change_pct'] ?? null) < 0) ? 'text-success' : 'text-muted') }}" id="averageChangeValue">
+            {{-- 2 Metrics Summary --}}
+            <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant mb-4" id="historicalSummary" aria-label="Historical price summary">
+                <div class="tw-p-3.5">
+                    <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change Per Period</div>
+                    <div class="fs-4 fw-bold ui-tabular-nums mt-1 {{ ($summary['average_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['average_change_pct'] ?? null) < 0) ? 'text-success' : 'tw-text-on-surface-variant') }}" id="averageChangeValue">
                         {{ $formatPct($summary['average_change_pct'] ?? null) }}
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Total change (initial → latest)</div>
-                    <div class="fs-4 fw-bold {{ ($summary['total_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['total_change_pct'] ?? null) < 0) ? 'text-success' : 'text-muted') }}" id="totalChangeValue">
+                <div class="tw-border-t tw-border-outline-variant tw-p-3.5 sm:tw-border-t-0">
+                    <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Cumulative Trajectory, Initial to Latest</div>
+                    <div class="fs-4 fw-bold ui-tabular-nums mt-1 {{ ($summary['total_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['total_change_pct'] ?? null) < 0) ? 'text-success' : 'tw-text-on-surface-variant') }}" id="totalChangeValue">
                         {{ $formatPct($summary['total_change_pct'] ?? null) }}
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </section>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
+            {{-- Supporting Breakdown Table --}}
+            <x-ui.data-table
+                title="Historical Quotation Breakdown"
+                description="Audited price quotes and converted Indonesian Rupiah benchmarks."
+            >
+                <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                     <thead class="table-light text-center" id="historicalTableHead">
                         @if($periodView === 'yearly')
                             <tr>
-                                <th>Year</th>
-                                <th>Average IDR/Kg</th>
-                                <th>Lowest Price</th>
-                                <th>Highest Price</th>
-                                <th>Change from Previous Period</th>
+                                <th scope="col">Year</th>
+                                <th scope="col" class="text-end">Average Price (IDR/Kg)</th>
+                                <th scope="col" class="text-end">Lowest Price</th>
+                                <th scope="col" class="text-end">Highest Price</th>
+                                <th scope="col" class="text-center">Period Variance</th>
                             </tr>
                         @else
                             <tr>
-                                <th>PR No.</th>
-                                <th>PO Date</th>
-                                <th>Status</th>
-                                <th>Price/Kg</th>
-                                <th>Currency</th>
-                                <th>IDR Price</th>
-                                <th>% Change</th>
+                                <th scope="col">PR Reference</th>
+                                <th scope="col">PO Date</th>
+                                <th scope="col" class="text-center">Status</th>
+                                <th scope="col" class="text-end">Quoted Price/Kg</th>
+                                <th scope="col" class="text-center">Currency</th>
+                                <th scope="col" class="text-end">Converted IDR Price</th>
+                                <th scope="col" class="text-center">% Variance</th>
                             </tr>
                         @endif
                     </thead>
@@ -172,54 +190,49 @@
                         @foreach($tableData as $row)
                             @if($periodView === 'yearly')
                                 <tr>
-                                    <td class="text-center fw-medium">{{ $row['period'] }}</td>
-                                    <td class="text-end text-primary fw-bold">Rp {{ number_format($row['price_idr'], 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($row['min_idr'], 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($row['max_idr'], 0, ',', '.') }}</td>
+                                    <td class="text-center fw-bold tw-text-on-surface">{{ $row['period'] }}</td>
+                                    <td class="text-end text-primary fw-bold ui-tabular-nums">Rp {{ number_format($row['price_idr'], 0, ',', '.') }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">Rp {{ number_format($row['min_idr'], 0, ',', '.') }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">Rp {{ number_format($row['max_idr'], 0, ',', '.') }}</td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                                 </tr>
                             @else
                                 <tr>
-                                    <td class="text-center fw-medium">
+                                    <td class="text-center fw-semibold">
                                         @if(!empty($row['pr_url']))
-                                            <a href="{{ $row['pr_url'] }}" class="text-decoration-none hover:tw-underline text-primary" target="_blank">{{ $row['pr_number'] ?? '-' }}</a>
+                                            <a href="{{ $row['pr_url'] }}" class="text-primary text-decoration-none hover:tw-underline" target="_blank">{{ $row['pr_number'] ?? '-' }}</a>
                                         @else
                                             {{ $row['pr_number'] ?? '-' }}
                                         @endif
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center tw-text-on-surface-variant ui-tabular-nums">
                                         @if(!empty($row['purchase_order_at_display']))
                                             {{ $row['purchase_order_at_display'] }}
                                         @else
-                                            <span class="badge bg-secondary">Draft</span>
+                                            <span class="ui-status-chip ui-status-chip--neutral">Draft</span>
                                         @endif
                                     </td>
                                     <td class="text-center">{!! $row['status_badge'] ?? '-' !!}</td>
-                                    <td class="text-end">
-                                        {{ number_format($row['price_per_kg'], 2, ',', '.') }}
+                                    <td class="text-end fw-semibold ui-tabular-nums">
+                                        {{ number_format($row['price_per_kg'], 4, ',', '.') }}
                                     </td>
-                                    <td class="text-center"><span class="badge bg-dark">{{ $row['currency'] }}</span></td>
-                                    <td class="text-end text-primary fw-bold">{{ $row['price_idr'] ? 'Rp ' . number_format($row['price_idr'], 0, ',', '.') : '-' }}</td>
+                                    <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $row['currency'] }}</span></td>
+                                    <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['price_idr'] ? 'Rp ' . number_format($row['price_idr'], 0, ',', '.') : '-' }}</td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                                 </tr>
                             @endif
                         @endforeach
                     </tbody>
                 </table>
+            </x-ui.data-table>
+        @elseif($selectedMaterialName)
+            <x-ui.alert tone="warning" title="No matching price history">No historical quotation pricing matches the selected material and dimension criteria.</x-ui.alert>
+        @else
+            <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+                <x-ui.empty-state icon="trending-up" title="Select a material specification" description="Choose a material above to review its price trajectory." />
             </div>
-        </div>
+        @endif
     </div>
-@elseif($selectedMaterialName)
-    <div class="alert alert-warning"><x-ui.icon name="triangle-alert" class="me-1" /> No quotation data found for this material.</div>
-@else
-    <div class="card border-0 shadow-sm">
-        <div class="card-body text-center py-5 text-muted">
-            <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
-            <p class="mt-3 mb-0">Select the material above to view your historical price trend.</p>
-        </div>
-    </div>
-@endif
-</div>
 </div>
 @endsection
 
@@ -273,11 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!resultsContainer) return;
 
         resultsContainer.innerHTML = `
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center py-5 text-muted">
-                    <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
-                    <p class="mt-3 mb-0">${escapeOptionText(message)}</p>
-                </div>
+            <div class="p-5 text-center bg-white border rounded tw-text-on-surface-variant">
+                <x-ui.icon name="trending-up" size="lg" class="tw-text-outline mb-2" />
+                <p class="mb-0 tw-text-ui-sm">${escapeOptionText(message)}</p>
             </div>
         `;
     }
@@ -301,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 filterForm.submit();
             }
         } else {
-            clearHistorycalResults('Select the material above to view your historical price trend.');
+            clearHistorycalResults('Select a material specification above to render price trajectory analytics.');
         }
     });
 
@@ -349,405 +360,94 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (materialSelect) {
-        materialSelect.addEventListener('change', updateDimensionVisibility);
-        updateDimensionVisibility();
-    }
-});
-</script>
-@if($chartData)
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-const initialHistorycalPayload = @json($payload);
-let historicalChart = null;
-const historicalDataUrl = @json(route('supplier.price-history.historical'));
-const historicalThemeStyles = getComputedStyle(document.documentElement);
-const historicalThemeColor = (token) => historicalThemeStyles.getPropertyValue(token).trim();
-const historicalThemeRgba = (token, alpha) => `rgba(${historicalThemeColor(token)}, ${alpha})`;
-const historicalTooltipTheme = {
-    backgroundColor: historicalThemeColor('--md-surface'),
-    titleColor: historicalThemeColor('--md-on-surface'),
-    bodyColor: historicalThemeColor('--md-on-surface-variant'),
-    borderColor: historicalThemeColor('--md-outline'),
-    borderWidth: 1,
-};
+    materialSelect.addEventListener('change', updateDimensionVisibility);
+    updateDimensionVisibility();
 
-function formatRupiah(value) {
-    if (value === null || value === undefined || value === '') return '-';
-    return 'Rp ' + Number(value).toLocaleString('id-ID');
-}
+    // Chart initialization if canvas present
+    const chartCanvas = document.getElementById('historicalChart');
+    const historicalChartData = @json($chartData);
+    if (chartCanvas && historicalChartData) {
+        const chartTheme = getComputedStyle(document.documentElement);
+        const chartColor = (token) => chartTheme.getPropertyValue(token).trim();
+        const datasets = [{
+            label: historicalChartData.type === 'yearly' ? 'Average Price (IDR/Kg)' : 'Price (IDR/Kg)',
+            data: historicalChartData.pricesIdr || [],
+            borderColor: chartColor('--md-primary'),
+            backgroundColor: chartColor('--md-primary'),
+            borderWidth: 2,
+            fill: false,
+            tension: 0.2,
+            pointRadius: 3,
+            pointHoverRadius: 4,
+        }];
 
-function formatNumber(value, decimals = 2) {
-    if (value === null || value === undefined || value === '') return '-';
-    return Number(value).toLocaleString('id-ID', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-    });
-}
+        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.minIdr)) {
+            datasets.push({
+                label: 'Lowest Price',
+                data: historicalChartData.minIdr,
+                borderColor: chartColor('--md-success'),
+                backgroundColor: chartColor('--md-success'),
+                borderWidth: 1.5,
+                borderDash: [4, 3],
+                fill: false,
+                tension: 0.2,
+                pointRadius: 2,
+            });
+        }
 
-function formatPercent(value) {
-    if (value === null || value === undefined) return '-';
-    return (Number(value) > 0 ? '+' : '') + Number(value).toLocaleString('id-ID', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }) + '%';
-}
+        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.maxIdr)) {
+            datasets.push({
+                label: 'Highest Price',
+                data: historicalChartData.maxIdr,
+                borderColor: chartColor('--md-error'),
+                backgroundColor: chartColor('--md-error'),
+                borderWidth: 1.5,
+                borderDash: [4, 3],
+                fill: false,
+                tension: 0.2,
+                pointRadius: 2,
+            });
+        }
 
-function changeHtml(value) {
-    if (value === null || value === undefined) return '<span class="text-muted">-</span>';
-    const numberValue = Number(value);
-
-    if (numberValue > 0) {
-        return `<span class="text-danger fw-bold">▲ ${formatNumber(numberValue)}%</span>`;
-    }
-
-    if (numberValue < 0) {
-        return `<span class="text-success fw-bold">▼ ${formatNumber(Math.abs(numberValue))}%</span>`;
-    }
-
-    return '<span class="text-muted fw-bold">- 0%</span>';
-}
-
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;',
-    }[char]));
-}
-
-function emptyHistorycalResultHtml(message, alertClass = 'card') {
-    if (alertClass === 'warning') {
-        return `<div class="alert alert-warning"><x-ui.icon name="triangle-alert" class="me-1" /> ${escapeHtml(message)}</div>`;
-    }
-
-    return `
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center py-5 text-muted">
-                <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
-                <p class="mt-3 mb-0">${escapeHtml(message)}</p>
-            </div>
-        </div>
-    `;
-}
-
-function historicalResultShellHtml(materialName) {
-    const exportUrl = new URL(@json(route('supplier.price-history.export')), window.location.origin);
-    const formData = new FormData(document.getElementById('historicalFilterForm'));
-    for (const [key, value] of formData.entries()) {
-        if (value.trim() !== '') exportUrl.searchParams.set(key, value.trim());
-    }
-
-    document.querySelector('.card-header.bg-white.py-3.d-flex.justify-content-between.align-items-center').innerHTML = `
-        <h6 class="mb-0 fw-bold">Search Filters</h6>
-        <a href="${exportUrl.toString()}" class="btn btn-sm btn-success" data-async-export>
-            <x-ui.icon name="file-spreadsheet" class="me-1" /> Export Excel
-        </a>
-    `;
-
-    return `
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold" id="historicalChartTitle">
-                    <x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend: "${escapeHtml(materialName)}"
-                </h6>
-            </div>
-            <div class="card-body">
-                <canvas id="historicalChart" height="300" role="img" aria-label="Supplier material price history">Supplier material price history chart.</canvas>
-            </div>
-        </div>
-
-        <div class="row g-3 mb-4" id="historicalSummary">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Average change per period</div>
-                        <div class="fs-4 fw-bold text-muted" id="averageChangeValue">-</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Total change (initial → latest)</div>
-                        <div class="fs-4 fw-bold text-muted" id="totalChangeValue">-</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
-                        <thead class="table-light text-center" id="historicalTableHead"></thead>
-                        <tbody id="historicalTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function historicalChartConfig(payload) {
-    const chartData = payload.chartData || {};
-
-    if (payload.periodView === 'yearly') {
-        return {
+        new Chart(chartCanvas.getContext('2d'), {
             type: 'line',
             data: {
-                labels: chartData.labels || [],
-                datasets: [{
-                    label: 'Average Price (IDR/Kg)',
-                    data: chartData.pricesIdr || [],
-                    borderColor: historicalThemeColor('--md-primary'),
-                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 6,
-                    pointBackgroundColor: historicalThemeColor('--md-primary'),
-                }],
+                labels: historicalChartData.labels || [],
+                datasets,
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
+                animation: false,
                 plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        ...historicalTooltipTheme,
-                        callbacks: {
-                            label: (context) => 'Average: ' + formatRupiah(context.parsed.y),
-                            afterLabel: (context) => {
-                                const index = context.dataIndex;
-                                return [
-                                    'Tertinggi: ' + formatRupiah(chartData.maxIdr?.[index]),
-                                    'Terendah: ' + formatRupiah(chartData.minIdr?.[index]),
-                                ];
-                            },
-                        },
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, usePointStyle: true }
                     },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Rp ' + Number(context.raw).toLocaleString('id-ID');
+                            }
+                        }
+                    }
                 },
                 scales: {
-                    y: { beginAtZero: true, ticks: { callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID') } },
-                },
-            },
-        };
-    }
-
-    return {
-        type: 'line',
-        data: {
-            labels: chartData.labels || [],
-            datasets: [
-                {
-                    label: 'Price/Kg (Original)',
-                    data: chartData.prices || [],
-                    borderColor: historicalThemeColor('--md-primary'),
-                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 6,
-                    pointBackgroundColor: historicalThemeColor('--md-primary'),
-                    yAxisID: 'y',
-                },
-                {
-                    label: 'Price/Kg (IDR)',
-                    data: chartData.pricesIdr || [],
-                    borderColor: historicalThemeColor('--md-error'),
-                    backgroundColor: historicalThemeRgba('--md-error-rgb', .1),
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 6,
-                    pointBackgroundColor: historicalThemeColor('--md-error'),
-                    yAxisID: 'y1',
-                },
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: historicalTooltipTheme,
-            },
-            scales: {
-                y: { type: 'linear', position: 'left', title: { display: true, text: 'Original Currency' } },
-                y1: { type: 'linear', position: 'right', title: { display: true, text: 'IDR' }, grid: { drawOnChartArea: false }, ticks: { callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID') } },
-            },
-        },
-    };
-}
-
-function renderHistorycalChart(payload) {
-    if (historicalChart) {
-        historicalChart.destroy();
-    }
-
-    historicalChart = new Chart(document.getElementById('historicalChart'), historicalChartConfig(payload));
-}
-
-function updateSummaryClass(element, value) {
-    element.classList.remove('text-danger', 'text-success', 'text-muted');
-    element.classList.add(value > 0 ? 'text-danger' : (value < 0 ? 'text-success' : 'text-muted'));
-}
-
-function renderSummary(summary) {
-    const averageChange = document.getElementById('averageChangeValue');
-    const totalChange = document.getElementById('totalChangeValue');
-    averageChange.textContent = formatPercent(summary.average_change_pct);
-    totalChange.textContent = formatPercent(summary.total_change_pct);
-    updateSummaryClass(averageChange, summary.average_change_pct);
-    updateSummaryClass(totalChange, summary.total_change_pct);
-}
-
-function renderTable(payload) {
-    const head = document.getElementById('historicalTableHead');
-    const body = document.getElementById('historicalTableBody');
-    const rows = payload.tableData || [];
-
-    if (payload.periodView === 'yearly') {
-        head.innerHTML = `
-            <tr>
-                <th>Year</th>
-                <th>Average IDR/Kg</th>
-                <th>Lowest Price</th>
-                <th>Highest Price</th>
-                <th>Change from Previous Period</th>
-            </tr>
-        `;
-        body.innerHTML = rows.map((row) => `
-            <tr>
-                <td class="text-center fw-medium">${escapeHtml(row.period)}</td>
-                <td class="text-end text-primary fw-bold">${formatRupiah(row.price_idr)}</td>
-                <td class="text-end">${formatRupiah(row.min_idr)}</td>
-                <td class="text-end">${formatRupiah(row.max_idr)}</td>
-                <td class="text-center">${changeHtml(row.change_pct)}</td>
-            </tr>
-        `).join('');
-        return;
-    }
-
-    head.innerHTML = `
-        <tr>
-            <th>PR No.</th>
-            <th>PO Date</th>
-            <th>Status</th>
-            <th>Price/Kg</th>
-            <th>Currency</th>
-            <th>IDR Price</th>
-            <th>% Change</th>
-        </tr>
-    `;
-    body.innerHTML = rows.map((row) => `
-        <tr>
-            <td class="text-center fw-medium">
-                ${row.pr_url ? `<a href="${row.pr_url}" class="text-decoration-none hover:tw-underline text-primary" target="_blank">${escapeHtml(row.pr_number || '-')}</a>` : escapeHtml(row.pr_number || '-')}
-            </td>
-            <td class="text-center">${row.purchase_order_at_display ? escapeHtml(row.purchase_order_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
-            <td class="text-center">${row.status_badge || '-'}</td>
-            <td class="text-end">${formatNumber(row.price_per_kg)}</td>
-            <td class="text-center"><span class="badge bg-dark">${escapeHtml(row.currency)}</span></td>
-            <td class="text-end text-primary fw-bold">${formatRupiah(row.price_idr)}</td>
-            <td class="text-center">${changeHtml(row.change_pct)}</td>
-        </tr>
-    `).join('');
-}
-
-function renderPayload(payload) {
-    const resultsContainer = document.getElementById('historicalResults');
-
-    if (!payload.chartData) {
-        if (historicalChart) {
-            historicalChart.destroy();
-            historicalChart = null;
-        }
-
-        if (resultsContainer) {
-            resultsContainer.innerHTML = emptyHistorycalResultHtml(
-                payload.materialName
-                    ? 'No quotation data found for this material.'
-                    : 'Select the material above to view your historical price trend.',
-                payload.materialName ? 'warning' : 'card'
-            );
-        }
-        document.querySelector('.card-header.bg-white.py-3.d-flex.justify-content-between.align-items-center').innerHTML = `<h6 class="mb-0 fw-bold">Search Filters</h6>`;
-        return;
-    }
-
-    if (!document.getElementById('historicalChart') && resultsContainer) {
-        resultsContainer.innerHTML = historicalResultShellHtml(payload.materialName);
-    } else {
-         const exportUrl = new URL(@json(route('supplier.price-history.export')), window.location.origin);
-         const formData = new FormData(document.getElementById('historicalFilterForm'));
-         for (const [key, value] of formData.entries()) {
-             if (value.trim() !== '') exportUrl.searchParams.set(key, value.trim());
-         }
-
-         document.querySelector('.card-header.bg-white.py-3.d-flex.justify-content-between.align-items-center').innerHTML = `
-             <h6 class="mb-0 fw-bold">Search Filters</h6>
-             <a href="${exportUrl.toString()}" class="btn btn-sm btn-success" data-async-export>
-                 <x-ui.icon name="file-spreadsheet" class="me-1" /> Export Excel
-             </a>
-         `;
-    }
-
-    renderHistorycalChart(payload);
-    renderSummary(payload.summary || {});
-    renderTable(payload);
-    document.getElementById('historicalChartTitle').innerHTML =
-        `<x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend: "${escapeHtml(payload.materialName)}"`;
-}
-
-window.loadHistorycalPayloadFromFilters = async function () {
-    const materialSelect = document.getElementById('historicalMaterialSelect');
-    const filterForm = document.getElementById('historicalFilterForm');
-
-    if (!materialSelect.value) {
-        return;
-    }
-
-    const url = new URL(historicalDataUrl, window.location.origin);
-    const formData = new FormData(filterForm);
-    for (const [key, value] of formData.entries()) {
-        if (value.trim() !== '') {
-            url.searchParams.set(key, value.trim());
-        }
-    }
-    url.searchParams.set('view', 'json');
-
-    try {
-        const response = await fetch(url.toString(), {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + (value >= 1000 ? (value/1000) + 'k' : value);
+                            }
+                        },
+                        grid: { color: chartColor('--md-outline-variant') }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
         });
-
-        if (!response.ok) {
-            throw new Error('Failed to load historical data');
-        }
-
-        const payload = await response.json();
-        renderPayload(payload);
-
-        url.searchParams.delete('view');
-        window.history.replaceState(null, '', url.toString());
-    } catch (error) {
-        const resultsContainer = document.getElementById('historicalResults');
-        if (resultsContainer) {
-            resultsContainer.innerHTML = emptyHistorycalResultHtml('Failed to load historical data. Try selecting filters again.', 'warning');
-        }
     }
-};
-
-if(initialHistorycalPayload && initialHistorycalPayload.chartData) {
-    renderHistorycalChart(initialHistorycalPayload);
-}
+});
 </script>
-@endif
 @endpush

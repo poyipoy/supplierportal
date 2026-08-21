@@ -190,7 +190,7 @@
         --ui-card-bg: var(--md-surface);
         --ui-card-border: var(--md-outline-variant);
         --ui-table-header-bg: var(--md-surface-container-low);
-        --ui-table-row-hover-bg: #F8FAFC;
+        --ui-table-row-hover-bg: var(--md-surface-container-low);
         --ui-dialog-bg: var(--md-surface);
         --ui-dialog-scrim: rgba(var(--md-scrim-rgb), var(--md-scrim-opacity));
 
@@ -340,7 +340,7 @@
     }
 
     .sidebar-brand-link .brand-text strong {
-        font-size: 0.9375rem;
+        font-size: var(--ui-font-size-base);
         font-weight: 700;
         letter-spacing: -0.01em;
         color: var(--md-primary);
@@ -348,7 +348,7 @@
 
     .sidebar-brand-link .brand-text small {
         color: var(--md-on-surface-variant);
-        font-size: 0.6875rem;
+        font-size: var(--ui-font-size-xs);
         font-weight: 500;
         letter-spacing: 0.02em;
     }
@@ -366,7 +366,7 @@
 
     .sidebar-heading {
         padding: 0.875rem 1rem 0.25rem 1rem;
-        font-size: 0.6875rem;
+        font-size: var(--ui-font-size-xs);
         text-transform: uppercase;
         font-weight: 700;
         letter-spacing: 0.06em;
@@ -393,7 +393,7 @@
         border-radius: var(--md-shape-sm);
         color: var(--md-on-surface-variant);
         text-decoration: none;
-        font-size: 0.8125rem;
+        font-size: var(--ui-font-size-sm);
         font-weight: 500;
         white-space: nowrap;
         transition: background-color var(--ui-motion-fast) var(--ui-easing-standard), color var(--ui-motion-fast) var(--ui-easing-standard);
@@ -474,7 +474,7 @@
 
     .topbar-page-title {
         color: var(--md-on-surface);
-        font-size: 0.875rem;
+        font-size: var(--ui-font-size-sm);
         font-weight: 600;
         margin: 0;
         letter-spacing: -0.01em;
@@ -539,7 +539,7 @@
     .role-badge {
         display: inline-flex;
         align-items: center;
-        font-size: 0.6875rem;
+        font-size: var(--ui-font-size-xs);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -550,27 +550,27 @@
     }
 
     .role-badge-admin {
-        background-color: #EFF6FF;
-        color: #1D4ED8;
-        border-color: #BFDBFE;
+        background-color: var(--md-primary-container);
+        color: var(--md-on-primary-container);
+        border-color: var(--md-outline);
     }
 
     .role-badge-purchasing {
-        background-color: #ECFDF5;
-        color: #047857;
-        border-color: #A7F3D0;
+        background-color: var(--md-success-container);
+        color: var(--md-on-success-container);
+        border-color: var(--md-outline);
     }
 
     .role-badge-supplier {
-        background-color: #FFFBEB;
-        color: #B45309;
-        border-color: #FDE68A;
+        background-color: var(--md-warning-container);
+        color: var(--md-on-warning-container);
+        border-color: var(--md-outline);
     }
 
     .role-badge-qc {
-        background-color: #FEF2F2;
-        color: #B91C1C;
-        border-color: #FECACA;
+        background-color: var(--md-error-container);
+        color: var(--md-on-error-container);
+        border-color: var(--md-outline);
     }
 
     /* Operational Toolbar */
@@ -631,7 +631,7 @@
     }
 
     .ui-form-section__title {
-        font-size: 0.8125rem;
+        font-size: var(--ui-font-size-sm);
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -640,7 +640,7 @@
     }
 
     .ui-form-section__description {
-        font-size: 0.8125rem;
+        font-size: var(--ui-font-size-sm);
         color: var(--md-on-surface-variant);
         margin: 0;
     }
@@ -658,7 +658,6 @@
         position: sticky;
         bottom: 0;
         z-index: 20;
-        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
         margin-top: auto;
     }
 
@@ -721,6 +720,68 @@
     .ui-status-chip--success { background: var(--md-success-container); color: var(--md-on-success-container); }
     .ui-status-chip--warning { background: var(--md-warning-container); color: var(--md-on-warning-container); }
     .ui-status-chip--error { background: var(--md-error-container); color: var(--md-on-error-container); }
+
+    .ui-data-action {
+        align-items: center;
+        background: transparent;
+        border: 1px solid var(--md-outline);
+        border-radius: var(--md-shape-sm);
+        color: var(--md-on-surface);
+        display: inline-flex;
+        font-size: var(--ui-font-size-xs);
+        font-weight: 600;
+        justify-content: center;
+        min-height: var(--ui-control-height-sm);
+        padding: var(--ui-space-1) var(--ui-space-2);
+        text-decoration: none;
+        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard), border-color var(--ui-motion-fast) var(--ui-easing-standard);
+        white-space: nowrap;
+    }
+
+    .ui-data-action:hover {
+        background: var(--md-surface-container);
+        color: var(--md-on-surface);
+    }
+
+    .ui-data-action--primary {
+        border-color: var(--md-primary);
+        color: var(--md-primary);
+    }
+
+    .ui-data-action--primary:hover {
+        background: var(--md-primary-container);
+        color: var(--md-on-primary-container);
+    }
+
+    .ui-data-action--danger {
+        border-color: var(--md-error);
+        color: var(--md-error);
+    }
+
+    .ui-data-action--danger:hover {
+        background: var(--md-error-container);
+        color: var(--md-on-error-container);
+    }
+
+    .ui-data-action--success {
+        border-color: var(--md-success);
+        color: var(--md-success);
+    }
+
+    .ui-data-action--success:hover {
+        background: var(--md-success-container);
+        color: var(--md-on-success-container);
+    }
+
+    .ui-data-action--warning {
+        border-color: var(--md-warning);
+        color: var(--md-on-warning-container);
+    }
+
+    .ui-data-action--warning:hover {
+        background: var(--md-warning-container);
+        color: var(--md-on-warning-container);
+    }
 
     .ui-skeleton {
         background-image: linear-gradient(
@@ -967,7 +1028,7 @@
         border-color: var(--md-outline-variant) !important;
         background-color: var(--md-surface);
         color: var(--md-on-surface);
-        font-size: 0.8125rem;
+        font-size: var(--ui-font-size-sm);
         margin-bottom: 0;
     }
 
@@ -977,7 +1038,7 @@
         color: var(--md-on-surface) !important;
         font-weight: 700 !important;
         text-transform: uppercase;
-        font-size: 0.6875rem;
+        font-size: var(--ui-font-size-xs);
         letter-spacing: 0.04em;
         padding: 0.625rem 0.875rem !important;
         white-space: nowrap;
@@ -990,11 +1051,11 @@
     }
 
     .table-striped tbody tr:nth-of-type(odd) {
-        background-color: #FAFAFA !important;
+        background-color: var(--md-surface-container-low) !important;
     }
 
     .table-hover tbody tr:hover {
-        background-color: rgba(var(--md-primary-rgb), 0.03) !important;
+        background-color: var(--ui-table-row-hover-bg) !important;
     }
 
     .table-responsive {
@@ -1017,7 +1078,7 @@
     .ui-data-table table thead th {
         background: var(--ui-table-header-bg);
         color: var(--md-on-surface);
-        font-size: 0.6875rem;
+        font-size: var(--ui-font-size-xs);
         font-weight: 700;
         letter-spacing: .04em;
         text-transform: uppercase;

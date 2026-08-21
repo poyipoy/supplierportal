@@ -35,9 +35,8 @@
             return;
         }
 
-        if (type === 'error' && window.AdasiAlert) {
-            window.AdasiAlert.error({ title, text });
-        }
+        window.__adasiToastQueue = window.__adasiToastQueue || [];
+        window.__adasiToastQueue.push({ type, title, message: text });
     };
 
     const exportActions = (exportsUrl) => exportsUrl ? [{

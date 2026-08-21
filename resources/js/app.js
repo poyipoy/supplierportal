@@ -243,6 +243,10 @@ window.AdasiToast = Object.freeze({
     },
 });
 
+if (Array.isArray(window.__adasiToastQueue) && window.__adasiToastQueue.length > 0) {
+    window.__adasiToastQueue.splice(0).forEach((options) => window.AdasiToast.show(options));
+}
+
 Alpine.data('adasiToastCenter', () => ({
     state: toastState,
     dismiss: dismissToast,

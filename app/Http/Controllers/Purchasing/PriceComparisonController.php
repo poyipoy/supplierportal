@@ -137,9 +137,8 @@ class PriceComparisonController extends Controller
                 $chartLabels = $comparisonItems->pluck('material_name')->toArray();
                 $chartMaterialIds = $comparisonItems->pluck('id')->map(fn($id) => (string) $id)->toArray();
                 $chartDatasets = [];
-                $colors = ['#1F5FA6', '#C0392B', '#27AE60', '#F39C12', '#8E44AD', '#16A085'];
 
-                foreach ($quotations as $idx => $quotation) {
+                foreach ($quotations as $quotation) {
                     $data = [];
 
                     foreach ($comparisonItems as $item) {
@@ -153,7 +152,6 @@ class PriceComparisonController extends Controller
                     $chartDatasets[] = [
                         'label' => $quotation->supplier->name,
                         'data' => $data,
-                        'backgroundColor' => $colors[$idx % count($colors)],
                     ];
                 }
 
@@ -359,7 +357,7 @@ class PriceComparisonController extends Controller
             })
             ->addColumn('diff_display', function ($row) {
                 $diff = $row->diff_idr_per_kg !== null ? (float) $row->diff_idr_per_kg : null;
-                $class = $diff > 0 ? 'text-danger' : ($diff < 0 ? 'text-success' : 'text-muted');
+                $class = $diff > 0 ? 'tw-text-error' : ($diff < 0 ? 'tw-text-success' : 'tw-text-on-surface-variant');
 
                 return '<div class="fw-bold ' . $class . '">' . $this->formatSignedRupiah($diff) . '</div>'
                     . '<div class="small ' . $class . '">' . $this->formatPercent($row->diff_percent) . '</div>';
@@ -371,7 +369,13 @@ class PriceComparisonController extends Controller
                     $competitiveThreshold
                 );
 
-                return '<span class="badge ' . $status['class'] . '">'
+                $tone = str_contains($status['class'], 'danger')
+                    ? 'error'
+                    : (str_contains($status['class'], 'warning')
+                        ? 'warning'
+                        : (str_contains($status['class'], 'success') ? 'success' : 'neutral'));
+
+                return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'
                     . e($status['label'])
                     . '</span><div class="text-muted small mt-1">' . e($status['recommendation']) . '</div>';
             })
@@ -381,8 +385,8 @@ class PriceComparisonController extends Controller
                     $this->routeModel(Quotation::class, $row->current_quotation_id),
                     $returnUrl
                 );
-                $html = '<div class="btn-group btn-group-sm" role="group" aria-label="Quotation comparison actions">'
-                    . '<a href="' . e($currentQuotationUrl) . '" class="btn btn-outline-primary" title="View current quotation">Current</a>';
+                $html = '<div class="d-inline-flex align-items-center gap-1" role="group" aria-label="Quotation comparison actions">'
+                    . '<a href="' . e($currentQuotationUrl) . '" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="View current quotation">Current</a>';
 
                 if ($row->best_quotation_id) {
                     $bestQuotationUrl = $this->routeWithReturn(
@@ -390,7 +394,7 @@ class PriceComparisonController extends Controller
                         $this->routeModel(Quotation::class, $row->best_quotation_id),
                         $returnUrl
                     );
-                    $html .= '<a href="' . e($bestQuotationUrl) . '" class="btn btn-outline-success" title="View historical best quotation">Best</a>';
+                    $html .= '<a href="' . e($bestQuotationUrl) . '" class="ui-data-action ui-data-action--success ui-focus-ring" aria-label="View historical best quotation">Best</a>';
                 }
 
                 return $html . '</div>';

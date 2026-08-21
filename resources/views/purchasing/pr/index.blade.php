@@ -1,30 +1,10 @@
 @extends('layouts.app')
 
 @section('title', 'Material Requisition List - ADASI Portal')
-@section('page-title', 'Purchase Requisition')
+@section('page-title', 'Purchase Requisitions')
 
 @push('styles')
 <style>
-    .action-button-grid {
-        display: inline-grid;
-        grid-template-columns: repeat(2, 2.25rem);
-        gap: .35rem;
-        justify-content: center;
-    }
-
-    .action-grid-form {
-        margin: 0;
-    }
-
-    .action-button-grid .action-grid-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.25rem;
-        height: 2.25rem;
-        padding: 0;
-    }
-
     .pr-filter-reset--active {
         background: var(--md-error-container) !important;
         color: var(--md-on-error-container) !important;
@@ -33,7 +13,8 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw-grid tw-gap-4">
+    {{-- 1. Compact Page Header --}}
     <x-ui.page-header
         title="Purchase Requisition"
         eyebrow="Purchasing"
@@ -42,66 +23,70 @@
         <x-slot:actions>
             <x-ui.button
                 :href="route('purchasing.export.requisitions')"
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 data-async-export
                 id="exportRequisitionsBtn"
                 :data-export-url="route('purchasing.export.requisitions')"
             >
                 <x-ui.icon name="file-spreadsheet" />
-                Export Excel
+                <span>Export Excel</span>
             </x-ui.button>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
                 <x-ui.icon name="plus-circle" />
-                Create Requisition
+                <span>Create Requisition</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.data-table
-        title="Requisition list"
-        description="Search the live list or narrow it by period and workflow status."
-    >
+    {{-- 2. Operational Toolbar --}}
+    <x-ui.toolbar :sticky="true">
         <x-slot:filters>
-            <x-ui.select name="period_id" id="period_id" label="Period" class="tw-w-full shell:tw-w-72">
-                <option value="">All periods</option>
-                @foreach($periods as $period)
-                    <option value="{{ $period->id }}">
-                        {{ $period->display_label }}
-                    </option>
-                @endforeach
-            </x-ui.select>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div style="min-width: 200px;">
+                    <select name="period_id" id="period_id" class="form-select form-select-sm" aria-label="Filter by Period">
+                        <option value="">All Periods</option>
+                        @foreach($periods as $period)
+                            <option value="{{ $period->id }}">{{ $period->display_label }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <x-ui.select name="status" id="status" label="Status" class="tw-w-full shell:tw-w-56">
-                <option value="">All statuses</option>
-                <option value="draft">Draft</option>
-                <option value="submitted">Submitted</option>
-                <option value="rejected">Rejected</option>
-                <option value="bidding">Bidding</option>
-                <option value="completed">Completed</option>
-            </x-ui.select>
+                <div style="min-width: 150px;">
+                    <select name="status" id="status" class="form-select form-select-sm" aria-label="Filter by Status">
+                        <option value="">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="submitted">Submitted</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="bidding">Bidding</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
 
-            <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset tw-w-full shell:tw-w-auto">
-                <x-ui.icon name="rotate-ccw" />
-                Reset filters
-            </x-ui.button>
-
-            <div id="filterChips" class="d-none tw-basis-full tw-flex-wrap tw-gap-2" aria-live="polite"></div>
+                <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset">
+                    <x-ui.icon name="rotate-ccw" />
+                    <span>Reset</span>
+                </x-ui.button>
+            </div>
+            <div id="filterChips" class="d-none flex-wrap tw-gap-1.5 align-items-center ms-2" aria-live="polite"></div>
         </x-slot:filters>
+    </x-ui.toolbar>
 
-        <table class="table table-hover align-middle" id="prTable">
+    {{-- 3. Balanced Data Table --}}
+    <x-ui.data-table density="compact">
+        <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="prTable">
             <thead class="table-light text-center">
                 <tr>
-                    <th>No</th>
-                    <th>PR No.</th>
-                    <th>Period</th>
-                    <th>Created By</th>
-                    <th>Suppliers</th>
-                    <th>Items</th>
-                    <th>Total KG</th>
-                    <th>Status</th>
-                    <th>Date Created</th>
-                    <th>Action</th>
+                    <th scope="col" style="width: 40px;">No</th>
+                    <th scope="col">PR No.</th>
+                    <th scope="col">Period</th>
+                    <th scope="col">Created By</th>
+                    <th scope="col">Suppliers</th>
+                    <th scope="col">Items</th>
+                    <th scope="col" class="text-end">Total KG</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Date Created</th>
+                    <th scope="col">Action</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -125,14 +110,14 @@
             },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
-                { data: 'pr_number_display', name: 'pr_number', className: 'fw-medium' },
+                { data: 'pr_number_display', name: 'pr_number', className: 'fw-bold tw-text-on-surface' },
                 { data: 'period_name', name: 'period.name' },
                 { data: 'creator_name', name: 'creator.name' },
                 { data: 'supplier_count', name: 'invited_suppliers_count', searchable: false, className: 'text-center' },
-                { data: 'item_count', name: 'item_count', searchable: false },
-                { data: 'total_kg', name: 'total_kg', searchable: false, className: 'text-end ui-tabular-nums' },
-                { data: 'status_badge', name: 'status', searchable: false },
-                { data: 'created_date', name: 'created_at' },
+                { data: 'item_count', name: 'item_count', searchable: false, className: 'text-center' },
+                { data: 'total_kg', name: 'total_kg', searchable: false, className: 'text-end fw-semibold tw-text-on-surface ui-tabular-nums' },
+                { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
+                { data: 'created_date', name: 'created_at', className: 'tw-text-on-surface-variant' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
             language: {},
@@ -156,16 +141,17 @@
         function updateFilterChips() {
             const periodText = $('#period_id option:selected').val() ? $('#period_id option:selected').text().trim() : null;
             const statusText = $('#status option:selected').val() ? $('#status option:selected').text().trim() : null;
-            
+
             const createChip = (label, targetId) => {
                 const $chip = $('<span>', {
-                    class: 'tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-full tw-bg-primary-container tw-px-3 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-text-primary-container-foreground'
+                    class: 'ui-status-chip ui-status-chip--info'
                 });
                 const $remove = $('<button>', {
                     type: 'button',
-                    class: 'ui-focus-ring tw-inline-flex tw-h-6 tw-w-6 tw-items-center tw-justify-center tw-rounded-ui-full hover:tw-bg-surface',
-                    'aria-label': `Remove ${label} filter`
-                }).append($('<i>', { class: 'bi x', 'aria-hidden': 'true' }));
+                    class: 'ui-focus-ring tw-inline-flex tw-h-5 tw-w-5 tw-items-center tw-justify-center tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-p-0 tw-text-primary hover:tw-bg-primary/10',
+                    'aria-label': `Remove ${label} filter`,
+                    text: '×'
+                });
 
                 $remove.on('click', () => $(`#${targetId}`).val('').trigger('change'));
                 $chip.append(document.createTextNode(label), $remove);
@@ -181,10 +167,10 @@
             const $resetBtn = $('#resetFilter');
 
             if (chips.length > 0) {
-                $container.empty().append(chips).removeClass('d-none').addClass('tw-flex');
+                $container.empty().append(chips).removeClass('d-none').addClass('d-flex');
                 $resetBtn.addClass('pr-filter-reset--active');
             } else {
-                $container.empty().addClass('d-none').removeClass('tw-flex');
+                $container.empty().addClass('d-none').removeClass('d-flex');
                 $resetBtn.removeClass('pr-filter-reset--active');
             }
         }
@@ -204,7 +190,7 @@
 
         updateFilterChips();
 
-        // ADASI Alert delete confirmation (delegated for dynamic rows)
+        // ADASI Alert delete confirmation
         $(document).on('click', '.btn-delete', function() {
             const form = $(this).closest('form');
             AdasiAlert.confirmDanger({

@@ -12,22 +12,22 @@
 
     $changeBadge = function ($value) {
         if ($value === null) {
-            return '<span class="text-muted">-</span>';
+            return '<span class="tw-text-on-surface-variant">-</span>';
         }
 
         if ($value > 0) {
-            return '<span class="text-danger fw-bold">+' . number_format($value, 2, ',', '.') . '%</span>';
+            return '<span class="tw-font-semibold tw-text-error">+' . number_format($value, 2, ',', '.') . '%</span>';
         }
 
         if ($value < 0) {
-            return '<span class="text-success fw-bold">−' . number_format(abs($value), 2, ',', '.') . '%</span>';
+            return '<span class="tw-font-semibold tw-text-success">&minus;' . number_format(abs($value), 2, ',', '.') . '%</span>';
         }
 
-        return '<span class="text-muted fw-bold">- 0%</span>';
+        return '<span class="tw-font-semibold tw-text-on-surface-variant">0%</span>';
     };
 @endphp
 
-<div class="tw-grid tw-gap-6">
+<div class="tw-grid tw-gap-4">
     <x-ui.page-header
         title="Historical Price Analysis"
         description="Trace supplier price movement by material, period, and matching dimensions."
@@ -35,10 +35,10 @@
     />
     <x-purchasing.comparison-tabs active="historical" />
 
-<x-ui.card title="Historical Filters" description="Choose a supplier and material; dimension filters narrow exact specifications.">
-        <form method="GET" action="{{ route('purchasing.comparison.historical') }}" class="row g-3 align-items-end" id="historicalFilterForm">
-            <div class="col-md-4">
-                <label class="form-label small fw-bold">Supplier</label>
+    <x-ui.toolbar class="tw-mb-0">
+        <form method="GET" action="{{ route('purchasing.comparison.historical') }}" class="tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-12 xl:tw-items-end" id="historicalFilterForm">
+            <div class="xl:tw-col-span-3">
+                <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="historicalSupplierSelect">Supplier</label>
                 <select name="supplier_id" class="form-select form-select-sm" id="historicalSupplierSelect" required>
                     <option value="">Select Supplier</option>
                     @foreach($suppliers as $supplier)
@@ -46,8 +46,8 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-bold">Material</label>
+            <div class="xl:tw-col-span-3">
+                <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="historicalMaterialSelect">Material</label>
                 <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required {{ $selectedSupplierId ? '' : 'disabled' }}>
                     <option value="">{{ $selectedSupplierId ? 'Select Material' : 'Select Supplier first' }}</option>
                     @foreach($materials as $material)
@@ -55,177 +55,172 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-bold">Time Period</label>
+            <div class="xl:tw-col-span-2">
+                <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="historicalRangeSelect">Time Period</label>
                 <select name="range" class="form-select form-select-sm" id="historicalRangeSelect">
                     @foreach($rangeOptions as $value => $label)
                         <option value="{{ $value }}" {{ $range === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-bold">View</label>
-                <div class="btn-group btn-group-sm w-100" role="group">
+            <fieldset class="tw-m-0 tw-min-w-0 tw-border-0 tw-p-0 xl:tw-col-span-2">
+                <legend class="form-label tw-mb-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface">Aggregation</legend>
+                <div class="btn-group btn-group-sm w-100" role="group" aria-label="Historical price aggregation interval">
                     <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
                     <label class="btn btn-outline-primary" for="periodViewMonthly">Monthly</label>
 
                     <input type="radio" class="btn-check" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
                     <label class="btn btn-outline-primary" for="periodViewYearly">Yearly</label>
                 </div>
+            </fieldset>
+
+            <div class="tw-flex xl:tw-col-span-2">
+                <x-ui.button type="submit" size="sm" class="tw-w-full tw-justify-center">
+                    <x-slot:leading><x-ui.icon name="search" /></x-slot:leading>
+                    Apply Filters
+                </x-ui.button>
             </div>
 
-            <div class="col-12 mt-3 mb-1">
-                <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-bold">
-                    <x-ui.icon name="funnel" /> Dimension Filter (Optional)
+            <div class="md:tw-col-span-2 xl:tw-col-span-12">
+                <a
+                    href="#dimensionFilters"
+                    data-bs-toggle="collapse"
+                    class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline"
+                    role="button"
+                    aria-expanded="{{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'true' : 'false' }}"
+                    aria-controls="dimensionFilters"
+                >
+                    <x-ui.icon name="sliders-horizontal" /> More Filters
                 </a>
             </div>
-            <div class="collapse {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
-                <div class="row g-2">
-                    <div class="col-md-2 dimension-field" data-dim="thickness">
-                        <label class="form-label small text-muted" for="purchasing-history-thickness">Thickness (mm)</label>
+            <div class="collapse md:tw-col-span-2 xl:tw-col-span-12 {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
+                <div class="tw-grid tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3 sm:tw-grid-cols-2 lg:tw-grid-cols-5">
+                    <div class="dimension-field" data-dim="thickness">
+                        <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" for="purchasing-history-thickness">Thickness (mm)</label>
                         <input type="number" step="0.01" name="thickness" id="purchasing-history-thickness" class="form-control form-control-sm historical-filter-input" value="{{ request('thickness') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="d_inner">
-                        <label class="form-label small text-muted" for="purchasing-history-d-inner">D-Inner (mm)</label>
+                    <div class="dimension-field" data-dim="d_inner">
+                        <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" for="purchasing-history-d-inner">D-Inner (mm)</label>
                         <input type="number" step="0.01" name="d_inner" id="purchasing-history-d-inner" class="form-control form-control-sm historical-filter-input" value="{{ request('d_inner') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="d_outer">
-                        <label class="form-label small text-muted" for="purchasing-history-d-outer">D-Outer (mm)</label>
+                    <div class="dimension-field" data-dim="d_outer">
+                        <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" for="purchasing-history-d-outer">D-Outer (mm)</label>
                         <input type="number" step="0.01" name="d_outer" id="purchasing-history-d-outer" class="form-control form-control-sm historical-filter-input" value="{{ request('d_outer') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="width">
-                        <label class="form-label small text-muted" for="purchasing-history-width">Width (mm)</label>
+                    <div class="dimension-field" data-dim="width">
+                        <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" for="purchasing-history-width">Width (mm)</label>
                         <input type="number" step="0.01" name="width" id="purchasing-history-width" class="form-control form-control-sm historical-filter-input" value="{{ request('width') }}">
                     </div>
-                    <div class="col-md-2 dimension-field" data-dim="length">
-                        <label class="form-label small text-muted" for="purchasing-history-length">Length (mm)</label>
+                    <div class="dimension-field" data-dim="length">
+                        <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" for="purchasing-history-length">Length (mm)</label>
                         <input type="number" step="0.01" name="length" id="purchasing-history-length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end flex-grow-1">
-                        <x-ui.button type="submit" size="sm" class="tw-w-full"><x-ui.icon name="search" /> Apply</x-ui.button>
                     </div>
                 </div>
             </div>
         </form>
-</x-ui.card>
+    </x-ui.toolbar>
 
-<div id="historicalResults">
-@if($chartData)
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h6 class="mb-0 fw-bold" id="historicalChartTitle">
-                <x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend "{{ $selectedMaterialName }}" - {{ $suppliers->firstWhere('id', (int) $selectedSupplierId)->name ?? '' }}
-            </h6>
-        </div>
-        <div class="card-body">
-            <canvas id="historicalChart" height="300" role="img" aria-label="Historical material price trend">Historical material price trend chart.</canvas>
-        </div>
-    </div>
+    <div id="historicalResults" class="tw-grid tw-gap-4" aria-live="polite" aria-busy="false">
+    @if($chartData)
+        <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="historicalChartTitle">
+            <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+                <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold tw-text-on-surface" id="historicalChartTitle">
+                    <x-ui.icon name="chart-no-axes-combined" class="tw-text-primary" />
+                    <span>Price Trend: {{ $selectedMaterialName }} — {{ $suppliers->firstWhere('id', (int) $selectedSupplierId)->name ?? '' }}</span>
+                </h2>
+            </header>
+            <div class="tw-h-72 tw-p-4">
+                <canvas id="historicalChart" role="img" aria-label="Historical material price trend">Historical material price trend chart.</canvas>
+            </div>
+        </section>
 
-    <div class="row g-3 mb-4" id="historicalSummary">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Average change per period</div>
-                    <div class="fs-4 fw-bold {{ ($summary['average_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['average_change_pct'] ?? null) < 0) ? 'text-success' : 'text-muted') }}" id="averageChangeValue">
-                        {{ $formatPct($summary['average_change_pct'] ?? null) }}
-                    </div>
+        <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="Historical price summary">
+            <div class="tw-p-4">
+                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change per Period</div>
+                <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold {{ ($summary['average_change_pct'] ?? null) > 0 ? 'tw-text-error' : ((($summary['average_change_pct'] ?? null) < 0) ? 'tw-text-success' : 'tw-text-on-surface-variant') }}" id="averageChangeValue">
+                    {{ $formatPct($summary['average_change_pct'] ?? null) }}
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Total change (initial → latest)</div>
-                    <div class="fs-4 fw-bold {{ ($summary['total_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['total_change_pct'] ?? null) < 0) ? 'text-success' : 'text-muted') }}" id="totalChangeValue">
-                        {{ $formatPct($summary['total_change_pct'] ?? null) }}
-                    </div>
+            <div class="tw-border-t tw-border-outline-variant tw-p-4 sm:tw-border-t-0">
+                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Total Change, Initial to Latest</div>
+                <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold {{ ($summary['total_change_pct'] ?? null) > 0 ? 'tw-text-error' : ((($summary['total_change_pct'] ?? null) < 0) ? 'tw-text-success' : 'tw-text-on-surface-variant') }}" id="totalChangeValue">
+                    {{ $formatPct($summary['total_change_pct'] ?? null) }}
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
-                    <thead class="table-light text-center" id="historicalTableHead">
+        <x-ui.data-table title="Supporting Data" description="Quotation values and period changes for the selected supplier and exact material specification.">
+            <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
+                <thead class="table-light text-center" id="historicalTableHead">
+                    @if($periodView === 'yearly')
+                        <tr>
+                            <th scope="col">Year</th>
+                            <th scope="col">Average IDR/Kg</th>
+                            <th scope="col">Lowest Price</th>
+                            <th scope="col">Highest Price</th>
+                            <th scope="col">Change from Previous Period</th>
+                        </tr>
+                    @else
+                        <tr>
+                            <th scope="col">PR Number</th>
+                            <th scope="col">Supplier</th>
+                            <th scope="col">Price/Kg</th>
+                            <th scope="col">Total Price IDR</th>
+                            <th scope="col">PO Date</th>
+                            <th scope="col">Change</th>
+                        </tr>
+                    @endif
+                </thead>
+                <tbody id="historicalTableBody">
+                    @foreach($tableData as $row)
                         @if($periodView === 'yearly')
                             <tr>
-                                <th>Year</th>
-                                <th>Average IDR/Kg</th>
-                                <th>Lowest Price</th>
-                                <th>Highest Price</th>
-                                <th>Change from Previous Period</th>
+                                <td class="text-center fw-medium">{{ $row['period'] }}</td>
+                                <td class="text-end text-primary fw-bold ui-tabular-nums">Rp {{ number_format($row['price_idr'], 0, ',', '.') }}</td>
+                                <td class="text-end ui-tabular-nums">Rp {{ number_format($row['min_idr'], 0, ',', '.') }}</td>
+                                <td class="text-end ui-tabular-nums">Rp {{ number_format($row['max_idr'], 0, ',', '.') }}</td>
+                                <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                             </tr>
                         @else
                             <tr>
-                                <th>PR No.</th>
-                                <th>Supplier</th>
-                                <th>Price/Kg</th>
-                                <th>Total Price IDR</th>
-                                <th>PO Date</th>
-                                <th>% Change</th>
+                                <td class="text-center fw-medium">
+                                    @if(!empty($row['pr_id']) && !empty($row['pr_url']))
+                                        <a href="{{ $row['pr_url'] }}" class="text-primary text-decoration-none hover:tw-underline">
+                                            {{ $row['pr_number'] }}
+                                            <x-ui.icon name="arrow-right" class="ms-1 tw-text-ui-sm" />
+                                        </a>
+                                    @else
+                                        {{ $row['pr_number'] ?? '-' }}
+                                    @endif
+                                </td>
+                                <td class="text-center">{{ $row['supplier'] ?? '-' }}</td>
+                                <td class="text-end ui-tabular-nums">
+                                    {{ number_format($row['price_per_kg'], 2, ',', '.') }}
+                                    <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">{{ $row['currency'] }}</span>
+                                </td>
+                                <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] ? 'Rp ' . number_format($row['total_idr'], 0, ',', '.') : '-' }}</td>
+                                <td class="text-center">
+                                    @if(!empty($row['purchase_order_at_display']))
+                                        {{ $row['purchase_order_at_display'] }}
+                                    @else
+                                        <span class="ui-status-chip ui-status-chip--neutral">Draft</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                             </tr>
                         @endif
-                    </thead>
-                    <tbody id="historicalTableBody">
-                        @foreach($tableData as $row)
-                            @if($periodView === 'yearly')
-                                <tr>
-                                    <td class="text-center fw-medium">{{ $row['period'] }}</td>
-                                    <td class="text-end text-primary fw-bold">Rp {{ number_format($row['price_idr'], 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($row['min_idr'], 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($row['max_idr'], 0, ',', '.') }}</td>
-                                    <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
-                                </tr>
-                            @else
-                                <tr>
-                                    <td class="text-center fw-medium">
-                                        @if(!empty($row['pr_id']) && !empty($row['pr_url']))
-                                            <a href="{{ $row['pr_url'] }}"
-                                               class="text-primary text-decoration-none hover:tw-underline">
-                                                {{ $row['pr_number'] }}
-                                                <x-ui.icon name="arrow-right" class="ms-1 tw-text-ui-sm" />
-                                            </a>
-                                        @else
-                                            {{ $row['pr_number'] ?? '-' }}
-                                        @endif
-                                    </td>
-                                    <td class="text-center">{{ $row['supplier'] ?? '-' }}</td>
-                                    <td class="text-end">
-                                        {{ number_format($row['price_per_kg'], 2, ',', '.') }}
-                                        <span class="badge bg-dark ms-1">{{ $row['currency'] }}</span>
-                                    </td>
-                                    <td class="text-end text-primary fw-bold">{{ $row['total_idr'] ? 'Rp ' . number_format($row['total_idr'], 0, ',', '.') : '-' }}</td>
-                                    <td class="text-center">
-                                        @if(!empty($row['purchase_order_at_display']))
-                                            {{ $row['purchase_order_at_display'] }}
-                                        @else
-                                            <span class="badge bg-secondary">Draft</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
-                                </tr>
-                            @endif
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                    @endforeach
+                </tbody>
+            </table>
+        </x-ui.data-table>
+    @elseif($selectedSupplierId && $selectedMaterialName)
+        <x-ui.alert tone="warning" title="No matching price history">No quotation data was found for this supplier and material combination.</x-ui.alert>
+    @else
+        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+            <x-ui.empty-state icon="chart-no-axes-combined" title="Select a supplier and material" description="Choose the primary filters above to review the historical price trend." />
         </div>
+    @endif
     </div>
-@elseif($selectedSupplierId && $selectedMaterialName)
-    <div class="alert alert-warning"><x-ui.icon name="triangle-alert" class="me-1" /> No quotation data found for this supplier and material combination.</div>
-@else
-    <div class="card border-0 shadow-sm">
-        <div class="card-body text-center py-5 text-muted">
-            <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
-            <p class="mt-3 mb-0">Select a supplier and material above to view the historical price trend.</p>
-        </div>
-    </div>
-@endif
-</div>
 </div>
 @endsection
 
@@ -298,10 +293,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!resultsContainer) return;
 
         resultsContainer.innerHTML = `
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center py-5 text-muted">
-                    <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
-                    <p class="mt-3 mb-0">${escapeOptionText(message)}</p>
+            <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+                <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-px-4 tw-py-8 tw-text-center">
+                    <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-text-on-surface-variant" />
+                    <p class="tw-m-0 tw-mt-3 tw-text-ui-sm tw-text-on-surface-variant">${escapeOptionText(message)}</p>
                 </div>
             </div>
         `;
@@ -321,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
         materialSelect.innerHTML = '<option value="">Loading materials...</option>';
         materialSelect.disabled = true;
         clearHistorycalResults('Select a material from the selected supplier to view the historical price trend.');
+        resultsContainer?.setAttribute('aria-busy', 'true');
 
         try {
             const url = new URL(materialsUrl, window.location.origin);
@@ -350,6 +346,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             renderMaterialOptions([], '');
             clearHistorycalResults('Failed to load material list. Try selecting a supplier again.');
+        } finally {
+            resultsContainer?.setAttribute('aria-busy', 'false');
         }
     }
 
@@ -467,18 +465,18 @@ function formatPercent(value) {
 }
 
 function changeHtml(value) {
-    if (value === null || value === undefined) return '<span class="text-muted">-</span>';
+    if (value === null || value === undefined) return '<span class="tw-text-on-surface-variant">-</span>';
     const numberValue = Number(value);
 
     if (numberValue > 0) {
-        return `<span class="text-danger fw-bold">▲ ${formatNumber(numberValue)}%</span>`;
+        return `<span class="tw-font-semibold tw-text-error">+${formatNumber(numberValue)}%</span>`;
     }
 
     if (numberValue < 0) {
-        return `<span class="text-success fw-bold">▼ ${formatNumber(Math.abs(numberValue))}%</span>`;
+        return `<span class="tw-font-semibold tw-text-success">&minus;${formatNumber(Math.abs(numberValue))}%</span>`;
     }
 
-    return '<span class="text-muted fw-bold">- 0%</span>';
+    return '<span class="tw-font-semibold tw-text-on-surface-variant">0%</span>';
 }
 
 function escapeHtml(value) {
@@ -491,16 +489,21 @@ function escapeHtml(value) {
     }[char]));
 }
 
-function emptyHistorycalResultHtml(message, alertClass = 'card') {
-    if (alertClass === 'warning') {
-        return `<div class="alert alert-warning"><x-ui.icon name="triangle-alert" class="me-1" /> ${escapeHtml(message)}</div>`;
+function emptyHistorycalResultHtml(message, variant = 'empty') {
+    if (variant === 'warning') {
+        return `
+            <div class="tw-flex tw-items-start tw-gap-3 tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-p-4 tw-text-warning-container-foreground" role="status">
+                <x-ui.icon name="triangle-alert" size="sm" class="tw-mt-0.5 tw-shrink-0" />
+                <div class="tw-text-ui-sm">${escapeHtml(message)}</div>
+            </div>
+        `;
     }
 
     return `
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center py-5 text-muted">
-                <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
-                <p class="mt-3 mb-0">${escapeHtml(message)}</p>
+        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+            <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-px-4 tw-py-8 tw-text-center">
+                <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-text-on-surface-variant" />
+                <p class="tw-m-0 tw-mt-3 tw-text-ui-sm tw-text-on-surface-variant">${escapeHtml(message)}</p>
             </div>
         </div>
     `;
@@ -508,45 +511,38 @@ function emptyHistorycalResultHtml(message, alertClass = 'card') {
 
 function historicalResultShellHtml() {
     return `
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold" id="historicalChartTitle"></h6>
+        <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="historicalChartTitle">
+            <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+                <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold tw-text-on-surface" id="historicalChartTitle"></h2>
+            </header>
+            <div class="tw-h-72 tw-p-4">
+                <canvas id="historicalChart" role="img" aria-label="Historical material price trend">Historical material price trend chart.</canvas>
             </div>
-            <div class="card-body">
-                <canvas id="historicalChart" height="300" role="img" aria-label="Historical material price trend">Historical material price trend chart.</canvas>
-            </div>
-        </div>
+        </section>
 
-        <div class="row g-3 mb-4" id="historicalSummary">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Average change per period</div>
-                        <div class="fs-4 fw-bold text-muted" id="averageChangeValue">-</div>
-                    </div>
-                </div>
+        <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="Historical price summary">
+            <div class="tw-p-4">
+                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change per Period</div>
+                <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold tw-text-on-surface-variant" id="averageChangeValue">-</div>
             </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Total change (first to latest)</div>
-                        <div class="fs-4 fw-bold text-muted" id="totalChangeValue">-</div>
-                    </div>
-                </div>
+            <div class="tw-border-t tw-border-outline-variant tw-p-4 sm:tw-border-t-0">
+                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Total Change, Initial to Latest</div>
+                <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold tw-text-on-surface-variant" id="totalChangeValue">-</div>
             </div>
-        </div>
+        </section>
 
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold">Supporting Data</h6></div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
-                        <thead class="table-light text-center" id="historicalTableHead"></thead>
-                        <tbody id="historicalTableBody"></tbody>
-                    </table>
-                </div>
+        <section class="ui-data-table tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-shadow-ui-1">
+            <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+                <h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">Supporting Data</h2>
+                <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">Quotation values and period changes for the selected supplier and exact material specification.</p>
+            </header>
+            <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full">
+                <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
+                    <thead class="table-light text-center" id="historicalTableHead"></thead>
+                    <tbody id="historicalTableBody"></tbody>
+                </table>
             </div>
-        </div>
+        </section>
     `;
 }
 
@@ -563,15 +559,17 @@ function historicalChartConfig(payload) {
                     data: chartData.pricesIdr || [],
                     borderColor: historicalThemeColor('--md-primary'),
                     backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 6,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.2,
+                    pointRadius: 3,
                     pointBackgroundColor: historicalThemeColor('--md-primary'),
                 }],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { position: 'bottom' },
@@ -606,9 +604,10 @@ function historicalChartConfig(payload) {
                     data: chartData.prices || [],
                     borderColor: historicalThemeColor('--md-primary'),
                     backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 6,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.2,
+                    pointRadius: 3,
                     pointBackgroundColor: historicalThemeColor('--md-primary'),
                     yAxisID: 'y',
                 },
@@ -617,9 +616,10 @@ function historicalChartConfig(payload) {
                     data: chartData.pricesIdr || [],
                     borderColor: historicalThemeColor('--md-error'),
                     backgroundColor: historicalThemeRgba('--md-error-rgb', .1),
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 6,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.2,
+                    pointRadius: 3,
                     pointBackgroundColor: historicalThemeColor('--md-error'),
                     yAxisID: 'y1',
                 },
@@ -628,6 +628,7 @@ function historicalChartConfig(payload) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { position: 'bottom' },
@@ -650,8 +651,8 @@ function renderHistorycalChart(payload) {
 }
 
 function updateSummaryClass(element, value) {
-    element.classList.remove('text-danger', 'text-success', 'text-muted');
-    element.classList.add(value > 0 ? 'text-danger' : (value < 0 ? 'text-success' : 'text-muted'));
+    element.classList.remove('tw-text-error', 'tw-text-success', 'tw-text-on-surface-variant');
+    element.classList.add(value > 0 ? 'tw-text-error' : (value < 0 ? 'tw-text-success' : 'tw-text-on-surface-variant'));
 }
 
 function renderSummary(summary) {
@@ -671,11 +672,11 @@ function renderTable(payload) {
     if (payload.periodView === 'yearly') {
         head.innerHTML = `
             <tr>
-                <th>Year</th>
-                <th>Average IDR/Kg</th>
-                <th>Lowest Price</th>
-                <th>Highest Price</th>
-                <th>Change from Previous Period</th>
+                <th scope="col">Year</th>
+                <th scope="col">Average IDR/Kg</th>
+                <th scope="col">Lowest Price</th>
+                <th scope="col">Highest Price</th>
+                <th scope="col">Change from Previous Period</th>
             </tr>
         `;
         body.innerHTML = rows.map((row) => `
@@ -692,12 +693,12 @@ function renderTable(payload) {
 
     head.innerHTML = `
         <tr>
-            <th>PR No.</th>
-            <th>Supplier</th>
-            <th>Price/Kg</th>
-            <th>Total Price IDR</th>
-            <th>PO Date</th>
-            <th>% Change</th>
+            <th scope="col">PR Number</th>
+            <th scope="col">Supplier</th>
+            <th scope="col">Price/Kg</th>
+            <th scope="col">Total Price IDR</th>
+            <th scope="col">PO Date</th>
+            <th scope="col">Change</th>
         </tr>
     `;
     body.innerHTML = rows.map((row) => `
@@ -708,9 +709,9 @@ function renderTable(payload) {
                     : escapeHtml(row.pr_number || '-')}
             </td>
             <td class="text-center">${escapeHtml(row.supplier || '-')}</td>
-            <td class="text-end">${formatNumber(row.price_per_kg)} <span class="badge bg-dark ms-1">${escapeHtml(row.currency)}</span></td>
-            <td class="text-end text-primary fw-bold">${formatRupiah(row.total_idr)}</td>
-            <td class="text-center">${row.purchase_order_at_display ? escapeHtml(row.purchase_order_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
+            <td class="text-end ui-tabular-nums">${formatNumber(row.price_per_kg)} <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">${escapeHtml(row.currency)}</span></td>
+            <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
+            <td class="text-center">${row.purchase_order_at_display ? escapeHtml(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">Draft</span>'}</td>
             <td class="text-center">${changeHtml(row.change_pct)}</td>
         </tr>
     `).join('');
@@ -730,7 +731,7 @@ function renderPayload(payload) {
                 payload.materialName
                     ? 'No quotation data found for this supplier and material combination.'
                     : 'Select a supplier and material above to view the historical price trend.',
-                payload.materialName ? 'warning' : 'card'
+                payload.materialName ? 'warning' : 'empty'
             );
         }
         return;
@@ -744,13 +745,14 @@ function renderPayload(payload) {
     renderSummary(payload.summary || {});
     renderTable(payload);
     document.getElementById('historicalChartTitle').innerHTML =
-        `<x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend "${escapeHtml(payload.materialName)}" - ${escapeHtml(payload.supplierName)}`;
+        `<x-ui.icon name="chart-no-axes-combined" class="tw-text-primary" /><span>Price Trend: ${escapeHtml(payload.materialName)} — ${escapeHtml(payload.supplierName)}</span>`;
 }
 
 window.loadHistorycalPayloadFromFilters = async function () {
     const supplierSelect = document.getElementById('historicalSupplierSelect');
     const materialSelect = document.getElementById('historicalMaterialSelect');
     const filterForm = document.getElementById('historicalFilterForm');
+    const resultsContainer = document.getElementById('historicalResults');
 
     if (!supplierSelect.value || !materialSelect.value) {
         return;
@@ -764,6 +766,7 @@ window.loadHistorycalPayloadFromFilters = async function () {
         }
     }
     url.searchParams.set('view', 'json');
+    resultsContainer?.setAttribute('aria-busy', 'true');
 
     try {
         const response = await fetch(url.toString(), {
@@ -783,10 +786,11 @@ window.loadHistorycalPayloadFromFilters = async function () {
         url.searchParams.delete('view');
         window.history.replaceState(null, '', url.toString());
     } catch (error) {
-        const resultsContainer = document.getElementById('historicalResults');
         if (resultsContainer) {
             resultsContainer.innerHTML = emptyHistorycalResultHtml('Failed to load historical data. Try selecting filters again.', 'warning');
         }
+    } finally {
+        resultsContainer?.setAttribute('aria-busy', 'false');
     }
 };
 

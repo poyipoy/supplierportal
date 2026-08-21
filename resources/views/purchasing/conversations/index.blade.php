@@ -1,11 +1,11 @@
 @extends('layouts.app')
 @section('title', 'Negotiation & Chat - ADASI Portal')
-@section('page-title', 'Negotiation with Suppliers')
+@section('page-title', 'Negotiations with Suppliers')
 
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header
-        title="Negotiation & chat"
+        title="Negotiations with Suppliers"
         eyebrow="Purchasing"
         description="Follow supplier conversations in their PR or PO context and prioritize threads that need a response."
     />
@@ -17,17 +17,22 @@
         <table class="table table-hover align-middle datatable">
             <thead class="table-light">
                 <tr>
-                    <th>Document context</th>
-                    <th>Supplier</th>
-                    <th>Latest message</th>
-                    <th>Last activity</th>
-                    <th>Status</th>
-                    <th class="text-end">Action</th>
+                    <th scope="col">Document Context</th>
+                    <th scope="col">Supplier</th>
+                    <th scope="col">Latest Message</th>
+                    <th scope="col">Last Activity</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="text-end">Action</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($conversations as $conv)
-                    @php $sla = \App\Support\ConversationPresenter::slaMeta($conv, auth()->user()); @endphp
+                    @php
+                        $sla = \App\Support\ConversationPresenter::slaMeta($conv, auth()->user());
+                        $statusClass = $conv->statusBadgeClassFor(auth()->user());
+                        $statusTone = str_contains($statusClass, 'success') ? 'success' : (str_contains($statusClass, 'warning') ? 'warning' : (str_contains($statusClass, 'danger') ? 'error' : 'neutral'));
+                        $slaTone = str_contains($sla['class'], 'success') ? 'success' : (str_contains($sla['class'], 'warning') ? 'warning' : (str_contains($sla['class'], 'danger') ? 'error' : 'neutral'));
+                    @endphp
                     <tr>
                         <td>
                             @if($conv->conversable_type === 'App\Models\PurchaseRequisition')
@@ -57,8 +62,8 @@
                         </td>
                         <td>
                             <div class="tw-flex tw-flex-wrap tw-gap-1.5">
-                                <span class="badge {{ $conv->statusBadgeClassFor(auth()->user()) }}">{{ $conv->statusLabelFor(auth()->user()) }}</span>
-                                <span class="badge {{ $sla['class'] }}">{{ $sla['label'] }}</span>
+                                <x-ui.status-chip :tone="$statusTone">{{ $conv->statusLabelFor(auth()->user()) }}</x-ui.status-chip>
+                                <x-ui.status-chip :tone="$slaTone">{{ $sla['label'] }}</x-ui.status-chip>
                             </div>
                         </td>
                         <td class="text-end">

@@ -16,7 +16,7 @@
 @endphp
 @if($normalizedItems->isNotEmpty())
 <nav aria-label="breadcrumb" class="bg-light py-2 px-3 rounded shadow-sm mb-4">
-    <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+    <ol class="breadcrumb mb-0 tw-text-ui-sm">
         @foreach($normalizedItems as $item)
             @if($loop->last || empty($item['url']))
                 <li class="breadcrumb-item active fw-bold text-truncate" style="max-width: 250px;" aria-current="page">{{ $item['label'] }}</li>

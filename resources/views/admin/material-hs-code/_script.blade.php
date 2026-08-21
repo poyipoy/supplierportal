@@ -21,6 +21,7 @@ $(function () {
     const materialsTable = $('#materialsTable').DataTable({
         processing: true,
         serverSide: true,
+        dom: 'rtip',
         ajax: {
             url: @json(route('admin.material-masters.data')),
             data: (data) => Object.assign(data, {
@@ -31,15 +32,16 @@ $(function () {
             })
         },
         columns: [
-            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
-            { data: 'material_code', name: 'material_code' },
+            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
+            { data: 'material_code', name: 'material_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
             { data: 'raw_category', name: 'raw_category', defaultContent: '-' },
             { data: 'hs_category', name: 'hs_category', defaultContent: '-' },
             { data: 'density_profile', name: 'density_profile' },
             { data: 'manufacturer_scope', name: 'manufacturer_scope' },
             { data: 'status_badge', name: 'is_active', searchable: false },
             { data: 'source_display', name: 'source_sheet', searchable: false },
-            { data: 'action', orderable: false, searchable: false, className: 'text-nowrap' }
+            { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
+            { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
         ],
         pageLength: 25,
         order: []
@@ -48,6 +50,7 @@ $(function () {
     const rulesTable = $('#rulesTable').DataTable({
         processing: true,
         serverSide: true,
+        dom: 'rtip',
         ajax: {
             url: @json(route('admin.hs-code-rules.data')),
             data: (data) => Object.assign(data, {
@@ -57,15 +60,16 @@ $(function () {
             })
         },
         columns: [
-            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
-            { data: 'hs_code', name: 'hs_code' },
+            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
+            { data: 'hs_code', name: 'hs_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
             { data: 'material_category', name: 'material_category' },
             { data: 'shape', name: 'shape' },
             { data: 'conditions_display', orderable: false, searchable: false },
             { data: 'priority', name: 'priority', className: 'text-center' },
             { data: 'status_badge', name: 'status', searchable: false },
             { data: 'source_display', orderable: false, searchable: false },
-            { data: 'action', orderable: false, searchable: false, className: 'text-nowrap' }
+            { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
+            { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
         ],
         pageLength: 25,
         order: []
@@ -73,6 +77,27 @@ $(function () {
 
     $('#materialStatusFilter, #materialCategoryFilter, #materialDensityFilter, #materialManufacturerFilter').on('change', () => materialsTable.ajax.reload());
     $('#ruleStatusFilter, #ruleCategoryFilter, #ruleShapeFilter').on('change', () => rulesTable.ajax.reload());
+
+    let materialSearchTimer;
+    $('#materialSearch').on('input', function () {
+        clearTimeout(materialSearchTimer);
+        const value = this.value;
+        materialSearchTimer = setTimeout(() => materialsTable.search(value).draw(), 250);
+    });
+    let ruleSearchTimer;
+    $('#ruleSearch').on('input', function () {
+        clearTimeout(ruleSearchTimer);
+        const value = this.value;
+        ruleSearchTimer = setTimeout(() => rulesTable.search(value).draw(), 250);
+    });
+    $('#resetMaterialFilters').on('click', function () {
+        $('#materialSearch, #materialStatusFilter, #materialCategoryFilter, #materialDensityFilter, #materialManufacturerFilter').val('');
+        materialsTable.search('').ajax.reload();
+    });
+    $('#resetRuleFilters').on('click', function () {
+        $('#ruleSearch, #ruleStatusFilter, #ruleCategoryFilter, #ruleShapeFilter').val('');
+        rulesTable.search('').ajax.reload();
+    });
 
     function setMethod($input, method) {
         if (method) {
@@ -124,7 +149,11 @@ $(function () {
             url: materialStatusUrl.replace('/0/', `/${button.data('id')}/`),
             method: 'POST',
             data: { _token: csrfToken, _method: 'PATCH', is_active: button.data('active') }
-        }).done(() => { materialsTable.ajax.reload(null, false); refreshQuality(); })
+        }).done(() => {
+            materialsTable.ajax.reload(null, false);
+            refreshQuality();
+            AdasiToast.success('Material status updated.');
+        })
           .fail(showAjaxError);
     });
 
@@ -205,9 +234,10 @@ $(function () {
         });
         if (Object.keys(conditions).length === 0) {
             event.preventDefault();
-            AdasiAlert.error({ title: 'Condition Required', text: 'Enter at least one minimum or maximum dimension.' });
+            $('#ruleConditionError').removeClass('d-none').trigger('focus');
             return;
         }
+        $('#ruleConditionError').addClass('d-none');
         $('#ruleConditionsJson').val(JSON.stringify(conditions));
         $(this).find('button[type="submit"]').prop('disabled', true).find('.spinner-border').removeClass('d-none');
     });
@@ -222,14 +252,18 @@ $(function () {
             url: ruleStatusUrl.replace('/0/', `/${button.data('id')}/`),
             method: 'POST',
             data: { _token: csrfToken, _method: 'PATCH', status: button.data('status') }
-        }).done(() => { rulesTable.ajax.reload(null, false); refreshQuality(); })
+        }).done(() => {
+            rulesTable.ajax.reload(null, false);
+            refreshQuality();
+            AdasiToast.success('HS Code rule status updated.');
+        })
           .fail(showAjaxError);
     });
 
     function showAjaxError(xhr) {
         const errors = xhr.responseJSON?.errors || {};
         const first = Object.values(errors)[0];
-        AdasiAlert.error({ title: 'Unable to Save', text: Array.isArray(first) ? first[0] : (first || xhr.responseJSON?.message || 'Request failed.') });
+        AdasiToast.error(Array.isArray(first) ? first[0] : (first || xhr.responseJSON?.message || 'Request failed.'));
     }
 
     function loadQuality() {
@@ -239,22 +273,11 @@ $(function () {
             const summary = report.summary || {};
             const attention = report.needs_attention || {};
             const referenceNotes = report.reference_notes || {};
-            const cards = [
-                ['Materials', summary.materials, 'boxes', 'text-primary'],
-                ['With HS Mapping', summary.materials_with_hs_mapping, 'network', 'text-success'],
-                ['Needs HS Mapping', summary.materials_needing_hs_mapping, 'circle-help', 'text-warning'],
-                ['Active HS Rules', summary.active_hs_rules, 'check-circle', 'text-success'],
-                ['Needs Review', summary.rules_needing_review, 'circle-alert', 'text-danger']
-            ];
-            const $cards = $('#qualityCards').empty();
-            cards.forEach(([label, value, icon, colorClass]) => {
-                $('<div class="col-sm-6 col-lg">').append(
-                    $('<div class="border rounded-3 p-3 h-100">').append(
-                        $('<div class="small text-muted">').append($('<i>').addClass(`bi ${icon} ${colorClass} me-1`).attr('aria-hidden', 'true')).append(document.createTextNode(label)),
-                        $('<div class="fs-4 fw-bold mt-1">').text(value)
-                    )
-                ).appendTo($cards);
-            });
+            $('#qualityMaterials').text(summary.materials ?? 0);
+            $('#qualityMapped').text(summary.materials_with_hs_mapping ?? 0);
+            $('#qualityNeedsMapping').text(summary.materials_needing_hs_mapping ?? 0);
+            $('#qualityActiveRules').text(summary.active_hs_rules ?? 0);
+            $('#qualityNeedsReview').text(summary.rules_needing_review ?? 0);
             renderTagList('#unmappedMaterials', attention.materials_without_hs_mapping, 'All materials have an HS mapping.');
             renderTagList('#categoriesWithoutRules', attention.categories_without_active_hs_rules, 'Every mapped category has an active HS rule.');
             renderRulesNeedingReview(attention.rules_needing_review || []);
@@ -265,10 +288,13 @@ $(function () {
             renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, 'All active rule categories are used by current materials.');
             renderTagList('#referenceOnlyMaterials', referenceNotes.reference_only_materials, 'None.');
             $('#qualityLoading').addClass('d-none');
+            $('#qualityError').addClass('d-none');
             $('#qualityContent').removeClass('d-none');
         }).fail(() => {
             qualityLoaded = false;
-            $('#qualityLoading').html('<div class="alert alert-danger">Data Quality could not be loaded.</div>');
+            $('#qualityLoading').addClass('d-none');
+            $('#qualityContent').removeClass('d-none');
+            $('#qualityError').removeClass('d-none');
         });
     }
 
@@ -279,20 +305,20 @@ $(function () {
             return;
         }
 
-        const $tags = $('<div class="d-flex flex-wrap gap-2">');
-        values.forEach((value) => $('<span class="badge text-bg-light border text-dark fw-normal">').text(value).appendTo($tags));
-        $tags.appendTo($container);
+        const $list = $('<ul class="list-unstyled mb-0 d-grid gap-1">');
+        values.forEach((value) => $('<li class="font-monospace small">').text(value).appendTo($list));
+        $list.appendTo($container);
     }
 
     function renderRulesNeedingReview(items) {
         const $container = $('#rulesNeedingReview').empty();
         if (!items.length) {
-            $('<div class="text-success">').text('No active rules need review.').appendTo($container);
+            $('<div class="text-muted">').text('No active rules need review.').appendTo($container);
             return;
         }
 
         items.forEach((item) => {
-            const $item = $('<div class="border rounded-3 bg-light p-3 mb-2">');
+            const $item = $('<div class="border-top pt-3 mt-3">');
             $('<div class="fw-semibold">').text(`${item.category} / ${item.shape}`).appendTo($item);
             $('<div class="text-muted mt-1">').text(item.message).appendTo($item);
             $('<div class="mt-2">').append($('<span class="small fw-semibold me-2">').text('HS Codes:'), document.createTextNode((item.hs_codes || []).join(', '))).appendTo($item);

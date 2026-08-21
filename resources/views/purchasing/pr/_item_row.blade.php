@@ -67,7 +67,7 @@
                 <input type="text" name="items[{{ $index }}][hs_code]" class="form-control hs-code-display" maxlength="20" value="{{ $itemData['hs_code'] ?? '' }}" placeholder="Auto or manual HS code" aria-label="HS code">
             </div>
             <input type="hidden" name="items[{{ $index }}][hs_code_manual_override]" class="hs-code-manual-override" value="{{ $source === 'manual' ? '1' : '0' }}">
-            <span class="badge mt-1 hs-status-badge {{ $source === 'manual' ? 'bg-warning text-dark' : ($status === 'matched' ? 'bg-success' : 'bg-secondary') }}">{{ $statusLabel }}</span>
+            <span class="ui-status-chip mt-1 hs-status-badge {{ $source === 'manual' ? 'ui-status-chip--warning' : ($status === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral') }}">{{ $statusLabel }}</span>
             @error("items.{$index}.hs_code")
                 <div class="text-danger small">{{ $message }}</div>
             @enderror
@@ -135,8 +135,6 @@
         @error("items.{$index}.remark") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
     <td class="text-center pr-sticky-action">
-        <button type="button" class="btn btn-sm btn-outline-danger border-0 pr-delete-button" onclick="removeRow(this)" aria-label="Delete material row">
-            <x-ui.icon name="trash" />
-        </button>
+        <x-ui.icon-button icon="trash" label="Delete material row" variant="danger" size="sm" class="pr-delete-button" onclick="removeRow(this)" />
     </td>
 </tr>

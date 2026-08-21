@@ -8,7 +8,7 @@
 @endphp
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw-grid tw-gap-4">
     <x-ui.page-header
         title="Current vs Best Price"
         description="Prioritize price gaps against the historical best after exchange-rate conversion."
@@ -16,40 +16,47 @@
     />
     <x-purchasing.comparison-tabs active="vs-best" />
 
-<x-ui.card
-    title="Current Price vs Historical Best Price"
-    :description="'Comparison uses IDR/kg after exchange-rate conversion. Competitive is within ' . $formatNumber($competitiveThreshold) . '%.'"
->
-    <x-slot:actions>
-        <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="tw-flex tw-flex-wrap tw-items-end tw-gap-3">
-            <x-ui.input type="month" name="date_from" label="From Month" :value="$dateFromInput" />
-            <x-ui.input type="month" name="date_to" label="To Month" :value="$dateToInput" />
-            <div class="tw-flex tw-gap-2">
-                <x-ui.button type="submit" size="sm"><x-ui.icon name="filter" /> Apply Filter</x-ui.button>
-                <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm"><x-ui.icon name="rotate-ccw" /> Reset</x-ui.button>
-            </div>
-        </form>
-    </x-slot:actions>
+    {{-- Filter Toolbar --}}
+    <x-ui.toolbar>
+        <x-slot:filters>
+            <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap align-items-center gap-2 w-100">
+                <div style="min-width: 170px;">
+                    <input type="month" name="date_from" value="{{ $dateFromInput }}" class="form-control form-control-sm" aria-label="From Month" placeholder="From Month" />
+                </div>
+                <div style="min-width: 170px;">
+                    <input type="month" name="date_to" value="{{ $dateToInput }}" class="form-control form-control-sm" aria-label="To Month" placeholder="To Month" />
+                </div>
+                <x-ui.button type="submit" size="sm">
+                    <x-ui.icon name="filter" />
+                    <span>Apply</span>
+                </x-ui.button>
+                <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm">
+                    <x-ui.icon name="rotate-ccw" />
+                    <span>Reset</span>
+                </x-ui.button>
+            </form>
+        </x-slot:filters>
+    </x-ui.toolbar>
 
-    <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
-        <x-ui.metric-card label="Total Compared Data" :value="$summary['total_rows']" icon="list-check" tone="neutral" value-id="vsBestTotalRows" />
-        <x-ui.metric-card label="Competitive / Safe" :value="$summary['competitive_count']" icon="shield-check" tone="success" value-id="vsBestCompetitiveCount" />
-        <x-ui.metric-card label="Above History" :value="$summary['above_count']" icon="trending-up" tone="warning" value-id="vsBestAboveCount" />
-        <x-ui.metric-card label="Potential Total Difference" :value="$formatRupiah($summary['total_potential_difference_idr'])" icon="banknote" tone="primary" value-id="vsBestPotentialTotal" />
+    {{-- Summary Metrics Strip --}}
+    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="Historical benchmark summary">
+        <x-ui.metric-card flat label="Total Compared Data" :value="$summary['total_rows']" icon="list-check" tone="neutral" value-id="vsBestTotalRows" />
+        <x-ui.metric-card flat label="Competitive / Safe" :value="$summary['competitive_count']" icon="shield-check" tone="success" value-id="vsBestCompetitiveCount" />
+        <x-ui.metric-card flat label="Above History" :value="$summary['above_count']" icon="trending-up" tone="{{ $summary['above_count'] > 0 ? 'warning' : 'neutral' }}" value-id="vsBestAboveCount" />
+        <x-ui.metric-card flat label="Potential Total Difference" :value="$formatRupiah($summary['total_potential_difference_idr'])" icon="banknote" tone="primary" value-id="vsBestPotentialTotal" />
     </div>
-</x-ui.card>
 
 <x-ui.data-table title="Price Benchmark Details" description="Server-side results are ordered by the largest potential difference.">
             <table class="table table-hover align-middle mb-0 w-100 tw-text-ui-sm" id="vsBestTable">
                 <thead class="table-light text-center">
                     <tr>
-                        <th class="text-start">Material</th>
-                        <th>Current Price</th>
-                        <th>Historical Best Price</th>
-                        <th>Difference IDR/kg</th>
-                        <th>Potential Total Difference</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                        <th scope="col" class="text-start">Material</th>
+                        <th scope="col">Current Price</th>
+                        <th scope="col">Historical Best Price</th>
+                        <th scope="col">Difference IDR/kg</th>
+                        <th scope="col">Potential Total Difference</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

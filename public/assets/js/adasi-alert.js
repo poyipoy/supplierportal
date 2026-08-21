@@ -23,7 +23,6 @@
         input: 'adasi-alert-input',
         validationMessage: 'adasi-alert-validation',
         closeButton: 'adasi-alert-close',
-        timerProgressBar: 'adasi-alert-progress',
     });
 
     const contentOptions = (options) => {
@@ -129,62 +128,32 @@
         const options = asOptions(rawOptions);
         const type = asText(options.type, 'info');
 
+        const actions = typeof options.onClick === 'function'
+            ? [{
+                label: asText(options.actionLabel, 'View'),
+                variant: 'primary',
+                onClick: options.onClick,
+            }]
+            : options.actions;
+        const payload = {
+            type,
+            title: asText(options.title, ''),
+            message: asText(options.text ?? options.message, ''),
+            timestamp: options.timestamp,
+            autoClose: Number(options.duration) > 0 ? Number(options.duration) : undefined,
+            actions,
+        };
+
         if (window.AdasiToast) {
-            const actions = typeof options.onClick === 'function'
-                ? [{
-                    label: asText(options.actionLabel, 'View'),
-                    variant: 'primary',
-                    onClick: options.onClick,
-                }]
-                : options.actions;
-            const id = window.AdasiToast.show({
-                type,
-                title: asText(options.title, ''),
-                message: asText(options.text ?? options.message, ''),
-                timestamp: options.timestamp,
-                autoClose: Number(options.duration) > 0 ? Number(options.duration) : undefined,
-                actions,
-            });
+            const id = window.AdasiToast.show(payload);
 
             return Promise.resolve({ ...fallbackResult(), id });
         }
 
-        if (!SweetAlert) return Promise.resolve(fallbackResult());
+        window.__adasiToastQueue = window.__adasiToastQueue || [];
+        window.__adasiToastQueue.push(payload);
 
-        const popupClasses = ['adasi-alert-toast'];
-        if (typeof options.onClick === 'function') popupClasses.push('adasi-alert-toast--clickable');
-
-        return SweetAlert.fire({
-            ...baseOptions(options, type, 'primary'),
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            showCloseButton: true,
-            timer: Number(options.duration) > 0 ? Number(options.duration) : 4000,
-            timerProgressBar: true,
-            allowOutsideClick: true,
-            customClass: {
-                ...classes('primary'),
-                container: '',
-                popup: popupClasses.join(' '),
-            },
-            didOpen: (toastElement) => {
-                toastElement.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
-
-                const pause = () => SweetAlert.stopTimer();
-                const resume = () => SweetAlert.resumeTimer();
-                toastElement.addEventListener('mouseenter', pause);
-                toastElement.addEventListener('mouseleave', resume);
-                toastElement.addEventListener('focusin', pause);
-                toastElement.addEventListener('focusout', resume);
-
-                if (typeof options.onClick === 'function') {
-                    toastElement.addEventListener('click', (event) => {
-                        if (!event.target.closest('.swal2-close')) options.onClick(event);
-                    });
-                }
-            },
-        });
+        return Promise.resolve(fallbackResult());
     };
 
     const AdasiAlert = {
@@ -210,18 +179,7 @@
                 duration: Number(element.dataset.duration) || undefined,
             };
 
-            if (window.AdasiToast) {
-                window.AdasiToast.show({
-                    type,
-                    title: options.title,
-                    message: options.text,
-                    autoClose: options.duration,
-                });
-            } else if (type === 'error') {
-                AdasiAlert.error(options);
-            } else {
-                AdasiAlert.toast({ ...options, type });
-            }
+            toast({ ...options, type });
         });
     });
 })(window, document);

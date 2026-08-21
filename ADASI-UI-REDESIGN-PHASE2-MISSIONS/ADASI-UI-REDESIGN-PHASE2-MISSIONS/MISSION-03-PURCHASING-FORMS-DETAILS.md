@@ -399,7 +399,7 @@ Verify no business semantics changed.
 Create:
 
 ```text
-UI-REDESIGN-PHASE2-M03-PURCHASING-FORMS-RESULT.md
+UI-REDESIGN-RESULT/UI-REDESIGN-PHASE2-M03-PURCHASING-FORMS-RESULT.md
 ```
 
 Include:

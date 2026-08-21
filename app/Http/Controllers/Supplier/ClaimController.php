@@ -45,7 +45,7 @@ class ClaimController extends Controller
                 ->addColumn('action', function ($c) {
                     $label = $c->status === 'pending' ? 'Give Response' : 'View Details';
 
-                    return '<a href="'.route('supplier.claims.show', $c).'" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);">'.$label.'</a>';
+                    return '<a href="'.route('supplier.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.$label.'</a>';
                 })
                 ->rawColumns(['deadline_display', 'status_badge', 'action'])
                 ->make(true);

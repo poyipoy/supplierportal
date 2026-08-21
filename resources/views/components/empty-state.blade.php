@@ -15,9 +15,8 @@
     :action-url="$actionUrl"
     :action-text="$actionText"
     :action-icon="$actionIcon"
-    @if($id) id="{{ $id }}" @endif
-    @if($testId) data-testid="{{ $testId }}" @endif
-    {{ $attributes }}
+    :id="$id"
+    :data-testid="$testId"
 >
     {{ $slot }}
 </x-ui.empty-state>
