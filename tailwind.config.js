@@ -12,6 +12,16 @@ export default {
         './resources/js/**/*.js',
     ],
 
+    // These controls are rendered by server-side DataTables presenters, so
+    // their classes do not appear in Blade/JS content scanning.
+    safelist: [
+        'ui-data-action',
+        'ui-data-action--primary',
+        'ui-data-action--danger',
+        'ui-data-action--success',
+        'ui-data-action--warning',
+    ],
+
     corePlugins: {
         preflight: false,
     },

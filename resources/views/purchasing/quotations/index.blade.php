@@ -265,10 +265,14 @@
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q)" variant="outline" size="sm">
-                                        <x-ui.icon name="eye" />
+                                    <a
+                                        href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q) }}"
+                                        class="ui-data-action ui-data-action--primary ui-focus-ring"
+                                        aria-label="View quotation"
+                                    >
+                                        <x-ui.icon name="eye" size="sm" />
                                         <span class="d-none d-md-inline ms-1">View</span>
-                                    </x-ui.button>
+                                    </a>
                                 </td>
                             </tr>
                         @empty
