@@ -16,12 +16,13 @@
     ];
 
     $sizes = [
-        'sm' => 'tw-h-9 tw-w-9 tw-text-base',
-        'md' => 'tw-h-11 tw-w-11 tw-text-lg',
+        'sm' => 'tw-h-8 tw-w-8',
+        'md' => 'tw-h-9 tw-w-9',
+        'lg' => 'tw-h-11 tw-w-11',
     ];
 
     $classes = implode(' ', [
-        'ui-motion ui-focus-ring tw-relative tw-inline-flex tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-border disabled:tw-cursor-not-allowed disabled:tw-opacity-50',
+        'ui-motion ui-focus-ring tw-relative tw-inline-flex tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border disabled:tw-cursor-not-allowed disabled:tw-opacity-50',
         $variants[$variant] ?? $variants['ghost'],
         $sizes[$size] ?? $sizes['md'],
     ]);
@@ -35,7 +36,7 @@
         @if($disabled) aria-disabled="true" tabindex="-1" @endif
         {{ $attributes->class([$classes]) }}
     >
-        <i class="bi {{ $icon }}" aria-hidden="true"></i>
+        <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
         @isset($badge){{ $badge }}@endisset
         <span class="tw-sr-only">{{ $label }}</span>
     </a>
@@ -47,7 +48,7 @@
         @disabled($disabled)
         {{ $attributes->class([$classes]) }}
     >
-        <i class="bi {{ $icon }}" aria-hidden="true"></i>
+        <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
         @isset($badge){{ $badge }}@endisset
         <span class="tw-sr-only">{{ $label }}</span>
     </button>

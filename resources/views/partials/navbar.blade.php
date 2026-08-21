@@ -1,25 +1,26 @@
 <nav class="top-navbar d-flex align-items-center justify-content-between">
     {{-- Left: Mobile toggle + Page title --}}
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-2.5 min-w-0">
         <x-ui.icon-button
-            icon="bi-list"
-            label="Buka atau tutup navigasi"
+            icon="panel-left"
+            label="Toggle sidebar navigation"
             size="sm"
-            class="sidebar-toggle"
+            class="sidebar-toggle text-slate-600"
             x-on:click="$dispatch('ui-sidebar-toggle')"
             x-bind:aria-expanded="viewportIsDesktop ? (!desktopCollapsed).toString() : mobileOpen.toString()"
             aria-controls="sidebar"
         />
-        <p class="topbar-page-title">@yield('page-title', 'Dashboard')</p>
+        <div class="vr mx-1 my-2 text-slate-300 d-none d-sm-block" style="height: 18px;"></div>
+        <p class="topbar-page-title text-truncate">@yield('page-title', 'Dashboard')</p>
     </div>
 
-    {{-- Right: User info + Logout --}}
-    <div class="d-flex align-items-center gap-3">
+    {{-- Right: User info + Notifications + Chat --}}
+    <div class="d-flex align-items-center gap-2">
         {{-- Chat Icon (Only for Purchasing and Supplier) --}}
         @if(in_array(auth()->user()->role, ['purchasing', 'supplier']))
             <x-ui.icon-button
                 :href="route(auth()->user()->role . '.conversations.index')"
-                icon="bi-chat-dots"
+                icon="message-circle-more"
                 label="Chat & Negotiation"
                 size="sm"
                 data-chat-drawer
@@ -33,7 +34,7 @@
         {{-- Notification Icon --}}
         <div class="dropdown">
             <x-ui.icon-button
-                icon="bi-bell"
+                icon="bell"
                 label="Notifications"
                 size="sm"
                 data-bs-toggle="dropdown"
@@ -44,11 +45,11 @@
                     <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}">{{ $initNotifCount }}</span>
                 </x-slot:badge>
             </x-ui.icon-button>
-            <div class="dropdown-menu dropdown-menu-end notification-dropdown">
+            <div class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
                 <div class="notification-panel">
-                    <div class="notification-menu nav nav-pills" role="tablist" aria-label="Kategori notification">
+                    <div class="notification-menu nav nav-pills" role="tablist" aria-label="Notification categories">
                         <div class="notification-menu-heading">
-                            <i class="bi bi-layers me-1"></i>Kategori
+                            <x-ui.icon name="layers" class="me-1" />Categories
                         </div>
                         @foreach($notificationCategories as $key => $category)
                             <button class="nav-link {{ $loop->first ? 'active' : '' }}"
@@ -62,7 +63,7 @@
                                 aria-controls="notif-pane-{{ $key }}"
                                 aria-selected="{{ $loop->first ? 'true' : 'false' }}">
                                 <span class="d-flex align-items-center gap-2">
-                                    <i class="bi {{ $category['icon'] }}"></i>
+                                    <x-ui.icon :name="$category['icon']" />
                                     {{ $category['short_label'] }}
                                 </span>
                                 @if(($navbarNotificationCounts[$key] ?? 0) > 0)
@@ -77,9 +78,9 @@
                         <div class="px-3 py-2 border-bottom bg-white d-flex align-items-center justify-content-between">
                             <div>
                                 <div class="fw-bold small">Notifications</div>
-                                <div class="text-muted" style="font-size:.72rem">Dipisah berdasarkan jenis aktivitas</div>
+                                <div class="text-muted" style="font-size:.72rem">Grouped by activity type</div>
                             </div>
-                            <span class="badge bg-light text-muted border">{{ $navbarNotifications->count() }} notification</span>
+                            <span class="text-muted small">{{ $navbarNotifications->count() }} {{ \Illuminate\Support\Str::plural('notification', $navbarNotifications->count()) }}</span>
                         </div>
                         <div class="tab-content notification-list">
                             @foreach($notificationCategories as $key => $category)
@@ -101,9 +102,7 @@
                                             data-notification-id="{{ $notif->id }}"
                                             style="cursor: pointer;">
                                             <div class="d-flex gap-3">
-                                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:34px;height:34px;">
-                                                    <i class="bi {{ $notif->data['icon'] ?? $notifCategory['icon'] }} text-primary"></i>
-                                                </div>
+                                                <x-ui.icon :name="$notif->data['icon'] ?? $notifCategory['icon']" size="lg" class="text-primary flex-shrink-0 mt-1" />
                                                 <div class="min-w-0 flex-grow-1">
                                                     <div class="d-flex justify-content-between gap-2">
                                                         <div class="fw-semibold small text-truncate">{{ $notif->data['title'] ?? 'Notifications' }}</div>
@@ -114,16 +113,16 @@
                                                     <div class="text-muted" style="font-size:.76rem">{{ \Illuminate\Support\Str::limit($notif->data['message'] ?? '-', 92) }}</div>
                                                     <div class="d-flex flex-wrap align-items-center gap-2 mt-2 text-muted" style="font-size:.68rem">
                                                         <span class="badge bg-white text-muted border fw-semibold">
-                                                            <i class="bi {{ $notifCategory['icon'] }} me-1"></i>{{ $notifCategory['label'] }}
+                                                            <x-ui.icon :name="$notifCategory['icon']" class="me-1" />{{ $notifCategory['label'] }}
                                                         </span>
-                                                        <span><i class="bi bi-clock me-1"></i>{{ $notif->created_at->diffForHumans() }}</span>
+                                                        <span><x-ui.icon name="clock" class="me-1" />{{ $notif->created_at->diffForHumans() }}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     @empty
                                         <div class="text-center text-muted py-5 px-3">
-                                            <i class="bi {{ $category['icon'] }}" style="font-size:2rem;opacity:.45"></i>
+                                            <x-ui.icon :name="$category['icon']" size="lg" class="tw-opacity-60" />
                                             <div class="fw-semibold mt-2">No {{ strtolower($category['label']) }}</div>
                                             <div style="font-size:.75rem">{{ $category['description'] }}</div>
                                         </div>
@@ -144,6 +143,7 @@
                 </div>
             </div>
         </div>
+
         {{-- Role Badge --}}
         <span class="role-badge role-badge-{{ auth()->user()->role }}">
             {{ ucfirst(auth()->user()->role) }}
@@ -152,31 +152,31 @@
         {{-- User Dropdown --}}
         <div class="dropdown">
             <button class="topbar-user-trigger dropdown-toggle" type="button"
-                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu pengguna">
+                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open user menu">
                 <x-ui.user-chip :name="auth()->user()->name" :meta="auth()->user()->email" class="topbar-user-chip" />
             </button>
-            <ul class="dropdown-menu dropdown-menu-end">
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
                 <li>
                     <span class="dropdown-item-text small text-muted">
                         {{ auth()->user()->email }}
                     </span>
                 </li>
                 <li>
-                    <hr class="dropdown-divider">
+                    <hr class="dropdown-divider my-1">
                 </li>
                 <li>
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
-                        <i class="bi bi-person-gear me-2"></i>Profile &amp; Security
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item py-1.5 small">
+                        <x-ui.icon name="user-cog" class="me-2" />Profile &amp; Security
                     </a>
                 </li>
                 <li>
-                    <hr class="dropdown-divider">
+                    <hr class="dropdown-divider my-1">
                 </li>
                 <li>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button type="submit" class="dropdown-item text-danger">
-                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        <button type="submit" class="dropdown-item text-danger py-1.5 small">
+                            <x-ui.icon name="log-out" class="me-2" />Logout
                         </button>
                     </form>
                 </li>

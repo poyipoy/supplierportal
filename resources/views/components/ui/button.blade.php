@@ -13,13 +13,14 @@
     $variants = [
         'primary' => 'tw-border-transparent tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90',
         'secondary' => 'tw-border-transparent tw-bg-secondary-container tw-text-secondary-container-foreground hover:tw-brightness-95 active:tw-brightness-90',
+        'outline' => 'tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high',
         'ghost' => 'tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high',
         'danger' => 'tw-border-transparent tw-bg-error tw-text-error-foreground hover:tw-brightness-95 active:tw-brightness-90',
     ];
 
     $sizes = [
-        'sm' => 'tw-min-h-[var(--ui-control-height-sm)] tw-gap-2 tw-px-3 tw-py-1.5 tw-text-ui-sm',
-        'md' => 'tw-min-h-[var(--ui-control-height-md)] tw-gap-2 tw-px-4 tw-py-2 tw-text-ui-sm',
+        'sm' => 'tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-[13px]',
+        'md' => 'tw-min-h-[var(--ui-control-height-md)] tw-gap-2 tw-px-3.5 tw-py-1.5 tw-text-ui-sm',
     ];
 
     $isDisabled = (bool) $disabled || (bool) $loading;
@@ -40,7 +41,7 @@
     >
         @if($loading)
             <span class="ui-spinner" aria-hidden="true"></span>
-            <span class="tw-sr-only">Memproses</span>
+            <span class="tw-sr-only">Processing</span>
         @elseif(isset($leading))
             <span class="tw-inline-flex tw-shrink-0" aria-hidden="true">{{ $leading }}</span>
         @endif
@@ -66,7 +67,7 @@
     >
         @if($loading)
             <span class="ui-spinner" aria-hidden="true"></span>
-            <span class="tw-sr-only">Memproses</span>
+            <span class="tw-sr-only">Processing</span>
         @elseif(isset($leading))
             <span class="tw-inline-flex tw-shrink-0" aria-hidden="true">{{ $leading }}</span>
         @endif

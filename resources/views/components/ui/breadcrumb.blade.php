@@ -10,14 +10,14 @@
 
 @if($normalizedItems->isNotEmpty())
     <nav aria-label="Breadcrumb" {{ $attributes }}>
-        <ol class="tw-m-0 tw-flex tw-list-none tw-flex-wrap tw-items-center tw-gap-1.5 tw-p-0 tw-text-ui-sm tw-text-on-surface-variant">
+        <ol class="tw-m-0 tw-flex tw-list-none tw-flex-wrap tw-items-center tw-gap-1 tw-p-0 tw-text-[12px] tw-text-on-surface-variant">
             @foreach($normalizedItems as $item)
-                <li class="tw-flex tw-min-w-0 tw-items-center tw-gap-1.5">
-                    @if(!$loop->first)<i class="bi bi-chevron-right tw-text-[.65rem]" aria-hidden="true"></i>@endif
+                <li class="tw-flex tw-min-w-0 tw-items-center tw-gap-1">
+                    @if(!$loop->first)<x-ui.icon name="chevron-right" size="sm" class="tw-text-slate-400" style="width: 12px; height: 12px;" />@endif
                     @if($loop->last || empty($item['url']))
-                        <span class="tw-max-w-[18rem] tw-truncate tw-font-semibold tw-text-on-surface" aria-current="page">{{ $item['label'] }}</span>
+                        <span class="tw-max-w-[18rem] tw-truncate tw-font-semibold tw-text-slate-700" aria-current="page">{{ $item['label'] }}</span>
                     @else
-                        <a href="{{ $item['url'] }}" class="ui-focus-ring tw-rounded-ui-xs tw-text-primary tw-no-underline hover:tw-underline">{{ $item['label'] }}</a>
+                        <a href="{{ $item['url'] }}" class="ui-focus-ring tw-rounded-ui-xs tw-text-slate-500 hover:tw-text-primary tw-no-underline">{{ $item['label'] }}</a>
                     @endif
                 </li>
             @endforeach
