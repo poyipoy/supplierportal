@@ -46,9 +46,9 @@ class HsCodeRuleController extends Controller
                     'notes' => $rule->notes,
                 ], JSON_THROW_ON_ERROR));
 
-                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-rule" data-rule="'.$payload.'" aria-label="Edit HS Code rule" title="Edit HS Code rule"><i class="bi bi-pencil" aria-hidden="true"></i></button> '
+                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-rule" data-rule="'.$payload.'" aria-label="Edit HS Code rule" title="Edit HS Code rule">Edit</button> '
                     .'<button type="button" class="btn btn-sm '.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'btn-outline-secondary' : 'btn-outline-success').' btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'" aria-label="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate HS Code rule' : 'Activate HS Code rule').'" title="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate HS Code rule' : 'Activate HS Code rule').'">'
-                    .'<i class="bi '.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'bi-pause-circle' : 'bi-play-circle').'" aria-hidden="true"></i></button>';
+                    .($rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate' : 'Activate').'</button>';
             })
             ->rawColumns(['status_badge', 'action'])
             ->toJson();

@@ -115,7 +115,7 @@ class ConversationPresenter
             return [[
                 'key' => 'open_revision',
                 'label' => 'Open Revision Form',
-                'icon' => 'bi-arrow-repeat',
+                'icon' => 'refresh-cw',
                 'type' => 'link',
                 'url' => route('supplier.quotations.create', $quotation->purchaseRequisition),
                 'variant' => 'warning',
@@ -133,7 +133,7 @@ class ConversationPresenter
                 $actions[] = [
                     'key' => 'request_price_revision',
                     'label' => 'Request Price Revision',
-                    'icon' => 'bi-cash-coin',
+                    'icon' => 'badge-dollar-sign',
                     'type' => 'prompt',
                     'requires_note' => true,
                     'variant' => 'warning',
@@ -144,7 +144,7 @@ class ConversationPresenter
                 [
                     'key' => 'request_validity_extension',
                     'label' => 'Extend Validity',
-                    'icon' => 'bi-calendar2-plus',
+                    'icon' => 'calendar-plus',
                     'type' => 'prompt',
                     'requires_note' => false,
                     'variant' => 'outline-primary',
@@ -152,7 +152,7 @@ class ConversationPresenter
                 [
                     'key' => 'request_delivery_confirmation',
                     'label' => 'Confirm Estimated Delivery',
-                    'icon' => 'bi-truck',
+                    'icon' => 'truck',
                     'type' => 'prompt',
                     'requires_note' => false,
                     'variant' => 'outline-primary',
@@ -164,7 +164,7 @@ class ConversationPresenter
             $actions[] = [
                 'key' => 'accept_quotation',
                 'label' => 'Accept Quotation',
-                'icon' => 'bi-check2-circle',
+                'icon' => 'circle-check',
                 'type' => 'confirm',
                 'requires_note' => false,
                 'variant' => 'success',
@@ -175,7 +175,7 @@ class ConversationPresenter
             $actions[] = [
                 'key' => 'reject_quotation',
                 'label' => 'Reject Quotation',
-                'icon' => 'bi-x-circle',
+                'icon' => 'circle-x',
                 'type' => 'prompt',
                 'requires_note' => true,
                 'variant' => 'outline-danger',

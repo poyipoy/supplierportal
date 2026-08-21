@@ -132,7 +132,7 @@ class PrItemRemarkTest extends TestCase
             ))['action'];
 
         $this->assertStringContainsString('btn-submit-draft', $action);
-        $this->assertStringContainsString('bi-send-check', $action);
+        $this->assertStringContainsString('Submit', $action);
         $this->assertStringContainsString('action-button-grid', $action);
         $this->assertSame(4, substr_count($action, 'action-grid-button'));
 

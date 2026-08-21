@@ -6,7 +6,7 @@
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="User Management" description="Manage role assignment, account status, and supplier profile access." eyebrow="Admin" />
     <x-ui.data-table title="User List" description="Search and administer registered portal users.">
-        <x-slot:toolbar><x-ui.button :href="route('admin.users.create')" size="sm"><i class="bi bi-plus-lg"></i> Add User</x-ui.button></x-slot:toolbar>
+        <x-slot:toolbar><x-ui.button :href="route('admin.users.create')" size="sm"><x-ui.icon name="plus" /> Add User</x-ui.button></x-slot:toolbar>
                 <table class="table table-hover align-middle w-100 tw-text-ui-sm" id="usersTable">
                     <thead class="table-light">
                         <tr>

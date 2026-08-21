@@ -19,31 +19,31 @@ class NotificationCategory
             self::ALL => [
                 'label' => 'All',
                 'short_label' => 'All',
-                'icon' => 'bi-bell',
+                'icon' => 'bell',
                 'description' => 'All notifications',
             ],
             self::CHAT => [
                 'label' => 'Chat',
                 'short_label' => 'Chat',
-                'icon' => 'bi-chat-dots',
+                'icon' => 'message-circle-more',
                 'description' => 'Negotiation messages',
             ],
             self::QUOTATION => [
                 'label' => 'Quotation',
                 'short_label' => 'Quotation',
-                'icon' => 'bi-tags',
+                'icon' => 'tags',
                 'description' => 'PR and quotations',
             ],
             self::DOCUMENT => [
                 'label' => 'PO Documents',
                 'short_label' => 'Document',
-                'icon' => 'bi-file-earmark-check',
+                'icon' => 'file-check',
                 'description' => 'Import document status',
             ],
             self::OTHER => [
                 'label' => 'Other',
                 'short_label' => 'Other',
-                'icon' => 'bi-grid',
+                'icon' => 'layout-grid',
                 'description' => 'Other system information',
             ],
         ];

@@ -4,7 +4,7 @@
             <div class="offcanvas-header border-bottom bg-white">
                 <div class="d-flex align-items-center gap-2 min-w-0">
                     <button type="button" class="btn btn-sm btn-light d-none" id="chatDrawerBack" title="Back to Chat List">
-                        <i class="bi bi-arrow-left"></i>
+                        <x-ui.icon name="arrow-left" />
                     </button>
                     <div class="min-w-0">
                         <h6 class="offcanvas-title fw-bold mb-0 text-truncate" id="chatDrawerTitle">Negotiation & Chat</h6>
@@ -18,7 +18,7 @@
                 <div class="chat-drawer-pane" id="chatDrawerListPane">
                     <div class="p-3 bg-white border-bottom">
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <span class="input-group-text bg-white"><x-ui.icon name="search" /></span>
                             <input type="search" class="form-control" id="chatDrawerSearch" placeholder="Search partner, PO, or PR">
                         </div>
                     </div>
@@ -39,7 +39,7 @@
                             <div class="chat-composer-tools d-flex align-items-center justify-content-between gap-2 mb-2">
                                 <div class="dropdown d-none" id="chatDrawerTemplates">
                                     <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-lightning-charge me-1"></i>Template
+                                        <x-ui.icon name="zap" class="me-1" />Template
                                     </button>
                                     <div class="dropdown-menu p-2 chat-template-menu" id="chatDrawerTemplateMenu"></div>
                                 </div>
@@ -48,11 +48,11 @@
                             <div class="d-flex gap-2 align-items-end">
                                 <textarea class="form-control" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="Type a message..." style="resize: none;"></textarea>
                                 <label class="btn btn-outline-secondary mb-0" for="chatDrawerAttachments" title="Attach file">
-                                    <i class="bi bi-paperclip"></i>
+                                    <x-ui.icon name="paperclip" />
                                 </label>
                                 <input type="file" class="d-none" id="chatDrawerAttachments" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
                                 <button type="submit" class="btn btn-primary" id="chatDrawerSend" style="background-color: var(--adasi-blue);">
-                                    <i class="bi bi-send-fill"></i>
+                                    <x-ui.icon name="send" />
                                 </button>
                             </div>
                             <div class="form-text small">Enter to send, Shift+Enter for a new line.</div>
@@ -167,7 +167,7 @@
                         if (filtered.length === 0) {
                             listEl.innerHTML = `
                                 <div class="text-center text-muted py-5 px-4">
-                                    <i class="bi bi-chat-square-text" style="font-size:2.2rem;"></i>
+                                    <x-ui.icon name="message-square-text" size="lg" />
                                     <div class="fw-medium mt-2">No chats yet</div>
                                     <div class="small">Conversations will appear after they are created from a PR or PO.</div>
                                 </div>
@@ -249,9 +249,9 @@
                                 </div>
                                 <div class="d-flex gap-1 flex-shrink-0">
                                     <button type="button" class="btn btn-sm btn-light border" data-chat-context-toggle title="Details">
-                                        <i class="bi bi-chevron-down"></i>
+                                        <x-ui.icon name="chevron-down" />
                                     </button>
-                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="btn btn-sm btn-outline-primary" title="Details"><i class="bi bi-box-arrow-up-right"></i></a>` : ''}
+                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="btn btn-sm btn-outline-primary" title="Details"><x-ui.icon name="external-link" /></a>` : ''}
                                 </div>
                             </div>
                             <div class="chat-context-grid d-none mt-2" id="chatContextDetail">${fields}</div>
@@ -269,12 +269,12 @@
                         actionsEl.innerHTML = actions.map((action) => {
                             if (action.type === 'link') {
                                 return `<a href="${escapeHtml(action.url)}" class="btn btn-sm btn-${escapeHtml(action.variant || 'outline-primary')}">
-                                    <i class="bi ${escapeHtml(action.icon || 'bi-arrow-right')} me-1"></i>${escapeHtml(action.label)}
+                                    ${escapeHtml(action.label)}
                                 </a>`;
                             }
 
                             return `<button type="button" class="btn btn-sm btn-${escapeHtml(action.variant || 'outline-primary')}" data-chat-action="${escapeHtml(action.key)}" data-chat-action-label="${escapeHtml(action.label)}" data-chat-action-note="${action.requires_note ? '1' : '0'}" data-chat-action-type="${escapeHtml(action.type || 'prompt')}">
-                                <i class="bi ${escapeHtml(action.icon || 'bi-lightning-charge')} me-1"></i>${escapeHtml(action.label)}
+                                ${escapeHtml(action.label)}
                             </button>`;
                         }).join('');
                         actionsEl.classList.remove('d-none');
@@ -305,7 +305,7 @@
 
                         attachmentListEl.innerHTML = files.map((file) => `
                             <span class="badge bg-light text-dark border me-1 mb-1">
-                                <i class="bi bi-paperclip me-1"></i>${escapeHtml(file.name)}
+                                <x-ui.icon name="paperclip" class="me-1" />${escapeHtml(file.name)}
                             </span>
                         `).join('');
                         attachmentListEl.classList.remove('d-none');
@@ -320,7 +320,7 @@
                             : 'Sent, unread';
 
                         return `<span class="chat-read-receipt ${read ? 'is-read' : ''}" data-read-receipt-id="${message.id}" title="${escapeHtml(title)}">
-                            <i class="bi bi-check2-all"></i>
+                            <x-ui.icon name="check-check" />
                         </span>`;
                     };
 
@@ -330,7 +330,7 @@
                         return `<div class="chat-attachment-stack mt-2">
                             ${attachments.map((attachment) => `
                                 <a href="${escapeHtml(attachment.url)}" target="_blank" class="chat-attachment-link">
-                                    <i class="bi bi-paperclip me-1"></i>
+                                    <x-ui.icon name="paperclip" class="me-1" />
                                     <span class="text-truncate">${escapeHtml(attachment.name)}</span>
                                 </a>
                             `).join('')}
@@ -403,7 +403,7 @@
                                 if (!data.messages || data.messages.length === 0) {
                                     messagesEl.innerHTML = `
                                         <div class="text-center text-muted py-5" id="chatDrawerEmpty">
-                                            <i class="bi bi-chat-dots" style="font-size:2.2rem;"></i>
+                                            <x-ui.icon name="message-circle-more" size="lg" />
                                             <div class="fw-medium mt-2">No messages yet</div>
                                             <div class="small">Start the conversation from the composer below.</div>
                                         </div>
@@ -518,11 +518,11 @@
                                     loadConversations();
                                     if (typeof updateBadges === 'function') updateBadges();
 
-                                    AdasiAlert.toast({
+                                    AdasiToast.show({
                                         type: 'success',
                                         title: 'Success',
-                                        text: `${label} processed successfully.`,
-                                        duration: 1400
+                                        message: `${label} processed successfully.`,
+                                        autoClose: 1400
                                     });
                                 })
                                 .catch((error) => {
@@ -596,8 +596,8 @@
                             detail.classList.toggle('d-none');
                             const icon = contextToggle.querySelector('i');
                             if (icon) {
-                                icon.classList.toggle('bi-chevron-down', detail.classList.contains('d-none'));
-                                icon.classList.toggle('bi-chevron-up', !detail.classList.contains('d-none'));
+                                icon.classList.toggle('chevron-down', detail.classList.contains('d-none'));
+                                icon.classList.toggle('chevron-up', !detail.classList.contains('d-none'));
                             }
                             return;
                         }

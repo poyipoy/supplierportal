@@ -37,7 +37,7 @@
         data-bs-target="#{{ $modalId }}"
         aria-describedby="{{ $modalId }}Summary"
     >
-        <x-slot:leading><i class="bi bi-people" aria-hidden="true"></i></x-slot:leading>
+        <x-slot:leading><x-ui.icon name="users" /></x-slot:leading>
         Select supplier
         <x-slot:trailing>
             <span class="supplier-selected-count tw-inline-flex tw-min-w-7 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-primary tw-px-2 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-primary-foreground">{{ $selectedSupplierCount > 0 ? $selectedSupplierCount : 'All' }}</span>
@@ -57,13 +57,13 @@
                         <h5 class="modal-title fw-semibold" id="{{ $modalId }}Label">Select Supplier</h5>
                         <div class="small text-muted">Check the suppliers that will receive this PR quotation invitation.</div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col">
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                <span class="input-group-text bg-white"><x-ui.icon name="search" /></span>
                                 <input type="text" class="form-control supplier-search-input" placeholder="Search supplier name, email, or company..." aria-label="Search suppliers">
                             </div>
                         </div>

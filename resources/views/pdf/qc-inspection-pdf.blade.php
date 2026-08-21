@@ -340,7 +340,7 @@
         <div class="summary-section">
             <div class="summary-cell">
                 <div class="summary-number color-total">{{ $totalItems }}</div>
-                <div class="summary-label">Total Item Diperiksa</div>
+                <div class="summary-label">Total Items Inspected</div>
             </div>
             <div class="summary-cell">
                 <div class="summary-number color-ok">{{ $okItems }}</div>
@@ -393,7 +393,7 @@
         <!-- Conclusion -->
         <div class="conclusion conclusion-{{ $inspection->status }}">
             @if($inspection->status === 'ok')
-                ✓ KESIMPULAN: Seluruh material telah diperiksa dan dinyatakan SESUAI SPESIFIKASI (OK).
+                CONCLUSION: All materials have been inspected and confirmed to meet the specification (OK).
             @else
                 ✗ CONCLUSION: Found {{ $ngItems }} items DO NOT MEET SPECIFICATION (NG). Material requires claim follow-up.
             @endif
@@ -413,7 +413,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            This document was generated automatically oleh ADASI Supplier Portal pada {{ now()->format('d F Y, H:i') }} WIB.
+            This document was generated automatically by ADASI Supplier Portal on {{ now()->format('d F Y, H:i') }} WIB.
         </div>
     </div>
 </body>

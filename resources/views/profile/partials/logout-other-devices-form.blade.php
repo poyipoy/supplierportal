@@ -15,7 +15,7 @@
         </div>
 
         <button type="submit" class="btn btn-outline-secondary">
-            <i class="bi bi-box-arrow-right me-1"></i>Log Out Other Devices
+            <x-ui.icon name="log-out" class="me-1" />Log Out Other Devices
         </button>
     </form>
 </section>

@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="tw-text-center" role="status" aria-live="polite">
-    <span class="tw-inline-flex tw-h-14 tw-w-14 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-success-container tw-text-success-container-foreground"><span class="ui-spinner" aria-hidden="true"></span></span>
+    <span class="ui-spinner" aria-hidden="true"></span>
     <h2 class="tw-m-0 tw-mt-4 tw-text-ui-xl tw-font-semibold">Continuing your protected action</h2>
     <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Your password was confirmed. Please wait while we continue.</p>
 

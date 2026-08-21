@@ -115,7 +115,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="secondary" size="sm" data-async-export>
-                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> 
+                <x-ui.icon name="file-spreadsheet" />
                 Export Excel
             </x-ui.button>
             <x-status-badge type="pr" :status="$pr->status" size="lg" />
@@ -239,7 +239,7 @@
             >
                 <x-slot:emptyState>
                     <x-ui.empty-state
-                        icon="bi-inbox"
+                        icon="inbox"
                         title="No quotations received"
                         description="Supplier responses will appear here after a quotation is submitted."
                     />
@@ -273,7 +273,7 @@
                                 <td class="text-end fw-bold ui-tabular-nums">
                                     @if($quotation->total_idr !== null)
                                         Rp {{ number_format($quotation->total_idr, 0, ',', '.') }}
-                                        @if($isLowest)<i class="bi bi-check-circle-fill tw-ms-1 tw-text-success" aria-label="Lowest estimated total"></i>@endif
+                                        @if($isLowest)<x-ui.icon name="circle-check" class="tw-ms-1 tw-text-success" aria-label="Lowest estimated total" />@endif
                                     @else
                                         <span class="tw-text-on-surface-variant">-</span>
                                     @endif
@@ -288,7 +288,7 @@
                                             variant="ghost"
                                             size="sm"
                                         >
-                                            <i class="bi bi-eye" aria-hidden="true"></i> 
+                                            <x-ui.icon name="eye" />
                                             View details
                                         </x-ui.button>
                                         @if($submittedQuotationCount >= 2)
@@ -297,7 +297,7 @@
                                                 variant="secondary"
                                                 size="sm"
                                             >
-                                                <i class="bi bi-bar-chart" aria-hidden="true"></i> 
+                                                <x-ui.icon name="bar-chart" />
                                                 Compare
                                             </x-ui.button>
                                         @endif
@@ -336,7 +336,7 @@
                     @endif
 
                     <a href="{{ \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index') }}" class="ui-focus-ring tw-justify-self-center tw-rounded-ui-xs tw-text-ui-sm tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">
-                        <i class="bi bi-arrow-left tw-me-1" aria-hidden="true"></i>Back to list
+                        <x-ui.icon name="arrow-left" class="tw-me-1" />Back to list
                     </a>
                 </div>
             </x-ui.card>
@@ -349,7 +349,7 @@
                                 @csrf
                                 <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                                 <x-ui.button type="submit" variant="ghost" class="tw-w-full tw-justify-start">
-                                    <i class="bi bi-chat-dots" aria-hidden="true"></i> 
+                                    <x-ui.icon name="message-circle-more" />
                                     {{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}
                                 </x-ui.button>
                             </form>

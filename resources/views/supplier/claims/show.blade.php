@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Respond to the claim for ' . $claim->purchaseOrder->po_number . ' before the stated deadline.'" eyebrow="Supplier Portal">
-        <x-slot:actions><x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Claim List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Claim List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -62,7 +62,7 @@
                         <x-ui.input type="file" name="attachments[]" label="Supporting Documents/Photos (Optional)" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" helper="Official letter, transfer evidence, or replacement receipt; max 10MB per file." :error="$errors->first('attachments.*')" />
 
                         <div class="tw-flex tw-justify-end">
-                            <x-ui.button type="button" id="btnSubmitRespond"><i class="bi bi-send"></i> Send Response</x-ui.button>
+                            <x-ui.button type="button" id="btnSubmitRespond"><x-ui.icon name="send" /> Send Response</x-ui.button>
                         </div>
                     </form>
                 @else
@@ -77,7 +77,7 @@
                             @foreach($claim->attachments as $att)
                                 <div class="col-4 col-md-3 col-lg-2">
                                     <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded text-center py-3 text-decoration-none shadow-sm h-100 bg-white">
-                                        <i class="bi bi-file-earmark-text fs-3 text-primary d-block mb-1"></i>
+                                        <x-ui.icon name="file-text" size="lg" class="text-primary d-block mb-1" />
                                         <span class="small text-truncate d-block px-2">{{ $att->file_name }}</span>
                                     </a>
                                 </div>

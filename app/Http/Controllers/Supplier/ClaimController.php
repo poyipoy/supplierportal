@@ -122,7 +122,7 @@ class ClaimController extends Controller
             'Claim Response Accepted',
             'The supplier has responded to the claim for PO '.$claim->purchaseOrder->po_number.'.',
             route('purchasing.claims.show', $claim, absolute: false),
-            'bi-reply text-primary',
+            'reply text-primary',
             [
                 'category' => NotificationCategory::OTHER,
                 'claim_id' => $claim->id,

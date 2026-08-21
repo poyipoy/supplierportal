@@ -12,7 +12,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -40,7 +39,7 @@
                         </div>
                     </div>
                     <div class="tw-inline-flex tw-items-center tw-gap-2 tw-rounded-full tw-bg-emerald-500/20 tw-border tw-border-emerald-500/30 tw-px-3.5 tw-py-1.5 tw-text-emerald-300 tw-backdrop-blur-sm">
-                        <i class="bi bi-shield-lock-fill tw-text-[15px]"></i>
+                        <x-ui.icon name="shield-lock" size="sm" />
                         <span class="tw-text-[11px] tw-font-bold tw-uppercase tw-tracking-widest">Secure Procurement</span>
                     </div>
                 </div>
@@ -76,7 +75,7 @@
                     </span>
                 </a>
 
-                <div class="tw-bg-white tw-rounded-xl tw-p-6 sm:tw-p-8 tw-shadow-lg tw-border tw-border-outline-variant">
+                <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-white tw-p-6 tw-shadow-ui-1 sm:tw-p-8">
                     @include('partials.alerts')
                     @yield('content')
                 </div>

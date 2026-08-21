@@ -58,7 +58,7 @@ class MaterialClaimController extends Controller
             ->addColumn('action', function ($po) {
                 $lastInspection = $po->qcInspections->first();
                 if ($lastInspection) {
-                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection).'" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-octagon me-1"></i> Create Claim</a>';
+                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection).'" class="btn btn-sm btn-danger">Create Claim</a>';
                 }
 
                 return '-';
@@ -173,7 +173,7 @@ class MaterialClaimController extends Controller
                 'New Material Claim',
                 'You received a new claim for PO '.$inspection->purchaseOrder->po_number.'. Please respond before '.Carbon::parse($claim->deadline)->format('d M Y').'.',
                 route('supplier.claims.show', $claim, absolute: false),
-                'bi-exclamation-octagon text-danger',
+                'octagon-alert text-danger',
                 [
                     'category' => NotificationCategory::OTHER,
                     'claim_id' => $claim->id,
@@ -236,7 +236,7 @@ class MaterialClaimController extends Controller
                 'Material Claim Completed',
                 'Claim for PO '.($claim->purchaseOrder->po_number ?? '-').' has been marked completed by Purchasing.',
                 route('supplier.claims.show', $claim, absolute: false),
-                'bi-check-circle text-success',
+                'check-circle text-success',
                 [
                     'category' => NotificationCategory::OTHER,
                     'claim_id' => $claim->id,

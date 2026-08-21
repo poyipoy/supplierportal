@@ -41,9 +41,9 @@ class MaterialMasterController extends Controller
                     'is_active' => $material->is_active,
                 ], JSON_THROW_ON_ERROR));
 
-                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-material" data-material="'.$payload.'" aria-label="Edit material" title="Edit material"><i class="bi bi-pencil" aria-hidden="true"></i></button> '
+                return '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-material" data-material="'.$payload.'" aria-label="Edit material" title="Edit material">Edit</button> '
                     .'<button type="button" class="btn btn-sm '.($material->is_active ? 'btn-outline-secondary' : 'btn-outline-success').' btn-toggle-material" data-id="'.$material->id.'" data-active="'.($material->is_active ? '0' : '1').'" aria-label="'.($material->is_active ? 'Deactivate material' : 'Activate material').'" title="'.($material->is_active ? 'Deactivate material' : 'Activate material').'">'
-                    .'<i class="bi '.($material->is_active ? 'bi-pause-circle' : 'bi-play-circle').'" aria-hidden="true"></i></button>';
+                    .($material->is_active ? 'Deactivate' : 'Activate').'</button>';
             })
             ->rawColumns(['status_badge', 'action'])
             ->toJson();

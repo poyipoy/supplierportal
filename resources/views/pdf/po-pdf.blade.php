@@ -363,7 +363,7 @@
                 <div class="signature-line">{{ $po->creator->name ?? '_______________' }}<br>Purchasing</div>
             </div>
             <div class="signature-box">
-                <div class="signature-title">Disetujui Oleh</div>
+                <div class="signature-title">Approved By</div>
                 <div class="signature-line">_______________<br>Manager Purchasing</div>
             </div>
             <div class="signature-box">
@@ -374,7 +374,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            This document was generated automatically oleh ADASI Supplier Portal pada {{ now()->format('d F Y, H:i') }} WIB.
+            This document was generated automatically by ADASI Supplier Portal on {{ now()->format('d F Y, H:i') }} WIB.
         </div>
     </div>
 </body>

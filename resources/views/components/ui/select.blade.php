@@ -25,7 +25,7 @@
     @if($label)
         <label for="{{ $resolvedId }}" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
             {{ $label }}
-            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> wajib</span>@endif
+            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> required</span>@endif
         </label>
     @endif
 
@@ -54,7 +54,7 @@
     @if($helper)<p id="{{ $helperId }}" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $helper }}</p>@endif
     @if($message)
         <p id="{{ $errorId }}" class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">
-            <i class="bi bi-exclamation-circle tw-mt-0.5" aria-hidden="true"></i><span>{{ $message }}</span>
+            <x-ui.icon name="circle-alert" size="sm" class="tw-mt-0.5" /><span>{{ $message }}</span>
         </p>
     @endif
 </div>

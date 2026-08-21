@@ -28,7 +28,7 @@ class PurchasingController extends Controller
                 $materialMingguIni = PurchaseOrder::where('status', 'active')
                     ->whereBetween('estimated_arrival', [now(), now()->addDays(7)])->count();
 
-                // Chart: PR per bulan — 1 query tunggal dengan GROUP BY (mengganti 6 query terpisah)
+                // Chart: PR by month using one grouped query instead of six separate queries.
                 $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
                 $prCounts = PurchaseRequisition::where('created_at', '>=', $sixMonthsAgo)
                     ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mn, COUNT(*) as total')
@@ -97,7 +97,7 @@ class PurchasingController extends Controller
             [
                 'label' => 'Completed PR Without PO',
                 'count' => $completedPrWithoutPo,
-                'icon' => 'bi-clipboard-x',
+                'icon' => 'clipboard-x',
                 'class' => 'danger',
                 'url' => route('purchasing.requisitions.index', ['status' => 'completed']),
                 'description' => 'Completed PR records that are not linked to any PO yet.',
@@ -105,7 +105,7 @@ class PurchasingController extends Controller
             [
                 'label' => 'Incomplete PO Documents',
                 'count' => $poDocumentsIncomplete,
-                'icon' => 'bi-file-earmark-excel',
+                'icon' => 'file-spreadsheet',
                 'class' => 'warning',
                 'url' => route('purchasing.purchase-orders.index'),
                 'description' => 'PO records that do not have all 4 completed import documents yet.',
@@ -113,7 +113,7 @@ class PurchasingController extends Controller
             [
                 'label' => 'Waiting QC > 2 Days',
                 'count' => $waitingQcLong,
-                'icon' => 'bi-clipboard-pulse',
+                'icon' => 'clipboard-check',
                 'class' => 'info',
                 'url' => route('purchasing.purchase-orders.index', ['status' => 'waiting_qc']),
                 'description' => 'PO records that have arrived but have not completed QC inspection for more than 2 days.',
@@ -121,20 +121,20 @@ class PurchasingController extends Controller
             [
                 'label' => 'Claims Past Deadline',
                 'count' => $claimsPastDeadline,
-                'icon' => 'bi-exclamation-octagon',
+                'icon' => 'octagon-alert',
                 'class' => 'danger',
                 'url' => route('purchasing.claims.index'),
                 'description' => 'Pending claims that have passed the supplier response deadline.',
             ],
         ];
 
-        // Quick tables (tidak di-cache karena harus selalu fresh)
+        // Quick tables remain uncached so the data is always current.
         $prTerbaru = PurchaseRequisition::with('period')->orderBy('created_at', 'desc')->take(5)->get();
         $poTerdekat = PurchaseOrder::with(['supplier', 'quotations.purchaseRequisition'])
             ->whereIn('status', ['active', 'overdue'])->whereNotNull('estimated_arrival')
             ->orderBy('estimated_arrival', 'asc')->take(5)->get();
 
-        // Exchange rates (sudah di-cache oleh model ExchangeRate::latestRate)
+        // Exchange rates are cached by ExchangeRate::latestRate.
         $latestRates = collect(ExchangeRate::CURRENCIES)
             ->mapWithKeys(fn($currency) => [$currency => ExchangeRate::latestRate($currency)]);
 

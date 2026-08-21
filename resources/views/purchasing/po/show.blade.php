@@ -16,7 +16,7 @@
         eyebrow="Purchase Order Details"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to PO List</x-ui.button>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to PO List</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -42,8 +42,8 @@
             <x-slot:actions>
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" class="me-2" />
-                    <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button>
-                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><i class="bi bi-file-earmark-pdf"></i> Print PDF</x-ui.button>
+                    <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><x-ui.icon name="file-spreadsheet" /> Export Excel</x-ui.button>
+                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><x-ui.icon name="file-text" /> Print PDF</x-ui.button>
                 </div>
             </x-slot:actions>
                 <div class="row mb-2">
@@ -60,7 +60,7 @@
                             @foreach($prs as $pr)
                                 <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="text-primary text-decoration-none me-2">
                                     {{ $pr->pr_number ?? '-' }}
-                                    <i class="bi bi-box-arrow-up-right ms-1 tw-text-ui-xs"></i>
+                                    <x-ui.icon name="external-link" class="ms-1 tw-text-ui-xs" />
                                 </a>
                             @endforeach
                             @if($prs->count() > 1)
@@ -83,7 +83,7 @@
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">
                         Est. Arrival
-                        <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Target material arrival date monitored by Purchasing."></i>
+                        <x-ui.icon name="info" class="ms-1" data-bs-toggle="tooltip" data-bs-title="Target material arrival date monitored by Purchasing." />
                     </div>
                     <div class="col-md-8 fw-medium">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
                 </div>
@@ -91,7 +91,7 @@
                     <div class="col-md-4 text-muted small">Actual Arrival</div>
                     <div class="col-md-8 fw-medium">
                         @if($po->actual_arrival)
-                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ $po->actual_arrival->format('d F Y') }}</span>
+                            <span class="text-success"><x-ui.icon name="circle-check" class="me-1" />{{ $po->actual_arrival->format('d F Y') }}</span>
                         @else
                             <span class="text-muted">Not arrived yet</span>
                         @endif
@@ -137,7 +137,7 @@
                                 @if($po->quotations->count() > 1)
                                     <tr class="table-primary">
                                         <td colspan="11" class="fw-bold small ps-3">
-                                            <i class="bi bi-folder2 me-1"></i>
+                                            <x-ui.icon name="folder" class="me-1" />
                                             {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
                                                 ({{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }})
@@ -176,7 +176,7 @@
                                             @if($quotation->purchaseRequisition)
                                                 <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none" title="Open PR detail">
                                                     {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
-                                                    <i class="bi bi-box-arrow-up-right ms-1 tw-text-ui-xs"></i>
+                                                    <x-ui.icon name="external-link" class="ms-1 tw-text-ui-xs" />
                                                 </a>
                                             @else
                                                 -
@@ -269,7 +269,7 @@
                         </div>
                     @elseif($latestInspection->status === 'ng')
                         <div class="alert alert-warning small mb-0">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            <x-ui.icon name="triangle-alert" class="me-1" />
                             Inspection status is NG, but QC evidence photos are not yet available.
                         </div>
                     @endif
@@ -290,8 +290,8 @@
                     @csrf
                     <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                     <button type="submit" class="btn btn-primary w-100 text-start d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-chat-dots me-2"></i> Chat with Supplier</span>
-                        <i class="bi bi-chevron-right"></i>
+                        <span><x-ui.icon name="message-circle-more" class="me-2" /> Chat with Supplier</span>
+                        <x-ui.icon name="chevron-right" />
                     </button>
                 </form>
                 <div class="mt-3 text-muted small text-center">
@@ -304,7 +304,7 @@
             <div class="card border-danger shadow-sm mb-4 tw-scroll-mt-20" id="sec-claim">
                 <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                     <h6 class="mb-0 fw-bold text-danger">
-                        <i class="bi bi-exclamation-octagon me-2"></i>Material Claim
+                        <x-ui.icon name="octagon-alert" class="me-2" />Material Claim
                     </h6>
                     <span class="badge bg-danger">NG</span>
                 </div>
@@ -315,18 +315,18 @@
 
                     @if($activeClaim)
                         <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-octagon me-2"></i> View Claim Material</span>
-                            <i class="bi bi-chevron-right"></i>
+                            <span><x-ui.icon name="octagon-alert" class="me-2" /> View Claim Material</span>
+                            <x-ui.icon name="chevron-right" />
                         </a>
                     @elseif($latestNgInspection)
                         <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection) }}" class="btn btn-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-plus-circle me-2"></i> Submit Material Claim</span>
-                            <i class="bi bi-chevron-right"></i>
+                            <span><x-ui.icon name="plus-circle" class="me-2" /> Submit Material Claim</span>
+                            <x-ui.icon name="chevron-right" />
                         </a>
                     @else
                         <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.claims.index') }}" class="btn btn-outline-danger w-100 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-folder2-open me-2"></i> Open Claim Menu</span>
-                            <i class="bi bi-chevron-right"></i>
+                            <span><x-ui.icon name="folder-open" class="me-2" /> Open Claim Menu</span>
+                            <x-ui.icon name="chevron-right" />
                         </a>
                     @endif
                 </div>
@@ -392,7 +392,7 @@
         @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival)
             <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po) }}" method="POST" id="arrivalForm">
                 @csrf
-                <button type="button" class="btn btn-success w-100 mb-3 py-2 fw-semibold shadow-sm" id="btnConfirmArrival">               <i class="bi bi-box-seam me-1"></i> Confirm Material Arrival
+                <button type="button" class="btn btn-success w-100 mb-3 py-2 fw-semibold shadow-sm" id="btnConfirmArrival">               <x-ui.icon name="package" class="me-1" /> Confirm Material Arrival
                 </button>
             </form>
         @endif
@@ -404,7 +404,7 @@
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold">
             Import Document Tracking
-            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Progress is calculated from 4 required import documents: Invoice, Bill of Lading, Packing List, and Form-E."></i>
+            <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Progress is calculated from 4 required import documents: Invoice, Bill of Lading, Packing List, and Form-E." />
         </h6>
         <span class="badge {{ $docProgress['class'] }} px-3 py-2" id="docProgressBadge" data-bs-toggle="tooltip" data-bs-title="{{ $docProgress['description'] }}">{{ $docProgress['label'] }}</span>
     </div>
@@ -421,7 +421,7 @@
 
         @if($allDocsComplete)
             <div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert">
-                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <x-ui.icon name="circle-check" size="lg" class="me-2" />
                 <span class="fw-medium">All import documents are complete ✅</span>
             </div>
         @endif
@@ -429,16 +429,16 @@
         <div class="row g-3">
             @php
                 $docConfig = [
-                    'invoice' => ['label' => 'Invoice', 'icon' => 'bi-receipt', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
-                    'bl' => ['label' => 'Bill of Lading', 'icon' => 'bi-truck', 'statuses' => ['pending' => 'Not Available', 'issued' => 'Issued', 'done' => 'Accepted']],
-                    'packing_list' => ['label' => 'Packing List', 'icon' => 'bi-list-check', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
-                    'form_e' => ['label' => 'Form-E', 'icon' => 'bi-file-earmark-text', 'statuses' => ['pending' => 'Not Available', 'processing' => 'Processing', 'done' => 'Completed']],
+                    'invoice' => ['label' => 'Invoice', 'icon' => 'receipt', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
+                    'bl' => ['label' => 'Bill of Lading', 'icon' => 'truck', 'statuses' => ['pending' => 'Not Available', 'issued' => 'Issued', 'done' => 'Accepted']],
+                    'packing_list' => ['label' => 'Packing List', 'icon' => 'list-check', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
+                    'form_e' => ['label' => 'Form-E', 'icon' => 'file-text', 'statuses' => ['pending' => 'Not Available', 'processing' => 'Processing', 'done' => 'Completed']],
                 ];
             @endphp
 
             @foreach($po->documents as $doc)
                 @php
-                    $config = $docConfig[$doc->doc_type] ?? ['label' => $doc->doc_type, 'icon' => 'bi-file', 'statuses' => []];
+                    $config = $docConfig[$doc->doc_type] ?? ['label' => $doc->doc_type, 'icon' => 'file', 'statuses' => []];
                     $statusLabel = $config['statuses'][$doc->status] ?? $doc->status;
                     $statusBadge = match($doc->status) {
                         'pending' => 'bg-secondary',
@@ -450,7 +450,7 @@
                 <div class="col-md-6 col-lg-3">
                     <div class="card border h-100" id="doc-card-{{ $doc->id }}">
                         <div class="card-body text-center py-4">
-                            <i class="bi {{ $config['icon'] }} fs-2 mb-2 d-block {{ $doc->status === 'pending' ? 'text-muted' : 'text-primary' }}"></i>
+                            <x-ui.icon :name="$config['icon']" size="lg" class="mb-2 d-block {{ $doc->status === 'pending' ? 'text-muted' : 'text-primary' }}" />
                             <h6 class="fw-bold mb-2">{{ $config['label'] }}</h6>
                             <span class="badge {{ $statusBadge }} mb-2 doc-status-badge" id="doc-badge-{{ $doc->id }}" data-status="{{ $doc->status }}">{{ $statusLabel }}</span>
                             <div class="small text-muted mb-3" id="doc-date-{{ $doc->id }}">
@@ -462,7 +462,7 @@
                                     data-doc-label="{{ $config['label'] }}"
                                     data-doc-status="{{ $doc->status }}"
                                     data-doc-statuses='@json($config['statuses'])'>
-                                <i class="bi bi-pencil-square me-1"></i> Update Status
+                                <x-ui.icon name="square-pen" class="me-1" /> Update Status
                             </button>
                         </div>
                     </div>
@@ -525,7 +525,7 @@
             });
 
             if (matching.length > 0) {
-                // Prioritaskan elemen yang pertama di DOM (kiri) jika sejajar
+                // Prefer the first DOM element when anchors are horizontally aligned.
                 current = matching[0].attr('id');
             }
 
@@ -632,17 +632,17 @@
 
                     if (docsComplete) {
                         if ($('#allDocsAlert').length === 0) {
-                            $('.progress').after('<div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert"><i class="bi bi-check-circle-fill me-2 fs-5"></i><span class="fw-medium">All import documents are complete ✅</span></div>');
+                            $('.progress').after('<div class="alert alert-success d-flex align-items-center mb-4" id="allDocsAlert"><x-ui.icon name="circle-check" size="lg" class="me-2" /><span class="fw-medium">All import documents are complete.</span></div>');
                         }
                     }
 
                     bootstrap.Modal.getInstance(document.getElementById('updateDocModal')).hide();
 
-                    AdasiAlert.toast({
+                    AdasiToast.show({
                         type: 'success',
                         title: @json('Success!'),
-                        text: res.message,
-                        duration: 1500
+                        message: res.message,
+                        autoClose: 1500
                     });
                 }
             },

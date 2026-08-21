@@ -23,7 +23,7 @@ class NotificationService
         string $title,
         string $message,
         string $url = '#',
-        string $icon = 'bi-bell',
+        string $icon = 'bell',
         array $data = [],
         array $replace = [],
     ): void {

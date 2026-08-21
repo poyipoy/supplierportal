@@ -10,11 +10,11 @@ use Illuminate\Http\Request;
 class ReportController extends Controller
 {
     /**
-     * Tampilkan halaman utama Report (Dashboard Export).
+     * Display the main report and export dashboard.
      */
     public function index()
     {
-        // Data master untuk dropdown filter form export
+        // Master data for export filter controls.
         $periods = Period::orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
         $suppliers = User::where('role', 'supplier')->orderBy('name')->get();
 

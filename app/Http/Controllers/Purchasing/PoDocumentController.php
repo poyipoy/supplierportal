@@ -56,7 +56,7 @@ class PoDocumentController extends Controller
                 'Document Status Updated',
                 "Document {$docLabel} on PO {$po->po_number} has been updated to \"{$statusLabel}\".",
                 route('purchasing.purchase-orders.show', $po, absolute: false),
-                'bi-file-earmark-check text-primary',
+                'file-check text-primary',
                 [
                     'category' => NotificationCategory::DOCUMENT,
                     'document_id' => $doc->id,
@@ -78,7 +78,7 @@ class PoDocumentController extends Controller
                 'All Import Documents Complete',
                 "All import documents for PO {$po->po_number} are complete. Confirm material arrival if it has arrived.",
                 route('purchasing.purchase-orders.show', $po, absolute: false),
-                'bi-check2-circle text-success',
+                'circle-check text-success',
                 [
                     'category' => NotificationCategory::DOCUMENT,
                     'document_id' => $doc->id,

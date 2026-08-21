@@ -48,11 +48,11 @@
                 id="exportRequisitionsBtn"
                 :data-export-url="route('purchasing.export.requisitions')"
             >
-                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> 
+                <x-ui.icon name="file-spreadsheet" />
                 Export Excel
             </x-ui.button>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
-                <i class="bi bi-plus-circle" aria-hidden="true"></i> 
+                <x-ui.icon name="plus-circle" />
                 Create Requisition
             </x-ui.button>
         </x-slot:actions>
@@ -82,7 +82,7 @@
             </x-ui.select>
 
             <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset tw-w-full shell:tw-w-auto">
-                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> 
+                <x-ui.icon name="rotate-ccw" />
                 Reset filters
             </x-ui.button>
 
@@ -165,7 +165,7 @@
                     type: 'button',
                     class: 'ui-focus-ring tw-inline-flex tw-h-6 tw-w-6 tw-items-center tw-justify-center tw-rounded-ui-full hover:tw-bg-surface',
                     'aria-label': `Remove ${label} filter`
-                }).append($('<i>', { class: 'bi bi-x', 'aria-hidden': 'true' }));
+                }).append($('<i>', { class: 'bi x', 'aria-hidden': 'true' }));
 
                 $remove.on('click', () => $(`#${targetId}`).val('').trigger('change'));
                 $chip.append(document.createTextNode(label), $remove);

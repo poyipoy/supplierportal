@@ -124,12 +124,12 @@ class PurchaseOrderController extends Controller
                         $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
                         $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
                         if ($activeClaim) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim).'" class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-octagon me-1"></i> Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim).'" class="btn btn-sm btn-outline-danger">Claim</a>';
                         } elseif ($latestNgInspection) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection).'" class="btn btn-sm btn-danger"><i class="bi bi-plus-circle me-1"></i> Create Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection).'" class="btn btn-sm btn-danger">Create Claim</a>';
                         }
                     }
-                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Detail</a>';
+                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="btn btn-sm btn-outline-info">Details</a>';
                     $html .= '</div>';
 
                     return $html;
@@ -170,8 +170,8 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * Form buat PO dari quotation terpilih.
-     * Sekarang mendukung konsolidasi: menampilkan quotation lain dari supplier & currency yang sama.
+     * Build a PO from the selected quotation.
+     * Supports consolidation across quotations with the same supplier and currency.
      */
     public function create($quotation_id)
     {
@@ -217,7 +217,7 @@ class PurchaseOrderController extends Controller
 
     /**
      * Save a new PO in an atomic transaction.
-     * Mendukung multiple quotation_ids untuk konsolidasi.
+     * Supports multiple quotation_ids for consolidation.
      */
     public function store(Request $request)
     {
@@ -228,7 +228,7 @@ class PurchaseOrderController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Load all quotation yang dipilih
+        // Load all selected quotations.
         /** @var Collection<Quotation> $quotations */
         $quotations = Quotation::with(['purchaseRequisition', 'exchange_rate'])
             ->whereIn('id', $request->quotation_ids)
@@ -263,7 +263,7 @@ class PurchaseOrderController extends Controller
         $supplierId = $supplierIds->first();
         $currency = $currencies->first();
 
-        // Ambil kurs terbaru sebagai fallback
+        // Use the latest exchange rate as a fallback.
         $latestRate = ExchangeRate::where('currency', $currency)
             ->orderBy('valid_from', 'desc')
             ->first();
@@ -313,7 +313,7 @@ class PurchaseOrderController extends Controller
 
             DB::commit();
 
-            // Notify supplier: PO diterbitkan
+            // Notify the supplier that the PO has been issued.
             $supplierUser = $quotations->first()->supplier;
             if ($supplierUser) {
                 $prCount = $quotations->count();
@@ -325,7 +325,7 @@ class PurchaseOrderController extends Controller
                     'New PO Issued',
                     "Purchase Order {$po->po_number} has been issued for your quotation{$prLabel}.",
                     route('supplier.purchase-orders.show', $po, absolute: false),
-                    'bi-receipt text-primary',
+                    'receipt text-primary',
                     [
                         'category' => NotificationCategory::OTHER,
                         'po_id' => $po->id,
@@ -411,7 +411,7 @@ class PurchaseOrderController extends Controller
             'Material Arrived - Ready for Inspection',
             "Material from PO {$po->po_number} has arrived. Please perform QC inspection.",
             route('qc.inspections.create', $po, absolute: false),
-            'bi-box-seam text-warning',
+            'package text-warning',
             [
                 'category' => NotificationCategory::OTHER,
                 'po_id' => $po->id,

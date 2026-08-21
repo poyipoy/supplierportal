@@ -1,15 +1,15 @@
 <div class="btn-group" role="group">
     <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi bi-upload me-1"></i> Import Data
+        <x-ui.icon name="upload" class="me-1" /> Import Data
     </button>
     <ul class="dropdown-menu dropdown-menu-end">
         <li><a class="dropdown-item" href="{{ route('supplier.quotations.import-template', $pr) }}">
-                <i class="bi bi-file-earmark-arrow-down me-1"></i> Download Template
+                <x-ui.icon name="file-down" class="me-1" /> Download Template
             </a></li>
         <li><hr class="dropdown-divider"></li>
         <li>
             <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#quotationImportModal">
-                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Import Excel
+                <x-ui.icon name="file-spreadsheet" class="me-1" /> Import Excel
             </button>
         </li>
     </ul>

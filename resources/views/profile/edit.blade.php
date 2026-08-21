@@ -4,103 +4,41 @@
 @section('page-title', 'Profile & Security')
 
 @section('content')
-    <div class="container-fluid px-0">
-        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2 mb-4">
-            <div>
-                <h4 class="mb-1 fw-bold">Profile &amp; Security</h4>
-                <p class="text-muted mb-0">Manage your account information, password, and sign-in security.</p>
-            </div>
-            <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
-                <i class="bi bi-person-check me-1"></i>{{ ucfirst($user->role) }} account
-            </span>
-        </div>
+    <div class="tw-grid tw-gap-6">
+        <x-ui.page-header
+            title="Profile & Security"
+            description="Manage your account information, password, sign-in security, and active sessions."
+            eyebrow="Account"
+        >
+            <x-slot:meta>
+                <x-ui.status-chip tone="info"><x-ui.icon name="user-check" size="sm" />{{ ucfirst($user->role) }} account</x-ui.status-chip>
+            </x-slot:meta>
+        </x-ui.page-header>
 
-        <div class="row g-4">
-            <div class="col-12 col-xl-7">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-bottom py-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
-                                <i class="bi bi-person"></i>
-                            </span>
-                            <div>
-                                <h6 class="mb-0 fw-semibold">Personal Information</h6>
-                                <small class="text-muted">Name and email address for this account.</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        @include('profile.partials.update-profile-information-form')
-                    </div>
-                </div>
+        <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,1.35fr)_minmax(20rem,1fr)] xl:tw-items-start">
+            <div class="tw-grid tw-gap-6">
+                <x-ui.card title="Personal Information" description="Name and email address for this account.">
+                    @include('profile.partials.update-profile-information-form')
+                </x-ui.card>
 
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-bottom py-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
-                                <i class="bi bi-key"></i>
-                            </span>
-                            <div>
-                                <h6 class="mb-0 fw-semibold">Change Password</h6>
-                                <small class="text-muted">Use a strong password with at least 12 characters.</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        @include('profile.partials.update-password-form')
-                    </div>
-                </div>
+                <x-ui.card title="Change Password" description="Use a strong password with at least 12 characters.">
+                    @include('profile.partials.update-password-form')
+                </x-ui.card>
             </div>
 
-            <div class="col-12 col-xl-5">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-bottom py-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
-                                <i class="bi bi-shield-lock"></i>
-                            </span>
-                            <div>
-                                <h6 class="mb-0 fw-semibold">Two-Factor Authentication</h6>
-                                <small class="text-muted">Optional additional protection for your sign-in.</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        @include('profile.partials.two-factor-authentication-form')
-                    </div>
-                </div>
+            <div class="tw-grid tw-gap-6">
+                <x-ui.card title="Two-Factor Authentication" description="Optional additional protection for your sign-in.">
+                    @include('profile.partials.two-factor-authentication-form')
+                </x-ui.card>
 
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-bottom py-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center justify-content-center tw-h-[34px] tw-w-[34px]">
-                                <i class="bi bi-laptop"></i>
-                            </span>
-                            <div>
-                                <h6 class="mb-0 fw-semibold">Other Devices</h6>
-                                <small class="text-muted">End access from other active sessions.</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        @include('profile.partials.logout-other-devices-form')
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12">
-                <div class="card border-danger-subtle shadow-sm">
-                    <div class="card-header bg-danger-subtle border-danger-subtle py-3">
-                        <div class="d-flex align-items-center gap-2 text-danger-emphasis">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <h6 class="mb-0 fw-semibold">Danger Zone</h6>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        @include('profile.partials.delete-user-form')
-                    </div>
-                </div>
+                <x-ui.card title="Other Devices" description="End access from other active sessions.">
+                    @include('profile.partials.logout-other-devices-form')
+                </x-ui.card>
             </div>
         </div>
+
+        <x-ui.card title="Danger Zone" description="Permanently delete this account and its eligible data." class="tw-border-error">
+            @include('profile.partials.delete-user-form')
+        </x-ui.card>
     </div>
 @endsection

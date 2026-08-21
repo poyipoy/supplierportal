@@ -1,7 +1,7 @@
 <section>
     @if ($user->hasTwoFactorAuthentication())
         <div class="alert alert-success d-flex align-items-start gap-2 small mb-4" role="status">
-            <i class="bi bi-shield-check fs-5"></i>
+            <x-ui.icon name="shield-check" size="lg" />
             <div>
                 <div class="fw-semibold">Two-factor authentication is enabled.</div>
                 <div>Use your authenticator app or a recovery code when you sign in.</div>
@@ -11,7 +11,7 @@
         <form method="POST" action="{{ route('profile.two-factor.recovery-codes') }}" class="mb-4">
             @csrf
             <button type="submit" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-repeat me-1"></i>Regenerate Recovery Codes
+                <x-ui.icon name="refresh-cw" class="me-1" />Regenerate Recovery Codes
             </button>
         </form>
 
@@ -32,12 +32,12 @@
                 @enderror
             </div>
             <button type="submit" class="btn btn-outline-danger">
-                <i class="bi bi-shield-x me-1"></i>Disable Two-Factor Authentication
+                <x-ui.icon name="shield-x" class="me-1" />Disable Two-Factor Authentication
             </button>
         </form>
     @else
         <div class="alert alert-light border d-flex align-items-start gap-2 small mb-4">
-            <i class="bi bi-shield-lock fs-5 text-primary"></i>
+            <x-ui.icon name="shield-lock" size="lg" class="text-primary" />
             <div>
                 <div class="fw-semibold">Two-factor authentication is optional.</div>
                 <div class="text-muted">Add an authenticator code to protect this account beyond its password.</div>
@@ -47,7 +47,7 @@
         <form method="POST" action="{{ route('profile.two-factor.start') }}">
             @csrf
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-qr-code-scan me-1"></i>Set Up Two-Factor Authentication
+                <x-ui.icon name="scan-qr-code" class="me-1" />Set Up Two-Factor Authentication
             </button>
         </form>
     @endif

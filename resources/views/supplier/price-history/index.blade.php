@@ -8,8 +8,8 @@
     <x-supplier.price-history-tabs active="overview" />
 
 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
-    <x-ui.metric-card label="Materials Offered" :value="number_format($stats['total_materials'] ?? 0, 0, ',', '.')" icon="bi-box-seam" />
-    <x-ui.metric-card label="Quotation Items" :value="number_format($stats['total_quotations'] ?? 0, 0, ',', '.')" icon="bi-file-earmark-check" tone="success" />
+    <x-ui.metric-card label="Materials Offered" :value="number_format($stats['total_materials'] ?? 0, 0, ',', '.')" icon="package" />
+    <x-ui.metric-card label="Quotation Items" :value="number_format($stats['total_quotations'] ?? 0, 0, ',', '.')" icon="file-check" tone="success" />
 </div>
 
 <x-ui.data-table title="Materials and Latest Price" description="Server-side results include your latest converted price, range, latest PO date, and quotation status.">
@@ -18,7 +18,7 @@
                     <tr>
                         <th>Material</th>
                         <th>Total Quotations</th>
-                        <th>Price Terakhir (IDR) & Range Price</th>
+                        <th>Latest Price (IDR) &amp; Price Range</th>
                         <th>Last PO Date</th>
                         <th>Latest Status</th>
                         <th class="text-center tw-w-[120px]">Action</th>

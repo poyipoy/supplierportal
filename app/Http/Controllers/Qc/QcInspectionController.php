@@ -58,7 +58,7 @@ class QcInspectionController extends Controller
             ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
             ->addColumn('arrival_date', fn ($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
             ->addColumn('item_count', fn ($po) => $po->quotations->sum('items_count').' Item')
-            ->addColumn('action', fn ($po) => '<a href="'.route('qc.inspections.create', $po).'" class="btn btn-sm btn-primary" style="background-color: var(--adasi-blue);"><i class="bi bi-clipboard-check me-1"></i> Start Inspection</a>')
+            ->addColumn('action', fn ($po) => '<a href="'.route('qc.inspections.create', $po).'" class="btn btn-sm btn-primary">Start Inspection</a>')
             ->rawColumns(['action'])
             ->make(true);
     }
@@ -81,7 +81,7 @@ class QcInspectionController extends Controller
                 StatusHelper::qcLabel($i->status)
             ))
             ->addColumn('inspector_name', fn ($i) => $i->inspector->name ?? '-')
-            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Details</a>')
+            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="btn btn-sm btn-outline-info">Details</a>')
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
@@ -236,7 +236,7 @@ class QcInspectionController extends Controller
                 $isOk
                     ? route('purchasing.purchase-orders.show', $po, absolute: false)
                     : route('purchasing.claims.create', $inspection, absolute: false),
-                $isOk ? 'bi-check-circle text-success' : 'bi-exclamation-triangle text-danger',
+                $isOk ? 'check-circle text-success' : 'triangle-alert text-danger',
                 [
                     'category' => NotificationCategory::OTHER,
                     'po_id' => $po->id,

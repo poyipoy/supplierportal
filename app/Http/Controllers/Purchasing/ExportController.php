@@ -179,7 +179,7 @@ class ExportController extends Controller
 
     private function dispatchResponse(Request $request, ExportJob $exportJob)
     {
-        $message = 'Permintaan export diterima. File akan terunduh otomatis ketika siap.';
+        $message = 'The export request was accepted. The file will download automatically when ready.';
 
         if ($request->wantsJson()) {
             return response()->json([

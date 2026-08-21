@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Start QC Inspection: ' . $po->po_number . ' - ADASI Portal')
-@section('page-title', 'QC Inspection Material')
+@section('page-title', 'Material QC Inspection')
 
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Inspect ' . $po->po_number" description="Compare each requested specification with actual measurements, mark OK/NG, and attach evidence for every NG item." eyebrow="QC">
-        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Inspection List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Inspection List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 {{-- Info PO Header --}}
@@ -135,7 +135,7 @@
 
                         {{-- NG Photo Upload (Hidden by default) --}}
                         <div class="ng-photo-section mt-3 p-3 bg-danger bg-opacity-10 border border-danger rounded d-none" id="photo-section-{{ $index }}">
-                            <label for="photo-input-{{ $index }}" class="form-label fw-bold text-danger small mb-2"><i class="bi bi-camera me-1"></i>NG Evidence Photos (Required)</label>
+                            <label for="photo-input-{{ $index }}" class="form-label fw-bold text-danger small mb-2"><x-ui.icon name="camera" class="me-1" />NG Evidence Photos (Required)</label>
                             <input type="file" id="photo-input-{{ $index }}" name="attachments[{{ $index }}][]" class="form-control form-control-sm photo-input" accept=".jpg,.jpeg,.png" multiple disabled aria-describedby="photo-input-help-{{ $index }}">
                             <div class="form-text text-danger small" id="photo-input-help-{{ $index }}">Max 10MB per file. Select at least 1 photo because this item status is NG.</div>
                         </div>
@@ -147,7 +147,7 @@
 
     <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
         <x-ui.button :href="route('qc.inspections.index')" variant="ghost">Cancel</x-ui.button>
-        <x-ui.button type="button" id="btnSubmit"><i class="bi bi-save"></i> Save Inspection Results</x-ui.button>
+        <x-ui.button type="button" id="btnSubmit"><x-ui.icon name="save" /> Save Inspection Results</x-ui.button>
     </div>
 </form>
 </div>
@@ -177,7 +177,7 @@
                         const diff = Math.abs(actualVal - specVal);
                         const ratio = diff / specVal;
                         
-                        if (ratio > 0.05) { // Lebih dari 5%
+                        if (ratio > 0.05) { // More than 5%.
                             $(this).addClass('is-invalid');
                         }
                     }

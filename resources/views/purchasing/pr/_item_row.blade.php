@@ -136,7 +136,7 @@
     </td>
     <td class="text-center pr-sticky-action">
         <button type="button" class="btn btn-sm btn-outline-danger border-0 pr-delete-button" onclick="removeRow(this)" aria-label="Delete material row">
-            <i class="bi bi-trash"></i>
+            <x-ui.icon name="trash" />
         </button>
     </td>
 </tr>

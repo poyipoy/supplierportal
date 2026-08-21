@@ -20,7 +20,7 @@
                 </button>
             </li>
         </ul>
-        <x-ui.button :href="route('qc.export.inspections', request()->all())" variant="secondary" size="sm" class="d-none" id="inspectionExportLink" data-async-export><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button>
+        <x-ui.button :href="route('qc.export.inspections', request()->all())" variant="secondary" size="sm" class="d-none" id="inspectionExportLink" data-async-export><x-ui.icon name="file-spreadsheet" /> Export Excel</x-ui.button>
     </div>
     <div class="tw-p-4 shell:tw-p-5">
         <div class="tab-content" id="inspectionTabsContent">
@@ -58,7 +58,7 @@
                         </div>
                         <div class="col-12 col-md-auto">
                             <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="resetHistoryStatusFilter">
-                                <i class="bi bi-x-circle me-1"></i> Reset
+                                <x-ui.icon name="x-circle" class="me-1" /> Reset
                             </button>
                         </div>
                         <div class="col-12 col-md">

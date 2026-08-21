@@ -33,7 +33,7 @@
                                 <td>
                                     @if($conv->latestMessage)
                                         @if($conv->latestMessage->sender_id === auth()->id())
-                                            <i class="bi bi-reply text-muted me-1"></i>
+                                            <x-ui.icon name="reply" class="text-muted me-1" />
                                         @endif
                                         {{ Str::limit($conv->latestMessage->body, 50) }}
                                     @else
@@ -54,7 +54,7 @@
                                 <td class="text-end">
                                     @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
                                     <a href="{{ route('supplier.conversations.show', $conv) }}" class="btn btn-sm btn-outline-primary position-relative">
-                                        <i class="bi bi-chat-text"></i> Open Chat
+                                        <x-ui.icon name="message-square-text" /> Open Chat
                                         @if($unreadCount > 0)
                                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                                 {{ $unreadCount }}

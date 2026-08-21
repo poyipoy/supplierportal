@@ -7,7 +7,7 @@
     <x-ui.page-header title="Announcements" description="Create, publish, and maintain portal-wide notices." eyebrow="Admin">
         <x-slot:actions>
             <x-ui.button :href="route('admin.announcements.create')" size="sm">
-                <i class="bi bi-plus-circle"></i> 
+                <x-ui.icon name="plus-circle" />
                 Create Announcement
             </x-ui.button>
         </x-slot:actions>
@@ -29,21 +29,21 @@
                                 <form action="{{ route('admin.announcements.toggle-publish', $ann->id) }}" method="POST">
                                     @csrf
                                     <x-ui.button type="submit" :variant="$ann->published_at ? 'secondary' : 'primary'" size="sm" icon-only :label="$ann->published_at ? 'Unpublish announcement' : 'Publish announcement'">
-                                        <i class="bi {{ $ann->published_at ? 'bi-eye-slash' : 'bi-eye' }}" aria-hidden="true"></i>
+                                        <x-ui.icon :name="$ann->published_at ? 'eye-off' : 'eye'" />
                                     </x-ui.button>
                                 </form>
-                                <x-ui.icon-button icon="bi-pencil" label="Edit announcement" :href="route('admin.announcements.edit', $ann->id)" variant="secondary" size="sm" />
+                                <x-ui.icon-button icon="pencil" label="Edit announcement" :href="route('admin.announcements.edit', $ann->id)" variant="secondary" size="sm" />
                                 <form action="{{ route('admin.announcements.destroy', $ann->id) }}" method="POST">
                                     @csrf @method('DELETE')
                                     <x-ui.button type="submit" variant="danger" size="sm" icon-only label="Delete announcement" onclick="return confirm(@json('Are you sure you want to delete?'))">
-                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                        <x-ui.icon name="trash" />
                                     </x-ui.button>
                                 </form>
                             </div>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6"><x-ui.empty-state icon="bi-megaphone" title="No announcements yet" description="Create an announcement when there is portal-wide information to share." /></td></tr>
+                    <tr><td colspan="6"><x-ui.empty-state icon="megaphone" title="No announcements yet" description="Create an announcement when there is portal-wide information to share." /></td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -145,7 +145,7 @@ class ConversationMessageController extends Controller
                 'New message from '.$senderName,
                 $preview,
                 $url,
-                'bi-chat-dots',
+                'message-circle-more',
                 [
                     'category' => NotificationCategory::CHAT,
                     'conversation_id' => $conversation->id,
@@ -506,7 +506,7 @@ class ConversationMessageController extends Controller
             $title,
             $message,
             route('supplier.quotations.show', $quotation, absolute: false),
-            'bi-chat-dots text-primary',
+            'message-circle-more text-primary',
             [
                 'category' => $category,
                 'conversation_id' => $conversation->id,

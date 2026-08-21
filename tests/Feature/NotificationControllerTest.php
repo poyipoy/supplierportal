@@ -89,7 +89,7 @@ class NotificationControllerTest extends TestCase
                 'title' => 'Test notification',
                 'message' => 'Test message',
                 'url' => route($user->role.'.dashboard', absolute: false),
-                'icon' => 'bi-bell',
+                'icon' => 'bell',
                 'category' => $category,
             ],
         ]);

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Quotation List - ADASI Portal')
-@section('page-title', 'Quotation Supplier')
+@section('page-title', 'Supplier Quotations')
 
 @push('styles')
     <style>
@@ -132,7 +132,7 @@
                     id="exportQuotationsBtn"
                     :data-export-url="route('purchasing.export.quotations')"
                 >
-                    <i class="bi bi-file-earmark-excel" aria-hidden="true"></i> 
+                    <x-ui.icon name="file-spreadsheet" />
                     Export Excel
                 </x-ui.button>
                 <x-ui.status-chip tone="info" id="quotationCountBadge">{{ $quotations->total() }} quotations</x-ui.status-chip>
@@ -157,15 +157,15 @@
                     <label class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Date range</label>
                     <div class="date-range-control" id="quotationDateRangeControl">
                         <div class="date-range-segment">
-                            <span class="date-range-label">Dari</span>
+                            <span class="date-range-label">From</span>
                             <input type="month" name="date_from" id="quotationDateFrom" value="{{ request('date_from') }}"
-                                placeholder="MM/YYYY" aria-label="Dari date">
+                                placeholder="MM/YYYY" aria-label="Start date">
                         </div>
                         <span class="date-range-divider">-</span>
                         <div class="date-range-segment">
-                            <span class="date-range-label">Sampai</span>
+                            <span class="date-range-label">To</span>
                             <input type="month" name="date_to" id="quotationDateTo" value="{{ request('date_to') }}"
-                                placeholder="MM/YYYY" aria-label="Sampai date" aria-describedby="quotationDateError">
+                                placeholder="MM/YYYY" aria-label="End date" aria-describedby="quotationDateError">
                         </div>
                     </div>
                     <div class="d-none tw-text-ui-xs tw-font-medium tw-text-error" id="quotationDateError" aria-live="polite">End date cannot be before start date.</div>
@@ -193,7 +193,7 @@
                         @endforeach
                 </x-ui.select>
                 <x-ui.button :href="route('purchasing.quotations.index')" variant="ghost" size="sm" class="tw-w-full xl:tw-col-span-2">
-                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> 
+                    <x-ui.icon name="rotate-ccw" />
                     Reset filters
                 </x-ui.button>
             </form>
@@ -214,7 +214,7 @@
                             <th>Date Submitted</th>
                             <th>
                                 Valid Until
-                                <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Expired quotations cannot be used to create a PO until the supplier submits a revision."></i>
+                                <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Expired quotations cannot be used to create a PO until the supplier submits a revision." />
                             </th>
                             <th class="text-end">Action</th>
                         </tr>
@@ -225,9 +225,7 @@
                                 <td>{{ $quotations->firstItem() + $i }}</td>
                                 <td class="fw-medium">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-primary-container">
-                                            <i class="bi bi-building text-primary small"></i>
-                                        </div>
+                                        <x-ui.icon name="building" size="lg" class="text-primary tw-shrink-0" />
                                         {{ $q->supplier->name }}
                                     </div>
                                 </td>
@@ -253,14 +251,14 @@
                                 </td>
                                 <td class="text-end">
                                     <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q)" variant="ghost" size="sm">
-                                        <i class="bi bi-eye" aria-hidden="true"></i> 
+                                        <x-ui.icon name="eye" />
                                         Detail
                                     </x-ui.button>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10"><x-ui.empty-state icon="bi-inbox" title="No quotations received" description="Submitted supplier quotations will appear here." /></td>
+                                <td colspan="10"><x-ui.empty-state icon="inbox" title="No quotations received" description="Submitted supplier quotations will appear here." /></td>
                             </tr>
                         @endforelse
                     </tbody>

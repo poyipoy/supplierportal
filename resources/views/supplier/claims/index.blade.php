@@ -16,7 +16,7 @@
                         <th>Date Submitted</th>
                         <th>
                             Deadline
-                            <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Deadline for supplier to respond to material claims."></i>
+                            <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Deadline for supplier to respond to material claims." />
                         </th>
                         <th class="text-center">Status</th>
                         <th class="text-end">Action</th>

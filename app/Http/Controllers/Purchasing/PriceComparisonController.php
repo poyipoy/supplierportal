@@ -21,8 +21,8 @@ class PriceComparisonController extends Controller
     private array $routeModelCache = [];
 
     /**
-     * View 1: Antar Supplier - menampilkan semua penawaran (quotation items) 
-     * dalam satu PR secara side-by-side.
+     * View 1: supplier comparison across all quotation items.
+     * within a single PR, shown side by side.
      * 
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
@@ -35,7 +35,7 @@ class PriceComparisonController extends Controller
             ->whereHas('quotations', function ($q) {
                 $q->whereIn('status', ['submitted', 'accepted', 'rejected']);
             }, '>=', 2)
-            ->where('created_at', '>=', now()->subYears(3)) // Batasi maks 3 tahun terakhir
+            ->where('created_at', '>=', now()->subYears(3)) // Limit the view to the latest three years.
             ->orderByDesc('created_at')
             ->get();
 
@@ -52,7 +52,7 @@ class PriceComparisonController extends Controller
                 . ($pr->period->display_label ?? $pr->period->name ?? '-')
                 . ' ('
                 . $pr->quotations->count()
-                . ' penawaran)';
+                . ' quotation(s))';
 
             $previewMaterials = $pr->items->take(3)->pluck('material_name')->implode(', ');
             if ($pr->items->count() > 3) {
@@ -177,7 +177,7 @@ class PriceComparisonController extends Controller
     }
 
     /**
-     * View 2: Historis - grafik garis harga material dari satu supplier lintas periode.
+     * View 2: historical material pricing for one supplier across periods.
      */
     public function historical(Request $request)
     {
@@ -268,7 +268,7 @@ class PriceComparisonController extends Controller
     }
 
     /**
-     * View 3: vs Harga Terbaik - harga saat ini vs MIN(price_per_kg) histori.
+     * View 3: current price versus the historical MIN(price_per_kg).
      */
     public function vsBestPrice(Request $request)
     {
@@ -326,10 +326,10 @@ class PriceComparisonController extends Controller
                 return '<div class="fw-bold">' . e($row->material_name) . '</div>'
                     . '<div class="text-muted small">Qty: ' . number_format((int) ($row->quantity ?? 1), 0, ',', '.') . '</div>'
                     . '<div class="text-muted small">Berat/unit: ' . $this->formatNumber($row->weight_needed) . ' kg</div>'
-                    . '<div class="text-muted small">Total berat: ' . $this->formatNumber($row->total_weight) . ' kg</div>'
+                    . '<div class="text-muted small">Total weight: ' . $this->formatNumber($row->total_weight) . ' kg</div>'
                     . '<a href="' . e($prUrl) . '" class="small text-primary text-decoration-none">'
                     . e($row->current_pr_number ?: '-')
-                    . '<i class="bi bi-arrow-right-short ms-1"></i></a>';
+                    . '</a>';
             })
             ->addColumn('current_price_display', function ($row) {
                 return '<div class="fw-bold text-primary">' . $this->formatRupiah($row->current_price_idr) . '</div>'
@@ -350,7 +350,7 @@ class PriceComparisonController extends Controller
                     );
                     $html .= '<a href="' . e($bestPrUrl) . '" class="small text-primary text-decoration-none">'
                         . e($row->best_pr_number ?: '-')
-                        . '<i class="bi bi-arrow-right-short ms-1"></i></a>';
+                        . '</a>';
                 } else {
                     $html .= '<div class="text-muted small">PR: -</div>';
                 }
@@ -372,7 +372,7 @@ class PriceComparisonController extends Controller
                 );
 
                 return '<span class="badge ' . $status['class'] . '">'
-                    . '<i class="bi ' . $status['icon'] . ' me-1"></i>' . e($status['label'])
+                    . e($status['label'])
                     . '</span><div class="text-muted small mt-1">' . e($status['recommendation']) . '</div>';
             })
             ->addColumn('action', function ($row) use ($returnUrl) {
@@ -381,9 +381,8 @@ class PriceComparisonController extends Controller
                     $this->routeModel(Quotation::class, $row->current_quotation_id),
                     $returnUrl
                 );
-                $html = '<div class="btn-group btn-group-sm" role="group">'
-                    . '<a href="' . e($currentQuotationUrl) . '" class="btn btn-outline-primary" title="Lihat penawaran saat ini">'
-                    . '<i class="bi bi-file-earmark-text"></i></a>';
+                $html = '<div class="btn-group btn-group-sm" role="group" aria-label="Quotation comparison actions">'
+                    . '<a href="' . e($currentQuotationUrl) . '" class="btn btn-outline-primary" title="View current quotation">Current</a>';
 
                 if ($row->best_quotation_id) {
                     $bestQuotationUrl = $this->routeWithReturn(
@@ -391,8 +390,7 @@ class PriceComparisonController extends Controller
                         $this->routeModel(Quotation::class, $row->best_quotation_id),
                         $returnUrl
                     );
-                    $html .= '<a href="' . e($bestQuotationUrl) . '" class="btn btn-outline-success" title="Lihat penawaran terbaik histori">'
-                        . '<i class="bi bi-trophy"></i></a>';
+                    $html .= '<a href="' . e($bestQuotationUrl) . '" class="btn btn-outline-success" title="View historical best quotation">Best</a>';
                 }
 
                 return $html . '</div>';
@@ -624,7 +622,7 @@ class PriceComparisonController extends Controller
             return [
                 'label' => 'N/A',
                 'class' => 'bg-secondary',
-                'icon' => 'bi-dash-circle',
+                'icon' => 'circle-minus',
                 'recommendation' => 'Safe',
             ];
         }
@@ -633,7 +631,7 @@ class PriceComparisonController extends Controller
             return [
                 'label' => 'Best Price',
                 'class' => 'bg-success',
-                'icon' => 'bi-check-circle',
+                'icon' => 'check-circle',
                 'recommendation' => 'Safe',
             ];
         }
@@ -642,7 +640,7 @@ class PriceComparisonController extends Controller
             return [
                 'label' => 'Competitive',
                 'class' => 'bg-primary',
-                'icon' => 'bi-shield-check',
+                'icon' => 'shield-check',
                 'recommendation' => 'Safe',
             ];
         }
@@ -650,7 +648,7 @@ class PriceComparisonController extends Controller
         return [
             'label' => 'Above History',
             'class' => 'bg-warning text-dark',
-            'icon' => 'bi-info-circle',
+            'icon' => 'info',
             'recommendation' => 'Safe, check context',
         ];
     }
@@ -965,19 +963,19 @@ class PriceComparisonController extends Controller
     {
         if ($periodView === 'yearly') {
             return [
-                '1y' => '1 Tahun',
-                '2y' => '2 Tahun',
-                '5y' => '5 Tahun',
-                'all' => 'Semua Tahun',
+                '1y' => '1 Year',
+                '2y' => '2 Years',
+                '5y' => '5 Years',
+                'all' => 'All Years',
             ];
         }
 
         return [
-            '3m' => '3 Bulan',
-            '6m' => '6 Bulan',
-            '12m' => '12 Bulan',
-            '24m' => '24 Bulan',
-            'all' => 'Semua Bulan',
+            '3m' => '3 Months',
+            '6m' => '6 Months',
+            '12m' => '12 Months',
+            '24m' => '24 Months',
+            'all' => 'All Months',
         ];
     }
 

@@ -154,10 +154,10 @@ class QuotationController extends Controller
                     $status = $quotation ? $quotation->status : 'unresponded';
 
                     $action = match ($status) {
-                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1"></i> Create Quotation</a>',
-                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Continue</a>',
-                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i> Revise Quotation</a>',
-                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i> View</a>' : '-',
+                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-primary">Create Quotation</a>',
+                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-outline-secondary">Continue</a>',
+                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="btn btn-sm btn-warning text-dark">Revise Quotation</a>',
+                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="btn btn-sm btn-outline-success">View</a>' : '-',
                     };
 
                     return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';
@@ -438,7 +438,7 @@ class QuotationController extends Controller
                     $title,
                     $message,
                     route('purchasing.requisitions.show', $pr, absolute: false),
-                    'bi-envelope-check text-success',
+                    'mail-check text-success',
                     [
                         'category' => NotificationCategory::QUOTATION,
                         'quotation_id' => $quotation->id,

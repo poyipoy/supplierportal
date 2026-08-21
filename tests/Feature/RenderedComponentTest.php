@@ -19,10 +19,10 @@ class RenderedComponentTest extends TestCase
 
     public function test_button_with_icon_renders_cleanly(): void
     {
-        $html = Blade::render('<x-ui.button><i class="bi bi-save"></i> Save</x-ui.button>');
+        $html = Blade::render('<x-ui.button><x-ui.icon name="save" /> Save</x-ui.button>');
         
         $this->assertStringContainsString('Save', $html);
-        $this->assertStringContainsString('bi-save', $html);
+        $this->assertStringContainsString('<svg', $html);
         $this->assertNoCompilerLeakage($html);
     }
 
@@ -31,8 +31,8 @@ class RenderedComponentTest extends TestCase
         $template = <<<'BLADE'
 <x-ui.page-header title="Dashboard">
     <x-slot:actions>
-        <x-ui.button variant="primary"><i class="bi bi-plus"></i> New</x-ui.button>
-        <x-ui.button variant="secondary"><i class="bi bi-export"></i> Export</x-ui.button>
+        <x-ui.button variant="primary"><x-ui.icon name="plus" /> New</x-ui.button>
+        <x-ui.button variant="secondary"><x-ui.icon name="download" /> Export</x-ui.button>
     </x-slot:actions>
 </x-ui.page-header>
 BLADE;
@@ -49,7 +49,7 @@ BLADE;
         $template = <<<'BLADE'
 <x-ui.data-table id="test-table">
     <x-slot:toolbar>
-        <x-ui.button><i class="bi bi-arrow-down"></i> Download</x-ui.button>
+        <x-ui.button><x-ui.icon name="arrow-down" /> Download</x-ui.button>
     </x-slot:toolbar>
     <x-slot:filters>
         <select><option>Status</option></select>

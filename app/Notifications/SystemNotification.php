@@ -23,7 +23,7 @@ class SystemNotification extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct($title, $message, $url = '#', $icon = 'bi-bell', array $data = [], array $replace = [])
+    public function __construct($title, $message, $url = '#', $icon = 'bell', array $data = [], array $replace = [])
     {
         $this->title = __($title, $replace);
         $this->message = __($message, $replace);

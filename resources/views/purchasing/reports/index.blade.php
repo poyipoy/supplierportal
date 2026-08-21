@@ -34,7 +34,7 @@
                 </x-ui.select>
 
                 <x-ui.button type="submit" variant="secondary" class="tw-w-full">
-                    <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                    <x-slot:leading><x-ui.icon name="file-spreadsheet" /></x-slot:leading>
                     Download Excel
                 </x-ui.button>
             </form>
@@ -59,7 +59,7 @@
                 </div>
 
                 <x-ui.button type="submit" variant="secondary" class="tw-w-full">
-                    <x-slot:leading><i class="bi bi-file-earmark-excel" aria-hidden="true"></i></x-slot:leading>
+                    <x-slot:leading><x-ui.icon name="file-spreadsheet" /></x-slot:leading>
                     Download Excel
                 </x-ui.button>
             </form>

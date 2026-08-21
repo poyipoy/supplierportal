@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="$po->po_number" description="Review order details, material values, claim actions, and read-only import document status." eyebrow="Supplier Portal">
-        <x-slot:actions><x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to PO List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to PO List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -30,8 +30,8 @@
                 @endphp
                 <x-slot:actions><div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <span class="badge {{ $badgeClass }} text-uppercase px-3 py-2 me-2">{{ $po->is_overdue ? 'Overdue' : ucwords(str_replace('_', ' ', $po->status)) }}</span>
-                    <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button>
-                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><i class="bi bi-file-earmark-pdf"></i> Print PDF</x-ui.button>
+                    <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="secondary" size="sm" data-async-export><x-ui.icon name="file-spreadsheet" /> Export Excel</x-ui.button>
+                    <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm><x-ui.icon name="file-text" /> Print PDF</x-ui.button>
                 </div></x-slot:actions>
                 <div class="row mb-2">
                     <div class="col-md-4 text-muted small">Reference (No. PR)</div>
@@ -49,7 +49,7 @@
                     <div class="col-md-4 text-muted small">Actual Arrival</div>
                     <div class="col-md-8 fw-medium">
                         @if($po->actual_arrival)
-                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ $po->actual_arrival->format('d F Y') }}</span>
+                            <span class="text-success"><x-ui.icon name="circle-check" class="me-1" />{{ $po->actual_arrival->format('d F Y') }}</span>
                         @else
                             <span class="text-muted">Not arrived yet</span>
                         @endif
@@ -94,7 +94,7 @@
                                 @if($po->quotations->count() > 1)
                                     <tr class="table-primary">
                                         <td colspan="10" class="fw-bold small ps-3">
-                                            <i class="bi bi-folder2 me-1"></i>
+                                            <x-ui.icon name="folder" class="me-1" />
                                             {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                             <span class="text-muted fw-normal ms-2">
                                                 @if($rate)
@@ -118,7 +118,7 @@
                                             @if($quotation->purchaseRequisition)
                                                 <a href="{{ route('supplier.quotations.show', $quotation) }}" class="text-primary text-decoration-none" title="Open related PR detail">
                                                     {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
-                                                    <i class="bi bi-box-arrow-up-right ms-1 tw-text-ui-xs"></i>
+                                                    <x-ui.icon name="external-link" class="ms-1 tw-text-ui-xs" />
                                                 </a>
                                             @else
                                                 -
@@ -174,12 +174,12 @@
                         <p class="small text-muted mb-3">
                             ADASI submitted a claim for this PO. Please provide a response and supporting attachments.
                         </p>
-                        <x-ui.button :href="route('supplier.claims.show', $pendingClaim)" variant="danger" class="tw-w-full tw-justify-between"><i class="bi bi-reply"></i> Claim Response <i class="bi bi-chevron-right"></i></x-ui.button>
+                        <x-ui.button :href="route('supplier.claims.show', $pendingClaim)" variant="danger" class="tw-w-full tw-justify-between"><x-ui.icon name="reply" /> Claim Response <x-ui.icon name="chevron-right" /></x-ui.button>
                     @else
                         <p class="small text-muted mb-3">
                             This PO has a material claim history. Open claim details to view status and response.
                         </p>
-                        <x-ui.button :href="route('supplier.claims.show', $latestClaim)" variant="ghost" class="tw-w-full tw-justify-between"><i class="bi bi-exclamation-octagon"></i> View Material Claim <i class="bi bi-chevron-right"></i></x-ui.button>
+                        <x-ui.button :href="route('supplier.claims.show', $latestClaim)" variant="ghost" class="tw-w-full tw-justify-between"><x-ui.icon name="octagon-alert" /> View Material Claim <x-ui.icon name="chevron-right" /></x-ui.button>
                     @endif
             </x-ui.card>
         @endif

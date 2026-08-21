@@ -376,7 +376,7 @@
         :description="'Complete availability, commercial values, and supporting MTC files for ' . ($pr->pr_number ?? 'this requisition') . '.'"
         eyebrow="Supplier Portal"
     >
-        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Requisition List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Requisition List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <x-ui.card title="Purchase Requisition Details" description="Reference information supplied by Purchasing; quotation inputs remain supplier-owned.">
@@ -403,14 +403,14 @@
             <div class="quotation-toolbar-heading">
                 <h6 class="mb-0 fw-bold">
                     Material Price Entry
-                    <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><i class="bi bi-cloud-check me-1"></i>Draft Auto-saved</span>
+                    <span id="autoSaveBadge" class="badge bg-success ms-2 d-none opacity-75"><x-ui.icon name="cloud-check" class="me-1" />Draft Auto-saved</span>
                 </h6>
                 <div class="small text-muted mt-1">Review the requested specifications, then complete your availability and commercial offer.</div>
             </div>
             <div class="quotation-toolbar-actions">
                 @include('supplier.quotations._import_controls')
                 <button type="button" id="copyAllRequested" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-clipboard-check me-1"></i> Copy All Requested Values
+                    <x-ui.icon name="clipboard-check" class="me-1" /> Copy All Requested Values
                 </button>
                 <div class="quotation-currency-control">
                     <label for="quotationCurrency" class="small fw-semibold text-muted mb-0">Currency</label>
@@ -429,13 +429,13 @@
             </div>
         </div>
         <div id="currencyRateWarning" class="alert alert-warning rounded-0 border-0 border-top border-bottom mb-0 small {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
-                <i class="bi bi-exclamation-triangle me-1"></i>
+                <x-ui.icon name="triangle-alert" class="me-1" />
                 Exchange rate for <span id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</span> is not available yet. Contact Admin before submitting the final quotation.
         </div>
         <div class="card-body p-0 quotation-table-shell">
             <div id="quotationTableScrollHint" class="quotation-scroll-hint">
-                <i class="bi bi-arrows" aria-hidden="true"></i>
-                <span>Geser tabel secara horizontal untuk melihat seluruh kolom.</span>
+                <x-ui.icon name="move" />
+                <span>Scroll horizontally to review all columns.</span>
             </div>
             <div class="table-responsive quotation-table-scroll" role="region" tabindex="0" aria-label="Material quotation price entry" aria-describedby="quotationTableScrollHint">
                 <table class="table table-bordered align-middle mb-0 quotation-items-table">
@@ -507,7 +507,7 @@
                                              -
                                          @endif
                                      </div>
-                                     <div class="small text-muted mt-2"><i class="bi bi-building me-1"></i>Requested by Purchasing</div>
+                                     <div class="small text-muted mt-2"><x-ui.icon name="building" class="me-1" />Requested by Purchasing</div>
                                      @if($item->remark)
                                          <div class="small mt-1 text-break"><span class="text-muted">Remark:</span> {{ $item->remark }}</div>
                                      @endif
@@ -519,7 +519,7 @@
                                  </td>
                                  <td class="availability-panel">
                                      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                                         <span class="small fw-semibold text-primary"><i class="bi bi-box-seam me-1"></i>Offered by Supplier</span>
+                                         <span class="small fw-semibold text-primary"><x-ui.icon name="package" class="me-1" />Offered by Supplier</span>
                                          <button
                                              type="button"
                                              class="btn btn-sm btn-outline-secondary py-0 copy-from-pr-btn"
@@ -531,7 +531,7 @@
                                              data-requested-length="{{ $item->length ?? '' }}"
                                              title="Copy requested quantity and relevant dimensions"
                                          >
-                                             <i class="bi bi-clipboard-check"></i> Copy
+                                             <x-ui.icon name="clipboard-check" /> Copy
                                          </button>
                                      </div>
                                      <div class="availability-grid">
@@ -619,7 +619,7 @@
                                             accept=".pdf,.jpg,.jpeg,.png"
                                         >
                                         <label for="mtcFile{{ $index }}" class="btn btn-sm btn-outline-primary mtc-file-button">
-                                            <i class="bi bi-paperclip me-1"></i> Choose MTC File
+                                            <x-ui.icon name="paperclip" class="me-1" /> Choose MTC File
                                         </label>
                                         <div
                                             class="mtc-file-name"
@@ -628,7 +628,7 @@
                                         >{{ $mtcAttachment?->file_name ?? 'No file selected' }}</div>
                                         @if($mtcAttachment)
                                             <a href="{{ route('attachments.show', $mtcAttachment->id) }}" class="small d-inline-flex align-items-center gap-1 mt-2 text-decoration-none" target="_blank" rel="noopener">
-                                                <i class="bi bi-box-arrow-up-right"></i>
+                                                <x-ui.icon name="external-link" />
                                                 View current file
                                             </a>
                                         @endif
@@ -665,7 +665,7 @@
 
     <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
         <x-ui.button type="button" variant="secondary" onclick="submitForm('draft')">{{ $quotation?->status === 'revision_requested' ? 'Save Revision' : 'Save Draft' }}</x-ui.button>
-        <x-ui.button type="button" onclick="confirmSubmit()"><i class="bi bi-send-check"></i> {{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}</x-ui.button>
+        <x-ui.button type="button" onclick="confirmSubmit()"><x-ui.icon name="send" /> {{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Send Final Quotation' }}</x-ui.button>
     </div>
 </form>
 
@@ -702,12 +702,12 @@
                     <div id="quotationImportSummary" class="alert alert-light border py-2 mb-3"></div>
 
                     <div id="quotationImportWarningsPanel" class="alert alert-warning d-none">
-                        <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Warnings</div>
+                        <div class="fw-semibold mb-1"><x-ui.icon name="triangle-alert" class="me-1" />Warnings</div>
                         <ul id="quotationImportWarnings" class="mb-0 small ps-3"></ul>
                     </div>
 
                     <div id="quotationImportErrorsPanel" class="alert alert-danger d-none">
-                        <div class="fw-semibold mb-1"><i class="bi bi-x-circle me-1"></i>Import Errors</div>
+                        <div class="fw-semibold mb-1"><x-ui.icon name="x-circle" class="me-1" />Import Errors</div>
                         <ul id="quotationImportErrors" class="mb-0 small ps-3"></ul>
                     </div>
 
@@ -741,7 +741,7 @@
                     Parse &amp; Validate
                 </button>
                 <button type="button" class="btn btn-primary" id="btnApplyQuotationImport" disabled>
-                    <i class="bi bi-check2-circle me-1"></i> Apply to Form
+                    <x-ui.icon name="circle-check" class="me-1" /> Apply to Form
                 </button>
             </div>
         </div>
@@ -932,11 +932,11 @@
 
         calculateTotal();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('quotationImportModal')).hide();
-        AdasiAlert.toast({
+        AdasiToast.show({
             type: 'success',
             title: 'Import Applied',
-            text: `${changedFields} field(s) across ${importedItems} item(s) were applied. Review the quotation before saving.`,
-            duration: 2400
+            message: `${changedFields} field(s) across ${importedItems} item(s) were applied. Review the quotation before saving.`,
+            autoClose: 2400
         });
     }
 
@@ -1032,11 +1032,11 @@
     }
 
     function showCopyFeedback(message) {
-        if (typeof AdasiAlert !== 'undefined') {
-            AdasiAlert.toast({
+        if (window.AdasiToast) {
+            AdasiToast.show({
                 type: 'success',
                 title: message,
-                duration: 1800
+                autoClose: 1800
             });
         }
     }
@@ -1148,7 +1148,7 @@
         });
         localStorage.setItem(draftKey, JSON.stringify(data));
         
-        $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<i class="bi bi-cloud-check me-1"></i>Draft Auto-saved');
+        $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<x-ui.icon name="cloud-check" class="me-1" />Draft Auto-saved');
         setTimeout(() => {
             $('#autoSaveBadge').removeClass('d-inline-block').addClass('d-none');
         }, 2000);
@@ -1167,7 +1167,7 @@
             calculateTotal();
             
             // Show badge permanently if draft loaded
-            $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<i class="bi bi-cloud-check me-1"></i>Draft Saved');
+            $('#autoSaveBadge').removeClass('d-none').addClass('d-inline-block').html('<x-ui.icon name="cloud-check" class="me-1" />Draft Saved');
         }
     }
 

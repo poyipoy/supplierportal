@@ -12,7 +12,7 @@
             <td align="center">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff; border:1px solid #dbe4ef; border-radius:16px; max-width:600px; overflow:hidden; width:100%;">
                     <tr>
-                        <td style="background:linear-gradient(135deg, #1f5fa6 0%, #174a85 100%); padding:28px 36px;">
+                        <td style="background:#1f5fa6; padding:28px 36px;">
                             <p style="color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.2px; line-height:1.3; margin:0;">ADASI Supplier Portal</p>
                             <p style="color:#dcecff; font-size:13px; line-height:1.5; margin:6px 0 0;">PT. Astra Daido Steel Indonesia</p>
                         </td>

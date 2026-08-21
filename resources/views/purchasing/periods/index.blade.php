@@ -11,7 +11,7 @@
         >
             <x-slot:actions>
                 <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#createModal">
-                    <i class="bi bi-plus-lg" aria-hidden="true"></i> 
+                    <x-ui.icon name="plus" />
                     Add period
                 </x-ui.button>
             </x-slot:actions>

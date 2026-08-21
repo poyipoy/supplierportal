@@ -42,7 +42,7 @@
                             <td class="text-muted small">{{ $rate->created_at->format('d M Y H:i') }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5"><x-ui.empty-state icon="bi-currency-exchange" title="No exchange rates found" description="Add the first effective rate using the form." /></td></tr>
+                        <tr><td colspan="5"><x-ui.empty-state icon="badge-dollar-sign" title="No exchange rates found" description="Add the first effective rate using the form." /></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -64,7 +64,7 @@
                 <x-ui.input name="rate_to_idr" type="number" label="Value to Rupiah (IDR)" step="0.01" min="1" placeholder="Example: 15500" required />
                 <x-ui.input name="valid_from" type="date" label="Valid From" :value="old('valid_from', date('Y-m-d'))" required />
                 <x-ui.button type="submit" class="tw-w-full">
-                    <x-slot:leading><i class="bi bi-save"></i></x-slot:leading>
+                    <x-slot:leading><x-ui.icon name="save" /></x-slot:leading>
                     Save Rate History
                 </x-ui.button>
             </form>

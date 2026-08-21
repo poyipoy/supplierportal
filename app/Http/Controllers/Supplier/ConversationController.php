@@ -11,7 +11,7 @@ class ConversationController extends Controller
 {
     /**
      * List all conversations owned by the logged-in supplier.
-     * WAJIB: filter supplier_user_id = auth()->id()
+     * Required: filter supplier_user_id = auth()->id().
      */
     public function index()
     {
@@ -25,7 +25,7 @@ class ConversationController extends Controller
     }
 
     /**
-     * Tampilkan halaman chat.
+     * Display the conversation page.
      */
     public function show($id)
     {

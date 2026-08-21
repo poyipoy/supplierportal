@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Purchasing Dashboard - ADASI Portal')
-@section('page-title', 'Dashboard Purchasing')
+@section('page-title', 'Purchasing Dashboard')
 
 @push('styles')
 <style>
@@ -18,23 +18,12 @@
         gap: .75rem;
         padding: .9rem;
         text-decoration: none;
-        transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+        transition: border-color .15s ease, box-shadow .15s ease;
     }
 
     .operational-check-item:hover {
         border-color: rgba(var(--md-primary-rgb), .28);
-        box-shadow: 0 .35rem 1rem rgba(var(--md-primary-rgb), .08);
-        transform: translateY(-1px);
-    }
-
-    .operational-check-icon {
-        align-items: center;
-        border-radius: 50%;
-        display: flex;
-        flex: 0 0 38px;
-        height: 38px;
-        justify-content: center;
-        width: 38px;
+        box-shadow: var(--ui-shadow-1);
     }
 
     @media (max-width: 991.98px) {
@@ -60,7 +49,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
-                <i class="bi bi-plus-circle" aria-hidden="true"></i> 
+                <x-ui.icon name="plus-circle" />
                 Create requisition
             </x-ui.button>
         </x-slot:actions>
@@ -71,21 +60,21 @@
     $hasInsights = ($poStatusDist['overdue'] ?? 0) > 0 || $menungguPenawaran > 0 || ($poStatusDist['waiting_qc'] ?? 0) > 0;
 @endphp
 @if($hasInsights)
-    <x-ui.alert tone="warning" title="Action required" class="animate-fade-in">
+    <x-ui.alert tone="warning" title="Action required">
         <div class="tw-flex tw-flex-wrap tw-gap-x-2 tw-gap-y-1">
-                    @if(($poStatusDist['overdue'] ?? 0) > 0) <span class="text-danger fw-semibold"><i class="bi bi-exclamation-circle"></i> {{ $poStatusDist['overdue'] }} overdue PO</span> have passed their estimated date. @endif
-                    @if($menungguPenawaran > 0) <span class="text-warning fw-semibold ms-1"><i class="bi bi-clock"></i> {{ $menungguPenawaran }} PR</span> have not received any quotations yet. @endif
-                    @if(($poStatusDist['waiting_qc'] ?? 0) > 0) <span class="text-primary fw-semibold ms-1"><i class="bi bi-box-seam"></i> {{ $poStatusDist['waiting_qc'] }} PO</span> are waiting for QC inspection. @endif
+                    @if(($poStatusDist['overdue'] ?? 0) > 0) <span class="text-danger fw-semibold"><x-ui.icon name="circle-alert" /> {{ $poStatusDist['overdue'] }} overdue PO</span> have passed their estimated date. @endif
+                    @if($menungguPenawaran > 0) <span class="text-warning fw-semibold ms-1"><x-ui.icon name="clock" /> {{ $menungguPenawaran }} PR</span> have not received any quotations yet. @endif
+                    @if(($poStatusDist['waiting_qc'] ?? 0) > 0) <span class="text-primary fw-semibold ms-1"><x-ui.icon name="package" /> {{ $poStatusDist['waiting_qc'] }} PO</span> are waiting for QC inspection. @endif
         </div>
     </x-ui.alert>
 @endif
 
-{{-- Card Statistik (Clickable) --}}
-<div class="animate-fade-in tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
-    <x-ui.metric-card label="Active requisitions" :value="$prAktif" icon="bi-clipboard-data" :href="route('purchasing.requisitions.index', ['status' => 'submitted'])" />
-    <x-ui.metric-card label="Waiting for quotation" :value="$menungguPenawaran" icon="bi-hourglass-split" tone="warning" :href="route('purchasing.requisitions.index', ['status' => 'bidding'])" />
-    <x-ui.metric-card label="Active PO" :value="$poBerjalan" icon="bi-receipt" tone="success" :href="route('purchasing.purchase-orders.index', ['status' => 'active'])" />
-    <x-ui.metric-card label="Arriving this week" :value="$materialMingguIni" icon="bi-truck" tone="info" :href="route('purchasing.purchase-orders.index', ['arrival' => 'this_week'])" />
+{{-- Clickable metrics --}}
+<div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
+    <x-ui.metric-card label="Active requisitions" :value="$prAktif" icon="clipboard-list" :href="route('purchasing.requisitions.index', ['status' => 'submitted'])" />
+    <x-ui.metric-card label="Waiting for quotation" :value="$menungguPenawaran" icon="hourglass" tone="warning" :href="route('purchasing.requisitions.index', ['status' => 'bidding'])" />
+    <x-ui.metric-card label="Active PO" :value="$poBerjalan" icon="receipt" tone="success" :href="route('purchasing.purchase-orders.index', ['status' => 'active'])" />
+    <x-ui.metric-card label="Arriving this week" :value="$materialMingguIni" icon="truck" tone="info" :href="route('purchasing.purchase-orders.index', ['arrival' => 'this_week'])" />
 </div>
 
 {{-- Quick operational checks --}}
@@ -94,9 +83,7 @@
         <div class="operational-check-grid">
             @foreach($operationalChecks as $check)
                 <a href="{{ $check['url'] }}" class="operational-check-item">
-                    <span class="operational-check-icon bg-{{ $check['class'] }} bg-opacity-10 text-{{ $check['class'] }}">
-                        <i class="bi {{ $check['icon'] }}"></i>
-                    </span>
+                    <x-ui.icon :name="$check['icon']" size="lg" class="mt-1 flex-shrink-0 text-{{ $check['class'] }}" />
                     <span class="min-w-0">
                         <span class="d-flex align-items-center gap-2">
                             <span class="fw-bold fs-5 lh-1">{{ $check['count'] }}</span>
@@ -124,7 +111,7 @@
                 @if(count($poStatusDist) > 0)
                     <div class="tw-h-[13.75rem] tw-w-[13.75rem]"><canvas id="poDonut" role="img" aria-label="Purchase order status distribution">Purchase order status distribution chart.</canvas></div>
                 @else
-                    <x-ui.empty-state icon="bi-pie-chart" title="No PO status data" description="Status distribution will appear after purchase orders are created." />
+                    <x-ui.empty-state icon="pie-chart" title="No PO status data" description="Status distribution will appear after purchase orders are created." />
                 @endif
             </div>
     </x-ui.card>
@@ -145,7 +132,7 @@
                                 <td class="fw-bold">{{ $pr->pr_number ?? 'DRAFT' }}</td>
                                 <td>{{ $pr->period->display_label ?? $pr->period->name }}</td>
                                 <td><x-status-badge type="pr" :status="$pr->status" /></td>
-                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="btn btn-sm btn-outline-info"><x-ui.icon name="eye" /></a></td>
                             </tr>
                             @empty<tr><td colspan="4" class="text-center text-muted py-3">No data available.</td></tr>@endforelse
                         </tbody>
@@ -155,13 +142,13 @@
         <x-ui.card>
             <x-slot:header>
                 <h2 class="tw-m-0 tw-text-ui-lg tw-font-semibold tw-text-on-surface">
-                    <i class="bi bi-currency-exchange me-1"></i> Today Exchange Rate
-                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="The latest exchange rate is used for new input. Quotation and PO history keep their own exchange rate snapshots."></i>
+                    <x-ui.icon name="badge-dollar-sign" class="me-1" /> Today Exchange Rate
+                    <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="The latest exchange rate is used for new input. Quotation and PO history keep their own exchange rate snapshots." />
                 </h2>
             </x-slot:header>
             <x-slot:actions>
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal">
-                    <i class="bi bi-pencil-square" aria-hidden="true"></i> 
+                    <x-ui.icon name="square-pen" />
                     Update
                 </x-ui.button>
             </x-slot:actions>
@@ -200,7 +187,7 @@
                                 <td>{{ $po->supplier->name }}</td>
                                 <td>{{ \Carbon\Carbon::parse($po->estimated_arrival)->format('d M Y') }}</td>
                                 <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
-                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                <td class="text-end"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po) }}" class="btn btn-sm btn-outline-info"><x-ui.icon name="eye" /></a></td>
                             </tr>
                             @empty<tr><td colspan="5" class="text-center text-muted py-3">No active PO.</td></tr>@endforelse
                         </tbody>
@@ -226,7 +213,7 @@
             <div class="mb-3">
                 <label class="form-label small fw-bold" for="exchange-rate-value">
                     Rate to IDR
-                    <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="New exchange rate is saved as new history, not overwriting the old one."></i>
+                    <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="New exchange rate is saved as new history, not overwriting the old one." />
                 </label>
                 <input type="number" step="0.01" name="rate_to_idr" id="exchange-rate-value" class="form-control form-control-sm" required placeholder="16500">
             </div>

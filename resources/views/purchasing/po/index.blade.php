@@ -30,10 +30,7 @@
                 id="exportPurchaseOrdersBtn"
                 :data-export-url="route('purchasing.export.purchase-orders')"
             >
-                <i
-                    class="bi bi-file-earmark-excel"
-                    aria-hidden="true"
-                ></i>
+                <x-ui.icon name="file-spreadsheet" />
 
                 <span>Export Excel</span>
             </x-ui.button>
@@ -67,10 +64,7 @@
                             id="searchPoBtn"
                             aria-label="Search PO number"
                         >
-                            <i
-                                class="bi bi-search"
-                                aria-hidden="true"
-                            ></i>
+                            <x-ui.icon name="search" />
                         </button>
                     </div>
                 </div>
@@ -130,10 +124,7 @@
                         class="tw-w-full tw-inline-flex tw-items-center tw-justify-center tw-gap-2"
                         id="resetFilter"
                     >
-                        <i
-                            class="bi bi-arrow-counterclockwise"
-                            aria-hidden="true"
-                        ></i>
+                        <x-ui.icon name="rotate-ccw" />
 
                         <span>Reset</span>
                     </x-ui.button>
@@ -412,10 +403,7 @@
                             data-filter-remove="po_number"
                             aria-label="Remove PO number filter"
                         >
-                            <i
-                                class="bi bi-x-circle"
-                                aria-hidden="true"
-                            ></i>
+                            <x-ui.icon name="x-circle" />
                         </button>
                     </span>
                 `);
@@ -441,10 +429,7 @@
                             data-filter-remove="status"
                             aria-label="Remove status filter"
                         >
-                            <i
-                                class="bi bi-x-circle"
-                                aria-hidden="true"
-                            ></i>
+                            <x-ui.icon name="x-circle" />
                         </button>
                     </span>
                 `);
@@ -470,10 +455,7 @@
                             data-filter-remove="supplier"
                             aria-label="Remove supplier filter"
                         >
-                            <i
-                                class="bi bi-x-circle"
-                                aria-hidden="true"
-                            ></i>
+                            <x-ui.icon name="x-circle" />
                         </button>
                     </span>
                 `);

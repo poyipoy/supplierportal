@@ -42,12 +42,12 @@
                         <td>{{ $item->remark ?: '-' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="8"><x-ui.empty-state icon="bi-box-seam" title="No material data" /></td></tr>
+                    <tr><td colspan="8"><x-ui.empty-state icon="package" title="No material data" /></td></tr>
                 @endforelse
             </tbody>
         </table>
         <x-slot:pagination>
-            <div class="tw-flex tw-justify-end"><x-ui.button :href="route('admin.dashboard')" variant="ghost"><i class="bi bi-arrow-left"></i> Back to Dashboard</x-ui.button></div>
+            <div class="tw-flex tw-justify-end"><x-ui.button :href="route('admin.dashboard')" variant="ghost"><x-ui.icon name="arrow-left" /> Back to Dashboard</x-ui.button></div>
         </x-slot:pagination>
     </x-ui.data-table>
 </div>

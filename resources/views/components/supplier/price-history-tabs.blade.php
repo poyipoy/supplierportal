@@ -9,7 +9,7 @@
             'tw-bg-primary tw-text-primary-foreground' => $active === 'overview',
             'tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface' => $active !== 'overview',
         ])
-    ><i class="bi bi-list-ul" aria-hidden="true"></i><span>Material Overview</span></a>
+    ><x-ui.icon name="list" /><span>Material Overview</span></a>
     <a
         href="{{ route('supplier.price-history.historical') }}"
         @if($active === 'historical') aria-current="page" @endif
@@ -18,5 +18,5 @@
             'tw-bg-primary tw-text-primary-foreground' => $active === 'historical',
             'tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface' => $active !== 'historical',
         ])
-    ><i class="bi bi-graph-up" aria-hidden="true"></i><span>Material Trends</span></a>
+    ><x-ui.icon name="chart-no-axes-combined" /><span>Material Trends</span></a>
 </nav>

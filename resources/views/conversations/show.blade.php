@@ -11,7 +11,7 @@
                 : route('supplier.conversations.index');
         @endphp
         <a href="{{ $backRoute }}" class="text-decoration-none text-muted small">
-            <i class="bi bi-arrow-left me-1"></i> Back to Chat List
+            <x-ui.icon name="arrow-left" class="me-1" /> Back to Chat List
         </a>
     </div>
 
@@ -28,7 +28,7 @@
                     </div>
                     @if($chatContext['url'])
                         <a href="{{ $chatContext['url'] }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-box-arrow-up-right me-1"></i> Open Details
+                            <x-ui.icon name="external-link" class="me-1" /> Open Details
                         </a>
                     @endif
                 </div>
@@ -52,7 +52,7 @@
                         @foreach($quickActions as $action)
                             @if(($action['type'] ?? '') === 'link')
                                 <a href="{{ $action['url'] }}" class="btn btn-sm btn-{{ $action['variant'] ?? 'outline-primary' }}">
-                                    <i class="bi {{ $action['icon'] ?? 'bi-arrow-right' }} me-1"></i>{{ $action['label'] }}
+                                    <x-ui.icon :name="$action['icon'] ?? 'arrow-right'" class="me-1" />{{ $action['label'] }}
                                 </a>
                             @else
                                 <button type="button"
@@ -61,7 +61,7 @@
                                     data-chat-action-label="{{ $action['label'] }}"
                                     data-chat-action-note="{{ !empty($action['requires_note']) ? '1' : '0' }}"
                                     data-chat-action-type="{{ $action['type'] ?? 'prompt' }}">
-                                    <i class="bi {{ $action['icon'] ?? 'bi-lightning-charge' }} me-1"></i>{{ $action['label'] }}
+                                    <x-ui.icon :name="$action['icon'] ?? 'zap'" class="me-1" />{{ $action['label'] }}
                                 </button>
                             @endif
                         @endforeach
@@ -83,7 +83,7 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <div class="d-flex align-items-center gap-3">
                 <div class="chat-fullpage-avatar bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center">
-                    <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
+                    <x-ui.icon name="user" size="lg" />
                 </div>
                 <div>
                     <h6 class="mb-0 fw-bold">{{ $partnerName }}</h6>
@@ -114,7 +114,7 @@
                                 <div class="d-grid gap-1 mt-2">
                                     @foreach($msg->attachments as $attachment)
                                         <a href="{{ route('attachments.show', $attachment->id) }}" target="_blank" class="btn btn-sm {{ $isMe ? 'btn-light' : 'btn-outline-primary' }} text-start">
-                                            <i class="bi bi-paperclip me-1"></i>{{ $attachment->file_name }}
+                                            <x-ui.icon name="paperclip" class="me-1" />{{ $attachment->file_name }}
                                         </a>
                                     @endforeach
                                 </div>
@@ -129,7 +129,7 @@
                                 <span class="chat-read-receipt {{ $msg->read_at ? 'is-read' : '' }}"
                                       data-read-receipt-id="{{ $msg->id }}"
                                       title="{{ $msg->read_at ? 'Read ' . $msg->read_at->format('H:i') : 'Sent, unread' }}">
-                                    <i class="bi bi-check2-all"></i>
+                                    <x-ui.icon name="check-check" />
                                 </span>
                             @endif
                         </div>
@@ -137,7 +137,7 @@
                 </div>
             @empty
                 <div class="text-center text-muted py-5" id="empty-state">
-                    <i class="bi bi-chat-dots" style="font-size: 2.5rem;"></i>
+                    <x-ui.icon name="message-circle-more" size="lg" />
                     <p class="mt-2">Start a conversation with {{ $partnerName }}</p>
                 </div>
             @endforelse
@@ -149,7 +149,7 @@
                 @if(!empty($messageTemplates))
                     <div class="dropdown mb-2">
                         <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-lightning-charge me-1"></i>Message Template
+                            <x-ui.icon name="zap" class="me-1" />Message Template
                         </button>
                         <div class="dropdown-menu p-2 chat-template-menu">
                             @foreach($messageTemplates as $template)
@@ -164,11 +164,11 @@
                 <div class="d-flex gap-2 align-items-end">
                     <textarea id="message-body" class="form-control" rows="2" placeholder="Type a message here... (Press Enter to send, Shift+Enter for a new line)" style="resize: none;"></textarea>
                     <label for="message-attachments" class="btn btn-outline-secondary mb-0" title="Attach file">
-                        <i class="bi bi-paperclip"></i>
+                        <x-ui.icon name="paperclip" />
                     </label>
                     <input type="file" id="message-attachments" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
                     <button type="submit" class="btn btn-primary px-4 py-2" id="btn-send">
-                        <i class="bi bi-send-fill"></i>
+                        <x-ui.icon name="send" />
                     </button>
                 </div>
             </form>
@@ -210,7 +210,7 @@
 
         attachmentPreview.innerHTML = files.map((file) => `
             <span class="badge bg-light text-dark border me-1 mb-1">
-                <i class="bi bi-paperclip me-1"></i>${escapeHtml(file.name)}
+                <x-ui.icon name="paperclip" class="me-1" />${escapeHtml(file.name)}
             </span>
         `).join('');
         attachmentPreview.classList.remove('d-none');
@@ -225,7 +225,7 @@
             : 'Sent, unread';
 
         return `<span class="chat-read-receipt ${read ? 'is-read' : ''}" data-read-receipt-id="${msg.id}" title="${escapeHtml(title)}">
-            <i class="bi bi-check2-all"></i>
+            <x-ui.icon name="check-check" />
         </span>`;
     }
 
@@ -235,7 +235,7 @@
         return `<div class="d-grid gap-1 mt-2">
             ${attachments.map((attachment) => `
                 <a href="${escapeHtml(attachment.url)}" target="_blank" class="btn btn-sm ${isMe ? 'btn-light' : 'btn-outline-primary'} text-start">
-                    <i class="bi bi-paperclip me-1"></i>${escapeHtml(attachment.name)}
+                    <x-ui.icon name="paperclip" class="me-1" />${escapeHtml(attachment.name)}
                 </a>
             `).join('')}
         </div>`;
@@ -389,11 +389,11 @@
                             scrollToBottom();
                         }
 
-                        AdasiAlert.toast({
+                        AdasiToast.show({
                             type: 'success',
                             title: 'Success',
-                            text: `${label} processed successfully.`,
-                            duration: 1400
+                            message: `${label} processed successfully.`,
+                            autoClose: 1400
                         });
                     })
                     .catch((error) => AdasiAlert.error({

@@ -6,11 +6,11 @@
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Purchase Requisitions — ' . $period->display_label" description="Review requisitions and continue only the quotations assigned to your supplier account." eyebrow="Supplier Portal">
-        <x-slot:actions><x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Period List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Period List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <x-ui.data-table title="Purchase Requisition List" description="Search and filter this period's supplier-visible requisitions.">
-    <x-slot:toolbar><x-ui.button :href="route('supplier.export.quotations', ['period_id' => $period->id])" variant="secondary" size="sm" data-async-export id="exportSupplierQuotationsBtn" :data-export-url="route('supplier.export.quotations')"><i class="bi bi-file-earmark-excel"></i> Export Excel</x-ui.button></x-slot:toolbar>
+    <x-slot:toolbar><x-ui.button :href="route('supplier.export.quotations', ['period_id' => $period->id])" variant="secondary" size="sm" data-async-export id="exportSupplierQuotationsBtn" :data-export-url="route('supplier.export.quotations')"><x-ui.icon name="file-spreadsheet" /> Export Excel</x-ui.button></x-slot:toolbar>
     <x-slot:filters>
         <div class="tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:tw-items-end">
             <div>
@@ -30,7 +30,7 @@
                 </select>
             </div>
             <div class="tw-flex tw-gap-2">
-                <x-ui.button type="button" size="sm" icon-only label="Apply filters" id="applyFilter"><i class="bi bi-search"></i></x-ui.button>
+                <x-ui.button type="button" size="sm" icon-only label="Apply filters" id="applyFilter"><x-ui.icon name="search" /></x-ui.button>
                 <x-ui.button type="button" variant="ghost" size="sm" id="resetFilter">Reset</x-ui.button>
             </div>
         </div>

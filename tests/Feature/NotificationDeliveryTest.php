@@ -44,7 +44,7 @@ class NotificationDeliveryTest extends TestCase
                 'New PR',
                 'PR submitted',
                 route('admin.dashboard', absolute: false),
-                'bi-bell',
+                'bell',
                 ['category' => NotificationCategory::QUOTATION, 'pr_id' => 99, 'pr_number' => 'REQ/08/2026/099'],
             );
         }

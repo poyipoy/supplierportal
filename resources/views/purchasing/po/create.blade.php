@@ -11,7 +11,7 @@
         eyebrow="Purchasing"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back</x-ui.button>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -161,7 +161,7 @@
 
     <div class="tw-flex tw-flex-wrap tw-justify-end tw-gap-2 tw-pb-4">
         <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost">Cancel</x-ui.button>
-        <x-ui.button type="button" id="btnCreatePo"><i class="bi bi-check-circle"></i> Create Purchase Order</x-ui.button>
+        <x-ui.button type="button" id="btnCreatePo"><x-ui.icon name="check-circle" /> Create Purchase Order</x-ui.button>
     </div>
 </form>
 

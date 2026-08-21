@@ -29,7 +29,7 @@ class ConversationController extends Controller
     }
 
     /**
-     * Tampilkan halaman chat.
+     * Display the conversation page.
      */
     public function show($id)
     {
@@ -54,7 +54,7 @@ class ConversationController extends Controller
     }
 
     /**
-     * Mulai conversation baru atau redirect ke yang already exists.
+     * Start a new conversation or redirect to the existing one.
      * Konteks: PR (Purchase Requisition).
      */
     public function startFromPr($pr_id, $supplier_id)
@@ -71,7 +71,7 @@ class ConversationController extends Controller
             return back()->with('error', 'This supplier does not have a quotation for this requisition yet.');
         }
 
-        // Search conversation yang already exists
+        // Find an existing conversation.
         $conversation = Conversation::where('conversable_type', PurchaseRequisition::class)
             ->where('conversable_id', $pr_id)
             ->where('purchasing_user_id', auth()->id())
@@ -103,7 +103,7 @@ class ConversationController extends Controller
     }
 
     /**
-     * Mulai conversation baru atau redirect ke yang already exists.
+     * Start a new conversation or redirect to the existing one.
      * Konteks: PO (Purchase Order).
      */
     public function startFromPo($po_id)
@@ -111,7 +111,7 @@ class ConversationController extends Controller
         $po = PurchaseOrder::findOrFail($po_id);
         $supplier_id = $po->supplier_id;
 
-        // Search conversation yang already exists
+        // Find an existing conversation.
         $conversation = Conversation::where('conversable_type', PurchaseOrder::class)
             ->where('conversable_id', $po_id)
             ->where('purchasing_user_id', auth()->id())

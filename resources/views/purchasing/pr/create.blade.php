@@ -78,7 +78,7 @@
                     <div class="tw-flex tw-flex-wrap tw-gap-2 shell:tw-justify-end">
                     @include('purchasing.pr._import_controls')
                         <x-ui.button type="button" variant="secondary" size="sm" id="btnAddRow">
-                            <x-slot:leading><i class="bi bi-plus" aria-hidden="true"></i></x-slot:leading>
+                            <x-slot:leading><x-ui.icon name="plus" /></x-slot:leading>
                             Add material
                         </x-ui.button>
                     </div>
@@ -130,7 +130,7 @@
                 <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="ghost">Cancel</x-ui.button>
                 <x-ui.button type="button" variant="secondary" onclick="submitForm('draft')">Save draft</x-ui.button>
                 <x-ui.button type="button" onclick="confirmSubmit()">
-                    <x-slot:leading><i class="bi bi-send-check" aria-hidden="true"></i></x-slot:leading>
+                    <x-slot:leading><x-ui.icon name="send" /></x-slot:leading>
                     Submit now
                 </x-ui.button>
             </div>

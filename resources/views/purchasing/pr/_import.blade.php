@@ -27,12 +27,12 @@
                     <div id="prImportSummary" class="alert alert-light border py-2 mb-3"></div>
 
                     <div id="prImportWarningsPanel" class="alert alert-warning d-none">
-                        <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Warnings</div>
+                        <div class="fw-semibold mb-1"><x-ui.icon name="triangle-alert" class="me-1" />Warnings</div>
                         <ul id="prImportWarnings" class="mb-0 small ps-3"></ul>
                     </div>
 
                     <div id="prImportErrorsPanel" class="alert alert-danger d-none">
-                        <div class="fw-semibold mb-1"><i class="bi bi-x-circle me-1"></i>Import Errors</div>
+                        <div class="fw-semibold mb-1"><x-ui.icon name="x-circle" class="me-1" />Import Errors</div>
                         <ul id="prImportErrors" class="mb-0 small ps-3"></ul>
                     </div>
 
@@ -64,7 +64,7 @@
                     Parse &amp; Validate
                 </x-ui.button>
                 <x-ui.button type="button" id="btnApplyPrImport" disabled>
-                    <i class="bi bi-check2-circle me-1"></i> Apply to Form
+                    <x-ui.icon name="circle-check" class="me-1" /> Apply to Form
                 </x-ui.button>
             </div>
         </div>
@@ -248,11 +248,11 @@
         prImportRows.forEach(appendImportedPrRow);
         checkRowCount();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('prImportModal')).hide();
-        AdasiAlert.toast({
+        AdasiToast.show({
             type: 'success',
             title: 'Import Applied',
-            text: `${prImportRows.length} material row(s) were added to the form. Review them before saving.`,
-            duration: 2200
+            message: `${prImportRows.length} material row(s) were added to the form. Review them before saving.`,
+            autoClose: 2200
         });
     }
 

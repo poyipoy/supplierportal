@@ -5,7 +5,7 @@
     </div>
 
     <button type="button" class="btn btn-outline-danger flex-shrink-0" data-bs-toggle="modal" data-bs-target="#confirmUserDeletionModal">
-        <i class="bi bi-trash3 me-1"></i>Delete Account
+        <x-ui.icon name="trash-2" class="me-1" />Delete Account
     </button>
 
     <div class="modal fade" id="confirmUserDeletionModal" tabindex="-1" aria-labelledby="confirmUserDeletionModalLabel" aria-hidden="true">
@@ -32,7 +32,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash3 me-1"></i>Delete Account
+                            <x-ui.icon name="trash-2" class="me-1" />Delete Account
                         </button>
                     </div>
                 </form>

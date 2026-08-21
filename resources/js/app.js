@@ -19,12 +19,12 @@ const toastDefaults = {
     progress: 0,
 };
 const toastIcons = {
-    success: 'bi-check-circle-fill',
-    error: 'bi-x-circle-fill',
-    warning: 'bi-exclamation-triangle-fill',
-    info: 'bi-info-circle-fill',
-    message: 'bi-chat-left-text-fill',
-    progress: 'bi-arrow-repeat',
+    success: 'circle-check',
+    error: 'circle-x',
+    warning: 'triangle-alert',
+    info: 'info',
+    message: 'message-square-text',
+    progress: 'loader-circle',
 };
 const toastTitles = {
     success: 'Operation completed',
@@ -147,9 +147,7 @@ const makeToast = (rawOptions = {}) => {
         title: String(options.title || toastTitles[type]),
         message: String(options.message ?? options.text ?? ''),
         timestamp: options.timestamp ? String(options.timestamp) : '',
-        icon: typeof options.icon === 'string' && /^bi-[a-z0-9-]+$/i.test(options.icon)
-            ? options.icon
-            : toastIcons[type],
+        icon: Object.values(toastIcons).includes(options.icon) ? options.icon : toastIcons[type],
         actions,
         autoClose,
         hasProgress: type === 'progress' || progress !== null,
@@ -186,7 +184,7 @@ const updateToast = (id, rawChanges = {}) => {
         toast.message = String(changes.message ?? changes.text ?? '');
     }
     if (changes.timestamp !== undefined) toast.timestamp = String(changes.timestamp || '');
-    if (changes.icon !== undefined && /^bi-[a-z0-9-]+$/i.test(String(changes.icon))) {
+    if (changes.icon !== undefined && Object.values(toastIcons).includes(String(changes.icon))) {
         toast.icon = String(changes.icon);
     } else if (typeChanged) {
         toast.icon = toastIcons[nextType];

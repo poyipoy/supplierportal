@@ -34,7 +34,7 @@ class PeriodController extends Controller
                         data-name="' . e($p->name) . '" 
                         data-month="' . ($p->month ?? '') . '"
                         data-year="' . $p->year . '" 
-                        data-status="' . $p->status . '"><i class="bi bi-pencil"></i> Edit</button>';
+                        data-status="' . $p->status . '">Edit</button>';
                 })
                 ->rawColumns(['status_badge', 'action'])
                 ->make(true);

@@ -37,7 +37,7 @@
                             <select id="materialManufacturerFilter" class="form-select form-select-sm"><option value="">All manufacturers</option>@foreach($manufacturerScopes as $scope)<option value="{{ $scope }}">{{ str_replace('_', ' ', $scope) }}</option>@endforeach</select>
                         </label>
                     </div>
-                    <x-ui.button type="button" size="sm" id="btnAddMaterial"><i class="bi bi-plus-lg"></i> Add Material</x-ui.button>
+                    <x-ui.button type="button" size="sm" id="btnAddMaterial"><x-ui.icon name="plus" /> Add Material</x-ui.button>
                 </div>
                 <div class="ui-data-table__scroll tw-overflow-x-auto">
                     <table id="materialsTable" class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm">
@@ -59,7 +59,7 @@
                             <select id="ruleShapeFilter" class="form-select form-select-sm"><option value="">All shapes</option>@foreach($shapes as $shape)<option value="{{ $shape }}">{{ $shape }}</option>@endforeach</select>
                         </label>
                     </div>
-                    <x-ui.button type="button" size="sm" id="btnAddRule"><i class="bi bi-plus-lg"></i> Add Rule</x-ui.button>
+                    <x-ui.button type="button" size="sm" id="btnAddRule"><x-ui.icon name="plus" /> Add Rule</x-ui.button>
                 </div>
                 <div class="ui-data-table__scroll tw-overflow-x-auto">
                     <table id="rulesTable" class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm">

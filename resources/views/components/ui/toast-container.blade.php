@@ -28,7 +28,14 @@
             @focusout="resume(toast.id)"
         >
             <div class="adasi-toast__header">
-                <i class="bi adasi-toast__icon" :class="toast.icon" aria-hidden="true"></i>
+                <span class="adasi-toast__icon" aria-hidden="true">
+                    <x-ui.icon name="circle-check" x-show="toast.icon === 'circle-check'" />
+                    <x-ui.icon name="circle-x" x-show="toast.icon === 'circle-x'" />
+                    <x-ui.icon name="triangle-alert" x-show="toast.icon === 'triangle-alert'" />
+                    <x-ui.icon name="info" x-show="toast.icon === 'info'" />
+                    <x-ui.icon name="message-square-text" x-show="toast.icon === 'message-square-text'" />
+                    <x-ui.icon name="loader-circle" x-show="toast.icon === 'loader-circle'" />
+                </span>
 
                 <div class="adasi-toast__heading">
                     <p class="adasi-toast__title" x-text="toast.title"></p>
@@ -41,7 +48,7 @@
                     @click="dismiss(toast.id)"
                     aria-label="Dismiss notification"
                 >
-                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    <x-ui.icon name="x" size="sm" />
                 </button>
             </div>
 

@@ -44,10 +44,10 @@
 
         <div class="d-flex align-items-center gap-3 mt-4">
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check2 me-1"></i>Save Profile
+                <x-ui.icon name="check" class="me-1" />Save Profile
             </button>
             @if (session('status') === 'profile-updated')
-                <span class="small text-success"><i class="bi bi-check-circle me-1"></i>Profile saved.</span>
+                <span class="small text-success"><x-ui.icon name="check-circle" class="me-1" />Profile saved.</span>
             @endif
         </div>
     </form>

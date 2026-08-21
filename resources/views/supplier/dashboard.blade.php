@@ -1,23 +1,23 @@
 @extends('layouts.app')
 @section('title', 'Supplier Dashboard - ADASI Portal')
-@section('page-title', 'Dashboard Supplier')
+@section('page-title', 'Supplier Dashboard')
 
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Supplier Dashboard" description="Focus on open quotation opportunities, active orders, and claims that need your response." eyebrow="Supplier Portal" />
-    {{-- Insight & Alerts --}}
+    {{-- Operational insight --}}
     @if($belumDirespons > 0)
-        <x-ui.alert title="Quotation opportunities" class="animate-fade-in">
+        <x-ui.alert title="Quotation opportunities">
             There are <strong>{{ $belumDirespons }} active requisitions</strong> that you have not quoted yet. Submit your best offer before the period closes.
         </x-ui.alert>
     @endif
 
-    {{-- Card Statistik --}}
+    {{-- Metrics --}}
     <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
-        <x-ui.metric-card label="Active Periods" :value="$periodeAktif" icon="bi-calendar-event" :href="route('supplier.quotations.index')" />
-        <x-ui.metric-card label="Not Responded" :value="$belumDirespons" icon="bi-exclamation-circle" tone="error" :href="route('supplier.quotations.index')" />
-        <x-ui.metric-card label="Submitted Quotations" :value="$penawaranTerkirim" icon="bi-send-check" tone="success" :href="route('supplier.quotations.index')" />
-        <x-ui.metric-card label="Received PO" :value="$poDiterima" icon="bi-receipt" tone="info" :href="route('supplier.purchase-orders.index')" />
+        <x-ui.metric-card label="Active Periods" :value="$periodeAktif" icon="calendar-days" :href="route('supplier.quotations.index')" />
+        <x-ui.metric-card label="Not Responded" :value="$belumDirespons" icon="circle-alert" tone="error" :href="route('supplier.quotations.index')" />
+        <x-ui.metric-card label="Submitted Quotations" :value="$penawaranTerkirim" icon="send" tone="success" :href="route('supplier.quotations.index')" />
+        <x-ui.metric-card label="Received PO" :value="$poDiterima" icon="receipt" tone="info" :href="route('supplier.purchase-orders.index')" />
     </div>
 
     {{-- Tabel + Announcement --}}
@@ -44,13 +44,11 @@
                                         <td>{{ $pr->items->count() }} Item</td>
                                         <td>{{ $pr->created_at->format('d M Y') }}</td>
                                         <td class="text-end"><a href="{{ route('supplier.quotations.create', $pr) }}"
-                                                class="btn btn-sm btn-primary py-0"><i
-                                                    class="bi bi-pencil-square me-1"></i>Create Quotation</a></td>
+                                                class="btn btn-sm btn-primary py-0"><x-ui.icon name="square-pen" class="me-1" />Create Quotation</a></td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-4"><i
-                                                class="bi bi-check-circle text-success fs-4 d-block mb-2"></i>All requisitions
+                                        <td colspan="5" class="text-center text-muted py-4"><x-ui.icon name="check-circle" size="lg" class="text-success d-block mb-2" />All requisitions
                                             have been responded to!</td>
                                     </tr>
                                 @endforelse
@@ -93,17 +91,16 @@
                                                 @if($pendingClaim)
                                                     <a href="{{ route('supplier.claims.show', $pendingClaim) }}"
                                                         class="btn btn-sm btn-danger" title="Claim Response">
-                                                        <i class="bi bi-reply"></i>
+                                                        <x-ui.icon name="reply" />
                                                     </a>
                                                 @elseif($latestClaim)
                                                     <a href="{{ route('supplier.claims.show', $latestClaim) }}"
                                                         class="btn btn-sm btn-outline-danger" title="View Claim">
-                                                        <i class="bi bi-exclamation-octagon"></i>
+                                                        <x-ui.icon name="octagon-alert" />
                                                     </a>
                                                 @endif
                                                 <a href="{{ route('supplier.purchase-orders.show', $po) }}"
-                                                    class="btn btn-sm btn-outline-info" title="Details"><i
-                                                        class="bi bi-eye"></i></a>
+                                                    class="btn btn-sm btn-outline-info" title="Details"><x-ui.icon name="eye" /></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -122,8 +119,7 @@
                             <h6 class="mb-1 small fw-bold"><a href="{{ route('supplier.announcements.show', $ann->id) }}"
                                     class="text-decoration-none">{{ $ann->title }}</a></h6>
                             <div class="text-muted small mb-2">{{ Str::limit($ann->content, 80) }}</div>
-                            <small class="text-muted tw-text-ui-xs"><i
-                                    class="bi bi-clock me-1"></i>{{ $ann->published_at->diffForHumans() }}</small>
+                            <small class="text-muted tw-text-ui-xs"><x-ui.icon name="clock" class="me-1" />{{ $ann->published_at->diffForHumans() }}</small>
                         </div>
                     @empty
                         <div class="p-4 text-center text-muted small">No new announcements.</div>

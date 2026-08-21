@@ -35,7 +35,7 @@ class SupplierController extends Controller
 
         extract($widgetData);
 
-        // Quick tables (tidak di-cache agar selalu fresh)
+        // Quick tables remain uncached so the data is always current.
         $prBelumRespons = PurchaseRequisition::with('period', 'items')
             ->whereIn('status', ['submitted', 'bidding'])
             ->visibleToSupplier($sid)

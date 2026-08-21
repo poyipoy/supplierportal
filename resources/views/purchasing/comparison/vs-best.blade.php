@@ -25,17 +25,17 @@
             <x-ui.input type="month" name="date_from" label="From Month" :value="$dateFromInput" />
             <x-ui.input type="month" name="date_to" label="To Month" :value="$dateToInput" />
             <div class="tw-flex tw-gap-2">
-                <x-ui.button type="submit" size="sm"><i class="bi bi-filter"></i> Apply Filter</x-ui.button>
-                <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm"><i class="bi bi-arrow-counterclockwise"></i> Reset</x-ui.button>
+                <x-ui.button type="submit" size="sm"><x-ui.icon name="filter" /> Apply Filter</x-ui.button>
+                <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm"><x-ui.icon name="rotate-ccw" /> Reset</x-ui.button>
             </div>
         </form>
     </x-slot:actions>
 
     <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
-        <x-ui.metric-card label="Total Compared Data" :value="$summary['total_rows']" icon="bi-list-check" tone="neutral" value-id="vsBestTotalRows" />
-        <x-ui.metric-card label="Competitive / Safe" :value="$summary['competitive_count']" icon="bi-shield-check" tone="success" value-id="vsBestCompetitiveCount" />
-        <x-ui.metric-card label="Above History" :value="$summary['above_count']" icon="bi-graph-up-arrow" tone="warning" value-id="vsBestAboveCount" />
-        <x-ui.metric-card label="Potential Total Difference" :value="$formatRupiah($summary['total_potential_difference_idr'])" icon="bi-cash-stack" tone="primary" value-id="vsBestPotentialTotal" />
+        <x-ui.metric-card label="Total Compared Data" :value="$summary['total_rows']" icon="list-check" tone="neutral" value-id="vsBestTotalRows" />
+        <x-ui.metric-card label="Competitive / Safe" :value="$summary['competitive_count']" icon="shield-check" tone="success" value-id="vsBestCompetitiveCount" />
+        <x-ui.metric-card label="Above History" :value="$summary['above_count']" icon="trending-up" tone="warning" value-id="vsBestAboveCount" />
+        <x-ui.metric-card label="Potential Total Difference" :value="$formatRupiah($summary['total_potential_difference_idr'])" icon="banknote" tone="primary" value-id="vsBestPotentialTotal" />
     </div>
 </x-ui.card>
 

@@ -21,9 +21,9 @@
     >
         <x-slot:meta>
             @if($pr->status === 'rejected')
-                <x-ui.status-chip tone="error" icon="bi-arrow-repeat">Rejected — revision required</x-ui.status-chip>
+                <x-ui.status-chip tone="error" icon="refresh-cw">Rejected — revision required</x-ui.status-chip>
             @else
-                <x-ui.status-chip tone="neutral" icon="bi-pencil-square">Draft</x-ui.status-chip>
+                <x-ui.status-chip tone="neutral" icon="square-pen">Draft</x-ui.status-chip>
             @endif
         </x-slot:meta>
     </x-ui.page-header>
@@ -91,7 +91,7 @@
                         @include('purchasing.pr._import_controls')
                     @endif
                         <x-ui.button type="button" variant="secondary" size="sm" id="btnAddRow">
-                            <x-slot:leading><i class="bi bi-plus" aria-hidden="true"></i></x-slot:leading>
+                            <x-slot:leading><x-ui.icon name="plus" /></x-slot:leading>
                             Add material
                         </x-ui.button>
                     </div>
@@ -145,7 +145,7 @@
                 <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="ghost">Cancel</x-ui.button>
                 <x-ui.button type="button" variant="secondary" onclick="submitForm('draft')">Save draft</x-ui.button>
                 <x-ui.button type="button" onclick="confirmSubmit()">
-                    <x-slot:leading><i class="bi bi-send-check" aria-hidden="true"></i></x-slot:leading>
+                    <x-slot:leading><x-ui.icon name="send" /></x-slot:leading>
                     {{ $pr->status === 'rejected' ? 'Revise & Resubmit' : 'Submit Now' }}
                 </x-ui.button>
             </div>

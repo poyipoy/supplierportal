@@ -35,10 +35,10 @@
 
         <div class="d-flex align-items-center gap-3 mt-4">
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-key me-1"></i>Update Password
+                <x-ui.icon name="key" class="me-1" />Update Password
             </button>
             @if (session('status') === 'password-updated')
-                <span class="small text-success"><i class="bi bi-check-circle me-1"></i>Password updated.</span>
+                <span class="small text-success"><x-ui.icon name="check-circle" class="me-1" />Password updated.</span>
             @endif
         </div>
     </form>

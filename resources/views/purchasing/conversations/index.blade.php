@@ -41,7 +41,7 @@
                         <td>
                             @if($conv->latestMessage)
                                 @if($conv->latestMessage->sender_id === auth()->id())
-                                    <i class="bi bi-reply tw-me-1 tw-text-on-surface-variant" aria-label="Your reply"></i>
+                                    <x-ui.icon name="reply" class="tw-me-1 tw-text-on-surface-variant" aria-label="Your reply" />
                                 @endif
                                 {{ Str::limit($conv->latestMessage->body, 50) }}
                             @else
@@ -64,7 +64,7 @@
                         <td class="text-end">
                             @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
                             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv)" variant="ghost" size="sm" class="tw-relative">
-                                <x-slot:leading><i class="bi bi-chat-text" aria-hidden="true"></i></x-slot:leading>
+                                <x-slot:leading><x-ui.icon name="message-square-text" /></x-slot:leading>
                                 Open chat
                                 @if($unreadCount > 0)
                                     <x-slot:trailing>
@@ -77,7 +77,7 @@
                 @empty
                     <tr>
                         <td colspan="6">
-                            <x-ui.empty-state icon="bi-chat-square-dots" title="No conversations yet" description="Negotiation threads will appear after a supplier conversation is started." />
+                            <x-ui.empty-state icon="message-square-more" title="No conversations yet" description="Negotiation threads will appear after a supplier conversation is started." />
                         </td>
                     </tr>
                 @endforelse

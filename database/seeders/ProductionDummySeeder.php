@@ -1265,7 +1265,7 @@ class ProductionDummySeeder extends Seeder
                 'title' => $title,
                 'message' => $message,
                 'url' => '#',
-                'icon' => 'bi-bell',
+                'icon' => 'bell',
             ]),
             'read_at' => $read ? $createdAt->copy()->addHour() : null,
             'created_at' => $createdAt,

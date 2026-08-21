@@ -20,14 +20,12 @@ use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
-use App\Notifications\SystemNotification;
 use App\Services\NotificationService;
 use App\Support\ExportDispatcher;
 use App\Support\NotificationCategory;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
@@ -323,27 +321,23 @@ class AsyncExportQueueTest extends TestCase
     public function test_worker_stores_files_and_notifies_completed_or_terminal_failed_exports(): void
     {
         Storage::fake('private');
-        Notification::fake();
+        $sentNotifications = [];
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldReceive('send')
+            ->twice()
+            ->andReturnUsing(function (...$arguments) use (&$sentNotifications): void {
+                $sentNotifications[] = $arguments;
+            });
+        $this->app->instance(NotificationService::class, $notifications);
 
         $completed = $this->createExportJob($this->purchasing);
-        (new ProcessExportJob($completed->id))->handle(app(NotificationService::class));
+        (new ProcessExportJob($completed->id))->handle($notifications);
 
         $completed->refresh();
         $this->assertSame(ExportJob::STATUS_COMPLETED, $completed->status);
         $this->assertTrue($completed->isDownloadable());
         $this->assertTrue(Storage::disk('private')->exists($completed->file_path));
         $this->assertTrue($completed->expires_at->isFuture());
-        Notification::assertSentTo(
-            $this->purchasing,
-            SystemNotification::class,
-            function (SystemNotification $notification) use ($completed): bool {
-                $data = $notification->toDatabase($this->purchasing);
-
-                return $data['event'] === 'export.completed'
-                    && $data['category'] === NotificationCategory::OTHER
-                    && $data['export_job_id'] === $completed->getRouteKey();
-            },
-        );
 
         $failed = $this->createExportJob($this->purchasing);
         $failedPath = 'exports/'.$this->purchasing->id.'/'.$failed->id.'/'.$failed->file_name;
@@ -363,17 +357,16 @@ class AsyncExportQueueTest extends TestCase
         $this->assertLessThanOrEqual(500, strlen((string) $failed->error_message));
         $this->assertNull($failed->file_path);
         Storage::disk('private')->assertMissing($failedPath);
-        Notification::assertSentTo(
-            $this->purchasing,
-            SystemNotification::class,
-            function (SystemNotification $notification): bool {
-                $data = $notification->toDatabase($this->purchasing);
-
-                return $data['event'] === 'export.failed'
-                    && $data['category'] === NotificationCategory::OTHER
-                    && $data['message'] === 'Export gagal diproses. Silakan coba lagi.';
-            },
-        );
+        $this->assertCount(2, $sentNotifications);
+        $this->assertSame('export.completed', $sentNotifications[0][1]);
+        $this->assertSame('Export Completed', $sentNotifications[0][3]);
+        $this->assertSame('Export :label is ready to download.', $sentNotifications[0][4]);
+        $this->assertSame(NotificationCategory::OTHER, $sentNotifications[0][7]['category']);
+        $this->assertSame($completed->getRouteKey(), $sentNotifications[0][7]['export_job_id']);
+        $this->assertSame('export.failed', $sentNotifications[1][1]);
+        $this->assertSame('Export Failed', $sentNotifications[1][3]);
+        $this->assertSame('The export could not be processed. Please try again.', $sentNotifications[1][4]);
+        $this->assertSame(NotificationCategory::OTHER, $sentNotifications[1][7]['category']);
     }
 
     public function test_large_exports_are_query_chunked_and_all_async_exports_use_fixed_widths(): void
@@ -494,7 +487,7 @@ class AsyncExportQueueTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('exports.index'))
             ->assertOk()
-            ->assertSeeText('Export Saya');
+            ->assertSeeText('Export History');
         $this->actingAs($this->purchasing)
             ->getJson(route('exports.index'))
             ->assertOk()
@@ -515,7 +508,7 @@ class AsyncExportQueueTest extends TestCase
             ->assertJson([
                 'id' => $downloadable->getRouteKey(),
                 'status' => ExportJob::STATUS_COMPLETED,
-                'message' => 'Export selesai dan siap diunduh.',
+                'message' => 'The export is complete and ready to download.',
                 'file_name' => 'report.xlsx',
                 'download_url' => route('exports.download', $downloadable, absolute: false),
             ]);
@@ -535,7 +528,7 @@ class AsyncExportQueueTest extends TestCase
         $this->actingAs($this->purchasing)
             ->getJson(route('exports.status', $failed))
             ->assertOk()
-            ->assertJsonPath('message', 'Export gagal diproses. Silakan coba lagi.')
+            ->assertJsonPath('message', 'The export could not be processed. Please try again.')
             ->assertJsonPath('download_url', null);
         $this->actingAs($this->purchasing)
             ->getJson(route('exports.status', $expired))

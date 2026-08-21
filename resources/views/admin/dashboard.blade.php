@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Admin Dashboard - ADASI Portal')
-@section('page-title', 'Dashboard Admin')
+@section('page-title', 'Admin Dashboard')
 
 @section('content')
 <div class="tw-grid tw-gap-6">
@@ -14,13 +14,13 @@
         <x-ui.metric-card
             label="Active Users"
             :value="$totalUsersActive"
-            icon="bi-people"
+            icon="users"
             :href="route('admin.users.index')"
             :meta="collect($usersByRole)->map(fn ($count, $role) => ucfirst($role) . ': ' . $count)->implode(' / ')"
         />
-        <x-ui.metric-card label="Transactions This Month" :value="$transaksiBulanIni" icon="bi-graph-up" tone="success" />
-        <x-ui.metric-card label="Registered Suppliers" :value="$supplierCount" icon="bi-building" tone="info" :href="route('admin.users.index')" />
-        <x-ui.metric-card label="Active Claims" :value="$klaimAktif" icon="bi-shield-exclamation" tone="error" />
+        <x-ui.metric-card label="Transactions This Month" :value="$transaksiBulanIni" icon="chart-no-axes-combined" tone="success" />
+        <x-ui.metric-card label="Registered Suppliers" :value="$supplierCount" icon="building" tone="info" :href="route('admin.users.index')" />
+        <x-ui.metric-card label="Active Claims" :value="$klaimAktif" icon="shield-alert" tone="error" />
     </div>
 
     <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,1.4fr)_minmax(20rem,1fr)] xl:tw-items-start">
@@ -28,9 +28,7 @@
             <div class="tw-divide-y tw-divide-outline-variant">
                 @forelse($recentActivities as $act)
                     <div class="tw-flex tw-gap-3 tw-p-4 shell:tw-px-5">
-                        <span class="tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-primary-container tw-text-primary-container-foreground">
-                            <i class="bi {{ $act->data['icon'] ?? 'bi-bell' }}" aria-hidden="true"></i>
-                        </span>
+                        <x-ui.icon :name="$act->data['icon'] ?? 'bell'" size="lg" class="tw-mt-0.5 tw-shrink-0 tw-text-primary" />
                         <div class="tw-min-w-0 tw-flex-1">
                             <div class="tw-text-ui-sm tw-font-semibold">{{ $act->data['title'] ?? 'Notifications' }}</div>
                             <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ $act->data['message'] ?? '-' }}</p>
@@ -40,7 +38,7 @@
                         </div>
                     </div>
                 @empty
-                    <x-ui.empty-state icon="bi-activity" title="No activity recorded" description="Recent administrative activity will appear here." />
+                    <x-ui.empty-state icon="activity" title="No activity recorded" description="Recent administrative activity will appear here." />
                 @endforelse
             </div>
         </x-ui.card>
@@ -49,7 +47,7 @@
             <x-ui.card title="Exchange Rate Management">
                 <x-slot:actions>
                     <x-ui.button size="sm" variant="secondary" data-bs-toggle="modal" data-bs-target="#kursModal">
-                        <i class="bi bi-plus-lg"></i> 
+                        <x-ui.icon name="plus" />
                         Update Exchange Rate
                     </x-ui.button>
                 </x-slot:actions>
@@ -90,7 +88,7 @@
 
             <x-ui.card title="Quick Links" variant="tonal">
                 <x-ui.button :href="route('admin.announcements.index')" variant="ghost" size="sm" class="tw-w-full tw-justify-start">
-                    <i class="bi bi-megaphone"></i> 
+                    <x-ui.icon name="megaphone" />
                     Announcement Management
                 </x-ui.button>
             </x-ui.card>

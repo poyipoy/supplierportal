@@ -21,7 +21,7 @@
     @if($label)
         <label for="{{ $resolvedId }}" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
             {{ $label }}
-            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> wajib</span>@endif
+            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> required</span>@endif
         </label>
     @endif
     <input

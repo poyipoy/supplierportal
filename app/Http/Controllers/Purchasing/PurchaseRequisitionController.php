@@ -103,21 +103,21 @@ class PurchaseRequisitionController extends Controller
                 ->addColumn('created_date', fn ($pr) => $pr->created_at->format('d M Y, H:i'))
                 ->addColumn('action', function ($pr) {
                     $actions = [
-                        '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr).'" class="btn btn-sm btn-outline-info action-grid-button" title="Details" aria-label="Details"><i class="bi bi-eye"></i></a>',
+                        '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr).'" class="btn btn-sm btn-outline-info action-grid-button" title="Details">View</a>',
                     ];
 
                     if ($pr->created_by === auth()->id() && $pr->status === 'draft') {
                         $actions[] = '<form action="'.route('purchasing.requisitions.submit', $pr).'" method="POST" class="draft-submit-form action-grid-form">'
                             .csrf_field()
                             .method_field('PUT')
-                            .'<button type="button" class="btn btn-sm btn-primary btn-submit-draft action-grid-button" title="Submit Draft" aria-label="Submit Draft">'
-                            .'<i class="bi bi-send-check"></i>'
+                            .'<button type="button" class="btn btn-sm btn-primary btn-submit-draft action-grid-button" title="Submit Draft">'
+                            .'Submit'
                             .'</button></form>';
                     }
 
                     if ($pr->created_by === auth()->id() && in_array($pr->status, ['draft', 'rejected'])) {
-                        $actions[] = '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr).'" class="btn btn-sm btn-outline-primary action-grid-button" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>';
-                        $actions[] = '<form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form action-grid-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete action-grid-button" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button></form>';
+                        $actions[] = '<a href="'.PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr).'" class="btn btn-sm btn-outline-primary action-grid-button" title="Edit">Edit</a>';
+                        $actions[] = '<form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form action-grid-form">'.csrf_field().method_field('DELETE').'<button type="button" class="btn btn-sm btn-outline-danger btn-delete action-grid-button" title="Delete">Delete</button></form>';
                     }
 
                     return '<div class="action-button-grid">'.implode('', $actions).'</div>';
@@ -451,7 +451,7 @@ class PurchaseRequisitionController extends Controller
             'New Purchase Requisition',
             'New PR :pr_number has been submitted by :name',
             route('admin.requisitions.show', $pr, absolute: false),
-            'bi-clipboard-plus text-primary',
+            'clipboard-plus text-primary',
             [
                 'category' => NotificationCategory::QUOTATION,
                 'pr_id' => $pr->id,

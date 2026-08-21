@@ -18,7 +18,7 @@
                 <div class="position-relative">
                     <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <span class="input-group-text bg-white"><x-ui.icon name="search" /></span>
                         <input type="text"
                                class="form-control"
                                id="comparisonPrSearch"
@@ -29,7 +29,7 @@
                                 class="btn btn-outline-secondary {{ $selectedPrOption ? '' : 'd-none' }}"
                                 id="comparisonPrClear"
                                 title="Delete">
-                            <i class="bi bi-x-lg"></i>
+                            <x-ui.icon name="x" />
                         </button>
                     </div>
                     <div class="list-group position-absolute w-100 shadow-sm d-none tw-z-[1050] tw-max-h-[260px] tw-overflow-y-auto"
@@ -39,7 +39,7 @@
             </div>
             <div>
                 <x-ui.button type="submit" size="sm" class="tw-w-full md:tw-w-auto">
-                    <x-slot:leading><i class="bi bi-search"></i></x-slot:leading>
+                    <x-slot:leading><x-ui.icon name="search" /></x-slot:leading>
                     Compare
                 </x-ui.button>
             </div>
@@ -100,7 +100,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <h6 class="fw-bold mb-1">{{ $data['name'] }}</h6>
                             @if($recommendedSupId === $qid)
-                                <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Cheapest</span>
+                                <span class="badge bg-success"><x-ui.icon name="star" class="me-1" />Cheapest</span>
                             @endif
                         </div>
                         <div class="text-muted small mb-2">Total Estimated Price</div>
@@ -133,7 +133,7 @@
         </div>
     </x-ui.card>
 
-    {{-- Tabel Side-by-Side --}}
+    {{-- Side-by-side comparison table --}}
     <x-ui.data-table :title="'Comparison Table - ' . $selectedPr->pr_number" description="Lowest converted price per material is highlighted for fast review.">
                 <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs">
                     <thead class="table-light text-center">
@@ -145,7 +145,11 @@
                             @foreach($comparison['suppliers'] as $sup)
                                 <th colspan="2" class="text-center">
                                     {{ $sup['name'] }}
-                                    <div><span class="badge bg-{{ $sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'danger' : 'primary') }} tw-text-[.55rem]">{{ strtoupper($sup['status']) }}</span></div>
+                                    <div class="tw-mt-1">
+                                        <x-ui.status-chip :tone="$sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'error' : 'info')" size="sm">
+                                            {{ strtoupper($sup['status']) }}
+                                        </x-ui.status-chip>
+                                    </div>
                                 </th>
                             @endforeach
                         </tr>
@@ -166,8 +170,8 @@
                                 <td class="fw-medium">
                                     {{ $row['item']->material_name }}
                                     @if(($row['spread_pct'] ?? 0) > 15)
-                                        <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="Spread harga tinggi (>15%)">
-                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Spread {{ number_format($row['spread_pct'], 1) }}%
+                                        <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="High price spread (>15%)">
+                                            <x-ui.icon name="triangle-alert" class="me-1" />Spread {{ number_format($row['spread_pct'], 1) }}%
                                         </div>
                                     @endif
                                 </td>
@@ -181,11 +185,11 @@
                                         <td class="text-end fw-bold {{ ($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr) ? 'text-success bg-success bg-opacity-10' : '' }}">
                                             Rp {{ number_format($p['price_idr'], 0, ',', '.') }}
                                             @if($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr)
-                                                <i class="bi bi-check-circle-fill ms-1"></i>
+                                                <x-ui.icon name="circle-check" class="ms-1" />
                                             @endif
                                             @if($p['detail_url'])
                                                 <a href="{{ $p['detail_url'] }}" class="btn btn-sm btn-link p-0 ms-1" title="Details">
-                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                    <x-ui.icon name="external-link" />
                                                 </a>
                                             @endif
                                         </td>
@@ -202,7 +206,7 @@
     <x-ui.alert tone="warning">No data found for the selected PR.</x-ui.alert>
 @else
     <x-ui.card padding="none">
-        <x-ui.empty-state icon="bi-bar-chart-line" title="Select a PR to compare" description="Choose an eligible purchase requisition above to compare supplier prices." />
+        <x-ui.empty-state icon="chart-no-axes-combined" title="Select a PR to compare" description="Choose an eligible purchase requisition above to compare supplier prices." />
     </x-ui.card>
 @endif
 </div>
@@ -248,7 +252,7 @@ const renderComparisonPrSuggestions = () => {
     if (matches.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'list-group-item small text-muted';
-        empty.textContent = 'Tidak ada PR yang cocok.';
+        empty.textContent = 'No matching PR was found.';
         comparisonPrSuggestions.appendChild(empty);
         comparisonPrSuggestions.classList.remove('d-none');
         return;
@@ -266,12 +270,12 @@ const renderComparisonPrSuggestions = () => {
         const meta = document.createElement('div');
         meta.className = 'text-muted';
         meta.style.fontSize = '.75rem';
-        meta.textContent = `${option.period} - ${option.quotationCount} penawaran`;
+        meta.textContent = `${option.period} - ${option.quotationCount} quotation(s)`;
 
         const preview = document.createElement('div');
         preview.className = 'text-secondary mt-1';
         preview.style.fontSize = '.7rem';
-        preview.innerHTML = `<i class="bi bi-box-seam me-1"></i>${option.previewMaterials}`;
+        preview.innerHTML = `<x-ui.icon name="package" class="me-1" />${option.previewMaterials}`;
 
         button.appendChild(title);
         button.appendChild(meta);

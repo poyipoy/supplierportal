@@ -7,14 +7,16 @@
     $selectedOption = $categoryOptions[$selectedCategory] ?? $categoryOptions[\App\Support\NotificationCategory::ALL];
 @endphp
 
-<div class="row g-3">
-    <div class="col-lg-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-1 fw-bold">Kategori Notifications</h6>
-                <div class="text-muted small">Select the activity type you want to view.</div>
-            </div>
-            <div class="card-body notification-page-menu">
+<div class="tw-grid tw-gap-6">
+    <x-ui.page-header
+        title="Notification Center"
+        description="Review persistent workflow updates and account activity."
+        eyebrow="Activity"
+    />
+
+    <div class="tw-grid tw-gap-6 lg:tw-grid-cols-[17rem_minmax(0,1fr)] lg:tw-items-start">
+        <x-ui.card title="Categories" description="Filter by activity type." padding="none">
+            <div class="notification-page-menu tw-p-2">
                 <div class="list-group list-group-flush">
                     @foreach($categoryOptions as $key => $category)
                         @php
@@ -25,39 +27,37 @@
                         @endphp
                         <a href="{{ $url }}" class="list-group-item list-group-item-action {{ $selectedCategory === $key ? 'active' : '' }}">
                             <span class="d-flex align-items-center gap-2 min-w-0">
-                                <i class="bi {{ $category['icon'] }} flex-shrink-0"></i>
+                                <x-ui.icon :name="$category['icon']" class="flex-shrink-0" />
                                 <span class="text-truncate">{{ $category['label'] }}</span>
                             </span>
-                            <span class="d-flex align-items-center gap-1 flex-shrink-0">
-                                @if($counts['unread'] > 0)
-                                    <span class="badge rounded-pill bg-danger">{{ $counts['unread'] }}</span>
-                                @endif
-                                <span class="badge rounded-pill bg-white text-muted border">{{ $counts['total'] }}</span>
+                            <span class="tw-shrink-0 tw-text-ui-xs {{ $counts['unread'] > 0 ? 'tw-font-semibold tw-text-error' : 'tw-text-on-surface-variant' }}">
+                                {{ $counts['unread'] > 0 ? $counts['unread'].' unread / ' : '' }}{{ $counts['total'] }} total
                             </span>
                         </a>
                     @endforeach
                 </div>
             </div>
-        </div>
-    </div>
+        </x-ui.card>
 
-    <div class="col-lg-9">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+        <x-ui.card padding="none">
+            <x-slot:header>
                 <div>
-                    <h5 class="mb-1 fw-bold">
-                        <i class="bi {{ $selectedOption['icon'] }} me-2 text-primary"></i>{{ $selectedOption['label'] }}
-                    </h5>
-                    <div class="text-muted small">{{ $selectedOption['description'] }}</div>
+                    <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-lg tw-font-semibold">
+                        <x-ui.icon :name="$selectedOption['icon']" class="me-2 text-primary" />{{ $selectedOption['label'] }}
+                    </h2>
+                    <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ $selectedOption['description'] }}</p>
                 </div>
+            </x-slot:header>
+            <x-slot:actions>
                 <form action="{{ route('notifications.mark-all-read') }}" method="POST">
                     @csrf
-                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-check2-all me-1"></i>Mark All as Read
-                    </button>
+                    <x-ui.button type="submit" size="sm" variant="secondary">
+                        <x-ui.icon name="check-check" size="sm" />Mark All as Read
+                    </x-ui.button>
                 </form>
-            </div>
-            <div class="card-body p-0">
+            </x-slot:actions>
+
+            <div>
                 <div class="list-group list-group-flush">
                     @forelse($notifications as $notif)
                         @php
@@ -66,22 +66,20 @@
                         @endphp
                         <a href="{{ route('notifications.read', $notif->id) }}" class="list-group-item list-group-item-action py-3 {{ $notif->read_at ? '' : 'bg-light' }}">
                             <div class="d-flex gap-3 align-items-start">
-                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;height:38px;">
-                                    <i class="bi {{ $notif->data['icon'] ?? $notifCategory['icon'] }} text-primary"></i>
-                                </div>
+                                <x-ui.icon :name="$notif->data['icon'] ?? $notifCategory['icon']" size="lg" class="text-primary flex-shrink-0 mt-1" />
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex justify-content-between gap-2">
                                         <span class="fw-bold small text-truncate">{{ $notif->data['title'] ?? 'Notifications' }}</span>
                                         @if(!$notif->read_at)
-                                            <span class="badge bg-danger flex-shrink-0" style="font-size:.55rem">New</span>
+                                            <x-ui.status-chip tone="error" size="sm" class="tw-shrink-0">New</x-ui.status-chip>
                                         @endif
                                     </div>
-                                    <div class="text-muted mt-1" style="font-size:.82rem">{{ $notif->data['message'] ?? '-' }}</div>
-                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-2 text-muted" style="font-size:.72rem">
-                                        <span class="badge bg-light text-muted border">
-                                            <i class="bi {{ $notifCategory['icon'] }} me-1"></i>{{ $notifCategory['label'] }}
+                                    <div class="tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ $notif->data['message'] ?? '-' }}</div>
+                                    <div class="tw-mt-2 tw-flex tw-flex-wrap tw-items-center tw-gap-3 tw-text-ui-xs tw-text-on-surface-variant">
+                                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-font-semibold">
+                                            <x-ui.icon :name="$notifCategory['icon']" class="me-1" />{{ $notifCategory['label'] }}
                                         </span>
-                                        <span><i class="bi bi-clock me-1"></i>{{ $notif->created_at->diffForHumans() }}</span>
+                                        <span><x-ui.icon name="clock" class="me-1" />{{ $notif->created_at->diffForHumans() }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -94,9 +92,9 @@
                 </div>
             </div>
             @if($notifications->hasPages())
-                <div class="card-footer bg-white py-3">{{ $notifications->links() }}</div>
+                <div class="tw-border-t tw-border-outline-variant tw-p-4">{{ $notifications->links() }}</div>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 </div>
 @endsection

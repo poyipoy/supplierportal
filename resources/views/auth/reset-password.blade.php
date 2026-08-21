@@ -16,12 +16,12 @@
     <x-ui.input name="email" id="email" type="email" label="Email" :value="$request->email" placeholder="name@email.com" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus />
     <x-ui.input name="password" id="password" type="password" label="New Password" placeholder="Create a strong password" autocomplete="new-password" minlength="12" maxlength="255" required />
     <x-ui.input name="password_confirmation" id="password_confirmation" type="password" label="Confirm New Password" placeholder="Repeat your new password" autocomplete="new-password" minlength="12" maxlength="255" required />
-    <x-ui.button type="submit" class="tw-w-full"><i class="bi bi-shield-check" aria-hidden="true"></i> Reset Password</x-ui.button>
+    <x-ui.button type="submit" class="tw-w-full"><x-ui.icon name="shield-check" /> Reset Password</x-ui.button>
 </form>
 
 <div class="tw-mt-5 tw-text-center">
     <a href="{{ route('login') }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-text-ui-sm tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">
-        <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Login
+        <x-ui.icon name="arrow-left" /> Back to Login
     </a>
 </div>
 @endsection

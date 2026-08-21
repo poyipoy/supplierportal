@@ -17,7 +17,7 @@
         <label for="password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Current Password <span class="tw-text-error" aria-hidden="true">*</span></label>
         <div class="tw-relative">
             <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3.5 tw-pointer-events-none tw-text-on-surface-variant">
-                <i class="bi bi-lock"></i>
+                <x-ui.icon name="lock" />
             </div>
             <input
                 id="password"
@@ -31,14 +31,15 @@
                 autofocus
             >
             <button type="button" class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-1 tw-my-auto tw-inline-flex tw-h-10 tw-w-10 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" @click="visible = !visible" :aria-label="visible ? 'Hide password' : 'Show password'">
-                <i class="bi" :class="visible ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+                <x-ui.icon name="eye-off" x-show="visible" />
+                <x-ui.icon name="eye" x-show="!visible" />
             </button>
         </div>
         @error('password')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
     </div>
 
     <button type="submit" class="ui-focus-ring ui-motion tw-flex tw-h-12 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-white hover:tw-bg-primary-600 active:tw-bg-primary-700">
-        <i class="bi bi-shield-lock"></i>
+        <x-ui.icon name="shield-lock" />
         Confirm and Continue
     </button>
 </form>

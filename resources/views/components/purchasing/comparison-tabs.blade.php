@@ -4,17 +4,17 @@
     $tabs = [
         'inter-supplier' => [
             'label' => 'Inter-Supplier',
-            'icon' => 'bi-people',
+            'icon' => 'users',
             'route' => 'purchasing.comparison.inter-supplier',
         ],
         'historical' => [
             'label' => 'Historical',
-            'icon' => 'bi-graph-up',
+            'icon' => 'chart-no-axes-combined',
             'route' => 'purchasing.comparison.historical',
         ],
         'vs-best' => [
             'label' => 'vs Best Price',
-            'icon' => 'bi-trophy',
+            'icon' => 'trophy',
             'route' => 'purchasing.comparison.vs-best',
         ],
     ];
@@ -31,7 +31,7 @@
                 'tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface' => $active !== $key,
             ])
         >
-            <i class="bi {{ $tab['icon'] }}" aria-hidden="true"></i>
+            <x-ui.icon :name="$tab['icon']" />
             <span>{{ $tab['label'] }}</span>
         </a>
     @endforeach

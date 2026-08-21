@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Tren Price - ADASI Portal')
+@section('title', 'Price Trends - ADASI Portal')
 @section('page-title', 'Price Comparison')
 
 @section('content')
@@ -16,24 +16,16 @@
         }
 
         if ($value > 0) {
-            return '<span class="text-danger fw-bold">▲ ' . number_format($value, 2, ',', '.') . '%</span>';
+            return '<span class="text-danger fw-bold">+' . number_format($value, 2, ',', '.') . '%</span>';
         }
 
         if ($value < 0) {
-            return '<span class="text-success fw-bold">▼ ' . number_format(abs($value), 2, ',', '.') . '%</span>';
+            return '<span class="text-success fw-bold">−' . number_format(abs($value), 2, ',', '.') . '%</span>';
         }
 
         return '<span class="text-muted fw-bold">- 0%</span>';
     };
 @endphp
-
-@push('styles')
-<style>
-    .hover-underline:hover {
-        text-decoration: underline !important;
-    }
-</style>
-@endpush
 
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Material Price Trends" description="Analyze only your own quotation history by material, period, and matching dimensions." eyebrow="Supplier Portal" />
@@ -44,7 +36,7 @@
         <h6 class="mb-0 fw-bold">Search Filters</h6>
         @if($selectedMaterialName)
         <a href="{{ route('supplier.price-history.export', request()->all()) }}" class="btn btn-sm btn-success" data-async-export>
-            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+            <x-ui.icon name="file-spreadsheet" class="me-1" /> Export Excel
         </a>
         @endif
     </div>
@@ -80,7 +72,7 @@
 
             <div class="col-12 mt-3 mb-1">
                 <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-bold">
-                    <i class="bi bi-funnel"></i> Dimension Filter (Optional)
+                    <x-ui.icon name="funnel" /> Dimension Filter (Optional)
                 </a>
             </div>
             <div class="collapse {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
@@ -106,7 +98,7 @@
                         <input type="number" step="0.01" name="length" id="supplier-history-length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
                     </div>
                     <div class="col-md-2 d-flex align-items-end flex-grow-1">
-                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Apply</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><x-ui.icon name="search" /> Apply</button>
                     </div>
                 </div>
             </div>
@@ -119,7 +111,7 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3">
             <h6 class="mb-0 fw-bold" id="historicalChartTitle">
-                <i class="bi bi-graph-up me-1"></i> Tren Price "{{ $selectedMaterialName }}"
+                <x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend: "{{ $selectedMaterialName }}"
             </h6>
         </div>
         <div class="card-body">
@@ -190,7 +182,7 @@
                                 <tr>
                                     <td class="text-center fw-medium">
                                         @if(!empty($row['pr_url']))
-                                            <a href="{{ $row['pr_url'] }}" class="text-decoration-none hover-underline text-primary" target="_blank">{{ $row['pr_number'] ?? '-' }}</a>
+                                            <a href="{{ $row['pr_url'] }}" class="text-decoration-none hover:tw-underline text-primary" target="_blank">{{ $row['pr_number'] ?? '-' }}</a>
                                         @else
                                             {{ $row['pr_number'] ?? '-' }}
                                         @endif
@@ -218,11 +210,11 @@
         </div>
     </div>
 @elseif($selectedMaterialName)
-    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> No quotation data found for this material.</div>
+    <div class="alert alert-warning"><x-ui.icon name="triangle-alert" class="me-1" /> No quotation data found for this material.</div>
 @else
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center py-5 text-muted">
-            <i class="bi bi-graph-up tw-text-[3rem] tw-opacity-50"></i>
+            <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
             <p class="mt-3 mb-0">Select the material above to view your historical price trend.</p>
         </div>
     </div>
@@ -283,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = `
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center py-5 text-muted">
-                    <i class="bi bi-graph-up tw-text-[3rem] tw-opacity-50"></i>
+                    <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
                     <p class="mt-3 mb-0">${escapeOptionText(message)}</p>
                 </div>
             </div>
@@ -428,13 +420,13 @@ function escapeHtml(value) {
 
 function emptyHistorycalResultHtml(message, alertClass = 'card') {
     if (alertClass === 'warning') {
-        return `<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i> ${escapeHtml(message)}</div>`;
+        return `<div class="alert alert-warning"><x-ui.icon name="triangle-alert" class="me-1" /> ${escapeHtml(message)}</div>`;
     }
 
     return `
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center py-5 text-muted">
-                <i class="bi bi-graph-up tw-text-[3rem] tw-opacity-50"></i>
+                <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-opacity-60" />
                 <p class="mt-3 mb-0">${escapeHtml(message)}</p>
             </div>
         </div>
@@ -451,7 +443,7 @@ function historicalResultShellHtml(materialName) {
     document.querySelector('.card-header.bg-white.py-3.d-flex.justify-content-between.align-items-center').innerHTML = `
         <h6 class="mb-0 fw-bold">Search Filters</h6>
         <a href="${exportUrl.toString()}" class="btn btn-sm btn-success" data-async-export>
-            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+            <x-ui.icon name="file-spreadsheet" class="me-1" /> Export Excel
         </a>
     `;
 
@@ -459,7 +451,7 @@ function historicalResultShellHtml(materialName) {
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
                 <h6 class="mb-0 fw-bold" id="historicalChartTitle">
-                    <i class="bi bi-graph-up me-1"></i> Tren Price "${escapeHtml(materialName)}"
+                    <x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend: "${escapeHtml(materialName)}"
                 </h6>
             </div>
             <div class="card-body">
@@ -654,7 +646,7 @@ function renderTable(payload) {
     body.innerHTML = rows.map((row) => `
         <tr>
             <td class="text-center fw-medium">
-                ${row.pr_url ? `<a href="${row.pr_url}" class="text-decoration-none hover-underline text-primary" target="_blank">${escapeHtml(row.pr_number || '-')}</a>` : escapeHtml(row.pr_number || '-')}
+                ${row.pr_url ? `<a href="${row.pr_url}" class="text-decoration-none hover:tw-underline text-primary" target="_blank">${escapeHtml(row.pr_number || '-')}</a>` : escapeHtml(row.pr_number || '-')}
             </td>
             <td class="text-center">${row.purchase_order_at_display ? escapeHtml(row.purchase_order_at_display) : '<span class="badge bg-secondary">Draft</span>'}</td>
             <td class="text-center">${row.status_badge || '-'}</td>
@@ -699,7 +691,7 @@ function renderPayload(payload) {
          document.querySelector('.card-header.bg-white.py-3.d-flex.justify-content-between.align-items-center').innerHTML = `
              <h6 class="mb-0 fw-bold">Search Filters</h6>
              <a href="${exportUrl.toString()}" class="btn btn-sm btn-success" data-async-export>
-                 <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                 <x-ui.icon name="file-spreadsheet" class="me-1" /> Export Excel
              </a>
          `;
     }
@@ -708,7 +700,7 @@ function renderPayload(payload) {
     renderSummary(payload.summary || {});
     renderTable(payload);
     document.getElementById('historicalChartTitle').innerHTML =
-        `<i class="bi bi-graph-up me-1"></i> Tren Price "${escapeHtml(payload.materialName)}"`;
+        `<x-ui.icon name="chart-no-axes-combined" class="me-1" /> Price Trend: "${escapeHtml(payload.materialName)}"`;
 }
 
 window.loadHistorycalPayloadFromFilters = async function () {

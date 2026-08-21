@@ -29,7 +29,7 @@ class QcExportController extends Controller
             'rekap_inspeksi_qc_'.now()->format('Ymd_His').'.xlsx',
         );
 
-        $message = 'Permintaan export diterima. File akan terunduh otomatis ketika siap.';
+        $message = 'The export request was accepted. The file will download automatically when ready.';
 
         if ($request->wantsJson()) {
             return response()->json([

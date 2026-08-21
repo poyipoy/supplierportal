@@ -5,7 +5,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Edit User — ' . $user->name" description="Update role, account status, credentials, and supplier profile within existing security rules." eyebrow="Admin">
-        <x-slot:actions><x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to User List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to User List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
     <x-ui.card :title="'Edit User Form: ' . $user->name">
@@ -23,13 +23,13 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="user-email">Alamat Email <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted" for="user-email">Email Address <span class="text-danger">*</span></label>
                             <input type="email" name="email" id="user-email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
                             @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3 border rounded p-3 bg-light">
-                            <label class="form-label small fw-bold text-dark" for="user-password"><i class="bi bi-key"></i> Change Password</label>
+                            <label class="form-label small fw-bold text-dark" for="user-password"><x-ui.icon name="key" /> Change Password</label>
                             <p class="small text-muted mb-2" id="user-password-help">Leave blank if you do not want to change the password.</p>
                             
                             <input type="password" name="password" id="user-password" class="form-control mb-2 @error('password') is-invalid @enderror" placeholder="New password (minimum 12 characters)" minlength="12" maxlength="255" autocomplete="new-password" aria-describedby="user-password-help">
@@ -57,7 +57,7 @@
                         </div>
                     </div>
 
-                    {{-- Dinamis untuk Supplier --}}
+                    {{-- Supplier-specific fields --}}
                     <div class="col-md-6" id="supplier-fields" hidden>
                         <h6 class="text-info fw-bold mb-3 border-bottom pb-2">Company Details (Supplier)</h6>
 
@@ -68,13 +68,13 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-address">Alamat Lengkap <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted" for="supplier-address">Full Address <span class="text-danger">*</span></label>
                             <textarea name="address" id="supplier-address" class="form-control @error('address') is-invalid @enderror" rows="3">{{ old('address', $user->supplier->address ?? '') }}</textarea>
                             @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-phone">Number Telepon <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted" for="supplier-phone">Phone Number <span class="text-danger">*</span></label>
                             <input type="text" name="phone" id="supplier-phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $user->supplier->phone ?? '') }}">
                             @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
@@ -86,7 +86,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-medium text-muted" for="supplier-category">Kategori Material <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-medium text-muted" for="supplier-category">Material Category <span class="text-danger">*</span></label>
                             <input type="text" name="category" id="supplier-category" class="form-control @error('category') is-invalid @enderror" value="{{ old('category', $user->supplier->category ?? '') }}" placeholder="Contoh: Baja, Plat Besi, dsb">
                             @error('category')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
@@ -95,7 +95,7 @@
                 </div>
 
                 <div class="tw-mt-5 tw-flex tw-justify-end">
-                    <x-ui.button type="submit"><i class="bi bi-save"></i> Save Changes</x-ui.button>
+                    <x-ui.button type="submit"><x-ui.icon name="save" /> Save Changes</x-ui.button>
                 </div>
             </form>
     </x-ui.card>

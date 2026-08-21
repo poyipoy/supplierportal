@@ -27,7 +27,7 @@
 @if($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="bi bi-x-circle-fill"></i>
+            <x-ui.icon name="circle-x" />
             <strong>An error occurred:</strong>
         </div>
         <ul class="mb-0 ps-3">

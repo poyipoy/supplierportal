@@ -11,7 +11,7 @@
 ]" />
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header :title="'Claim #' . $claim->id" :description="'Material claim for ' . $claim->purchaseOrder->po_number . ' from ' . $claim->purchaseOrder->supplier->name . '.'" eyebrow="Material Claim Details">
-        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><i class="bi bi-arrow-left"></i> Back to Claim List</x-ui.button></x-slot:actions>
+        <x-slot:actions><x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> Back to Claim List</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
 <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
@@ -76,7 +76,7 @@
                         @foreach($claim->attachments as $att)
                             <div class="col-4 col-md-3 col-lg-2">
                                 <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded text-center py-3 text-decoration-none shadow-sm h-100 bg-white">
-                                    <i class="bi bi-file-earmark-text fs-3 text-primary d-block mb-1"></i>
+                                    <x-ui.icon name="file-text" size="lg" class="text-primary d-block mb-1" />
                                     <span class="small text-truncate d-block px-2">{{ $att->file_name }}</span>
                                 </a>
                             </div>
@@ -97,9 +97,9 @@
                     <x-ui.alert class="tw-mb-3">Supplier has provided a response. Is the solution acceptable?</x-ui.alert>
                     <form action="{{ route('purchasing.claims.resolve', $claim) }}" method="POST">
                         @csrf
-                        <x-ui.button type="submit" class="tw-mb-2 tw-w-full"><i class="bi bi-check2-circle"></i> Mark Completed (Resolved)</x-ui.button>
+                        <x-ui.button type="submit" class="tw-mb-2 tw-w-full"><x-ui.icon name="circle-check" /> Mark Completed (Resolved)</x-ui.button>
                     </form>
-                    <x-ui.button disabled variant="danger" class="tw-w-full" title="Escalation feature is not active yet"><i class="bi bi-exclamation-triangle"></i> Escalation</x-ui.button>
+                    <x-ui.button disabled variant="danger" class="tw-w-full" title="Escalation feature is not active yet"><x-ui.icon name="triangle-alert" /> Escalation</x-ui.button>
                 @elseif($claim->status === 'resolved')
                     <x-ui.alert tone="success">This claim has been declared completed and resolved.</x-ui.alert>
                 @endif

@@ -2,14 +2,6 @@
     'use strict';
 
     const SweetAlert = window.Swal;
-    const iconMap = {
-        success: 'bi-check-circle-fill',
-        error: 'bi-x-circle-fill',
-        warning: 'bi-exclamation-triangle-fill',
-        info: 'bi-info-circle-fill',
-        question: 'bi-question-circle-fill',
-    };
-
     const fallbackResult = (overrides) => Object.assign({
         isConfirmed: false,
         isDenied: false,
@@ -19,8 +11,6 @@
 
     const asOptions = (options) => options && typeof options === 'object' ? options : {};
     const asText = (value, fallback) => value === undefined || value === null ? fallback : String(value);
-    const iconHtml = (type) => `<i class="bi ${iconMap[type] || iconMap.info} adasi-alert-icon-glyph" aria-hidden="true"></i>`;
-
     const classes = (confirmTone) => ({
         container: 'adasi-alert-container',
         popup: 'adasi-alert-popup',
@@ -50,7 +40,6 @@
         titleText: asText(options.title, ''),
         ...contentOptions(options),
         icon: type,
-        iconHtml: iconHtml(type),
         buttonsStyling: false,
         customClass: classes(confirmTone),
         showClass: { popup: 'adasi-alert-show' },

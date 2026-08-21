@@ -277,7 +277,7 @@ class QuotationListController extends Controller
             $title,
             $message,
             route('supplier.quotations.show', $quotation, absolute: false),
-            $eventSuffix === 'revision_requested' ? 'bi-arrow-repeat text-warning' : 'bi-tags text-primary',
+            $eventSuffix === 'revision_requested' ? 'refresh-cw text-warning' : 'tags text-primary',
             [
                 'category' => NotificationCategory::QUOTATION,
                 'quotation_id' => $quotation->id,

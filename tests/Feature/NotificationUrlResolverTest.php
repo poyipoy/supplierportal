@@ -267,7 +267,7 @@ class NotificationUrlResolverTest extends TestCase
                 'title' => 'Notification',
                 'message' => 'Notification target',
                 'url' => '#',
-                'icon' => 'bi-bell',
+                'icon' => 'bell',
             ], $data),
         ]);
     }

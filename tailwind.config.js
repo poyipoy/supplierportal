@@ -95,9 +95,8 @@ export default {
                 'ui-full': 'var(--md-shape-full)',
             },
             boxShadow: {
-                'ui-1': 'var(--md-elevation-1)',
-                'ui-2': 'var(--md-elevation-2)',
-                'ui-3': 'var(--md-elevation-3)',
+                'ui-1': 'var(--ui-shadow-1)',
+                'ui-2': 'var(--ui-shadow-2)',
             },
             transitionDuration: {
                 fast: 'var(--ui-motion-fast)',

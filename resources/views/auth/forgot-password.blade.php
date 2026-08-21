@@ -16,7 +16,7 @@
         <label for="email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Email Address <span class="tw-text-error" aria-hidden="true">*</span></label>
         <div class="tw-relative">
             <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3.5 tw-pointer-events-none tw-text-on-surface-variant">
-                <i class="bi bi-envelope"></i>
+                <x-ui.icon name="mail" />
             </div>
             <input
                 id="email"
@@ -34,14 +34,14 @@
     </div>
 
     <button type="submit" class="ui-focus-ring ui-motion tw-flex tw-h-12 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-white hover:tw-bg-primary-600 active:tw-bg-primary-700">
-        <i class="bi bi-envelope-arrow-up"></i>
+        <x-ui.icon name="send" />
         Send Reset Link
     </button>
 </form>
 
 <div class="tw-mt-5 tw-text-center">
     <a href="{{ route('login') }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-text-ui-sm tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">
-        <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Login
+        <x-ui.icon name="arrow-left" /> Back to Login
     </a>
 </div>
 @endsection

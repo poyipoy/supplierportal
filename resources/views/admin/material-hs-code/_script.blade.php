@@ -240,11 +240,11 @@ $(function () {
             const attention = report.needs_attention || {};
             const referenceNotes = report.reference_notes || {};
             const cards = [
-                ['Materials', summary.materials, 'bi-boxes', 'text-primary'],
-                ['With HS Mapping', summary.materials_with_hs_mapping, 'bi-diagram-3', 'text-success'],
-                ['Needs HS Mapping', summary.materials_needing_hs_mapping, 'bi-question-circle', 'text-warning'],
-                ['Active HS Rules', summary.active_hs_rules, 'bi-check-circle', 'text-success'],
-                ['Needs Review', summary.rules_needing_review, 'bi-exclamation-circle', 'text-danger']
+                ['Materials', summary.materials, 'boxes', 'text-primary'],
+                ['With HS Mapping', summary.materials_with_hs_mapping, 'network', 'text-success'],
+                ['Needs HS Mapping', summary.materials_needing_hs_mapping, 'circle-help', 'text-warning'],
+                ['Active HS Rules', summary.active_hs_rules, 'check-circle', 'text-success'],
+                ['Needs Review', summary.rules_needing_review, 'circle-alert', 'text-danger']
             ];
             const $cards = $('#qualityCards').empty();
             cards.forEach(([label, value, icon, colorClass]) => {
@@ -287,7 +287,7 @@ $(function () {
     function renderRulesNeedingReview(items) {
         const $container = $('#rulesNeedingReview').empty();
         if (!items.length) {
-            $('<div class="text-success">').append($('<i class="bi bi-check-circle me-1" aria-hidden="true">'), document.createTextNode('No active rules need review.')).appendTo($container);
+            $('<div class="text-success">').text('No active rules need review.').appendTo($container);
             return;
         }
 

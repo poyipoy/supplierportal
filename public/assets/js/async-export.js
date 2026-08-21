@@ -35,18 +35,8 @@
             return;
         }
 
-        if (window.AdasiAlert) {
-            if (type === 'error') {
-                window.AdasiAlert.error({ title, text });
-                return;
-            }
-
-            window.AdasiAlert.notification({ type, title, text, duration: 5000 });
-            return;
-        }
-
-        if (type === 'error') {
-            window.alert(`${title}\n\n${text}`);
+        if (type === 'error' && window.AdasiAlert) {
+            window.AdasiAlert.error({ title, text });
         }
     };
 
@@ -115,12 +105,12 @@
 
     const recordsTotal = () => {
         if (typeof window.jQuery === 'undefined' || !window.jQuery.fn.dataTable) {
-            return 'semua';
+            return 'all';
         }
 
         const tables = window.jQuery.fn.dataTable.tables(true);
         if (!tables.length) {
-            return 'semua';
+            return 'all';
         }
 
         return window.jQuery(tables[0]).DataTable().page.info().recordsTotal;
@@ -128,12 +118,12 @@
 
     const confirmExport = () => {
         const options = {
-            title: 'Konfirmasi Export',
-            text: `Anda akan mengekspor ${recordsTotal()} baris data ke Excel. Lanjutkan?`,
+            title: 'Confirm Export',
+            text: `You are about to export ${recordsTotal()} data rows to Excel. Continue?`,
             type: 'info',
             confirmTone: 'success',
-            confirmText: 'Ya, Export',
-            cancelText: 'Batal',
+            confirmText: 'Export',
+            cancelText: 'Cancel',
         };
 
         if (window.AdasiAlert) {
@@ -233,8 +223,8 @@
         }
 
         return response.status === 401
-            ? 'Sesi Anda telah berakhir. Silakan login kembali.'
-            : 'Permintaan export tidak dapat diproses.';
+            ? 'Your session has expired. Please sign in again.'
+            : 'The export request could not be processed.';
     };
 
     const triggerDownload = async (downloadUrl, fileName, exportJobId) => {
@@ -253,12 +243,12 @@
 
         const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
         if (contentType.includes('text/html')) {
-            throw new Error('Sesi download tidak valid. Silakan login kembali.');
+            throw new Error('The download session is invalid. Please sign in again.');
         }
 
         const blob = await response.blob();
         if (!blob.size) {
-            throw new Error('File export kosong atau tidak tersedia.');
+            throw new Error('The export file is empty or unavailable.');
         }
 
         const objectUrl = window.URL.createObjectURL(blob);
@@ -287,7 +277,7 @@
                 updateExportToast(state, {
                     type: 'warning',
                     title: 'Export is still processing',
-                    message: 'Automatic monitoring has stopped. The file will remain available in Export Saya.',
+                    message: 'Automatic monitoring has stopped. The file will remain available in Export History.',
                     autoClose: 0,
                 });
                 return;
@@ -332,7 +322,7 @@
                             updateExportToast(state, {
                                 type: 'error',
                                 title: 'Automatic download failed',
-                                message: error instanceof Error ? error.message : 'Download the file from Export Saya.',
+                                message: error instanceof Error ? error.message : 'Download the file from Export History.',
                                 autoClose: 0,
                             });
                         }
@@ -353,7 +343,7 @@
                     updateExportToast(state, {
                         type: 'error',
                         title: 'Export could not be completed',
-                        message: payload.message || 'Try the export again or review Export Saya.',
+                        message: payload.message || 'Try the export again or review Export History.',
                         autoClose: 0,
                     });
                     return;
@@ -364,7 +354,7 @@
                     updateExportToast(state, {
                         type: 'error',
                         title: 'Export status is unavailable',
-                        message: 'Review the job in Export Saya.',
+                        message: 'Review the job in Export History.',
                         autoClose: 0,
                     });
                     return;
@@ -387,7 +377,7 @@
                     updateExportToast(state, {
                         type: 'warning',
                         title: 'Export status could not be refreshed',
-                        message: 'The file will remain available in Export Saya after processing.',
+                        message: 'The file will remain available in Export History after processing.',
                         autoClose: 0,
                     });
                     return;
@@ -435,7 +425,7 @@
 
             const payload = await response.json();
             if (!payload.export_job_id || !payload.status_url) {
-                throw new Error('Respons export tidak lengkap.');
+                throw new Error('The export response is incomplete.');
             }
 
             state.exportJobId = payload.export_job_id;
@@ -462,8 +452,8 @@
             setBusy(control, false);
             updateExportToast(state, {
                 type: 'error',
-                title: 'Export gagal dimulai',
-                message: error instanceof Error ? error.message : 'Permintaan export tidak dapat diproses.',
+                title: 'Unable to Start Export',
+                message: error instanceof Error ? error.message : 'The export request could not be processed.',
                 autoClose: 0,
             });
         }

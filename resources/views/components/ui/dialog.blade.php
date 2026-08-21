@@ -64,13 +64,13 @@
             @if($title) aria-labelledby="{{ $titleId }}" @endif
             @if($description) aria-describedby="{{ $descriptionId }}" @endif
             tabindex="-1"
-            class="tw-relative tw-w-full tw-overflow-hidden tw-rounded-ui-lg tw-border tw-border-outline-variant tw-bg-surface tw-shadow-ui-3 {{ $widths[$maxWidth] ?? $widths['lg'] }}"
+            class="tw-relative tw-w-full tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-shadow-ui-2 {{ $widths[$maxWidth] ?? $widths['lg'] }}"
             x-transition:enter="tw-transition tw-duration-standard tw-ease-emphasized"
-            x-transition:enter-start="tw-translate-y-2 tw-scale-95 tw-opacity-0"
-            x-transition:enter-end="tw-translate-y-0 tw-scale-100 tw-opacity-100"
+            x-transition:enter-start="tw-translate-y-1 tw-opacity-0"
+            x-transition:enter-end="tw-translate-y-0 tw-opacity-100"
             x-transition:leave="tw-transition tw-duration-fast tw-ease-standard"
-            x-transition:leave-start="tw-translate-y-0 tw-scale-100 tw-opacity-100"
-            x-transition:leave-end="tw-translate-y-2 tw-scale-95 tw-opacity-0"
+            x-transition:leave-start="tw-translate-y-0 tw-opacity-100"
+            x-transition:leave-end="tw-translate-y-1 tw-opacity-0"
         >
             @if($title || $description || isset($header))
                 <header class="tw-flex tw-items-start tw-justify-between tw-gap-4 tw-border-b tw-border-outline-variant tw-p-5">
@@ -80,8 +80,8 @@
                             @if($description)<p id="{{ $descriptionId }}" class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ $description }}</p>@endif
                         @endisset
                     </div>
-                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface" @click="closeDialog()" aria-label="Tutup dialog">
-                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-11 tw-w-11 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface" @click="closeDialog()" aria-label="Close dialog">
+                        <x-ui.icon name="x" size="sm" />
                     </button>
                 </header>
             @endif

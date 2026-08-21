@@ -12,10 +12,10 @@
                         <small class="text-muted">{{ $ann->published_at->format('d M Y, H:i') }}</small>
                     </div>
                     <div class="text-muted mb-3 tw-text-ui-sm">{{ Str::limit($ann->content, 200) }}</div>
-                    <x-ui.button :href="route('supplier.announcements.show', $ann->id)" variant="ghost" size="sm">Read More<x-slot:trailing><i class="bi bi-arrow-right"></i></x-slot:trailing></x-ui.button>
+                    <x-ui.button :href="route('supplier.announcements.show', $ann->id)" variant="ghost" size="sm">Read More<x-slot:trailing><x-ui.icon name="arrow-right" /></x-slot:trailing></x-ui.button>
                 </div>
             @empty
-                <x-empty-state icon="bi-info-circle" title="No announcements yet" />
+                <x-empty-state icon="info" title="No announcements yet" />
             @endforelse
         @if($announcements->hasPages())<x-slot:footer>{{ $announcements->links() }}</x-slot:footer>@endif
     </x-ui.card>

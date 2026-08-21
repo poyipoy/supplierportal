@@ -15,6 +15,7 @@
         "maatwebsite/excel": "*",
         "pragmarx/google2fa": "^9.0",
         "pusher/pusher-php-server": "^7.3",
+        "technikermathe/blade-lucide-icons": "^3.168",
         "vinkla/hashids": "*",
         "yajra/laravel-datatables-oracle": "~12.0"
     },

@@ -18,7 +18,7 @@ class SupplierPriceHistoryController extends Controller
     public function __construct(private readonly SupplierPriceHistoryBuilder $historyBuilder) {}
 
     /**
-     * Sub-View 1: Menampilkan ringkasan seluruh material supplier.
+     * Sub-view 1: display the supplier's material summary.
      */
     public function index(Request $request)
     {
@@ -33,7 +33,7 @@ class SupplierPriceHistoryController extends Controller
     }
 
     /**
-     * Sub-View 2: Grafik dan tabel riwayat harga per material.
+     * Sub-view 2: price-history chart and table by material.
      */
     public function historical(Request $request)
     {
@@ -135,7 +135,7 @@ class SupplierPriceHistoryController extends Controller
         $fileName = 'Price_History_'.str_replace([' ', '/'], '_', $materialName).'_'.now()->format('YmdHis').'.xlsx';
 
         $exportJob = ExportDispatcher::dispatch(
-            'Riwayat Harga Supplier',
+            'Supplier Price History',
             SupplierPriceHistoryExport::class,
             [
                 $supplierId,
@@ -204,7 +204,7 @@ class SupplierPriceHistoryController extends Controller
             ->addColumn('action', function ($row) {
                 $url = route('supplier.price-history.historical', ['material_name' => $row->material_name]);
 
-                return '<a href="'.$url.'" class="btn btn-sm btn-outline-primary"><i class="bi bi-graph-up me-1"></i>View History</a>';
+                return '<a href="'.$url.'" class="btn btn-sm btn-outline-primary">View History</a>';
             })
             ->addColumn('price_info', function ($row) {
                 $latest = $row->latest_price_idr ?? 0;
@@ -283,7 +283,7 @@ class SupplierPriceHistoryController extends Controller
 
     private function dispatchResponse(Request $request, ExportJob $exportJob)
     {
-        $message = 'Permintaan export diterima. File akan terunduh otomatis ketika siap.';
+        $message = 'The export request was accepted. The file will download automatically when ready.';
 
         if ($request->wantsJson()) {
             return response()->json([

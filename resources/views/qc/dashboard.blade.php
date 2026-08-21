@@ -1,15 +1,15 @@
 @extends('layouts.app')
 @section('title', 'QC Dashboard - ADASI Portal')
-@section('page-title', 'Dashboard Quality Control')
+@section('page-title', 'Quality Control Dashboard')
 
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Quality Control Dashboard" description="Prioritize arrivals waiting for inspection and monitor OK/NG quality outcomes." eyebrow="QC" />
     <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
-        <x-ui.metric-card label="Total Inspections" :value="$totalInspections" icon="bi-clipboard2-check" :href="route('qc.inspections.index')" />
-        <x-ui.metric-card label="Material OK" :value="$totalOk" icon="bi-check-circle" tone="success" :href="route('qc.inspections.index')" />
-        <x-ui.metric-card label="Material NG" :value="$totalNg" icon="bi-x-octagon" tone="error" :href="route('qc.inspections.index')" />
-        <x-ui.metric-card label="Waiting for Inspection" :value="$waitingInspections" icon="bi-hourglass-split" tone="warning" :href="$firstWaitingPo ? route('qc.inspections.create', $firstWaitingPo) : route('qc.inspections.index')" />
+        <x-ui.metric-card label="Total Inspections" :value="$totalInspections" icon="clipboard-check" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card label="Material OK" :value="$totalOk" icon="check-circle" tone="success" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card label="Material NG" :value="$totalNg" icon="x-octagon" tone="error" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card label="Waiting for Inspection" :value="$waitingInspections" icon="hourglass" tone="warning" :href="$firstWaitingPo ? route('qc.inspections.create', $firstWaitingPo) : route('qc.inspections.index')" />
     </div>
 
     <div class="row g-4 mb-4">

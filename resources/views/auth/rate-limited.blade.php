@@ -13,7 +13,7 @@
 
 <div class="tw-text-center" aria-labelledby="rate-limit-title">
     <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-error">429 / Request Limited</p>
-    <span class="tw-mt-4 tw-inline-flex tw-h-16 tw-w-16 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-primary-container tw-text-primary-container-foreground"><i class="bi bi-shield-exclamation tw-text-2xl" aria-hidden="true"></i></span>
+    <x-ui.icon name="shield-alert" size="lg" class="tw-mt-4 tw-text-primary" />
     <h1 id="rate-limit-title" class="tw-m-0 tw-mt-4 tw-text-ui-2xl tw-font-semibold tw-tracking-tight">Please wait a moment</h1>
     <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-leading-6 tw-text-on-surface-variant">To help protect your account, this action is temporarily limited because too many requests were made.</p>
 
@@ -22,8 +22,8 @@
     </x-ui.alert>
 
     <div class="tw-mt-6 tw-grid tw-gap-3 sm:tw-grid-cols-2">
-        <x-ui.button type="button" variant="ghost" id="go-back"><i class="bi bi-arrow-left" aria-hidden="true"></i> Go Back</x-ui.button>
-        <x-ui.button :href="$returnUrl"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ $returnLabel }}</x-ui.button>
+        <x-ui.button type="button" variant="ghost" id="go-back"><x-ui.icon name="arrow-left" /> Go Back</x-ui.button>
+        <x-ui.button :href="$returnUrl"><x-ui.icon name="circle-user-round" /> {{ $returnLabel }}</x-ui.button>
     </div>
     <p class="tw-m-0 tw-mt-5 tw-text-ui-xs tw-text-on-surface-variant">If the issue continues, please contact your system administrator.</p>
 </div>

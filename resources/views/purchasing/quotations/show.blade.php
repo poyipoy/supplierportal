@@ -36,7 +36,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
-                <i class="bi bi-arrow-left"></i> 
+                <x-ui.icon name="arrow-left" />
                 Back to Quotation List
             </x-ui.button>
         </x-slot:actions>
@@ -50,7 +50,7 @@
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                     <span class="badge {{ $quotation->statusBadgeClass() }} text-uppercase px-3 py-2">{{ $quotation->statusLabel() }}</span>
                     <x-ui.button :href="route('purchasing.export.quotations.detail', $quotation)" variant="secondary" size="sm" data-async-export>
-                        <i class="bi bi-file-earmark-excel"></i> 
+                        <x-ui.icon name="file-spreadsheet" />
                         Export Excel
                     </x-ui.button>
                 </div>
@@ -67,7 +67,7 @@
                         <div class="mb-3">
                             <span class="text-muted small d-block">
                                 Quotation Valid Until
-                                <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-title="Expired quotations cannot be used to create a PO until the supplier submits a revision."></i>
+                                <x-ui.icon name="info" class="ms-1" data-bs-toggle="tooltip" data-bs-title="Expired quotations cannot be used to create a PO until the supplier submits a revision." />
                             </span>
                             @if($quotation->validity_period)
                                 <span class="fw-medium">{{ $quotation->validity_period->format('d F Y') }}</span>
@@ -89,11 +89,11 @@
                     </x-ui.alert>
                 @endif
                 @if($quotation->general_notes)
-                    <div class="mt-2 p-3 bg-light rounded small"><i class="bi bi-chat-left-text me-1"></i> {{ $quotation->general_notes }}</div>
+                    <div class="mt-2 p-3 bg-light rounded small"><x-ui.icon name="message-square-text" class="me-1" /> {{ $quotation->general_notes }}</div>
                 @endif
                 @if($quotation->reviewer_notes)
                     <div class="mt-2 p-3 bg-warning bg-opacity-10 border border-warning rounded small">
-                        <div class="fw-semibold mb-1"><i class="bi bi-pencil-square me-1"></i> Review Notes</div>
+                        <div class="fw-semibold mb-1"><x-ui.icon name="square-pen" class="me-1" /> Review Notes</div>
                         {{ $quotation->reviewer_notes }}
                     </div>
                 @endif
@@ -153,12 +153,12 @@
                                      @php($availability = $item->availability_comparison)
                                      <td class="text-start small tw-min-w-[230px]">
                                          <div class="border rounded p-2 bg-light mb-2">
-                                             <div class="text-muted fw-semibold mb-1"><i class="bi bi-building me-1"></i>Requested by Purchasing</div>
+                                             <div class="text-muted fw-semibold mb-1"><x-ui.icon name="building" class="me-1" />Requested by Purchasing</div>
                                              <div>Qty: {{ number_format($quantity, 0) }}</div>
                                              <div class="text-muted">{{ $item->prItem?->dimension_label ?? '-' }}</div>
                                          </div>
                                          <div class="border rounded p-2">
-                                             <div class="text-primary fw-semibold mb-1"><i class="bi bi-box-seam me-1"></i>Offered by Supplier</div>
+                                             <div class="text-primary fw-semibold mb-1"><x-ui.icon name="package" class="me-1" />Offered by Supplier</div>
                                              <div>Qty: {{ $item->available_qty ?? '-' }}</div>
                                              <div class="text-muted">{{ $item->available_dimension_label }}</div>
                                              <div class="d-flex flex-wrap gap-1 mt-2">
@@ -192,7 +192,7 @@
                                         @if($item->attachments->isNotEmpty())
                                             @foreach($item->attachments as $attachment)
                                                 <a href="{{ route('attachments.show', $attachment->id) }}" class="btn btn-sm btn-outline-primary mb-1" target="_blank" title="{{ $attachment->file_name }}">
-                                                    <i class="bi bi-paperclip"></i>
+                                                    <x-ui.icon name="paperclip" />
                                                 </a>
                                             @endforeach
                                         @else
@@ -221,8 +221,8 @@
                 <h5 class="fw-bold mb-1">{{ $supplierDisplayName }}</h5>
                 <p class="text-muted small mb-2">{{ $quotation->supplier->email }}</p>
                 @if($quotation->supplier->supplier)
-                    <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>{{ $quotation->supplier->supplier->address ?? '-' }}</div>
-                    <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
+                    <div class="small text-muted mb-1"><x-ui.icon name="map-pin" class="me-1" />{{ $quotation->supplier->supplier->address ?? '-' }}</div>
+                    <div class="small text-muted"><x-ui.icon name="phone" class="me-1" />{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
                 @endif
         </x-ui.card>
 
@@ -233,9 +233,9 @@
                         @csrf
                         <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                         <x-ui.button type="submit" class="tw-w-full tw-justify-between">
-                            <i class="bi bi-chat-dots"></i> 
+                            <x-ui.icon name="message-circle-more" />
                             Chat with {{ $supplierDisplayName }}
-                             <i class="bi bi-chevron-right"></i>
+                             <x-ui.icon name="chevron-right" />
                         </x-ui.button>
                     </form>
                     <div class="mt-3 text-muted small">
@@ -275,7 +275,7 @@
                     <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="tw-mb-3">
                         @csrf
                         <x-ui.button type="submit" class="tw-w-full">
-                            <i class="bi bi-check-circle"></i> 
+                            <x-ui.icon name="check-circle" />
                             Accept Quotation
                         </x-ui.button>
                     </form>
@@ -285,7 +285,7 @@
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                         <x-ui.textarea name="revision_note" id="revisionNote" label="Revision Notes" :rows="3" maxlength="1000" required placeholder="Example: Please revise the price, lead time, MTC, or payment terms." />
                         <x-ui.button type="submit" variant="secondary" class="tw-w-full">
-                            <i class="bi bi-arrow-repeat"></i> 
+                            <x-ui.icon name="refresh-cw" />
                             Request Revision
                         </x-ui.button>
                     </form>
@@ -294,7 +294,7 @@
                         @csrf
                         <x-ui.textarea name="reviewer_notes" label="Rejection Notes" :rows="3" maxlength="1000" required placeholder="Required if the quotation is rejected." />
                         <x-ui.button type="submit" variant="danger" class="tw-w-full">
-                            <i class="bi bi-x-circle"></i> 
+                            <x-ui.icon name="x-circle" />
                             Reject Quotation
                         </x-ui.button>
                     </form>
@@ -302,7 +302,7 @@
 
                 @if($canCreatePo)
                     <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation)" class="tw-mb-3 tw-w-full">
-                        <i class="bi bi-receipt"></i> 
+                        <x-ui.icon name="receipt" />
                         Create PO from This Quotation
                     </x-ui.button>
                 @elseif($quotation->status === 'submitted' && $quotation->isExpired())
@@ -315,13 +315,13 @@
                             </x-ui.alert>
                             <x-ui.textarea name="revision_note" id="revisionNote" label="Revision Notes" :rows="3" maxlength="1000" placeholder="Example: Please update the validity date, lead time, and latest price." />
                             <x-ui.button type="submit" variant="secondary" class="tw-w-full">
-                                <i class="bi bi-arrow-repeat"></i> 
+                                <x-ui.icon name="refresh-cw" />
                                 Request Quotation Revision
                             </x-ui.button>
                         </form>
                     @else
                         <x-ui.button disabled variant="danger" class="tw-mb-3 tw-w-full">
-                            <i class="bi bi-lock"></i> 
+                            <x-ui.icon name="lock" />
                             Quotation Expired
                         </x-ui.button>
                     @endif
@@ -333,7 +333,7 @@
                     <x-ui.alert tone="success" class="tw-mb-3">PO already created: <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order) }}" class="tw-font-semibold tw-underline">{{ $quotation->first_purchase_order->po_number }}</a></x-ui.alert>
                 @endif
                 <x-ui.button :href="$relatedPrUrl" variant="ghost" size="sm" class="tw-w-full">
-                    <i class="bi bi-clipboard-data"></i> 
+                    <x-ui.icon name="clipboard-list" />
                     View Related PR
                 </x-ui.button>
         </x-ui.card>
@@ -344,8 +344,8 @@
                 <div class="list-group list-group-flush">
                     @foreach($quotation->attachments as $att)
                         <a href="{{ route('attachments.show', $att->id) }}" class="list-group-item list-group-item-action py-2 px-3 small d-flex justify-content-between align-items-center" target="_blank">
-                            <span><i class="bi bi-file-earmark me-2"></i>{{ $att->file_name }}</span>
-                            <i class="bi bi-download text-muted"></i>
+                            <span><x-ui.icon name="file" class="me-2" />{{ $att->file_name }}</span>
+                            <x-ui.icon name="download" class="text-muted" />
                         </a>
                     @endforeach
                 </div>
