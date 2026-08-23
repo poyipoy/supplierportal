@@ -8,6 +8,8 @@ trait InteractsWithExportProgress
 {
     private ?int $exportProgressJobId = null;
 
+    private ?int $exportProgressTotalRows = null;
+
     public function setExportProgressContext(int $exportJobId): void
     {
         $this->exportProgressJobId = $exportJobId;
@@ -19,5 +21,10 @@ trait InteractsWithExportProgress
         return $this->exportProgressJobId === null
             ? []
             : [new TrackExportChunkProgress($this->exportProgressJobId)];
+    }
+
+    public function querySize(): int
+    {
+        return $this->exportProgressTotalRows ??= max(0, $this->query()->count());
     }
 }

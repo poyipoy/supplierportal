@@ -48,7 +48,11 @@ class PurchaseRequisitionDetailExport implements FromCollection, TracksExportPro
 
     public function progressTotalRows(): int
     {
-        return $this->collection()->count();
+        $requisition = PurchaseRequisition::query()
+            ->select('id')
+            ->findOrFail($this->prId);
+
+        return $requisition->items()->count();
     }
 
     public function columnWidths(): array

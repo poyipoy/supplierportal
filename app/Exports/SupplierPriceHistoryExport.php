@@ -19,6 +19,8 @@ class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress
 {
     use InteractsWithExportProgress;
 
+    private ?Collection $cachedRows = null;
+
     public function __construct(
         private readonly int $supplierId,
         private readonly string $view,
@@ -29,6 +31,11 @@ class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress
     ) {}
 
     public function collection(): Collection
+    {
+        return $this->cachedRows ??= $this->buildRows();
+    }
+
+    private function buildRows(): Collection
     {
         $dateFrom = $this->dateFromIso !== null ? Carbon::parse($this->dateFromIso) : null;
         [, $data] = app(SupplierPriceHistoryBuilder::class)->build(
@@ -59,6 +66,17 @@ class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress
             $row['currency'],
             $row['change_pct'] !== null ? number_format($row['change_pct'], 2).'%' : '-',
         ]);
+    }
+
+    /**
+     * Keep the in-process row cache out of every serialized queue-chain job.
+     * Maatwebsite already serializes each data chunk separately.
+     *
+     * @return list<string>
+     */
+    public function __sleep(): array
+    {
+        return array_values(array_diff(array_keys(get_object_vars($this)), ['cachedRows']));
     }
 
     public function headings(): array

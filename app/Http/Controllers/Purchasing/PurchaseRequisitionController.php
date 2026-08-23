@@ -39,9 +39,20 @@ class PurchaseRequisitionController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = PurchaseRequisition::with(['period', 'items', 'creator'])
-                ->withCount('invitedSuppliers')
-                ->select('purchase_requisitions.*')
+            $query = PurchaseRequisition::query()
+                ->select([
+                    'purchase_requisitions.id',
+                    'purchase_requisitions.period_id',
+                    'purchase_requisitions.created_by',
+                    'purchase_requisitions.pr_number',
+                    'purchase_requisitions.status',
+                    'purchase_requisitions.created_at',
+                ])
+                ->with([
+                    'period:id,name,month,year',
+                    'creator:id,name',
+                ])
+                ->withCount(['items', 'invitedSuppliers'])
                 ->selectSub(
                     PrItem::query()
                         ->selectRaw('COALESCE(SUM(COALESCE(pr_items.weight_needed, 0) * CASE WHEN pr_items.quantity IS NULL OR pr_items.quantity < 1 THEN 1 ELSE pr_items.quantity END), 0)')
@@ -71,7 +82,7 @@ class PurchaseRequisitionController extends Controller
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
                 ->addColumn('period_name', fn ($pr) => $pr->period->display_label ?? '-')
                 ->addColumn('creator_name', fn ($pr) => $pr->creator->name ?? '-')
-                ->addColumn('item_count', fn ($pr) => $pr->items->count().' Item')
+                ->addColumn('item_count', fn ($pr) => $pr->items_count.' Item')
                 ->addColumn('total_kg', fn ($pr) => number_format((float) $pr->total_kg, 4, '.', ',').' kg')
                 ->addColumn('supplier_count', fn ($pr) => $pr->invited_suppliers_count)
                 ->addColumn('status_badge', function ($pr) {
@@ -136,6 +147,19 @@ class PurchaseRequisitionController extends Controller
                         .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
                 ->rawColumns(['status_badge', 'action'])
+                ->ignoreSelectsInCountQuery()
+                ->only([
+                    'DT_RowIndex',
+                    'pr_number_display',
+                    'period_name',
+                    'creator_name',
+                    'supplier_count',
+                    'item_count',
+                    'total_kg',
+                    'status_badge',
+                    'created_date',
+                    'action',
+                ])
                 ->make(true);
         }
 

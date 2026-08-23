@@ -161,7 +161,19 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
 
     public function progressTotalRows(): int
     {
-        return $this->collection()->count();
+        $query = PurchaseOrder::query()
+            ->select(['id', 'supplier_id'])
+            ->whereKey($this->purchaseOrderId);
+
+        if ($this->forcedSupplierId !== null) {
+            $query->where('supplier_id', $this->forcedSupplierId);
+        }
+
+        $purchaseOrder = $query->firstOrFail();
+
+        return $purchaseOrder->quotations()
+            ->join('quotation_items', 'quotation_items.quotation_id', '=', 'quotations.id')
+            ->count('quotation_items.id');
     }
 
     public function columnWidths(): array

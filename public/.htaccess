@@ -1,3 +1,19 @@
+<IfModule mod_setenvif.c>
+    # Vite filenames under build/assets are content-hashed and safe to cache
+    # for one year. Files under assets use stable names and get a shorter TTL.
+    SetEnvIf Request_URI "(^|/)build/assets/" adasi_vite_asset=1
+    SetEnvIf Request_URI "(^|/)assets/" adasi_public_asset=1
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=86400, must-revalidate" env=adasi_public_asset
+    Header set Cache-Control "public, max-age=31536000, immutable" env=adasi_vite_asset
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

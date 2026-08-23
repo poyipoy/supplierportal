@@ -32,20 +32,13 @@ class ProcessExportJob implements ShouldQueue
     {
         $record = ExportJob::find($this->exportJobId);
 
-        if ($record === null || $record->status === ExportJob::STATUS_FAILED) {
-            return;
-        }
-
-        if ($record->status === ExportJob::STATUS_COMPLETED && $record->isDownloadable()) {
+        if ($record === null || $record->status !== ExportJob::STATUS_QUEUED) {
             return;
         }
 
         if (! ExportDispatcher::isSupported($record->export_class) || ! class_exists($record->export_class)) {
             throw new RuntimeException('Unsupported export class.');
         }
-
-        $path = 'exports/'.$record->user_id.'/'.$record->getKey().'/'.$record->file_name;
-        $progress->prepare($record, $path);
 
         $exportClass = $record->export_class;
         $export = new $exportClass(...$record->export_args);
@@ -54,17 +47,29 @@ class ProcessExportJob implements ShouldQueue
             throw new RuntimeException('The export does not support row progress tracking.');
         }
 
+        // Expensive construction/counting happens while the durable record is
+        // still queued. A process death here is therefore safe for worker retry.
         $totalRows = max(0, $export->progressTotalRows());
         $export->setExportProgressContext((int) $record->getKey());
-        $progress->startGenerating($record, $totalRows);
+        $path = 'exports/'.$record->user_id.'/'.$record->getKey().'/'.$record->file_name;
 
-        $pending = Excel::queue($export, $path, $record->disk)
-            ->allOnQueue('exports')
-            ->appendToChain(new FinalizeExportJob((int) $record->getKey()));
+        $progress->handoffToExportQueue(
+            $record,
+            $path,
+            $totalRows,
+            function () use ($export, $path, $record): void {
+                $pending = Excel::queue($export, $path, $record->disk)
+                    ->allOnQueue('exports')
+                    ->appendToChain(new FinalizeExportJob((int) $record->getKey()));
 
-        $pending->getJob()->chainCatchCallbacks = [
-            new MarkExportFailed((int) $record->getKey()),
-        ];
+                $pending->getJob()->chainCatchCallbacks = [
+                    new MarkExportFailed((int) $record->getKey()),
+                ];
+
+                // Force dispatch before the surrounding database transaction commits.
+                unset($pending);
+            },
+        );
     }
 
     public function failed(Throwable $exception): void

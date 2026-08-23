@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('uses-datatables', true)
 
 @section('title', 'Material Claims - ADASI Portal')
 @section('page-title', 'Material Claims')

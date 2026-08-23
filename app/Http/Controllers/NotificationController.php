@@ -26,6 +26,20 @@ class NotificationController extends Controller
         return response()->json($this->summaryService->countsForUser($request->user()));
     }
 
+    public function summary(Request $request)
+    {
+        $summary = $this->summaryService->forUser($request->user());
+        $counts = collect($summary['category_counts']);
+
+        return view('partials.notification-panel', [
+            'notificationCategories' => $summary['categories'],
+            'navbarNotifications' => $summary['notifications'],
+            'navbarNotificationGroups' => $summary['groups'],
+            'navbarNotificationCounts' => $counts->map(fn ($count) => $count['unread']),
+            'navbarNotificationTotals' => $counts->map(fn ($count) => $count['total']),
+        ]);
+    }
+
     public function markRead(Request $request, string $id)
     {
         $notification = $request->user()->notifications()->findOrFail($id);

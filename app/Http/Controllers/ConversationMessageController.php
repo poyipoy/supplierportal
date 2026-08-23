@@ -33,6 +33,11 @@ class ConversationMessageController extends Controller
             'latestMessage.sender',
         ])
             ->withMax('messages', 'created_at')
+            ->withCount([
+                'messages as unread_messages_count' => fn ($query) => $query
+                    ->where('sender_id', '!=', auth()->id())
+                    ->whereNull('read_at'),
+            ])
             ->forUser(auth()->id())
             ->when(request()->filled('q'), function ($query) {
                 $keyword = trim((string) request('q'));
@@ -302,12 +307,12 @@ class ConversationMessageController extends Controller
      */
     public function unreadCount()
     {
-        $count = Conversation::forUser(auth()->id())
-            ->withCount(['messages' => function ($q) {
-                $q->where('sender_id', '!=', auth()->id())->whereNull('read_at');
-            }])
-            ->get()
-            ->sum('messages_count');
+        $userId = auth()->id();
+        $count = Message::query()
+            ->where('sender_id', '!=', $userId)
+            ->whereNull('read_at')
+            ->whereHas('conversation', fn ($query) => $query->forUser($userId))
+            ->count();
 
         return response()->json(['count' => $count]);
     }
@@ -326,7 +331,9 @@ class ConversationMessageController extends Controller
             'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : 'No messages yet',
             'latest_time' => $latestMessage?->created_at?->diffForHumans(),
             'latest_at' => $latestMessage?->created_at?->toIso8601String(),
-            'unread_count' => $conversation->unreadCountFor(auth()->id()),
+            'unread_count' => array_key_exists('unread_messages_count', $conversation->getAttributes())
+                ? (int) $conversation->unread_messages_count
+                : $conversation->unreadCountFor(auth()->id()),
             'status' => $conversation->status ?? Conversation::STATUS_OPEN,
             'status_label' => $conversation->statusLabelFor(auth()->user()),
             'status_badge_class' => $conversation->statusBadgeClassFor(auth()->user()),

@@ -126,7 +126,7 @@
             <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
                 <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold tw-text-on-surface" id="historicalChartTitle">
                     <x-ui.icon name="chart-no-axes-combined" class="tw-text-primary" />
-                    <span>Price Trend: {{ $selectedMaterialName }} — {{ $suppliers->firstWhere('id', (int) $selectedSupplierId)->name ?? '' }}</span>
+                    <span>Price Trend: {{ $selectedMaterialName }} — {{ $payload['supplierName'] ?? '' }}</span>
                 </h2>
             </header>
             <div class="tw-h-72 tw-p-4">
@@ -212,6 +212,43 @@
                     @endforeach
                 </tbody>
             </table>
+            <div
+                id="historicalPagination"
+                class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-px-4 tw-py-3 {{ $tablePagination ? '' : 'd-none' }}"
+            >
+                <span id="historicalPaginationSummary" class="tw-text-ui-xs tw-text-on-surface-variant">
+                    @if($tablePagination)
+                        Showing {{ $tablePagination['from'] ?? 0 }}-{{ $tablePagination['to'] ?? 0 }} of {{ $tablePagination['total'] }} records
+                    @endif
+                </span>
+                <div class="tw-flex tw-items-center tw-gap-2">
+                    <x-ui.button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        id="historicalPreviousPage"
+                        data-history-page="{{ max(1, (int) ($tablePagination['current_page'] ?? 1) - 1) }}"
+                        :disabled="!$tablePagination || $tablePagination['current_page'] <= 1"
+                    >
+                        Previous
+                    </x-ui.button>
+                    <span id="historicalPaginationPage" class="tw-min-w-20 tw-text-center tw-text-ui-xs tw-font-semibold tw-text-on-surface">
+                        @if($tablePagination)
+                            Page {{ $tablePagination['current_page'] }} of {{ $tablePagination['last_page'] }}
+                        @endif
+                    </span>
+                    <x-ui.button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        id="historicalNextPage"
+                        data-history-page="{{ min((int) ($tablePagination['last_page'] ?? 1), (int) ($tablePagination['current_page'] ?? 1) + 1) }}"
+                        :disabled="!$tablePagination || $tablePagination['current_page'] >= $tablePagination['last_page']"
+                    >
+                        Next
+                    </x-ui.button>
+                </div>
+            </div>
         </x-ui.data-table>
     @elseif($selectedSupplierId && $selectedMaterialName)
         <x-ui.alert tone="warning" title="No matching price history">No quotation data was found for this supplier and material combination.</x-ui.alert>
@@ -429,7 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
 @if($chartData)
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const initialHistorycalPayload = @json($payload);
+const initialHistorycalPayload = @json([
+    'chartData' => $chartData,
+    'periodView' => $periodView,
+]);
 let historicalChart = null;
 const historicalDataUrl = @json(route('purchasing.comparison.historical'));
 const historicalThemeStyles = getComputedStyle(document.documentElement);
@@ -536,13 +576,21 @@ function historicalResultShellHtml() {
                 <h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">Supporting Data</h2>
                 <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">Quotation values and period changes for the selected supplier and exact material specification.</p>
             </header>
-            <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full">
-                <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
-                    <thead class="table-light text-center" id="historicalTableHead"></thead>
-                    <tbody id="historicalTableBody"></tbody>
-                </table>
-            </div>
-        </section>
+             <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full">
+                 <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
+                     <thead class="table-light text-center" id="historicalTableHead"></thead>
+                     <tbody id="historicalTableBody"></tbody>
+                 </table>
+             </div>
+             <div id="historicalPagination" class="d-none tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-px-4 tw-py-3">
+                 <span id="historicalPaginationSummary" class="tw-text-ui-xs tw-text-on-surface-variant"></span>
+                 <div class="tw-flex tw-items-center tw-gap-2">
+                     <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">Previous</button>
+                     <span id="historicalPaginationPage" class="tw-min-w-20 tw-text-center tw-text-ui-xs tw-font-semibold tw-text-on-surface"></span>
+                     <button type="button" id="historicalNextPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">Next</button>
+                 </div>
+             </div>
+         </section>
     `;
 }
 
@@ -717,6 +765,33 @@ function renderTable(payload) {
     `).join('');
 }
 
+function renderPagination(pagination) {
+    const container = document.getElementById('historicalPagination');
+    const summary = document.getElementById('historicalPaginationSummary');
+    const pageLabel = document.getElementById('historicalPaginationPage');
+    const previous = document.getElementById('historicalPreviousPage');
+    const next = document.getElementById('historicalNextPage');
+
+    if (!container || !summary || !pageLabel || !previous || !next) {
+        return;
+    }
+
+    if (!pagination || Number(pagination.total || 0) === 0) {
+        container.classList.add('d-none');
+        return;
+    }
+
+    const currentPage = Number(pagination.current_page || 1);
+    const lastPage = Number(pagination.last_page || 1);
+    summary.textContent = `Showing ${pagination.from || 0}-${pagination.to || 0} of ${pagination.total} records`;
+    pageLabel.textContent = `Page ${currentPage} of ${lastPage}`;
+    previous.disabled = currentPage <= 1;
+    previous.dataset.historyPage = String(Math.max(1, currentPage - 1));
+    next.disabled = currentPage >= lastPage;
+    next.dataset.historyPage = String(Math.min(lastPage, currentPage + 1));
+    container.classList.remove('d-none');
+}
+
 function renderPayload(payload) {
     const resultsContainer = document.getElementById('historicalResults');
 
@@ -744,11 +819,12 @@ function renderPayload(payload) {
     renderHistorycalChart(payload);
     renderSummary(payload.summary || {});
     renderTable(payload);
+    renderPagination(payload.pagination || null);
     document.getElementById('historicalChartTitle').innerHTML =
         `<x-ui.icon name="chart-no-axes-combined" class="tw-text-primary" /><span>Price Trend: ${escapeHtml(payload.materialName)} — ${escapeHtml(payload.supplierName)}</span>`;
 }
 
-window.loadHistorycalPayloadFromFilters = async function () {
+window.loadHistorycalPayloadFromFilters = async function (historyPage = 1) {
     const supplierSelect = document.getElementById('historicalSupplierSelect');
     const materialSelect = document.getElementById('historicalMaterialSelect');
     const filterForm = document.getElementById('historicalFilterForm');
@@ -766,6 +842,9 @@ window.loadHistorycalPayloadFromFilters = async function () {
         }
     }
     url.searchParams.set('view', 'json');
+    if (Number(historyPage) > 1) {
+        url.searchParams.set('history_page', String(historyPage));
+    }
     resultsContainer?.setAttribute('aria-busy', 'true');
 
     try {
@@ -784,6 +863,12 @@ window.loadHistorycalPayloadFromFilters = async function () {
         renderPayload(payload);
 
         url.searchParams.delete('view');
+        const resolvedPage = Number(payload.pagination?.current_page || 1);
+        if (resolvedPage > 1) {
+            url.searchParams.set('history_page', String(resolvedPage));
+        } else {
+            url.searchParams.delete('history_page');
+        }
         window.history.replaceState(null, '', url.toString());
     } catch (error) {
         if (resultsContainer) {
@@ -793,6 +878,16 @@ window.loadHistorycalPayloadFromFilters = async function () {
         resultsContainer?.setAttribute('aria-busy', 'false');
     }
 };
+
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-history-page]');
+    if (!button || button.disabled) {
+        return;
+    }
+
+    event.preventDefault();
+    window.loadHistorycalPayloadFromFilters(Number(button.dataset.historyPage || 1));
+});
 
 renderHistorycalChart(initialHistorycalPayload);
 </script>

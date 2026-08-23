@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Notifications\SystemNotification;
-use App\Services\NotificationSummaryService;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
 use Illuminate\Notifications\Events\NotificationFailed;
@@ -11,7 +10,6 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -29,25 +27,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        View::composer('partials.navbar', function ($view): void {
-            if (! auth()->check()) {
-                return;
-            }
-
-            $summary = app(NotificationSummaryService::class)->forUser(auth()->user());
-            $counts = collect($summary['category_counts']);
-
-            $view->with([
-                'notificationCategories' => $summary['categories'],
-                'navbarNotifications' => $summary['notifications'],
-                'navbarNotificationGroups' => $summary['groups'],
-                'navbarUnreadCount' => $summary['count'],
-                'navbarNotificationCounts' => $counts->map(fn ($count) => $count['unread']),
-                'navbarNotificationTotals' => $counts->map(fn ($count) => $count['total']),
-                'initNotifCount' => $summary['count'],
-            ]);
-        });
-
         Event::listen(NotificationFailed::class, function (NotificationFailed $event): void {
             $notification = $event->notification;
 

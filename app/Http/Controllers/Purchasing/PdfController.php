@@ -14,14 +14,20 @@ class PdfController extends Controller
      */
     public function purchaseOrder($id)
     {
-        $po = PurchaseOrder::with([
+        $query = PurchaseOrder::with([
             'supplier',
             'quotations.supplier',
             'quotations.items.prItem',
             'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
             'creator',
-        ])->findOrFail($id);
+        ]);
+
+        if (auth()->user()->role === 'supplier') {
+            $query->where('supplier_id', auth()->id());
+        }
+
+        $po = $query->findOrFail($id);
 
         $quotationRates = $po->quotations->mapWithKeys(function ($q) {
             return [$q->id => $q->exchange_rate];
@@ -30,7 +36,7 @@ class PdfController extends Controller
         $pdf = Pdf::loadView('pdf.po-pdf', compact('po', 'quotationRates'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download('PO_' . str_replace('/', '-', $po->po_number) . '.pdf');
+        return $pdf->download('PO_'.str_replace('/', '-', $po->po_number).'.pdf');
     }
 
     /**
@@ -48,9 +54,8 @@ class PdfController extends Controller
         $pdf = Pdf::loadView('pdf.qc-inspection-pdf', compact('inspection'))
             ->setPaper('a4', 'portrait');
 
-        $filename = 'QC_Inspection_PO_' . str_replace('/', '-', $inspection->purchaseOrder->po_number) . '.pdf';
+        $filename = 'QC_Inspection_PO_'.str_replace('/', '-', $inspection->purchaseOrder->po_number).'.pdf';
 
         return $pdf->download($filename);
     }
-
 }

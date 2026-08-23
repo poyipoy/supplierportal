@@ -13,10 +13,11 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
+use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
+class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
 
@@ -146,7 +147,7 @@ class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColum
 
     public function progressTotalRows(): int
     {
-        return $this->query()->count();
+        return $this->querySize();
     }
 
     public function headings(): array

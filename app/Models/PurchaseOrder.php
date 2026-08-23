@@ -10,15 +10,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
- * @property \Illuminate\Support\Carbon|null $estimated_arrival
- * @property \Illuminate\Support\Carbon|null $actual_arrival
+ * @property Carbon|null $estimated_arrival
+ * @property Carbon|null $actual_arrival
  */
 class PurchaseOrder extends Model
 {
-    use SoftDeletes, HasHashids;
+    use HasHashids, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
 
@@ -49,7 +51,7 @@ class PurchaseOrder extends Model
                 $this->status === 'active'
                 && $this->estimated_arrival
                 && $this->estimated_arrival->isBefore(today())
-                && !$this->actual_arrival
+                && ! $this->actual_arrival
             );
     }
 
@@ -113,6 +115,42 @@ class PurchaseOrder extends Model
         });
     }
 
+    /**
+     * Project the list total while preserving QuotationItem::resolved_amount semantics.
+     */
+    public function scopeWithResolvedTotalIdr(Builder $query): Builder
+    {
+        $quantityExpression = <<<'SQL'
+            CASE
+                WHEN pi.quantity IS NULL OR pi.quantity < 1 THEN 1
+                ELSE pi.quantity
+            END
+            SQL;
+        $totalWeightExpression = "ROUND(COALESCE(pi.weight_needed, 0) * ({$quantityExpression}), 4)";
+        $resolvedAmountExpression = <<<SQL
+            CASE
+                WHEN COALESCE(qi.amount, 0) > 0 THEN qi.amount
+                WHEN COALESCE(qi.price_per_kg, 0) > 0
+                    AND pi.id IS NOT NULL
+                    AND {$totalWeightExpression} > 0
+                    THEN ROUND(qi.price_per_kg * {$totalWeightExpression}, 4)
+                ELSE COALESCE(qi.amount, 0)
+            END
+            SQL;
+
+        return $query->selectSub(
+            DB::table('po_quotations as links')
+                ->join('quotations as q', 'q.id', '=', 'links.quotation_id')
+                ->join('quotation_items as qi', 'qi.quotation_id', '=', 'q.id')
+                ->leftJoin('pr_items as pi', 'pi.id', '=', 'qi.pr_item_id')
+                ->leftJoin('exchange_rates as er', 'er.id', '=', 'q.exchange_rate_id')
+                ->whereColumn('links.po_id', 'purchase_orders.id')
+                ->whereNull('q.deleted_at')
+                ->selectRaw("COALESCE(SUM(({$resolvedAmountExpression}) * COALESCE(er.rate_to_idr, 1)), 0)"),
+            'resolved_total_idr',
+        );
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -165,11 +203,11 @@ class PurchaseOrder extends Model
      */
     public static function generatePoNumber(): string
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () {
+        return DB::transaction(function () {
             $year = (int) now()->year;
             $month = (int) now()->month;
 
-            $seq = \Illuminate\Support\Facades\DB::table('document_sequences')
+            $seq = DB::table('document_sequences')
                 ->where('type', 'PO')
                 ->where('year', $year)
                 ->where('month', $month)
@@ -178,12 +216,12 @@ class PurchaseOrder extends Model
 
             if ($seq) {
                 $next = $seq->last_number + 1;
-                \Illuminate\Support\Facades\DB::table('document_sequences')
+                DB::table('document_sequences')
                     ->where('id', $seq->id)
                     ->update(['last_number' => $next, 'updated_at' => now()]);
             } else {
                 $next = 1;
-                \Illuminate\Support\Facades\DB::table('document_sequences')->insert([
+                DB::table('document_sequences')->insert([
                     'type' => 'PO',
                     'year' => $year,
                     'month' => $month,
@@ -193,7 +231,7 @@ class PurchaseOrder extends Model
                 ]);
             }
 
-            return 'PO/' . now()->format('m/Y') . '/' . str_pad($next, 3, '0', STR_PAD_LEFT);
+            return 'PO/'.now()->format('m/Y').'/'.str_pad($next, 3, '0', STR_PAD_LEFT);
         });
     }
 }

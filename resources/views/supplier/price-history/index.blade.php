@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('uses-datatables', true)
 
 @section('title', 'Price History - ADASI Portal')
 @section('page-title', 'Material Price History')

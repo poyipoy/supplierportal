@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Models\ExchangeRate;
+use App\Models\MaterialClaim;
 use App\Models\PoDocument;
 use App\Models\PurchaseOrder;
+use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Services\NotificationService;
@@ -16,6 +18,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseOrderController extends Controller
@@ -29,15 +32,42 @@ class PurchaseOrderController extends Controller
     {
         $supplierFilter = $this->resolveSupplierFilter($request->query('supplier_id'));
 
-        $query = PurchaseOrder::with([
-            'supplier',
-            'quotations.purchaseRequisition.period',
-            'quotations.exchange_rate',
-            'quotations.items.prItem',
-            'documents',
-            'qcInspections',
-            'materialClaims',
-        ])
+        $query = PurchaseOrder::query()
+            ->select([
+                'purchase_orders.id',
+                'purchase_orders.supplier_id',
+                'purchase_orders.po_number',
+                'purchase_orders.status',
+                'purchase_orders.estimated_arrival',
+                'purchase_orders.actual_arrival',
+                'purchase_orders.notes',
+                'purchase_orders.created_at',
+            ])
+            ->withResolvedTotalIdr()
+            ->with([
+                'supplier:id,name',
+                'quotations:id,pr_id',
+                'quotations.purchaseRequisition:id,period_id,pr_number',
+                'quotations.purchaseRequisition.period:id,name,month,year',
+            ])
+            ->selectSub(
+                MaterialClaim::query()
+                    ->select('material_claims.id')
+                    ->whereColumn('material_claims.po_id', 'purchase_orders.id')
+                    ->whereIn('material_claims.status', ['pending', 'responded', 'escalated'])
+                    ->latest('material_claims.created_at')
+                    ->limit(1),
+                'active_claim_id',
+            )
+            ->selectSub(
+                QcInspection::query()
+                    ->select('qc_inspections.id')
+                    ->whereColumn('qc_inspections.po_id', 'purchase_orders.id')
+                    ->where('qc_inspections.status', 'ng')
+                    ->latest('qc_inspections.inspected_at')
+                    ->limit(1),
+                'latest_ng_inspection_id',
+            )
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('po_number')) {
@@ -87,17 +117,7 @@ class PurchaseOrderController extends Controller
 
                     return '<span title="'.e($notes).'">'.e($preview).'</span>';
                 })
-                ->addColumn('total_idr', function ($po) {
-                    $totalIdr = 0;
-                    foreach ($po->quotations as $quotation) {
-                        $rate = $quotation->exchange_rate;
-                        foreach ($quotation->items as $item) {
-                            $totalIdr += $item->resolved_amount * ($rate ? $rate->rate_to_idr : 1);
-                        }
-                    }
-
-                    return 'Rp '.number_format($totalIdr, 0, ',', '.');
-                })
+                ->addColumn('total_idr', fn ($po) => 'Rp '.number_format((float) $po->resolved_total_idr, 0, ',', '.'))
                 ->addColumn('status_badge', function ($po) {
                     return StatusHelper::badge(
                         StatusHelper::poBadge($po->status, $po->is_overdue),
@@ -121,12 +141,10 @@ class PurchaseOrderController extends Controller
                 ->addColumn('action', function ($po) {
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
                     if ($po->status === 'claim_needed') {
-                        $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
-                        $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
-                        if ($activeClaim) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim</a>';
-                        } elseif ($latestNgInspection) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
+                        if ($po->active_claim_id) {
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', Hashids::encode((int) $po->active_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim</a>';
+                        } elseif ($po->latest_ng_inspection_id) {
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', Hashids::encode((int) $po->latest_ng_inspection_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
                         }
                     }
                     $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>';
@@ -147,6 +165,18 @@ class PurchaseOrderController extends Controller
                     $query->where('notes', 'like', '%'.$keyword.'%');
                 })
                 ->rawColumns(['status_badge', 'estimated_date', 'remark_display', 'action'])
+                ->ignoreSelectsInCountQuery()
+                ->only([
+                    'po_number_display',
+                    'supplier_name',
+                    'period_name',
+                    'pr_reference',
+                    'remark_display',
+                    'total_idr',
+                    'status_badge',
+                    'estimated_date',
+                    'action',
+                ])
                 ->make(true);
         }
 

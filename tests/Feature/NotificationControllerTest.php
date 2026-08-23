@@ -39,6 +39,29 @@ class NotificationControllerTest extends TestCase
         $this->assertNull($otherNotification->fresh()->read_at);
     }
 
+    public function test_notification_panel_is_loaded_lazily_and_scoped_to_authenticated_user(): void
+    {
+        $user = $this->user('purchasing');
+        $other = $this->user('purchasing');
+        $this->notification($user, NotificationCategory::QUOTATION, 'Own lazy notification');
+        $this->notification($other, NotificationCategory::CHAT, 'Other user notification');
+
+        $this->actingAs($user)->get(route('purchasing.dashboard'))
+            ->assertOk()
+            ->assertSee('data-notification-summary-url', false)
+            ->assertDontSee('Own lazy notification');
+
+        $this->actingAs($user)->get(route('notifications.summary'))
+            ->assertOk()
+            ->assertSee('Own lazy notification')
+            ->assertDontSee('Other user notification');
+
+        $navbar = file_get_contents(resource_path('views/partials/navbar.blade.php'));
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $this->assertStringContainsString('notificationSummaryDirty', $navbar);
+        $this->assertStringContainsString("notificationSummaryDirty = 'true'", $layout);
+    }
+
     public function test_mark_all_validates_category_and_updates_only_selected_category(): void
     {
         $user = $this->user('supplier');
@@ -80,13 +103,13 @@ class NotificationControllerTest extends TestCase
         return User::factory()->create(['role' => $role, 'is_active' => $active]);
     }
 
-    private function notification(User $user, string $category): DatabaseNotification
+    private function notification(User $user, string $category, string $title = 'Test notification'): DatabaseNotification
     {
         return $user->notifications()->create([
             'id' => (string) Str::uuid(),
             'type' => SystemNotification::class,
             'data' => [
-                'title' => 'Test notification',
+                'title' => $title,
                 'message' => 'Test message',
                 'url' => route($user->role.'.dashboard', absolute: false),
                 'icon' => 'bell',

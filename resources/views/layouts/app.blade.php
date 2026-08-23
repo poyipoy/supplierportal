@@ -21,8 +21,10 @@
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    @hasSection('uses-datatables')
+        <!-- DataTables CSS (only on pages that initialize a DataTable) -->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    @endif
 
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
@@ -97,7 +99,7 @@
         .adasi-loader-logo {
             width: 28px;
             height: 28px;
-            background-image: url("data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/logo-adasi.png'))) }}");
+            background-image: url("{{ asset('assets/images/logo-adasi.png') }}");
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
@@ -492,16 +494,6 @@
             $dashboardUrl = \Illuminate\Support\Facades\Route::has($roleDashboardRoute)
                 ? route($roleDashboardRoute)
                 : route('dashboard');
-            if (in_array(auth()->user()->role, ['purchasing', 'supplier'])) {
-                $initChatCount = \App\Models\Conversation::forUser(auth()->id())
-                    ->withCount([
-                        'messages' => function ($q) {
-                            $q->where('sender_id', '!=', auth()->id())->whereNull('read_at');
-                        }
-                    ])
-                    ->get()
-                    ->sum('messages_count');
-            }
         }
     @endphp
     {{-- Sidebar --}}
@@ -553,9 +545,11 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    @hasSection('uses-datatables')
+        <!-- DataTables JS (only on pages that initialize a DataTable) -->
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    @endif
     <script>
         // ADASI Loader — Inject overlay ke body
         const isDataTableRequest = (options = {}) => {
@@ -1097,6 +1091,21 @@
                     notification,
                     readUrl
                 ) => {
+                    const summaryContainer = document.querySelector(
+                        '[data-notification-summary-container]'
+                    );
+
+                    if (
+                        summaryContainer?.dataset.notificationSummaryState
+                        === 'loading'
+                    ) {
+                        summaryContainer.dataset.notificationSummaryDirty = 'true';
+                    }
+
+                    if (!document.querySelector('#notif-pane-all')) {
+                        return;
+                    }
+
                     const category =
                         allowedCategories.has(
                             notification.category

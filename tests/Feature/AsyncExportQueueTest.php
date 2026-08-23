@@ -29,8 +29,10 @@ use App\Services\NotificationService;
 use App\Support\ExportDispatcher;
 use App\Support\NotificationCategory;
 use Carbon\Carbon;
+use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -38,6 +40,7 @@ use InvalidArgumentException;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
+use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Files\TemporaryFile;
 use Maatwebsite\Excel\Jobs\AppendDataToSheet;
 use Maatwebsite\Excel\Jobs\QueueExport;
@@ -300,6 +303,61 @@ class AsyncExportQueueTest extends TestCase
         ExportDispatcher::dispatch('Template', PrImportTemplateExport::class, [], 'template.xlsx');
     }
 
+    public function test_dispatcher_removes_the_record_when_the_initial_queue_enqueue_fails(): void
+    {
+        config()->set('queue.default', 'database');
+        $dispatcher = \Mockery::mock(BusDispatcher::class);
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->andThrow(new RuntimeException('Queue connection unavailable.'));
+        $this->app->instance(BusDispatcher::class, $dispatcher);
+        $this->actingAs($this->purchasing);
+
+        try {
+            ExportDispatcher::dispatch(
+                'Unavailable queue',
+                RequisitionsExport::class,
+                [null, null, null],
+                'unavailable.xlsx',
+            );
+            $this->fail('A synchronous queue failure must propagate to the request path.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Queue connection unavailable.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseCount('export_jobs', 0);
+    }
+
+    public function test_database_queue_handoffs_commit_the_record_and_root_job_together(): void
+    {
+        config()->set('queue.default', 'database');
+        Event::fake([ExportProgressUpdated::class]);
+        $this->actingAs($this->purchasing);
+
+        $record = ExportDispatcher::dispatch(
+            'Atomic launcher',
+            RequisitionsExport::class,
+            [null, null, null],
+            'atomic-launcher.xlsx',
+        );
+
+        $this->assertSame(ExportJob::STATUS_QUEUED, $record->fresh()->status);
+        $this->assertDatabaseHas('jobs', ['queue' => 'exports']);
+
+        // Simulate the database worker having reserved/deleted the launcher;
+        // invoke it directly and verify the Excel root job is durably handed off.
+        DB::table('jobs')->delete();
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        (new ProcessExportJob($record->id))->handle(new ExportProgressService($notifications));
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_PROCESSING, $record->status);
+        $this->assertSame(ExportJob::STAGE_GENERATING, $record->progress_stage);
+        $this->assertGreaterThan(0, $record->total_rows);
+        $this->assertDatabaseHas('jobs', ['queue' => 'exports']);
+    }
+
     public function test_qc_and_price_history_validation_happens_before_queue_dispatch(): void
     {
         Queue::fake();
@@ -424,6 +482,135 @@ class AsyncExportQueueTest extends TestCase
         );
     }
 
+    public function test_duplicate_launcher_does_not_dispatch_a_second_excel_chain(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Queue::fake();
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $progress = new ExportProgressService($notifications);
+        $record = $this->createExportJob($this->purchasing);
+
+        (new ProcessExportJob($record->id))->handle($progress);
+        (new ProcessExportJob($record->id))->handle($progress);
+
+        $this->assertSame(ExportJob::STATUS_PROCESSING, $record->fresh()->status);
+        Queue::assertPushed(QueueExport::class, 1);
+    }
+
+    public function test_setup_failure_restores_queued_state_for_a_later_retry(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Queue::fake();
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $progress = new ExportProgressService($notifications);
+        $record = $this->createExportJob($this->purchasing, [
+            'export_class' => PurchaseOrderDetailExport::class,
+            'export_args' => [],
+        ]);
+
+        try {
+            (new ProcessExportJob($record->id))->handle($progress);
+            $this->fail('Invalid constructor arguments must fail export setup.');
+        } catch (\ArgumentCountError) {
+            // The queue worker will retry this launcher job.
+        }
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_QUEUED, $record->status);
+        $this->assertSame(ExportJob::STAGE_QUEUED, $record->progress_stage);
+        $this->assertNull($record->file_path);
+        Queue::assertNotPushed(QueueExport::class);
+
+        $record->update(['export_args' => [$this->purchaseOrder->id]]);
+        (new ProcessExportJob($record->id))->handle($progress);
+
+        $this->assertSame(ExportJob::STATUS_PROCESSING, $record->fresh()->status);
+        Queue::assertPushed(QueueExport::class, 1);
+    }
+
+    public function test_excel_chain_enqueue_failure_restores_an_empty_export_for_retry(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        config()->set('queue.default', 'database');
+        $dispatcher = \Mockery::mock(BusDispatcher::class);
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->andThrow(new RuntimeException('Excel chain enqueue failed.'));
+        $this->app->instance(BusDispatcher::class, $dispatcher);
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $record = $this->createExportJob($this->purchasing, [
+            'export_args' => [PHP_INT_MAX, null, null],
+        ]);
+
+        try {
+            (new ProcessExportJob($record->id))->handle(new ExportProgressService($notifications));
+            $this->fail('A rejected Excel chain enqueue must propagate to the launcher.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Excel chain enqueue failed.', $exception->getMessage());
+        }
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_QUEUED, $record->status);
+        $this->assertSame(ExportJob::STAGE_QUEUED, $record->progress_stage);
+        $this->assertSame(0, $record->total_rows);
+        $this->assertNull($record->file_path);
+    }
+
+    public function test_atomic_handoff_rejects_a_separate_database_queue_connection(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        config()->set('queue.default', 'database');
+        config()->set('queue.connections.database.connection', 'separate-queue-database');
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $record = $this->createExportJob($this->purchasing);
+
+        try {
+            (new ProcessExportJob($record->id))->handle(new ExportProgressService($notifications));
+            $this->fail('A non-atomic database queue configuration must be rejected.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame(
+                'Atomic export handoff requires ExportJob and database queue to share a connection.',
+                $exception->getMessage(),
+            );
+        }
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_QUEUED, $record->status);
+        $this->assertSame(ExportJob::STAGE_QUEUED, $record->progress_stage);
+        $this->assertNull($record->file_path);
+    }
+
+    public function test_late_failure_callback_cannot_downgrade_or_delete_completed_export(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Storage::fake('private');
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $progress = new ExportProgressService($notifications);
+        $record = $this->createExportJob($this->purchasing, [
+            'status' => ExportJob::STATUS_COMPLETED,
+            'progress_stage' => ExportJob::STAGE_COMPLETED,
+            'progress' => 100,
+            'file_path' => 'exports/'.$this->purchasing->id.'/completed/report.xlsx',
+            'completed_at' => now(),
+            'expires_at' => now()->addDay(),
+        ]);
+        Storage::disk('private')->put($record->file_path, 'completed workbook');
+
+        $progress->fail($record->id, new RuntimeException('Late duplicate chain failure.'));
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_COMPLETED, $record->status);
+        $this->assertSame(ExportJob::STAGE_COMPLETED, $record->progress_stage);
+        $this->assertNull($record->error_message);
+        Storage::disk('private')->assertExists($record->file_path);
+        Event::assertNotDispatched(ExportProgressUpdated::class);
+    }
+
     public function test_large_exports_are_query_chunked_and_all_async_exports_use_fixed_widths(): void
     {
         $largeExports = [
@@ -436,6 +623,7 @@ class AsyncExportQueueTest extends TestCase
         foreach ($largeExports as $export) {
             $this->assertInstanceOf(FromQuery::class, $export);
             $this->assertInstanceOf(WithCustomChunkSize::class, $export);
+            $this->assertInstanceOf(WithCustomQuerySize::class, $export);
             $this->assertSame(500, $export->chunkSize());
         }
 
@@ -451,6 +639,63 @@ class AsyncExportQueueTest extends TestCase
             $this->assertInstanceOf(TracksExportProgress::class, $export);
             $this->assertInstanceOf(WithColumnWidths::class, $export);
             $this->assertNotEmpty($export->columnWidths());
+        }
+    }
+
+    public function test_query_export_reuses_one_count_for_progress_and_chunk_planning(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Queue::fake();
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $record = $this->createExportJob($this->purchasing);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        (new ProcessExportJob($record->id))->handle(new ExportProgressService($notifications));
+
+        $countQueries = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->filter(fn (string $sql): bool => str_contains(strtolower($sql), 'count(*) as aggregate'))
+            ->filter(fn (string $sql): bool => str_contains(strtolower($sql), 'from `pr_items`'));
+
+        $this->assertCount(1, $countQueries);
+        $this->assertSame(1, $record->fresh()->total_rows);
+    }
+
+    public function test_collection_history_export_reuses_rows_without_serializing_the_cache(): void
+    {
+        $export = new SupplierPriceHistoryExport(
+            $this->supplier->id,
+            'monthly',
+            'Async Export Steel',
+            null,
+        );
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $totalRows = $export->progressTotalRows();
+        $queryCountAfterProgress = count(DB::getQueryLog());
+        $rows = $export->collection();
+
+        $this->assertSame(1, $totalRows);
+        $this->assertCount(1, $rows);
+        $this->assertSame($queryCountAfterProgress, count(DB::getQueryLog()));
+        $this->assertStringNotContainsString($this->requisition->pr_number, serialize($export));
+    }
+
+    public function test_detail_export_progress_counts_match_generated_rows(): void
+    {
+        $exports = [
+            new PurchaseRequisitionDetailExport($this->requisition->id),
+            new QuotationDetailExport($this->quotation->id),
+            new QuotationDetailExport($this->quotation->id, $this->supplier->id, false),
+            new PurchaseOrderDetailExport($this->purchaseOrder->id),
+            new PurchaseOrderDetailExport($this->purchaseOrder->id, $this->supplier->id),
+        ];
+
+        foreach ($exports as $export) {
+            $this->assertSame($export->collection()->count(), $export->progressTotalRows());
         }
     }
 

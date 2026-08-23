@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('uses-datatables', true)
 
 @section('title', 'Master Material & HS Code - ADASI Portal')
 @section('page-title', 'Master Material & HS Code')

@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('uses-datatables', true)
 
 @section('title', 'Requisition List: ' . $period->display_label . ' - ADASI Portal')
 @section('page-title', 'Purchase Requisitions — ' . $period->display_label)

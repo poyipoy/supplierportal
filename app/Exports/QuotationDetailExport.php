@@ -126,7 +126,15 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
 
     public function progressTotalRows(): int
     {
-        return $this->collection()->count();
+        $query = Quotation::query()
+            ->select('id')
+            ->whereKey($this->quotationId);
+
+        if ($this->forcedSupplierId !== null) {
+            $query->where('supplier_id', $this->forcedSupplierId);
+        }
+
+        return $query->firstOrFail()->items()->count();
     }
 
     public function columnWidths(): array

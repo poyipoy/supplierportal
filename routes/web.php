@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+        Route::get('/notifications/summary', [NotificationController::class, 'summary'])->name('notifications.summary');
         Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
         Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     });

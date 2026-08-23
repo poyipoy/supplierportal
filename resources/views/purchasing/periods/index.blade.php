@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('uses-datatables', true)
 @section('title', 'Period Management - ADASI Portal')
 @section('page-title', 'Period Management')
 

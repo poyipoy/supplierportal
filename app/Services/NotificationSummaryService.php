@@ -11,11 +11,36 @@ class NotificationSummaryService
     public function forUser(User $user, int $limit = 30): array
     {
         $categories = NotificationCategory::options();
-        $notifications = $user->notifications()->latest()->take($limit)->get();
+        $notifications = $user->notifications()
+            ->latest()
+            ->take($limit)
+            ->get(['id', 'data', 'read_at', 'created_at']);
         $unreadNotifications = $user->unreadNotifications()
-            ->select(['id', 'type', 'notifiable_type', 'notifiable_id', 'data', 'read_at', 'created_at'])
-            ->get();
+            ->get(['id', 'data', 'read_at', 'created_at']);
 
+        return $this->summary($categories, $notifications, $unreadNotifications);
+    }
+
+    public function countsForUser(User $user, int $limit = 30): array
+    {
+        $categories = NotificationCategory::options();
+        $notifications = $user->notifications()
+            ->latest()
+            ->take($limit)
+            ->get(['id', 'data', 'read_at']);
+        $unreadNotifications = $user->unreadNotifications()
+            ->get(['id', 'data', 'read_at']);
+
+        $summary = $this->summary($categories, $notifications, $unreadNotifications);
+
+        return [
+            'count' => $summary['count'],
+            'category_counts' => $summary['category_counts'],
+        ];
+    }
+
+    private function summary(array $categories, Collection $notifications, Collection $unreadNotifications): array
+    {
         $groups = collect($categories)->mapWithKeys(function ($option, string $key) use ($notifications): array {
             return [$key => $this->filterByCategory($notifications, $key)->values()];
         });
@@ -33,16 +58,6 @@ class NotificationSummaryService
             'groups' => $groups,
             'count' => $unreadNotifications->count(),
             'category_counts' => $counts,
-        ];
-    }
-
-    public function countsForUser(User $user): array
-    {
-        $summary = $this->forUser($user);
-
-        return [
-            'count' => $summary['count'],
-            'category_counts' => $summary['category_counts'],
         ];
     }
 

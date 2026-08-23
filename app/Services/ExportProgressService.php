@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Events\ExportProgressUpdated;
 use App\Models\ExportJob;
+use App\Support\ExportDispatcher;
 use App\Support\NotificationCategory;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -16,20 +18,87 @@ class ExportProgressService
 {
     public function __construct(private readonly NotificationService $notifications) {}
 
-    public function prepare(ExportJob $record, string $path): ExportJob
+    /**
+     * Atomically hand an export record to Laravel's database queue.
+     *
+     * The record transition and the root queue-job insert share one database
+     * transaction. A worker termination before commit therefore leaves both
+     * absent, while a committed processing state always has a durable root job.
+     */
+    public function handoffToExportQueue(
+        ExportJob $record,
+        string $path,
+        int $totalRows,
+        Closure $enqueue,
+    ): ?ExportJob {
+        ExportDispatcher::assertAtomicQueueConfiguration($record);
+        $totalRows = max(0, $totalRows);
+
+        $claimed = $record->getConnection()->transaction(function () use ($record, $path, $totalRows, $enqueue): ?ExportJob {
+            $locked = ExportJob::query()
+                ->lockForUpdate()
+                ->find($record->getKey());
+
+            if ($locked === null || $locked->status !== ExportJob::STATUS_QUEUED) {
+                return null;
+            }
+
+            $locked->forceFill([
+                'status' => ExportJob::STATUS_PROCESSING,
+                'progress_stage' => $totalRows === 0
+                    ? ExportJob::STAGE_FINALIZING
+                    : ExportJob::STAGE_GENERATING,
+                'progress' => $totalRows === 0 ? 100 : 0,
+                'total_rows' => $totalRows,
+                'processed_rows' => 0,
+                'processed_chunks' => [],
+                'file_path' => $path,
+                'error_message' => null,
+                'completed_at' => null,
+                'expires_at' => null,
+            ])->save();
+
+            // PendingDispatch must be forced by the caller before this closure
+            // returns so the database queue insert belongs to this transaction.
+            $enqueue();
+
+            return $locked;
+        }, 3);
+
+        if ($claimed !== null) {
+            // The testing/local sync driver may finish the entire chain before
+            // returning. Broadcast the committed current state, never a stale
+            // processing snapshot.
+            $claimed->refresh();
+            $this->broadcast($claimed);
+        }
+
+        return $claimed;
+    }
+
+    public function prepare(ExportJob $record, string $path): ?ExportJob
     {
-        $record->forceFill([
-            'status' => ExportJob::STATUS_PROCESSING,
-            'progress_stage' => ExportJob::STAGE_PREPARING,
-            'progress' => 0,
-            'total_rows' => 0,
-            'processed_rows' => 0,
-            'processed_chunks' => [],
-            'file_path' => $path,
-            'error_message' => null,
-            'completed_at' => null,
-            'expires_at' => null,
-        ])->save();
+        $claimed = ExportJob::query()
+            ->whereKey($record->getKey())
+            ->where('status', ExportJob::STATUS_QUEUED)
+            ->update([
+                'status' => ExportJob::STATUS_PROCESSING,
+                'progress_stage' => ExportJob::STAGE_PREPARING,
+                'progress' => 0,
+                'total_rows' => 0,
+                'processed_rows' => 0,
+                'processed_chunks' => [],
+                'file_path' => $path,
+                'error_message' => null,
+                'completed_at' => null,
+                'expires_at' => null,
+            ]);
+
+        if ($claimed !== 1) {
+            return null;
+        }
+
+        $record->refresh();
 
         $this->broadcast($record);
 
@@ -98,29 +167,36 @@ class ExportProgressService
 
     public function complete(int $exportJobId): void
     {
-        $record = ExportJob::with('user')->find($exportJobId);
+        $record = DB::transaction(function () use ($exportJobId): ?ExportJob {
+            $record = ExportJob::with('user')->lockForUpdate()->find($exportJobId);
 
-        if ($record === null || $record->status === ExportJob::STATUS_FAILED) {
+            if (
+                $record === null
+                || in_array($record->status, [ExportJob::STATUS_COMPLETED, ExportJob::STATUS_FAILED], true)
+            ) {
+                return null;
+            }
+
+            if (! $record->hasSafeFilePath() || ! Storage::disk($record->disk)->exists($record->file_path)) {
+                throw new RuntimeException('The export file could not be stored.');
+            }
+
+            $record->forceFill([
+                'status' => ExportJob::STATUS_COMPLETED,
+                'progress_stage' => ExportJob::STAGE_COMPLETED,
+                'progress' => 100,
+                'processed_rows' => $record->total_rows,
+                'completed_at' => now(),
+                'expires_at' => now()->addDays(3),
+                'error_message' => null,
+            ])->save();
+
+            return $record;
+        }, 3);
+
+        if ($record === null) {
             return;
         }
-
-        if ($record->status === ExportJob::STATUS_COMPLETED && $record->isDownloadable()) {
-            return;
-        }
-
-        if (! $record->hasSafeFilePath() || ! Storage::disk($record->disk)->exists($record->file_path)) {
-            throw new RuntimeException('The export file could not be stored.');
-        }
-
-        $record->forceFill([
-            'status' => ExportJob::STATUS_COMPLETED,
-            'progress_stage' => ExportJob::STAGE_COMPLETED,
-            'progress' => 100,
-            'processed_rows' => $record->total_rows,
-            'completed_at' => now(),
-            'expires_at' => now()->addDays(3),
-            'error_message' => null,
-        ])->save();
 
         $this->broadcast($record);
 
@@ -144,9 +220,29 @@ class ExportProgressService
 
     public function fail(int $exportJobId, Throwable $exception): void
     {
-        $record = ExportJob::with('user')->find($exportJobId);
+        $record = DB::transaction(function () use ($exportJobId, $exception): ?ExportJob {
+            $record = ExportJob::with('user')->lockForUpdate()->find($exportJobId);
 
-        if ($record === null || $record->status === ExportJob::STATUS_FAILED) {
+            if (
+                $record === null
+                || in_array($record->status, [ExportJob::STATUS_COMPLETED, ExportJob::STATUS_FAILED], true)
+            ) {
+                return null;
+            }
+
+            $record->forceFill([
+                'status' => ExportJob::STATUS_FAILED,
+                'progress_stage' => ExportJob::STAGE_FAILED,
+                'progress' => null,
+                'error_message' => Str::limit($exception->getMessage(), 500, ''),
+                'completed_at' => null,
+                'expires_at' => now()->addDays(3),
+            ])->save();
+
+            return $record;
+        }, 3);
+
+        if ($record === null) {
             return;
         }
 
@@ -167,15 +263,18 @@ class ExportProgressService
             }
         }
 
-        $record->forceFill([
-            'status' => ExportJob::STATUS_FAILED,
-            'progress_stage' => ExportJob::STAGE_FAILED,
-            'progress' => null,
-            'file_path' => $fileDeleted ? null : $filePath,
-            'error_message' => Str::limit($exception->getMessage(), 500, ''),
-            'completed_at' => null,
-            'expires_at' => now()->addDays(3),
-        ])->save();
+        if ($fileDeleted) {
+            $cleanup = ExportJob::query()
+                ->whereKey($record->getKey())
+                ->where('status', ExportJob::STATUS_FAILED);
+
+            if ($filePath !== null) {
+                $cleanup->where('file_path', $filePath);
+            }
+
+            $cleanup->update(['file_path' => null]);
+            $record->file_path = null;
+        }
 
         $this->broadcast($record);
 

@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Exports\PurchaseOrdersExport;
 use App\Exports\RequisitionsExport;
 use App\Models\ExchangeRate;
+use App\Models\MaterialClaim;
 use App\Models\Period;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
+use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -108,6 +110,11 @@ class PurchaseOrderReferenceRemarkTest extends TestCase
         $this->assertStringContainsString('&lt;script&gt;', $row['remark_display']);
         $this->assertStringNotContainsString('<script>', $row['remark_display']);
         $this->assertStringContainsString('title=', $row['remark_display']);
+        $this->assertArrayNotHasKey('supplier', $row);
+        $this->assertArrayNotHasKey('quotations', $row);
+        $this->assertArrayNotHasKey('resolved_total_idr', $row);
+        $this->assertArrayNotHasKey('active_claim_id', $row);
+        $this->assertArrayNotHasKey('latest_ng_inspection_id', $row);
 
         $this->dataTableRequest(
             $this->purchasing,
@@ -203,6 +210,103 @@ class PurchaseOrderReferenceRemarkTest extends TestCase
         $this->assertSame("'-PO formula remark", $poRow[8]);
     }
 
+    public function test_purchase_order_datatable_total_preserves_stored_and_compatibility_amount_semantics(): void
+    {
+        $pr = $this->createRequisition('REQ/08/2026/031', 'Legacy Amount Material');
+        $po = $this->createPurchaseOrder(
+            $this->supplierA,
+            [$pr],
+            'PO/08/2026/031',
+            'Resolved amount regression',
+            'active'
+        );
+        $item = $po->quotations()->firstOrFail()->items()->firstOrFail();
+
+        $item->update(['amount' => 999]);
+        $storedAmountRow = $this->dataTableRow($this->purchasing, 'purchasing.purchase-orders.index', $this->purchasingColumns());
+        $this->assertSame('Rp 15.984.000', $storedAmountRow['total_idr']);
+
+        $item->update(['amount' => 0]);
+        $compatibilityRow = $this->dataTableRow($this->purchasing, 'purchasing.purchase-orders.index', $this->purchasingColumns());
+        $this->assertSame('Rp 8.000.000', $compatibilityRow['total_idr']);
+    }
+
+    public function test_purchase_order_action_projection_preserves_claim_precedence_soft_deletes_and_hashids(): void
+    {
+        $qc = User::factory()->create(['role' => 'qc', 'is_active' => true]);
+        $pr = $this->createRequisition('REQ/08/2026/041', 'Claim Action Material');
+        $po = $this->createPurchaseOrder(
+            $this->supplierA,
+            [$pr],
+            'PO/08/2026/041',
+            'Claim action regression',
+            'claim_needed'
+        );
+        $inspection = QcInspection::create([
+            'po_id' => $po->id,
+            'inspected_by' => $qc->id,
+            'status' => 'ng',
+            'inspected_at' => now()->subHour(),
+        ]);
+        $deletedInspection = QcInspection::create([
+            'po_id' => $po->id,
+            'inspected_by' => $qc->id,
+            'status' => 'ng',
+            'inspected_at' => now(),
+        ]);
+        $deletedInspection->delete();
+        $claim = MaterialClaim::create([
+            'inspection_id' => $inspection->id,
+            'po_id' => $po->id,
+            'submitted_by' => $this->purchasing->id,
+            'supplier_id' => $this->supplierA->id,
+            'status' => 'pending',
+            'description' => 'Projected active claim',
+        ]);
+
+        $claimRow = $this->dataTableRow($this->purchasing, 'purchasing.purchase-orders.index', $this->purchasingColumns());
+        $this->assertStringContainsString(route('purchasing.claims.show', $claim), $claimRow['action']);
+        $this->assertStringNotContainsString('/'.$claim->id, $claimRow['action']);
+
+        $claim->delete();
+        $inspectionRow = $this->dataTableRow($this->purchasing, 'purchasing.purchase-orders.index', $this->purchasingColumns());
+        $this->assertStringContainsString(route('purchasing.claims.create', $inspection), $inspectionRow['action']);
+        $this->assertStringNotContainsString(route('purchasing.claims.create', $deletedInspection), $inspectionRow['action']);
+    }
+
+    public function test_supplier_purchase_order_action_ignores_claims_owned_by_another_supplier(): void
+    {
+        $qc = User::factory()->create(['role' => 'qc', 'is_active' => true]);
+        $pr = $this->createRequisition('REQ/08/2026/051', 'Supplier Claim Scope Material');
+        $po = $this->createPurchaseOrder(
+            $this->supplierA,
+            [$pr],
+            'PO/08/2026/051',
+            'Supplier claim scope regression',
+            'claim_needed'
+        );
+        $inspection = QcInspection::create([
+            'po_id' => $po->id,
+            'inspected_by' => $qc->id,
+            'status' => 'ng',
+            'inspected_at' => now(),
+        ]);
+        $foreignClaim = MaterialClaim::create([
+            'inspection_id' => $inspection->id,
+            'po_id' => $po->id,
+            'submitted_by' => $this->purchasing->id,
+            'supplier_id' => $this->supplierB->id,
+            'status' => 'pending',
+            'description' => 'Intentionally inconsistent ownership fixture',
+        ]);
+
+        $row = $this->dataTableRow($this->supplierA, 'supplier.purchase-orders.index', $this->supplierColumns());
+
+        $this->assertStringNotContainsString(route('supplier.claims.show', $foreignClaim), $row['action']);
+        $this->assertStringNotContainsString('Claim Response', $row['action']);
+        $this->assertStringContainsString(route('supplier.purchase-orders.show', $po), $row['action']);
+    }
+
     private function createRequisition(string $number, string $materialName, ?string $remark = null): PurchaseRequisition
     {
         $pr = PurchaseRequisition::create([
@@ -295,6 +399,15 @@ class PurchaseOrderReferenceRemarkTest extends TestCase
         return $this->actingAs($user)
             ->withHeader('X-Requested-With', 'XMLHttpRequest')
             ->getJson(route($routeName).'?'.http_build_query($parameters));
+    }
+
+    private function dataTableRow(User $user, string $routeName, array $columns): array
+    {
+        $response = $this->dataTableRequest($user, $routeName, $columns)
+            ->assertOk()
+            ->assertJsonPath('recordsFiltered', 1);
+
+        return $response->json('data.0');
     }
 
     private function purchasingColumns(): array

@@ -53,7 +53,7 @@ class SupplierDataIsolationTest extends TestCase
     private function createFullDataChainFor(User $supplier): array
     {
         $period = Period::create([
-            'name' => 'Test Period ' . $supplier->id,
+            'name' => 'Test Period '.$supplier->id,
             'month' => 5,
             'year' => 2026,
             'status' => 'open',
@@ -63,8 +63,8 @@ class SupplierDataIsolationTest extends TestCase
         $pr = PurchaseRequisition::create([
             'period_id' => $period->id,
             'created_by' => $this->purchasing->id,
-            'pr_number' => 'REQ/TEST/' . str_pad($supplier->id, 3, '0', STR_PAD_LEFT),
-            'notes' => 'Test PR for supplier ' . $supplier->id,
+            'pr_number' => 'REQ/TEST/'.str_pad($supplier->id, 3, '0', STR_PAD_LEFT),
+            'notes' => 'Test PR for supplier '.$supplier->id,
             'status' => 'completed',
         ]);
 
@@ -108,7 +108,7 @@ class SupplierDataIsolationTest extends TestCase
             'supplier_id' => $supplier->id,
             'currency' => 'USD',
             'exchange_rate_id' => $rate->id,
-            'po_number' => 'PO/TEST/' . str_pad($supplier->id, 3, '0', STR_PAD_LEFT),
+            'po_number' => 'PO/TEST/'.str_pad($supplier->id, 3, '0', STR_PAD_LEFT),
             'status' => 'completed',
             'created_by' => $this->purchasing->id,
             'estimated_arrival' => now()->addDays(30),
@@ -184,6 +184,25 @@ class SupplierDataIsolationTest extends TestCase
             ->get(route('supplier.purchase-orders.show', $dataB['po']));
 
         $response->assertStatus(403);
+    }
+
+    public function test_supplier_cannot_download_other_supplier_purchase_order_pdf(): void
+    {
+        $dataB = $this->createFullDataChainFor($this->supplierB);
+
+        $this->actingAs($this->supplierA)
+            ->get(route('shared.pdf.purchase-order', $dataB['po']))
+            ->assertNotFound();
+    }
+
+    public function test_supplier_can_download_own_purchase_order_pdf(): void
+    {
+        $dataA = $this->createFullDataChainFor($this->supplierA);
+
+        $this->actingAs($this->supplierA)
+            ->get(route('shared.pdf.purchase-order', $dataA['po']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     // ─────────────────────────────────────────────────

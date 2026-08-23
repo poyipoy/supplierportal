@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
+use RuntimeException;
 
 class ExportDispatcher
 {
@@ -51,24 +52,68 @@ class ExportDispatcher
             throw new InvalidArgumentException('Export arguments must be JSON serializable.', previous: $exception);
         }
 
-        $record = ExportJob::create([
-            'user_id' => $user->getKey(),
-            'label' => $label,
-            'export_class' => $exportClass,
-            'export_args' => $args,
-            'file_name' => self::safeFileName($fileName),
-            'disk' => 'private',
-            'status' => ExportJob::STATUS_QUEUED,
-            'progress_stage' => ExportJob::STAGE_QUEUED,
-            'progress' => 0,
-            'total_rows' => 0,
-            'processed_rows' => 0,
-            'processed_chunks' => [],
-        ]);
+        $connection = ExportJob::query()->getModel()->getConnection();
 
-        ProcessExportJob::dispatch((int) $record->getKey())->onQueue('exports');
+        return $connection->transaction(function () use ($user, $label, $exportClass, $args, $fileName): ExportJob {
+            $record = ExportJob::create([
+                'user_id' => $user->getKey(),
+                'label' => $label,
+                'export_class' => $exportClass,
+                'export_args' => $args,
+                'file_name' => self::safeFileName($fileName),
+                'disk' => 'private',
+                'status' => ExportJob::STATUS_QUEUED,
+                'progress_stage' => ExportJob::STAGE_QUEUED,
+                'progress' => 0,
+                'total_rows' => 0,
+                'processed_rows' => 0,
+                'processed_chunks' => [],
+            ]);
 
-        return $record;
+            self::assertAtomicQueueConfiguration($record);
+            $pending = ProcessExportJob::dispatch((int) $record->getKey())->onQueue('exports');
+
+            // Force the root database-queue insert before the record transaction
+            // commits. A failure or process termination rolls both changes back.
+            unset($pending);
+
+            return $record;
+        }, 3);
+    }
+
+    public static function assertAtomicQueueConfiguration(ExportJob $record): void
+    {
+        $queueName = (string) config('queue.default');
+        $queue = config("queue.connections.{$queueName}", []);
+        $driver = $queue['driver'] ?? null;
+
+        // PHPUnit and local queue fakes use sync. Durable async exports in this
+        // project intentionally use the database driver.
+        if ($driver === 'sync') {
+            return;
+        }
+
+        if ($driver !== 'database') {
+            throw new RuntimeException(
+                'Atomic export handoff requires the database queue driver.'
+            );
+        }
+
+        if (($queue['after_commit'] ?? false) !== false) {
+            throw new RuntimeException(
+                'Atomic export handoff requires database queue after_commit=false.'
+            );
+        }
+
+        $recordConnection = $record->getConnectionName() ?: config('database.default');
+        $queueConnection = ($queue['connection'] ?? null) ?: config('database.default');
+
+        if ($recordConnection !== $queueConnection) {
+            throw new RuntimeException(
+                'Atomic export handoff requires ExportJob and database queue to share a connection.'
+            );
+        }
+
     }
 
     public static function isSupported(string $exportClass): bool
