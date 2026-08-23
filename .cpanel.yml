@@ -1,0 +1,35 @@
+---
+deployment:
+  tasks:
+    # Production destinations
+    - export APPPATH=/home/adaw2196/supplierportal
+    - export WEBPATH=/home/adaw2196/public_html
+
+    # Ensure Laravel application directories exist
+    - /bin/mkdir -p $APPPATH/app
+    - /bin/mkdir -p $APPPATH/bootstrap
+    - /bin/mkdir -p $APPPATH/config
+    - /bin/mkdir -p $APPPATH/database
+    - /bin/mkdir -p $APPPATH/resources
+    - /bin/mkdir -p $APPPATH/routes
+
+    # Deploy Laravel application source
+    - /bin/cp -a app/. $APPPATH/app/
+    - /bin/cp -a bootstrap/. $APPPATH/bootstrap/
+    - /bin/cp -a config/. $APPPATH/config/
+    - /bin/cp -a database/. $APPPATH/database/
+    - /bin/cp -a resources/. $APPPATH/resources/
+    - /bin/cp -a routes/. $APPPATH/routes/
+
+    # Deploy root runtime files
+    - /bin/cp artisan $APPPATH/artisan
+    - /bin/cp composer.json $APPPATH/composer.json
+    - /bin/cp composer.lock $APPPATH/composer.lock
+
+    # Deploy tracked public assets.
+    # IMPORTANT: intentionally DO NOT overwrite public_html/index.php.
+    - /bin/cp public/.htaccess $WEBPATH/.htaccess
+    - /bin/cp public/favicon.ico $WEBPATH/favicon.ico
+    - /bin/cp public/robots.txt $WEBPATH/robots.txt
+    - /bin/mkdir -p $WEBPATH/assets
+    - /bin/cp -a public/assets/. $WEBPATH/assets/
