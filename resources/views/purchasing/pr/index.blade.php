@@ -29,11 +29,11 @@
                 id="exportRequisitionsBtn"
                 :data-export-url="route('purchasing.export.requisitions')"
             >
-                <x-ui.icon name="file-spreadsheet" />
+                <x-ui.icon name="file-spreadsheet" size="sm" />
                 <span>Export Excel</span>
             </x-ui.button>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
-                <x-ui.icon name="plus-circle" />
+                <x-ui.icon name="plus-circle" size="sm" />
                 <span>Create Requisition</span>
             </x-ui.button>
         </x-slot:actions>

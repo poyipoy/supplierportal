@@ -140,7 +140,7 @@
 
         {{-- Chat Form --}}
         <div class="tw-border-t tw-border-outline-variant tw-px-4 tw-py-2.5">
-            <form id="chat-form" onsubmit="sendMessage(event)">
+            <form id="chat-form" data-managed-submit onsubmit="sendMessage(event)">
                 @if(!empty($messageTemplates))
                     <div class="dropdown tw-mb-2">
                         <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -180,9 +180,25 @@
     const emptyState = document.getElementById('empty-state');
     const attachmentInput = document.getElementById('message-attachments');
     const attachmentPreview = document.getElementById('message-attachments-preview');
+    const sendButton = document.getElementById('btn-send');
+    const sendButtonDefaultHtml = sendButton.innerHTML;
+    const sendButtonDefaultDisabled = sendButton.disabled;
     const quickActionUrl = `{{ route('conversations.quick-action', $conversation) }}`;
     let lastMessageId = {{ $conversation->messages->last()->id ?? 0 }};
     let isSending = false;
+
+    function setSendButtonLoading(loading) {
+        sendButton.disabled = loading || sendButtonDefaultDisabled;
+
+        if (loading) {
+            sendButton.setAttribute('aria-busy', 'true');
+            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">Sending message</span>';
+            return;
+        }
+
+        sendButton.removeAttribute('aria-busy');
+        sendButton.innerHTML = sendButtonDefaultHtml;
+    }
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -263,7 +279,7 @@
         if (!body && files.length === 0) return;
 
         isSending = true;
-        document.getElementById('btn-send').disabled = true;
+        setSendButtonLoading(true);
         const payload = new FormData();
         payload.append('body', body);
         files.forEach((file) => payload.append('attachments[]', file));
@@ -291,7 +307,7 @@
         .catch(err => console.error(err))
         .finally(() => {
             isSending = false;
-            document.getElementById('btn-send').disabled = false;
+            setSendButtonLoading(false);
             bodyInput.focus();
         });
     }

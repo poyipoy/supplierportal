@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\PrItem;
 use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,8 +14,10 @@ use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class RequisitionsExport implements FromQuery, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
+class RequisitionsExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
 {
+    use InteractsWithExportProgress;
+
     protected $periodId;
 
     protected $status;
@@ -89,6 +93,11 @@ class RequisitionsExport implements FromQuery, WithColumnWidths, WithCustomChunk
     public function chunkSize(): int
     {
         return 500;
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->query()->count();
     }
 
     public function headings(): array

@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Support\SupplierPriceHistoryBuilder;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -13,14 +15,17 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, WithHeadings, WithStyles, WithTitle
+class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings, WithStyles, WithTitle
 {
+    use InteractsWithExportProgress;
+
     public function __construct(
         private readonly int $supplierId,
         private readonly string $view,
         private readonly string $materialName,
         private readonly ?string $dateFromIso,
         private readonly array $dimensionFilters = [],
+        private readonly ?string $currency = null,
     ) {}
 
     public function collection(): Collection
@@ -32,14 +37,16 @@ class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, Wi
             $this->view,
             $dateFrom,
             $this->dimensionFilters,
+            $this->currency,
         );
 
         if ($this->view === 'yearly') {
             return $data->map(fn (array $row) => [
                 $row['period'],
-                $row['price_idr'],
-                $row['min_idr'],
-                $row['max_idr'],
+                $row['price_per_kg'],
+                $row['min_price'],
+                $row['max_price'],
+                $row['currency'],
                 $row['change_pct'] !== null ? number_format($row['change_pct'], 2).'%' : '-',
             ]);
         }
@@ -50,7 +57,6 @@ class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, Wi
             $row['status_label'],
             $row['price_per_kg'],
             $row['currency'],
-            $row['price_idr'],
             $row['change_pct'] !== null ? number_format($row['change_pct'], 2).'%' : '-',
         ]);
     }
@@ -60,9 +66,10 @@ class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, Wi
         if ($this->view === 'yearly') {
             return [
                 'Year',
-                'Average Price (IDR/Kg)',
-                'Lowest Price (IDR)',
-                'Highest Price (IDR)',
+                'Average Price/Kg',
+                'Lowest Price/Kg',
+                'Highest Price/Kg',
+                'Currency',
                 '% Change',
             ];
         }
@@ -73,9 +80,13 @@ class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, Wi
             'Status',
             'Price/Kg',
             'Currency',
-            'IDR Price',
             '% Change',
         ];
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->collection()->count();
     }
 
     public function title(): string
@@ -91,7 +102,8 @@ class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, Wi
                 'B' => 24,
                 'C' => 20,
                 'D' => 20,
-                'E' => 14,
+                'E' => 12,
+                'F' => 14,
             ];
         }
 
@@ -101,8 +113,7 @@ class SupplierPriceHistoryExport implements FromCollection, WithColumnWidths, Wi
             'C' => 20,
             'D' => 16,
             'E' => 12,
-            'F' => 20,
-            'G' => 14,
+            'F' => 14,
         ];
     }
 

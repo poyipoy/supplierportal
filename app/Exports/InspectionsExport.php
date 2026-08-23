@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\QcInspection;
 use App\Models\QcItem;
 use Carbon\Carbon;
@@ -13,8 +15,10 @@ use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class InspectionsExport implements FromQuery, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
+class InspectionsExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
 {
+    use InteractsWithExportProgress;
+
     protected $startDate;
 
     protected $endDate;
@@ -93,6 +97,11 @@ class InspectionsExport implements FromQuery, WithColumnWidths, WithCustomChunkS
     public function chunkSize(): int
     {
         return 500;
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->query()->count();
     }
 
     public function headings(): array

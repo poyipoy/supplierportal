@@ -47,8 +47,8 @@
     {{-- Search & Dimension Filters Card --}}
         <x-ui.card title="Analytics and Material Selection">
         <x-slot:actions>
-            @if($selectedMaterialName)
-                <x-ui.button :href="route('supplier.price-history.export', request()->all())" variant="outline" size="sm" data-async-export>
+            @if($selectedMaterialName && $selectedCurrency)
+                <x-ui.button :href="route('supplier.price-history.export', array_merge(request()->all(), ['currency' => $selectedCurrency]))" variant="outline" size="sm" data-async-export>
                     <x-ui.icon name="file-spreadsheet" size="sm" />
                     <span>Export Analysis</span>
                 </x-ui.button>
@@ -56,7 +56,7 @@
         </x-slot:actions>
 
         <form method="GET" action="{{ route('supplier.price-history.historical') }}" class="row g-3 align-items-end" id="historicalFilterForm">
-            <div class="col-md-5 col-lg-5">
+            <div class="col-md-6 col-lg-4">
                 <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalMaterialSelect">Select Material Specification</label>
                 <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required>
                     <option value="">Choose Material...</option>
@@ -65,7 +65,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-4 col-lg-3">
+            <div class="col-md-3 col-lg-3">
                 <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalRangeSelect">Time Horizon</label>
                 <select name="range" class="form-select form-select-sm" id="historicalRangeSelect">
                     @foreach($rangeOptions as $value => $label)
@@ -73,7 +73,19 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3 col-lg-4">
+            <div class="col-md-3 col-lg-2">
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalCurrencySelect">Currency</label>
+                <select name="currency" class="form-select form-select-sm" id="historicalCurrencySelect" {{ $currencyOptions->isEmpty() ? 'disabled' : 'required' }}>
+                    @if($currencyOptions->isEmpty())
+                        <option value="">Select material first</option>
+                    @else
+                        @foreach($currencyOptions as $currency)
+                            <option value="{{ $currency }}" @selected($selectedCurrency === $currency)>{{ $currency }}</option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+            <div class="col-md-12 col-lg-3">
                 <label class="form-label small fw-semibold tw-text-on-surface mb-1">Aggregation Interval</label>
                 <div class="btn-group btn-group-sm w-100" role="group">
                     <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
@@ -131,15 +143,21 @@
             {{-- Trend Chart Card --}}
             <x-ui.card class="mb-4">
                 <x-slot:header>
-                    <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="w-100">
                         <h6 class="mb-0 fw-bold tw-text-ui-sm tw-text-on-surface" id="historicalChartTitle">
                             <x-ui.icon name="trending-up" size="sm" class="tw-me-1.5 text-primary" />
-                            Price Trend Analysis: <span class="text-primary">{{ $selectedMaterialName }}</span>
+                            Price Trend Analysis: <span class="text-primary">{{ $selectedMaterialName }}</span> · {{ $selectedCurrency }}
                         </h6>
+                        <p class="tw-mb-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant" id="historicalChartDescription">
+                            Original quoted price per kilogram in {{ $selectedCurrency }}. Values are not converted to another currency.
+                        </p>
                     </div>
                 </x-slot:header>
-                <div class="tw-h-[320px] w-100">
-                    <canvas id="historicalChart" role="img" aria-label="Supplier material price history">Supplier material price history chart.</canvas>
+                <div id="historicalChartContainer" class="tw-relative tw-h-64 tw-w-full md:tw-h-[320px]">
+                    <canvas id="historicalChart" role="img" aria-label="Original material price history in {{ $selectedCurrency }} per kilogram" aria-describedby="historicalChartDescription">Original material price history chart.</canvas>
+                    <div id="historicalChartFallback" class="d-none tw-flex tw-h-full tw-items-center tw-justify-center tw-p-4 tw-text-center tw-text-ui-sm tw-text-on-surface-variant" role="status">
+                        Price chart is temporarily unavailable. The historical breakdown remains available below.
+                    </div>
                 </div>
             </x-ui.card>
 
@@ -162,16 +180,16 @@
             {{-- Supporting Breakdown Table --}}
             <x-ui.data-table
                 title="Historical Quotation Breakdown"
-                description="Audited price quotes and converted Indonesian Rupiah benchmarks."
+                description="Audited original prices in the selected transaction currency."
             >
                 <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                     <thead class="table-light text-center" id="historicalTableHead">
                         @if($periodView === 'yearly')
                             <tr>
                                 <th scope="col">Year</th>
-                                <th scope="col" class="text-end">Average Price (IDR/Kg)</th>
-                                <th scope="col" class="text-end">Lowest Price</th>
-                                <th scope="col" class="text-end">Highest Price</th>
+                                <th scope="col" class="text-end">Average Price/Kg ({{ $selectedCurrency }})</th>
+                                <th scope="col" class="text-end">Lowest Price/Kg</th>
+                                <th scope="col" class="text-end">Highest Price/Kg</th>
                                 <th scope="col" class="text-center">Period Variance</th>
                             </tr>
                         @else
@@ -181,7 +199,6 @@
                                 <th scope="col" class="text-center">Status</th>
                                 <th scope="col" class="text-end">Quoted Price/Kg</th>
                                 <th scope="col" class="text-center">Currency</th>
-                                <th scope="col" class="text-end">Converted IDR Price</th>
                                 <th scope="col" class="text-center">% Variance</th>
                             </tr>
                         @endif
@@ -191,9 +208,9 @@
                             @if($periodView === 'yearly')
                                 <tr>
                                     <td class="text-center fw-bold tw-text-on-surface">{{ $row['period'] }}</td>
-                                    <td class="text-end text-primary fw-bold ui-tabular-nums">Rp {{ number_format($row['price_idr'], 0, ',', '.') }}</td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">Rp {{ number_format($row['min_idr'], 0, ',', '.') }}</td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">Rp {{ number_format($row['max_idr'], 0, ',', '.') }}</td>
+                                    <td class="text-end text-primary fw-bold ui-tabular-nums">{{ number_format($row['price_per_kg'], 4, ',', '.') }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($row['min_price'], 4, ',', '.') }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($row['max_price'], 4, ',', '.') }}</td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                                 </tr>
                             @else
@@ -217,7 +234,6 @@
                                         {{ number_format($row['price_per_kg'], 4, ',', '.') }}
                                     </td>
                                     <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $row['currency'] }}</span></td>
-                                    <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['price_idr'] ? 'Rp ' . number_format($row['price_idr'], 0, ',', '.') : '-' }}</td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                                 </tr>
                             @endif
@@ -226,7 +242,11 @@
                 </table>
             </x-ui.data-table>
         @elseif($selectedMaterialName)
-            <x-ui.alert tone="warning" title="No matching price history">No historical quotation pricing matches the selected material and dimension criteria.</x-ui.alert>
+            <x-ui.alert tone="warning" title="No matching price history">
+                {{ $selectedCurrency
+                    ? 'No historical pricing in the selected currency matches the material, period, and dimension criteria.'
+                    : 'No purchase-backed pricing is available for the selected material and dimension criteria.' }}
+            </x-ui.alert>
         @else
             <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
                 <x-ui.empty-state icon="trending-up" title="Select a material specification" description="Choose a material above to review its price trajectory." />
@@ -237,11 +257,13 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const filterForm = document.getElementById('historicalFilterForm');
     const materialSelect = document.getElementById('historicalMaterialSelect');
     const rangeSelect = document.getElementById('historicalRangeSelect');
+    const currencySelect = document.getElementById('historicalCurrencySelect');
     const resultsContainer = document.getElementById('historicalResults');
     const periodViewInputs = document.querySelectorAll('input[name="period_view"]');
     const rangeOptionSets = {
@@ -253,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         yearly: { '3m': '1y', '6m': '1y', '12m': '1y', '24m': '2y' },
     };
 
-    if (!filterForm || !materialSelect || !rangeSelect || periodViewInputs.length === 0) {
+    if (!filterForm || !materialSelect || !rangeSelect || !currencySelect || periodViewInputs.length === 0) {
         return;
     }
 
@@ -324,6 +346,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    currencySelect.addEventListener('change', () => {
+        if (materialSelect.value && currencySelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
+            window.loadHistorycalPayloadFromFilters();
+        } else if (materialSelect.value && currencySelect.value) {
+            filterForm.submit();
+        }
+    });
+
     filterForm.addEventListener('submit', (e) => {
         if (materialSelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
             e.preventDefault();
@@ -365,13 +395,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Chart initialization if canvas present
     const chartCanvas = document.getElementById('historicalChart');
+    const chartFallback = document.getElementById('historicalChartFallback');
     const historicalChartData = @json($chartData);
+
+    const showHistoricalChartFallback = () => {
+        chartCanvas?.classList.add('d-none');
+        chartFallback?.classList.remove('d-none');
+    };
+
     if (chartCanvas && historicalChartData) {
         const chartTheme = getComputedStyle(document.documentElement);
         const chartColor = (token) => chartTheme.getPropertyValue(token).trim();
+        const chartCurrency = historicalChartData.currency || '';
+        const formatChartPrice = (value) => Number(value).toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 4,
+        });
         const datasets = [{
-            label: historicalChartData.type === 'yearly' ? 'Average Price (IDR/Kg)' : 'Price (IDR/Kg)',
-            data: historicalChartData.pricesIdr || [],
+            label: historicalChartData.type === 'yearly' ? `Average Price / Kg (${chartCurrency})` : `Price / Kg (${chartCurrency})`,
+            data: historicalChartData.prices || [],
             borderColor: chartColor('--md-primary'),
             backgroundColor: chartColor('--md-primary'),
             borderWidth: 2,
@@ -381,10 +423,10 @@ document.addEventListener('DOMContentLoaded', () => {
             pointHoverRadius: 4,
         }];
 
-        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.minIdr)) {
+        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.minPrices)) {
             datasets.push({
                 label: 'Lowest Price',
-                data: historicalChartData.minIdr,
+                data: historicalChartData.minPrices,
                 borderColor: chartColor('--md-success'),
                 backgroundColor: chartColor('--md-success'),
                 borderWidth: 1.5,
@@ -395,10 +437,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.maxIdr)) {
+        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.maxPrices)) {
             datasets.push({
                 label: 'Highest Price',
-                data: historicalChartData.maxIdr,
+                data: historicalChartData.maxPrices,
                 borderColor: chartColor('--md-error'),
                 backgroundColor: chartColor('--md-error'),
                 borderWidth: 1.5,
@@ -409,44 +451,58 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        new Chart(chartCanvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: historicalChartData.labels || [],
-                datasets,
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { boxWidth: 12, usePointStyle: true }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Rp ' + Number(context.raw).toLocaleString('id-ID');
+        if (typeof window.Chart !== 'function') {
+            showHistoricalChartFallback();
+            return;
+        }
+
+        try {
+            new window.Chart(chartCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: historicalChartData.labels || [],
+                    datasets,
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { boxWidth: 12, usePointStyle: true }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatChartPrice(context.raw)}`;
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + (value >= 1000 ? (value/1000) + 'k' : value);
-                            }
-                        },
-                        grid: { color: chartColor('--md-outline-variant') }
                     },
-                    x: {
-                        grid: { display: false }
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: `${chartCurrency} / Kg`
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatChartPrice(value);
+                                }
+                            },
+                            grid: { color: chartColor('--md-outline-variant') }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('Supplier price history chart initialization failed:', error);
+            showHistoricalChartFallback();
+        }
     }
 });
 </script>

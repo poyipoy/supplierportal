@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\TracksExportProgress;
+use App\Events\ExportProgressUpdated;
 use App\Exports\InspectionsExport;
 use App\Exports\PrImportTemplateExport;
 use App\Exports\PurchaseOrderDetailExport;
@@ -11,6 +13,8 @@ use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\SupplierPriceHistoryExport;
+use App\Jobs\FinalizeExportJob;
+use App\Jobs\Middleware\TrackExportChunkProgress;
 use App\Jobs\ProcessExportJob;
 use App\Models\ExchangeRate;
 use App\Models\ExportJob;
@@ -20,22 +24,25 @@ use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\ExportProgressService;
 use App\Services\NotificationService;
 use App\Support\ExportDispatcher;
 use App\Support\NotificationCategory;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
-use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Files\TemporaryFile;
+use Maatwebsite\Excel\Jobs\AppendDataToSheet;
+use Maatwebsite\Excel\Jobs\QueueExport;
 use RuntimeException;
 use Tests\TestCase;
-use Throwable;
 
 class AsyncExportQueueTest extends TestCase
 {
@@ -320,6 +327,8 @@ class AsyncExportQueueTest extends TestCase
 
     public function test_worker_stores_files_and_notifies_completed_or_terminal_failed_exports(): void
     {
+        Event::fake([ExportProgressUpdated::class]);
+        Queue::fake();
         Storage::fake('private');
         $sentNotifications = [];
         $notifications = \Mockery::mock(NotificationService::class);
@@ -329,31 +338,65 @@ class AsyncExportQueueTest extends TestCase
                 $sentNotifications[] = $arguments;
             });
         $this->app->instance(NotificationService::class, $notifications);
+        $progress = new ExportProgressService($notifications);
 
         $completed = $this->createExportJob($this->purchasing);
-        (new ProcessExportJob($completed->id))->handle($notifications);
+        (new ProcessExportJob($completed->id))->handle($progress);
+
+        $completed->refresh();
+        $this->assertSame(ExportJob::STATUS_PROCESSING, $completed->status);
+        $this->assertSame(ExportJob::STAGE_GENERATING, $completed->progress_stage);
+        $this->assertGreaterThan(0, $completed->total_rows);
+        $this->assertSame(0, $completed->processed_rows);
+        $this->assertSame(0, $completed->progress);
+        Queue::assertPushed(QueueExport::class, function (QueueExport $job): bool {
+            $chain = collect($job->chained)->map(fn (string $serialized) => unserialize($serialized));
+
+            return $job->queue === 'exports'
+                && $chain->contains(fn (object $chainedJob) => $chainedJob instanceof FinalizeExportJob);
+        });
+
+        $progress->recordChunk($completed->id, 'query:0:1', 500);
+        $completed->refresh();
+        $this->assertSame($completed->total_rows, $completed->processed_rows);
+        $this->assertSame(100, $completed->progress);
+        $this->assertSame(ExportJob::STAGE_FINALIZING, $completed->progress_stage);
+
+        Storage::disk('private')->put($completed->file_path, 'xlsx contents');
+        (new FinalizeExportJob($completed->id))->handle($progress);
 
         $completed->refresh();
         $this->assertSame(ExportJob::STATUS_COMPLETED, $completed->status);
         $this->assertTrue($completed->isDownloadable());
-        $this->assertTrue(Storage::disk('private')->exists($completed->file_path));
         $this->assertTrue($completed->expires_at->isFuture());
+        $this->assertSame(ExportJob::STAGE_COMPLETED, $completed->progress_stage);
+        $this->assertSame(100, $completed->progress);
+
+        $tracked = $this->createExportJob($this->purchasing);
+        $trackedPath = 'exports/'.$this->purchasing->id.'/'.$tracked->id.'/'.$tracked->file_name;
+        $progress->prepare($tracked, $trackedPath);
+        $progress->startGenerating($tracked, 1200);
+        $progress->recordChunk($tracked->id, 'query:0:1', 500);
+        $this->assertSame(41, $tracked->fresh()->progress);
+        $progress->recordChunk($tracked->id, 'query:0:1', 500);
+        $this->assertSame(500, $tracked->fresh()->processed_rows);
+        $progress->recordChunk($tracked->id, 'query:0:2', 500);
+        $this->assertSame(83, $tracked->fresh()->progress);
+        $progress->recordChunk($tracked->id, 'query:0:3', 500);
+        $this->assertSame(1200, $tracked->fresh()->processed_rows);
+        $this->assertSame(100, $tracked->fresh()->progress);
 
         $failed = $this->createExportJob($this->purchasing);
         $failedPath = 'exports/'.$this->purchasing->id.'/'.$failed->id.'/'.$failed->file_name;
+        $progress->prepare($failed, $failedPath);
+        $progress->startGenerating($failed, 500);
         Storage::disk('private')->put($failedPath, 'partial file');
-        Excel::shouldReceive('store')->once()->andThrow(new RuntimeException(str_repeat('x', 600)));
-
-        $worker = new ProcessExportJob($failed->id);
-        try {
-            $worker->handle(app(NotificationService::class));
-            $this->fail('The export worker should propagate a storage exception to the queue runtime.');
-        } catch (Throwable $exception) {
-            $worker->failed($exception);
-        }
+        $progress->fail($failed->id, new RuntimeException(str_repeat('x', 600)));
 
         $failed->refresh();
         $this->assertSame(ExportJob::STATUS_FAILED, $failed->status);
+        $this->assertSame(ExportJob::STAGE_FAILED, $failed->progress_stage);
+        $this->assertNull($failed->progress);
         $this->assertLessThanOrEqual(500, strlen((string) $failed->error_message));
         $this->assertNull($failed->file_path);
         Storage::disk('private')->assertMissing($failedPath);
@@ -367,6 +410,18 @@ class AsyncExportQueueTest extends TestCase
         $this->assertSame('Export Failed', $sentNotifications[1][3]);
         $this->assertSame('The export could not be processed. Please try again.', $sentNotifications[1][4]);
         $this->assertSame(NotificationCategory::OTHER, $sentNotifications[1][7]['category']);
+        Event::assertDispatched(ExportProgressUpdated::class, fn (ExportProgressUpdated $event) => $event->exportJobId === $completed->getRouteKey()
+            && $event->stage === ExportJob::STAGE_GENERATING
+            && $event->progress === 0
+        );
+        Event::assertDispatched(ExportProgressUpdated::class, fn (ExportProgressUpdated $event) => $event->exportJobId === $completed->getRouteKey()
+            && $event->stage === ExportJob::STAGE_COMPLETED
+            && $event->progress === 100
+            && $event->processedRows === $event->totalRows
+        );
+        Event::assertDispatched(ExportProgressUpdated::class, fn (ExportProgressUpdated $event) => $event->exportJobId === $failed->getRouteKey()
+            && $event->stage === ExportJob::STAGE_FAILED
+        );
     }
 
     public function test_large_exports_are_query_chunked_and_all_async_exports_use_fixed_widths(): void
@@ -393,9 +448,73 @@ class AsyncExportQueueTest extends TestCase
         ];
 
         foreach ($allAsyncExports as $export) {
+            $this->assertInstanceOf(TracksExportProgress::class, $export);
             $this->assertInstanceOf(WithColumnWidths::class, $export);
             $this->assertNotEmpty($export->columnWidths());
         }
+    }
+
+    public function test_chunked_export_pipeline_generates_a_downloadable_file_end_to_end(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Storage::fake('private');
+        config(['queue.default' => 'sync']);
+
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldReceive('send')
+            ->once()
+            ->withArgs(fn (...$arguments) => $arguments[1] === 'export.completed');
+        $this->app->instance(NotificationService::class, $notifications);
+
+        $record = $this->createExportJob($this->purchasing);
+        (new ProcessExportJob($record->id))->handle(new ExportProgressService($notifications));
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_COMPLETED, $record->status);
+        $this->assertSame(ExportJob::STAGE_COMPLETED, $record->progress_stage);
+        $this->assertSame($record->total_rows, $record->processed_rows);
+        $this->assertSame(100, $record->progress);
+        $this->assertTrue($record->isDownloadable());
+        Storage::disk('private')->assertExists($record->file_path);
+    }
+
+    public function test_chunk_middleware_records_only_rows_from_successful_chunks(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $this->app->instance(NotificationService::class, $notifications);
+        $progress = new ExportProgressService($notifications);
+        $record = $this->createExportJob($this->purchasing);
+        $path = 'exports/'.$this->purchasing->id.'/'.$record->id.'/'.$record->file_name;
+        $progress->prepare($record, $path);
+        $progress->startGenerating($record, 3);
+
+        $temporaryFile = \Mockery::mock(TemporaryFile::class);
+        $export = new RequisitionsExport;
+        $firstChunk = new AppendDataToSheet($export, $temporaryFile, 'Xlsx', 0, [['one'], ['two']]);
+        $secondChunk = new AppendDataToSheet($export, $temporaryFile, 'Xlsx', 0, [['three']]);
+        $middleware = new TrackExportChunkProgress($record->id);
+
+        $middleware->handle($firstChunk, fn (): null => null);
+        $record->refresh();
+        $this->assertSame(2, $record->processed_rows);
+        $this->assertSame(66, $record->progress);
+
+        try {
+            $middleware->handle($secondChunk, fn () => throw new RuntimeException('Chunk failed.'));
+            $this->fail('A failed chunk must propagate its exception.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Chunk failed.', $exception->getMessage());
+        }
+
+        $this->assertSame(2, $record->fresh()->processed_rows);
+
+        $middleware->handle($secondChunk, fn (): null => null);
+        $record->refresh();
+        $this->assertSame(3, $record->processed_rows);
+        $this->assertSame(100, $record->progress);
+        $this->assertSame(ExportJob::STAGE_FINALIZING, $record->progress_stage);
     }
 
     public function test_large_export_mappings_do_not_lazy_load_relations(): void
@@ -445,6 +564,8 @@ class AsyncExportQueueTest extends TestCase
         Storage::fake('private');
         $downloadable = $this->createExportJob($this->purchasing, [
             'status' => ExportJob::STATUS_COMPLETED,
+            'progress_stage' => ExportJob::STAGE_COMPLETED,
+            'progress' => 100,
             'file_path' => 'exports/'.$this->purchasing->id.'/download/report.xlsx',
             'file_name' => 'report.xlsx',
             'completed_at' => now(),
@@ -508,6 +629,8 @@ class AsyncExportQueueTest extends TestCase
             ->assertJson([
                 'id' => $downloadable->getRouteKey(),
                 'status' => ExportJob::STATUS_COMPLETED,
+                'stage' => ExportJob::STAGE_COMPLETED,
+                'progress' => 100,
                 'message' => 'The export is complete and ready to download.',
                 'file_name' => 'report.xlsx',
                 'download_url' => route('exports.download', $downloadable, absolute: false),
@@ -523,6 +646,8 @@ class AsyncExportQueueTest extends TestCase
             ->getJson(route('exports.status', $queued))
             ->assertOk()
             ->assertJsonPath('status', ExportJob::STATUS_QUEUED)
+            ->assertJsonPath('stage', ExportJob::STAGE_QUEUED)
+            ->assertJsonPath('progress', null)
             ->assertJsonPath('file_name', null)
             ->assertJsonPath('download_url', null);
         $this->actingAs($this->purchasing)

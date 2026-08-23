@@ -703,6 +703,10 @@
         vertical-align: -.125em;
     }
 
+    .ui-button {
+        text-decoration: none;
+    }
+
     .ui-status-chip {
         align-items: center;
         border-radius: var(--md-shape-full);
@@ -869,8 +873,43 @@
         margin-block-start: .125rem;
     }
 
-    .adasi-toast--progress .adasi-toast__icon {
+    .adasi-toast__progress-ring {
+        display: inline-flex;
+        height: 1.25rem;
+        width: 1.25rem;
+    }
+
+    .adasi-toast__progress-ring svg {
+        height: 100%;
+        transform: rotate(-90deg);
+        width: 100%;
+    }
+
+    .adasi-toast__progress-ring-track,
+    .adasi-toast__progress-ring-value {
+        fill: none;
+        stroke-width: 2;
+    }
+
+    .adasi-toast__progress-ring-track {
+        stroke: var(--md-outline-variant);
+    }
+
+    .adasi-toast__progress-ring-value {
+        stroke: currentColor;
+        stroke-dasharray: 50.265;
+        stroke-dashoffset: 50.265;
+        stroke-linecap: round;
+        transition: stroke-dashoffset var(--ui-motion-standard) var(--ui-easing-standard);
+    }
+
+    .adasi-toast__progress-ring--indeterminate svg {
         animation: ui-spin 1.2s linear infinite;
+    }
+
+    .adasi-toast__progress-ring--indeterminate .adasi-toast__progress-ring-value {
+        stroke-dasharray: 14 36.265;
+        stroke-dashoffset: 0;
     }
 
     .adasi-toast__heading {
@@ -1154,6 +1193,8 @@
     .ui-motion::after,
     .adasi-toast,
     .adasi-toast__icon,
+    .adasi-toast__progress-ring svg,
+    .adasi-toast__progress-ring-value,
     .adasi-toast__progress-bar {
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;

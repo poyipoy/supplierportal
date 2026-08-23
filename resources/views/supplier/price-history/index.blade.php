@@ -14,7 +14,7 @@
     <x-ui.page-header
         title="Purchase Price History"
         eyebrow="Commercial Intelligence"
-        description="Monitor historical price trends and quotation conversion rates strictly for materials quoted by your company."
+        description="Monitor original quoted prices by material and transaction currency for your company."
     />
 
     {{-- Tabs --}}
@@ -41,14 +41,15 @@
     {{-- DataTable --}}
     <x-ui.data-table
             title="Materials and Latest Pricing"
-        description="Converted IDR prices, historical range, and last quotation timestamps."
+        description="Original price ranges grouped by material and transaction currency."
     >
         <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" id="overviewTable">
             <thead class="table-light">
                 <tr>
                     <th scope="col">Material Name</th>
+                    <th scope="col" class="text-center">Currency</th>
                     <th scope="col" class="text-center">Total Offers</th>
-                    <th scope="col">Latest Price (IDR) &amp; Range</th>
+                    <th scope="col">Latest Price/Kg &amp; Range</th>
                     <th scope="col">Last Quoted Date</th>
                     <th scope="col" class="text-center">Latest Status</th>
                     <th scope="col" class="text-center" style="width: 120px;">Action</th>
@@ -69,6 +70,7 @@
             ajax: '{{ route("supplier.price-history.index") }}',
             columns: [
                 { data: 'material_name', name: 'material_name', className: 'fw-bold tw-text-on-surface' },
+                { data: 'currency', name: 'currency', className: 'text-center fw-semibold ui-tabular-nums' },
                 { data: 'total_quotations', name: 'total_quotations', searchable: false, className: 'text-center fw-semibold ui-tabular-nums' },
                 { data: 'price_info', name: 'price_info', orderable: false, searchable: false },
                 { 
@@ -82,7 +84,7 @@
                 { data: 'latest_status_badge', name: 'latest_status_badge', orderable: false, searchable: false, className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
-            order: [[0, 'asc']],
+            order: [[0, 'asc'], [1, 'asc']],
             pageLength: 25
         });
     });

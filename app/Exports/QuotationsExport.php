@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Support\SpreadsheetCellSanitizer;
@@ -14,8 +16,10 @@ use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class QuotationsExport implements FromQuery, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
+class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
 {
+    use InteractsWithExportProgress;
+
     public function __construct(
         private readonly array $filters = [],
         private readonly ?int $forcedSupplierId = null,
@@ -130,6 +134,11 @@ class QuotationsExport implements FromQuery, WithColumnWidths, WithCustomChunkSi
     public function chunkSize(): int
     {
         return 500;
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->query()->count();
     }
 
     public function headings(): array

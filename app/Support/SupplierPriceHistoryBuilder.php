@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\ExchangeRate;
 use App\Models\QuotationItem;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -82,12 +83,60 @@ class SupplierPriceHistoryBuilder
         string $periodView,
         ?Carbon $dateFrom,
         array $dimensionFilters = [],
+        ?string $currency = null,
     ): array {
         $dimensionFilters = $this->validDimensionFilters($dimensionFilters);
+        $currency = $this->resolveCurrency($supplierId, $materialName, $dimensionFilters, $currency);
+
+        if ($currency === null) {
+            return [[
+                'type' => $periodView === 'yearly' ? 'yearly' : 'monthly',
+                'currency' => null,
+                'labels' => collect(),
+                'prices' => collect(),
+            ], collect()];
+        }
 
         return $periodView === 'yearly'
-            ? $this->buildYearlyData($supplierId, $materialName, $dateFrom, $dimensionFilters)
-            : $this->buildMonthlyData($supplierId, $materialName, $dateFrom, $dimensionFilters);
+            ? $this->buildYearlyData($supplierId, $materialName, $dateFrom, $dimensionFilters, $currency)
+            : $this->buildMonthlyData($supplierId, $materialName, $dateFrom, $dimensionFilters, $currency);
+    }
+
+    /** @return Collection<int, string> */
+    public function availableCurrencies(
+        int $supplierId,
+        string $materialName,
+        array $dimensionFilters = [],
+    ): Collection {
+        return $this->historicalItemsQuery(
+            $supplierId,
+            $materialName,
+            null,
+            $this->validDimensionFilters($dimensionFilters),
+            null,
+        )
+            ->select([])
+            ->selectRaw('quotations.currency as currency')
+            ->selectRaw('MAX(purchase_orders.created_at) as latest_purchase_at')
+            ->groupBy('quotations.currency')
+            ->orderByDesc('latest_purchase_at')
+            ->pluck('currency')
+            ->filter(fn ($currency) => in_array($currency, ExchangeRate::CURRENCIES, true))
+            ->values();
+    }
+
+    public function resolveCurrency(
+        int $supplierId,
+        string $materialName,
+        array $dimensionFilters = [],
+        ?string $requestedCurrency = null,
+    ): ?string {
+        $currencies = $this->availableCurrencies($supplierId, $materialName, $dimensionFilters);
+        $requestedCurrency = strtoupper(trim((string) $requestedCurrency));
+
+        return $currencies->contains($requestedCurrency)
+            ? $requestedCurrency
+            : $currencies->first();
     }
 
     public function statusLabel(string $status): string
@@ -119,16 +168,15 @@ class SupplierPriceHistoryBuilder
         string $materialName,
         ?Carbon $dateFrom,
         array $dimensionFilters,
+        string $currency,
     ): array {
-        $items = $this->historicalItemsQuery($supplierId, $materialName, $dateFrom, $dimensionFilters)
+        $items = $this->historicalItemsQuery($supplierId, $materialName, $dateFrom, $dimensionFilters, $currency)
             ->orderBy('purchase_orders.created_at')
             ->orderBy('quotation_items.id')
             ->get();
 
         $tableData = $items->map(function (QuotationItem $item): array {
             $period = optional(optional($item->quotation->purchaseRequisition)->period);
-            $rate = $item->history_rate_to_idr;
-            $priceIdr = $rate !== null ? round((float) $item->price_per_kg * (float) $rate, 0) : null;
             $purchaseRequisition = $item->prItem?->purchaseRequisition;
             $purchaseAt = $item->history_po_created_at
                 ? Carbon::parse($item->history_po_created_at)
@@ -151,9 +199,6 @@ class SupplierPriceHistoryBuilder
                 'pr_url' => route('supplier.quotations.show', $item->quotation),
                 'price_per_kg' => (float) $item->price_per_kg,
                 'currency' => $item->quotation->currency,
-                'price_idr' => $priceIdr,
-                'min_idr' => null,
-                'max_idr' => null,
                 // Keep the legacy keys for existing consumers, but make
                 // their date explicitly represent the purchase event.
                 'submitted_at' => $purchaseAt?->toIso8601String(),
@@ -165,13 +210,13 @@ class SupplierPriceHistoryBuilder
             ];
         })->sortBy('period_sort', SORT_NATURAL)->values();
 
-        $tableData = $this->appendChangePercent($tableData);
+        $tableData = $this->appendChangePercent($tableData, 'price_per_kg');
 
         return [[
             'type' => 'monthly',
+            'currency' => $currency,
             'labels' => $tableData->pluck('period')->values(),
             'prices' => $tableData->pluck('price_per_kg')->values(),
-            'pricesIdr' => $tableData->pluck('price_idr')->map(fn ($price) => $price ?? 0)->values(),
         ], $tableData];
     }
 
@@ -181,48 +226,52 @@ class SupplierPriceHistoryBuilder
         string $materialName,
         ?Carbon $dateFrom,
         array $dimensionFilters,
+        string $currency,
     ): array {
-        $query = $this->historicalItemsQuery($supplierId, $materialName, $dateFrom, $dimensionFilters);
-        $priceIdr = '(quotation_items.price_per_kg * COALESCE(history_po_rates.rate_to_idr, history_quote_rates.rate_to_idr, 1))';
+        $query = $this->historicalItemsQuery($supplierId, $materialName, $dateFrom, $dimensionFilters, $currency);
 
         $yearlyData = $query
             ->select([])
             ->selectRaw('YEAR(purchase_orders.created_at) as year')
-            ->selectRaw("AVG({$priceIdr}) as avg_price_idr")
-            ->selectRaw("MIN({$priceIdr}) as min_price_idr")
-            ->selectRaw("MAX({$priceIdr}) as max_price_idr")
+            ->selectRaw('AVG(quotation_items.price_per_kg) as avg_price')
+            ->selectRaw('MIN(quotation_items.price_per_kg) as min_price')
+            ->selectRaw('MAX(quotation_items.price_per_kg) as max_price')
             ->groupByRaw('YEAR(purchase_orders.created_at)')
             ->orderBy('year', 'asc')
             ->get();
 
-        $tableData = $yearlyData->map(function ($row): array {
+        $tableData = $yearlyData->map(function ($row) use ($currency): array {
             return [
                 'period' => (string) $row->year,
-                'price_idr' => round((float) $row->avg_price_idr, 0),
-                'min_idr' => round((float) $row->min_price_idr, 0),
-                'max_idr' => round((float) $row->max_price_idr, 0),
+                'price_per_kg' => round((float) $row->avg_price, 4),
+                'min_price' => round((float) $row->min_price, 4),
+                'max_price' => round((float) $row->max_price, 4),
+                'currency' => $currency,
             ];
         })->values();
 
-        $tableData = $this->appendChangePercent($tableData, 'price_idr');
+        $tableData = $this->appendChangePercent($tableData, 'price_per_kg');
 
         return [[
             'type' => 'yearly',
+            'currency' => $currency,
             'labels' => $tableData->pluck('period')->values(),
-            'pricesIdr' => $tableData->pluck('price_idr')->values(),
+            'prices' => $tableData->pluck('price_per_kg')->values(),
+            'minPrices' => $tableData->pluck('min_price')->values(),
+            'maxPrices' => $tableData->pluck('max_price')->values(),
         ], $tableData];
     }
 
     /**
-     * Purchase history is established only by a live PO link. The selected
-     * exchange-rate snapshot belongs to the PO; quotation rate is a legacy
-     * fallback for older POs that did not store one.
+     * Purchase history is established only by a live PO link. Currency is
+     * filtered per quotation so raw prices are never compared across units.
      */
     private function historicalItemsQuery(
         int $supplierId,
         string $materialName,
         ?Carbon $dateFrom,
         array $dimensionFilters,
+        ?string $currency,
     ): Builder {
         $query = QuotationItem::query()
             ->select([
@@ -231,12 +280,9 @@ class SupplierPriceHistoryBuilder
                 'purchase_orders.po_number as history_po_number',
                 'purchase_orders.created_at as history_po_created_at',
             ])
-            ->selectRaw('COALESCE(history_po_rates.rate_to_idr, history_quote_rates.rate_to_idr) as history_rate_to_idr')
             ->join('po_quotations', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
             ->join('purchase_orders', 'po_quotations.po_id', '=', 'purchase_orders.id')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
-            ->leftJoin('exchange_rates as history_po_rates', 'purchase_orders.exchange_rate_id', '=', 'history_po_rates.id')
-            ->leftJoin('exchange_rates as history_quote_rates', 'quotations.exchange_rate_id', '=', 'history_quote_rates.id')
             ->join('pr_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
             ->where('purchase_orders.supplier_id', $supplierId)
             ->whereNull('purchase_orders.deleted_at')
@@ -244,7 +290,6 @@ class SupplierPriceHistoryBuilder
             ->where('pr_items.material_name', $materialName)
             ->with([
                 'quotation.purchaseRequisition.period',
-                'quotation.exchange_rate',
                 'prItem.purchaseRequisition' => function ($query) {
                     $query->select('id', 'pr_number');
                 },
@@ -254,6 +299,10 @@ class SupplierPriceHistoryBuilder
             $query->where("pr_items.{$field}", $value);
         }
 
+        if ($currency !== null) {
+            $query->where('quotations.currency', $currency);
+        }
+
         if ($dateFrom !== null) {
             $query->where('purchase_orders.created_at', '>=', $dateFrom);
         }
@@ -261,7 +310,7 @@ class SupplierPriceHistoryBuilder
         return $query;
     }
 
-    private function appendChangePercent($tableData, string $priceKey = 'price_idr')
+    private function appendChangePercent($tableData, string $priceKey = 'price_per_kg')
     {
         $tableData = $tableData->values();
         $previousPrice = null;

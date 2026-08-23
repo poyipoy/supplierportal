@@ -21,7 +21,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
-                <x-ui.icon name="plus-circle" />
+                <x-ui.icon name="plus-circle" size="sm" />
                 Create Requisition
             </x-ui.button>
         </x-slot:actions>

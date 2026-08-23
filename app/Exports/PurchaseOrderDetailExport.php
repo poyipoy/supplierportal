@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\PurchaseOrder;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
@@ -10,8 +12,10 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PurchaseOrderDetailExport implements FromCollection, WithColumnWidths, WithHeadings
+class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings
 {
+    use InteractsWithExportProgress;
+
     public function __construct(
         private readonly int $purchaseOrderId,
         private readonly ?int $forcedSupplierId = null,
@@ -153,6 +157,11 @@ class PurchaseOrderDetailExport implements FromCollection, WithColumnWidths, Wit
             'Claim Status',
             'Claim Updated At',
         ];
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->collection()->count();
     }
 
     public function columnWidths(): array

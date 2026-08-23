@@ -35,7 +35,7 @@
                     <div class="chat-action-panel tw-border-b tw-border-outline-variant tw-bg-surface-low tw-p-2 d-none" id="chatDrawerActions"></div>
                     <div class="chat-message-list p-3" id="chatDrawerMessages"></div>
                     <div class="tw-border-t tw-border-outline-variant tw-bg-surface tw-p-3">
-                        <form id="chatDrawerForm">
+                        <form id="chatDrawerForm" data-managed-submit>
                             <div class="chat-composer-tools d-flex align-items-center justify-content-between gap-2 mb-2">
                                 <div class="dropdown d-none" id="chatDrawerTemplates">
                                     <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -96,6 +96,8 @@
                     const attachmentInput = document.getElementById('chatDrawerAttachments');
                     const attachmentListEl = document.getElementById('chatDrawerAttachmentList');
                     const sendButton = document.getElementById('chatDrawerSend');
+                    const sendButtonDefaultHtml = sendButton.innerHTML;
+                    const sendButtonDefaultDisabled = sendButton.disabled;
 
                     let conversations = [];
                     let activeConversationId = null;
@@ -103,6 +105,19 @@
                     let pollTimer = null;
                     let searchTimer = null;
                     let isSending = false;
+
+                    const setSendButtonLoading = (loading) => {
+                        sendButton.disabled = loading || sendButtonDefaultDisabled;
+
+                        if (loading) {
+                            sendButton.setAttribute('aria-busy', 'true');
+                            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">Sending message</span>';
+                            return;
+                        }
+
+                        sendButton.removeAttribute('aria-busy');
+                        sendButton.innerHTML = sendButtonDefaultHtml;
+                    };
 
                     const buildUrl = (template, id) => template.replace('__ID__', id);
                     const escapeHtml = (value) => String(value ?? '')
@@ -700,7 +715,7 @@
                         if (!body && files.length === 0) return;
 
                         isSending = true;
-                        sendButton.disabled = true;
+                        setSendButtonLoading(true);
                         const payload = new FormData();
                         payload.append('body', body);
                         files.forEach((file) => payload.append('attachments[]', file));
@@ -738,7 +753,7 @@
                            })
                             .finally(() => {
                                 isSending = false;
-                                sendButton.disabled = false;
+                                setSendButtonLoading(false);
                                 inputEl.focus();
                             });
                     });

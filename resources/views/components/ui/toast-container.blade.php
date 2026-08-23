@@ -34,7 +34,22 @@
                     <x-ui.icon name="triangle-alert" x-show="toast.icon === 'triangle-alert'" />
                     <x-ui.icon name="info" x-show="toast.icon === 'info'" />
                     <x-ui.icon name="message-square-text" x-show="toast.icon === 'message-square-text'" />
-                    <x-ui.icon name="loader-circle" x-show="toast.icon === 'loader-circle'" />
+                    <span
+                        x-show="toast.icon === 'loader-circle'"
+                        class="adasi-toast__progress-ring"
+                        :class="{ 'adasi-toast__progress-ring--indeterminate': toast.indeterminate }"
+                    >
+                        <svg viewBox="0 0 20 20" focusable="false">
+                            <circle class="adasi-toast__progress-ring-track" cx="10" cy="10" r="8"></circle>
+                            <circle
+                                class="adasi-toast__progress-ring-value"
+                                cx="10"
+                                cy="10"
+                                r="8"
+                                :style="toast.indeterminate ? null : `stroke-dashoffset: ${50.265 * (1 - toast.progress / 100)}`"
+                            ></circle>
+                        </svg>
+                    </span>
                 </span>
 
                 <div class="adasi-toast__heading">

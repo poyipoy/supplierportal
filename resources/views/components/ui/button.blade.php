@@ -25,7 +25,7 @@
 
     $isDisabled = (bool) $disabled || (bool) $loading;
     $classes = implode(' ', [
-        'ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold disabled:tw-cursor-not-allowed disabled:tw-opacity-50',
+        'ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50',
         $variants[$variant] ?? $variants['primary'],
         $sizes[$size] ?? $sizes['md'],
         $iconOnly ? 'tw-aspect-square tw-px-0' : '',
@@ -43,18 +43,18 @@
             <span class="ui-spinner" aria-hidden="true"></span>
             <span class="tw-sr-only">Processing</span>
         @elseif(isset($leading))
-            <span class="tw-inline-flex tw-shrink-0" aria-hidden="true">{{ $leading }}</span>
+            <span class="tw-inline-flex tw-shrink-0 tw-items-center" aria-hidden="true">{{ $leading }}</span>
         @endif
 
         @if(!$iconOnly)
-            <span>{{ $slot }}</span>
+            <span class="tw-inline-flex tw-items-center tw-gap-1.5">{{ $slot }}</span>
         @else
             {{ $slot }}
             @if($label)<span class="tw-sr-only">{{ $label }}</span>@endif
         @endif
 
         @if(!$loading && isset($trailing))
-            <span class="tw-inline-flex tw-shrink-0" aria-hidden="true">{{ $trailing }}</span>
+            <span class="tw-inline-flex tw-shrink-0 tw-items-center" aria-hidden="true">{{ $trailing }}</span>
         @endif
     </a>
 @else
@@ -69,18 +69,18 @@
             <span class="ui-spinner" aria-hidden="true"></span>
             <span class="tw-sr-only">Processing</span>
         @elseif(isset($leading))
-            <span class="tw-inline-flex tw-shrink-0" aria-hidden="true">{{ $leading }}</span>
+            <span class="tw-inline-flex tw-shrink-0 tw-items-center" aria-hidden="true">{{ $leading }}</span>
         @endif
 
         @if(!$iconOnly)
-            <span>{{ $slot }}</span>
+            <span class="tw-inline-flex tw-items-center tw-gap-1.5">{{ $slot }}</span>
         @else
             {{ $slot }}
             @if($label)<span class="tw-sr-only">{{ $label }}</span>@endif
         @endif
 
         @if(!$loading && isset($trailing))
-            <span class="tw-inline-flex tw-shrink-0" aria-hidden="true">{{ $trailing }}</span>
+            <span class="tw-inline-flex tw-shrink-0 tw-items-center" aria-hidden="true">{{ $trailing }}</span>
         @endif
     </button>
 @endif

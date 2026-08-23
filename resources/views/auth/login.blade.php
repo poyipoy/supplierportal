@@ -23,7 +23,7 @@
                 type="email"
                 name="email"
                 class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ (isset($errors) && $errors->has('email')) ? 'tw-border-error' : 'tw-border-outline-variant' }}"
-                placeholder="name@company.com"
+                placeholder="Email"
                 value="{{ old('email') }}"
                 autocomplete="email"
                 required
@@ -36,7 +36,7 @@
     <div x-data="{ visible: false }" class="tw-grid tw-gap-1.5">
         <div class="tw-flex tw-items-center tw-justify-between tw-gap-3">
             <label for="password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Password</label>
-            <a href="{{ route('password.request') }}" class="ui-focus-ring tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">Forgot password?</a>
+            <a href="{{ route('password.request') }}" class="ui-focus-ring tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">Reset/Forgot password?</a>
         </div>
         <div class="tw-relative">
             <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
@@ -47,7 +47,7 @@
                 :type="visible ? 'text' : 'password'"
                 name="password"
                 class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-11 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ (isset($errors) && $errors->has('password')) ? 'tw-border-error' : 'tw-border-outline-variant' }}"
-                placeholder="••••••••"
+                placeholder="Password"
                 autocomplete="current-password"
                 maxlength="255"
                 @if(isset($errors) && $errors->has('password')) aria-invalid="true" aria-describedby="password-error" @endif

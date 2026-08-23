@@ -19,6 +19,18 @@ class ExportJob extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STAGE_QUEUED = 'queued';
+
+    public const STAGE_PREPARING = 'preparing';
+
+    public const STAGE_GENERATING = 'generating';
+
+    public const STAGE_FINALIZING = 'finalizing';
+
+    public const STAGE_COMPLETED = 'completed';
+
+    public const STAGE_FAILED = 'failed';
+
     protected $fillable = [
         'user_id',
         'label',
@@ -28,6 +40,11 @@ class ExportJob extends Model
         'file_path',
         'disk',
         'status',
+        'progress_stage',
+        'progress',
+        'total_rows',
+        'processed_rows',
+        'processed_chunks',
         'error_message',
         'completed_at',
         'expires_at',
@@ -37,6 +54,10 @@ class ExportJob extends Model
     {
         return [
             'export_args' => 'array',
+            'progress' => 'integer',
+            'total_rows' => 'integer',
+            'processed_rows' => 'integer',
+            'processed_chunks' => 'array',
             'completed_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
@@ -50,6 +71,23 @@ class ExportJob extends Model
     public function isPending(): bool
     {
         return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_PROCESSING], true);
+    }
+
+    public function progressMessage(): string
+    {
+        return match ($this->progress_stage) {
+            self::STAGE_QUEUED => 'Waiting for an export worker.',
+            self::STAGE_PREPARING => 'Preparing the export data.',
+            self::STAGE_GENERATING => $this->total_rows > 0
+                ? 'Processed '.number_format($this->processed_rows).' of '.number_format($this->total_rows).' rows.'
+                : 'Generating the Excel workbook.',
+            self::STAGE_FINALIZING => $this->total_rows > 0
+                ? 'All '.number_format($this->total_rows).' rows are processed. Finalizing the file.'
+                : 'Finalizing and verifying the export file.',
+            self::STAGE_COMPLETED => 'The export is complete and ready to download.',
+            self::STAGE_FAILED => 'The export could not be processed. Please try again.',
+            default => 'The export is being processed.',
+        };
     }
 
     public function hasSafeFilePath(): bool

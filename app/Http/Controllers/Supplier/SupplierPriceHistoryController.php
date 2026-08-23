@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supplier;
 
 use App\Exports\SupplierPriceHistoryExport;
 use App\Http\Controllers\Controller;
+use App\Models\ExchangeRate;
 use App\Models\ExportJob;
 use App\Models\PrItem;
 use App\Support\ExportDispatcher;
@@ -60,14 +61,27 @@ class SupplierPriceHistoryController extends Controller
         ];
 
         $dimensionFilters = $this->dimensionFilters($request);
+        $currencyOptions = collect();
+        $selectedCurrency = null;
 
         if ($selectedMaterialName) {
+            $currencyOptions = $this->historyBuilder->availableCurrencies(
+                (int) $supplierId,
+                $selectedMaterialName,
+                $dimensionFilters,
+            );
+            $requestedCurrency = strtoupper(trim((string) $request->input('currency')));
+            $selectedCurrency = $currencyOptions->contains($requestedCurrency)
+                ? $requestedCurrency
+                : $currencyOptions->first();
+
             [$chartData, $tableData] = $this->historyBuilder->build(
                 (int) $supplierId,
                 $selectedMaterialName,
                 $periodView,
                 $dateFrom,
                 $dimensionFilters,
+                $selectedCurrency,
             );
 
             if ($tableData->isEmpty()) {
@@ -85,6 +99,8 @@ class SupplierPriceHistoryController extends Controller
             'range' => $range,
             'rangeOptions' => $rangeOptions,
             'materialName' => $selectedMaterialName,
+            'currency' => $selectedCurrency,
+            'currencyOptions' => $currencyOptions->values(),
         ];
 
         if ($request->ajax() && ($request->wantsJson() || $request->input('view') === 'json')) {
@@ -102,6 +118,8 @@ class SupplierPriceHistoryController extends Controller
             'rangeOptions',
             'monthlyRangeOptions',
             'yearlyRangeOptions',
+            'currencyOptions',
+            'selectedCurrency',
             'payload',
         ));
     }
@@ -119,6 +137,7 @@ class SupplierPriceHistoryController extends Controller
             'material_name' => ['required', 'string', 'max:255'],
             'period_view' => ['nullable', Rule::in(['monthly', 'yearly'])],
             'range' => ['nullable', Rule::in(['3m', '6m', '12m', '24m', '1y', '2y', '3y', '5y', 'all'])],
+            'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
             'thickness' => ['nullable', 'numeric'],
             'd_inner' => ['nullable', 'numeric'],
             'd_outer' => ['nullable', 'numeric'],
@@ -132,7 +151,14 @@ class SupplierPriceHistoryController extends Controller
         $range = $this->historyBuilder->normalizeRange($periodView, $validated['range'] ?? null);
         $dateFrom = $this->historyBuilder->dateFromRange($range);
         $dimensionFilters = $this->dimensionFilters($request);
-        $fileName = 'Price_History_'.str_replace([' ', '/'], '_', $materialName).'_'.now()->format('YmdHis').'.xlsx';
+        $currency = $this->historyBuilder->resolveCurrency(
+            $supplierId,
+            $materialName,
+            $dimensionFilters,
+            $validated['currency'] ?? null,
+        );
+        $currencySuffix = $currency ? '_'.$currency : '';
+        $fileName = 'Price_History_'.str_replace([' ', '/'], '_', $materialName).$currencySuffix.'_'.now()->format('YmdHis').'.xlsx';
 
         $exportJob = ExportDispatcher::dispatch(
             'Supplier Price History',
@@ -143,6 +169,7 @@ class SupplierPriceHistoryController extends Controller
                 $materialName,
                 $dateFrom?->toIso8601String(),
                 $dimensionFilters,
+                $currency,
             ],
             $fileName,
         );
@@ -171,50 +198,51 @@ class SupplierPriceHistoryController extends Controller
 
     private function getOverviewData(Request $request, $supplierId)
     {
-        $priceIdr = '(quotation_items.price_per_kg * COALESCE(po_rates.rate_to_idr, quotation_rates.rate_to_idr, 1))';
-
         $rows = DB::table('quotation_items')
             ->join('po_quotations', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
             ->join('purchase_orders', 'po_quotations.po_id', '=', 'purchase_orders.id')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
-            ->leftJoin('exchange_rates as po_rates', 'purchase_orders.exchange_rate_id', '=', 'po_rates.id')
-            ->leftJoin('exchange_rates as quotation_rates', 'quotations.exchange_rate_id', '=', 'quotation_rates.id')
             ->join('pr_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
             ->where('purchase_orders.supplier_id', $supplierId)
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('quotations.deleted_at')
             ->select([
                 'pr_items.material_name',
+                'quotations.currency',
                 DB::raw('COUNT(DISTINCT CONCAT(purchase_orders.id, ":", quotation_items.id)) as total_quotations'),
-                DB::raw("MIN($priceIdr) as min_price_idr"),
-                DB::raw("MAX($priceIdr) as max_price_idr"),
-                DB::raw("CAST(SUBSTRING_INDEX(GROUP_CONCAT($priceIdr ORDER BY purchase_orders.created_at DESC SEPARATOR '|'), '|', 1) AS DECIMAL(20,4)) as latest_price_idr"),
+                DB::raw('MIN(quotation_items.price_per_kg) as min_price'),
+                DB::raw('MAX(quotation_items.price_per_kg) as max_price'),
+                DB::raw("CAST(SUBSTRING_INDEX(GROUP_CONCAT(quotation_items.price_per_kg ORDER BY purchase_orders.created_at DESC SEPARATOR '|'), '|', 1) AS DECIMAL(20,4)) as latest_price"),
                 DB::raw("SUBSTRING_INDEX(GROUP_CONCAT(quotations.status ORDER BY purchase_orders.created_at DESC SEPARATOR '|'), '|', 1) as latest_status"),
                 DB::raw('MAX(purchase_orders.created_at) as last_submitted_at'),
             ])
-            ->groupBy('pr_items.material_name')
+            ->groupBy('pr_items.material_name', 'quotations.currency')
             ->get();
 
         $search = $request->input('search.value');
         if (! empty($search)) {
-            $rows = $rows->filter(fn ($row) => stripos($row->material_name, $search) !== false)->values();
+            $rows = $rows->filter(fn ($row) => stripos($row->material_name, $search) !== false
+                || stripos($row->currency, $search) !== false)->values();
         }
 
         return DataTables::collection($rows)
             ->addColumn('action', function ($row) {
-                $url = route('supplier.price-history.historical', ['material_name' => $row->material_name]);
+                $url = route('supplier.price-history.historical', [
+                    'material_name' => $row->material_name,
+                    'currency' => $row->currency,
+                ]);
 
                 return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">View History</a>';
             })
             ->addColumn('price_info', function ($row) {
-                $latest = $row->latest_price_idr ?? 0;
-                $min = $row->min_price_idr ?? 0;
-                $max = $row->max_price_idr ?? 0;
+                $latest = $row->latest_price ?? 0;
+                $min = $row->min_price ?? 0;
+                $max = $row->max_price ?? 0;
 
-                return '<div class="fw-bold text-primary">Rp '.number_format($latest, 0, ',', '.').'</div>'
+                return '<div class="fw-bold text-primary">'.number_format($latest, 4, ',', '.').' '.e($row->currency).'/Kg</div>'
                     .'<div class="small text-muted">'
-                    .'Min: Rp '.number_format($min, 0, ',', '.').' | '
-                    .'Max: Rp '.number_format($max, 0, ',', '.')
+                    .'Min: '.number_format($min, 4, ',', '.').' | '
+                    .'Max: '.number_format($max, 4, ',', '.')
                     .'</div>';
             })
             ->addColumn('latest_status_badge', fn ($row) => $this->historyBuilder->statusBadge($row->latest_status ?? ''))
@@ -266,13 +294,13 @@ class SupplierPriceHistoryController extends Controller
         }
 
         $changes = $tableData->pluck('change_pct')->filter(fn ($value) => $value !== null)->values();
-        $firstPriceIdr = $tableData->first()['price_idr'] ?? null;
-        $lastPriceIdr = $tableData->last()['price_idr'] ?? null;
+        $firstPrice = $tableData->first()['price_per_kg'] ?? null;
+        $lastPrice = $tableData->last()['price_per_kg'] ?? null;
         $averageChangePct = $changes->isNotEmpty() ? $changes->average() : null;
         $totalChangePct = null;
 
-        if ($firstPriceIdr > 0 && $lastPriceIdr !== null) {
-            $totalChangePct = (($lastPriceIdr - $firstPriceIdr) / $firstPriceIdr) * 100;
+        if ($firstPrice > 0 && $lastPrice !== null) {
+            $totalChangePct = (($lastPrice - $firstPrice) / $firstPrice) * 100;
         }
 
         return [

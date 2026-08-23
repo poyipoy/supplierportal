@@ -59,6 +59,11 @@ class ExportDispatcher
             'file_name' => self::safeFileName($fileName),
             'disk' => 'private',
             'status' => ExportJob::STATUS_QUEUED,
+            'progress_stage' => ExportJob::STAGE_QUEUED,
+            'progress' => 0,
+            'total_rows' => 0,
+            'processed_rows' => 0,
+            'processed_chunks' => [],
         ]);
 
         ProcessExportJob::dispatch((int) $record->getKey())->onQueue('exports');

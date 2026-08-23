@@ -767,6 +767,9 @@
                 const form = e.target;
                 if (!(form instanceof HTMLFormElement)) return;
 
+                // AJAX forms manage their own loading state and duplicate-submit guard.
+                if (form.hasAttribute('data-managed-submit')) return;
+
                 // Skip forms already marked as submitting.
                 if (form.dataset.submitting === 'true') {
                     e.preventDefault();
@@ -1237,11 +1240,11 @@
                         }
                     });
 
-                    window.Echo
-                        .private(
-                            'App.Models.User.' + userId
-                        )
-                        .notification(
+                    const userChannel = window.Echo.private(
+                        'App.Models.User.' + userId
+                    );
+
+                    userChannel.notification(
                             (notification) => {
                                 const readUrl =
                                     readUrlFor(
@@ -1262,6 +1265,12 @@
                                 );
                             }
                         );
+
+                    userChannel.listen(
+                        '.export.progress',
+                        (progress) => window.AdasiAsyncExport
+                            ?.handleProgress?.(progress)
+                    );
 
                 } catch (error) {
                     console.error(

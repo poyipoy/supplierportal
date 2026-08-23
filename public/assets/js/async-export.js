@@ -8,6 +8,14 @@
     const pollTimeoutMs = 660000;
     const maxConsecutivePollFailures = 5;
     const completedExportRetentionMs = 30000;
+    const progressStageLabels = Object.freeze({
+        queued: 'Waiting for processing',
+        preparing: 'Preparing data',
+        generating: 'Generating workbook',
+        finalizing: 'Finalizing file',
+        completed: 'Completed',
+        failed: 'Failed',
+    });
     let confirmationOpen = false;
 
     document.documentElement.dataset.asyncExportReady = 'true';
@@ -100,6 +108,75 @@
     const updateExportToast = (state, changes) => {
         if (state.toastId && window.AdasiToast?.update(state.toastId, changes)) return;
         notify(changes.type || 'info', changes.title || 'Export update', changes.message || '');
+    };
+
+    const findActiveExport = (exportJobId) => {
+        const normalizedId = normalizeExportJobId(exportJobId);
+        if (!normalizedId) return null;
+
+        return Array.from(activeExports.values())
+            .find((state) => normalizeExportJobId(state.exportJobId) === normalizedId) || null;
+    };
+
+    const applyProgressUpdate = (state, payload = {}) => {
+        if (!state || !['queued', 'processing', 'completed', 'failed'].includes(payload.status)) {
+            return;
+        }
+
+        const stage = typeof payload.stage === 'string' && progressStageLabels[payload.stage]
+            ? payload.stage
+            : payload.status;
+        const numericProgress = payload.progress === null || payload.progress === undefined
+            ? null
+            : Number(payload.progress);
+        const progress = Number.isFinite(numericProgress)
+            ? Math.min(100, Math.max(0, Math.round(numericProgress)))
+            : null;
+        const processedRows = Math.max(0, Number(payload.processed_rows) || 0);
+        const totalRows = Math.max(0, Number(payload.total_rows) || 0);
+        const signature = [
+            payload.status,
+            stage,
+            progress,
+            processedRows,
+            totalRows,
+            payload.message || '',
+        ].join(':');
+
+        if (state.lastProgressSignature === signature) return;
+
+        state.lastStatus = payload.status;
+        state.lastStage = stage;
+        state.lastProgressSignature = signature;
+
+        const changes = {
+            title: payload.status === 'completed'
+                ? 'Export completed'
+                : payload.status === 'failed'
+                    ? 'Export could not be completed'
+                    : payload.status === 'queued' ? 'Export queued' : 'Export in progress',
+            message: payload.message || 'The export is continuing in the background.',
+            progressLabel: totalRows > 0 && ['generating', 'finalizing'].includes(stage)
+                ? `${processedRows.toLocaleString()} of ${totalRows.toLocaleString()} rows`
+                : progressStageLabels[stage] || 'Processing',
+            autoClose: 0,
+        };
+
+        if (progress === null) {
+            changes.indeterminate = true;
+        } else {
+            changes.progress = progress;
+        }
+
+        if (payload.status === 'completed') changes.type = 'success';
+        if (payload.status === 'failed') changes.type = 'error';
+
+        updateExportToast(state, changes);
+    };
+
+    const handleProgress = (payload = {}) => {
+        const state = findActiveExport(payload.export_job_id);
+        if (state) applyProgressUpdate(state, payload);
     };
 
     const recordsTotal = () => {
@@ -298,6 +375,7 @@
 
                 const payload = await response.json();
                 consecutiveFailures = 0;
+                applyProgressUpdate(state, payload);
 
                 if (payload.status === 'completed') {
                     if (payload.download_url) {
@@ -359,15 +437,6 @@
                     return;
                 }
 
-                if (payload.status !== state.lastStatus) {
-                    state.lastStatus = payload.status;
-                    updateExportToast(state, {
-                        title: payload.status === 'processing' ? 'Export in progress' : 'Export queued',
-                        message: payload.message || 'The export is continuing in the background.',
-                        progressLabel: payload.status === 'processing' ? 'Preparing file' : 'Waiting for processing',
-                        indeterminate: true,
-                    });
-                }
             } catch (error) {
                 consecutiveFailures += 1;
 
@@ -402,6 +471,8 @@
             statusUrl: null,
             toastId: createStartingToast(),
             lastStatus: 'starting',
+            lastStage: 'starting',
+            lastProgressSignature: null,
             startedAt: Date.now(),
         };
 
@@ -433,13 +504,15 @@
             trackExportJob(state.exportJobId);
 
             if (state.toastId) {
-                updateExportToast(state, {
-                    title: 'Export queued',
+                applyProgressUpdate(state, {
+                    status: 'queued',
+                    stage: 'queued',
+                    progress: 0,
+                    processed_rows: 0,
+                    total_rows: 0,
                     message: payload.message || 'The export will continue in the background.',
-                    progressLabel: 'Waiting for processing',
-                    indeterminate: true,
-                    actions: exportActions(payload.exports_url),
                 });
+                updateExportToast(state, { actions: exportActions(payload.exports_url) });
             } else {
                 notify('info', 'Export queued', payload.message || 'The file will download automatically when ready.');
             }
@@ -459,6 +532,7 @@
     };
 
     window.AdasiAsyncExport = Object.freeze({
+        handleProgress,
         isTrackingNotification,
     });
 

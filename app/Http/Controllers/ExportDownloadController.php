@@ -59,8 +59,7 @@ class ExportDownloadController extends Controller
             : null;
 
         $message = match ($exportJob->status) {
-            ExportJob::STATUS_QUEUED => 'The export request is queued.',
-            ExportJob::STATUS_PROCESSING => 'The export is being processed.',
+            ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING => $exportJob->progressMessage(),
             ExportJob::STATUS_COMPLETED => $downloadUrl
                 ? 'The export is complete and ready to download.'
                 : 'The export file is unavailable or has expired.',
@@ -71,6 +70,10 @@ class ExportDownloadController extends Controller
         return response()->json([
             'id' => $exportJob->getRouteKey(),
             'status' => $exportJob->status,
+            'stage' => $exportJob->progress_stage,
+            'progress' => $exportJob->progress,
+            'processed_rows' => $exportJob->processed_rows,
+            'total_rows' => $exportJob->total_rows,
             'message' => $message,
             'file_name' => $downloadUrl ? $exportJob->file_name : null,
             'download_url' => $downloadUrl,
@@ -84,6 +87,10 @@ class ExportDownloadController extends Controller
             'id' => $exportJob->getRouteKey(),
             'label' => $exportJob->label,
             'status' => $exportJob->status,
+            'stage' => $exportJob->progress_stage,
+            'progress' => $exportJob->progress,
+            'processed_rows' => $exportJob->processed_rows,
+            'total_rows' => $exportJob->total_rows,
             'file_name' => $exportJob->file_name,
             'created_at' => $exportJob->created_at?->toIso8601String(),
             'completed_at' => $exportJob->completed_at?->toIso8601String(),

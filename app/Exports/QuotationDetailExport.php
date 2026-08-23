@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\Quotation;
 use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Collection;
@@ -10,8 +12,10 @@ use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-class QuotationDetailExport implements FromCollection, WithColumnWidths, WithHeadings
+class QuotationDetailExport implements FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings
 {
+    use InteractsWithExportProgress;
+
     public function __construct(
         private readonly int $quotationId,
         private readonly ?int $forcedSupplierId = null,
@@ -118,6 +122,11 @@ class QuotationDetailExport implements FromCollection, WithColumnWidths, WithHea
             'Item Notes',
             'MTC Attachment Count',
         ]);
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->collection()->count();
     }
 
     public function columnWidths(): array

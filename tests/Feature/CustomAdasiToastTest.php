@@ -98,7 +98,7 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringContainsString('window.AdasiAlert = Object.freeze(AdasiAlert)', $runtime);
     }
 
-    public function test_async_export_uses_one_indeterminate_progress_toast_and_real_completion_state(): void
+    public function test_async_export_uses_one_realtime_row_progress_toast_and_real_completion_state(): void
     {
         $runtime = file_get_contents(public_path('assets/js/async-export.js'));
         $styles = file_get_contents(resource_path('css/app.css'));
@@ -108,15 +108,20 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringContainsString("title: 'Starting export'", $runtime);
         $this->assertStringContainsString("message: 'Submitting the export request...'", $runtime);
         $this->assertStringContainsString('window.AdasiToast?.update(state.toastId, changes)', $runtime);
-        $this->assertStringContainsString('indeterminate: true', $runtime);
         $this->assertStringContainsString('progress: 100', $runtime);
-        $this->assertStringNotContainsString('progress: 32', $runtime);
-        $this->assertStringNotContainsString('progress: 64', $runtime);
-        $this->assertStringNotContainsString('progress: 85', $runtime);
+        $this->assertStringContainsString('processed_rows', $runtime);
+        $this->assertStringContainsString('total_rows', $runtime);
+        $this->assertStringContainsString('of ${totalRows.toLocaleString()} rows', $runtime);
+        $this->assertStringContainsString('handleProgress', $runtime);
+        $this->assertStringContainsString('progressStageLabels', $runtime);
         $this->assertStringContainsString("label: 'View jobs'", $runtime);
         $this->assertStringContainsString('window.AdasiAsyncExport = Object.freeze({', $runtime);
         $this->assertStringContainsString('isTrackingNotification', $runtime);
         $this->assertStringContainsString('completedExportRetentionMs = 30000', $runtime);
+        $toast = file_get_contents(resource_path('views/components/ui/toast-container.blade.php'));
+        $this->assertStringContainsString('adasi-toast__progress-ring', $toast);
+        $this->assertStringContainsString('50.265 * (1 - toast.progress / 100)', $toast);
+        $this->assertStringContainsString('toast.indeterminate', $toast);
         $this->assertStringNotContainsString('border-inline-start: 3px solid var(--adasi-toast-accent)', $styles);
 
         $startExportPosition = strpos($runtime, 'const startExport = async (control) =>');
@@ -144,5 +149,7 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringContainsString('shouldSuppressTransientNotification(', $layout);
         $this->assertStringContainsString('window.AdasiAsyncExport', $layout);
         $this->assertStringContainsString("'export.completed'", $layout);
+        $this->assertStringContainsString("'.export.progress'", $layout);
+        $this->assertStringContainsString('handleProgress?.(progress)', $layout);
     }
 }

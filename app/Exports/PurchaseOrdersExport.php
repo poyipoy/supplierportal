@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\PurchaseOrder;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
@@ -14,8 +16,10 @@ use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PurchaseOrdersExport implements FromQuery, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
+class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithHeadings, WithMapping
 {
+    use InteractsWithExportProgress;
+
     protected $supplierId;
 
     protected $startDate;
@@ -138,6 +142,11 @@ class PurchaseOrdersExport implements FromQuery, WithColumnWidths, WithCustomChu
     public function chunkSize(): int
     {
         return 500;
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->query()->count();
     }
 
     public function headings(): array

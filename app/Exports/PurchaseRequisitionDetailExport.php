@@ -2,14 +2,18 @@
 
 namespace App\Exports;
 
+use App\Contracts\TracksExportProgress;
+use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\PurchaseRequisition;
 use App\Support\SpreadsheetCellSanitizer;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PurchaseRequisitionDetailExport implements FromCollection, WithColumnWidths, WithHeadings
+class PurchaseRequisitionDetailExport implements FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings
 {
+    use InteractsWithExportProgress;
+
     public function __construct(private readonly int $prId) {}
 
     public function collection()
@@ -40,6 +44,11 @@ class PurchaseRequisitionDetailExport implements FromCollection, WithColumnWidth
     public function headings(): array
     {
         return ['PR Number', 'HS Code', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark'];
+    }
+
+    public function progressTotalRows(): int
+    {
+        return $this->collection()->count();
     }
 
     public function columnWidths(): array
