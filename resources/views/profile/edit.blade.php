@@ -16,8 +16,8 @@
     </x-ui.page-header>
 
     {{-- Primary Account Section --}}
-    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="profile-account-title">
-        <header class="tw-border-b tw-border-outline-variant tw-px-5 tw-py-4">
+    <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="profile-account-title">
+        <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
             <h2 id="profile-account-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Account Information</h2>
             <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Keep this information accurate so Purchasing, Suppliers, and QC can identify your account correctly.</p>
         </header>
@@ -35,8 +35,8 @@
     </section>
 
     {{-- Security Section --}}
-    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="profile-security-title">
-        <header class="tw-border-b tw-border-outline-variant tw-px-5 tw-py-4">
+    <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="profile-security-title">
+        <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
             <h2 id="profile-security-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Sign-In Security</h2>
             <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Manage two-factor authentication and active sessions.</p>
         </header>

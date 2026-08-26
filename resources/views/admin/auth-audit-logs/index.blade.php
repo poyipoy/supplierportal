@@ -28,7 +28,7 @@
     </x-ui.toolbar>
 
     <div class="collapse" id="auditMoreFilters">
-        <div class="tw-mb-4 tw-border tw-border-outline-variant tw-bg-surface-low tw-p-4">
+        <div class="tw-mb-4 tw-border tw-border-outline tw-bg-surface-container tw-p-4">
             <div class="tw-grid tw-gap-3 md:tw-grid-cols-3" id="auditFilters">
                 <x-ui.select name="audit_user" id="auditUser" label="Actor" placeholder="All users">
                     @foreach ($users as $user)

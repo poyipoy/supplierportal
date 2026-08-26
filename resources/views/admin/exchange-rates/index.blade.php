@@ -8,7 +8,7 @@
         <x-slot:actions><x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#rateModal"><x-ui.icon name="plus" /> Add Effective Rate</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
-    <section class="tw-border-y tw-border-outline-variant tw-bg-surface" aria-labelledby="rate-summary-title">
+    <section class="tw-border-y tw-border-outline tw-bg-surface-container" aria-labelledby="rate-summary-title">
         <h2 id="rate-summary-title" class="tw-sr-only">Rate history summary</h2>
         <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-5">
             <div class="tw-border-b tw-border-r tw-border-outline-variant tw-p-4 lg:tw-border-b-0"><dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">All Records</dt><dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($totalRates) }}</dd></div>

@@ -2,6 +2,7 @@
 
 namespace App\Exports\Concerns;
 
+use App\Jobs\Middleware\StopCancelledExport;
 use App\Jobs\Middleware\TrackExportChunkProgress;
 
 trait InteractsWithExportProgress
@@ -20,7 +21,10 @@ trait InteractsWithExportProgress
     {
         return $this->exportProgressJobId === null
             ? []
-            : [new TrackExportChunkProgress($this->exportProgressJobId)];
+            : [
+                new StopCancelledExport($this->exportProgressJobId),
+                new TrackExportChunkProgress($this->exportProgressJobId),
+            ];
     }
 
     public function querySize(): int

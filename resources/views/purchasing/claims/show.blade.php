@@ -91,7 +91,7 @@
                             <div class="row g-2">
                                 @foreach($claim->attachments as $att)
                                     <div class="col-6 col-md-4">
-                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 tw-p-2.5 border rounded text-decoration-none bg-white hover:tw-bg-surface-low">
+                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 tw-p-2.5 border rounded text-decoration-none tw-bg-surface hover:tw-bg-surface-low">
                                             <x-ui.icon name="file-text" size="sm" class="text-primary flex-shrink-0" />
                                             <span class="tw-text-ui-xs text-truncate tw-text-on-surface fw-medium">{{ $att->file_name }}</span>
                                         </a>

@@ -19,7 +19,7 @@
     >
         <x-slot:actions>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" />
-            <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export>
+            <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export data-export-source-singular="purchase order" data-export-source-plural="purchase orders" data-export-source-count="1" data-export-filtered="false" data-export-row-label="ordered material rows" data-export-row-explanation="Each ordered material item will be written as a separate Excel row.">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export Excel</span>
             </x-ui.button>
@@ -35,11 +35,11 @@
     </x-ui.page-header>
 
     {{-- 4-Key Tracking Dates Strip --}}
-    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 lg:tw-grid-cols-4">
+    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-outline-variant sm:tw-grid-cols-2 lg:tw-grid-cols-4">
         @php
             $firstPr = $po->quotations->map(fn($q) => $q->purchaseRequisition)->filter()->first();
         @endphp
-        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface tw-p-3">
+        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface-container tw-p-3">
             <x-ui.icon name="file-plus" size="sm" class="tw-shrink-0 tw-text-on-surface-variant" />
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">1. PR Issued</div>
@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface tw-p-3">
+        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface-container tw-p-3">
             <x-ui.icon name="receipt" size="sm" class="tw-shrink-0 tw-text-primary" />
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">2. PO Created</div>
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface tw-p-3">
+        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface-container tw-p-3">
             <x-ui.icon name="calendar" size="sm" class="tw-shrink-0 {{ $po->is_overdue ? 'tw-text-error' : 'tw-text-on-surface-variant' }}" />
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">3. Estimated Arrival</div>
@@ -70,7 +70,7 @@
             </div>
         </div>
 
-        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface tw-p-3">
+        <div class="tw-flex tw-items-center tw-gap-3 tw-bg-surface-container tw-p-3">
             <x-ui.icon name="{{ $po->actual_arrival ? 'circle-check' : 'clock' }}" size="sm" class="tw-shrink-0 {{ $po->actual_arrival ? 'tw-text-success' : 'tw-text-on-surface-variant' }}" />
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">4. Actual Arrival</div>
@@ -214,15 +214,15 @@
             {{-- PO Commercial Parameters --}}
             <x-ui.card title="Order Information">
                 <div class="tw-grid tw-gap-2.5">
-                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                    <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Reference (No. PR)</div>
                         <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">{{ $po->pr_reference }}</div>
                     </div>
-                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                    <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Currency</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->currency }}</div>
                     </div>
-                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                    <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Order Remarks</div>
                         <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $po->notes ?: 'No special notes recorded.' }}</div>
                     </div>
@@ -257,7 +257,7 @@
                                 default => 'neutral'
                             };
                         @endphp
-                        <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-outline-variant tw-bg-surface tw-p-2 tw-text-ui-xs last:tw-border-b-0">
+                        <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-outline-variant tw-bg-surface-container tw-p-2 tw-text-ui-xs last:tw-border-b-0">
                             <span class="fw-semibold tw-text-on-surface">{{ $docLabels[$doc->doc_type] ?? $doc->doc_type }}</span>
                             <span class="ui-status-chip ui-status-chip--{{ $statusTone }}">{{ $statusLabels[$doc->status] ?? $doc->status }}</span>
                         </div>

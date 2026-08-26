@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\ExportJob;
 use App\Services\ExportProgressService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,6 +24,12 @@ class FinalizeExportJob implements ShouldQueue
 
     public function handle(ExportProgressService $progress): void
     {
+        if (ExportJob::query()->whereKey($this->exportJobId)->value('status') === ExportJob::STATUS_CANCELLED) {
+            $progress->cleanupCancelledFile($this->exportJobId);
+
+            return;
+        }
+
         $progress->complete($this->exportJobId);
     }
 }

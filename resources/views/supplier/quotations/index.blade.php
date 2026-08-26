@@ -17,7 +17,17 @@
         description="Select an active procurement period to review open requisitions and submit your quotation pricing."
     >
         <x-slot:actions>
-            <x-ui.button :href="route('supplier.export.quotations')" variant="outline" size="sm" data-async-export>
+            <x-ui.button
+                :href="route('supplier.export.quotations')"
+                variant="outline"
+                size="sm"
+                data-async-export
+                data-export-source-singular="quotation"
+                data-export-source-plural="quotations"
+                data-export-row-label="quotation item rows"
+                data-export-row-explanation="Each quotation item will be written as a separate Excel row."
+                data-export-filtered="false"
+            >
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export History</span>
             </x-ui.button>

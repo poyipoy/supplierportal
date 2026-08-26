@@ -19,8 +19,8 @@
         </x-slot:meta>
     </x-ui.page-header>
 
-    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="export-table-title">
-        <header class="tw-border-b tw-border-outline-variant tw-px-5 tw-py-3">
+    <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="export-table-title">
+        <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-3">
             <h2 id="export-table-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Generated Files</h2>
             <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">Status updates automatically while an export is queued or processing.</p>
         </header>
@@ -48,6 +48,7 @@
                                         'queued' => 'neutral',
                                         'processing' => 'info',
                                         'completed' => 'success',
+                                        'cancelled' => 'warning',
                                         default => 'error',
                                     };
                                 @endphp
@@ -85,7 +86,7 @@
             </table>
         </div>
         @if($jobs->hasPages())
-            <div class="tw-border-t tw-border-outline-variant tw-px-5 tw-py-3">{{ $jobs->links() }}</div>
+            <div class="tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-5 tw-py-3">{{ $jobs->links('pagination::bootstrap-5') }}</div>
         @endif
     </section>
 </div>
@@ -113,8 +114,16 @@ document.addEventListener('DOMContentLoaded', () => {
         queued: 'ui-status-chip ui-status-chip--neutral',
         processing: 'ui-status-chip ui-status-chip--info',
         completed: 'ui-status-chip ui-status-chip--success',
+        cancelled: 'ui-status-chip ui-status-chip--warning',
         failed: 'ui-status-chip ui-status-chip--error',
     })[status] || 'ui-status-chip ui-status-chip--neutral';
+    const statusLabel = (status) => ({
+        queued: 'Queued',
+        processing: 'Processing',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+        failed: 'Failed',
+    })[status] || String(status || 'Unknown');
 
     const renderRows = (items) => {
         if (!items.length) {
@@ -131,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return `<tr>
                 <td><div class="tw-font-semibold">${escapeHtml(item.label)}</div><div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">${escapeHtml(item.file_name)}</div></td>
-                <td><span class="${badgeClass(item.status)} text-capitalize">${escapeHtml(item.status)}</span></td>
+                <td><span class="${badgeClass(item.status)}">${escapeHtml(statusLabel(item.status))}</span></td>
                 <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">${escapeHtml(formatDate(item.created_at))}</td>
                 <td class="tw-text-ui-xs tw-text-on-surface-variant">${completed}${expiry}</td>
                 <td class="text-end">${action}</td>

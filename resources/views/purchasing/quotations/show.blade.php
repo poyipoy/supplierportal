@@ -35,7 +35,7 @@
     >
         <x-slot:actions>
             <x-status-badge type="quotation" :status="$quotation->status" size="lg" />
-            <x-ui.button :href="route('purchasing.export.quotations.detail', $quotation)" variant="outline" size="sm" data-async-export>
+            <x-ui.button :href="route('purchasing.export.quotations.detail', $quotation)" variant="outline" size="sm" data-async-export data-export-source-singular="quotation" data-export-source-plural="quotations" data-export-source-count="1" data-export-filtered="false" data-export-row-label="quotation item rows" data-export-row-explanation="Each quotation item will be written as a separate Excel row.">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export Excel</span>
             </x-ui.button>
@@ -166,7 +166,7 @@
                                         <span class="tw-text-on-surface-variant fw-semibold d-block">Requested:</span>
                                         <span class="fw-medium">Qty {{ number_format($quantity, 0) }} &bull; {{ $item->prItem?->dimension_label ?? '-' }}</span>
                                     </div>
-                                    <div class="border rounded tw-p-1.5 bg-white tw-text-ui-xs">
+                                    <div class="border rounded tw-p-1.5 tw-bg-surface tw-text-ui-xs">
                                         <span class="text-primary fw-semibold d-block">Offered:</span>
                                         <span class="fw-medium">Qty {{ $item->available_qty ?? '-' }} &bull; {{ $item->available_dimension_label }}</span>
                                         <div class="d-flex flex-wrap gap-1 mt-1">

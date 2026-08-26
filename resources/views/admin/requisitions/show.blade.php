@@ -18,7 +18,7 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <section class="tw-border-y tw-border-outline-variant tw-bg-surface" aria-labelledby="pr-summary-title">
+    <section class="tw-border-y tw-border-outline tw-bg-surface-container" aria-labelledby="pr-summary-title">
         <h2 id="pr-summary-title" class="tw-sr-only">Requisition summary</h2>
         <dl class="tw-m-0 tw-grid tw-grid-cols-2 xl:tw-grid-cols-4">
             <div class="tw-border-b tw-border-r tw-border-outline-variant tw-p-4 xl:tw-border-b-0">
@@ -40,8 +40,8 @@
         </dl>
     </section>
 
-    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="pr-notes-title">
-        <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+    <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="pr-notes-title">
+        <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
             <h2 id="pr-notes-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Requisition Instructions</h2>
         </header>
         <div class="tw-p-4 tw-text-ui-sm tw-whitespace-pre-line {{ $pr->notes ? 'tw-text-on-surface' : 'tw-text-on-surface-variant' }}">{{ $pr->notes ?: 'No additional instructions were provided.' }}</div>

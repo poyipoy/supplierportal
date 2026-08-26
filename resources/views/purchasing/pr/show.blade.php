@@ -78,7 +78,7 @@
         description="Review material requirements, invited suppliers, quotation responses, and workflow progress."
     >
         <x-slot:actions>
-            <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="outline" size="sm" data-async-export>
+            <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="outline" size="sm" data-async-export data-export-source-singular="requisition" data-export-source-plural="requisitions" data-export-source-count="1" data-export-filtered="false" data-export-row-label="material rows" data-export-row-explanation="Each material item will be written as a separate Excel row.">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export Excel</span>
             </x-ui.button>

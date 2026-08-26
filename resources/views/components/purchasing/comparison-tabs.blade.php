@@ -20,7 +20,7 @@
     ];
 @endphp
 
-<nav {{ $attributes->class(['tw-flex tw-gap-2 tw-overflow-x-auto tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-p-2 tw-shadow-ui-1']) }} aria-label="Price comparison views">
+<nav {{ $attributes->class(['tw-flex tw-gap-2 tw-overflow-x-auto tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-2 tw-shadow-none']) }} aria-label="Price comparison views">
     @foreach($tabs as $key => $tab)
         <a
             href="{{ \App\Support\PurchasingNavigation::listUrl($tab['route']) }}"

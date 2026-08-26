@@ -259,31 +259,39 @@
             }
         });
 
-        // Horizontal wheel scroll for items table
+        // Horizontal drag-to-scroll for items table
         const prScroll = document.querySelector('.pr-form-table-scroll');
         if (prScroll) {
-            prScroll.addEventListener('wheel', function(e) {
-                if (e.target.closest?.('.material-search-results')) {
+            let isDown = false;
+            let startX = 0;
+            let startScrollLeft = 0;
+
+            prScroll.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return;
+                if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, .modal, .material-search-results')) {
                     return;
                 }
+                isDown = true;
+                startX = e.pageX;
+                startScrollLeft = prScroll.scrollLeft;
+                prScroll.style.cursor = 'grabbing';
+                prScroll.style.userSelect = 'none';
+            });
 
-                if (e.deltaY === 0 || this.scrollWidth <= this.clientWidth) {
-                    return;
-                }
-
-                const maxScrollLeft = this.scrollWidth - this.clientWidth;
-                const currentScrollLeft = this.scrollLeft;
-                const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, currentScrollLeft + e.deltaY));
-                const consumedDelta = nextScrollLeft - currentScrollLeft;
-                const remainingDelta = e.deltaY - consumedDelta;
-
-                this.scrollLeft = nextScrollLeft;
+            window.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
                 e.preventDefault();
+                const walk = e.pageX - startX;
+                prScroll.scrollLeft = startScrollLeft - walk;
+            });
 
-                if (remainingDelta !== 0) {
-                    window.scrollBy({ top: remainingDelta, left: 0, behavior: 'auto' });
+            window.addEventListener('mouseup', function() {
+                if (isDown) {
+                    isDown = false;
+                    prScroll.style.cursor = '';
+                    prScroll.style.removeProperty('user-select');
                 }
-            }, { passive: false });
+            });
         }
     });
 </script>

@@ -9,7 +9,7 @@
     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">Each code can be used once. They will not be shown again after leaving this page.</p>
 </header>
 
-<div class="tw-grid tw-grid-cols-2 tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-p-3 tw-font-mono tw-text-ui-sm tw-mb-5" id="recoveryCodes">
+<div class="tw-grid tw-grid-cols-2 tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-p-3 tw-font-mono tw-text-ui-sm tw-mb-5" id="recoveryCodes">
     @foreach ($codes as $code)<div class="tw-select-all tw-rounded-ui-xs tw-bg-surface tw-border tw-border-outline-variant tw-p-2 tw-text-center">{{ $code }}</div>@endforeach
 </div>
 

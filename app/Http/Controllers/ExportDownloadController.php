@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExportJob;
+use App\Services\ExportProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -64,6 +65,7 @@ class ExportDownloadController extends Controller
                 ? 'The export is complete and ready to download.'
                 : 'The export file is unavailable or has expired.',
             ExportJob::STATUS_FAILED => 'The export could not be processed. Please try again.',
+            ExportJob::STATUS_CANCELLED => 'The export was cancelled. No file was generated.',
             default => 'The export status is not recognized.',
         };
 
@@ -78,6 +80,36 @@ class ExportDownloadController extends Controller
             'file_name' => $downloadUrl ? $exportJob->file_name : null,
             'download_url' => $downloadUrl,
             'expires_at' => $exportJob->expires_at?->toIso8601String(),
+            'cancel_url' => $exportJob->isPending()
+                ? route('exports.cancel', $exportJob, absolute: false)
+                : null,
+        ]);
+    }
+
+    public function cancel(Request $request, ExportJob $exportJob, ExportProgressService $progress)
+    {
+        abort_unless((int) $exportJob->user_id === (int) $request->user()->getKey(), 403);
+
+        $cancelled = $progress->cancel((int) $exportJob->getKey());
+
+        if (in_array($cancelled->status, [ExportJob::STATUS_COMPLETED, ExportJob::STATUS_FAILED], true)) {
+            return response()->json([
+                'status' => $cancelled->status,
+                'message' => 'The export has already finished and cannot be cancelled.',
+            ], 409);
+        }
+
+        return response()->json([
+            'id' => $cancelled->getRouteKey(),
+            'status' => $cancelled->status,
+            'stage' => $cancelled->progress_stage,
+            'progress' => $cancelled->progress,
+            'processed_rows' => $cancelled->processed_rows,
+            'total_rows' => $cancelled->total_rows,
+            'message' => $cancelled->progressMessage(),
+            'file_name' => null,
+            'download_url' => null,
+            'cancel_url' => null,
         ]);
     }
 
@@ -97,6 +129,9 @@ class ExportDownloadController extends Controller
             'expires_at' => $exportJob->expires_at?->toIso8601String(),
             'download_url' => $exportJob->isDownloadable()
                 ? route('exports.download', $exportJob, absolute: false)
+                : null,
+            'cancel_url' => $exportJob->isPending()
+                ? route('exports.cancel', $exportJob, absolute: false)
                 : null,
         ];
     }

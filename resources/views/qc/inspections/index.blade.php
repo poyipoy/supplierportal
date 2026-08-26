@@ -25,6 +25,11 @@
                 class="d-none"
                 id="inspectionExportLink"
                 data-async-export
+                data-export-source-singular="inspection"
+                data-export-source-plural="inspections"
+                data-export-count-table="#historyTable"
+                data-export-row-label="inspection item rows"
+                data-export-row-explanation="Each inspected item will be written as a separate Excel row."
             >
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export History</span>
@@ -33,8 +38,8 @@
     </x-ui.page-header>
 
     {{-- Tabs Shell --}}
-    <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface" aria-label="Inspection queues">
-        <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-outline-variant tw-bg-surface-low tw-px-4 tw-pt-3">
+    <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface" aria-label="Inspection queues">
+        <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-pt-3">
             <ul class="nav nav-tabs border-bottom-0" id="inspectionTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button

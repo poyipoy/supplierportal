@@ -127,7 +127,7 @@
                         $visibleDimensions = array_merge($relevantDimensions, ['weight']);
                         $itemStatus = old('items.' . $index . '.status', 'ok');
                     @endphp
-                    <div class="item-card tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface">
+                    <div class="item-card tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface">
                         <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-outline-variant tw-bg-surface-low tw-px-3 tw-py-2.5">
                             <div class="fw-bold tw-text-on-surface tw-text-ui-xs d-flex align-items-center tw-gap-1.5">
                                 <span class="tw-rounded-ui-xs tw-bg-primary-container tw-px-2 tw-py-0.5 tw-text-primary-container-foreground">Item #{{ $index + 1 }}</span>
@@ -222,7 +222,7 @@
                                             type="file"
                                             id="photo-input-{{ $index }}"
                                             name="attachments[{{ $index }}][]"
-                                            class="form-control form-control-sm photo-input bg-white"
+                                            class="form-control form-control-sm photo-input tw-bg-surface"
                                             accept=".jpg,.jpeg,.png"
                                             multiple
                                             disabled

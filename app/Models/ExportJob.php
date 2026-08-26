@@ -19,6 +19,8 @@ class ExportJob extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_CANCELLED = 'cancelled';
+
     public const STAGE_QUEUED = 'queued';
 
     public const STAGE_PREPARING = 'preparing';
@@ -30,6 +32,8 @@ class ExportJob extends Model
     public const STAGE_COMPLETED = 'completed';
 
     public const STAGE_FAILED = 'failed';
+
+    public const STAGE_CANCELLED = 'cancelled';
 
     protected $fillable = [
         'user_id',
@@ -73,6 +77,15 @@ class ExportJob extends Model
         return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_PROCESSING], true);
     }
 
+    public function isTerminal(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_COMPLETED,
+            self::STATUS_FAILED,
+            self::STATUS_CANCELLED,
+        ], true);
+    }
+
     public function progressMessage(): string
     {
         return match ($this->progress_stage) {
@@ -86,6 +99,7 @@ class ExportJob extends Model
                 : 'Finalizing and verifying the export file.',
             self::STAGE_COMPLETED => 'The export is complete and ready to download.',
             self::STAGE_FAILED => 'The export could not be processed. Please try again.',
+            self::STAGE_CANCELLED => 'The export was cancelled. No file was generated.',
             default => 'The export is being processed.',
         };
     }

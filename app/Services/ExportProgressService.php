@@ -76,6 +76,54 @@ class ExportProgressService
         return $claimed;
     }
 
+    public function cancel(int $exportJobId): ExportJob
+    {
+        $wasCancelled = false;
+
+        $record = DB::transaction(function () use ($exportJobId, &$wasCancelled): ExportJob {
+            $record = ExportJob::query()->lockForUpdate()->findOrFail($exportJobId);
+
+            if (! $record->isPending()) {
+                return $record;
+            }
+
+            $record->forceFill([
+                'status' => ExportJob::STATUS_CANCELLED,
+                'progress_stage' => ExportJob::STAGE_CANCELLED,
+                'progress' => null,
+                'error_message' => null,
+                'completed_at' => null,
+                'expires_at' => $record->file_path !== null ? now()->addDays(3) : null,
+            ])->save();
+
+            $wasCancelled = true;
+
+            return $record;
+        }, 3);
+
+        if ($wasCancelled) {
+            $this->deleteCancelledFile($record);
+            $record->refresh();
+            $this->broadcast($record);
+        }
+
+        return $record;
+    }
+
+    public function cleanupCancelledFile(int $exportJobId): void
+    {
+        $record = ExportJob::query()->find($exportJobId);
+
+        if ($record !== null && $record->status === ExportJob::STATUS_CANCELLED) {
+            // The finalizer runs after StoreQueuedExport. At that point a
+            // missing path is definitive, so it can safely clear the
+            // bookkeeping left behind by a cancellation race. During the
+            // cancellation request itself, retain a missing path so a
+            // concurrently-running StoreQueuedExport cannot orphan a file.
+            $this->deleteCancelledFile($record, clearMissing: true);
+        }
+    }
+
     public function prepare(ExportJob $record, string $path): ?ExportJob
     {
         $claimed = ExportJob::query()
@@ -172,7 +220,7 @@ class ExportProgressService
 
             if (
                 $record === null
-                || in_array($record->status, [ExportJob::STATUS_COMPLETED, ExportJob::STATUS_FAILED], true)
+                || $record->isTerminal()
             ) {
                 return null;
             }
@@ -225,7 +273,7 @@ class ExportProgressService
 
             if (
                 $record === null
-                || in_array($record->status, [ExportJob::STATUS_COMPLETED, ExportJob::STATUS_FAILED], true)
+                || $record->isTerminal()
             ) {
                 return null;
             }
@@ -321,6 +369,38 @@ class ExportProgressService
                 'stage' => $record->progress_stage,
                 'exception_class' => $exception::class,
             ]);
+        }
+    }
+
+    private function deleteCancelledFile(ExportJob $record, bool $clearMissing = false): void
+    {
+        if (! $record->hasSafeFilePath()) {
+            return;
+        }
+
+        $filePath = $record->file_path;
+        $fileDeleted = false;
+
+        try {
+            $disk = Storage::disk($record->disk);
+            $exists = $disk->exists($filePath);
+            $fileDeleted = $exists ? $disk->delete($filePath) : $clearMissing;
+        } catch (Throwable $exception) {
+            Log::warning('Cancelled export file cleanup failed.', [
+                'export_job_id' => $record->getKey(),
+                'exception_class' => $exception::class,
+            ]);
+        }
+
+        if ($fileDeleted) {
+            ExportJob::query()
+                ->whereKey($record->getKey())
+                ->where('status', ExportJob::STATUS_CANCELLED)
+                ->where('file_path', $filePath)
+                ->update([
+                    'file_path' => null,
+                    'expires_at' => null,
+                ]);
         }
     }
 }

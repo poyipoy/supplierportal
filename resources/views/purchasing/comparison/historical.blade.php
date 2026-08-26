@@ -122,8 +122,8 @@
 
     <div id="historicalResults" class="tw-grid tw-gap-4" aria-live="polite" aria-busy="false">
     @if($chartData)
-        <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="historicalChartTitle">
-            <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+        <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface" aria-labelledby="historicalChartTitle">
+            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
                 <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold tw-text-on-surface" id="historicalChartTitle">
                     <x-ui.icon name="chart-no-axes-combined" class="tw-text-primary" />
                     <span>Price Trend: {{ $selectedMaterialName }} — {{ $payload['supplierName'] ?? '' }}</span>
@@ -134,7 +134,7 @@
             </div>
         </section>
 
-        <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="Historical price summary">
+        <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="Historical price summary">
             <div class="tw-p-4">
                 <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change per Period</div>
                 <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold {{ ($summary['average_change_pct'] ?? null) > 0 ? 'tw-text-error' : ((($summary['average_change_pct'] ?? null) < 0) ? 'tw-text-success' : 'tw-text-on-surface-variant') }}" id="averageChangeValue">
@@ -253,7 +253,7 @@
     @elseif($selectedSupplierId && $selectedMaterialName)
         <x-ui.alert tone="warning" title="No matching price history">No quotation data was found for this supplier and material combination.</x-ui.alert>
     @else
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+        <div class="tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface">
             <x-ui.empty-state icon="chart-no-axes-combined" title="Select a supplier and material" description="Choose the primary filters above to review the historical price trend." />
         </div>
     @endif
@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!resultsContainer) return;
 
         resultsContainer.innerHTML = `
-            <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+            <div class="tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface">
                 <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-px-4 tw-py-8 tw-text-center">
                     <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-text-on-surface-variant" />
                     <p class="tw-m-0 tw-mt-3 tw-text-ui-sm tw-text-on-surface-variant">${escapeOptionText(message)}</p>
@@ -540,7 +540,7 @@ function emptyHistorycalResultHtml(message, variant = 'empty') {
     }
 
     return `
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+        <div class="tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface">
             <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-px-4 tw-py-8 tw-text-center">
                 <x-ui.icon name="chart-no-axes-combined" size="lg" class="tw-text-on-surface-variant" />
                 <p class="tw-m-0 tw-mt-3 tw-text-ui-sm tw-text-on-surface-variant">${escapeHtml(message)}</p>
@@ -551,8 +551,8 @@ function emptyHistorycalResultHtml(message, variant = 'empty') {
 
 function historicalResultShellHtml() {
     return `
-        <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="historicalChartTitle">
-            <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+        <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface" aria-labelledby="historicalChartTitle">
+            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
                 <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold tw-text-on-surface" id="historicalChartTitle"></h2>
             </header>
             <div class="tw-h-72 tw-p-4">
@@ -560,7 +560,7 @@ function historicalResultShellHtml() {
             </div>
         </section>
 
-        <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="Historical price summary">
+        <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="Historical price summary">
             <div class="tw-p-4">
                 <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change per Period</div>
                 <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold tw-text-on-surface-variant" id="averageChangeValue">-</div>
@@ -571,8 +571,8 @@ function historicalResultShellHtml() {
             </div>
         </section>
 
-        <section class="ui-data-table tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-shadow-ui-1">
-            <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+        <section class="ui-data-table tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface tw-shadow-none">
+            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
                 <h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">Supporting Data</h2>
                 <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">Quotation values and period changes for the selected supplier and exact material specification.</p>
             </header>
@@ -582,7 +582,7 @@ function historicalResultShellHtml() {
                      <tbody id="historicalTableBody"></tbody>
                  </table>
              </div>
-             <div id="historicalPagination" class="d-none tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-px-4 tw-py-3">
+             <div id="historicalPagination" class="d-none tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-4 tw-py-3">
                  <span id="historicalPaginationSummary" class="tw-text-ui-xs tw-text-on-surface-variant"></span>
                  <div class="tw-flex tw-items-center tw-gap-2">
                      <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">Previous</button>

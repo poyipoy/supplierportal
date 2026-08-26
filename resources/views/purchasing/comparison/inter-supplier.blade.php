@@ -18,7 +18,7 @@
                 <div class="position-relative">
                     <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white"><x-ui.icon name="search" /></span>
+                        <span class="input-group-text tw-bg-surface"><x-ui.icon name="search" /></span>
                         <input type="text"
                                class="form-control"
                                id="comparisonPrSearch"

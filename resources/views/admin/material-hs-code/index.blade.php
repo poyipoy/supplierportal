@@ -8,9 +8,9 @@
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Master Material and HS Code" description="Maintain material mappings, deterministic HS Code rules, and master-data quality signals." eyebrow="Admin Master Data" />
 
-    <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="master-data-workspace-title">
+    <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="master-data-workspace-title">
         <h2 id="master-data-workspace-title" class="tw-sr-only">Master data workspace</h2>
-        <div class="tw-border-b tw-border-outline-variant tw-px-3 tw-pt-3 shell:tw-px-4">
+        <div class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-3 tw-pt-3 shell:tw-px-4">
             <ul class="nav nav-tabs border-0 gap-1" id="masterTabs" role="tablist">
                 <li class="nav-item" role="presentation"><button class="nav-link active rounded-1" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab" aria-controls="materials" aria-selected="true">Materials</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link rounded-1" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules" type="button" role="tab" aria-controls="rules" aria-selected="false">HS Code Rules</button></li>
@@ -40,7 +40,7 @@
                     </x-slot:actions>
                 </x-ui.toolbar>
                 <div class="collapse" id="materialMoreFilters">
-                    <div class="tw-mb-4 tw-grid tw-gap-3 tw-border tw-border-outline-variant tw-bg-surface-low tw-p-4 md:tw-grid-cols-3">
+                    <div class="tw-mb-4 tw-grid tw-gap-3 tw-border tw-border-outline tw-bg-surface-container tw-p-4 md:tw-grid-cols-3">
                         <label class="tw-grid tw-gap-1 tw-text-ui-xs tw-font-medium" for="materialCategoryFilter">HS Category
                             <select id="materialCategoryFilter" class="form-select form-select-sm"><option value="">All HS categories</option>@foreach($hsCategories as $category)<option value="{{ $category }}">{{ str($category)->replace('_', ' ')->title() }}</option>@endforeach</select>
                         </label>
@@ -80,7 +80,7 @@
                     </x-slot:actions>
                 </x-ui.toolbar>
                 <div class="collapse" id="ruleMoreFilters">
-                    <div class="tw-mb-4 tw-grid tw-gap-3 tw-border tw-border-outline-variant tw-bg-surface-low tw-p-4 md:tw-grid-cols-2">
+                    <div class="tw-mb-4 tw-grid tw-gap-3 tw-border tw-border-outline tw-bg-surface-container tw-p-4 md:tw-grid-cols-2">
                         <label class="tw-grid tw-gap-1 tw-text-ui-xs tw-font-medium" for="ruleCategoryFilter">Category
                             <select id="ruleCategoryFilter" class="form-select form-select-sm"><option value="">All categories</option>@foreach($hsCategories as $category)<option value="{{ $category }}">{{ str($category)->replace('_', ' ')->title() }}</option>@endforeach</select>
                         </label>
@@ -101,7 +101,7 @@
                     <span class="ui-spinner" aria-hidden="true"></span><span class="tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">Analyzing master data...</span>
                 </div>
                 <div id="qualityContent" class="d-none">
-                    <section class="tw-border-y tw-border-outline-variant tw-bg-surface" aria-labelledby="quality-summary-title">
+                    <section class="tw-border-y tw-border-outline-variant tw-bg-surface-container" aria-labelledby="quality-summary-title">
                         <h3 id="quality-summary-title" class="tw-sr-only">Data quality summary</h3>
                         <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-5">
                             @foreach([
@@ -122,7 +122,7 @@
                     <div id="qualityError" class="d-none tw-mt-4 tw-border tw-border-error/40 tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-on-surface" role="alert">Data quality could not be loaded. Try opening this tab again.</div>
 
                     <div class="tw-mt-5 tw-grid tw-gap-5 lg:tw-grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.8fr)]">
-                        <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="quality-attention-title">
+                        <section class="tw-border tw-border-outline tw-bg-surface-container" aria-labelledby="quality-attention-title">
                             <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
                                 <h3 id="quality-attention-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Needs Attention</h3>
                                 <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Records that can affect automatic HS Code results.</p>
@@ -133,7 +133,7 @@
                                 <div class="tw-p-4"><div class="tw-font-semibold">Rules needing review</div><div id="rulesNeedingReview" class="tw-mt-2"></div></div>
                             </div>
                         </section>
-                        <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="quality-reference-title">
+                        <section class="tw-border tw-border-outline tw-bg-surface-container" aria-labelledby="quality-reference-title">
                             <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
                                 <h3 id="quality-reference-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Reference Context</h3>
                                 <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Useful context that does not require immediate action.</p>

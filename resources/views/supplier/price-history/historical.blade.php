@@ -48,7 +48,17 @@
         <x-ui.card title="Analytics and Material Selection">
         <x-slot:actions>
             @if($selectedMaterialName && $selectedCurrency)
-                <x-ui.button :href="route('supplier.price-history.export', array_merge(request()->all(), ['currency' => $selectedCurrency]))" variant="outline" size="sm" data-async-export>
+                <x-ui.button
+                    :href="route('supplier.price-history.export', array_merge(request()->all(), ['currency' => $selectedCurrency]))"
+                    variant="outline"
+                    size="sm"
+                    data-async-export
+                    data-export-source-singular="price history entry"
+                    data-export-source-plural="price history entries"
+                    :data-export-source-count="count($tableData)"
+                    data-export-row-label="price history rows"
+                    data-export-row-explanation="Each history entry will be written as one Excel row."
+                >
                     <x-ui.icon name="file-spreadsheet" size="sm" />
                     <span>Export Analysis</span>
                 </x-ui.button>
@@ -162,7 +172,7 @@
             </x-ui.card>
 
             {{-- 2 Metrics Summary --}}
-            <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant mb-4" id="historicalSummary" aria-label="Historical price summary">
+            <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant mb-4" id="historicalSummary" aria-label="Historical price summary">
                 <div class="tw-p-3.5">
                     <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change Per Period</div>
                     <div class="fs-4 fw-bold ui-tabular-nums mt-1 {{ ($summary['average_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['average_change_pct'] ?? null) < 0) ? 'text-success' : 'tw-text-on-surface-variant') }}" id="averageChangeValue">
@@ -248,7 +258,7 @@
                     : 'No purchase-backed pricing is available for the selected material and dimension criteria.' }}
             </x-ui.alert>
         @else
-            <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface">
+            <div class="tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface">
                 <x-ui.empty-state icon="trending-up" title="Select a material specification" description="Choose a material above to review its price trajectory." />
             </div>
         @endif
@@ -308,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!resultsContainer) return;
 
         resultsContainer.innerHTML = `
-            <div class="p-5 text-center bg-white border rounded tw-text-on-surface-variant">
+            <div class="p-5 text-center tw-bg-surface border rounded tw-text-on-surface-variant">
                 <x-ui.icon name="trending-up" size="lg" class="tw-text-outline mb-2" />
                 <p class="mb-0 tw-text-ui-sm">${escapeOptionText(message)}</p>
             </div>

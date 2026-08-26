@@ -7,10 +7,10 @@
 
 @php
     $variants = [
-        'default' => 'tw-border-outline-variant tw-bg-surface tw-shadow-ui-1',
-        'flat' => 'tw-border-outline-variant tw-bg-surface tw-shadow-none',
-        'tonal' => 'tw-border-outline-variant tw-bg-surface-low tw-shadow-none',
-        'elevated' => 'tw-border-outline-variant tw-bg-surface tw-shadow-ui-2',
+        'default' => 'tw-border-outline tw-bg-surface tw-shadow-none',
+        'flat' => 'tw-border-outline tw-bg-surface tw-shadow-none',
+        'tonal' => 'tw-border-outline tw-bg-surface-container tw-shadow-none',
+        'elevated' => 'tw-border-outline tw-bg-surface tw-shadow-ui-2',
     ];
     $paddings = ['none' => '', 'sm' => 'tw-p-3.5', 'md' => 'tw-p-4 shell:tw-p-5'];
 @endphp

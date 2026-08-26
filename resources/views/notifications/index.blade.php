@@ -16,7 +16,7 @@
         <x-slot:actions>
             <form action="{{ route('notifications.mark-all-read') }}" method="POST">
                 @csrf
-                <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-9 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-3 tw-text-ui-sm tw-font-medium tw-text-on-surface hover:tw-bg-surface-container">
+                <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-9 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-3 tw-text-ui-sm tw-font-medium tw-text-on-surface hover:tw-bg-surface-container">
                     <x-ui.icon name="check-check" />Mark All as Read
                 </button>
             </form>
@@ -25,8 +25,8 @@
 
     <div class="tw-grid tw-gap-5 lg:tw-grid-cols-[16rem_minmax(0,1fr)] lg:tw-items-start">
         {{-- Category Sidebar --}}
-        <nav class="tw-border tw-border-outline-variant tw-bg-surface" aria-label="Notification categories">
-            <div class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+        <nav class="tw-border tw-border-outline tw-bg-surface-container" aria-label="Notification categories">
+            <div class="tw-border-b tw-border-outline-variant tw-bg-surface-low tw-px-4 tw-py-3">
                 <h2 class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Categories</h2>
             </div>
             <div class="tw-divide-y tw-divide-outline-variant">
@@ -54,8 +54,8 @@
         </nav>
 
         {{-- Notification Feed --}}
-        <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="notification-feed-title">
-            <header class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-px-5 tw-py-3">
+        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="notification-feed-title">
+            <header class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-3">
                 <div>
                     <h2 id="notification-feed-title" class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold">
                         <x-ui.icon :name="$selectedOption['icon']" class="tw-text-primary" />{{ $selectedOption['label'] }}
@@ -99,7 +99,7 @@
             </div>
 
             @if($notifications->hasPages())
-                <div class="tw-border-t tw-border-outline-variant tw-px-5 tw-py-3">{{ $notifications->links() }}</div>
+                <div class="tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-5 tw-py-3">{{ $notifications->links() }}</div>
             @endif
         </section>
     </div>

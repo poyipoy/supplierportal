@@ -7,9 +7,9 @@
     'density' => 'compact',
 ])
 
-<section {{ $attributes->class(['ui-data-table tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-shadow-ui-1', 'ui-table--compact' => $density === 'compact']) }}>
+<section {{ $attributes->class(['ui-data-table tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface tw-shadow-none', 'ui-table--compact' => $density === 'compact']) }}>
     @if($title || $description || isset($toolbar) || isset($filters))
-        <header class="tw-grid tw-gap-2.5 tw-border-b tw-border-outline-variant tw-p-3.5 shell:tw-px-4">
+        <header class="tw-grid tw-gap-2.5 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-p-3.5 shell:tw-px-4">
             <div class="tw-flex tw-flex-col tw-gap-2.5 shell:tw-flex-row shell:tw-items-center shell:tw-justify-between">
                 <div class="tw-min-w-0">
                     @if($title)<h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">{{ $title }}</h2>@endif
@@ -33,5 +33,5 @@
         <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full">{{ $slot }}</div>
     @endif
 
-    @isset($pagination)<footer class="tw-border-t tw-border-outline-variant tw-p-3.5 shell:tw-px-4">{{ $pagination }}</footer>@endisset
+    @isset($pagination)<footer class="tw-border-t tw-border-outline-variant tw-bg-surface-low tw-p-3.5 shell:tw-px-4">{{ $pagination }}</footer>@endisset
 </section>

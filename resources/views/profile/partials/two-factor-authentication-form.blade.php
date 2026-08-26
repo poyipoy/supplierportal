@@ -24,7 +24,7 @@
                 <div class="tw-grid tw-gap-1.5 tw-mb-4">
                     <label for="disable_two_factor_code" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Authenticator or recovery code</label>
                     <input id="disable_two_factor_code" name="code" type="text"
-                        class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-font-mono tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('code') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                        class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-font-mono tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('code') ? 'tw-border-error' : 'tw-border-outline-strong' }}"
                         autocomplete="one-time-code" maxlength="32" required>
                     @error('code')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
                 </div>
@@ -34,7 +34,7 @@
             </form>
         </div>
     @else
-        <div class="tw-flex tw-items-start tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-p-3 tw-mb-4">
+        <div class="tw-flex tw-items-start tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-p-3 tw-mb-4">
             <x-ui.icon name="shield-lock" class="tw-shrink-0 tw-text-primary tw-mt-0.5" />
             <div>
                 <div class="tw-text-ui-sm tw-font-semibold">Two-factor authentication is not enabled.</div>

@@ -20,7 +20,7 @@
     >
         <x-slot:actions>
             <x-status-badge type="quotation" :status="$quotation->status" size="lg" />
-            <x-ui.button :href="route('supplier.export.quotations.detail', $quotation)" variant="outline" size="sm" data-async-export>
+            <x-ui.button :href="route('supplier.export.quotations.detail', $quotation)" variant="outline" size="sm" data-async-export data-export-source-singular="quotation" data-export-source-plural="quotations" data-export-source-count="1" data-export-filtered="false" data-export-row-label="quotation item rows" data-export-row-explanation="Each quotation item will be written as a separate Excel row.">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export Excel</span>
             </x-ui.button>

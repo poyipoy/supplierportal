@@ -58,19 +58,19 @@
     {{-- Inspection Metadata & Order Overview --}}
         <x-ui.card title="Inspection and Arrival Summary">
         <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
                 <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $inspection->purchaseOrder->supplier->company_name ?? $inspection->purchaseOrder->supplier->name ?? '-' }}</div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Inspected By</div>
                 <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $inspection->inspector->name ?? '-' }}</div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Inspection Timestamp</div>
                 <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ $inspection->inspected_at ? $inspection->inspected_at->format('d M Y, H:i') : '-' }}</div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Material Arrival Date</div>
                 <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ $inspection->purchaseOrder->actual_arrival ? $inspection->purchaseOrder->actual_arrival->format('d M Y') : '-' }}</div>
             </div>
@@ -107,8 +107,8 @@
                 $weight = compareValues($item->actual_weight, $prItem->weight_needed);
             @endphp
 
-            <div class="tw-overflow-hidden tw-rounded-ui-sm tw-border tw-bg-surface {{ $item->status === 'ng' ? 'tw-border-error' : 'tw-border-outline-variant' }}">
-                <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-px-3.5 tw-py-2.5 {{ $item->status === 'ng' ? 'tw-border-error/30 tw-bg-error-container' : 'tw-border-outline-variant tw-bg-surface-low' }}">
+            <div class="tw-overflow-hidden tw-rounded-ui-sm tw-border tw-bg-surface {{ $item->status === 'ng' ? 'tw-border-error' : 'tw-border-outline' }}">
+                <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-px-3.5 tw-py-2.5 {{ $item->status === 'ng' ? 'tw-border-error/30 tw-bg-error-container' : 'tw-border-outline-variant tw-bg-surface-container' }}">
                     <div class="tw-flex tw-items-center tw-gap-2 tw-text-ui-xs tw-font-bold {{ $item->status === 'ng' ? 'tw-text-error' : 'tw-text-on-surface' }}">
                         <span class="ui-status-chip {{ $item->status === 'ng' ? 'ui-status-chip--error' : 'ui-status-chip--info' }}">Item #{{ $index + 1 }}</span>
                         <span>{{ $prItem->material_name }}</span>
@@ -145,7 +145,7 @@
                             <tbody>
                                 {{-- Requested Specification Row --}}
                                 <tr class="text-center">
-                                    <td class="text-start tw-text-on-surface-variant fw-semibold tw-bg-surface-low">Requested</td>
+                                    <td class="text-start tw-text-on-surface-variant fw-semibold tw-bg-surface-container">Requested</td>
                                     <td class="tw-text-on-surface">{{ $prItem->shape ?? '-' }}</td>
                                     <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->thickness ?? '-' }}</td>
                                     <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->d_inner ?? '-' }}</td>
@@ -157,7 +157,7 @@
                                 </tr>
                                 {{-- Actual Inspected Row --}}
                                 <tr class="text-center">
-                                    <td class="text-start fw-bold text-primary tw-bg-surface-low">Actual</td>
+                                    <td class="text-start fw-bold text-primary tw-bg-surface-container">Actual</td>
                                     <td class="tw-text-on-surface">{{ $prItem->shape ?? '-' }}</td>
                                     <td class="ui-tabular-nums {{ $thick['class'] }}">{{ $thick['val'] }}</td>
                                     <td class="ui-tabular-nums {{ $dInner['class'] }}">{{ $dInner['val'] }}</td>
@@ -172,7 +172,7 @@
                     </div>
 
                     @if($item->notes)
-                        <div class="p-3 border-top tw-bg-surface-low">
+                        <div class="p-3 border-top tw-bg-surface-container">
                             <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-1">Inspector Notes:</div>
                             <p class="mb-0 tw-text-on-surface tw-text-ui-xs">{{ $item->notes }}</p>
                         </div>

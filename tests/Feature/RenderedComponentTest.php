@@ -2,9 +2,8 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
 
 class RenderedComponentTest extends TestCase
@@ -20,8 +19,25 @@ class RenderedComponentTest extends TestCase
     public function test_button_with_icon_renders_cleanly(): void
     {
         $html = Blade::render('<x-ui.button><x-ui.icon name="save" /> Save</x-ui.button>');
-        
+
         $this->assertStringContainsString('Save', $html);
+        $this->assertStringContainsString('<svg', $html);
+        $this->assertNoCompilerLeakage($html);
+    }
+
+    public function test_icon_button_accepts_stateful_visual_slot(): void
+    {
+        $html = Blade::render(<<<'BLADE'
+<x-ui.icon-button icon="panel-left" label="Toggle navigation">
+    <x-slot:visual>
+        <x-ui.icon name="panel-left-open" />
+        <span class="sidebar-toggle-label">Collapse navigation</span>
+    </x-slot:visual>
+</x-ui.icon-button>
+BLADE);
+
+        $this->assertStringContainsString('aria-label="Toggle navigation"', $html);
+        $this->assertStringContainsString('Collapse navigation', $html);
         $this->assertStringContainsString('<svg', $html);
         $this->assertNoCompilerLeakage($html);
     }
@@ -106,6 +122,25 @@ BLADE;
         $this->assertNoCompilerLeakage($html);
     }
 
+    public function test_sidebar_item_renders_active_tooltip_and_trailing_state_cleanly(): void
+    {
+        $template = <<<'BLADE'
+<x-ui.sidebar-item href="/requisitions" icon="clipboard-list" :active="true" label="Purchase Requisition">
+    Purchase Requisition
+    <x-slot:trailing><span class="chat-badge">7</span></x-slot:trailing>
+</x-ui.sidebar-item>
+BLADE;
+
+        $html = Blade::render($template);
+
+        $this->assertStringContainsString('aria-current="page"', $html);
+        $this->assertStringContainsString('data-sidebar-tooltip', $html);
+        $this->assertStringContainsString('data-bs-title="Purchase Requisition"', $html);
+        $this->assertStringContainsString('sidebar-link-icon', $html);
+        $this->assertStringContainsString('chat-badge', $html);
+        $this->assertNoCompilerLeakage($html);
+    }
+
     public function test_auth_views_render_without_compiler_leakage(): void
     {
         $views = [
@@ -122,7 +157,7 @@ BLADE;
                 'returnLabel' => 'Return to Dashboard',
                 'turnstileRequired' => false,
                 'turnstileSiteKey' => null,
-                'errors' => new \Illuminate\Support\ViewErrorBag(),
+                'errors' => new ViewErrorBag,
             ])->render();
 
             $this->assertNoCompilerLeakage($html);

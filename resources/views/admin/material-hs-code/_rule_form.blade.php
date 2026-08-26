@@ -85,7 +85,7 @@
                 </div>
 
                 {{-- Dimension Threshold Matrix --}}
-                <div class="tw-border tw-border-outline-variant tw-rounded-ui-sm tw-p-4 tw-bg-surface-low">
+                <div class="tw-border tw-border-outline tw-rounded-ui-sm tw-p-4 tw-bg-surface-container">
                     <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
                         <span class="tw-text-ui-sm tw-font-bold tw-text-on-surface">Dimensional Boundary Conditions (mm)</span>
                         <span class="tw-text-ui-xs tw-text-on-surface-variant">Leave bounds empty if dimension is unconstrained.</span>

@@ -25,6 +25,11 @@
                 data-async-export
                 id="exportSupplierPurchaseOrdersBtn"
                 :data-export-url="route('supplier.export.purchase-orders')"
+                data-export-source-singular="purchase order"
+                data-export-source-plural="purchase orders"
+                data-export-count-table="#poTable"
+                data-export-row-label="purchase order rows"
+                data-export-row-explanation="Each purchase order will be written as one Excel row."
             >
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export Excel</span>

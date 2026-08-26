@@ -66,7 +66,7 @@
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col">
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-white tw-text-outline"><x-ui.icon name="search" size="sm" /></span>
+                                <span class="input-group-text tw-bg-surface tw-text-outline"><x-ui.icon name="search" size="sm" /></span>
                                 <input type="text" class="form-control supplier-search-input" placeholder="Search by supplier name, company, or email..." aria-label="Search suppliers">
                             </div>
                         </div>

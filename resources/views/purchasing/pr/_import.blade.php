@@ -24,7 +24,7 @@
                 </div>
 
                 <div id="prImportResult" class="d-none mt-4">
-                    <div id="prImportSummary" class="tw-mb-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
+                    <div id="prImportSummary" class="tw-mb-3 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
 
                     <div id="prImportWarningsPanel" class="d-none tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2.5 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
                         <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> Warnings</div>
@@ -127,9 +127,28 @@
 
         applyMaterialShapeRules($row, true);
         $row.data('selected-material-name', data.material_name ?? '');
-        scheduleMaterialPreview($row, 0);
+
+        // Render badge and format values directly without firing scheduleMaterialPreview()
+        const isManual = String(data.manual_hs_code) === '1';
+        const hsStatus = data.hs_code_resolution_status || 'insufficient_data';
+        const labelMap = {
+            matched: 'Auto matched',
+            ambiguous: 'Ambiguous',
+            no_rule: 'No rule',
+            unmapped_material: 'Unmapped material',
+            insufficient_data: 'Needs more data'
+        };
+
+        $row.find('.hs-code-display').val(data.hs_code ?? '');
+        $row.find('.hs-status-badge')
+            .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
+            .addClass(isManual ? 'ui-status-chip--warning' : (hsStatus === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
+            .text(isManual ? 'Manual selection' : (labelMap[hsStatus] || hsStatus || 'Needs more data'));
+
+        const weight = Number(data.weight_needed || 0);
+        $row.find('.weight-unit-display').val(weight.toFixed(4));
+
         itemIndex++;
-        $row.find('input, select, textarea').first().trigger('input');
 
         return $row;
     }

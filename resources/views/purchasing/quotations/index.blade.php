@@ -130,6 +130,11 @@
                     data-async-export
                     id="exportQuotationsBtn"
                     :data-export-url="route('purchasing.export.quotations')"
+                    data-export-source-singular="quotation"
+                    data-export-source-plural="quotations"
+                    :data-export-source-count="$quotations->total()"
+                    data-export-row-label="quotation item rows"
+                    data-export-row-explanation="Each quotation item will be written as a separate Excel row."
                 >
                     <x-ui.icon name="file-spreadsheet" />
                     <span>Export Excel</span>

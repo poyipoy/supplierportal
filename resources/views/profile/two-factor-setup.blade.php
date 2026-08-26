@@ -13,7 +13,7 @@
     <img src="{{ $qrCode }}" alt="Two-factor authentication QR code" class="tw-w-full tw-max-w-[200px] tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-2">
 </div>
 
-<div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-p-3 tw-mb-5">
+<div class="tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-p-3 tw-mb-5">
     <span class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Manual setup key</span>
     <code class="tw-mt-1 tw-block tw-break-all tw-select-all tw-text-ui-sm tw-text-primary">{{ $secret }}</code>
 </div>

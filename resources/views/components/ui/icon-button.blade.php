@@ -36,7 +36,11 @@
         @if($disabled) aria-disabled="true" tabindex="-1" @endif
         {{ $attributes->class([$classes]) }}
     >
-        <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
+        @isset($visual)
+            {{ $visual }}
+        @else
+            <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
+        @endisset
         @isset($badge){{ $badge }}@endisset
         <span class="tw-sr-only">{{ $label }}</span>
     </a>
@@ -48,7 +52,11 @@
         @disabled($disabled)
         {{ $attributes->class([$classes]) }}
     >
-        <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
+        @isset($visual)
+            {{ $visual }}
+        @else
+            <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
+        @endisset
         @isset($badge){{ $badge }}@endisset
         <span class="tw-sr-only">{{ $label }}</span>
     </button>

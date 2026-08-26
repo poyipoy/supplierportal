@@ -14,6 +14,7 @@ use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\SupplierPriceHistoryExport;
 use App\Jobs\FinalizeExportJob;
+use App\Jobs\Middleware\StopCancelledExport;
 use App\Jobs\Middleware\TrackExportChunkProgress;
 use App\Jobs\ProcessExportJob;
 use App\Models\ExchangeRate;
@@ -482,6 +483,107 @@ class AsyncExportQueueTest extends TestCase
         );
     }
 
+    public function test_export_can_be_cancelled_by_owner_and_remains_non_downloadable(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Queue::fake();
+        Storage::fake('private');
+
+        $record = $this->createExportJob($this->purchasing);
+
+        $this->actingAs($this->purchasing)
+            ->postJson(route('exports.cancel', $record))
+            ->assertOk()
+            ->assertJsonPath('id', $record->getRouteKey())
+            ->assertJsonPath('status', ExportJob::STATUS_CANCELLED)
+            ->assertJsonPath('cancel_url', null)
+            ->assertJsonPath('download_url', null);
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_CANCELLED, $record->status);
+        $this->assertFalse($record->isDownloadable());
+
+        $this->actingAs($this->purchasing)
+            ->getJson(route('exports.status', $record))
+            ->assertOk()
+            ->assertJsonPath('status', ExportJob::STATUS_CANCELLED)
+            ->assertJsonPath('message', 'The export was cancelled. No file was generated.')
+            ->assertJsonPath('cancel_url', null)
+            ->assertJsonPath('download_url', null);
+
+        $this->actingAs($this->purchasing)
+            ->postJson(route('exports.cancel', $record))
+            ->assertOk()
+            ->assertJsonPath('status', ExportJob::STATUS_CANCELLED);
+
+        $this->actingAs($this->otherSupplier)
+            ->postJson(route('exports.cancel', $record))
+            ->assertForbidden();
+
+        $this->actingAs($this->purchasing)
+            ->get(route('exports.download', $record))
+            ->assertNotFound();
+
+        Event::assertDispatchedTimes(ExportProgressUpdated::class, 1);
+    }
+
+    public function test_processing_export_cancellation_cleans_file_and_blocks_late_progress(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Storage::fake('private');
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        $progress = new ExportProgressService($notifications);
+        $record = $this->createExportJob($this->purchasing, [
+            'status' => ExportJob::STATUS_PROCESSING,
+            'progress_stage' => ExportJob::STAGE_GENERATING,
+            'progress' => 50,
+            'total_rows' => 10,
+            'processed_rows' => 5,
+            'file_path' => 'exports/'.$this->purchasing->id.'/cancelled/report.xlsx',
+        ]);
+        Storage::disk('private')->put($record->file_path, 'partial workbook');
+
+        $progress->cancel($record->id);
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_CANCELLED, $record->status);
+        $this->assertSame(ExportJob::STAGE_CANCELLED, $record->progress_stage);
+        $this->assertNull($record->file_path);
+        Storage::disk('private')->assertMissing('exports/'.$this->purchasing->id.'/cancelled/report.xlsx');
+
+        $progress->recordChunk($record->id, 'query:0:1', 5);
+        $progress->complete($record->id);
+        $progress->fail($record->id, new RuntimeException('Late failure'));
+
+        $record->refresh();
+        $this->assertSame(ExportJob::STATUS_CANCELLED, $record->status);
+        $this->assertSame(5, $record->processed_rows);
+        Event::assertDispatched(ExportProgressUpdated::class, fn (ExportProgressUpdated $event) => $event->status === ExportJob::STATUS_CANCELLED
+            && $event->stage === ExportJob::STAGE_CANCELLED
+        );
+    }
+
+    public function test_cancelled_export_middleware_skips_next_chunk_and_deletes_temporary_file(): void
+    {
+        $record = $this->createExportJob($this->purchasing, [
+            'status' => ExportJob::STATUS_CANCELLED,
+            'progress_stage' => ExportJob::STAGE_CANCELLED,
+        ]);
+        $temporaryFile = \Mockery::mock(TemporaryFile::class);
+        $temporaryFile->shouldReceive('delete')->once();
+        $export = new RequisitionsExport;
+        $chunk = new AppendDataToSheet($export, $temporaryFile, 'Xlsx', 0, [['one']]);
+        $middleware = new StopCancelledExport($record->id);
+        $nextCalled = false;
+
+        $middleware->handle($chunk, function () use (&$nextCalled): void {
+            $nextCalled = true;
+        });
+
+        $this->assertFalse($nextCalled);
+    }
+
     public function test_duplicate_launcher_does_not_dispatch_a_second_excel_chain(): void
     {
         Event::fake([ExportProgressUpdated::class]);
@@ -661,6 +763,35 @@ class AsyncExportQueueTest extends TestCase
 
         $this->assertCount(1, $countQueries);
         $this->assertSame(1, $record->fresh()->total_rows);
+    }
+
+    public function test_requisition_document_count_and_export_material_row_count_use_distinct_units(): void
+    {
+        $secondRequisition = PurchaseRequisition::create([
+            'period_id' => $this->period->id,
+            'created_by' => $this->purchasing->id,
+            'pr_number' => 'REQ/08/2026/802',
+            'status' => 'bidding',
+        ]);
+        $secondRequisition->items()->createMany([
+            [
+                'hs_code' => '7209.16.00',
+                'material_name' => 'Second Export Steel A',
+                'quantity' => 1,
+                'shape' => 'Flat',
+                'weight_needed' => 50,
+            ],
+            [
+                'hs_code' => '7209.16.00',
+                'material_name' => 'Second Export Steel B',
+                'quantity' => 1,
+                'shape' => 'Flat',
+                'weight_needed' => 75,
+            ],
+        ]);
+
+        $this->assertSame(2, PurchaseRequisition::query()->count());
+        $this->assertSame(3, (new RequisitionsExport)->progressTotalRows());
     }
 
     public function test_collection_history_export_reuses_rows_without_serializing_the_cache(): void

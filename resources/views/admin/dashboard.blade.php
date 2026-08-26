@@ -60,8 +60,8 @@
             </x-ui.data-table>
         </div>
 
-        <section class="tw-border tw-border-outline-variant tw-bg-surface" aria-labelledby="admin-shortcuts-title">
-            <header class="tw-border-b tw-border-outline-variant tw-px-4 tw-py-3">
+        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="admin-shortcuts-title">
+            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
                 <h2 id="admin-shortcuts-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Administration Shortcuts</h2>
                 <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Open a maintenance workspace directly.</p>
             </header>
@@ -83,7 +83,7 @@
         </section>
     </div>
 
-    <section class="tw-border-y tw-border-outline-variant tw-bg-surface" aria-labelledby="admin-summary-title">
+    <section class="tw-border-y tw-border-outline tw-bg-surface-container" aria-labelledby="admin-summary-title">
         <h2 id="admin-summary-title" class="tw-sr-only">Operational summary</h2>
         <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-4">
             <div class="tw-border-b tw-border-r tw-border-outline-variant tw-p-4 lg:tw-border-b-0">

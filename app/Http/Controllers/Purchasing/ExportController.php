@@ -187,6 +187,7 @@ class ExportController extends Controller
                 'export_job_id' => $exportJob->getRouteKey(),
                 'exports_url' => route('exports.index', absolute: false),
                 'status_url' => route('exports.status', $exportJob, absolute: false),
+                'cancel_url' => route('exports.cancel', $exportJob, absolute: false),
             ], 202);
         }
 

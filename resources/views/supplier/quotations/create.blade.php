@@ -603,7 +603,7 @@
                 </div>
 
                 <div id="quotationImportResult" class="d-none mt-3">
-                    <div id="quotationImportSummary" class="tw-mb-2.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
+                    <div id="quotationImportSummary" class="tw-mb-2.5 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
 
                     <div id="quotationImportWarningsPanel" class="d-none tw-mb-2.5 tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
                         <div class="fw-bold mb-1"><x-ui.icon name="triangle-alert" size="sm" class="me-1" />Warnings</div>
@@ -1065,19 +1065,39 @@
         refreshCurrencyState();
         calculateTotal();
 
-        // Horizontal wheel scroll
+        // Horizontal drag-to-scroll for table
         const qScroll = document.querySelector('.quotation-table-scroll');
         if (qScroll) {
-            qScroll.addEventListener('wheel', function(e) {
-                if (e.deltaY === 0 || this.scrollWidth <= this.clientWidth) return;
-                const maxScroll = this.scrollWidth - this.clientWidth;
-                const nextScroll = Math.max(0, Math.min(maxScroll, this.scrollLeft + e.deltaY));
-                const consumed = nextScroll - this.scrollLeft;
-                const remaining = e.deltaY - consumed;
-                this.scrollLeft = nextScroll;
+            let isDown = false;
+            let startX = 0;
+            let startScrollLeft = 0;
+
+            qScroll.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return;
+                if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, .modal')) {
+                    return;
+                }
+                isDown = true;
+                startX = e.pageX;
+                startScrollLeft = qScroll.scrollLeft;
+                qScroll.style.cursor = 'grabbing';
+                qScroll.style.userSelect = 'none';
+            });
+
+            window.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
                 e.preventDefault();
-                if (remaining !== 0) window.scrollBy({ top: remaining, left: 0, behavior: 'auto' });
-            }, { passive: false });
+                const walk = e.pageX - startX;
+                qScroll.scrollLeft = startScrollLeft - walk;
+            });
+
+            window.addEventListener('mouseup', function() {
+                if (isDown) {
+                    isDown = false;
+                    qScroll.style.cursor = '';
+                    qScroll.style.removeProperty('user-select');
+                }
+            });
         }
     });
 

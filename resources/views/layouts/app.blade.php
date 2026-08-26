@@ -32,6 +32,22 @@
     <!-- ADASI Alert Theme -->
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
+    <script>
+        (() => {
+            const desktop = window.matchMedia('(min-width: 992px)').matches;
+            let collapsed = false;
+
+            try {
+                collapsed = desktop && window.localStorage.getItem('sidebarCollapsed') === 'true';
+            } catch (error) {
+                collapsed = false;
+            }
+
+            window.__adasiSidebarInitialCollapsed = collapsed;
+            document.documentElement.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+        })();
+    </script>
+
     <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -207,7 +223,7 @@
 
         .chat-message-bubble.is-partner {
             background: var(--md-surface);
-            border: 1px solid var(--md-outline-variant);
+            border: 1px solid var(--ui-surface-border);
             color: var(--md-on-surface);
             border-bottom-left-radius: 2px;
         }
@@ -247,9 +263,9 @@
 
         .chat-context-field {
             min-width: 0;
-            border: 1px solid var(--md-outline-variant);
+            border: 1px solid var(--ui-surface-border);
             border-radius: var(--md-shape-xs);
-            background: var(--md-surface-container-low);
+            background: var(--md-surface);
             padding: 0.35rem 0.5rem;
         }
 
@@ -333,11 +349,12 @@
             flex-direction: column;
             min-height: 0;
             background: var(--md-surface);
-            border: 1px solid var(--md-outline-variant);
+            border: 1px solid var(--ui-surface-border);
             border-radius: var(--md-shape-md);
         }
 
         .chat-fullpage-card #chat-messages {
+            background: var(--ui-surface-subtle);
             flex: 1 1 auto !important;
             min-height: 0;
             padding: 1rem 1.25rem !important;
@@ -477,12 +494,12 @@
 
 <body
     x-data="adasiShell"
-    x-on:ui-sidebar-toggle.window="toggleSidebar()"
+    x-on:ui-sidebar-toggle.window="toggleSidebar($event.detail?.trigger)"
     x-on:keydown.escape.window="closeMobileSidebar()"
     x-on:keydown.tab.window="trapSidebarFocus($event)"
     x-effect="document.body.classList.toggle('ui-nav-open', mobileOpen)"
 >
-    <a href="#main-content" class="ui-skip-link">Langsung ke konten utama</a>
+    <a href="#main-content" class="ui-skip-link">Skip to main content</a>
     @php
         $initNotifCount = 0;
         $initChatCount = 0;
@@ -684,6 +701,16 @@
                         .then(r => r.json())
                         .then(data => {
                             document.querySelectorAll('.chat-badge').forEach(badge => {
+                                badge.setAttribute('aria-label', `Unread conversations: ${data.count}`);
+                                const sidebarLink = badge.closest('.sidebar-link');
+                                if (sidebarLink) {
+                                    sidebarLink.setAttribute(
+                                        'aria-label',
+                                        data.count > 0
+                                            ? `Negotiation and Chat, ${data.count} unread conversations`
+                                            : 'Negotiation and Chat'
+                                    );
+                                }
                                 if (data.count > 0) {
                                     badge.textContent = data.count;
                                     badge.classList.remove('d-none');

@@ -29,6 +29,11 @@
                 data-async-export
                 id="exportPurchaseOrdersBtn"
                 :data-export-url="route('purchasing.export.purchase-orders')"
+                data-export-source-singular="purchase order"
+                data-export-source-plural="purchase orders"
+                data-export-count-table="#poTable"
+                data-export-row-label="purchase order rows"
+                data-export-row-explanation="Each purchase order will be written as one Excel row."
             >
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export Excel</span>
@@ -40,7 +45,7 @@
     <x-ui.toolbar :sticky="true">
         <x-slot:search>
             <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white border-end-0 tw-text-outline">
+                <span class="input-group-text tw-bg-surface border-end-0 tw-text-outline">
                     <x-ui.icon name="search" size="sm" />
                 </span>
                 <input

@@ -22,6 +22,7 @@
         scrollbar-color: var(--md-on-surface-variant) var(--md-outline-variant);
         scrollbar-width: auto;
         padding-bottom: 12px;
+        min-height: 300px; /* Prevent dropdown clipping when table has few rows */
     }
 
     .pr-form-table-scroll::-webkit-scrollbar {
@@ -50,8 +51,8 @@
         border-spacing: 0;
         font-size: var(--ui-font-size-xs);
         margin-bottom: 0;
-        min-width: 1372px !important;
-        width: 1372px !important;
+        min-width: max-content !important;
+        width: max-content !important;
         table-layout: fixed;
         background-color: var(--md-surface);
     }
@@ -60,6 +61,8 @@
     #itemsTable.pr-items-table td {
         padding: .65rem .55rem;
         background-color: var(--md-surface);
+        border-right: 1px solid var(--md-outline-variant) !important;
+        border-bottom: 1px solid var(--md-outline-variant) !important;
     }
 
     #itemsTable.pr-items-table thead th {
@@ -67,6 +70,9 @@
         line-height: 1.25;
         vertical-align: middle !important;
         border-bottom: 1px solid var(--md-outline-variant) !important;
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     #itemsTable.pr-items-table .pr-group-header th {
@@ -97,7 +103,7 @@
     }
 
     #itemsTable.pr-items-table tbody .pr-sticky-material.material-search-open {
-        z-index: 20;
+        z-index: 30;
     }
 
     #itemsTable.pr-items-table .pr-sticky-action {

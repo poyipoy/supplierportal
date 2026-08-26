@@ -16,7 +16,7 @@
     </div>
 
     @isset($chatContext)
-        <div class="tw-border tw-border-outline-variant tw-bg-surface tw-mb-2">
+        <div class="tw-border tw-border-outline tw-bg-surface-container tw-mb-2">
             <div class="tw-flex tw-flex-wrap tw-items-start tw-justify-between tw-gap-3 tw-px-4 tw-py-3">
                 <div class="tw-min-w-0">
                     <div class="tw-flex tw-items-center tw-gap-2 tw-mb-0.5">
@@ -76,7 +76,7 @@
 
     <div class="chat-fullpage-card">
         {{-- Chat Header --}}
-        <div class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-px-4 tw-py-2.5">
+        <div class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-2.5">
             <div class="tw-flex tw-items-center tw-gap-3 tw-min-w-0">
                 <x-ui.avatar :name="$partnerName" size="sm" />
                 <div class="tw-min-w-0">
@@ -157,7 +157,7 @@
                 @endif
                 <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-1.5 d-none" id="message-attachments-preview"></div>
                 <div class="tw-flex tw-gap-2 tw-items-end">
-                    <textarea id="message-body" class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" rows="2" placeholder="Type a message... (Enter to send, Shift+Enter for new line)" aria-label="Message"></textarea>
+                    <textarea id="message-body" class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-strong tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" rows="2" placeholder="Type a message... (Enter to send, Shift+Enter for new line)" aria-label="Message"></textarea>
                     <label for="message-attachments" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="Attach files" aria-label="Attach files">
                         <x-ui.icon name="paperclip" />
                     </label>

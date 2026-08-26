@@ -32,11 +32,11 @@
             {{-- ADASI Claim Demand Information --}}
             <x-ui.card title="ADASI Claim Request" description="Defect details and expected resolution recorded by Quality Control.">
                 <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 mb-3">
-                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                    <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Submitted Date</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $claim->created_at->format('d F Y') }}</div>
                     </div>
-                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                    <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Response Deadline</div>
                         <div class="fw-bold text-danger tw-text-ui-sm tw-mt-0.5 d-flex align-items-center gap-1">
                         <x-ui.icon name="clock" size="sm" />
@@ -47,14 +47,14 @@
 
                 <div class="mb-3">
                     <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase tw-mb-1.5">Problem Description (QC Report)</div>
-                    <div class="p-3 tw-bg-surface-low border rounded tw-text-on-surface tw-text-ui-xs leading-relaxed">
+                    <div class="p-3 tw-bg-surface-container border rounded tw-text-on-surface tw-text-ui-xs leading-relaxed">
                         {{ $claim->description }}
                     </div>
                 </div>
 
                 <div class="mb-3">
                     <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase tw-mb-1.5">Expected Resolution from ADASI</div>
-                    <div class="p-3 tw-bg-surface-low border rounded tw-text-on-surface tw-text-ui-xs leading-relaxed">
+                    <div class="p-3 tw-bg-surface-container border rounded tw-text-on-surface tw-text-ui-xs leading-relaxed">
                         {{ $claim->resolution_expected }}
                     </div>
                 </div>
@@ -106,7 +106,7 @@
                     <div class="tw-text-on-surface-variant tw-text-ui-xs mb-2">
                         Response submitted on: <strong>{{ $claim->updated_at->format('d M Y, H:i') }}</strong>
                     </div>
-                    <div class="p-3 tw-bg-surface-low border rounded mb-3 tw-text-on-surface tw-text-ui-xs leading-relaxed">
+                    <div class="p-3 tw-bg-surface-container border rounded mb-3 tw-text-on-surface tw-text-ui-xs leading-relaxed">
                         {{ $claim->supplier_response }}
                     </div>
 
@@ -114,7 +114,7 @@
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">Attached Supplier Documents</div>
                         <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-2">
                             @foreach($claim->attachments as $att)
-                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 p-2 text-decoration-none tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface hover:tw-bg-surface-low tw-transition-colors">
+                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 p-2 text-decoration-none tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface hover:tw-bg-surface-low tw-transition-colors">
                                     <x-ui.icon name="file-text" size="sm" class="text-primary flex-shrink-0" />
                                     <span class="tw-text-ui-xs tw-text-on-surface text-truncate">{{ $att->file_name }}</span>
                                 </a>

@@ -1,16 +1,29 @@
 <nav class="top-navbar d-flex align-items-center justify-content-between">
-    {{-- Left: Mobile toggle + Page title --}}
+    {{-- Left: Mobile drawer toggle + Page title --}}
     <div class="d-flex align-items-center tw-gap-2.5 tw-min-w-0">
         <x-ui.icon-button
             icon="panel-left"
             label="Toggle sidebar navigation"
-            size="sm"
-            class="sidebar-toggle tw-text-on-surface-variant"
-            x-on:click="$dispatch('ui-sidebar-toggle')"
+            size="lg"
+            class="sidebar-toggle sidebar-toggle--mobile tw-text-on-surface-variant"
+            x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
+            x-bind:aria-label="sidebarToggleLabel"
+            x-bind:title="sidebarToggleLabel"
             x-bind:aria-expanded="viewportIsDesktop ? (!desktopCollapsed).toString() : mobileOpen.toString()"
             aria-controls="sidebar"
-        />
-        <div class="vr mx-1 my-2 tw-text-outline d-none d-sm-block" style="height: 18px;"></div>
+        >
+            <x-slot:visual>
+                <span class="sidebar-toggle-icons" x-bind:class="sidebarIsExpanded ? 'is-expanded' : 'is-collapsed'" aria-hidden="true">
+                    <span class="sidebar-toggle-icon sidebar-toggle-icon--collapse">
+                        <x-ui.icon name="panel-left-close" size="md" />
+                    </span>
+                    <span class="sidebar-toggle-icon sidebar-toggle-icon--expand">
+                        <x-ui.icon name="panel-left-open" size="md" />
+                    </span>
+                </span>
+            </x-slot:visual>
+        </x-ui.icon-button>
+        <div class="vr mx-1 my-2 tw-text-outline d-none d-sm-block d-lg-none" style="height: 18px;"></div>
         <p class="topbar-page-title text-truncate">@yield('page-title', 'Dashboard')</p>
     </div>
 

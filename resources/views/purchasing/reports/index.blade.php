@@ -19,7 +19,7 @@
             description="Export comprehensive PR dataset with invited suppliers, items, weights, and status."
             class="tw-h-full"
         >
-            <form action="{{ route('purchasing.export.requisitions') }}" method="GET" data-async-export class="tw-grid tw-gap-4">
+            <form action="{{ route('purchasing.export.requisitions') }}" method="GET" data-async-export data-export-source-singular="requisition" data-export-source-plural="requisitions" data-export-row-label="material rows" data-export-row-explanation="Each material item will be written as a separate Excel row." class="tw-grid tw-gap-4">
                 <div>
                     <label class="form-label small fw-semibold tw-text-on-surface" for="pr-report-period">Procurement Period</label>
                     <select name="period_id" id="pr-report-period" class="form-select form-select-sm">
@@ -57,7 +57,7 @@
             description="Export purchase orders dataset by supplier and date range, including delivery and QC state."
             class="tw-h-full"
         >
-            <form action="{{ route('purchasing.export.purchase-orders') }}" method="GET" data-async-export class="tw-grid tw-gap-4">
+            <form action="{{ route('purchasing.export.purchase-orders') }}" method="GET" data-async-export data-export-source-singular="purchase order" data-export-source-plural="purchase orders" data-export-row-label="purchase order rows" data-export-row-explanation="Each purchase order will be written as one Excel row." class="tw-grid tw-gap-4">
                 <div>
                     <label class="form-label small fw-semibold tw-text-on-surface" for="po-report-supplier">Supplier</label>
                     <select name="supplier_id" id="po-report-supplier" class="form-select form-select-sm">

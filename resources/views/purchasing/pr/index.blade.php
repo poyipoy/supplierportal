@@ -29,6 +29,11 @@
                 data-async-export
                 id="exportRequisitionsBtn"
                 :data-export-url="route('purchasing.export.requisitions')"
+                data-export-source-singular="requisition"
+                data-export-source-plural="requisitions"
+                data-export-count-table="#prTable"
+                data-export-row-label="material rows"
+                data-export-row-explanation="Each material item will be written as a separate Excel row."
             >
                 <x-ui.icon name="file-spreadsheet" size="sm" />
                 <span>Export Excel</span>

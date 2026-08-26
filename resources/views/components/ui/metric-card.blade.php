@@ -25,9 +25,9 @@
 <{{ $tag }}
     @if($href) href="{{ $href }}" @endif
     {{ $attributes->class([
-        'ui-motion ui-focus-ring tw-flex tw-h-full tw-items-start tw-justify-between tw-gap-4 tw-bg-surface tw-p-4 tw-text-on-surface tw-no-underline',
-        'tw-rounded-ui-md tw-border tw-border-outline-variant' => !$flat,
-        'hover:tw-border-primary hover:tw-shadow-ui-1' => $href && !$flat,
+        'ui-motion ui-focus-ring tw-flex tw-h-full tw-items-start tw-justify-between tw-gap-4 tw-bg-surface-container tw-p-4 tw-text-on-surface tw-no-underline',
+        'tw-rounded-ui-md tw-border tw-border-outline tw-shadow-none' => !$flat,
+        'hover:tw-border-primary' => $href && !$flat,
         'hover:tw-bg-surface-low' => $href && $flat,
     ]) }}
 >

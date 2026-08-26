@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -111,10 +112,17 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringContainsString('progress: 100', $runtime);
         $this->assertStringContainsString('processed_rows', $runtime);
         $this->assertStringContainsString('total_rows', $runtime);
-        $this->assertStringContainsString('of ${totalRows.toLocaleString()} rows', $runtime);
+        $this->assertStringContainsString('rowProgressLabel(processedRows, totalRows, rowLabel)', $runtime);
+        $this->assertStringContainsString('Processed ${rowProgressLabel(processedRows, totalRows, rowLabel)}.', $runtime);
+        $this->assertStringContainsString("rowLabel.replace(/\\brows$/i, 'row')", $runtime);
         $this->assertStringContainsString('handleProgress', $runtime);
         $this->assertStringContainsString('progressStageLabels', $runtime);
         $this->assertStringContainsString("label: 'View jobs'", $runtime);
+        $this->assertStringContainsString("label: 'Cancel'", $runtime);
+        $this->assertStringContainsString("label: 'Dismiss'", $runtime);
+        $this->assertStringContainsString("variant: 'danger'", $runtime);
+        $this->assertStringContainsString('maxActions: 3', $runtime);
+        $this->assertStringContainsString('dismiss: false', $runtime);
         $this->assertStringContainsString('window.AdasiAsyncExport = Object.freeze({', $runtime);
         $this->assertStringContainsString('isTrackingNotification', $runtime);
         $this->assertStringContainsString('completedExportRetentionMs = 30000', $runtime);
@@ -125,13 +133,108 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringNotContainsString('border-inline-start: 3px solid var(--adasi-toast-accent)', $styles);
 
         $startExportPosition = strpos($runtime, 'const startExport = async (control) =>');
-        $startingToastPosition = strpos($runtime, 'toastId: createStartingToast()', $startExportPosition);
+        $startingToastPosition = strpos($runtime, 'toastId: createStartingToast(toastId)', $startExportPosition);
         $requestPosition = strpos($runtime, 'const response = await window.fetch(requestUrl', $startExportPosition);
 
         $this->assertIsInt($startExportPosition);
         $this->assertIsInt($startingToastPosition);
         $this->assertIsInt($requestPosition);
         $this->assertLessThan($requestPosition, $startingToastPosition);
+    }
+
+    public function test_async_export_dismissal_is_persisted_without_suppressing_terminal_result(): void
+    {
+        $runtime = file_get_contents(public_path('assets/js/async-export.js'));
+        $toastRuntime = file_get_contents(resource_path('js/app.js'));
+
+        $this->assertStringContainsString("new CustomEvent('adasi:toast-dismissed'", $toastRuntime);
+        $this->assertStringContainsString("window.addEventListener('adasi:toast-dismissed', handleToastDismissed)", $runtime);
+        $this->assertStringContainsString('progressDismissed: state.progressDismissed === true', $runtime);
+        $this->assertStringContainsString('terminalDismissed: state.terminalDismissed === true', $runtime);
+        $this->assertStringContainsString('exportsUrl: state.exportsUrl', $runtime);
+        $this->assertStringContainsString('cancelUrl: state.cancelUrl', $runtime);
+        $this->assertStringContainsString('if (terminal && state.terminalDismissed) return;', $runtime);
+        $this->assertStringContainsString('if (!terminal && state.progressDismissed) return;', $runtime);
+        $this->assertStringContainsString('const terminal = changes.terminal === true;', $runtime);
+        $this->assertStringContainsString('terminal: true', $runtime);
+        $this->assertStringContainsString('rehydrateToast: !restoredProgressDismissed && !restoredTerminalStatus', $runtime);
+        $this->assertStringContainsString('actions: progressActionsForState(state)', $runtime);
+        $this->assertStringContainsString('const isManualDismissReason = (reason) =>', $runtime);
+        $this->assertStringContainsString("['manual', 'action', 'clear']", $runtime);
+        $this->assertStringContainsString('View jobs', $runtime);
+        $this->assertStringContainsString('Dismiss', $runtime);
+        $this->assertStringContainsString('cancelExport', $runtime);
+    }
+
+    public function test_async_export_presentation_uses_explicit_filtered_source_counts_and_persisted_output_units(): void
+    {
+        $runtime = file_get_contents(public_path('assets/js/async-export.js'));
+
+        $this->assertStringContainsString('const dataTableSourceCount = (control) =>', $runtime);
+        $this->assertStringContainsString('control?.dataset?.exportCountTable', $runtime);
+        $this->assertStringContainsString('DataTable().page.info().recordsDisplay', $runtime);
+        $this->assertStringNotContainsString('dataTable.tables(true)', $runtime);
+        $this->assertStringNotContainsString('.page.info().recordsTotal', $runtime);
+        $this->assertStringContainsString('sourceCount === null', $runtime);
+        $this->assertStringNotContainsString('data rows to Excel', $runtime);
+        $this->assertStringContainsString('rowLabel: state.rowLabel', $runtime);
+        $this->assertStringContainsString("cleanPresentationText(record.rowLabel, 'rows')", $runtime);
+        $this->assertStringContainsString('Each material item will be written as a separate Excel row.', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
+        $this->assertStringContainsString('data-export-count-table="#historyTable"', file_get_contents(resource_path('views/qc/inspections/index.blade.php')));
+
+        $controlCount = 0;
+        foreach (File::allFiles(resource_path('views')) as $view) {
+            $contents = $view->getContents();
+            if (! str_contains($contents, 'data-async-export')) {
+                continue;
+            }
+
+            $offset = 0;
+            while (($position = strpos($contents, 'data-async-export', $offset)) !== false) {
+                $controlCount++;
+                $relativePath = str_replace(resource_path('views').DIRECTORY_SEPARATOR, '', $view->getPathname());
+                $controlContext = substr($contents, max(0, $position - 600), 1600);
+                $this->assertStringContainsString('data-export-source-singular=', $controlContext, "Missing singular source label in {$relativePath}");
+                $this->assertStringContainsString('data-export-source-plural=', $controlContext, "Missing plural source label in {$relativePath}");
+                $this->assertStringContainsString('data-export-row-label=', $controlContext, "Missing workbook row label in {$relativePath}");
+                $this->assertStringContainsString('data-export-row-explanation=', $controlContext, "Missing row explanation in {$relativePath}");
+                $offset = $position + strlen('data-async-export');
+            }
+        }
+
+        $this->assertSame(15, $controlCount);
+    }
+
+    public function test_async_export_toast_rehydrates_before_polling_with_scoped_view_transition(): void
+    {
+        $exportRuntime = file_get_contents(public_path('assets/js/async-export.js'));
+        $toastRuntime = file_get_contents(resource_path('js/app.js'));
+        $toastView = file_get_contents(resource_path('views/components/ui/toast-container.blade.php'));
+        $styles = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertStringContainsString("pendingExportStorageKey = 'adasi:pending-export-jobs:v1'", $exportRuntime);
+        $this->assertStringContainsString('toastId: state.toastId', $exportRuntime);
+        $this->assertStringContainsString('const showOrQueueProgressToast = (options) =>', $exportRuntime);
+        $this->assertStringContainsString('window.__adasiToastQueue.push({', $exportRuntime);
+        $this->assertStringContainsString('restored: true', $exportRuntime);
+        $this->assertStringContainsString('[401, 403, 404, 410]', $exportRuntime);
+
+        $resumePosition = strpos($exportRuntime, 'const resumePersistedExports = () =>');
+        $hydratePosition = strpos($exportRuntime, 'state.toastId = showOrQueueProgressToast({', $resumePosition);
+        $pollPosition = strpos($exportRuntime, 'pollStatus(state);', $resumePosition);
+
+        $this->assertIsInt($resumePosition);
+        $this->assertIsInt($hydratePosition);
+        $this->assertIsInt($pollPosition);
+        $this->assertLessThan($pollPosition, $hydratePosition);
+
+        $this->assertStringContainsString('if (options?.id)', $toastRuntime);
+        $this->assertStringContainsString('restored: options.restored === true', $toastRuntime);
+        $this->assertStringContainsString('adasi-toast--restored', $toastView);
+        $this->assertStringContainsString('@view-transition', $styles);
+        $this->assertStringContainsString('view-transition-name: adasi-toast-region', $styles);
+        $this->assertStringContainsString('::view-transition-group(adasi-toast-region)', $styles);
+        $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $styles);
     }
 
     public function test_persistent_notification_center_remains_separate_from_transient_delivery(): void

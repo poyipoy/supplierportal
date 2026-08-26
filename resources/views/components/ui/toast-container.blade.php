@@ -18,7 +18,7 @@
             x-transition:leave-start="adasi-toast-leave-start"
             x-transition:leave-end="adasi-toast-leave-end"
             class="adasi-toast"
-            :class="`adasi-toast--${toast.type}`"
+            :class="[`adasi-toast--${toast.type}`, { 'adasi-toast--restored': toast.restored }]"
             :role="toast.type === 'error' ? 'alert' : 'status'"
             :aria-live="toast.type === 'error' ? 'assertive' : 'polite'"
             aria-atomic="true"
@@ -101,6 +101,7 @@
                         type="button"
                         class="adasi-toast__action ui-focus-ring"
                         :class="`adasi-toast__action--${action.variant}`"
+                        :disabled="action.disabled"
                         @click="runAction(toast.id, action)"
                         x-text="action.label"
                     ></button>

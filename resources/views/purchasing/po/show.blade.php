@@ -64,7 +64,7 @@
     >
         <x-slot:actions>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" />
-            <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export>
+            <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export data-export-source-singular="purchase order" data-export-source-plural="purchase orders" data-export-source-count="1" data-export-filtered="false" data-export-row-label="ordered material rows" data-export-row-explanation="Each ordered material item will be written as a separate Excel row.">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>Export Excel</span>
             </x-ui.button>
@@ -117,7 +117,7 @@
     </div>
 
     {{-- Sticky In-Page Navigation Bar --}}
-    <div class="tw-sticky tw-top-2 tw-z-sticky tw-border tw-border-outline-variant tw-bg-surface tw-p-1.5">
+    <div class="tw-sticky tw-top-2 tw-z-sticky tw-border tw-border-outline tw-bg-surface tw-p-1.5">
         <ul class="nav po-nav-pills gap-1" id="po-section-nav">
             <li class="nav-item"><a class="nav-link active" href="#sec-info">Order Info</a></li>
             <li class="nav-item"><a class="nav-link" href="#sec-material">Materials &amp; Commercials</a></li>
@@ -138,11 +138,11 @@
             {{-- Order Info Card --}}
             <x-ui.card title="Order Information" id="sec-info" class="tw-scroll-mt-24">
                 <div class="tw-grid tw-gap-px tw-overflow-hidden tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 lg:tw-grid-cols-3">
-                    <div class="tw-bg-surface tw-p-2.5">
+                    <div class="tw-bg-surface-container tw-p-2.5">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->supplier->name }}</div>
                     </div>
-                    <div class="tw-bg-surface tw-p-2.5">
+                    <div class="tw-bg-surface-container tw-p-2.5">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Reference (No. PR)</div>
                         <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">
                             @php $prs = $po->purchaseRequisitions(); @endphp
@@ -160,20 +160,20 @@
                             @endif
                         </div>
                     </div>
-                    <div class="tw-bg-surface tw-p-2.5">
+                    <div class="tw-bg-surface-container tw-p-2.5">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Procurement Period</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
                             @php $periods = $prs->map(fn($pr) => $pr->period?->display_label ?? '-')->unique(); @endphp
                             {{ $periods->implode(', ') }}
                         </div>
                     </div>
-                    <div class="tw-bg-surface tw-p-2.5">
+                    <div class="tw-bg-surface-container tw-p-2.5">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Locked Currency</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->currency }}</span>
                         </div>
                     </div>
-                    <div class="tw-bg-surface tw-p-2.5 sm:tw-col-span-2">
+                    <div class="tw-bg-surface-container tw-p-2.5 sm:tw-col-span-2">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Notes &amp; Remark</div>
                         <div class="tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->notes ?: '-' }}</div>
                     </div>
@@ -410,8 +410,8 @@
                                 default => 'neutral'
                             };
                         @endphp
-                        <div class="tw-bg-surface">
-                            <div class="po-doc-card tw-h-full tw-bg-surface" id="doc-card-{{ $doc->id }}">
+                        <div class="tw-bg-surface-container">
+                            <div class="po-doc-card tw-h-full tw-bg-surface-container" id="doc-card-{{ $doc->id }}">
                                 <div class="text-center p-3">
                                     <x-ui.icon :name="$config['icon']" size="lg" class="tw-mb-1.5 d-block {{ $doc->status === 'pending' ? 'tw-text-outline' : 'text-primary' }}" />
                                     <h6 class="fw-bold tw-text-on-surface tw-text-ui-sm mb-1">{{ $config['label'] }}</h6>

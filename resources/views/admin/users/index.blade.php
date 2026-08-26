@@ -32,7 +32,7 @@
     </x-ui.toolbar>
 
     <div class="collapse" id="userMoreFilters">
-        <div class="tw-mb-4 tw-border tw-border-outline-variant tw-bg-surface-low tw-p-4">
+        <div class="tw-mb-4 tw-border tw-border-outline tw-bg-surface-container tw-p-4">
             <label class="tw-grid tw-max-w-xs tw-gap-1 tw-text-ui-xs tw-font-medium" for="userStatusFilter">Account Status
                 <select id="userStatusFilter" class="form-select form-select-sm"><option value="">All statuses</option><option value="1">Active</option><option value="0">Inactive</option></select>
             </label>

@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
         Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
         Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
+        Route::post('/exports/{exportJob}/cancel', [ExportDownloadController::class, 'cancel'])->name('exports.cancel');
         Route::get('/exports/{exportJob}/download', [ExportDownloadController::class, 'download'])->name('exports.download');
     });
 
