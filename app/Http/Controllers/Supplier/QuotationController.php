@@ -865,17 +865,22 @@ class QuotationController extends Controller
         $path = 'attachments/'.now()->format('Y/m').'/'.$fileName;
 
         $stream = fopen($file->getPathname(), 'r');
-        if ($stream) {
-            Storage::disk('private')->put($path, $stream);
-            fclose($stream);
-
-            $quotationItem->attachments()->create([
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName(),
-                'file_type' => $file->getMimeType(),
-                'uploaded_by' => auth()->id(),
-            ]);
+        if (! $stream) {
+            throw new \RuntimeException('File cannot be read. Please upload the file again.');
         }
+
+        try {
+            Storage::disk('private')->put($path, $stream);
+        } finally {
+            fclose($stream);
+        }
+
+        $quotationItem->attachments()->create([
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'file_type' => $file->getMimeType(),
+            'uploaded_by' => auth()->id(),
+        ]);
     }
 
     private function importableRequisition($prId): PurchaseRequisition

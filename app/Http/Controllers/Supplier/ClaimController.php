@@ -99,17 +99,22 @@ class ClaimController extends Controller
                 $path = 'attachments/claims/'.now()->format('Y/m').'/'.$fileName;
 
                 $stream = fopen($file->getPathname(), 'r');
-                if ($stream) {
-                    Storage::disk('private')->put($path, $stream);
-                    fclose($stream);
-
-                    $claim->attachments()->create([
-                        'file_path' => $path,
-                        'file_name' => $file->getClientOriginalName(),
-                        'file_type' => $file->getMimeType(),
-                        'uploaded_by' => auth()->id(),
-                    ]);
+                if (! $stream) {
+                    continue;
                 }
+
+                try {
+                    Storage::disk('private')->put($path, $stream);
+                } finally {
+                    fclose($stream);
+                }
+
+                $claim->attachments()->create([
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_type' => $file->getMimeType(),
+                    'uploaded_by' => auth()->id(),
+                ]);
             }
         }
 
