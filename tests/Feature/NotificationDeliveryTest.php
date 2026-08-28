@@ -192,14 +192,35 @@ class NotificationDeliveryTest extends TestCase
             'pr_number' => 'REQ/08/2026/010',
             'status' => 'bidding',
         ]);
-
-        $quotations = collect(['accepted', 'rejected', 'revision_requested'])->map(fn () => Quotation::create([
+        $item = PrItem::create([
             'pr_id' => $pr->id,
-            'supplier_id' => $supplier->id,
-            'currency' => 'USD',
-            'status' => 'submitted',
-            'submitted_at' => now(),
-        ]));
+            'hs_code' => '7209.16.00',
+            'material_name' => 'Notification Quotation Material',
+            'quantity' => 1,
+            'shape' => 'Flat',
+            'thickness' => 2,
+            'width' => 1000,
+            'length' => 2000,
+            'weight_needed' => 100,
+        ]);
+
+        $quotations = collect(['accepted', 'rejected', 'revision_requested'])->map(function () use ($pr, $supplier, $item) {
+            $quotation = Quotation::create([
+                'pr_id' => $pr->id,
+                'supplier_id' => $supplier->id,
+                'currency' => 'USD',
+                'status' => 'submitted',
+                'submitted_at' => now(),
+            ]);
+            $quotation->items()->create([
+                'pr_item_id' => $item->id,
+                'is_available' => true,
+                'price_per_kg' => 2.5,
+                'amount' => 250,
+            ]);
+
+            return $quotation;
+        });
 
         $this->actingAs($purchasing)->post(route('purchasing.quotations.accept', $quotations[0]))
             ->assertRedirect();
@@ -230,12 +251,29 @@ class NotificationDeliveryTest extends TestCase
             'pr_number' => 'REQ/08/2026/020',
             'status' => 'bidding',
         ]);
+        $item = PrItem::create([
+            'pr_id' => $pr->id,
+            'hs_code' => '7209.16.00',
+            'material_name' => 'PO Notification Material',
+            'quantity' => 1,
+            'shape' => 'Flat',
+            'thickness' => 2,
+            'width' => 1000,
+            'length' => 2000,
+            'weight_needed' => 100,
+        ]);
         $quotation = Quotation::create([
             'pr_id' => $pr->id,
             'supplier_id' => $supplier->id,
             'currency' => 'USD',
             'status' => 'submitted',
             'submitted_at' => now(),
+        ]);
+        $quotation->items()->create([
+            'pr_item_id' => $item->id,
+            'is_available' => true,
+            'price_per_kg' => 2.5,
+            'amount' => 250,
         ]);
 
         $this->actingAs($purchasing)->post(route('purchasing.purchase-orders.store'), [
