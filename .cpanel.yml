@@ -1,17 +1,22 @@
 ---
 deployment:
   tasks:
-    # Production destinations
-    - export APPPATH=/home/adaw2196/supplierportal
-    - export WEBPATH=/home/adaw2196/public_html
+    # Target paths: Default to current user's cPanel home structure
+    - export APPPATH=${APPPATH:-$HOME/supplierportal}
+    - export WEBPATH=${WEBPATH:-$HOME/public_html}
 
-    # Ensure Laravel application directories exist
+    # Ensure application target directories exist
     - /bin/mkdir -p $APPPATH/app
-    - /bin/mkdir -p $APPPATH/bootstrap
+    - /bin/mkdir -p $APPPATH/bootstrap/cache
     - /bin/mkdir -p $APPPATH/config
     - /bin/mkdir -p $APPPATH/database
     - /bin/mkdir -p $APPPATH/resources
     - /bin/mkdir -p $APPPATH/routes
+    - /bin/mkdir -p $APPPATH/storage/app/private
+    - /bin/mkdir -p $APPPATH/storage/framework/cache/data
+    - /bin/mkdir -p $APPPATH/storage/framework/sessions
+    - /bin/mkdir -p $APPPATH/storage/framework/views
+    - /bin/mkdir -p $APPPATH/storage/logs
 
     # Deploy Laravel application source
     - /bin/cp -a app/. $APPPATH/app/
@@ -26,10 +31,12 @@ deployment:
     - /bin/cp composer.json $APPPATH/composer.json
     - /bin/cp composer.lock $APPPATH/composer.lock
 
-    # Deploy tracked public assets.
+    # Deploy tracked public assets and Vite build bundles
     # IMPORTANT: intentionally DO NOT overwrite public_html/index.php.
     - /bin/cp public/.htaccess $WEBPATH/.htaccess
     - /bin/cp public/favicon.ico $WEBPATH/favicon.ico
     - /bin/cp public/robots.txt $WEBPATH/robots.txt
     - /bin/mkdir -p $WEBPATH/assets
     - /bin/cp -a public/assets/. $WEBPATH/assets/
+    - /bin/mkdir -p $WEBPATH/build
+    - /bin/cp -a public/build/. $WEBPATH/build/

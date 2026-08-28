@@ -94,6 +94,33 @@ Do not edit `.env` after caching configuration without rebuilding the configurat
 
 If the host uses release directories or symlinks, build caches from the active release path. Ensure `storage` and `bootstrap/cache` are writable by the PHP process.
 
+### 3.1 Rollback and Migration Recovery Procedures
+
+If a deployment must be rolled back:
+
+1. **Application Code & Asset Rollback:**
+   Revert application source files and `public/build/` to the prior release commit, then clear/rebuild caches:
+   ```sh
+   <PHP_BINARY> artisan optimize:clear
+   <PHP_BINARY> artisan config:cache
+   <PHP_BINARY> artisan route:cache
+   <PHP_BINARY> artisan view:cache
+   ```
+
+2. **Schema Rollback Pre-requisites:**
+   - **Forward-compatible Schema:** In most incidents, rolling back application code without rolling back additive migrations (like `2026_08_28_000002_add_offer_fields_to_quotation_items_table`) is safest because previous application code ignores unknown columns.
+   - **Full Database Rollback with `price_per_kg NULL` Safety:**
+     Migration `2026_08_28_000002` contains a safety guard preventing accidental data corruption if unavailable items have `price_per_kg = NULL`.
+     If full schema rollback is strictly required, the operator must explicitly sanitize `NULL` prices before running rollback:
+     ```sql
+     -- Sanitize NULL prices before rollback if required
+     UPDATE quotation_items SET price_per_kg = 0 WHERE price_per_kg IS NULL;
+     ```
+     Then execute:
+     ```sh
+     <PHP_BINARY> artisan migrate:rollback --step=1
+     ```
+
 ## 4. Scheduler Cron
 
 The repository schedules authentication-audit pruning at 02:10 and expired-export cleanup at 02:20. Configure one scheduler entry every minute:
