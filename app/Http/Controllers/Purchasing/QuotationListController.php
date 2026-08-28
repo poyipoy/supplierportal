@@ -120,10 +120,13 @@ class QuotationListController extends Controller
         $latestRate = ExchangeRate::latestRate($quotation->currency);
 
         // Check whether a PO can be created.
+        $hasAvailableItems = $quotation->hasAvailableItems();
+
         $canCreatePo = in_array($quotation->status, [Quotation::STATUS_SUBMITTED, Quotation::STATUS_ACCEPTED], true)
             && $quotation->purchaseOrders->isEmpty()
             && $quotation->purchaseRequisition->status !== 'completed'
-            && ! $quotation->isExpired();
+            && ! $quotation->isExpired()
+            && $hasAvailableItems;
 
         $canRequestRevision = $quotation->canRequestRevision()
             && $quotation->purchaseRequisition->status !== 'completed';
@@ -139,7 +142,8 @@ class QuotationListController extends Controller
             'canCreatePo',
             'canRequestRevision',
             'chatAvailable',
-            'supplierDisplayName'
+            'supplierDisplayName',
+            'hasAvailableItems'
         ));
     }
 
@@ -149,6 +153,10 @@ class QuotationListController extends Controller
 
         if (! $quotation->canApproveBy(auth()->user())) {
             return back()->with('error', 'This quotation cannot be accepted.');
+        }
+
+        if (! $quotation->hasAvailableItems()) {
+            return back()->with('error', 'This quotation cannot be accepted because all items are marked as not available by the supplier.');
         }
 
         if ($quotation->isExpired()) {
@@ -179,6 +187,10 @@ class QuotationListController extends Controller
 
         if (! $quotation->canApproveBy(auth()->user())) {
             return back()->with('error', 'This quotation cannot be rejected.');
+        }
+
+        if (! $quotation->hasAvailableItems()) {
+            return back()->with('error', 'Cannot reject a quotation that has no available items.');
         }
 
         $quotation->update([

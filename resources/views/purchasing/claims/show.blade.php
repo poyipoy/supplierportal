@@ -67,7 +67,7 @@
                         <div class="row g-2">
                             @foreach($claim->inspection->attachments as $att)
                                 <div class="col-4 col-md-3 col-lg-2">
-                                    <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden tw-h-24 tw-bg-surface-low">
+                                    <a href="{{ route('attachments.show', $att->id) }}" class="d-block border rounded overflow-hidden tw-h-24 tw-bg-surface-low image-preview-trigger" title="{{ $att->file_name }}">
                                         <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                                     </a>
                                 </div>
@@ -90,9 +90,12 @@
                             <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">Supplier Attachments</div>
                             <div class="row g-2">
                                 @foreach($claim->attachments as $att)
+                                    @php
+                                        $isImage = str_starts_with($att->file_type ?? '', 'image/') || preg_match('/\.(jpe?g|png|webp|gif|bmp|svg)$/i', $att->file_name);
+                                    @endphp
                                     <div class="col-6 col-md-4">
-                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 tw-p-2.5 border rounded text-decoration-none tw-bg-surface hover:tw-bg-surface-low">
-                                            <x-ui.icon name="file-text" size="sm" class="text-primary flex-shrink-0" />
+                                        <a href="{{ route('attachments.show', $att->id) }}" {{ $isImage ? 'class=image-preview-trigger' : 'target=_blank' }} class="d-flex align-items-center gap-2 tw-p-2.5 border rounded text-decoration-none tw-bg-surface hover:tw-bg-surface-low" title="{{ $att->file_name }}">
+                                            <x-ui.icon :name="$isImage ? 'image' : 'file-text'" size="sm" class="text-primary flex-shrink-0" />
                                             <span class="tw-text-ui-xs text-truncate tw-text-on-surface fw-medium">{{ $att->file_name }}</span>
                                         </a>
                                     </div>
@@ -137,7 +140,7 @@
                     @endforeach
                 </ul>
                 <div class="tw-p-2.5 text-center border-top tw-bg-surface-low">
-                    <x-ui.button :href="route('qc.inspections.show', $claim->inspection)" target="_blank" variant="ghost" size="sm">
+                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $claim->inspection)" variant="ghost" size="sm">
                         <x-ui.icon name="external-link" size="sm" class="me-1" />
                         View Full QC Inspection Report
                     </x-ui.button>

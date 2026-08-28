@@ -1,0 +1,281 @@
+[
+  {
+    "rule_key": "pdf-001-high-speed-round-d-ge-10",
+    "hs_code": "7228.10.10",
+    "material_category": "high_speed_steel",
+    "shape": "Round",
+    "conditions": {"d_outer": {"min": 10, "min_inclusive": true, "max": null, "max_inclusive": true}},
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [1]}],
+    "notes": null
+  },
+  {
+    "rule_key": "pdf-002-alloy-round-d-10-165",
+    "hs_code": "7228.30.10",
+    "material_category": "alloy_steel",
+    "shape": "Round",
+    "conditions": {"d_outer": {"min": 10, "min_inclusive": true, "max": 165, "max_inclusive": true}},
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [2, 3]}],
+    "notes": "Two identical source entries consolidated."
+  },
+  {
+    "rule_key": "pdf-004-alloy-flat-t-10-135-w-400-600",
+    "hs_code": "7226.91.90",
+    "material_category": "alloy_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 10, "min_inclusive": true, "max": 135, "max_inclusive": true},
+      "width": {"min": 400, "min_inclusive": false, "max": 600, "max_inclusive": false}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [4]}],
+    "notes": "Same-code subset of PDF entry 5; retained for source audit."
+  },
+  {
+    "rule_key": "pdf-005-alloy-flat-t-3-135-w-400-600",
+    "hs_code": "7226.91.90",
+    "material_category": "alloy_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 3, "min_inclusive": true, "max": 135, "max_inclusive": true},
+      "width": {"min": 400, "min_inclusive": false, "max": 600, "max_inclusive": false}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [5]}],
+    "notes": "Overlaps entry 4 with the same HS Code."
+  },
+  {
+    "rule_key": "pdf-006-alloy-flat-t-gt-135",
+    "hs_code": "7228.40.90",
+    "material_category": "alloy_steel",
+    "shape": "Flat",
+    "conditions": {"thickness": {"min": 135, "min_inclusive": false, "max": null, "max_inclusive": true}},
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [6, 7]}],
+    "notes": "Two identical source entries consolidated."
+  },
+  {
+    "rule_key": "pdf-008-alloy-round-d-gt-165",
+    "hs_code": "7228.40.10",
+    "material_category": "alloy_steel",
+    "shape": "Round",
+    "conditions": {"d_outer": {"min": 165, "min_inclusive": false, "max": null, "max_inclusive": true}},
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [8, 9]}],
+    "notes": "Two identical source entries consolidated."
+  },
+  {
+    "rule_key": "pdf-010-alloy-flat-t-3-135-w-ge-600",
+    "hs_code": "7225.40.90",
+    "material_category": "alloy_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 3, "min_inclusive": true, "max": 135, "max_inclusive": true},
+      "width": {"min": 600, "min_inclusive": true, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [10, 11]}],
+    "notes": "Two identical source entries consolidated."
+  },
+  {
+    "rule_key": "pdf-012-alloy-flat-t-10-135-w-le-150",
+    "hs_code": "7228.30.90",
+    "material_category": "alloy_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 10, "min_inclusive": true, "max": 135, "max_inclusive": true},
+      "width": {"min": null, "min_inclusive": true, "max": 150, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [12]}],
+    "notes": null
+  },
+  {
+    "rule_key": "pdf-013-alloy-flat-t-3-135-w-150-400",
+    "hs_code": "7226.91.10",
+    "material_category": "alloy_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 3, "min_inclusive": true, "max": 135, "max_inclusive": true},
+      "width": {"min": 150, "min_inclusive": false, "max": 400, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [13]}],
+    "notes": null
+  },
+  {
+    "rule_key": "pdf-014-high-speed-flat-t-ge-10-w-150-400",
+    "hs_code": "7226.20.10",
+    "material_category": "high_speed_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 10, "min_inclusive": true, "max": null, "max_inclusive": true},
+      "width": {"min": 150, "min_inclusive": false, "max": 400, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [14]}],
+    "notes": null
+  },
+  {
+    "rule_key": "pdf-015-carbon-round-d-16-250-l-gt-2000",
+    "hs_code": "7214.99.92",
+    "material_category": "carbon_steel",
+    "shape": "Round",
+    "conditions": {
+      "d_outer": {"min": 16, "min_inclusive": true, "max": 250, "max_inclusive": false},
+      "length": {"min": 2000, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [15, 16]}],
+    "notes": "Two identical source entries consolidated."
+  },
+  {
+    "rule_key": "pdf-017-carbon-flat-t-gt-10-w-gt-600",
+    "hs_code": "7208.51.00",
+    "material_category": "carbon_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 10, "min_inclusive": false, "max": null, "max_inclusive": true},
+      "width": {"min": 600, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 20,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [17, 18]}],
+    "notes": "Broad Carbon Flat rule; lower precedence than the thickness >= 250 rule."
+  },
+  {
+    "rule_key": "pdf-019-carbon-round-d-ge-250-l-gt-2000",
+    "hs_code": "7214.10.11",
+    "material_category": "carbon_steel",
+    "shape": "Round",
+    "conditions": {
+      "d_outer": {"min": 250, "min_inclusive": true, "max": null, "max_inclusive": true},
+      "length": {"min": 2000, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [19, 20]}],
+    "notes": "Two identical source entries consolidated."
+  },
+  {
+    "rule_key": "pdf-021-carbon-flat-t-ge-250-w-gt-600",
+    "hs_code": "7214.10.19",
+    "material_category": "carbon_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 250, "min_inclusive": true, "max": null, "max_inclusive": true},
+      "width": {"min": 600, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 10,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 1, "entries": [21]}],
+    "notes": "Explicitly higher priority than the broad Carbon Flat rule."
+  },
+  {
+    "rule_key": "pdf-022-honed-hollow-od-ge-140-id-gt-50-selected",
+    "hs_code": "7304.31.90",
+    "material_category": "honed_tube_steel",
+    "shape": "Hollow",
+    "conditions": {
+      "d_outer": {"min": 140, "min_inclusive": true, "max": null, "max_inclusive": true},
+      "d_inner": {"min": 50, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 2, "entries": [22]}],
+    "notes": "Selected by the approved implementation decision on 2026-08-12."
+  },
+  {
+    "rule_key": "pdf-023-honed-hollow-od-ge-140-id-gt-50-rejected",
+    "hs_code": "7304.31.40",
+    "material_category": "honed_tube_steel",
+    "shape": "Hollow",
+    "conditions": {
+      "d_outer": {"min": 140, "min_inclusive": true, "max": null, "max_inclusive": true},
+      "d_inner": {"min": 50, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "inactive",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 2, "entries": [23]}],
+    "notes": "Inactive alternative retained for audit; 7304.31.90 was selected."
+  },
+  {
+    "rule_key": "pdf-024-strip-flat-w-le-400",
+    "hs_code": "7211.29.20",
+    "material_category": "strip_steel",
+    "shape": "Flat",
+    "conditions": {"width": {"min": null, "min_inclusive": true, "max": 400, "max_inclusive": true}},
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 2, "entries": [24]}],
+    "notes": "Currently unreachable because no selected-source material maps to strip_steel."
+  },
+  {
+    "rule_key": "pdf-025-alloy-hollow-od-gt-165-id-gt-135-rejected",
+    "hs_code": "7304.51.90",
+    "material_category": "alloy_steel",
+    "shape": "Hollow",
+    "conditions": {
+      "d_outer": {"min": 165, "min_inclusive": false, "max": null, "max_inclusive": true},
+      "d_inner": {"min": 135, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "inactive",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 2, "entries": [25]}],
+    "notes": "Inactive alternative retained for audit; 7304.59.90 was selected."
+  },
+  {
+    "rule_key": "pdf-026-alloy-hollow-od-gt-165-id-gt-135-selected",
+    "hs_code": "7304.59.90",
+    "material_category": "alloy_steel",
+    "shape": "Hollow",
+    "conditions": {
+      "d_outer": {"min": 165, "min_inclusive": false, "max": null, "max_inclusive": true},
+      "d_inner": {"min": 135, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 2, "entries": [26]}],
+    "notes": "Selected by the approved implementation decision on 2026-08-12."
+  },
+  {
+    "rule_key": "pdf-027-carbon-flat-t-4-75-10-w-gt-600",
+    "hs_code": "7208.52.00",
+    "material_category": "carbon_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 4.75, "min_inclusive": true, "max": 10, "max_inclusive": true},
+      "width": {"min": 600, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 2, "entries": [27, 28]}],
+    "notes": "Two identical source entries consolidated."
+  },
+  {
+    "rule_key": "pdf-029-carbon-flat-t-3-4-75-w-gt-600",
+    "hs_code": "7208.53.00",
+    "material_category": "carbon_steel",
+    "shape": "Flat",
+    "conditions": {
+      "thickness": {"min": 3, "min_inclusive": true, "max": 4.75, "max_inclusive": false},
+      "width": {"min": 600, "min_inclusive": false, "max": null, "max_inclusive": true}
+    },
+    "priority": 100,
+    "status": "active",
+    "source_refs": [{"file": "docs/PENENTUAN HS CODE.pdf", "page": 2, "entries": [29, 30]}],
+    "notes": "Two identical source entries consolidated."
+  }
+]

@@ -1,4 +1,7 @@
 import Alpine from 'alpinejs';
+import { bootAdasiCalendars } from './calendar';
+import './unsaved-changes';
+import './number-input-helper';
 
 window.Alpine = Alpine;
 
@@ -303,8 +306,8 @@ Alpine.data('adasiShell', () => ({
     get sidebarToggleLabel() {
         if (this.viewportIsDesktop) {
             return this.desktopCollapsed
-                ? 'Expand sidebar navigation'
-                : 'Collapse sidebar navigation';
+                ? 'Expand sidebar'
+                : 'Collapse sidebar';
         }
 
         return this.mobileOpen
@@ -433,3 +436,4 @@ Alpine.data('adasiShell', () => ({
 }));
 
 Alpine.start();
+bootAdasiCalendars();

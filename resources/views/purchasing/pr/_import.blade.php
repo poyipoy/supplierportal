@@ -17,10 +17,13 @@
                         helper="XLSX, XLS, or CSV format; maximum 10 MB and up to 1,000 rows."
                         accept=".xlsx,.xls,.csv"
                     />
-                    <x-ui.select name="import_mode" id="prImportMode" label="Import Mode">
-                        <option value="replace" selected>Replace Current Rows</option>
-                        <option value="append">Append to Current Rows</option>
-                    </x-ui.select>
+                    <div>
+                        <x-ui.select name="import_mode" id="prImportMode" label="Import Mode" aria-describedby="prImportModeHelp">
+                            <option value="replace" selected>Replace Current Rows</option>
+                            <option value="append">Append to Current Rows</option>
+                        </x-ui.select>
+                        <div id="prImportModeHelp" class="form-text tw-text-ui-xs" aria-live="polite"></div>
+                    </div>
                 </div>
 
                 <div id="prImportResult" class="d-none mt-4">
@@ -148,6 +151,18 @@
         const weight = Number(data.weight_needed || 0);
         $row.find('.weight-unit-display').val(weight.toFixed(4));
 
+        if (data.remark) {
+            $row.find('.pr-remark-trigger__text').text(data.remark);
+            $row.find('.pr-remark-trigger').addClass('has-remark').attr('title', data.remark);
+            if (!$row.find('.pr-remark-trigger__badge').length) {
+                $row.find('.pr-remark-trigger').append('<span class="pr-remark-trigger__badge" title="Remark entered" aria-hidden="true"></span>');
+            }
+            $row.find('.pr-remark-draft').val(data.remark);
+        }
+        if (data.material_name) {
+            $row.find('.pr-remark-material-name').text(data.material_name);
+        }
+
         itemIndex++;
 
         return $row;
@@ -265,6 +280,7 @@
         }
 
         prImportRows.forEach(appendImportedPrRow);
+        renumberPrRows();
         checkRowCount();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('prImportModal')).hide();
         AdasiToast.show({
@@ -301,8 +317,18 @@
     }
 
     $(document).ready(function() {
+        const importModeDescriptions = {
+            replace: 'Removes the material rows currently shown in this form and replaces them with the validated rows from the spreadsheet.',
+            append: 'Keeps the material rows currently shown and adds validated spreadsheet rows below them.',
+        };
+        const updateImportModeHelp = () => {
+            $('#prImportModeHelp').text(importModeDescriptions[$('#prImportMode').val()] || '');
+        };
+
         $('#btnParsePrImport').on('click', parsePrImport);
         $('#btnApplyPrImport').on('click', applyPrImport);
+        $('#prImportMode').on('change', updateImportModeHelp);
+        updateImportModeHelp();
         $('#prImportModal').on('hidden.bs.modal', function() {
             if (prImportRequestInFlight) {
                 return;
@@ -310,6 +336,7 @@
 
             document.getElementById('prImportFile').value = '';
             $('#prImportMode').val('replace');
+            updateImportModeHelp();
             $('#prImportResult').addClass('d-none');
             $('#prImportWarnings, #prImportErrors, #prImportPreviewBody').empty();
             $('#btnApplyPrImport').prop('disabled', true);

@@ -5,7 +5,7 @@
 
 @php
     $formatRupiah = fn ($value) => $value !== null ? 'Rp ' . number_format($value, 0, ',', '.') : '-';
-    $formatNumber = fn ($value, $decimals = 1) => $value !== null ? number_format($value, $decimals, ',', '.') : '-';
+    $formatNumber = fn ($value, $decimals = 1) => $value !== null ? \App\Support\NumberFormat::maxDecimals($value, $decimals) : '-';
 @endphp
 
 @section('content')
@@ -20,14 +20,23 @@
     {{-- Filter Toolbar --}}
     <x-ui.toolbar>
         <x-slot:filters>
-            <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap align-items-center gap-2 w-100">
-                <div style="min-width: 170px;">
-                    <input type="month" name="date_from" value="{{ $dateFromInput }}" class="form-control form-control-sm" aria-label="From Month" placeholder="From Month" />
+            <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap align-items-center gap-2 w-100" id="vsBestFilterForm">
+                <div style="min-width: 250px;">
+                    <x-ui.date-range-picker
+                        id="vsBestMonthRange"
+                        granularity="month"
+                        start-name="date_from"
+                        start-id="vsBestDateFrom"
+                        start-label="From month"
+                        :start-value="$dateFromInput"
+                        end-name="date_to"
+                        end-id="vsBestDateTo"
+                        end-label="To month"
+                        :end-value="$dateToInput"
+                        compact
+                    />
                 </div>
-                <div style="min-width: 170px;">
-                    <input type="month" name="date_to" value="{{ $dateToInput }}" class="form-control form-control-sm" aria-label="To Month" placeholder="To Month" />
-                </div>
-                <x-ui.button type="submit" size="sm">
+                <x-ui.button type="submit" variant="secondary" size="sm" data-calendar-native-submit>
                     <x-ui.icon name="filter" />
                     <span>Apply</span>
                 </x-ui.button>
@@ -77,7 +86,7 @@ $(document).ready(function() {
 
     function formatRupiah(value) {
         if (value === null || value === undefined || value === '') return '-';
-        return 'Rp ' + Number(value).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        return 'Rp ' + Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     }
 
     function formatInteger(value) {
@@ -92,7 +101,7 @@ $(document).ready(function() {
         $('#vsBestPotentialTotal').text(formatRupiah(data.total_potential_difference_idr));
     }
 
-    $('#vsBestTable').DataTable({
+    const table = $('#vsBestTable').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
@@ -117,6 +126,16 @@ $(document).ready(function() {
         language: {},
         pageLength: 25,
         order: [[4, 'desc']]
+    });
+
+    document.getElementById('vsBestMonthRange')?.addEventListener('adasi:date-range-commit', (event) => {
+        filterParams.date_from = event.detail.start;
+        filterParams.date_to = event.detail.end;
+        const url = new URL(document.getElementById('vsBestFilterForm').action, window.location.origin);
+        if (event.detail.start) url.searchParams.set('date_from', event.detail.start);
+        if (event.detail.end) url.searchParams.set('date_to', event.detail.end);
+        window.history.replaceState({}, '', url);
+        table.ajax.reload();
     });
 });
 </script>

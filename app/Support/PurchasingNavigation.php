@@ -93,6 +93,21 @@ class PurchasingNavigation
 
     public static function currentUrlForReturn(): string
     {
+        if (request()->ajax() || request()->expectsJson() || self::isDataEndpointUrl(request()->url())) {
+            $lastListUrl = session('purchasing.last_list_url');
+            if (self::isSafeUrl($lastListUrl)) {
+                return $lastListUrl;
+            }
+
+            $currentRoute = request()->route()?->getName();
+            $fallback = self::fallbackListRoute($currentRoute);
+            if ($fallback) {
+                return self::listUrl($fallback);
+            }
+
+            return route('purchasing.dashboard');
+        }
+
         return request()->fullUrlWithoutQuery([self::RETURN_URL_KEY]);
     }
 
@@ -105,6 +120,10 @@ class PurchasingNavigation
         $url = trim($url);
 
         if (Str::startsWith($url, ['//', 'javascript:', 'data:'])) {
+            return false;
+        }
+
+        if (self::isDataEndpointUrl($url)) {
             return false;
         }
 
@@ -121,6 +140,20 @@ class PurchasingNavigation
         return ($parsed['host'] ?? null) === request()->getHost()
             && in_array($parsed['scheme'] ?? request()->getScheme(), ['http', 'https'], true)
             && ! self::containsLegacyNumericIdentifier($url);
+    }
+
+    public static function isDataEndpointUrl(?string $url): bool
+    {
+        if (! is_string($url) || trim($url) === '') {
+            return false;
+        }
+
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+
+        return (bool) preg_match(
+            '~/(?:data-action|data-history|data|ajax|json|search|import-preview|preview)(?:/|$)~i',
+            $path
+        );
     }
 
     public static function listRoutePaths(): array
@@ -142,7 +175,10 @@ class PurchasingNavigation
         $segments = explode('.', $routeName);
 
         if (count($segments) >= 3) {
-            return $segments[0] . '.' . $segments[1] . '.index';
+            $listCandidate = $segments[0] . '.' . $segments[1] . '.index';
+            if (self::isListRoute($listCandidate)) {
+                return $listCandidate;
+            }
         }
 
         return self::isListRoute($routeName) ? $routeName : null;

@@ -38,91 +38,137 @@
                 title="Material Price Breakdown"
                 description="Commercial values reflect your quotation's locked exchange-rate snapshot."
             >
-                <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
-                    <thead class="table-light text-center">
-                        <tr>
-                            <th scope="col" style="width: 35px;">No</th>
-                            <th scope="col" class="text-start">Material</th>
-                            <th scope="col">Offered Availability</th>
-                            <th scope="col">Qty</th>
-                            <th scope="col" class="text-end">Weight/Unit</th>
-                            <th scope="col" class="text-end">Total Weight</th>
-                            <th scope="col" class="text-end">Price/Kg ({{ $quotation->currency }})</th>
-                            <th scope="col" class="text-end">Amount ({{ $quotation->currency }})</th>
-                            <th scope="col" class="text-end">Est. IDR</th>
-                            <th scope="col">Notes</th>
-                            <th scope="col" class="text-center" style="width: 50px;">MTC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $totalAmount = 0;
-                            $totalIdr = 0;
-                            $rate = $quotation->exchange_rate ? $quotation->exchange_rate->rate_to_idr : 1;
-                        @endphp
-                        @foreach($quotation->items as $index => $item)
-                            @php
-                                $amount = $item->resolved_amount;
-                                $idr = $amount * $rate;
-                                $totalAmount += $amount;
-                                $totalIdr += $idr;
-                                $availability = $item->availability_comparison;
-                            @endphp
-                            <tr>
-                                <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
-                                <td class="text-start">
-                                    <div class="fw-bold tw-text-on-surface">{{ $item->prItem->material_name }}</div>
-                                    <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
-                                        @if($item->prItem->shape)
-                                            <span class="ui-status-chip ui-status-chip--neutral">{{ $item->prItem->shape }}</span>
-                                            {{ $item->prItem->dimension_label }}
-                                        @else
-                                            -
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="text-start">
-                                    @if($availability['specification']['code'] === 'not_available')
-                                        <span class="tw-text-on-surface-variant">Not Available</span>
-                                    @elseif($availability['quantity']['code'] === 'not_specified' && $availability['specification']['code'] === 'not_specified')
-                                        <span class="tw-text-outline">Not specified</span>
-                                    @else
-                                        <div class="tw-text-ui-xs">
-                                            <span class="tw-text-on-surface-variant">Qty:</span> <span class="fw-semibold">{{ $item->available_qty ?? '-' }}</span>
-                                            <div class="tw-text-on-surface-variant tw-mt-0.5">{{ $item->available_dimension_label }}</div>
-                                        </div>
-                                    @endif
-                                </td>
-                                <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->prItem->quantity_value, 0) }}</td>
-                                <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->prItem->weight_needed, 2) }}</td>
-                                <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->prItem->total_weight, 2) }}</td>
-                                <td class="text-end fw-bold ui-tabular-nums">
-                                    {{ $item->price_per_kg === null ? '-' : number_format($item->price_per_kg, 4) }}
-                                </td>
-                                <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
-                                <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp {{ number_format($idr, 0, ',', '.') }}</td>
-                                <td class="tw-text-on-surface-variant tw-text-ui-xs">{{ $item->notes ?: '-' }}</td>
-                                <td class="text-center">
-                                    @if($item->attachments->isNotEmpty())
-                                        @foreach($item->attachments as $attachment)
-                                            <x-ui.icon-button :href="route('attachments.show', $attachment->id)" icon="paperclip" :label="'Open attachment: ' . $attachment->file_name" size="sm" target="_blank" />
-                                        @endforeach
-                                    @else
-                                        <span class="tw-text-outline">-</span>
-                                    @endif
-                                </td>
+                <div class="table-responsive border rounded overflow-hidden">
+                    <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
+                        <thead class="table-light align-middle text-center">
+                            <tr class="border-bottom">
+                                <th scope="col" rowspan="2" style="width: 40px;" class="text-center">#</th>
+                                <th scope="col" rowspan="2" class="text-start" style="min-width: 200px;">Material &amp; Requested Specs</th>
+                                <th scope="col" rowspan="2" class="text-start" style="min-width: 180px;">Availability &amp; Offer Specs</th>
+                                <th scope="col" colspan="3" class="border-bottom text-center tw-bg-surface-low">Quantity &amp; Weight</th>
+                                <th scope="col" colspan="3" class="border-bottom text-center tw-bg-surface-low">Commercials ({{ $quotation->currency }})</th>
+                                <th scope="col" rowspan="2" class="text-end" style="min-width: 130px;">Offer Est. IDR</th>
+                                <th scope="col" rowspan="2" class="text-start" style="min-width: 130px;">Notes</th>
+                                <th scope="col" rowspan="2" class="text-center" style="width: 54px;">MTC</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot class="table-light fw-bold border-top">
-                        <tr>
-                            <td colspan="7" class="text-end tw-text-on-surface">TOTAL:</td>
-                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($totalAmount, 2) }} {{ $quotation->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                            <tr class="tw-text-[11px] tw-text-on-surface-variant">
+                                <th scope="col" class="text-center" style="min-width: 85px;">Qty</th>
+                                <th scope="col" class="text-end" style="min-width: 105px;">KG / Unit</th>
+                                <th scope="col" class="text-end" style="min-width: 105px;">Total KG</th>
+                                <th scope="col" class="text-end" style="min-width: 95px;">Price / KG</th>
+                                <th scope="col" class="text-end" style="min-width: 105px;">Req. Amount</th>
+                                <th scope="col" class="text-end" style="min-width: 110px;">Offer Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $totalAmount = 0;
+                                $totalIdr = 0;
+                                $rate = $quotation->exchange_rate ? (float) $quotation->exchange_rate->rate_to_idr : null;
+                            @endphp
+                            @foreach($quotation->items as $index => $item)
+                                @php
+                                    $amount = $item->resolved_amount;
+                                    $requestedAmount = $item->requested_amount;
+                                    $idr = $rate !== null ? $amount * $rate : null;
+                                    $totalAmount += $amount;
+                                    $totalIdr += $idr ?? 0;
+                                    $availability = $item->availability_comparison;
+                                @endphp
+                                <tr>
+                                    <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
+                                    <td class="text-start">
+                                        <div class="fw-bold tw-text-on-surface">{{ $item->prItem->material_name }}</div>
+                                        <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
+                                            @if($item->prItem->shape)
+                                                <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $item->prItem->shape }}</span>
+                                                <span>{{ $item->prItem->dimension_label }}</span>
+                                            @else
+                                                <span>-</span>
+                                            @endif
+                                        </div>
+                                        @if($item->prItem?->remark)
+                                            <div class="tw-text-on-surface-variant tw-text-[11px] tw-mt-1 tw-italic">
+                                                <span class="fw-semibold">Remark:</span> {{ $item->prItem->remark }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="text-start">
+                                        @if($availability['specification']['code'] === 'not_available')
+                                            <span class="ui-status-chip ui-status-chip--error">
+                                                <x-ui.icon name="x-circle" size="xs" class="me-1" /> Not Available
+                                            </span>
+                                        @elseif($availability['quantity']['code'] === 'not_specified' && $availability['specification']['code'] === 'not_specified')
+                                            <span class="tw-text-outline">Not specified</span>
+                                        @else
+                                            <div class="tw-text-ui-xs">
+                                                <div class="fw-semibold tw-text-on-surface">{{ $item->available_dimension_label }}</div>
+                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    <span class="ui-status-chip ui-status-chip--neutral" style="font-size: 10px;">{{ $availability['quantity']['label'] }}</span>
+                                                    <span class="ui-status-chip ui-status-chip--neutral" style="font-size: 10px;">{{ $availability['specification']['label'] }}</span>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="text-center ui-tabular-nums">
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant"><span class="tw-opacity-70">Req:</span> {{ $item->requested_quantity ?? '-' }}</div>
+                                        <div class="fw-bold text-primary"><span class="tw-opacity-70">Off:</span> {{ $item->is_available ? ($item->available_qty ?? '-') : '—' }}</div>
+                                    </td>
+                                    <td class="text-end ui-tabular-nums">
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant"><span class="tw-opacity-70">Req:</span> {{ \App\Support\NumberFormat::maxDecimals($item->requested_weight_per_unit) }}</div>
+                                        <div class="fw-bold text-primary">
+                                            <span class="tw-opacity-70">Off:</span> {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->requested_weight_per_unit) : '—' }}
+                                            @if($item->is_available && $item->is_estimated_weight)
+                                                <span class="ui-status-chip ui-status-chip--warning ms-1" style="font-size: 10px;">Est</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="text-end ui-tabular-nums">
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant"><span class="tw-opacity-70">Req:</span> {{ \App\Support\NumberFormat::maxDecimals($item->requested_total_weight) }}</div>
+                                        <div class="fw-bold text-primary"><span class="tw-opacity-70">Off:</span> {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight) : '—' }}</div>
+                                    </td>
+                                    <td class="text-end fw-bold ui-tabular-nums">
+                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg) }}
+                                    </td>
+                                    <td class="text-end tw-text-on-surface-variant ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($requestedAmount) : '—' }}</td>
+                                    <td class="text-end fw-semibold text-primary ui-tabular-nums" data-offer-amount="{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '' }}">
+                                        {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}
+                                    </td>
+                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">
+                                        {{ $idr !== null && $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($idr) : '—' }}
+                                    </td>
+                                    <td class="text-start tw-text-on-surface-variant tw-text-ui-xs">
+                                        @if($item->notes)
+                                            <div class="text-truncate" style="max-width: 140px;" title="{{ $item->notes }}">
+                                                {{ $item->notes }}
+                                            </div>
+                                        @else
+                                            <span class="tw-text-outline">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($item->attachments->isNotEmpty())
+                                            @foreach($item->attachments as $attachment)
+                                                <x-ui.icon-button :href="route('attachments.show', $attachment->id)" icon="paperclip" :label="'Open attachment: ' . $attachment->file_name" size="sm" target="_blank" />
+                                            @endforeach
+                                        @else
+                                            <span class="tw-text-outline">—</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot class="table-light fw-bold border-top">
+                            <tr>
+                                <td colspan="7" class="text-end tw-text-on-surface tw-uppercase">Total Offer Amount:</td>
+                                <td class="text-end tw-text-on-surface-variant ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($quotation->items->sum('requested_amount')) }}</td>
+                                <td class="text-end text-primary ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($totalAmount) }} {{ $quotation->currency }}</td>
+                                <td class="text-end text-primary ui-tabular-nums fs-6">{{ $rate !== null ? 'Rp '.\App\Support\NumberFormat::maxDecimals($totalIdr) : '—' }}</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </x-ui.data-table>
         </div>
 
@@ -140,7 +186,7 @@
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Exchange Rate Snapshot</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
                             @if($quotation->exchange_rate)
-                                1 {{ $quotation->currency }} = Rp {{ number_format($quotation->exchange_rate->rate_to_idr, 0, ',', '.') }}
+                                1 {{ $quotation->currency }} = Rp {{ \App\Support\NumberFormat::maxDecimals($quotation->exchange_rate->rate_to_idr) }}
                             @else
                                 -
                             @endif

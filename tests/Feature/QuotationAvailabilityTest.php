@@ -152,17 +152,30 @@ class QuotationAvailabilityTest extends TestCase
         $this->actingAs($this->supplier)
             ->get(route('supplier.quotations.create', $pr))
             ->assertOk()
-            ->assertSee('Supplier Availability')
-            ->assertSee('Supplier Offer')
-            ->assertSee('Commercial')
-            ->assertSee('Supporting')
+            ->assertSee('Row Type')
+            ->assertSee('Requested')
+            ->assertSee('Offer')
+            ->assertSee('Not Available')
+            ->assertSee('TOTAL OFFER AMOUNT')
             ->assertSee('quotation-sticky-number', false)
             ->assertSee('quotation-sticky-material', false)
+            ->assertSee('quotation-sticky-row-type', false)
             ->assertSee('border-right: 1px solid var(--md-outline) !important', false)
             ->assertSee('border-collapse: separate !important', false)
-            ->assertSee('min-width: 1957px !important', false)
+            ->assertSee('min-width: 2180px !important', false)
+            ->assertSee('height: 3.75rem;', false)
             ->assertSee('quotation-calculated', false)
-            ->assertSee('mtc-file-input', false);
+            ->assertSee('mtc-file-input', false)
+            ->assertSee('available_length_input', false)
+            ->assertSee('offered_weight_per_unit', false)
+            ->assertSee('offered_weight_manual_override', false)
+            ->assertSee('Offer Qty cannot exceed the requested Qty', false)
+            ->assertDontSee('Extra supply capacity belongs in Notes; Offer Qty cannot exceed Requested Qty.', false)
+            ->assertSee('Accepted files: PDF, JPG, or PNG; maximum 5MB.', false)
+            ->assertSee('aria-describedby="mtcFileHelp', false)
+            ->assertSee('availability-toggle', false)
+            ->assertSee('quotation-material-section', false)
+            ->assertSee('Submit quotation with all requested items marked Not Available?', false);
 
         $this->actingAs($this->supplier)
             ->get(route('supplier.quotations.show', $quotation))
@@ -266,12 +279,14 @@ class QuotationAvailabilityTest extends TestCase
         $this->actingAs($this->supplier)
             ->get(route('supplier.quotations.show', $quotation))
             ->assertOk()
-            ->assertSee('50.00');
+            ->assertSee('data-offer-amount="50"', false)
+            ->assertDontSee('data-offer-amount="50.00"', false);
 
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.quotations.show', $quotation))
             ->assertOk()
-            ->assertSee('50.00');
+            ->assertSee('data-offer-amount="50"', false)
+            ->assertDontSee('data-offer-amount="50.00"', false);
     }
 
     public function test_zero_amount_repair_command_is_dry_run_until_explicitly_enabled(): void
@@ -620,6 +635,8 @@ class QuotationAvailabilityTest extends TestCase
         $this->assertSame('Not available note', $item->notes);
         $this->assertSame('not_available', $item->availability_comparison['specification']['code']);
 
+        $this->assertFalse($quotation->hasAvailableItems());
+
         $this->actingAs($this->supplier)
             ->get(route('supplier.quotations.show', $quotation))
             ->assertOk()
@@ -628,7 +645,39 @@ class QuotationAvailabilityTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.quotations.show', $quotation))
             ->assertOk()
-            ->assertSee('Not Available');
+            ->assertSee('Not Available')
+            ->assertSee('No available materials')
+            ->assertDontSee('Create PO from Quotation')
+            ->assertDontSee('Reject Quotation');
+
+        // Purchasing cannot navigate to PO creation for an unavailable quotation
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.purchase-orders.create', $quotation))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        // Purchasing cannot accept a quotation with no available items
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.accept', $quotation))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        // Purchasing cannot reject a quotation with no available items
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.reject', $quotation), [
+                'reviewer_notes' => 'Unavailable quotation rejection',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        // Purchasing cannot store a PO for an unavailable quotation
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.store'), [
+                'quotation_ids' => [$quotation->id],
+                'estimated_arrival' => now()->addDays(10)->toDateString(),
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
     }
 
     private function createRequisition(array $items = [[]]): PurchaseRequisition

@@ -64,7 +64,7 @@
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">QC Photographic Evidence from ADASI</div>
                         <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 md:tw-grid-cols-4 tw-gap-2">
                             @foreach($claim->inspection->attachments as $att)
-                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="tw-block tw-h-24 tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline-variant tw-transition-opacity hover:tw-opacity-90">
+                                <a href="{{ route('attachments.show', $att->id) }}" class="tw-block tw-h-24 tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline-variant tw-transition-opacity hover:tw-opacity-90 image-preview-trigger" title="{{ $att->file_name }}">
                                     <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                                 </a>
                             @endforeach
@@ -83,7 +83,7 @@
                             label="Official Explanation and Proposed Action"
                             :rows="4"
                             required
-                            placeholder="Write your root-cause explanation or agreed corrective action (e.g. material replacement schedule, credit note)..."
+                            placeholder="e.g. Root cause: cutting line calibration drift. Corrective: replacement lot scheduled for dispatch on 15-Sep..."
                         />
                         <x-ui.input
                             type="file"
@@ -114,8 +114,11 @@
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-2">Attached Supplier Documents</div>
                         <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-2">
                             @foreach($claim->attachments as $att)
-                                <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-flex align-items-center gap-2 p-2 text-decoration-none tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface hover:tw-bg-surface-low tw-transition-colors">
-                                    <x-ui.icon name="file-text" size="sm" class="text-primary flex-shrink-0" />
+                                @php
+                                    $isImage = str_starts_with($att->file_type ?? '', 'image/') || preg_match('/\.(jpe?g|png|webp|gif|bmp|svg)$/i', $att->file_name);
+                                @endphp
+                                <a href="{{ route('attachments.show', $att->id) }}" {{ $isImage ? 'class=image-preview-trigger' : 'target=_blank' }} class="d-flex align-items-center gap-2 p-2 text-decoration-none tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface hover:tw-bg-surface-low tw-transition-colors" title="{{ $att->file_name }}">
+                                    <x-ui.icon :name="$isImage ? 'image' : 'file-text'" size="sm" class="text-primary flex-shrink-0" />
                                     <span class="tw-text-ui-xs tw-text-on-surface text-truncate">{{ $att->file_name }}</span>
                                 </a>
                             @endforeach

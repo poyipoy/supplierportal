@@ -3,12 +3,32 @@
 @section('title', 'QC Inspection Details: ' . ($inspection->purchaseOrder->po_number ?? 'N/A') . ' - ADASI Portal')
 @section('page-title', 'QC Inspection Details')
 
+@php
+    $returnUrl = request()->query('return_url') ?? request()->input('return_url');
+    $isFromClaim = $returnUrl && (str_contains($returnUrl, '/claims') || str_contains($returnUrl, 'claims'));
+    $safeReturnUrl = \App\Support\PurchasingNavigation::isSafeUrl($returnUrl) ? $returnUrl : null;
+
+    $backUrl = $safeReturnUrl ?: (auth()->user()->role === 'purchasing'
+        ? route('purchasing.purchase-orders.show', $inspection->purchaseOrder)
+        : route('qc.inspections.index'));
+
+    $backLabel = $isFromClaim
+        ? 'Back to Material Claim'
+        : (auth()->user()->role === 'purchasing' ? 'Back to PO' : 'Back to List');
+
+    $breadcrumbDashboard = auth()->user()->role === 'purchasing' ? route('purchasing.dashboard') : route('qc.dashboard');
+    $breadcrumbParentUrl = $isFromClaim
+        ? ($safeReturnUrl ?: route('purchasing.claims.index'))
+        : (auth()->user()->role === 'purchasing' ? route('purchasing.purchase-orders.index') : route('qc.inspections.index'));
+    $breadcrumbParentLabel = $isFromClaim ? 'Material Claims' : 'QC Inspections';
+@endphp
+
 @section('content')
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => auth()->user()->role === 'purchasing' ? route('purchasing.dashboard') : route('qc.dashboard'),
-        'QC Inspections' => auth()->user()->role === 'purchasing' ? route('purchasing.purchase-orders.index') : route('qc.inspections.index'),
+        'Dashboard' => $breadcrumbDashboard,
+        $breadcrumbParentLabel => $breadcrumbParentUrl,
         ('PO ' . ($inspection->purchaseOrder->po_number ?? 'N/A')) => null,
     ]" />
 
@@ -44,12 +64,12 @@
                 </x-ui.button>
 
                 <x-ui.button
-                    :href="auth()->user()->role === 'purchasing' ? route('purchasing.purchase-orders.show', $inspection->purchaseOrder) : route('qc.inspections.index')"
+                    :href="$backUrl"
                     variant="ghost"
                     size="sm"
                 >
                     <x-ui.icon name="arrow-left" size="sm" />
-                    <span>{{ auth()->user()->role === 'purchasing' ? 'Back to PO' : 'Back to List' }}</span>
+                    <span>{{ $backLabel }}</span>
                 </x-ui.button>
             </div>
         </x-slot:actions>
@@ -199,8 +219,7 @@
                         <div class="col-6 col-md-4 col-lg-3">
                             <a
                                 href="{{ route('attachments.show', $att->id) }}"
-                                target="_blank"
-                                class="tw-relative tw-block tw-h-40 tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container hover:tw-opacity-95"
+                                class="tw-relative tw-block tw-h-40 tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container hover:tw-opacity-95 image-preview-trigger"
                                 title="{{ $att->file_name }}"
                             >
                                 <img

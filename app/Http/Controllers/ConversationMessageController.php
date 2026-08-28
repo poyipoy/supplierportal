@@ -425,6 +425,12 @@ class ConversationMessageController extends Controller
             ]);
         }
 
+        if (! $quotation->hasAvailableItems()) {
+            throw ValidationException::withMessages([
+                'action' => 'This quotation cannot be accepted because all items are marked as not available by the supplier.',
+            ]);
+        }
+
         if ($quotation->isExpired()) {
             throw ValidationException::withMessages([
                 'action' => 'This quotation has expired. Ask the supplier to submit a revision before accepting it.',
@@ -454,6 +460,12 @@ class ConversationMessageController extends Controller
         if (! $quotation->canApproveBy(auth()->user())) {
             throw ValidationException::withMessages([
                 'action' => 'This quotation cannot be rejected.',
+            ]);
+        }
+
+        if (! $quotation->hasAvailableItems()) {
+            throw ValidationException::withMessages([
+                'action' => 'Cannot reject a quotation that has no available items.',
             ]);
         }
 

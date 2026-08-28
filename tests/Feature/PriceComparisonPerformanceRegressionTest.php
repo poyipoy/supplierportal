@@ -352,14 +352,14 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             'action',
         ], array_keys($row)));
         $this->assertStringContainsString('Qty: 3', $row['material_display']);
-        $this->assertStringContainsString('Berat/unit: 2,50 kg', $row['material_display']);
-        $this->assertStringContainsString('Total weight: 7,50 kg', $row['material_display']);
+        $this->assertStringContainsString('Berat/unit: 2.5 kg', $row['material_display']);
+        $this->assertStringContainsString('Total weight: 7.5 kg', $row['material_display']);
         $this->assertStringContainsString('Rp 160.000', $row['current_price_display']);
-        $this->assertStringContainsString('10,00 USD/kg', $row['current_price_display']);
+        $this->assertStringContainsString('10 USD/kg', $row['current_price_display']);
         $this->assertStringContainsString('Rp 120.000', $row['best_price_display']);
-        $this->assertStringContainsString('8,00 USD/kg', $row['best_price_display']);
+        $this->assertStringContainsString('8 USD/kg', $row['best_price_display']);
         $this->assertStringContainsString('+Rp 40.000', $row['diff_display']);
-        $this->assertStringContainsString('+33,33%', $row['diff_display']);
+        $this->assertStringContainsString('+33.33%', $row['diff_display']);
         $this->assertStringContainsString('Rp 300.000', $row['potential_difference_display']);
         $this->assertStringContainsString('Above History', $row['status_badge']);
 

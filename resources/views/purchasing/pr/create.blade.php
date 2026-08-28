@@ -65,7 +65,7 @@
                             label="Additional Remarks / Notes"
                             :value="old('notes')"
                             rows="2"
-                            placeholder="Optional instructions for suppliers..."
+                            placeholder="e.g. Required delivery Cikarang plant, strict thickness tolerance..."
                         />
                     </div>
                 </div>
@@ -75,6 +75,7 @@
             <x-ui.form-section
                 title="Material Requirements"
                 description="Add materials from master data, specify dimensional shapes, and inspect auto-computed weights."
+                class="pr-material-section"
             >
                 <x-slot:actions>
                     <div class="d-flex align-items-center gap-2">
@@ -90,19 +91,23 @@
                     <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw-text-ui-xs" id="itemsTable">
                         <caption class="visually-hidden">Required material entry table with shape-aware dimension columns</caption>
                         <colgroup>
-                            <col style="width: 280px; min-width: 280px;">
-                            <col style="width: 120px; min-width: 120px;">
-                            <col style="width: 75px; min-width: 75px;">
-                            <col data-dimension-slot-col="1" style="width: 130px; min-width: 130px;">
-                            <col data-dimension-slot-col="2" style="width: 130px; min-width: 130px;">
-                            <col data-dimension-slot-col="3" style="width: 130px; min-width: 130px;">
-                            <col style="width: 140px; min-width: 140px;">
-                            <col style="width: 200px; min-width: 200px;">
-                            <col style="width: 60px; min-width: 60px;">
+                            <col style="width: 48px; min-width: 48px;">
+                            <col style="width: 250px; min-width: 250px;">
+                            <col style="width: 165px; min-width: 165px;">
+                            <col style="width: 110px; min-width: 110px;">
+                            <col style="width: 78px; min-width: 78px;">
+                            <col data-dimension-slot-col="1" style="width: 120px; min-width: 120px;">
+                            <col data-dimension-slot-col="2" style="width: 120px; min-width: 120px;">
+                            <col data-dimension-slot-col="3" style="width: 120px; min-width: 120px;">
+                            <col style="width: 160px; min-width: 160px;">
+                            <col style="width: 180px; min-width: 180px;">
+                            <col style="width: 64px; min-width: 64px;">
                         </colgroup>
                         <thead class="table-light text-center">
                             <tr class="pr-group-header">
-                                <th scope="col" class="pr-sticky-material">Master Material &amp; HS Code <span class="text-danger">*</span></th>
+                                <th scope="col" class="pr-sticky-number">No</th>
+                                <th scope="col" class="pr-sticky-material">Material <span class="text-danger">*</span></th>
+                                <th scope="col">HS Code</th>
                                 <th scope="col">Shape</th>
                                 <th scope="col">Qty <span class="text-danger">*</span></th>
                                 <th scope="col" data-dimension-slot-header="1">Dimension 1 (mm)</th>
@@ -172,6 +177,7 @@
         applyMaterialShapeRules($('#itemsBody tr.item-row').last(), true);
         resetMaterialPreview($('#itemsBody tr.item-row').last());
         itemIndex++;
+        renumberPrRows();
         updateMaterialDimensionHeaders();
         checkRowCount();
     }
@@ -184,6 +190,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $(btn).closest('tr').remove();
+                renumberPrRows();
                 updateMaterialDimensionHeaders();
                 checkRowCount();
             }
@@ -204,6 +211,7 @@
             document.getElementById('btnAddRow')?.focus();
             return;
         }
+        window.AdasiUnsaved?.markClean?.();
         $('#formAction').val(action);
         $('#prForm').submit();
     }
@@ -222,6 +230,7 @@
             cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
+                window.AdasiUnsaved?.markClean?.();
                 $('#formAction').val('submitted');
                 $('#prForm').submit();
             }

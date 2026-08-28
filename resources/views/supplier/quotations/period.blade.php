@@ -50,7 +50,7 @@
             <div class="row g-2 align-items-end">
                 <div class="col-md-5 col-lg-4">
                     <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_pr_number">PR Number</label>
-                    <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="Search PR number... (REQ/MM/YYYY/XXX)">
+                    <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="e.g. REQ/05/2026/001">
                 </div>
                 <div class="col-md-4 col-lg-3">
                     <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_status">My Quotation Status</label>

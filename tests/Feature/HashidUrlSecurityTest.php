@@ -239,6 +239,9 @@ class HashidUrlSecurityTest extends TestCase
         $this->assertTrue(PurchasingNavigation::isSafeUrl('/purchasing/quotations/'.$this->quotation->getRouteKey()));
         $this->assertFalse(PurchasingNavigation::isSafeUrl('/purchasing/quotations?supplier_id='.$this->supplier->id));
         $this->assertTrue(PurchasingNavigation::isSafeUrl('/purchasing/quotations?supplier_id='.$this->supplier->getRouteKey()));
+        $this->assertFalse(PurchasingNavigation::isSafeUrl('/purchasing/claims/data-action'));
+        $this->assertFalse(PurchasingNavigation::isSafeUrl('/purchasing/claims/data-history'));
+        $this->assertTrue(PurchasingNavigation::isSafeUrl('/purchasing/claims'));
     }
 
     public function test_rendered_links_comparison_history_pdf_and_chat_payload_use_hashes(): void

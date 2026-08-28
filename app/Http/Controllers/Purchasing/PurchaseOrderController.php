@@ -216,6 +216,11 @@ class PurchaseOrderController extends Controller
             return redirect()->back()->with('error', 'This quotation is not valid for PO creation.');
         }
 
+        if (! $quotation->hasAvailableItems()) {
+            return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
+                ->with('error', 'Cannot create a Purchase Order because all items in this quotation are marked as not available.');
+        }
+
         if ($quotation->isExpired()) {
             return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
                 ->with('error', 'The quotation validity has expired. Ask the supplier to resubmit the quotation before creating a PO.');
@@ -236,6 +241,7 @@ class PurchaseOrderController extends Controller
             ->whereIn('status', ['submitted', 'accepted'])
             ->where('id', '!=', $quotation->id)
             ->whereDoesntHave('purchaseOrders') // Does not have a PO yet.
+            ->whereHas('items', fn ($q) => $q->where('is_available', true))
             ->where(function ($q) {
                 $q->whereNull('validity_period')
                     ->orWhereDate('validity_period', '>=', today());
@@ -275,6 +281,9 @@ class PurchaseOrderController extends Controller
             }
             if ($q->purchaseOrders()->exists()) {
                 return redirect()->back()->with('error', "Quotation #{$q->id} already has a PO.");
+            }
+            if (! $q->hasAvailableItems()) {
+                return redirect()->back()->with('error', "Quotation #{$q->id} cannot be converted to a PO because all items are marked as not available.");
             }
         }
 

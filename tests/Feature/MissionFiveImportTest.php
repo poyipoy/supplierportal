@@ -279,6 +279,8 @@ class MissionFiveImportTest extends TestCase
             ->assertSee('Import Excel')
             ->assertSee('Replace Current Rows')
             ->assertSee('Append to Current Rows')
+            ->assertSee('Removes the material rows currently shown in this form and replaces them with the validated rows from the spreadsheet.')
+            ->assertSee('Keeps the material rows currently shown and adds validated spreadsheet rows below them.')
             ->assertSee('dimension-input', false)
             ->assertSee('data-dimension-slot="1"', false)
             ->assertSee('data-dimension-canonical-field="thickness"', false)
@@ -591,7 +593,8 @@ class MissionFiveImportTest extends TestCase
             ->assertSee('Import Mode')
             ->assertSee('Fill Empty Fields Only')
             ->assertSee('Replace Imported Fields')
-            ->assertSee('Choose how validated Excel values update the current quotation.')
+            ->assertSee('Only fills offer fields that are still empty. Existing values entered in the form are preserved.')
+            ->assertSee('Replaces the matching offer fields for the same PR items using values from the spreadsheet. It does not create additional quotation items.')
             ->assertSee('quotationImportPreviewUrl', false);
 
         $this->actingAs($this->supplierA)

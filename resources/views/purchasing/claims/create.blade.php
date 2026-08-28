@@ -42,18 +42,17 @@
                     label="Problem Description and Discrepancy"
                             :rows="4"
                             required
-                            placeholder="Detail exactly which material failed inspection, dimensions/visual flaws observed, and operational impact..."
+                            placeholder="e.g. Thickness deviation (actual 34.2mm vs spec 35.0mm), surface crack on 2 pcs..."
                         />
                         <x-ui.textarea
                             name="resolution_expected"
                             label="Expected Resolution / Remedy"
                             :rows="3"
                             required
-                            placeholder="Example: Full replacement of defective lot, credit note refund, or supplier repair on site..."
+                            placeholder="e.g. Full lot replacement within 14 days or credit note on next invoice..."
                         />
                         <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2">
-                            <x-ui.input
-                                type="date"
+                            <x-ui.date-picker
                                 name="deadline"
                                 label="Supplier Response Deadline"
                                 :min="date('Y-m-d', strtotime('+1 day'))"
@@ -84,7 +83,7 @@
             <aside class="tw-grid tw-gap-4">
                 <x-ui.card title="QC Inspection Reference">
                     <x-slot:actions>
-                        <x-ui.button :href="route('qc.inspections.show', $inspection)" target="_blank" variant="ghost" size="sm">
+                        <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $inspection)" variant="ghost" size="sm" title="View Full QC Inspection Report">
                             <x-ui.icon name="external-link" size="sm" />
                         </x-ui.button>
                     </x-slot:actions>
@@ -124,13 +123,13 @@
                             <div class="row g-2">
                                 @foreach($inspection->attachments as $att)
                                     <div class="col-4">
-                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden tw-h-20 tw-bg-surface-low">
+                                        <a href="{{ route('attachments.show', $att->id) }}" class="d-block border rounded overflow-hidden tw-h-20 tw-bg-surface-low image-preview-trigger" title="{{ $att->file_name }}">
                                             <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                                         </a>
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="tw-text-outline tw-text-ui-xs tw-mt-1.5">Evidence photos are automatically attached to supplier claim notice.</div>
+                            <div class="tw-text-outline tw-text-ui-xs tw-mt-1.5">Click photo to view with interactive zoom. Photos are automatically attached to supplier claim notice.</div>
                         </div>
                     @endif
                 </x-ui.card>

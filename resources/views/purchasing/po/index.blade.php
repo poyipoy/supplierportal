@@ -52,7 +52,7 @@
                     type="text"
                     id="filter_po_number"
                     class="form-control border-start-0 ps-0"
-                    placeholder="Search PO number (e.g. PO/05/2026/001)..."
+                    placeholder="e.g. PO/05/2026/001 or supplier name..."
                     autocomplete="off"
                     aria-label="Search purchase order number"
                 >

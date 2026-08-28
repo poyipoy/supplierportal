@@ -121,12 +121,14 @@
                             <th scope="col" style="width: 35px;">No</th>
                             <th scope="col" class="text-start">Material</th>
                             <th scope="col">Requested vs Offered</th>
-                            <th scope="col">Qty</th>
-                            <th scope="col" class="text-end">Weight/Unit</th>
-                            <th scope="col" class="text-end">Total Weight</th>
+                            <th scope="col">Qty<br><span class="fw-normal">Requested / Offer</span></th>
+                            <th scope="col" class="text-end">KG / Unit<br><span class="fw-normal">Requested / Offer</span></th>
+                            <th scope="col" class="text-end">Total KG<br><span class="fw-normal">Requested / Offer</span></th>
                             <th scope="col" class="text-end">Price/Kg ({{ $quotation->currency }})</th>
-                            <th scope="col" class="text-end">Amount ({{ $quotation->currency }})</th>
-                            <th scope="col" class="text-end">Est. IDR</th>
+                            <th scope="col" class="text-end">Requested Amount</th>
+                            <th scope="col" class="text-end">Offer Amount</th>
+                            <th scope="col" class="text-end">Offer Est. IDR</th>
+                            <th scope="col">Notes</th>
                             <th scope="col" class="text-center" style="width: 50px;">MTC</th>
                         </tr>
                     </thead>
@@ -143,7 +145,7 @@
                                 $totalWeight = $item->prItem ? (float)$item->prItem->total_weight : $weight;
                                 $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
                                 $amount = $item->resolved_amount;
-                                $priceIdr = $pricePerKg !== null && $rateValue !== null ? $pricePerKg * $rateValue : null;
+                                $requestedAmount = $item->requested_amount;
                                 $amountIdr = $rateValue !== null ? $amount * $rateValue : null;
                                 $totalOriginal += $amount;
                                 $totalIdr += $amountIdr ?? 0;
@@ -169,9 +171,12 @@
                                     <div class="border rounded tw-p-1.5 tw-bg-surface tw-text-ui-xs">
                                         <span class="text-primary fw-semibold d-block">Offered:</span>
                                         @if($availability['specification']['code'] === 'not_available')
-                                            <span class="fw-medium">Not Available</span>
+                                            <span class="ui-status-chip ui-status-chip--error">Not Available</span>
                                         @else
                                             <span class="fw-medium">Qty {{ $item->available_qty ?? '-' }} &bull; {{ $item->available_dimension_label }}</span>
+                                            @if($item->is_estimated_weight)
+                                                <div class="tw-mt-1"><span class="ui-status-chip ui-status-chip--warning">Est Weight</span></div>
+                                            @endif
                                         @endif
                                         <div class="d-flex flex-wrap gap-1 mt-1">
                                             <span @class([
@@ -189,14 +194,25 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="text-center fw-bold ui-tabular-nums">{{ number_format($quantity, 0) }}</td>
-                                <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($weight, 2) }}</td>
-                                <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($totalWeight, 2) }}</td>
-                                <td class="text-end fw-bold ui-tabular-nums">{{ $pricePerKg === null ? '-' : number_format($pricePerKg, 2) }}</td>
-                                <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
-                                <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">
-                                    {{ $amountIdr !== null ? 'Rp ' . number_format($amountIdr, 0, ',', '.') : '-' }}
+                                <td class="text-center ui-tabular-nums">
+                                    <div>{{ $quantity }}</div>
+                                    <div class="fw-bold text-primary">{{ $item->is_available ? ($item->available_qty ?? '-') : '—' }}</div>
                                 </td>
+                                <td class="text-end ui-tabular-nums">
+                                    <div class="tw-text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($weight) }}</div>
+                                    <div class="fw-bold text-primary">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $weight) : '—' }}</div>
+                                </td>
+                                <td class="text-end ui-tabular-nums">
+                                    <div class="tw-text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($totalWeight) }}</div>
+                                    <div class="fw-bold text-primary">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight) : '—' }}</div>
+                                </td>
+                                <td class="text-end fw-bold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($pricePerKg) }}</td>
+                                <td class="text-end ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($requestedAmount) : '—' }}</td>
+                                <td class="text-end fw-semibold ui-tabular-nums" data-offer-amount="{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '' }}">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}</td>
+                                <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">
+                                    {{ $amountIdr !== null && $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($amountIdr) : '—' }}
+                                </td>
+                                <td class="text-start tw-text-on-surface-variant">{{ $item->notes ?: '—' }}</td>
                                 <td class="text-center">
                                     @if($item->attachments->isNotEmpty())
                                         @foreach($item->attachments as $attachment)
@@ -211,12 +227,12 @@
                     </tbody>
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
-                            <td colspan="7" class="text-end tw-text-on-surface">Total ({{ $quotation->currency }}):</td>
-                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($totalOriginal, 2) }}</td>
+                            <td colspan="8" class="text-end tw-text-on-surface">Total Offer Amount ({{ $quotation->currency }}):</td>
+                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($totalOriginal) }}</td>
                             <td class="text-end text-primary ui-tabular-nums fs-6">
-                                {{ $rateValue !== null ? 'Rp ' . number_format($totalIdr, 0, ',', '.') : '-' }}
+                                {{ $rateValue !== null ? 'Rp '.\App\Support\NumberFormat::maxDecimals($totalIdr) : '—' }}
                             </td>
-                            <td></td>
+                            <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -266,7 +282,7 @@
                 @if($quotationRate)
                     <div class="p-3 tw-bg-surface-low border rounded text-center">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ $quotation->currency }} → IDR</div>
-                        <div class="fw-bold text-primary fs-5 mt-1">Rp {{ number_format($quotationRate->rate_to_idr, 0, ',', '.') }}</div>
+                        <div class="fw-bold text-primary fs-5 mt-1">Rp {{ \App\Support\NumberFormat::maxDecimals($quotationRate->rate_to_idr) }}</div>
                         <div class="tw-text-outline tw-text-ui-xs tw-mt-0.5">Snapshot Date: {{ $quotationRate->valid_from->format('d M Y') }}</div>
                     </div>
                 @else
@@ -277,13 +293,19 @@
             {{-- Review Actions Card --}}
             <x-ui.card title="Commercial Review Actions" description="Actions based on quotation state.">
                 @if($quotation->status === 'submitted' && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
-                    <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="tw-mb-2.5">
-                        @csrf
-                        <x-ui.button type="submit" size="sm" class="tw-w-full">
-                            <x-slot:leading><x-ui.icon name="circle-check" /></x-slot:leading>
-                            Accept Quotation
-                        </x-ui.button>
-                    </form>
+                    @if($hasAvailableItems)
+                        <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="tw-mb-2.5">
+                            @csrf
+                            <x-ui.button type="submit" size="sm" class="tw-w-full">
+                                <x-slot:leading><x-ui.icon name="circle-check" /></x-slot:leading>
+                                Accept Quotation
+                            </x-ui.button>
+                        </form>
+                    @else
+                        <x-ui.alert tone="warning" title="No available materials" class="tw-mb-2.5">
+                            All requested materials in this quotation are marked as not available.
+                        </x-ui.alert>
+                    @endif
 
                     <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-2.5" id="requestRevisionForm">
                         @csrf
@@ -298,23 +320,33 @@
                         </x-ui.button>
                     </form>
 
-                    <form action="{{ route('purchasing.quotations.reject', $quotation) }}" method="POST" class="tw-mb-2.5">
-                        @csrf
-                        <div class="mb-2">
-                            <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="reviewerNotes">Rejection Reason</label>
-                            <textarea name="reviewer_notes" id="reviewerNotes" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="State reason for rejecting offer..."></textarea>
-                        </div>
-                        <x-ui.button type="submit" variant="danger" size="sm" class="tw-w-full">
-                            <x-slot:leading><x-ui.icon name="circle-x" /></x-slot:leading>
-                            Reject Quotation
-                        </x-ui.button>
-                    </form>
+                    @if($hasAvailableItems)
+                        <form action="{{ route('purchasing.quotations.reject', $quotation) }}" method="POST" class="tw-mb-2.5">
+                            @csrf
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="reviewerNotes">Rejection Reason</label>
+                                <textarea name="reviewer_notes" id="reviewerNotes" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="State reason for rejecting offer..."></textarea>
+                            </div>
+                            <x-ui.button type="submit" variant="danger" size="sm" class="tw-w-full">
+                                <x-slot:leading><x-ui.icon name="circle-x" /></x-slot:leading>
+                                Reject Quotation
+                            </x-ui.button>
+                        </form>
+                    @endif
                 @endif
 
                 @if($canCreatePo)
                     <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation)" size="sm" class="tw-w-full tw-mb-2.5">
                         <x-ui.icon name="receipt" size="sm" />
                         <span>Create PO from Quotation</span>
+                    </x-ui.button>
+                @elseif(! $hasAvailableItems && in_array($quotation->status, ['submitted', 'accepted'], true) && $quotation->purchaseOrders->isEmpty() && $quotation->status === 'accepted')
+                    <x-ui.alert tone="warning" title="No available materials" class="tw-mb-2.5">
+                        All requested materials in this quotation are marked as not available. A Purchase Order cannot be created.
+                    </x-ui.alert>
+                    <x-ui.button variant="secondary" size="sm" class="tw-mb-2.5 tw-w-full" disabled title="Supplier marked all items as not available">
+                        <x-slot:leading><x-ui.icon name="ban" /></x-slot:leading>
+                        Cannot Create PO (Not Available)
                     </x-ui.button>
                 @elseif($quotation->status === 'submitted' && $quotation->isExpired())
                     @if($canRequestRevision)

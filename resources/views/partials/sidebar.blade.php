@@ -21,7 +21,7 @@
     <div class="sidebar-control" aria-label="Sidebar controls">
         <x-ui.icon-button
             icon="panel-left"
-            label="Toggle sidebar navigation"
+            label="Toggle sidebar"
             size="lg"
             class="sidebar-toggle sidebar-toggle--desktop tw-text-on-surface-variant"
             x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
@@ -39,7 +39,7 @@
                         <x-ui.icon name="panel-left-open" size="md" />
                     </span>
                 </span>
-                <span class="sidebar-toggle-label sidebar-type-text" style="--sidebar-type-steps: 19;">Collapse navigation</span>
+                <span class="sidebar-toggle-label sidebar-type-text" style="--sidebar-type-steps: 16;">Collapse sidebar</span>
             </x-slot:visual>
         </x-ui.icon-button>
     </div>

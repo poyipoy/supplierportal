@@ -11,6 +11,7 @@ use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\Materials\MaterialResolver;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
@@ -363,6 +364,26 @@ class PurchaseRequisitionController extends Controller
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
                 ->with('error', 'You cannot edit this requisition.');
+        }
+
+        $resolver = app(MaterialResolver::class);
+        $materialIndex = $resolver->activeIndex();
+        foreach ($pr->items as $item) {
+            if ($item->material_master_id === null && ! empty($item->material_name)) {
+                $matched = $resolver->resolveExact($item->material_name, $materialIndex);
+                if (! $matched) {
+                    $stripped = preg_replace('/[\s\-_]+(F|R|H|FLAT|ROUND|HOLLOW)$/i', '', trim($item->material_name));
+                    $matched = $resolver->resolveExact($stripped, $materialIndex);
+                    if (! $matched) {
+                        $nospace = str_replace(' ', '', $stripped);
+                        $matched = $resolver->resolveExact($nospace, $materialIndex);
+                    }
+                }
+                if ($matched) {
+                    $item->material_master_id = $matched->id;
+                    $item->saveQuietly();
+                }
+            }
         }
 
         $periods = Period::where('status', 'open')

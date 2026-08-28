@@ -9,8 +9,8 @@ const materialDimensionFields = {
         { field: 'length', label: 'Length' },
     ],
     Hollow: [
-        { field: 'd_inner', label: 'Inner Diameter' },
         { field: 'd_outer', label: 'Outer Diameter' },
+        { field: 'd_inner', label: 'Inner Diameter' },
         { field: 'length', label: 'Length' },
     ],
 };
@@ -23,6 +23,12 @@ const materialPreviewTimers = new WeakMap();
 const materialPreviewRequests = new WeakMap();
 const materialSearchTimers = new WeakMap();
 const materialSearchRequests = new WeakMap();
+
+function renumberPrRows() {
+    $('#itemsBody tr.item-row').each(function(index) {
+        $(this).find('[data-pr-row-number]').text(index + 1);
+    });
+}
 
 function positionMaterialSearchResults($row) {
     const $input = $row.find('.material-master-search');
@@ -148,6 +154,7 @@ function selectMaterialInRow($row, material) {
     setMaterialSearchOpen($row, false);
     $row.find('.hs-code-manual-override').val('0');
     $row.find('.weight-manual-override').val('0');
+    $row.find('.pr-remark-material-name').text(material.material_code || material.text || 'Material');
     scheduleMaterialPreview($row, 0);
 }
 
@@ -207,13 +214,19 @@ function searchMaterial($input) {
 }
 
 function materialPreviewPayload($row) {
+    const hsDisplay = String($row.find('.hs-code-display').val() || '').trim();
+    const isExact8 = /^\d{8}$/.test(hsDisplay.replace(/\./g, ''));
+    const hsOverrideVal = $row.find('.hs-code-manual-override').val();
+    const hsManualOverride = (hsOverrideVal === '1' && isExact8) ? '1' : '0';
+
     const payload = {
         _token: @json(csrf_token()),
-        material_master_id: $row.find('.material-master-id').val(),
+        material_master_id: $row.find('.material-master-id').val() || '',
+        material_name: $row.find('.material-master-search').val() || '',
         shape: $row.find('.material-shape-select').val(),
         quantity: $row.find('.material-quantity').val() || 1,
-        hs_code: $row.find('.hs-code-display').val(),
-        hs_code_manual_override: $row.find('.hs-code-manual-override').val() || 0,
+        hs_code: isExact8 ? hsDisplay : '',
+        hs_code_manual_override: hsManualOverride,
         weight_needed: $row.find('.weight-unit-display').val(),
         weight_manual_override: $row.find('.weight-manual-override').val() || 0,
     };
@@ -252,7 +265,9 @@ function renderMaterialPreview($row, payload) {
 
 function requestMaterialPreview($row) {
     const row = $row[0];
-    if (!$row.find('.material-master-id').val()) {
+    const matId = $row.find('.material-master-id').val();
+    const matName = String($row.find('.material-master-search').val() || '').trim();
+    if (!matId && !matName) {
         resetMaterialPreview($row);
         return;
     }
@@ -272,7 +287,12 @@ function requestMaterialPreview($row) {
     });
     materialPreviewRequests.set(row, request);
 
-    request.done((payload) => renderMaterialPreview($row, payload))
+    request.done((payload) => {
+        if (payload.material && payload.material.id) {
+            $row.find('.material-master-id').val(payload.material.id);
+        }
+        renderMaterialPreview($row, payload);
+    })
         .fail((xhr, status) => {
             if (status === 'abort') return;
             const response = xhr.responseJSON || {};
@@ -303,16 +323,120 @@ function scheduleMaterialPreview($row, delay = 300) {
 
 function initializeMaterialShapeRows() {
     $('#itemsBody tr.item-row').each(function() {
-        $(this).data('selected-material-name', $(this).find('.material-master-search').val());
+        const $row = $(this);
+        $row.data('selected-material-name', $row.find('.material-master-search').val());
         applyMaterialShapeRules(this, true);
-        if ($(this).find('.material-master-id').val()) {
-            scheduleMaterialPreview($(this), 0);
-        } else {
-            resetMaterialPreview($(this));
+        const hasMatId = !!$row.find('.material-master-id').val();
+        const hasMatName = !!String($row.find('.material-master-search').val() || '').trim();
+        const hasExistingHs = !!$row.find('.hs-code-display').val();
+        const hasExistingWeight = Number($row.find('.weight-unit-display').val() || 0) > 0;
+
+        if (hasMatId || hasMatName) {
+            scheduleMaterialPreview($row, 0);
+        } else if (!hasExistingHs && !hasExistingWeight) {
+            resetMaterialPreview($row);
         }
     });
+    renumberPrRows();
     updateMaterialDimensionHeaders();
 }
+
+// Remark popover event handlers
+$(document).on('click', '[data-remark-trigger]', function(e) {
+    e.stopPropagation();
+    const $cell = $(this).closest('td');
+    const $popover = $cell.find('[data-remark-popover]');
+    const isVisible = !$popover.prop('hidden');
+
+    $('[data-remark-popover]').prop('hidden', true);
+    $('[data-remark-trigger]').attr('aria-expanded', 'false');
+
+    if (!isVisible) {
+        const currentVal = $cell.find('.pr-item-remark').val() || '';
+        $cell.find('.pr-remark-draft').val(currentVal);
+
+        const matName = $cell.closest('tr').find('.material-master-search').val() || 'Material';
+        $cell.find('.pr-remark-material-name').text(matName);
+
+        const rect = this.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        if (spaceBelow < 240 && rect.top > 240) {
+            $popover.css({ top: 'auto', bottom: 'calc(100% + 4px)', right: '0', left: 'auto' });
+        } else {
+            $popover.css({ top: 'calc(100% + 4px)', bottom: 'auto', right: '0', left: 'auto' });
+        }
+
+        $popover.prop('hidden', false);
+        $(this).attr('aria-expanded', 'true');
+        $cell.find('.pr-remark-draft').focus();
+    }
+});
+
+$(document).on('click', '[data-remark-save]', function(e) {
+    e.stopPropagation();
+    const $cell = $(this).closest('td');
+    const $popover = $cell.find('[data-remark-popover]');
+    const draftVal = $cell.find('.pr-remark-draft').val().trim();
+    const $realInput = $cell.find('.pr-item-remark');
+    const $trigger = $cell.find('[data-remark-trigger]');
+    const $triggerText = $trigger.find('.pr-remark-trigger__text');
+
+    $realInput.val(draftVal).trigger('input').trigger('change');
+
+    if (draftVal) {
+        $triggerText.text(draftVal);
+        $trigger.addClass('has-remark').attr('title', draftVal);
+        if (!$trigger.find('.pr-remark-trigger__badge').length) {
+            $trigger.append('<span class="pr-remark-trigger__badge" title="Remark entered" aria-hidden="true"></span>');
+        }
+    } else {
+        $triggerText.text('Add remark...');
+        $trigger.removeClass('has-remark').attr('title', 'Click to add remark');
+        $trigger.find('.pr-remark-trigger__badge').remove();
+    }
+
+    $popover.prop('hidden', true);
+    $trigger.attr('aria-expanded', 'false');
+});
+
+$(document).on('click', '[data-remark-cancel]', function(e) {
+    e.stopPropagation();
+    const $cell = $(this).closest('td');
+    $cell.find('[data-remark-popover]').prop('hidden', true);
+    $cell.find('[data-remark-trigger]').attr('aria-expanded', 'false').focus();
+});
+
+$(document).on('change input', '.pr-item-remark', function() {
+    const val = $(this).val().trim();
+    const $cell = $(this).closest('td');
+    const $trigger = $cell.find('[data-remark-trigger]');
+    const $triggerText = $trigger.find('.pr-remark-trigger__text');
+    if (val) {
+        $triggerText.text(val);
+        $trigger.addClass('has-remark').attr('title', val);
+        if (!$trigger.find('.pr-remark-trigger__badge').length) {
+            $trigger.append('<span class="pr-remark-trigger__badge" title="Remark entered" aria-hidden="true"></span>');
+        }
+    } else {
+        $triggerText.text('Add remark...');
+        $trigger.removeClass('has-remark').attr('title', 'Click to add remark');
+        $trigger.find('.pr-remark-trigger__badge').remove();
+    }
+});
+
+$(document).on('click', function(e) {
+    if (!$(e.target).closest('[data-remark-popover], [data-remark-trigger]').length) {
+        $('[data-remark-popover]').prop('hidden', true);
+        $('[data-remark-trigger]').attr('aria-expanded', 'false');
+    }
+});
+
+$(document).on('keydown', function(e) {
+    if (e.key === 'Escape') {
+        $('[data-remark-popover]').prop('hidden', true);
+        $('[data-remark-trigger]').attr('aria-expanded', 'false');
+    }
+});
 
 $(document).on('focus input', '.material-master-search', function() {
     const $input = $(this);

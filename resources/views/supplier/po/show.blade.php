@@ -120,7 +120,7 @@
                                         {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                         <span class="tw-text-on-surface-variant fw-normal ms-2">
                                             @if($rate)
-                                                &bull; Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                                &bull; Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ \App\Support\NumberFormat::maxDecimals($rate->rate_to_idr) }}
                                             @endif
                                         </span>
                                     </td>
@@ -135,7 +135,14 @@
                                 @endphp
                                 <tr>
                                     <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
-                                    <td class="text-start fw-bold tw-text-on-surface">{{ $item->prItem->material_name }}</td>
+                                    <td class="text-start tw-text-on-surface">
+                                        <div class="fw-bold">{{ $item->prItem->material_name }}</div>
+                                        @if($item->is_available)
+                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">Offer: {{ $item->available_dimension_label }}</div>
+                                        @else
+                                            <span class="ui-status-chip ui-status-chip--error tw-mt-0.5">Not Available</span>
+                                        @endif
+                                    </td>
                                     <td class="text-start">
                                         @if($quotation->purchaseRequisition)
                                             <a href="{{ route('supplier.quotations.show', $quotation) }}" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1" title="Open related quotation">
@@ -155,14 +162,23 @@
                                             <span class="tw-text-outline">-</span>
                                         @endif
                                     </td>
-                                    <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->prItem->quantity_value, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->prItem->weight_needed, 2) }}</td>
-                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->prItem->total_weight, 2) }}</td>
-                                    <td class="text-end ui-tabular-nums">
-                                        {{ $item->price_per_kg === null ? '-' : number_format($item->price_per_kg, 4) }}
+                                    <td class="text-center fw-bold ui-tabular-nums">
+                                        @if($item->is_available)
+                                            {{ $item->available_qty ?? $item->prItem->quantity_value }}
+                                        @else
+                                            <span class="ui-status-chip ui-status-chip--error">Not Available</span>
+                                        @endif
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
-                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                                    <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
+                                        {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed) : '—' }}
+                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">Est Weight</span>@endif
+                                    </td>
+                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
+                                    <td class="text-end ui-tabular-nums">
+                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg) }}
+                                    </td>
+                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}</td>
+                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($idr) : '—' }}</td>
                                 </tr>
                             @endforeach
                         @endforeach
@@ -170,8 +186,8 @@
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="8" class="text-end tw-text-on-surface">TOTAL:</td>
-                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($totalAmount, 2) }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
+                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($totalAmount) }} {{ $po->currency }}</td>
+                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ \App\Support\NumberFormat::maxDecimals($totalIdr) }}</td>
                         </tr>
                     </tfoot>
                 </table>

@@ -68,8 +68,8 @@
 
             foreach($comparison['suppliers'] as $sup) {
                 $p = $row['prices'][$sup['quotation_id']] ?? null;
-                if($p && $p['price_idr']) {
-                    $supplierTotals[$sup['quotation_id']]['total'] += $p['price_idr'] * $row['item']->total_weight;
+                if($p && $p['is_available'] && $p['price_idr']) {
+                    $supplierTotals[$sup['quotation_id']]['total'] += $p['offer_amount_idr'] ?? 0;
                     if($minIdr && $p['price_idr'] <= $minIdr) {
                         $supplierWins[$sup['quotation_id']]++;
                     }
@@ -111,7 +111,7 @@
                         <tr>
                             <td class="fw-semibold tw-text-on-surface">{{ $data['name'] }}</td>
                             <td class="text-end fw-bold ui-tabular-nums {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">
-                                Rp {{ number_format($data['total'], 0, ',', '.') }}
+                                Rp {{ \App\Support\NumberFormat::maxDecimals($data['total']) }}
                             </td>
                             <td class="text-center ui-tabular-nums">{{ $supplierWins[$qid] }}</td>
                             <td>
@@ -156,7 +156,7 @@
                             <th scope="col" rowspan="2" class="align-middle">Weight/Unit (Kg)</th>
                             <th scope="col" rowspan="2" class="align-middle">Total Weight (Kg)</th>
                             @foreach($comparison['suppliers'] as $sup)
-                                <th scope="colgroup" colspan="2" class="text-center">
+                                <th scope="colgroup" colspan="3" class="text-center">
                                     {{ $sup['name'] }}
                                     <div class="tw-mt-1">
                                         <x-ui.status-chip :tone="$sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'error' : 'info')" size="sm">
@@ -170,6 +170,7 @@
                             @foreach($comparison['suppliers'] as $sup)
                                 <th scope="col" class="text-center small">Price/Kg ({{ $sup['currency'] }})</th>
                                 <th scope="col" class="text-center small">Price/Kg (IDR)</th>
+                                <th scope="col" class="text-center small">Offer Amount</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -189,14 +190,27 @@
                                     @endif
                                 </td>
                                 <td class="text-center">{{ number_format($row['item']->quantity_value, 0) }}</td>
-                                <td class="text-center">{{ number_format($row['item']->weight_needed, 2) }}</td>
-                                <td class="text-center fw-medium text-primary">{{ number_format($row['item']->total_weight, 2) }}</td>
+                                <td class="text-center">{{ \App\Support\NumberFormat::maxDecimals($row['item']->weight_needed) }}</td>
+                                <td class="text-center fw-medium text-primary">{{ \App\Support\NumberFormat::maxDecimals($row['item']->total_weight) }}</td>
                                 @foreach($comparison['suppliers'] as $sup)
                                     @php $p = $row['prices'][$sup['quotation_id']] ?? null; @endphp
-                                    @if($p && $p['price_per_kg'])
-                                        <td class="text-end">{{ number_format($p['price_per_kg'], 2) }}</td>
+                                    @if($p && !$p['is_available'])
+                                        <td class="text-center" colspan="3">
+                                            <span class="ui-status-chip ui-status-chip--error">Not Available</span>
+                                            @if($p['detail_url'])
+                                                <x-ui.icon-button :href="$p['detail_url']" icon="external-link" label="Open quotation details" size="sm" class="tw-ms-1" />
+                                            @endif
+                                        </td>
+                                    @elseif($p && $p['price_per_kg'])
+                                        <td class="text-end">
+                                            {{ \App\Support\NumberFormat::maxDecimals($p['price_per_kg']) }}
+                                            <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
+                                                Qty {{ $p['available_qty'] ?? '-' }} · {{ \App\Support\NumberFormat::maxDecimals($p['offered_total_weight']) }} kg
+                                                @if($p['is_estimated_weight']) · Est Weight @endif
+                                            </div>
+                                        </td>
                                         <td class="text-end fw-bold {{ ($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr) ? 'text-success bg-success bg-opacity-10' : '' }}">
-                                            Rp {{ number_format($p['price_idr'], 0, ',', '.') }}
+                                            Rp {{ \App\Support\NumberFormat::maxDecimals($p['price_idr']) }}
                                             @if($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr)
                                                 <x-ui.icon name="circle-check" class="ms-1" />
                                             @endif
@@ -204,8 +218,12 @@
                                                 <x-ui.icon-button :href="$p['detail_url']" icon="external-link" label="Open quotation details" size="sm" class="tw-ms-1" />
                                             @endif
                                         </td>
+                                        <td class="text-end fw-semibold ui-tabular-nums">
+                                            {{ \App\Support\NumberFormat::maxDecimals($p['offer_amount']) }} {{ $p['currency'] }}
+                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">Rp {{ \App\Support\NumberFormat::maxDecimals($p['offer_amount_idr']) }}</div>
+                                        </td>
                                     @else
-                                        <td class="text-center text-muted" colspan="2">- no quotation -</td>
+                                        <td class="text-center text-muted" colspan="3">- no quotation -</td>
                                     @endif
                                 @endforeach
                             </tr>

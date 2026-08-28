@@ -59,7 +59,7 @@
         <form action="{{ route('admin.exchange-rates.store') }}" method="POST" class="modal-content">
             @csrf
             <div class="modal-header"><div><h2 class="modal-title fs-6 fw-bold" id="rateModalTitle">Add Effective Rate</h2><p class="mb-0 mt-1 small text-muted">A new record is appended; existing values remain unchanged.</p></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-            <div class="modal-body tw-grid tw-gap-4"><x-ui.select name="currency" label="Currency" :options="\App\Models\ExchangeRate::CURRENCY_LABELS" :value="old('currency')" required /><x-ui.input name="rate_to_idr" type="number" label="Rate to IDR" step="0.01" min="1" placeholder="Example: 15500" required /><x-ui.input name="valid_from" type="date" label="Effective Date" :value="old('valid_from', date('Y-m-d'))" required /></div>
+            <div class="modal-body tw-grid tw-gap-4"><x-ui.select name="currency" label="Currency" :options="\App\Models\ExchangeRate::CURRENCY_LABELS" :value="old('currency')" required /><x-ui.input name="rate_to_idr" type="number" label="Rate to IDR" step="0.01" min="1" placeholder="Example: 15500" required /><x-ui.date-picker name="valid_from" label="Effective Date" :value="old('valid_from', date('Y-m-d'))" required /></div>
             <div class="modal-footer"><x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">Cancel</x-ui.button><x-ui.button type="submit"><x-ui.icon name="save" /> Save Rate</x-ui.button></div>
         </form>
     </div>

@@ -108,7 +108,7 @@
         <x-ui.metric-card
             flat
             label="Total Requested Weight"
-            :value="number_format((float) $totalKg, 2, '.', ',') . ' kg'"
+            :value="\App\Support\NumberFormat::maxDecimals($totalKg) . ' kg'"
             icon="weight"
             tone="primary"
         />
@@ -169,8 +169,10 @@
                         <tr>
                             <th scope="col" style="width: 40px;">No</th>
                             <th scope="col">HS Code</th>
-                            <th scope="col">Material Name</th>
-                            <th scope="col">Shape &amp; Dimensions (mm)</th>
+                            <th scope="col">HS Status</th>
+                            <th scope="col" class="text-start">Material</th>
+                            <th scope="col">Shape</th>
+                            <th scope="col" class="text-start">Dimensions (mm)</th>
                             <th scope="col">Qty</th>
                             <th scope="col" class="text-end">KG / Unit</th>
                             <th scope="col" class="text-end">Total Weight</th>
@@ -179,35 +181,37 @@
                     </thead>
                     <tbody>
                         @foreach($pr->items as $index => $item)
+                            @php
+                                $hsStatusLabel = match (true) {
+                                    $item->hs_code_source === 'manual' => 'Manual',
+                                    $item->hs_code_resolution_status === 'matched' => 'Auto',
+                                    $item->hs_code_source === 'legacy' => 'Legacy',
+                                    $item->hs_code_resolution_status === 'no_rule' => 'No Rule',
+                                    $item->hs_code_resolution_status === 'ambiguous' => 'Ambiguous',
+                                    $item->hs_code_resolution_status === 'unmapped_material' => 'Unmapped',
+                                    default => 'Unresolved',
+                                };
+                                $hsStatusTone = match ($hsStatusLabel) {
+                                    'Auto' => 'ui-status-chip--success',
+                                    'Manual' => 'ui-status-chip--warning',
+                                    default => 'ui-status-chip--neutral',
+                                };
+                            @endphp
                             <tr>
                                 <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
-                                <td class="text-center">
-                                    <div class="fw-semibold tw-text-on-surface">{{ $item->hs_code ?? '-' }}</div>
-                                    <div class="tw-mt-0.5">
-                                        @if($item->hs_code_source === 'manual')
-                                            <span class="ui-status-chip ui-status-chip--warning">Manual</span>
-                                        @elseif($item->hs_code_resolution_status === 'matched')
-                                            <span class="ui-status-chip ui-status-chip--success">Auto</span>
-                                        @elseif($item->hs_code_source === 'legacy')
-                                            <span class="ui-status-chip ui-status-chip--neutral">Legacy</span>
-                                        @else
-                                            <span class="ui-status-chip ui-status-chip--neutral">{{ str_replace('_', ' ', $item->hs_code_resolution_status ?? 'unresolved') }}</span>
-                                        @endif
-                                    </div>
+                                <td class="text-center fw-semibold tw-text-on-surface">
+                                    {{ $item->hs_code ?? '-' }}
                                 </td>
-                                <td class="fw-bold tw-text-on-surface">{{ $item->material_name }}</td>
                                 <td class="text-center">
-                                    @if($item->shape)
-                                        <span class="ui-status-chip ui-status-chip--neutral">{{ $item->shape }}</span>
-                                        <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">{{ $item->dimension_label }}</div>
-                                    @else
-                                        <span class="tw-text-outline">-</span>
-                                    @endif
+                                    <span class="ui-status-chip {{ $hsStatusTone }}">{{ $hsStatusLabel }}</span>
                                 </td>
+                                <td class="text-start fw-bold tw-text-on-surface">{{ $item->material_name }}</td>
+                                <td class="text-center">{{ $item->shape ?: '-' }}</td>
+                                <td class="text-start tw-text-on-surface-variant">{{ $item->dimension_label }}</td>
                                 <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
-                                <td class="text-end ui-tabular-nums tw-text-on-surface">{{ number_format($item->weight_needed, 4) }}</td>
-                                <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->total_weight, 4) }}</td>
-                                <td class="tw-text-on-surface-variant">{{ $item->remark ?: '-' }}</td>
+                                <td class="text-end ui-tabular-nums tw-text-on-surface">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
+                                <td class="text-end fw-bold text-primary ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
+                                <td class="text-start tw-text-on-surface-variant">{{ $item->remark ?: '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -252,10 +256,10 @@
                             <tr class="{{ $isLowest ? 'pr-best-quotation' : '' }}">
                                 <td class="fw-bold tw-text-on-surface">{{ $supplierName }}</td>
                                 <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></td>
-                                <td class="text-end ui-tabular-nums fw-semibold">{{ number_format($quotation->total_amount, 2, ',', '.') }}</td>
+                                <td class="text-end ui-tabular-nums fw-semibold">{{ \App\Support\NumberFormat::maxDecimals($quotation->total_amount) }}</td>
                                 <td class="text-end fw-bold ui-tabular-nums">
                                     @if($quotation->total_idr !== null)
-                                        Rp {{ number_format($quotation->total_idr, 0, ',', '.') }}
+                                        Rp {{ \App\Support\NumberFormat::maxDecimals($quotation->total_idr) }}
                                         @if($isLowest)
                                             <x-ui.icon name="circle-check" class="ms-1 text-success" aria-label="Lowest estimated total" />
                                         @endif

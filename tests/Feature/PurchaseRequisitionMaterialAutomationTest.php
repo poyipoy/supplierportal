@@ -68,6 +68,10 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertSee('Dimension 2 (mm)')
             ->assertSee('Dimension 3 (mm)')
             ->assertSee('KG / Unit (kg)')
+            ->assertSee('HS Code')
+            ->assertSee('data-pr-row-number', false)
+            ->assertSee('renumberPrRows', false)
+            ->assertSee('pr-sticky-number', false)
             ->assertSee('pr-sticky-material', false)
             ->assertSee('pr-sticky-action', false)
             ->assertSee('border-right: 1px solid var(--md-outline-variant) !important', false)
@@ -90,13 +94,14 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             'material_master_id' => $scm->id,
             'material_name' => $scm->material_code,
             'quantity' => 1,
-            'shape' => 'Round',
+            'shape' => 'Hollow',
+            'd_inner' => 60,
             'd_outer' => 100,
             'length' => 1000,
             'weight_needed' => 61.67,
         ]);
 
-        $this->actingAs($this->purchasing)
+        $response = $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.edit', $pr))
             ->assertOk()
             ->assertSee('Outer Diameter')
@@ -109,6 +114,13 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertSee('data-dimension-slot="3"', false)
             ->assertSee('data-dimension-canonical-field="d_outer"', false)
             ->assertSee('is-disabled', false);
+
+        $content = $response->getContent();
+        $this->assertLessThan(
+            strpos($content, 'data-dimension-field-cell="d_inner"'),
+            strpos($content, 'data-dimension-field-cell="d_outer"'),
+            'Hollow presentation must render Outer Diameter before Inner Diameter.'
+        );
     }
 
     public function test_dimension_slots_render_shape_labels_for_mixed_rows(): void

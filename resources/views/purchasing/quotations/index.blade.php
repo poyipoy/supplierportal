@@ -4,52 +4,6 @@
 
 @push('styles')
     <style>
-        .quotation-filter .date-range-control {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-            align-items: center;
-            gap: .35rem;
-            min-height: 31px;
-            padding: .2rem .4rem;
-            border: 1px solid var(--md-outline);
-            border-radius: var(--md-shape-xs);
-            background-color: var(--md-surface);
-        }
-
-        .quotation-filter .date-range-control.is-invalid {
-            border-color: var(--md-error);
-        }
-
-        .quotation-filter .date-range-segment {
-            display: flex;
-            align-items: center;
-            gap: .35rem;
-            min-width: 0;
-        }
-
-        .quotation-filter .date-range-label {
-            flex: 0 0 auto;
-            font-size: var(--ui-font-size-xs);
-            color: var(--md-on-surface-variant);
-            white-space: nowrap;
-        }
-
-        .quotation-filter .date-range-control input[type="month"] {
-            min-width: 0;
-            height: 24px;
-            padding: 0;
-            border: 0;
-            font-size: var(--ui-font-size-sm);
-            background-color: transparent;
-            box-shadow: none;
-        }
-
-        .quotation-filter .date-range-divider {
-            color: var(--md-outline);
-            font-size: var(--ui-font-size-sm);
-            line-height: 1;
-        }
-
         .quotation-pagination .pagination {
             align-items: center;
             justify-content: flex-end;
@@ -87,25 +41,6 @@
         }
 
         @media (max-width: 575.98px) {
-            .quotation-filter .date-range-control {
-                grid-template-columns: minmax(0, 1fr);
-                gap: .25rem;
-                padding: .35rem .5rem;
-            }
-
-            .quotation-filter .date-range-segment {
-                justify-content: space-between;
-            }
-
-            .quotation-filter .date-range-control input[type="month"] {
-                max-width: 10rem;
-                text-align: right;
-            }
-
-            .quotation-filter .date-range-divider {
-                display: none;
-            }
-
             .quotation-pagination .pagination {
                 justify-content: center;
                 flex-wrap: wrap;
@@ -162,21 +97,27 @@
                         />
                     </div>
 
-                    <div style="min-width: 220px;">
-                        <div class="date-range-control" id="quotationDateRangeControl">
-                            <div class="date-range-segment">
-                                <span class="date-range-label">From</span>
-                                <input type="month" name="date_from" id="quotationDateFrom" value="{{ request('date_from') }}"
-                                    placeholder="MM/YYYY" aria-label="Start date">
-                            </div>
-                            <span class="date-range-divider">-</span>
-                            <div class="date-range-segment">
-                                <span class="date-range-label">To</span>
-                                <input type="month" name="date_to" id="quotationDateTo" value="{{ request('date_to') }}"
-                                    placeholder="MM/YYYY" aria-label="End date" aria-describedby="quotationDateError">
-                            </div>
-                        </div>
+                    <div style="min-width: 250px;">
+                        <x-ui.date-range-picker
+                            id="quotationDateRangeControl"
+                            granularity="month"
+                            start-name="date_from"
+                            start-id="quotationDateFrom"
+                            start-label="From"
+                            :start-value="request('date_from')"
+                            end-name="date_to"
+                            end-id="quotationDateTo"
+                            end-label="To"
+                            :end-value="request('date_to')"
+                            error-id="quotationDateError"
+                            compact
+                        />
                     </div>
+
+                    <x-ui.button type="submit" variant="secondary" size="sm" data-calendar-native-submit>
+                        <x-ui.icon name="filter" />
+                        <span>Apply filters</span>
+                    </x-ui.button>
 
                     <div style="min-width: 160px;">
                         <select name="supplier_id" class="form-select form-select-sm" aria-label="Filter by Supplier">
@@ -213,7 +154,6 @@
                         <span>Reset</span>
                     </x-ui.button>
                 </form>
-                <div class="d-none text-danger small fw-semibold w-100 mt-1" id="quotationDateError" aria-live="polite">End date cannot be before start date.</div>
             </x-slot:filters>
         </x-ui.toolbar>
 
@@ -310,14 +250,15 @@
             const dateError = document.getElementById('quotationDateError');
             const exportButton = document.getElementById('exportQuotationsBtn');
             const textFilters = filterForm.querySelectorAll('input[type="text"]');
-            const instantFilters = filterForm.querySelectorAll('select, input[type="month"]');
+            const instantFilters = filterForm.querySelectorAll('select');
             let filterTimer;
             let filterRequest;
 
             const toggleDateError = (show) => {
                 dateRangeControl.classList.toggle('is-invalid', show);
-                dateTo.classList.toggle('is-invalid', show);
-                dateError.classList.toggle('d-none', !show);
+                dateRangeControl.dataset.calendarInvalid = String(show);
+                dateError.querySelector('[data-calendar-error-message]').textContent = 'End month cannot be before start month.';
+                dateError.classList.toggle('tw-hidden', !show);
             };
 
             const hasInvalidDateRange = () => dateFrom.value && dateTo.value && dateTo.value < dateFrom.value;
@@ -440,6 +381,19 @@
 
             instantFilters.forEach((input) => {
                 input.addEventListener('change', () => {
+                    clearTimeout(filterTimer);
+                    submitFilters();
+                });
+            });
+
+            dateRangeControl.addEventListener('adasi:date-range-commit', () => {
+                clearTimeout(filterTimer);
+                submitFilters();
+            });
+
+            [dateFrom, dateTo].forEach((input) => {
+                input.addEventListener('change', () => {
+                    if (dateRangeControl.dataset.calendarEnhanced === 'true') return;
                     clearTimeout(filterTimer);
                     submitFilters();
                 });

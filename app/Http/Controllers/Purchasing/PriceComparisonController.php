@@ -8,6 +8,7 @@ use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Support\NumberFormat;
 use App\Support\PurchasingNavigation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -131,6 +132,10 @@ class PriceComparisonController extends Controller
                             ? QuotationItem::calculateRequestedAmount($quotationItem->prItem, $quotationItem->price_per_kg)
                             : ($quotationItem ? (float) $quotationItem->amount : null);
                         $offerAmount = $quotationItem?->resolved_amount;
+                        $isAvailable = $quotationItem?->is_available ?? false;
+                        $offerAmountIdr = $quotationItem && $isAvailable && $rate
+                            ? $offerAmount * (float) $rate->rate_to_idr
+                            : null;
 
                         $row['prices'][$quotation->id] = [
                             'quotation_id' => $quotation->id,
@@ -144,6 +149,14 @@ class PriceComparisonController extends Controller
                             'amount' => $requestedAmount,
                             'requested_amount' => $requestedAmount,
                             'offer_amount' => $offerAmount,
+                            'offer_amount_idr' => $offerAmountIdr,
+                            'is_available' => $isAvailable,
+                            'available_qty' => $quotationItem?->available_qty,
+                            'available_dimension_label' => $quotationItem?->available_dimension_label,
+                            'offered_weight_per_unit' => $quotationItem?->offered_weight_per_unit,
+                            'offered_total_weight' => $quotationItem?->offered_total_weight,
+                            'is_estimated_weight' => $quotationItem?->is_estimated_weight ?? false,
+                            'availability_comparison' => $quotationItem?->availability_comparison,
                             'currency' => $quotation->currency,
                             'detail_url' => $quotationItem
                                 ? PurchasingNavigation::toRoute('purchasing.quotations.show', $quotation)
@@ -846,7 +859,7 @@ class PriceComparisonController extends Controller
     private function formatNumber($value, int $decimals = 2): string
     {
         return $value !== null
-            ? number_format((float) $value, $decimals, ',', '.')
+            ? NumberFormat::maxDecimals($value, $decimals)
             : '-';
     }
 
@@ -858,7 +871,7 @@ class PriceComparisonController extends Controller
 
         $value = (float) $value;
 
-        return ($value > 0 ? '+' : '').number_format($value, 2, ',', '.').'%';
+        return ($value > 0 ? '+' : '').NumberFormat::maxDecimals($value).'%';
     }
 
     private function formatDate($value): ?string

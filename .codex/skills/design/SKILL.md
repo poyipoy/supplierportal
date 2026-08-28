@@ -301,7 +301,7 @@ python3 --version || python --version
 ## Setup
 
 ```bash
-export GEMINI_API_KEY="your-key"  # https://aistudio.google.com/apikey
+export GEMINI_API_KEY="your_api_key_here"  # https://aistudio.google.com/apikey
 pip install google-genai pillow
 ```
 

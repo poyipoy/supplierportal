@@ -1,0 +1,45 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        DB::statement("ALTER TABLE quotations MODIFY currency ENUM('USD','JPY','IDR','CNY') NOT NULL DEFAULT 'USD'");
+        DB::statement("ALTER TABLE exchange_rates MODIFY currency ENUM('USD','JPY','IDR','CNY') NOT NULL");
+        DB::statement("ALTER TABLE purchase_orders MODIFY currency ENUM('USD','JPY','IDR','CNY') NOT NULL DEFAULT 'USD'");
+
+        $adminId = DB::table('users')->where('role', 'admin')->orderBy('id')->value('id');
+
+        if ($adminId) {
+            foreach (['IDR' => 1, 'CNY' => 2250] as $currency => $rate) {
+                if (DB::table('exchange_rates')->where('currency', $currency)->exists()) {
+                    continue;
+                }
+
+                DB::table('exchange_rates')->insert([
+                    'currency' => $currency,
+                    'rate_to_idr' => $rate,
+                    'valid_from' => now()->toDateString(),
+                    'created_by' => $adminId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+
+    public function down(): void
+    {
+        DB::table('quotations')->whereIn('currency', ['IDR', 'CNY'])->update(['currency' => 'USD']);
+        DB::table('purchase_orders')->whereIn('currency', ['IDR', 'CNY'])->update(['currency' => 'USD']);
+
+        DB::table('exchange_rates')->whereIn('currency', ['IDR', 'CNY'])->delete();
+
+        DB::statement("ALTER TABLE quotations MODIFY currency ENUM('USD','JPY') NOT NULL DEFAULT 'USD'");
+        DB::statement("ALTER TABLE exchange_rates MODIFY currency ENUM('USD','JPY') NOT NULL");
+        DB::statement("ALTER TABLE purchase_orders MODIFY currency ENUM('USD','JPY') NOT NULL DEFAULT 'USD'");
+    }
+};

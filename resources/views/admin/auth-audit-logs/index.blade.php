@@ -35,8 +35,15 @@
                         <option value="{{ $user->getRouteKey() }}">{{ $user->name }} - {{ $user->email }}</option>
                     @endforeach
                 </x-ui.select>
-                <x-ui.input name="audit_date_from" id="auditDateFrom" type="date" label="From Date" />
-                <x-ui.input name="audit_date_to" id="auditDateTo" type="date" label="To Date" />
+                <x-ui.date-range-picker
+                    id="auditDateRange"
+                    start-name="audit_date_from"
+                    start-id="auditDateFrom"
+                    start-label="From Date"
+                    end-name="audit_date_to"
+                    end-id="auditDateTo"
+                    end-label="To Date"
+                />
             </div>
         </div>
     </div>
@@ -92,7 +99,12 @@ $(function () {
     });
 
     let emailTimer;
-    $('#auditUser, #auditEvent, #auditDateFrom, #auditDateTo').on('change', () => table.ajax.reload());
+    $('#auditUser, #auditEvent').on('change', () => table.ajax.reload());
+    document.getElementById('auditDateRange')?.addEventListener('adasi:date-range-commit', () => table.ajax.reload());
+    $('#auditDateFrom, #auditDateTo').on('change', function () {
+        if (this.closest('[data-calendar-enhanced="true"]')) return;
+        table.ajax.reload();
+    });
     $('#auditEmail').on('input', function () {
         clearTimeout(emailTimer);
         emailTimer = setTimeout(() => table.ajax.reload(), 350);
@@ -100,6 +112,7 @@ $(function () {
 
     $('#resetAuditFilters').on('click', function () {
         $('#auditUser, #auditEmail, #auditEvent, #auditDateFrom, #auditDateTo').val('');
+        document.getElementById('auditDateRange')?.dispatchEvent(new CustomEvent('adasi:calendar-reset'));
         table.ajax.reload();
     });
 });

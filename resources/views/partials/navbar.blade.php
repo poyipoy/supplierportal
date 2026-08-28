@@ -3,7 +3,7 @@
     <div class="d-flex align-items-center tw-gap-2.5 tw-min-w-0">
         <x-ui.icon-button
             icon="panel-left"
-            label="Toggle sidebar navigation"
+            label="Toggle sidebar"
             size="lg"
             class="sidebar-toggle sidebar-toggle--mobile tw-text-on-surface-variant"
             x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"

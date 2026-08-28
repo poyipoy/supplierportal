@@ -160,7 +160,7 @@ class ConversationPresenter
             ]);
         }
 
-        if ($quotation->canApproveBy($viewer) && ! $quotation->isExpired()) {
+        if ($quotation->canApproveBy($viewer) && ! $quotation->isExpired() && $quotation->hasAvailableItems()) {
             $actions[] = [
                 'key' => 'accept_quotation',
                 'label' => 'Accept Quotation',
@@ -171,7 +171,7 @@ class ConversationPresenter
             ];
         }
 
-        if ($quotation->canApproveBy($viewer)) {
+        if ($quotation->canApproveBy($viewer) && $quotation->hasAvailableItems()) {
             $actions[] = [
                 'key' => 'reject_quotation',
                 'label' => 'Reject Quotation',

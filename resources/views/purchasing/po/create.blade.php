@@ -74,17 +74,20 @@
                         @php
                             $oqItems = [];
                             foreach ($oq->items as $i) {
+                                if (!$i->isAvailable()) {
+                                    continue;
+                                }
                                 $oqItems[] = [
                                     'material' => $i->prItem->material_name,
-                                    'quantity' => (int)$i->prItem->quantity_value,
-                                    'weight_unit' => (float)$i->prItem->weight_needed,
-                                    'weight' => (float)$i->prItem->total_weight,
+                                    'quantity' => (int)($i->available_qty ?? $i->prItem->quantity_value),
+                                    'weight_unit' => (float)($i->offered_weight_per_unit ?? $i->prItem->weight_needed),
+                                    'weight' => (float)($i->offered_total_weight ?? $i->prItem->total_weight),
                                     'price' => $i->price_per_kg === null ? null : (float) $i->price_per_kg,
                                     'amount' => $i->resolved_amount,
                                     'rate' => (float)($oq->exchange_rate?->rate_to_idr ?? 0),
                                 ];
                             }
-                            $oqTotal = $oq->items->sum('amount');
+                            $oqTotal = $oq->total_amount;
                             $oqRate = $oq->exchange_rate;
                             $oqIdr = $oqTotal * ($oqRate ? $oqRate->rate_to_idr : 1);
                         @endphp
@@ -140,21 +143,27 @@
                     @php $totalAmount = 0; $totalIdr = 0; $no = 1; @endphp
                     @foreach($quotation->items as $item)
                         @php
-                            $amount = $item->resolved_amount;
+                            $isAvail = $item->isAvailable();
+                            $amount = $isAvail ? $item->resolved_amount : 0;
                             $idr = $amount * ($rate ? $rate->rate_to_idr : 1);
                             $totalAmount += $amount;
                             $totalIdr += $idr;
                         @endphp
-                        <tr>
+                        <tr class="{{ $isAvail ? '' : 'table-secondary tw-opacity-75' }}">
                             <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
                             <td class="fw-bold text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</td>
-                            <td class="fw-semibold tw-text-on-surface">{{ $item->prItem->material_name }}</td>
-                            <td class="text-center ui-tabular-nums">{{ number_format($item->prItem->quantity_value, 0) }}</td>
-                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->prItem->weight_needed, 2) }}</td>
-                            <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->prItem->total_weight, 2) }}</td>
-                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $item->price_per_kg === null ? '-' : number_format($item->price_per_kg, 4) }}</td>
-                            <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
-                            <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                            <td class="fw-semibold tw-text-on-surface">
+                                {{ $item->prItem->material_name }}
+                                @if(!$isAvail)
+                                    <span class="ui-status-chip ui-status-chip--error ms-1">Not Available</span>
+                                @endif
+                            </td>
+                            <td class="text-center ui-tabular-nums">{{ $isAvail ? number_format($item->available_qty ?? $item->prItem->quantity_value, 0) : '—' }}</td>
+                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $isAvail ? number_format($item->offered_weight_per_unit ?? $item->prItem->weight_needed, 2) : '—' }}</td>
+                            <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $isAvail ? number_format($item->offered_total_weight ?? $item->prItem->total_weight, 2) : '—' }}</td>
+                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $isAvail && $item->price_per_kg !== null ? number_format($item->price_per_kg, 4) : '—' }}</td>
+                            <td class="text-end fw-semibold ui-tabular-nums">{{ $isAvail ? number_format($amount, 2) : '—' }}</td>
+                            <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $isAvail ? 'Rp '.number_format($idr, 0, ',', '.') : '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -181,8 +190,8 @@
             description="Specify the estimated material delivery arrival date and any operational order instructions."
         >
             <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
-                <x-ui.input type="date" name="estimated_arrival" label="Estimated Arrival Date" required />
-                <x-ui.textarea name="notes" label="Purchase Order Notes / Instructions" :rows="2" placeholder="Optional notes for delivery coordination..." />
+                <x-ui.date-picker name="estimated_arrival" label="Estimated Arrival Date" required />
+                <x-ui.textarea name="notes" label="Purchase Order Notes / Instructions" :rows="2" placeholder="e.g. Include original COO & B/L with cargo, notify 3 days prior to ETA..." />
             </div>
         </x-ui.form-section>
 

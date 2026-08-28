@@ -24,18 +24,63 @@
         background: var(--md-primary-container);
     }
 
+    .po-sticky-nav-bar {
+        position: sticky;
+        top: var(--topbar-height, 56px);
+        z-index: 1010;
+        background-color: var(--md-surface);
+        border: 1px solid var(--md-outline-variant);
+        border-radius: var(--md-shape-sm, 8px);
+        padding: 0.35rem 0.5rem;
+        box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.08);
+        transition: box-shadow 0.2s ease;
+    }
+
+    .po-nav-pills {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 0.35rem;
+        margin: 0;
+        padding: 0.1rem 0;
+    }
+
+    .po-nav-pills::-webkit-scrollbar {
+        display: none;
+    }
+
+    .po-nav-pills .nav-item {
+        flex-shrink: 0;
+    }
+
     .po-nav-pills .nav-link {
         font-size: var(--ui-font-size-sm);
         font-weight: 600;
-        padding: 0.35rem 0.85rem;
+        padding: 0.4rem 0.95rem;
         color: var(--md-on-surface-variant);
         border-radius: var(--md-shape-full);
         transition: all 0.15s ease;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    .po-nav-pills .nav-link:hover:not(.active) {
+        background-color: var(--md-surface-container-high);
+        color: var(--md-on-surface);
     }
 
     .po-nav-pills .nav-link.active {
         background-color: var(--md-primary) !important;
         color: var(--md-on-primary) !important;
+        box-shadow: 0 1px 3px rgba(var(--md-primary-rgb), 0.35);
+    }
+
+    .po-nav-pills .nav-link.text-danger.active {
+        background-color: var(--md-error) !important;
+        color: var(--md-on-error) !important;
+        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.35);
     }
 
     .po-doc-card {
@@ -44,6 +89,62 @@
 
     .po-doc-card:hover {
         border-color: var(--md-primary);
+    }
+
+    @keyframes sectionPulsePrimary {
+        0% {
+            box-shadow: 0 0 0 0 rgba(31, 95, 166, 0);
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+        20% {
+            box-shadow: 0 0 0 5px rgba(31, 95, 166, 0.35), 0 8px 24px -4px rgba(31, 95, 166, 0.2);
+            outline: 2px solid var(--md-primary);
+            outline-offset: 2px;
+        }
+        50% {
+            box-shadow: 0 0 0 6px rgba(31, 95, 166, 0.2), 0 6px 18px -4px rgba(31, 95, 166, 0.15);
+            outline: 2px solid var(--md-primary);
+            outline-offset: 2px;
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(31, 95, 166, 0);
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+    }
+
+    @keyframes sectionPulseDanger {
+        0% {
+            box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+        20% {
+            box-shadow: 0 0 0 5px rgba(192, 57, 43, 0.4), 0 8px 24px -4px rgba(192, 57, 43, 0.25);
+            outline: 2px solid var(--md-error);
+            outline-offset: 2px;
+        }
+        50% {
+            box-shadow: 0 0 0 6px rgba(192, 57, 43, 0.2), 0 6px 18px -4px rgba(192, 57, 43, 0.15);
+            outline: 2px solid var(--md-error);
+            outline-offset: 2px;
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+    }
+
+    .section-target-highlight {
+        animation: sectionPulsePrimary 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        border-radius: var(--md-shape-md, 12px);
+    }
+
+    .section-target-highlight--danger {
+        animation: sectionPulseDanger 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        border-radius: var(--md-shape-md, 12px);
     }
 </style>
 @endpush
@@ -117,8 +218,8 @@
     </div>
 
     {{-- Sticky In-Page Navigation Bar --}}
-    <div class="tw-sticky tw-top-2 tw-z-sticky tw-border tw-border-outline tw-bg-surface tw-p-1.5">
-        <ul class="nav po-nav-pills gap-1" id="po-section-nav">
+    <nav class="po-sticky-nav-bar" aria-label="Purchase order sections">
+        <ul class="nav po-nav-pills" id="po-section-nav">
             <li class="nav-item"><a class="nav-link active" href="#sec-info">Order Info</a></li>
             <li class="nav-item"><a class="nav-link" href="#sec-material">Materials &amp; Commercials</a></li>
             @if($po->qcInspections->isNotEmpty())
@@ -130,7 +231,7 @@
             @endif
             <li class="nav-item"><a class="nav-link" href="#sec-timeline">Timeline</a></li>
         </ul>
-    </div>
+    </nav>
 
     <div class="tw-grid tw-items-start tw-gap-4 lg:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
         {{-- Main Column --}}
@@ -220,7 +321,7 @@
                                         <span class="tw-text-on-surface-variant fw-normal ms-2">
                                             ({{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }})
                                             @if($rate)
-                                                &bull; Locked Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                                &bull; Locked Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ \App\Support\NumberFormat::maxDecimals($rate->rate_to_idr) }}
                                             @endif
                                         </span>
                                     </td>
@@ -237,21 +338,26 @@
                                     <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $globalNo++ }}</td>
                                     <td class="fw-bold tw-text-on-surface">{{ $item->prItem->material_name }}</td>
                                     <td class="text-center">
-                                        @if($item->prItem->shape)
-                                            <span class="ui-status-chip ui-status-chip--neutral">{{ $item->prItem->shape }}</span>
-                                            <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">{{ $item->prItem->dimension_label }}</div>
+                                        @if(!$item->is_available)
+                                            <span class="ui-status-chip ui-status-chip--error">Not Available</span>
+                                        @elseif($item->prItem->shape)
+                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">Requested: {{ $item->prItem->dimension_label }}</div>
+                                            <div class="fw-semibold tw-text-ui-xs tw-mt-0.5">Offer: {{ $item->available_dimension_label }}</div>
                                         @else
                                             <span class="tw-text-outline">-</span>
                                         @endif
                                     </td>
-                                    <td class="text-center ui-tabular-nums">{{ number_format($item->prItem->quantity_value, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->prItem->weight_needed, 2) }}</td>
-                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->prItem->total_weight, 2) }}</td>
+                                    <td class="text-center ui-tabular-nums">{{ $item->is_available ? ($item->available_qty ?? $item->prItem->quantity_value) : '—' }}</td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
-                                        {{ $item->price_per_kg === null ? '-' : number_format($item->price_per_kg, 4) }}
+                                        {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed) : '—' }}
+                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">Est Weight</span>@endif
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
-                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp {{ number_format($idr, 0, ',', '.') }}</td>
+                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
+                                    <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
+                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg) }}
+                                    </td>
+                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}</td>
+                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($idr) : '—' }}</td>
                                     <td class="text-nowrap">
                                         @if($quotation->purchaseRequisition)
                                             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none fw-medium" title="Open PR detail">
@@ -277,8 +383,8 @@
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="7" class="text-end tw-text-on-surface">GRAND TOTAL</td>
-                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($grandTotalAmount, 2) }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ number_format($grandTotalIdr, 0, ',', '.') }}</td>
+                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($grandTotalAmount) }} {{ $po->currency }}</td>
+                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ \App\Support\NumberFormat::maxDecimals($grandTotalIdr) }}</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
@@ -570,53 +676,148 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        const sections = $('div[id^="sec-"]');
         const navLinks = $('#po-section-nav .nav-link');
-        let isScrolling = false;
+        let isProgrammaticScroll = false;
+        let manualClickLockId = null;
+        let unlockTimer = null;
 
-        $(window).on('scroll', function() {
-            if (isScrolling) return;
+        function getStickyOffset() {
+            const navHeight = $('.po-sticky-nav-bar').outerHeight() || 46;
+            return 56 + navHeight + 16;
+        }
 
-            let current = '';
-            const scrollPosition = $(window).scrollTop() + 100;
+        function setActiveTab(targetId) {
+            navLinks.removeClass('active');
+            const $activeLink = $(`#po-section-nav .nav-link[href="${targetId}"]`);
+            if ($activeLink.length) {
+                $activeLink.addClass('active');
+            }
+        }
 
-            let matching = [];
-            sections.each(function() {
-                const sectionTop = $(this).offset().top;
-                const sectionHeight = $(this).outerHeight();
-                if (scrollPosition >= sectionTop && scrollPosition < (sectionTop + sectionHeight)) {
-                    matching.push($(this));
+        function updateActiveSection() {
+            if (isProgrammaticScroll) return;
+            if (manualClickLockId) {
+                setActiveTab(manualClickLockId);
+                return;
+            }
+
+            const stickyOffset = getStickyOffset();
+            const scrollPos = $(window).scrollTop();
+            const viewportFocusLine = scrollPos + stickyOffset + 40;
+
+            let bestMatchId = null;
+            let bestDistance = Infinity;
+
+            navLinks.each(function() {
+                const href = $(this).attr('href');
+                if (!href || !href.startsWith('#')) return;
+                const $target = $(href);
+                if (!$target.length || !$target.is(':visible')) return;
+
+                const top = $target.offset().top;
+                const height = $target.outerHeight();
+                const bottom = top + height;
+
+                if (top <= viewportFocusLine && bottom > viewportFocusLine - 60) {
+                    const distance = Math.abs(viewportFocusLine - top);
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        bestMatchId = href;
+                    }
                 }
             });
 
-            if (matching.length > 0) {
-                current = matching[0].attr('id');
+            if (!bestMatchId) {
+                if (scrollPos < 150) {
+                    bestMatchId = navLinks.first().attr('href');
+                } else {
+                    let minDiff = Infinity;
+                    navLinks.each(function() {
+                        const href = $(this).attr('href');
+                        if (!href || !href.startsWith('#')) return;
+                        const $target = $(href);
+                        if (!$target.length || !$target.is(':visible')) return;
+                        const diff = Math.abs($target.offset().top - (scrollPos + stickyOffset));
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestMatchId = href;
+                        }
+                    });
+                }
             }
 
-            if(current) {
-                navLinks.removeClass('active');
-                $(`#po-section-nav .nav-link[href="#${current}"]`).addClass('active');
+            if (bestMatchId) {
+                setActiveTab(bestMatchId);
+            }
+        }
+
+        let highlightTimer = null;
+
+        function highlightTargetSection($target, isDanger) {
+            $('.section-target-highlight, .section-target-highlight--danger').removeClass('section-target-highlight section-target-highlight--danger');
+            if (highlightTimer) {
+                clearTimeout(highlightTimer);
+            }
+
+            const highlightClass = isDanger ? 'section-target-highlight--danger' : 'section-target-highlight';
+
+            // Force DOM reflow to re-trigger CSS animation smoothly on repeated clicks
+            $target.removeClass(highlightClass);
+            if ($target.length && $target[0]) {
+                void $target[0].offsetWidth;
+            }
+            $target.addClass(highlightClass);
+
+            highlightTimer = setTimeout(() => {
+                $target.removeClass(highlightClass);
+            }, 1850);
+        }
+
+        // Release lock when user manually scrolls with wheel, touch, or keys
+        $(window).on('wheel touchmove keydown', function() {
+            manualClickLockId = null;
+            if (unlockTimer) {
+                clearTimeout(unlockTimer);
+                unlockTimer = null;
             }
         });
+
+        $(window).on('scroll', updateActiveSection);
 
         navLinks.on('click', function(e) {
             e.preventDefault();
             const targetId = $(this).attr('href');
+            const $target = $(targetId);
+            if (!$target.length) return;
 
-            navLinks.removeClass('active');
-            $(this).addClass('active');
+            // Lock this tab as the explicit active selection
+            manualClickLockId = targetId;
+            setActiveTab(targetId);
 
-            const targetPosition = $(targetId).offset().top - 80;
+            if (unlockTimer) {
+                clearTimeout(unlockTimer);
+            }
+            unlockTimer = setTimeout(() => {
+                manualClickLockId = null;
+            }, 1500);
 
-            isScrolling = true;
+            const isDanger = targetId === '#sec-claim' || $(this).hasClass('text-danger');
+            highlightTargetSection($target, isDanger);
+
+            const targetPosition = Math.max(0, $target.offset().top - getStickyOffset());
+
+            isProgrammaticScroll = true;
             $('html, body').stop().animate({
                 scrollTop: targetPosition
-            }, 300);
-
-            setTimeout(() => {
-                isScrolling = false;
-            }, 350);
+            }, 300, function() {
+                setTimeout(() => {
+                    isProgrammaticScroll = false;
+                }, 50);
+            });
         });
+
+        // Initialize active state on load
+        updateActiveSection();
     });
 
     $('.btn-update-doc').on('click', function() {

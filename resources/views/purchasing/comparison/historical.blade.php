@@ -7,7 +7,7 @@
     $formatPct = function ($value) {
         if ($value === null) return '-';
 
-        return ($value > 0 ? '+' : '') . number_format($value, 2, ',', '.') . '%';
+        return ($value > 0 ? '+' : '') . \App\Support\NumberFormat::maxDecimals($value) . '%';
     };
 
     $changeBadge = function ($value) {
@@ -16,11 +16,11 @@
         }
 
         if ($value > 0) {
-            return '<span class="tw-font-semibold tw-text-error">+' . number_format($value, 2, ',', '.') . '%</span>';
+            return '<span class="tw-font-semibold tw-text-error">+' . \App\Support\NumberFormat::maxDecimals($value) . '%</span>';
         }
 
         if ($value < 0) {
-            return '<span class="tw-font-semibold tw-text-success">&minus;' . number_format(abs($value), 2, ',', '.') . '%</span>';
+            return '<span class="tw-font-semibold tw-text-success">&minus;' . \App\Support\NumberFormat::maxDecimals(abs($value)) . '%</span>';
         }
 
         return '<span class="tw-font-semibold tw-text-on-surface-variant">0%</span>';
@@ -176,9 +176,9 @@
                         @if($periodView === 'yearly')
                             <tr>
                                 <td class="text-center fw-medium">{{ $row['period'] }}</td>
-                                <td class="text-end text-primary fw-bold ui-tabular-nums">Rp {{ number_format($row['price_idr'], 0, ',', '.') }}</td>
-                                <td class="text-end ui-tabular-nums">Rp {{ number_format($row['min_idr'], 0, ',', '.') }}</td>
-                                <td class="text-end ui-tabular-nums">Rp {{ number_format($row['max_idr'], 0, ',', '.') }}</td>
+                                <td class="text-end text-primary fw-bold ui-tabular-nums">Rp {{ \App\Support\NumberFormat::maxDecimals($row['price_idr']) }}</td>
+                                <td class="text-end ui-tabular-nums">Rp {{ \App\Support\NumberFormat::maxDecimals($row['min_idr']) }}</td>
+                                <td class="text-end ui-tabular-nums">Rp {{ \App\Support\NumberFormat::maxDecimals($row['max_idr']) }}</td>
                                 <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                             </tr>
                         @else
@@ -195,10 +195,10 @@
                                 </td>
                                 <td class="text-center">{{ $row['supplier'] ?? '-' }}</td>
                                 <td class="text-end ui-tabular-nums">
-                                    {{ number_format($row['price_per_kg'], 2, ',', '.') }}
+                                    {{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg']) }}
                                     <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">{{ $row['currency'] }}</span>
                                 </td>
-                                <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] ? 'Rp ' . number_format($row['total_idr'], 0, ',', '.') : '-' }}</td>
+                                <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] ? 'Rp '.\App\Support\NumberFormat::maxDecimals($row['total_idr']) : '-' }}</td>
                                 <td class="text-center">
                                     @if(!empty($row['purchase_order_at_display']))
                                         {{ $row['purchase_order_at_display'] }}

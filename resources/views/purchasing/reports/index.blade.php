@@ -68,16 +68,15 @@
                     </select>
                 </div>
 
-                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2">
-                    <div>
-                        <label class="form-label small fw-semibold tw-text-on-surface" for="po-report-start-date">Start Date</label>
-                        <input type="date" name="start_date" id="po-report-start-date" class="form-control form-control-sm" />
-                    </div>
-                    <div>
-                        <label class="form-label small fw-semibold tw-text-on-surface" for="po-report-end-date">End Date</label>
-                        <input type="date" name="end_date" id="po-report-end-date" class="form-control form-control-sm" />
-                    </div>
-                </div>
+                <x-ui.date-range-picker
+                    id="poReportDateRange"
+                    start-name="start_date"
+                    start-id="po-report-start-date"
+                    start-label="Start Date"
+                    end-name="end_date"
+                    end-id="po-report-end-date"
+                    end-label="End Date"
+                />
 
                 <div class="pt-2">
                     <x-ui.button type="submit" variant="primary" size="sm" class="tw-w-full">

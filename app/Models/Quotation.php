@@ -209,4 +209,28 @@ class Quotation extends Model
     {
         return $this->morphMany(Attachment::class, 'attachable');
     }
+
+    /**
+     * Determine if the quotation has at least one item marked as available.
+     */
+    public function hasAvailableItems(): bool
+    {
+        $items = $this->relationLoaded('items')
+            ? $this->items
+            : $this->items()->get();
+
+        return $items->contains(fn (QuotationItem $item) => $item->isAvailable());
+    }
+
+    /**
+     * Get the count of items marked as available.
+     */
+    public function availableItemsCount(): int
+    {
+        $items = $this->relationLoaded('items')
+            ? $this->items
+            : $this->items()->get();
+
+        return $items->filter(fn (QuotationItem $item) => $item->isAvailable())->count();
+    }
 }

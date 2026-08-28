@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\PrItem;
+use App\Services\Materials\MaterialResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,6 +14,26 @@ class MaterialCalculationRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('material_master_id') && $this->filled('material_name')) {
+            $name = (string) $this->input('material_name');
+            $resolver = app(MaterialResolver::class);
+            $material = $resolver->resolveExact($name);
+            if (! $material) {
+                $stripped = preg_replace('/[\s\-_]+(F|R|H|FLAT|ROUND|HOLLOW)$/i', '', trim($name));
+                $material = $resolver->resolveExact($stripped);
+                if (! $material) {
+                    $nospace = str_replace(' ', '', $stripped);
+                    $material = $resolver->resolveExact($nospace);
+                }
+            }
+            if ($material) {
+                $this->merge(['material_master_id' => $material->id]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -21,6 +42,7 @@ class MaterialCalculationRequest extends FormRequest
                 'integer',
                 Rule::exists('material_masters', 'id')->where('is_active', true),
             ],
+            'material_name' => ['nullable', 'string', 'max:255'],
             'shape' => ['nullable', Rule::in(PrItem::SHAPES)],
             'quantity' => ['required', 'integer', 'min:1'],
             'hs_code' => ['nullable', 'string', 'max:20'],

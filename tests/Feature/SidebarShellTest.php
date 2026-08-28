@@ -23,7 +23,7 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('brand-text sidebar-type-text', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-label sidebar-type-text', $sidebar);
         $this->assertStringContainsString('sidebar-heading-label sidebar-type-text', $sidebar);
-        $this->assertStringContainsString('Collapse navigation', $sidebar);
+        $this->assertStringContainsString('Collapse sidebar', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-icon--collapse', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-icon--expand', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-icon--collapse', $navbar);
