@@ -179,21 +179,22 @@ class SessionSecurityTest extends TestCase
         $this->assertDatabaseHas('auth_audit_logs', ['user_id' => $target->id, 'event' => 'role_changed']);
     }
 
-    public function test_concurrent_session_cap_evicts_the_oldest_session_on_new_login(): void
+    public function test_concurrent_session_cap_of_three_evicts_only_the_oldest_active_session(): void
     {
         // The concurrent-session cap works directly against the `sessions`
         // table, which the array driver used by the rest of this suite
         // never writes to. Switch to the database driver for this test only.
         config()->set('session.driver', 'database');
-        config()->set('auth_security.session.max_concurrent_sessions', 2);
+        config()->set('auth_security.session.max_concurrent_sessions', 3);
         Notification::fake();
 
         $user = User::factory()->create();
 
-        // Two pre-existing "other device" sessions, oldest first.
+        // Three pre-existing "other device" sessions, oldest first.
         DB::table('sessions')->insert([
             ['id' => 'other-session-oldest', 'user_id' => $user->id, 'ip_address' => '10.0.0.1', 'user_agent' => 'DeviceA', 'payload' => base64_encode(''), 'last_activity' => now()->subMinutes(30)->timestamp],
-            ['id' => 'other-session-newest', 'user_id' => $user->id, 'ip_address' => '10.0.0.2', 'user_agent' => 'DeviceB', 'payload' => base64_encode(''), 'last_activity' => now()->subMinutes(10)->timestamp],
+            ['id' => 'other-session-middle', 'user_id' => $user->id, 'ip_address' => '10.0.0.2', 'user_agent' => 'DeviceB', 'payload' => base64_encode(''), 'last_activity' => now()->subMinutes(20)->timestamp],
+            ['id' => 'other-session-newest', 'user_id' => $user->id, 'ip_address' => '10.0.0.3', 'user_agent' => 'DeviceC', 'payload' => base64_encode(''), 'last_activity' => now()->subMinutes(10)->timestamp],
         ]);
 
         $this->post('/login', ['email' => $user->email, 'password' => 'password'])
@@ -201,52 +202,59 @@ class SessionSecurityTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
 
-        // Limit is 2 (including the session that was just created), so only
-        // the single most-recently-active OTHER session may survive.
+        // Limit is 3 (including the session that was just created), so the
+        // two most-recently-active OTHER sessions survive.
         $this->assertDatabaseMissing('sessions', ['id' => 'other-session-oldest']);
+        $this->assertDatabaseHas('sessions', ['id' => 'other-session-middle']);
         $this->assertDatabaseHas('sessions', ['id' => 'other-session-newest']);
+        $this->assertSame(3, DB::table('sessions')->where('user_id', $user->id)->count());
         $this->assertDatabaseHas('auth_audit_logs', [
             'user_id' => $user->id,
             'event' => 'concurrent_session_limit_enforced',
         ]);
     }
 
-    public function test_login_from_a_known_active_session_does_not_trigger_new_device_alert(): void
+    public function test_idle_expired_session_does_not_consume_a_concurrent_session_slot(): void
     {
         config()->set('session.driver', 'database');
+        config()->set('auth_security.session.max_concurrent_sessions', 3);
         Notification::fake();
+        $user = User::factory()->create();
+        $expiredAt = now()->subMinutes((int) config('session.lifetime') + 1)->timestamp;
 
+        DB::table('sessions')->insert([
+            ['id' => 'active-session-one', 'user_id' => $user->id, 'ip_address' => '10.0.0.1', 'user_agent' => 'ActiveA', 'payload' => base64_encode(''), 'last_activity' => now()->subMinutes(10)->timestamp],
+            ['id' => 'active-session-two', 'user_id' => $user->id, 'ip_address' => '10.0.0.2', 'user_agent' => 'ActiveB', 'payload' => base64_encode(''), 'last_activity' => now()->subMinutes(5)->timestamp],
+            ['id' => 'idle-expired-session', 'user_id' => $user->id, 'ip_address' => '10.0.0.3', 'user_agent' => 'Expired', 'payload' => base64_encode(''), 'last_activity' => $expiredAt],
+        ]);
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertDatabaseHas('sessions', ['id' => 'active-session-one']);
+        $this->assertDatabaseHas('sessions', ['id' => 'active-session-two']);
+        $this->assertDatabaseHas('sessions', ['id' => 'idle-expired-session']);
+        $this->assertDatabaseMissing('auth_audit_logs', [
+            'user_id' => $user->id,
+            'event' => 'concurrent_session_limit_enforced',
+        ]);
+    }
+
+    public function test_active_sessions_profile_hides_idle_expired_rows(): void
+    {
+        config()->set('session.driver', 'database');
         $user = User::factory()->create();
 
         DB::table('sessions')->insert([
-            'id' => 'already-active-elsewhere',
-            'user_id' => $user->id,
-            'ip_address' => '127.0.0.1',
-            'user_agent' => 'Symfony',
-            'payload' => base64_encode(''),
-            'last_activity' => now()->subMinutes(1)->timestamp,
+            ['id' => 'visible-active-session', 'user_id' => $user->id, 'ip_address' => '10.0.0.4', 'user_agent' => 'VisibleActiveDevice', 'payload' => base64_encode(''), 'last_activity' => now()->subMinute()->timestamp],
+            ['id' => 'hidden-expired-session', 'user_id' => $user->id, 'ip_address' => '10.0.0.5', 'user_agent' => 'HiddenExpiredDevice', 'payload' => base64_encode(''), 'last_activity' => now()->subMinutes((int) config('session.lifetime') + 1)->timestamp],
         ]);
 
-        $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1', 'HTTP_USER_AGENT' => 'Symfony'])
-            ->post('/login', ['email' => $user->email, 'password' => 'password'])
-            ->assertRedirect(route('dashboard', absolute: false));
-
-        Notification::assertNotSentTo($user, \App\Notifications\NewDeviceLoginNotification::class);
-    }
-
-    public function test_login_from_an_unrecognized_ip_and_user_agent_triggers_new_device_alert(): void
-    {
-        config()->set('session.driver', 'database');
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.7', 'HTTP_USER_AGENT' => 'Never-Seen-Before-Browser'])
-            ->post('/login', ['email' => $user->email, 'password' => 'password'])
-            ->assertRedirect(route('dashboard', absolute: false));
-
-        Notification::assertSentTo($user, \App\Notifications\NewDeviceLoginNotification::class);
-        $this->assertDatabaseHas('auth_audit_logs', ['user_id' => $user->id, 'event' => 'new_device_login']);
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('VisibleActiveDevice')
+            ->assertDontSee('HiddenExpiredDevice');
     }
 
     public function test_user_can_revoke_a_single_other_session_without_affecting_the_current_one(): void
@@ -254,6 +262,7 @@ class SessionSecurityTest extends TestCase
         config()->set('session.driver', 'database');
 
         $user = User::factory()->create();
+        $originalVersion = $user->auth_session_version;
 
         DB::table('sessions')->insert([
             'id' => 'someone-elses-device',
@@ -270,6 +279,41 @@ class SessionSecurityTest extends TestCase
 
         $this->assertDatabaseMissing('sessions', ['id' => 'someone-elses-device']);
         $this->assertAuthenticatedAs($user);
+        $this->assertSame($originalVersion, $user->fresh()->auth_session_version);
+        $this->assertDatabaseHas('auth_audit_logs', [
+            'user_id' => $user->id,
+            'event' => 'session_revoked',
+        ]);
+    }
+
+    public function test_user_cannot_revoke_another_users_session(): void
+    {
+        config()->set('session.driver', 'database');
+        $actor = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        DB::table('sessions')->insert([
+            'id' => 'other-users-session',
+            'user_id' => $otherUser->id,
+            'ip_address' => '10.1.1.2',
+            'user_agent' => 'OtherUserDevice',
+            'payload' => base64_encode(''),
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $this->actingAs($actor)
+            ->delete(route('profile.sessions.revoke', 'other-users-session'))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'session-not-found');
+
+        $this->assertDatabaseHas('sessions', [
+            'id' => 'other-users-session',
+            'user_id' => $otherUser->id,
+        ]);
+        $this->assertDatabaseMissing('auth_audit_logs', [
+            'user_id' => $actor->id,
+            'event' => 'session_revoked',
+        ]);
     }
 
     public function test_user_cannot_revoke_their_own_current_session_through_the_revoke_endpoint(): void
@@ -278,12 +322,18 @@ class SessionSecurityTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get('/dashboard');
-        $currentSessionId = session()->getId();
+        $start = $this->actingAs($user)->get('/dashboard');
+        $currentSessionId = $start->getCookie(config('session.cookie'))->getValue();
 
-        $this->delete(route('profile.sessions.revoke', $currentSessionId))
-            ->assertRedirect();
+        $this->withCookie(config('session.cookie'), $currentSessionId)
+            ->delete(route('profile.sessions.revoke', $currentSessionId))
+            ->assertRedirect()
+            ->assertSessionHas('warning', 'Use the sign-out button to end your current session.');
 
         $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseMissing('auth_audit_logs', [
+            'user_id' => $user->id,
+            'event' => 'session_revoked',
+        ]);
     }
 }

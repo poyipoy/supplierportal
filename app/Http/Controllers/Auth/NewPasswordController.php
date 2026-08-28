@@ -82,9 +82,7 @@ class NewPasswordController extends Controller
         // redirect them back to where they came from with their error message.
         $message = match ($status) {
             Password::PASSWORD_RESET => 'Password has been reset successfully.',
-            Password::INVALID_TOKEN => 'Password reset token is invalid.',
-            Password::INVALID_USER => 'We could not find a user with that email address.',
-            default => 'Failed to reset password.',
+            default => 'This password reset link is invalid or has expired.',
         };
 
         return $status == Password::PASSWORD_RESET

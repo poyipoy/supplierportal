@@ -36,6 +36,7 @@ class AuthAuditLog extends Model
         'password_reset_blocked_inactive_account',
         'new_device_login',
         'concurrent_session_limit_enforced',
+        'global_login_anomaly_detected',
     ];
 
     public const UPDATED_AT = null;

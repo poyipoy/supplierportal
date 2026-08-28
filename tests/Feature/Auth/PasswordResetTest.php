@@ -141,7 +141,27 @@ class PasswordResetTest extends TestCase
         // Reported identically to an invalid/expired token - the response
         // must not reveal that the account exists but is deactivated.
         $response->assertSessionHasErrors('email');
-        $this->assertSame('Password reset token is invalid.', $response->getSession()->get('errors')->first('email'));
+        $this->assertSame('This password reset link is invalid or has expired.', $response->getSession()->get('errors')->first('email'));
         $this->assertSame($originalPasswordHash, $user->fresh()->password);
+    }
+
+    public function test_invalid_token_and_unknown_user_return_the_same_generic_error(): void
+    {
+        $user = User::factory()->create();
+        $payload = [
+            'token' => 'invalid-token',
+            'password' => 'Reset!Password123',
+            'password_confirmation' => 'Reset!Password123',
+        ];
+
+        $invalidToken = $this->post('/reset-password', $payload + ['email' => $user->email]);
+        $unknownUser = $this->post('/reset-password', $payload + ['email' => 'unknown@example.test']);
+
+        $invalidToken->assertSessionHasErrors('email');
+        $unknownUser->assertSessionHasErrors('email');
+
+        $message = 'This password reset link is invalid or has expired.';
+        $this->assertSame($message, $invalidToken->getSession()->get('errors')->first('email'));
+        $this->assertSame($message, $unknownUser->getSession()->get('errors')->first('email'));
     }
 }

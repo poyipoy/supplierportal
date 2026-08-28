@@ -3,8 +3,11 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Services\Auth\LoginRateLimiter;
 use App\Services\Auth\TwoFactorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -241,5 +244,35 @@ class AuthRateLimitingTest extends TestCase
             $this->assertNotNull($route, "Route [{$routeName}] is missing.");
             $this->assertContains($middleware, $route->gatherMiddleware(), "Route [{$routeName}] is not rate limited.");
         }
+    }
+
+    public function test_global_login_brake_forces_turnstile_without_producing_http_429(): void
+    {
+        config()->set('auth_security.login.global.attempts', 1);
+        config()->set('auth_security.turnstile.site_key', 'site-key');
+        config()->set('auth_security.turnstile.secret_key', 'secret-key');
+        Http::fake(['*' => Http::response(['success' => true])]);
+        Notification::fake();
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.210'])
+            ->post('/login', ['email' => 'failed@example.test', 'password' => 'incorrect'])
+            ->assertSessionHasErrors('email');
+
+        $user = User::factory()->create();
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.211'])
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+                'cf-turnstile-response' => 'valid-test-token',
+            ]);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertNotSame(429, $response->getStatusCode());
+
+        $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '198.51.100.212']);
+        $this->assertSame(
+            ['combination', 'email', 'ip'],
+            array_keys(app(LoginRateLimiter::class)->attempts($request, 'fresh@example.test')),
+        );
     }
 }

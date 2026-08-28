@@ -1,4 +1,4 @@
-<section>
+<section id="active-sessions">
     <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
         Devices currently signed in to your account. Up to {{ config('auth_security.session.max_concurrent_sessions', 3) }} sessions can stay active at once — signing in on a new device beyond that limit will automatically sign the oldest one out.
     </p>

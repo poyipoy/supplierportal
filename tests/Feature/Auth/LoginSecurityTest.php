@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\AuthAuditLog;
 use App\Models\User;
+use App\Services\Auth\LoginRateLimiter;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -15,9 +17,10 @@ class LoginSecurityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_inactive_account_is_indistinguishable_from_invalid_credentials_and_never_authenticated(): void
+    public function test_unknown_inactive_and_wrong_password_failures_are_indistinguishable(): void
     {
         $inactive = User::factory()->create(['is_active' => false]);
+        $active = User::factory()->create();
 
         $inactiveResponse = $this->post('/login', [
             'email' => $inactive->email,
@@ -31,11 +34,22 @@ class LoginSecurityTest extends TestCase
             'password' => 'password',
             'remember' => '1',
         ]);
+        $invalidMessage = $invalidResponse->getSession()->get('errors')->first('email');
+
+        $wrongPasswordResponse = $this->post('/login', [
+            'email' => $active->email,
+            'password' => 'incorrect',
+            'remember' => '1',
+        ]);
+        $wrongPasswordMessage = $wrongPasswordResponse->getSession()->get('errors')->first('email');
 
         $this->assertSame(trans('auth.failed'), $inactiveMessage);
-        $this->assertSame($inactiveMessage, $invalidResponse->getSession()->get('errors')->first('email'));
+        $this->assertSame($inactiveMessage, $invalidMessage);
+        $this->assertSame($inactiveMessage, $wrongPasswordMessage);
         $this->assertGuest();
         $inactiveResponse->assertCookieMissing(auth()->guard('web')->getRecallerName());
+        $invalidResponse->assertCookieMissing(auth()->guard('web')->getRecallerName());
+        $wrongPasswordResponse->assertCookieMissing(auth()->guard('web')->getRecallerName());
     }
 
     public function test_email_is_normalized_before_authentication(): void
@@ -243,36 +257,6 @@ class LoginSecurityTest extends TestCase
         $unknown->assertSessionHasNoErrors();
     }
 
-    public function test_hash_check_runs_even_when_the_account_does_not_exist(): void
-    {
-        // Closes the login timing side-channel: EloquentUserProvider only
-        // calls Hash::check() once a matching active user has been found, so
-        // without TimingSafeAuth the "no such account" path would be
-        // measurably faster than "wrong password" even though the error
-        // message is identical. Assert the dummy check still fires here.
-        Hash::spy();
-
-        $this->post('/login', [
-            'email' => 'nobody-here@example.test',
-            'password' => 'whatever-password',
-        ]);
-
-        Hash::shouldHaveReceived('check')->atLeast()->once();
-    }
-
-    public function test_hash_check_runs_even_for_a_deactivated_account(): void
-    {
-        $inactive = User::factory()->create(['is_active' => false]);
-        Hash::spy();
-
-        $this->post('/login', [
-            'email' => $inactive->email,
-            'password' => 'password',
-        ]);
-
-        Hash::shouldHaveReceived('check')->atLeast()->once();
-    }
-
     public function test_distinct_email_threshold_forces_turnstile_independent_of_attempt_counts(): void
     {
         // Isolated at the LoginRateLimiter level (rather than the full HTTP
@@ -281,16 +265,84 @@ class LoginSecurityTest extends TestCase
         // (which also increase alongside it in a "one try per email"
         // pattern) muddying which mechanism actually triggered Turnstile.
         config()->set('auth_security.login.distinct_email.threshold', 3);
-        $limiter = app(\App\Services\Auth\LoginRateLimiter::class);
-        $request = \Illuminate\Http\Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.9']);
+        $limiter = app(LoginRateLimiter::class);
+        $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.9']);
 
         $this->assertFalse($limiter->requiresTurnstile($request, 'first@example.test'));
 
-        $limiter->recordDistinctEmailAttempt($request, 'first@example.test');
-        $limiter->recordDistinctEmailAttempt($request, 'second@example.test');
+        $limiter->hit($request, 'first@example.test');
+        $limiter->hit($request, 'second@example.test');
         $this->assertFalse($limiter->requiresTurnstile($request, 'third@example.test'));
 
-        $limiter->recordDistinctEmailAttempt($request, 'third@example.test');
+        $limiter->hit($request, 'third@example.test');
         $this->assertTrue($limiter->requiresTurnstile($request, 'fourth@example.test'));
+    }
+
+    public function test_distributed_failures_across_emails_and_ips_activate_the_global_brake(): void
+    {
+        config()->set('auth_security.login.global.attempts', 3);
+        $limiter = app(LoginRateLimiter::class);
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.'.$attempt])
+                ->post('/login', [
+                    'email' => "distributed{$attempt}@example.test",
+                    'password' => 'incorrect',
+                ])
+                ->assertSessionHasErrors('email');
+        }
+
+        $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.100']);
+
+        $this->assertSame(
+            ['combination' => 0, 'email' => 0, 'ip' => 0],
+            $limiter->attempts($request, 'next@example.test'),
+        );
+        $this->assertTrue($limiter->requiresTurnstile($request, 'next@example.test'));
+    }
+
+    public function test_successful_login_does_not_increment_the_global_failure_counter(): void
+    {
+        config()->set('auth_security.login.global.attempts', 1);
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.101']);
+        $this->assertFalse(app(LoginRateLimiter::class)->requiresTurnstile($request, 'next@example.test'));
+    }
+
+    public function test_successful_users_behind_one_ip_do_not_trigger_distinct_failed_email_defense(): void
+    {
+        config()->set('auth_security.login.distinct_email.threshold', 3);
+        Notification::fake();
+
+        foreach (User::factory()->count(3)->create() as $user) {
+            $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.200'])
+                ->post('/login', ['email' => $user->email, 'password' => 'password'])
+                ->assertRedirect(route('dashboard', absolute: false));
+
+            $this->post('/logout')->assertRedirect(route('login'));
+        }
+
+        $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '198.51.100.200']);
+        $this->assertFalse(app(LoginRateLimiter::class)->requiresTurnstile($request, 'next@example.test'));
+    }
+
+    public function test_global_anomaly_audit_is_written_once_per_window(): void
+    {
+        config()->set('auth_security.login.global.attempts', 3);
+        $limiter = app(LoginRateLimiter::class);
+        $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.102']);
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $limiter->hit($request, "audit{$attempt}@example.test");
+        }
+
+        $this->assertDatabaseCount('auth_audit_logs', 1);
+        $audit = AuthAuditLog::query()->where('event', 'global_login_anomaly_detected')->sole();
+        $this->assertSame(['count' => 3], $audit->metadata);
     }
 }

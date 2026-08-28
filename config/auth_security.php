@@ -20,6 +20,14 @@ return [
             'window_seconds' => (int) env('AUTH_DISTINCT_EMAIL_WINDOW', 300),
         ],
 
+        // Application-wide failed-login velocity brake for distributed
+        // credential stuffing. It only forces Turnstile and is deliberately
+        // excluded from the definitions that can return HTTP 429.
+        'global' => [
+            'attempts' => (int) env('AUTH_GLOBAL_FAILED_LOGIN_THRESHOLD', 200),
+            'decay_seconds' => (int) env('AUTH_GLOBAL_FAILED_LOGIN_WINDOW', 300),
+        ],
+
         // Alerts admins when a single account is locked out repeatedly within
         // an hour, which suggests a targeted attack rather than a user simply
         // mistyping their password.
@@ -76,6 +84,11 @@ return [
         // a new login pushes the count above this limit, the oldest sessions
         // (by last activity) are evicted first. 0 disables the cap.
         'max_concurrent_sessions' => (int) env('AUTH_MAX_CONCURRENT_SESSIONS', 3),
+    ],
+
+    'known_device' => [
+        'cookie_name' => env('AUTH_KNOWN_DEVICE_COOKIE', 'adasi_known_device'),
+        'lifetime_days' => (int) env('AUTH_KNOWN_DEVICE_LIFETIME_DAYS', 400),
     ],
 
     'audit' => [

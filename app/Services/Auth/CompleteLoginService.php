@@ -5,25 +5,24 @@ namespace App\Services\Auth;
 use App\Events\AuthSecurityEvent;
 use App\Models\User;
 use App\Notifications\NewDeviceLoginNotification;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 
 class CompleteLoginService
 {
     public function __construct(
-        private readonly SessionRevocationService $revocation,
+        private readonly KnownDeviceService $knownDevices,
+        private readonly SessionInventoryService $sessions,
+        private readonly NotificationService $notifications,
     ) {}
 
     public function complete(Request $request, User $user, bool $remember): void
     {
         $request->attributes->set('auth_security.login_completed', true);
-
-        // Check for a matching active session BEFORE login()/regenerate() run,
-        // since at this point any row for this user+ip+agent can only belong
-        // to a genuinely different, still-live session.
-        $isNewDevice = ! $this->hasMatchingActiveSession($user, $request);
 
         Auth::guard('web')->login($user, $remember);
         $request->session()->regenerate();
@@ -32,10 +31,11 @@ class CompleteLoginService
             'auth_absolute_started_at' => now()->timestamp,
         ]);
 
-        $evicted = $this->revocation->enforceConcurrentLimit(
+        $isNewDevice = $this->knownDevices->registerOrTouch($request, $user);
+
+        $evicted = $this->sessions->enforceConcurrentLimit(
             $user,
             $request->session()->getId(),
-            (int) config('auth_security.session.max_concurrent_sessions', 3),
         );
 
         if ($evicted > 0) {
@@ -45,27 +45,30 @@ class CompleteLoginService
         if ($isNewDevice) {
             event(new AuthSecurityEvent('new_device_login', $user));
 
-            Notification::send($user, new NewDeviceLoginNotification(
-                (string) ($request->ip() ?? ''),
-                (string) $request->userAgent(),
-                now(),
-            ));
+            $this->notifications->send(
+                $user,
+                'new_device_login',
+                'auth:new-device-login:'.Str::uuid(),
+                'New sign-in detected',
+                'Your account was signed in on a device that has not been used with this account before.',
+                route('profile.edit', absolute: false).'#active-sessions',
+                'monitor',
+            );
+
+            try {
+                $user->notify(new NewDeviceLoginNotification(
+                    (string) ($request->ip() ?? ''),
+                    Str::limit((string) $request->userAgent(), 512, ''),
+                    now(),
+                ));
+            } catch (Throwable $exception) {
+                Log::warning('New-device email notification dispatch failed.', [
+                    'user_id' => $user->getKey(),
+                    'channel' => 'mail',
+                    'queue' => config('queue.default'),
+                    'exception_class' => $exception::class,
+                ]);
+            }
         }
-    }
-
-    private function hasMatchingActiveSession(User $user, Request $request): bool
-    {
-        $ip = (string) ($request->ip() ?? '');
-        $userAgent = (string) $request->userAgent();
-
-        if ($ip === '' && $userAgent === '') {
-            return false;
-        }
-
-        return DB::table('sessions')
-            ->where('user_id', $user->getKey())
-            ->where('ip_address', $ip)
-            ->where('user_agent', $userAgent)
-            ->exists();
     }
 }

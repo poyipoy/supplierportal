@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Events\AuthSecurityEvent;
 use App\Support\RateLimitResponse;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -40,6 +41,20 @@ class LoginRateLimiter
         foreach ($this->definitions($request, $email) as $definition) {
             RateLimiter::hit($definition['key'], $definition['decay_seconds']);
         }
+
+        $this->recordDistinctFailedEmail($request, $email);
+
+        $global = $this->globalDefinition();
+        $count = RateLimiter::hit($global['key'], $global['decay_seconds']);
+        $remainingWindow = max(1, RateLimiter::availableIn($global['key']));
+
+        if ($count >= $global['attempts'] && Cache::add(
+            $this->globalAnomalyMarkerKey(),
+            true,
+            $remainingWindow,
+        )) {
+            event(new AuthSecurityEvent('global_login_anomaly_detected', metadata: ['count' => $count]));
+        }
     }
 
     public function clearAfterSuccess(Request $request, string $email): void
@@ -57,7 +72,8 @@ class LoginRateLimiter
 
         return RateLimiter::attempts($definitions['email']['key']) >= $threshold
             || RateLimiter::attempts($definitions['ip']['key']) >= $threshold
-            || $this->distinctEmailThresholdExceeded($request);
+            || $this->distinctEmailThresholdExceeded($request)
+            || $this->globalThresholdExceeded();
     }
 
     /**
@@ -69,7 +85,7 @@ class LoginRateLimiter
      * tracks the set of distinct emails seen per IP in a rolling window so
      * that pattern can trip requiresTurnstile() too.
      */
-    public function recordDistinctEmailAttempt(Request $request, string $email): void
+    private function recordDistinctFailedEmail(Request $request, string $email): void
     {
         $window = (int) config('auth_security.login.distinct_email.window_seconds', 300);
         $emails = Cache::get($this->distinctEmailKey($request), []);
@@ -94,6 +110,18 @@ class LoginRateLimiter
     private function distinctEmailKey(Request $request): string
     {
         return 'auth-login:distinct-emails:'.hash('sha256', (string) ($request->ip() ?: 'unknown'));
+    }
+
+    private function globalThresholdExceeded(): bool
+    {
+        $definition = $this->globalDefinition();
+
+        return RateLimiter::attempts($definition['key']) >= $definition['attempts'];
+    }
+
+    private function globalAnomalyMarkerKey(): string
+    {
+        return 'auth-login:global-anomaly-audited';
     }
 
     public function attempts(Request $request, string $email): array
@@ -126,6 +154,17 @@ class LoginRateLimiter
 
         return [
             'key' => "auth-login:{$scope}:".hash('sha256', $identity),
+            'attempts' => (int) $config['attempts'],
+            'decay_seconds' => (int) $config['decay_seconds'],
+        ];
+    }
+
+    private function globalDefinition(): array
+    {
+        $config = config('auth_security.login.global');
+
+        return [
+            'key' => 'auth-login:global-failures',
             'attempts' => (int) $config['attempts'],
             'decay_seconds' => (int) $config['decay_seconds'],
         ];

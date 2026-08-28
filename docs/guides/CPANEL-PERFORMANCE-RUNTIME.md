@@ -112,7 +112,7 @@ During staging validation, temporarily send Cron output to a file under `storage
 
 ## 5. Short-lived queue worker Cron
 
-Exports are dispatched to the `exports` queue. The worker must listen to `exports,default` in that order. A worker that listens only to `default` leaves exports queued indefinitely.
+Exports are dispatched to the `exports` queue. Password-reset mail, new-device alert mail, and queued repeated-lockout alerts use the `default` queue. The worker must listen to `exports,default` in that order. A worker that listens only to `default` leaves exports queued indefinitely; a worker that listens only to `exports` leaves security mail queued indefinitely.
 
 Preferred template when the host provides `flock`:
 
@@ -144,7 +144,7 @@ Operational checks:
 <PHP_BINARY> artisan schedule:list
 ```
 
-Then trigger one small export from an authorized staging account and verify the UI lifecycle `queued -> processing -> completed`, the private download works, the `jobs` table returns to its prior depth, and no new failed job appears. Record completion latency. Do not use production as a stress-test target.
+Then trigger one small export from an authorized staging account and one queued security email. Verify the export UI lifecycle `queued -> processing -> completed`, the private download works, both queues return to their prior depth, and no new failed job appears. Record completion latency. Do not use production as a stress-test target.
 
 Monitor at minimum:
 
@@ -242,6 +242,9 @@ After caches and Cron are configured, use staging or a controlled production smo
 - notification summary/unread/read actions;
 - chat drawer and unread count;
 - one small queued export through download;
+- one password-reset mail job and one new-device alert mail job through the `default` queue;
+- first-device in-app alert, same-device no-repeat behavior, and the `/profile#active-sessions` link;
+- a fourth concurrent login evicting only the oldest active session;
 - `/up` health endpoint;
 - `storage/logs/laravel.log`, queue log, and `failed_jobs` after the checks.
 
@@ -252,11 +255,12 @@ Confirm supplier data isolation with accounts from two different suppliers. Do n
 For an application rollback:
 
 1. pause the queue Cron and allow an active locked worker to finish;
-2. restore the previous matching application source, `public/build/manifest.json`, and `public/build/assets` set;
-3. restore the previous `.htaccess` if the static policy itself is being rolled back;
-4. run `artisan optimize:clear`, then `config:cache`, `route:cache`, and `view:cache` from the restored release;
-5. resume scheduler/worker Cron;
-6. repeat the smoke checks and inspect logs/failed jobs.
+2. inspect pending `default` jobs and drain security notifications or keep their serialized notification classes compatible with the rollback release;
+3. restore the previous matching application source, `public/build/manifest.json`, and `public/build/assets` set;
+4. restore the previous `.htaccess` if the static policy itself is being rolled back;
+5. run `artisan optimize:clear`, then `config:cache`, `route:cache`, and `view:cache` from the restored release;
+6. resume scheduler/worker Cron;
+7. repeat the smoke checks and inspect logs/failed jobs.
 
 Do not roll back a migration without reviewing whether production data now depends on it. Vite's content-hashed filenames allow old and new assets to coexist temporarily; do not delete the previous build set until the rollback window is closed.
 
@@ -275,6 +279,6 @@ Do not roll back a migration without reviewing whether production data now depen
 | HTTP/2 | public-host protocol negotiation | NOT MEASURED — ENVIRONMENT REQUIRED |
 | HTTPS | redirect, certificate, secure-cookie smoke | NOT MEASURED — ENVIRONMENT REQUIRED |
 | Scheduler Cron | timestamped Cron evidence plus scheduled cleanup | NOT MEASURED — ENVIRONMENT REQUIRED |
-| Queue Cron | end-to-end export and no overlap | NOT MEASURED — ENVIRONMENT REQUIRED |
+| Queue Cron | end-to-end export, default security mail, and no overlap | NOT MEASURED — ENVIRONMENT REQUIRED |
 
 Do not replace these statuses with "verified" based solely on repository configuration or the local Windows/Laragon environment.
