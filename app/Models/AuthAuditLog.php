@@ -32,6 +32,10 @@ class AuthAuditLog extends Model
         'account_deactivated',
         'session_timeout',
         'session_revoked',
+        'repeated_lockouts_detected',
+        'password_reset_blocked_inactive_account',
+        'new_device_login',
+        'concurrent_session_limit_enforced',
     ];
 
     public const UPDATED_AT = null;

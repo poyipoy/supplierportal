@@ -41,9 +41,23 @@ class NewPasswordController extends Controller
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
+        $blockedForInactiveAccount = false;
+
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
+            function (User $user) use ($request, &$blockedForInactiveAccount) {
+                // A deactivated account must not be able to set a new password
+                // even with an otherwise-valid token: it still can't log in
+                // (LoginRequest gates on is_active), but leaving this open
+                // would let a stale/inactive credential be "revived" without
+                // an admin's involvement. The token is still consumed below
+                // by the broker either way, so it can't be retried.
+                if (! $user->is_active) {
+                    $blockedForInactiveAccount = true;
+
+                    return;
+                }
+
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
@@ -54,6 +68,14 @@ class NewPasswordController extends Controller
                 event(new AuthSecurityEvent('password_changed', $user, metadata: ['reason' => 'password_reset']));
             }
         );
+
+        if ($blockedForInactiveAccount) {
+            event(new AuthSecurityEvent('password_reset_blocked_inactive_account', email: $request->string('email')->toString()));
+
+            // Report the same status as an invalid/expired token so this case
+            // is indistinguishable from any other failed reset.
+            $status = Password::INVALID_TOKEN;
+        }
 
         // If the password was successfully reset, we will redirect the user back to
         // the application's home authenticated view. If there is an error we can

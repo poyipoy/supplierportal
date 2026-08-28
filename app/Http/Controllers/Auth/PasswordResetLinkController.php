@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
@@ -25,6 +26,13 @@ class PasswordResetLinkController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Normalize the same way LoginRequest does, so lookups aren't
+        // sensitive to casing/whitespace and rate-limit keys stay consistent
+        // with the login flow's.
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->input('email', ''))),
+        ]);
+
         $request->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
         ]);

@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -240,5 +241,56 @@ class LoginSecurityTest extends TestCase
         $this->assertSame($known->getSession()->get('status'), $unknown->getSession()->get('status'));
         $known->assertSessionHasNoErrors();
         $unknown->assertSessionHasNoErrors();
+    }
+
+    public function test_hash_check_runs_even_when_the_account_does_not_exist(): void
+    {
+        // Closes the login timing side-channel: EloquentUserProvider only
+        // calls Hash::check() once a matching active user has been found, so
+        // without TimingSafeAuth the "no such account" path would be
+        // measurably faster than "wrong password" even though the error
+        // message is identical. Assert the dummy check still fires here.
+        Hash::spy();
+
+        $this->post('/login', [
+            'email' => 'nobody-here@example.test',
+            'password' => 'whatever-password',
+        ]);
+
+        Hash::shouldHaveReceived('check')->atLeast()->once();
+    }
+
+    public function test_hash_check_runs_even_for_a_deactivated_account(): void
+    {
+        $inactive = User::factory()->create(['is_active' => false]);
+        Hash::spy();
+
+        $this->post('/login', [
+            'email' => $inactive->email,
+            'password' => 'password',
+        ]);
+
+        Hash::shouldHaveReceived('check')->atLeast()->once();
+    }
+
+    public function test_distinct_email_threshold_forces_turnstile_independent_of_attempt_counts(): void
+    {
+        // Isolated at the LoginRateLimiter level (rather than the full HTTP
+        // login flow) so this specifically exercises the new distinct-email
+        // tracker, without the pre-existing per-identity attempt counters
+        // (which also increase alongside it in a "one try per email"
+        // pattern) muddying which mechanism actually triggered Turnstile.
+        config()->set('auth_security.login.distinct_email.threshold', 3);
+        $limiter = app(\App\Services\Auth\LoginRateLimiter::class);
+        $request = \Illuminate\Http\Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.9']);
+
+        $this->assertFalse($limiter->requiresTurnstile($request, 'first@example.test'));
+
+        $limiter->recordDistinctEmailAttempt($request, 'first@example.test');
+        $limiter->recordDistinctEmailAttempt($request, 'second@example.test');
+        $this->assertFalse($limiter->requiresTurnstile($request, 'third@example.test'));
+
+        $limiter->recordDistinctEmailAttempt($request, 'third@example.test');
+        $this->assertTrue($limiter->requiresTurnstile($request, 'fourth@example.test'));
     }
 }

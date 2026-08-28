@@ -7,6 +7,7 @@ use App\Events\AuthSecurityEvent;
 use App\Models\User;
 use App\Services\Auth\LoginRateLimiter;
 use App\Services\Auth\TurnstileVerifier;
+use App\Support\Auth\TimingSafeAuth;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -59,6 +60,7 @@ class LoginRequest extends FormRequest
     public function authenticate(LoginRateLimiter $limiter, TurnstileVerifier $turnstile): User
     {
         $email = $limiter->normalizedEmail($this->string('email')->toString());
+        $limiter->recordDistinctEmailAttempt($this, $email);
         $limiter->ensureNotLimited($this, $email);
 
         if ($limiter->requiresTurnstile($this, $email) && $turnstile->configured()) {
@@ -78,6 +80,14 @@ class LoginRequest extends FormRequest
             'password' => $this->string('password')->toString(),
             'is_active' => true,
         ])) {
+            // EloquentUserProvider only runs Hash::check() when a matching
+            // active user was found. If none was, burn equivalent time on a
+            // dummy hash so "no such account" and "wrong password" take the
+            // same amount of time to respond (see TimingSafeAuth docblock).
+            if (! User::where('email', $email)->where('is_active', true)->exists()) {
+                TimingSafeAuth::equalize();
+            }
+
             $limiter->hit($this, $email);
             $this->session()->flash('auth_turnstile_required', $limiter->requiresTurnstile($this, $email));
 

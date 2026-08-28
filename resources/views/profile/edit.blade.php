@@ -47,6 +47,10 @@
                 @include('profile.partials.two-factor-authentication-form')
             </div>
             <div class="tw-p-5">
+                <h3 class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Active Sessions</h3>
+                @include('profile.partials.active-sessions')
+            </div>
+            <div class="tw-p-5">
                 <h3 class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Other Devices</h3>
                 @include('profile.partials.logout-other-devices-form')
             </div>

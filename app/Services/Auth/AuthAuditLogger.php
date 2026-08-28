@@ -23,6 +23,7 @@ class AuthAuditLogger
         'route',
         'status',
         'method',
+        'count',
     ];
 
     public function write(

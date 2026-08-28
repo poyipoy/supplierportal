@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\ProfileTwoFactorController;
+use App\Http\Controllers\Auth\RevokeSessionController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +70,14 @@ Route::middleware('auth')->group(function () {
     Route::post('profile/logout-other-devices', LogoutOtherDevicesController::class)
         ->middleware(['auth.session', 'throttle:auth.credentials'])
         ->name('profile.logout-other-devices');
+
+    // Revoke one specific session (as opposed to logout-other-devices above,
+    // which nukes all of them at once and requires a password). This is a
+    // narrower, lower-friction action: it can only ever target a row that
+    // already belongs to the current user, scoped inside RevokeSessionController.
+    Route::delete('profile/sessions/{sessionId}', RevokeSessionController::class)
+        ->middleware(['auth.session', 'throttle:auth.security-action'])
+        ->name('profile.sessions.revoke');
 
     Route::post('profile/two-factor/setup', [ProfileTwoFactorController::class, 'start'])
         ->middleware(['auth.session', 'password.confirm', 'throttle:auth.security-action'])->name('profile.two-factor.start');

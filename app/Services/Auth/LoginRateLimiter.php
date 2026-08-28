@@ -6,6 +6,7 @@ use App\Support\RateLimitResponse;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -55,7 +56,44 @@ class LoginRateLimiter
         $definitions = $this->definitions($request, $email);
 
         return RateLimiter::attempts($definitions['email']['key']) >= $threshold
-            || RateLimiter::attempts($definitions['ip']['key']) >= $threshold;
+            || RateLimiter::attempts($definitions['ip']['key']) >= $threshold
+            || $this->distinctEmailThresholdExceeded($request);
+    }
+
+    /**
+     * Record that this IP just attempted to sign in with the given email.
+     *
+     * The per-identity limiters above catch an attacker hammering ONE
+     * account, but not the "wide" credential-stuffing pattern of trying many
+     * different accounts from a single IP, each only once or twice. This
+     * tracks the set of distinct emails seen per IP in a rolling window so
+     * that pattern can trip requiresTurnstile() too.
+     */
+    public function recordDistinctEmailAttempt(Request $request, string $email): void
+    {
+        $window = (int) config('auth_security.login.distinct_email.window_seconds', 300);
+        $emails = Cache::get($this->distinctEmailKey($request), []);
+
+        if (! is_array($emails)) {
+            $emails = [];
+        }
+
+        $emails[hash('sha256', $this->normalizedEmail($email))] = true;
+
+        Cache::put($this->distinctEmailKey($request), $emails, $window);
+    }
+
+    private function distinctEmailThresholdExceeded(Request $request): bool
+    {
+        $threshold = (int) config('auth_security.login.distinct_email.threshold', 5);
+        $emails = Cache::get($this->distinctEmailKey($request), []);
+
+        return is_array($emails) && count($emails) >= $threshold;
+    }
+
+    private function distinctEmailKey(Request $request): string
+    {
+        return 'auth-login:distinct-emails:'.hash('sha256', (string) ($request->ip() ?: 'unknown'));
     }
 
     public function attempts(Request $request, string $email): array

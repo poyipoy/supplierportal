@@ -11,6 +11,22 @@ return [
         'combination' => ['attempts' => 5, 'decay_seconds' => 60],
         'email' => ['attempts' => 12, 'decay_seconds' => 900],
         'ip' => ['attempts' => 30, 'decay_seconds' => 300],
+
+        // Flags a credential-stuffing pattern: many distinct emails attempted
+        // from the same IP in a short window (independent of per-identity
+        // attempt counts above, which don't catch "wide" attacks).
+        'distinct_email' => [
+            'threshold' => (int) env('AUTH_DISTINCT_EMAIL_THRESHOLD', 5),
+            'window_seconds' => (int) env('AUTH_DISTINCT_EMAIL_WINDOW', 300),
+        ],
+
+        // Alerts admins when a single account is locked out repeatedly within
+        // an hour, which suggests a targeted attack rather than a user simply
+        // mistyping their password.
+        'repeated_lockout_alert' => [
+            'threshold' => (int) env('AUTH_REPEATED_LOCKOUT_ALERT_THRESHOLD', 3),
+            'window_seconds' => 3600,
+        ],
     ],
 
     'rate_limits' => [
@@ -54,6 +70,12 @@ return [
 
     'session' => [
         'absolute_timeout_minutes' => (int) env('AUTH_ABSOLUTE_TIMEOUT', 480),
+
+        // Maximum number of concurrent active sessions allowed per account
+        // (across all devices, including the one currently signing in). When
+        // a new login pushes the count above this limit, the oldest sessions
+        // (by last activity) are evicted first. 0 disables the cap.
+        'max_concurrent_sessions' => (int) env('AUTH_MAX_CONCURRENT_SESSIONS', 3),
     ],
 
     'audit' => [

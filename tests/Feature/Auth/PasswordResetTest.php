@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Notifications\AdasiResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -87,5 +88,60 @@ class PasswordResetTest extends TestCase
 
             return true;
         });
+    }
+
+    public function test_no_notification_is_sent_for_an_unregistered_email(): void
+    {
+        // Locks in the core requirement as an explicit, tested guarantee
+        // instead of an implicit side effect of Laravel's default password
+        // broker: this must keep holding even if the broker/provider setup
+        // changes later.
+        Notification::fake();
+
+        $this->post('/forgot-password', ['email' => 'not-in-the-database@example.test']);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_no_notification_is_sent_for_a_deactivated_account(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['is_active' => false]);
+
+        $this->post('/forgot-password', ['email' => $user->email]);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_forgot_password_email_is_normalized_before_lookup(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'normalized@example.test']);
+
+        $this->post('/forgot-password', ['email' => '  NORMALIZED@EXAMPLE.TEST ']);
+
+        Notification::assertSentTo($user, AdasiResetPasswordNotification::class);
+    }
+
+    public function test_deactivated_account_cannot_complete_a_password_reset(): void
+    {
+        $user = User::factory()->create(['is_active' => false]);
+        $originalPasswordHash = $user->password;
+        $token = Password::broker()->createToken($user);
+
+        $response = $this->post('/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'Reset!Password123',
+            'password_confirmation' => 'Reset!Password123',
+        ]);
+
+        // Reported identically to an invalid/expired token - the response
+        // must not reveal that the account exists but is deactivated.
+        $response->assertSessionHasErrors('email');
+        $this->assertSame('Password reset token is invalid.', $response->getSession()->get('errors')->first('email'));
+        $this->assertSame($originalPasswordHash, $user->fresh()->password);
     }
 }

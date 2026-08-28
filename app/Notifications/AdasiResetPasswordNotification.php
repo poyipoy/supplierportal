@@ -3,10 +3,20 @@
 namespace App\Notifications;
 
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class AdasiResetPasswordNotification extends ResetPassword
+/**
+ * Queued so the SMTP round-trip never happens inline on the forgot-password
+ * request. Without this, "email exists" (send + wait) and "email doesn't
+ * exist" (skip send) responded in noticeably different times, which leaked
+ * account existence even though the response message is identical.
+ */
+class AdasiResetPasswordNotification extends ResetPassword implements ShouldQueue
 {
+    use Queueable;
+
     /**
      * Build the ADASI-branded mail message without changing the password-broker
      * token or URL-generation contract supplied by Laravel.

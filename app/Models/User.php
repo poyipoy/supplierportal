@@ -123,9 +123,18 @@ class User extends Authenticatable
     /**
      * Send the branded reset-password notification while preserving Laravel's
      * password-broker token and expiration behavior.
+     *
+     * Deactivated accounts are intentionally skipped: the broker still
+     * creates a token (harmless, self-expires), but no email goes out and
+     * NewPasswordController separately refuses to honor a token for an
+     * inactive account, so a stale credential can't be "revived" this way.
      */
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token)
     {
+        if (! $this->is_active) {
+            return;
+        }
+
         $this->notify(new AdasiResetPasswordNotification($token));
     }
 }
