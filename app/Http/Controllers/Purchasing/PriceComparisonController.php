@@ -120,19 +120,30 @@ class PriceComparisonController extends Controller
                     foreach ($quotations as $quotation) {
                         $quotationItem = $quotation->items->where('pr_item_id', $item->id)->first();
                         $rate = $quotation->exchange_rate;
-                        $pricePerKg = $quotationItem ? (float) $quotationItem->price_per_kg : null;
-                        $priceIdr = ($pricePerKg && $rate)
+                        $pricePerKg = $quotationItem?->price_per_kg === null
+                            ? null
+                            : (float) $quotationItem->price_per_kg;
+                        $priceIdr = ($pricePerKg !== null && $rate)
                             ? $pricePerKg * (float) $rate->rate_to_idr
                             : null;
+
+                        $requestedAmount = $quotationItem && $quotationItem->prItem
+                            ? QuotationItem::calculateRequestedAmount($quotationItem->prItem, $quotationItem->price_per_kg)
+                            : ($quotationItem ? (float) $quotationItem->amount : null);
+                        $offerAmount = $quotationItem?->resolved_amount;
 
                         $row['prices'][$quotation->id] = [
                             'quotation_id' => $quotation->id,
                             'quotation_item_id' => $quotationItem?->id,
                             'price_per_kg' => $pricePerKg,
                             'price_idr' => $priceIdr,
-                            'amount' => $quotationItem && $quotationItem->prItem
-                                ? QuotationItem::calculateAmount($quotationItem->prItem, $quotationItem->price_per_kg)
-                                : ($quotationItem ? (float) $quotationItem->amount : null),
+                            // `amount` is the long-standing requested-total
+                            // comparison value.  Expose the official stored
+                            // Offer Amount separately for consumers that need
+                            // quotation/PO financial semantics.
+                            'amount' => $requestedAmount,
+                            'requested_amount' => $requestedAmount,
+                            'offer_amount' => $offerAmount,
                             'currency' => $quotation->currency,
                             'detail_url' => $quotationItem
                                 ? PurchasingNavigation::toRoute('purchasing.quotations.show', $quotation)
@@ -159,7 +170,7 @@ class PriceComparisonController extends Controller
                     foreach ($comparisonItems as $item) {
                         $quotationItem = $quotation->items->where('pr_item_id', $item->id)->first();
                         $rate = $quotation->exchange_rate;
-                        $data[] = ($quotationItem && $rate)
+                        $data[] = ($quotationItem && $rate && $quotationItem->price_per_kg !== null)
                             ? round((float) $quotationItem->price_per_kg * (float) $rate->rate_to_idr, 0)
                             : 0;
                     }
@@ -488,6 +499,10 @@ class PriceComparisonController extends Controller
             ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
             ->whereNull('history_pos.deleted_at')
             ->whereNull('history_quotes.deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('history_items.is_available')
+                    ->orWhere('history_items.is_available', true);
+            })
             ->selectRaw('history_pr_items.material_name, MIN('.$historyPriceIdr.') as best_price_idr')
             ->groupBy('history_pr_items.material_name');
 
@@ -504,6 +519,10 @@ class PriceComparisonController extends Controller
             })
             ->whereNull('history_pos.deleted_at')
             ->whereNull('history_quotes.deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('history_items.is_available')
+                    ->orWhere('history_items.is_available', true);
+            })
             ->selectRaw('best_price.material_name, MIN(history_items.id) as best_item_id')
             ->groupBy('best_price.material_name');
 
@@ -531,6 +550,10 @@ class PriceComparisonController extends Controller
             ->whereIn('current_quotes.status', $currentStatuses)
             ->whereNull('current_quotes.deleted_at')
             ->whereNull('current_pr.deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('current_items.is_available')
+                    ->orWhere('current_items.is_available', true);
+            })
             ->select([
                 'current_items.id as current_item_id',
                 'current_items.quotation_id as current_quotation_id',
@@ -764,9 +787,14 @@ class PriceComparisonController extends Controller
             ->distinct()
             ->whereNotNull('material_name')
             ->where('material_name', '<>', '')
-            ->whereHas('quotationItems.quotation.purchaseOrders', function ($q) use ($supplierId) {
-                $q->where('purchase_orders.supplier_id', $supplierId)
-                    ->whereNull('purchase_orders.deleted_at');
+            ->whereHas('quotationItems', function ($q) use ($supplierId) {
+                $q->where(function ($q) {
+                    $q->whereNull('quotation_items.is_available')
+                        ->orWhere('quotation_items.is_available', true);
+                })->whereHas('quotation.purchaseOrders', function ($q) use ($supplierId) {
+                    $q->where('purchase_orders.supplier_id', $supplierId)
+                        ->whereNull('purchase_orders.deleted_at');
+                });
             })
             ->orderBy('material_name')
             ->get()
@@ -784,9 +812,14 @@ class PriceComparisonController extends Controller
     {
         return PrItem::query()
             ->where('material_name', $materialName)
-            ->whereHas('quotationItems.quotation.purchaseOrders', function ($query) use ($supplierId) {
-                $query->where('purchase_orders.supplier_id', $supplierId)
-                    ->whereNull('purchase_orders.deleted_at');
+            ->whereHas('quotationItems', function ($query) use ($supplierId) {
+                $query->where(function ($query) {
+                    $query->whereNull('quotation_items.is_available')
+                        ->orWhere('quotation_items.is_available', true);
+                })->whereHas('quotation.purchaseOrders', function ($query) use ($supplierId) {
+                    $query->where('purchase_orders.supplier_id', $supplierId)
+                        ->whereNull('purchase_orders.deleted_at');
+                });
             })
             ->exists();
     }
@@ -857,7 +890,11 @@ class PriceComparisonController extends Controller
             ->where('purchase_orders.supplier_id', $supplierId)
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('quotations.deleted_at')
-            ->where('pr_items.material_name', $materialName);
+            ->where('pr_items.material_name', $materialName)
+            ->where(function ($query) {
+                $query->whereNull('quotation_items.is_available')
+                    ->orWhere('quotation_items.is_available', true);
+            });
 
         foreach ($dimensionFilters as $field => $val) {
             $baseQuery->where("pr_items.{$field}", $val);
@@ -887,7 +924,7 @@ class PriceComparisonController extends Controller
                     ? Carbon::parse($item->history_po_created_at)
                     : null;
                 $rate = $item->history_rate_to_idr;
-                $priceIdr = $rate !== null
+                $priceIdr = $rate !== null && $item->price_per_kg !== null
                     ? round((float) $item->price_per_kg * (float) $rate, 0)
                     : null;
                 $periodLabel = $purchaseAt?->format('M Y')
@@ -903,7 +940,7 @@ class PriceComparisonController extends Controller
                     'period_sort' => $purchaseAt
                         ? $purchaseAt->format('Y-m-d H:i:s').'-'.str_pad((string) $item->id, 10, '0', STR_PAD_LEFT)
                         : sprintf('9999-99-99 99:99:99-%010d', (int) $item->id),
-                    'price_per_kg' => (float) $item->price_per_kg,
+                    'price_per_kg' => $item->price_per_kg === null ? null : (float) $item->price_per_kg,
                     'price_idr' => $priceIdr,
                 ];
             })
@@ -948,11 +985,15 @@ class PriceComparisonController extends Controller
         $tableData = $items->map(function ($item) use ($changeByRow) {
             $period = optional(optional($item->quotation->purchaseRequisition)->period);
             $rate = $item->history_rate_to_idr;
-            $priceIdr = $rate !== null ? round((float) $item->price_per_kg * (float) $rate, 0) : null;
-            $totalAmount = $item->prItem
-                ? QuotationItem::calculateAmount($item->prItem, $item->price_per_kg)
+            $priceIdr = $rate !== null && $item->price_per_kg !== null
+                ? round((float) $item->price_per_kg * (float) $rate, 0)
+                : null;
+            $requestedAmount = $item->prItem
+                ? QuotationItem::calculateRequestedAmount($item->prItem, $item->price_per_kg)
                 : (float) $item->amount;
-            $totalIdr = $rate !== null ? round($totalAmount * (float) $rate, 0) : null;
+            $totalIdr = $rate !== null && $requestedAmount !== null
+                ? round($requestedAmount * (float) $rate, 0)
+                : null;
             $purchaseRequisition = $item->prItem?->purchaseRequisition;
             $purchaseAt = $item->history_po_created_at
                 ? Carbon::parse($item->history_po_created_at)
@@ -980,6 +1021,8 @@ class PriceComparisonController extends Controller
                 'currency' => $item->quotation->currency,
                 'price_idr' => $priceIdr,
                 'total_idr' => $totalIdr,
+                'requested_amount' => $requestedAmount,
+                'offer_amount' => $item->resolved_amount,
                 'min_idr' => null,
                 'max_idr' => null,
                 'submitted_at' => $purchaseAt?->toIso8601String(),
@@ -1036,7 +1079,11 @@ class PriceComparisonController extends Controller
             ->where('purchase_orders.supplier_id', $supplierId)
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('quotations.deleted_at')
-            ->where('pr_items.material_name', $materialName);
+            ->where('pr_items.material_name', $materialName)
+            ->where(function ($query) {
+                $query->whereNull('quotation_items.is_available')
+                    ->orWhere('quotation_items.is_available', true);
+            });
 
         foreach ($dimensionFilters as $field => $val) {
             $query->where("pr_items.{$field}", $val);

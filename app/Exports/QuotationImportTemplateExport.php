@@ -8,7 +8,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class QuotationImportTemplateExport implements FromCollection, WithHeadings, ShouldAutoSize
+class QuotationImportTemplateExport implements FromCollection, ShouldAutoSize, WithHeadings
 {
     public function __construct(private readonly int $prId) {}
 
@@ -28,6 +28,8 @@ class QuotationImportTemplateExport implements FromCollection, WithHeadings, Sho
             null,
             null,
             null,
+            'Available',
+            null,
         ]);
     }
 
@@ -45,6 +47,8 @@ class QuotationImportTemplateExport implements FromCollection, WithHeadings, Sho
             'available_width',
             'available_length',
             'notes',
+            'availability',
+            'offered_weight_per_unit',
         ];
     }
 }

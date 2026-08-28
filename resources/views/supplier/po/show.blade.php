@@ -158,7 +158,9 @@
                                     <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                                     <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->prItem->total_weight, 2) }}</td>
-                                    <td class="text-end ui-tabular-nums">{{ number_format($item->price_per_kg, 4) }}</td>
+                                    <td class="text-end ui-tabular-nums">
+                                        {{ $item->price_per_kg === null ? '-' : number_format($item->price_per_kg, 4) }}
+                                    </td>
                                     <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
                                     <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp {{ number_format($idr, 0, ',', '.') }}</td>
                                 </tr>

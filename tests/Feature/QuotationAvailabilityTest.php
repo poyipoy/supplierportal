@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\ExchangeRate;
+use App\Models\MaterialMaster;
 use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Models\ExchangeRate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -42,6 +43,11 @@ class QuotationAvailabilityTest extends TestCase
             'available_d_outer',
             'available_width',
             'available_length',
+            'is_available',
+            'available_length_min',
+            'available_length_max',
+            'offered_weight_per_unit',
+            'offered_weight_source',
         ]));
 
         $pr = $this->createRequisition([
@@ -72,7 +78,7 @@ class QuotationAvailabilityTest extends TestCase
 
         $payload = $this->quotationPayload($pr);
         $payload['items'][0] = array_merge($payload['items'][0], [
-            'available_qty' => 5,
+            'available_qty' => 2,
             'available_thickness' => 1.3,
             'available_width' => 125,
             'available_length' => 245,
@@ -80,7 +86,7 @@ class QuotationAvailabilityTest extends TestCase
             'available_d_outer' => 999,
         ]);
         $payload['items'][1] = array_merge($payload['items'][1], [
-            'available_qty' => 4,
+            'available_qty' => 3,
             'available_thickness' => 999,
             'available_d_inner' => 999,
             'available_d_outer' => 21,
@@ -104,7 +110,7 @@ class QuotationAvailabilityTest extends TestCase
         $items = $quotation->items()->with('prItem')->get()->keyBy('pr_item_id');
 
         $flat = $items->get($pr->items[0]->id);
-        $this->assertSame(5, $flat->available_qty);
+        $this->assertSame(2, $flat->available_qty);
         $this->assertSame('1.3000', $flat->available_thickness);
         $this->assertSame('125.0000', $flat->available_width);
         $this->assertSame('245.0000', $flat->available_length);
@@ -290,6 +296,25 @@ class QuotationAvailabilityTest extends TestCase
         $this->assertSame('0.0000', $amounts[1]);
     }
 
+    public function test_zero_amount_repair_command_does_not_rewrite_offer_rows(): void
+    {
+        $pr = $this->createRequisition();
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $quotationItem = $quotation->items()->firstOrFail();
+        $quotationItem->update([
+            'amount' => 0,
+            'is_available' => true,
+            'available_qty' => 1,
+            'offered_weight_per_unit' => 2.4,
+            'offered_weight_source' => 'estimated',
+        ]);
+
+        $this->artisan('quotations:repair-zero-amounts', ['--execute' => true])
+            ->assertExitCode(0);
+
+        $this->assertSame('0.0000', $quotationItem->fresh()->amount);
+    }
+
     public function test_supplier_cannot_submit_items_from_another_pr_or_replace_existing_items(): void
     {
         $pr = $this->createRequisition();
@@ -345,7 +370,7 @@ class QuotationAvailabilityTest extends TestCase
         $quotation = $this->createDraftQuotation($pr, $this->supplier, 4.25);
 
         $payload = $this->quotationPayload($pr);
-        $payload['items'][0]['available_qty'] = 99;
+        $payload['items'][0]['available_qty'] = 2;
 
         $this->actingAs($this->otherSupplier)
             ->post(route('supplier.quotations.store', $pr), $payload)
@@ -391,6 +416,219 @@ class QuotationAvailabilityTest extends TestCase
 
         $this->assertSame('match', $comparison['quantity']['code']);
         $this->assertSame('exact', $comparison['specification']['code']);
+    }
+
+    public function test_explicit_available_offer_uses_auto_weight_and_offer_amount(): void
+    {
+        $material = MaterialMaster::create([
+            'material_code' => 'OFFER-AUTO-'.uniqid(),
+            'normalized_code' => 'OFFER-AUTO-'.uniqid(),
+            'density_profile' => MaterialMaster::DENSITY_STEEL,
+            'is_active' => true,
+        ]);
+        $pr = $this->createRequisition([[
+            'quantity' => 2,
+            'thickness' => 1,
+            'width' => 100,
+            'length' => 200,
+            'material_master_id' => $material->id,
+            'weight_needed' => 10,
+        ]]);
+        $item = $pr->items->firstOrFail();
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0] = [
+            'pr_item_id' => $item->id,
+            'is_available' => true,
+            'available_qty' => 1,
+            'available_thickness' => 1,
+            'available_width' => 100,
+            'available_length_input' => '200',
+            'price_per_kg' => 100,
+            'notes' => 'Offer note',
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $quotationItem = Quotation::where('pr_id', $pr->id)
+            ->where('supplier_id', $this->supplier->id)
+            ->firstOrFail()
+            ->items()
+            ->firstOrFail();
+
+        $this->assertTrue($quotationItem->is_available);
+        $this->assertSame('auto', $quotationItem->offered_weight_source);
+        $this->assertSame('0.1570', $quotationItem->offered_weight_per_unit);
+        $this->assertSame('0.1570', $quotationItem->offered_total_weight === null
+            ? null
+            : number_format($quotationItem->offered_total_weight, 4, '.', ''));
+        $this->assertSame('15.7000', $quotationItem->amount);
+        $this->assertSame(2000.0, $quotationItem->requested_amount);
+    }
+
+    public function test_range_length_requires_estimated_weight_and_persists_offer_amount(): void
+    {
+        $pr = $this->createRequisition([[
+            'quantity' => 2,
+            'length' => 2400,
+            'weight_needed' => 10,
+        ]]);
+        $item = $pr->items->firstOrFail();
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0] = [
+            'pr_item_id' => $item->id,
+            'is_available' => true,
+            'available_qty' => 2,
+            'available_thickness' => 1,
+            'available_width' => 100,
+            'available_length_input' => '2300 - 2500',
+            'offered_weight_per_unit' => 2.4,
+            'price_per_kg' => 100,
+            'notes' => 'Range offer',
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $quotationItem = Quotation::where('pr_id', $pr->id)
+            ->where('supplier_id', $this->supplier->id)
+            ->firstOrFail()
+            ->items()
+            ->with('prItem')
+            ->firstOrFail();
+
+        $this->assertNull($quotationItem->available_length);
+        $this->assertSame('2300.0000', $quotationItem->available_length_min);
+        $this->assertSame('2500.0000', $quotationItem->available_length_max);
+        $this->assertSame('estimated', $quotationItem->offered_weight_source);
+        $this->assertSame('480.0000', $quotationItem->amount);
+        $this->assertSame('within_range', $quotationItem->availability_comparison['specification']['code']);
+    }
+
+    public function test_submitted_available_offer_requires_authoritative_weight(): void
+    {
+        ExchangeRate::create([
+            'currency' => 'USD',
+            'rate_to_idr' => 16000,
+            'valid_from' => now()->subMinute(),
+            'created_by' => $this->purchasing->id,
+        ]);
+        $pr = $this->createRequisition([['quantity' => 2]]);
+        $payload = $this->quotationPayload($pr);
+        $payload['action'] = 'submitted';
+        $payload['items'][0] = [
+            'pr_item_id' => $pr->items->firstOrFail()->id,
+            'is_available' => true,
+            'available_qty' => 2,
+            'available_thickness' => 1,
+            'available_width' => 100,
+            'available_length_input' => '200',
+            'price_per_kg' => 100,
+        ];
+
+        $this->actingAs($this->supplier)
+            ->from(route('supplier.quotations.create', $pr))
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect(route('supplier.quotations.create', $pr))
+            ->assertSessionHasErrors('items.0.offered_weight_per_unit');
+
+        $this->assertDatabaseCount('quotations', 0);
+    }
+
+    public function test_manual_offer_weight_is_persisted_as_estimated(): void
+    {
+        $pr = $this->createRequisition([['quantity' => 2]]);
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0] = [
+            'pr_item_id' => $pr->items->firstOrFail()->id,
+            'is_available' => true,
+            'available_qty' => 1,
+            'offered_weight_per_unit' => 1.2345,
+            'offered_weight_manual_override' => true,
+            'price_per_kg' => 100,
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $item = Quotation::where('pr_id', $pr->id)
+            ->where('supplier_id', $this->supplier->id)
+            ->firstOrFail()
+            ->items()
+            ->firstOrFail();
+
+        $this->assertSame('estimated', $item->offered_weight_source);
+        $this->assertSame('1.2345', $item->offered_weight_per_unit);
+        $this->assertSame('123.4500', $item->amount);
+    }
+
+    public function test_explicit_available_quantity_above_requested_is_rejected_without_writes(): void
+    {
+        $pr = $this->createRequisition([['quantity' => 2]]);
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0] = array_merge($payload['items'][0], [
+            'is_available' => true,
+            'available_qty' => 3,
+            'offered_weight_per_unit' => 2,
+        ]);
+
+        $this->actingAs($this->supplier)
+            ->from(route('supplier.quotations.create', $pr))
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect(route('supplier.quotations.create', $pr))
+            ->assertSessionHasErrors('items.0.available_qty');
+
+        $this->assertDatabaseCount('quotations', 0);
+    }
+
+    public function test_not_available_clears_offer_fields_and_can_be_submitted(): void
+    {
+        ExchangeRate::create([
+            'currency' => 'USD',
+            'rate_to_idr' => 16000,
+            'valid_from' => now()->subMinute(),
+            'created_by' => $this->purchasing->id,
+        ]);
+        $pr = $this->createRequisition([['quantity' => 2]]);
+        $payload = $this->quotationPayload($pr);
+        $payload['action'] = 'submitted';
+        $payload['items'][0] = [
+            'pr_item_id' => $pr->items->firstOrFail()->id,
+            'is_available' => false,
+            'available_qty' => 99,
+            'available_length_input' => 'bad-range',
+            'offered_weight_per_unit' => 99,
+            'price_per_kg' => 99,
+            'notes' => 'Not available note',
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
+        $item = $quotation->items()->firstOrFail();
+        $this->assertSame('submitted', $quotation->status);
+        $this->assertFalse($item->is_available);
+        $this->assertNull($item->price_per_kg);
+        $this->assertSame('0.0000', $item->amount);
+        $this->assertNull($item->available_qty);
+        $this->assertNull($item->offered_weight_per_unit);
+        $this->assertSame('Not available note', $item->notes);
+        $this->assertSame('not_available', $item->availability_comparison['specification']['code']);
+
+        $this->actingAs($this->supplier)
+            ->get(route('supplier.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee('Not Available');
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee('Not Available');
     }
 
     private function createRequisition(array $items = [[]]): PurchaseRequisition

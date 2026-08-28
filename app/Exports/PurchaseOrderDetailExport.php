@@ -94,6 +94,9 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
             ) {
                 $prItem = $item->prItem;
                 $amount = $item->resolved_amount;
+                $requestedAmount = $item->requested_amount;
+                $offerAmount = $item->offer_amount;
+                $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
 
                 return [
                     SpreadsheetCellSanitizer::text($po->po_number),
@@ -105,7 +108,7 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
                     $prItem?->quantity_value,
                     (float) ($prItem?->weight_needed ?? 0),
                     (float) ($prItem?->total_weight ?? 0),
-                    (float) $item->price_per_kg,
+                    $pricePerKg,
                     $amount,
                     $rate,
                     $amount * $rate,
@@ -122,6 +125,15 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
                     $latestInspection?->inspected_at?->format('Y-m-d H:i:s') ?? '-',
                     $claimStatus,
                     $latestClaim?->updated_at?->format('Y-m-d H:i:s') ?? '-',
+                    $item->is_available ? 'Available' : 'Not Available',
+                    $item->offered_quantity,
+                    SpreadsheetCellSanitizer::text($item->offered_dimension_label !== '-' ? $item->offered_dimension_label : null),
+                    $item->available_length_display !== '-' ? $item->available_length_display : null,
+                    $item->offered_weight_per_unit === null ? null : (float) $item->offered_weight_per_unit,
+                    SpreadsheetCellSanitizer::text($item->offered_weight_source),
+                    $item->offered_total_weight,
+                    $requestedAmount,
+                    $offerAmount,
                 ];
             });
         });
@@ -156,6 +168,15 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
             'QC Inspected At',
             'Claim Status',
             'Claim Updated At',
+            'Availability',
+            'Offered Quantity',
+            'Offered Dimensions',
+            'Offered Length',
+            'Offer Weight/Unit',
+            'Offer Weight Source',
+            'Offer Total Weight',
+            'Requested Amount',
+            'Offer Amount',
         ];
     }
 
@@ -205,6 +226,15 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
             'X' => 21,
             'Y' => 17,
             'Z' => 21,
+            'AA' => 18,
+            'AB' => 18,
+            'AC' => 18,
+            'AD' => 18,
+            'AE' => 18,
+            'AF' => 18,
+            'AG' => 18,
+            'AH' => 18,
+            'AI' => 18,
         ];
     }
 }

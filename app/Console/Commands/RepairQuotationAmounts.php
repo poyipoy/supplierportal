@@ -34,14 +34,30 @@ class RepairQuotationAmounts extends Command
                 $candidates++;
                 $prItem = $item->prItem;
 
+                // Rows carrying the revision-era offer fields already have a
+                // distinct Offer Amount contract.  This command is only for
+                // legacy requested-weight zero rows and must never replace a
+                // new offer amount with a requested amount.
+                if (! $item->is_available
+                    || $item->offered_weight_per_unit !== null
+                    || $item->offered_weight_source !== null
+                    || $item->available_length_min !== null
+                    || $item->available_length_max !== null) {
+                    $this->line("SKIP quotation_item={$item->id}: row uses the Offer Amount contract.");
+
+                    continue;
+                }
+
                 if (! $prItem || $prItem->total_weight <= 0) {
                     $this->line("SKIP quotation_item={$item->id}: PR total KG is not positive.");
 
                     continue;
                 }
 
-                $amount = QuotationItem::calculateAmount($prItem, $item->price_per_kg);
-                if ($amount <= 0) {
+                // This legacy repair command repairs requested-weight zero
+                // rows only; it must not rewrite new Offer Amount records.
+                $amount = QuotationItem::calculateRequestedAmount($prItem, $item->price_per_kg);
+                if ($amount === null || $amount <= 0) {
                     $this->line("SKIP quotation_item={$item->id}: calculated amount is not positive.");
 
                     continue;

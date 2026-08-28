@@ -3,27 +3,31 @@
 namespace App\Models;
 
 use App\Traits\HasHashids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
- * @property \Illuminate\Support\Carbon|null $submitted_at
- * @property \Illuminate\Support\Carbon|null $estimated_delivery
- * @property \Illuminate\Support\Carbon|null $validity_period
+ * @property Carbon|null $submitted_at
+ * @property Carbon|null $estimated_delivery
+ * @property Carbon|null $validity_period
  */
 class Quotation extends Model
 {
-    use SoftDeletes, HasHashids;
+    use HasHashids, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_REVISION_REQUESTED = 'revision_requested';
+
     public const STATUS_ACCEPTED = 'accepted';
+
     public const STATUS_REJECTED = 'rejected';
 
     protected $fillable = [
@@ -39,7 +43,7 @@ class Quotation extends Model
         'estimated_delivery',
         'payment_terms',
         'validity_period',
-        'general_notes'
+        'general_notes',
     ];
 
     protected function casts(): array
@@ -120,6 +124,36 @@ class Quotation extends Model
             self::STATUS_REJECTED => 'bg-danger',
             default => 'bg-secondary',
         };
+    }
+
+    /**
+     * Official quotation total: Offer Amounts stored on each item.  This is a
+     * state-aware stored sum by design; QuotationItem::resolved_amount is a
+     * display/compatibility accessor and must not turn a legacy zero into a
+     * new financial total.
+     */
+    public function getTotalAmountAttribute(): float
+    {
+        $items = $this->relationLoaded('items')
+            ? $this->items
+            : $this->items()->get();
+
+        return round((float) $items->sum(fn (QuotationItem $item) => $item->isAvailable()
+            ? (float) ($item->amount ?? 0)
+            : 0.0), 4, PHP_ROUND_HALF_UP);
+    }
+
+    public function getTotalIdrAttribute(): ?float
+    {
+        $rate = $this->relationLoaded('exchange_rate')
+            ? $this->exchange_rate?->rate_to_idr
+            : $this->exchange_rate()->value('rate_to_idr');
+
+        if ($rate === null) {
+            return null;
+        }
+
+        return round($this->total_amount * (float) $rate, 4, PHP_ROUND_HALF_UP);
     }
 
     // ─── Relationships ───

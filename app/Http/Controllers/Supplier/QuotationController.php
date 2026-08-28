@@ -13,7 +13,9 @@ use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Services\Materials\MaterialWeightCalculator;
 use App\Services\NotificationService;
+use App\Support\Materials\DimensionRange;
 use App\Support\NotificationCategory;
 use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
@@ -30,7 +32,10 @@ use Yajra\DataTables\Facades\DataTables;
 
 class QuotationController extends Controller
 {
-    public function __construct(private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly MaterialWeightCalculator $weightCalculator,
+    ) {}
 
     /**
      * Display open quotation periods.
@@ -268,7 +273,7 @@ class QuotationController extends Controller
      */
     public function store(Request $request, $pr_id)
     {
-        $pr = PurchaseRequisition::with('invitedSuppliers', 'items')->findOrFail($pr_id);
+        $pr = PurchaseRequisition::with('invitedSuppliers', 'items.materialMaster')->findOrFail($pr_id);
 
         if (! in_array($pr->status, ['submitted', 'bidding'])) {
             return redirect()->route('supplier.quotations.index')->with('error', 'This requisition is not available for quotation.');
@@ -278,7 +283,7 @@ class QuotationController extends Controller
             abort(403, 'You are not invited to submit a quotation for this requisition.');
         }
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'action' => 'required|in:draft,submitted',
             'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
             'estimated_delivery' => 'required|date',
@@ -294,14 +299,25 @@ class QuotationController extends Controller
                 'distinct',
                 Rule::exists('pr_items', 'id')->where(fn ($query) => $query->where('pr_id', $pr->id)),
             ],
-            'items.*.price_per_kg' => 'required|numeric|min:0.01',
+            'items.*.is_available' => ['sometimes', 'boolean'],
+            // Price is conditional: explicit Not Available rows clear it.
+            // Legacy payloads without is_available retain the old required
+            // price contract through the validator callback below.
+            'items.*.price_per_kg' => 'nullable|numeric',
             'items.*.notes' => 'nullable|string',
-            'items.*.available_qty' => 'nullable|integer|min:1',
-            'items.*.available_thickness' => 'nullable|numeric|min:0',
-            'items.*.available_d_inner' => 'nullable|numeric|min:0',
-            'items.*.available_d_outer' => 'nullable|numeric|min:0',
-            'items.*.available_width' => 'nullable|numeric|min:0',
-            'items.*.available_length' => 'nullable|numeric|min:0',
+            // Keep the base rules permissive for Not Available rows; their
+            // numeric offer fields are intentionally sanitized away.
+            'items.*.available_qty' => 'nullable|integer',
+            'items.*.available_thickness' => 'nullable|numeric',
+            'items.*.available_d_inner' => 'nullable|numeric',
+            'items.*.available_d_outer' => 'nullable|numeric',
+            'items.*.available_width' => 'nullable|numeric',
+            // The shared parser validates exact and range syntax after the
+            // base validator; numeric-only validation would reject ranges.
+            'items.*.available_length' => 'nullable',
+            'items.*.available_length_input' => 'nullable',
+            'items.*.offered_weight_per_unit' => 'nullable|numeric',
+            'items.*.offered_weight_manual_override' => ['sometimes', 'boolean'],
             'items.*.mtc_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ], [
             'currency.required' => 'Currency is required.',
@@ -312,6 +328,162 @@ class QuotationController extends Controller
             'items.*.mtc_file.mimes' => 'The MTC file must be PDF, JPG, JPEG, or PNG.',
             'items.*.mtc_file.max' => 'The MTC file size must not exceed 5MB.',
         ]);
+        $validator->after(function ($validator) use ($request, $pr): void {
+            $prItems = $pr->items->keyBy(fn (PrItem $item) => (int) $item->id);
+            $rawItems = $request->input('items', []);
+            $isSubmitted = $request->input('action') === 'submitted';
+
+            foreach (is_array($rawItems) ? $rawItems : [] as $index => $rawItem) {
+                if (! is_array($rawItem)) {
+                    continue;
+                }
+
+                $prItemId = filter_var($rawItem['pr_item_id'] ?? null, FILTER_VALIDATE_INT);
+                /** @var PrItem|null $prItem */
+                $prItem = $prItemId === false ? null : $prItems->get((int) $prItemId);
+                if (! $prItem) {
+                    continue;
+                }
+
+                $hasExplicitAvailability = array_key_exists('is_available', $rawItem)
+                    || (array_key_exists('availability', $rawItem)
+                        && trim((string) ($rawItem['availability'] ?? '')) !== '');
+                $legacyPayload = ! $hasExplicitAvailability;
+                $availabilityInput = array_key_exists('is_available', $rawItem)
+                    ? $rawItem['is_available']
+                    : ($rawItem['availability'] ?? true);
+                $isAvailable = QuotationItem::normalizeAvailabilityState($availabilityInput);
+                $rawAvailability = strtolower(trim((string) ($rawItem['availability'] ?? '')));
+                if (array_key_exists('availability', $rawItem)
+                    && ! array_key_exists('is_available', $rawItem)
+                    && $rawAvailability !== ''
+                    && ! in_array($rawAvailability, [
+                        'available', 'yes', 'true', '1', 'not available', 'unavailable', 'no', 'false', '0',
+                    ], true)) {
+                    $validator->errors()->add(
+                        "items.{$index}.availability",
+                        'Availability must be Available or Not Available.'
+                    );
+                }
+                $price = $rawItem['price_per_kg'] ?? null;
+
+                if (! $isAvailable) {
+                    continue;
+                }
+
+                if ($price === null || $price === '' || ! is_numeric($price) || (float) $price <= 0) {
+                    $validator->errors()->add(
+                        "items.{$index}.price_per_kg",
+                        $legacyPayload
+                            ? 'The price per kg field is required.'
+                            : 'The price per kg field must be greater than zero for an available item.'
+                    );
+                }
+
+                $offeredQty = $rawItem['available_qty'] ?? null;
+                $offeredQty = $offeredQty === null || $offeredQty === '' ? null : (int) $offeredQty;
+
+                if ($offeredQty !== null && $offeredQty < 1) {
+                    $validator->errors()->add(
+                        "items.{$index}.available_qty",
+                        'The offered quantity must be at least 1 for an available item.'
+                    );
+                }
+
+                // The cross-record ceiling always uses the persisted PR item.
+                // Historical surplus rows are left untouched; new saves are
+                // never allowed to create another surplus row.
+                if ($offeredQty !== null && $offeredQty > $prItem->quantity_value) {
+                    $validator->errors()->add(
+                        "items.{$index}.available_qty",
+                        'The offered quantity cannot exceed the requested quantity of '.$prItem->quantity_value.'. If you can supply more, enter the requested quantity and describe the additional capacity in Notes.'
+                    );
+                }
+
+                if (! $legacyPayload) {
+                    $rawWeight = $rawItem['offered_weight_per_unit'] ?? null;
+                    if ($rawWeight !== null && $rawWeight !== '' && (! is_numeric($rawWeight) || (float) $rawWeight <= 0)) {
+                        $validator->errors()->add(
+                            "items.{$index}.offered_weight_per_unit",
+                            'Offer KG/Unit must be greater than zero for an available item.'
+                        );
+                    }
+                    foreach (PrItem::relevantDimensionFields($prItem->shape) as $field) {
+                        $value = $rawItem['available_'.$field] ?? null;
+                        if ($value !== null && $value !== '' && is_numeric($value) && (float) $value <= 0) {
+                            $validator->errors()->add(
+                                "items.{$index}.available_{$field}",
+                                'Offered dimensions must be greater than zero for an available item.'
+                            );
+                        }
+                    }
+                    if ($prItem->shape === PrItem::SHAPE_HOLLOW
+                        && is_numeric($rawItem['available_d_inner'] ?? null)
+                        && is_numeric($rawItem['available_d_outer'] ?? null)
+                        && (float) $rawItem['available_d_inner'] >= (float) $rawItem['available_d_outer']) {
+                        $validator->errors()->add(
+                            "items.{$index}.available_d_inner",
+                            'Inner diameter must be smaller than outer diameter for a Hollow item.'
+                        );
+                    }
+                }
+
+                // Keep the historical form contract (which permits zero as
+                // an incomplete dimension) but never allow a negative
+                // numeric dimension through either payload shape.
+                foreach (PrItem::relevantDimensionFields($prItem->shape) as $field) {
+                    $value = $rawItem['available_'.$field] ?? null;
+                    if ($value !== null && $value !== '' && is_numeric($value) && (float) $value < 0) {
+                        $validator->errors()->add(
+                            "items.{$index}.available_{$field}",
+                            'Offered dimensions cannot be negative.'
+                        );
+                    }
+                }
+
+                $lengthInput = array_key_exists('available_length_input', $rawItem)
+                    ? $rawItem['available_length_input']
+                    : ($rawItem['available_length'] ?? null);
+                if (($lengthInput === null || $lengthInput === '')
+                    && ($rawItem['available_length_min'] ?? null) !== null
+                    && ($rawItem['available_length_max'] ?? null) !== null) {
+                    $lengthInput = (string) $rawItem['available_length_min'].'-'.(string) $rawItem['available_length_max'];
+                }
+                $hasLengthInput = ! ($lengthInput === null || (is_string($lengthInput) && trim($lengthInput) === ''));
+                $length = DimensionRange::parse($lengthInput);
+                if ($hasLengthInput && $length === null) {
+                    $validator->errors()->add(
+                        "items.{$index}.available_length_input",
+                        'Length must be a positive number or a valid range such as 2300-2500.'
+                    );
+                }
+
+                $offer = $this->resolveOfferedWeight($prItem, $rawItem, $length, $legacyPayload);
+                if ($isSubmitted && ! $legacyPayload) {
+                    if ($offeredQty === null) {
+                        $validator->errors()->add(
+                            "items.{$index}.available_qty",
+                            'The offered quantity is required for an available item when submitting the final quotation.'
+                        );
+                    }
+                    if ($offer['weight'] === null) {
+                        $validator->errors()->add(
+                            "items.{$index}.offered_weight_per_unit",
+                            $offer['error'] ?? 'Offer KG/Unit is required for an available item when submitting the final quotation.'
+                        );
+                    }
+                    if ($price === null || $price === '') {
+                        $validator->errors()->add(
+                            "items.{$index}.price_per_kg",
+                            'The price per kg field is required for an available item when submitting the final quotation.'
+                        );
+                    }
+                }
+
+            }
+        });
+
+        $validated = $validator->validate();
         $supplierCurrency = $validated['currency'];
 
         $quotation = Quotation::where('pr_id', $pr_id)
@@ -347,6 +519,28 @@ class QuotationController extends Controller
                 }
 
                 $exchangeRateId = $rate->id;
+            }
+
+            // Recheck the exact PR item set under the transaction lock.  The
+            // request was validated against the pre-transaction snapshot, so
+            // this prevents a concurrent PR edit from silently producing an
+            // incomplete quotation response set.
+            $currentPrItemIds = PrItem::query()
+                ->where('pr_id', $pr->id)
+                ->lockForUpdate()
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->sort()
+                ->values()
+                ->all();
+            $validatedPrItemIds = collect($validated['items'])
+                ->pluck('pr_item_id')
+                ->map(fn ($id) => (int) $id)
+                ->sort()
+                ->values()
+                ->all();
+            if ($currentPrItemIds !== $validatedPrItemIds) {
+                throw new \RuntimeException('The requisition items changed while the quotation was being saved. Please reload and try again.');
             }
 
             if (! $quotation) {
@@ -389,17 +583,77 @@ class QuotationController extends Controller
             foreach ($validated['items'] as $index => $itemData) {
                 /** @var PrItem $prItem */
                 $prItem = PrItem::query()
+                    ->with('materialMaster')
                     ->whereKey((int) $itemData['pr_item_id'])
                     ->where('pr_id', $pr->id)
                     ->firstOrFail();
-                $amount = QuotationItem::calculateAmount($prItem, $itemData['price_per_kg']);
+                // Rebuild from the fresh PR row inside the transaction. The
+                // pre-validation map protects request UX, but persisted
+                // quantity/weight must come from current authoritative data.
+                $rawItem = $request->input("items.{$index}", $itemData);
+                $rawItem = is_array($rawItem) ? $rawItem : $itemData;
+                $hasExplicitAvailability = array_key_exists('is_available', $rawItem)
+                    || (array_key_exists('availability', $rawItem)
+                        && trim((string) ($rawItem['availability'] ?? '')) !== '');
+                $legacyPayload = ! $hasExplicitAvailability;
+                $availabilityInput = array_key_exists('is_available', $rawItem)
+                    ? $rawItem['is_available']
+                    : ($rawItem['availability'] ?? true);
+                $isAvailable = QuotationItem::normalizeAvailabilityState($availabilityInput);
+                $priceValue = $isAvailable && (($rawItem['price_per_kg'] ?? null) !== null && ($rawItem['price_per_kg'] ?? '') !== '')
+                    ? (float) $rawItem['price_per_kg']
+                    : null;
+                $lengthInput = array_key_exists('available_length_input', $rawItem)
+                    ? $rawItem['available_length_input']
+                    : ($rawItem['available_length'] ?? null);
+                if (($lengthInput === null || $lengthInput === '')
+                    && ($rawItem['available_length_min'] ?? null) !== null
+                    && ($rawItem['available_length_max'] ?? null) !== null) {
+                    $lengthInput = (string) $rawItem['available_length_min'].'-'.(string) $rawItem['available_length_max'];
+                }
+                $length = DimensionRange::parse($lengthInput);
+                $availability = QuotationItem::sanitizeAvailabilityData($rawItem, $prItem);
+                $offeredQty = $rawItem['available_qty'] ?? null;
+                $offeredQty = $offeredQty === null || $offeredQty === '' ? null : (int) $offeredQty;
+                $offer = $isAvailable
+                    ? $this->resolveOfferedWeight($prItem, $rawItem, $length, $legacyPayload)
+                    : ['weight' => null, 'source' => null, 'error' => null];
+                if ($isAvailable && $offeredQty !== null && $offeredQty > $prItem->quantity_value) {
+                    throw new \RuntimeException('The offered quantity no longer fits the current requested quantity. Please reload the requisition and try again.');
+                }
+                if ($request->action === 'submitted'
+                    && $isAvailable
+                    && ! $legacyPayload
+                    && ($offeredQty === null || $offer['weight'] === null || $priceValue === null)) {
+                    throw new \RuntimeException('The available offer changed while it was being saved. Please reload the requisition and complete the offer again.');
+                }
+                $availability['offered_weight_per_unit'] = $offer['weight'];
+                $availability['offered_weight_source'] = $offer['source'];
+                $offerTotalWeight = $isAvailable && $offeredQty !== null && $offer['weight'] !== null
+                    ? round($offeredQty * $offer['weight'], 4, PHP_ROUND_HALF_UP)
+                    : null;
+                $amount = ! $isAvailable
+                    ? 0.0
+                    : ($legacyPayload
+                        ? (QuotationItem::calculateRequestedAmount($prItem, $priceValue) ?? 0.0)
+                        : ($offerTotalWeight === null
+                            ? 0.0
+                            : QuotationItem::calculateOfferAmount($offerTotalWeight, $priceValue)));
+                $offer = [
+                    ...$availability,
+                    'price_per_kg' => $priceValue,
+                    'offer_total_weight' => $offerTotalWeight,
+                    'amount' => $amount,
+                ];
+                $offerFields = $offer;
+                unset($offerFields['price_per_kg'], $offerFields['amount'], $offerFields['offer_total_weight']);
 
                 $quotationItem = $quotation->items()->create([
                     'pr_item_id' => $prItem->id,
-                    'price_per_kg' => $itemData['price_per_kg'],
-                    'amount' => $amount,
+                    'price_per_kg' => $offer['price_per_kg'],
+                    'amount' => $offer['amount'],
                     'notes' => $itemData['notes'] ?? null,
-                    ...QuotationItem::sanitizeAvailabilityData($itemData, $prItem),
+                    ...$offerFields,
                 ]);
 
                 $mtcFile = $request->file("items.{$index}.mtc_file");
@@ -478,6 +732,130 @@ class QuotationController extends Controller
             ->first();
 
         return view('supplier.quotations.show', compact('quotation', 'conversation'));
+    }
+
+    /**
+     * Resolve supplier-side KG/unit without changing the persisted PR item.
+     * Exact geometry uses the existing material calculator; ranges never use a
+     * midpoint/min/max approximation and therefore require supplier weight.
+     *
+     * @return array{weight: ?float, source: ?string, error: ?string}
+     */
+    private function resolveOfferedWeight(
+        PrItem $prItem,
+        array $item,
+        ?DimensionRange $length,
+        bool $legacyPayload,
+    ): array {
+        $rawWeight = $item['offered_weight_per_unit'] ?? null;
+        $hasWeight = $rawWeight !== null && $rawWeight !== '' && is_numeric($rawWeight) && (float) $rawWeight > 0;
+        $manualOverride = $this->booleanInput($item['offered_weight_manual_override'] ?? false);
+
+        if ($length?->isRange()) {
+            if ($hasWeight) {
+                return [
+                    'weight' => round((float) $rawWeight, 4, PHP_ROUND_HALF_UP),
+                    'source' => QuotationItem::OFFER_WEIGHT_SOURCE_ESTIMATED,
+                    'error' => null,
+                ];
+            }
+
+            return [
+                'weight' => $legacyPayload ? (float) $prItem->weight_needed : null,
+                'source' => null,
+                'error' => 'A length range requires a supplier-provided Offer KG/Unit marked as estimated.',
+            ];
+        }
+
+        $sanitized = QuotationItem::sanitizeAvailabilityData($item, $prItem);
+        $dimensions = [];
+        foreach (PrItem::relevantDimensionFields($prItem->shape) as $field) {
+            $dimensions[$field] = $field === 'length'
+                ? $length?->exact
+                : ($sanitized['available_'.$field] ?? null);
+        }
+        $hasCompleteGeometry = collect(PrItem::relevantDimensionFields($prItem->shape))
+            ->every(fn (string $field) => isset($dimensions[$field]) && is_numeric($dimensions[$field]) && (float) $dimensions[$field] > 0);
+
+        if ($manualOverride) {
+            if ($hasWeight) {
+                return [
+                    'weight' => round((float) $rawWeight, 4, PHP_ROUND_HALF_UP),
+                    'source' => QuotationItem::OFFER_WEIGHT_SOURCE_ESTIMATED,
+                    'error' => null,
+                ];
+            }
+
+            return [
+                'weight' => null,
+                'source' => null,
+                'error' => 'Offer KG/Unit must be greater than zero when manual override is selected.',
+            ];
+        }
+
+        if ($hasCompleteGeometry && $prItem->materialMaster) {
+            $calculation = $this->weightCalculator->calculate(
+                $prItem->materialMaster,
+                $prItem->shape,
+                $dimensions,
+                1,
+            );
+
+            if ($calculation->isCalculated()
+                && $calculation->unitKg !== null
+                && (float) $calculation->unitKg > 0) {
+                if ($hasWeight && abs((float) $rawWeight - (float) $calculation->unitKg) > QuotationItem::AVAILABILITY_TOLERANCE) {
+                    return [
+                        'weight' => round((float) $rawWeight, 4, PHP_ROUND_HALF_UP),
+                        'source' => QuotationItem::OFFER_WEIGHT_SOURCE_ESTIMATED,
+                        'error' => null,
+                    ];
+                }
+
+                return [
+                    'weight' => (float) $calculation->unitKg,
+                    'source' => QuotationItem::OFFER_WEIGHT_SOURCE_AUTO,
+                    'error' => null,
+                ];
+            }
+        }
+
+        if ($hasWeight) {
+            return [
+                'weight' => round((float) $rawWeight, 4, PHP_ROUND_HALF_UP),
+                'source' => QuotationItem::OFFER_WEIGHT_SOURCE_ESTIMATED,
+                'error' => null,
+            ];
+        }
+
+        if ($legacyPayload) {
+            // Pre-revision forms did not submit Offer KG/Unit. Retain their
+            // requested-weight amount semantics and render safely.
+            return [
+                'weight' => (float) $prItem->weight_needed,
+                'source' => null,
+                'error' => null,
+            ];
+        }
+
+        return [
+            'weight' => null,
+            'source' => null,
+            'error' => 'Complete the offered dimensions or provide Offer KG/Unit before saving this available item.',
+        ];
+    }
+
+    private function booleanInput(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value === 1;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN) ?? false;
     }
 
     private function storeMtcAttachment(QuotationItem $quotationItem, UploadedFile $file): void

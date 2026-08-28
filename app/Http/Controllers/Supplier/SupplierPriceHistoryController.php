@@ -186,7 +186,11 @@ class SupplierPriceHistoryController extends Controller
             ->join('pr_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
             ->where('purchase_orders.supplier_id', $supplierId)
             ->whereNull('purchase_orders.deleted_at')
-            ->whereNull('quotations.deleted_at');
+            ->whereNull('quotations.deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('quotation_items.is_available')
+                    ->orWhere('quotation_items.is_available', true);
+            });
 
         return [
             'total_materials' => (clone $baseQuery)->distinct('pr_items.material_name')->count('pr_items.material_name'),
@@ -206,6 +210,10 @@ class SupplierPriceHistoryController extends Controller
             ->where('purchase_orders.supplier_id', $supplierId)
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('quotations.deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('quotation_items.is_available')
+                    ->orWhere('quotation_items.is_available', true);
+            })
             ->select([
                 'pr_items.material_name',
                 'quotations.currency',
@@ -257,9 +265,14 @@ class SupplierPriceHistoryController extends Controller
             ->distinct()
             ->whereNotNull('material_name')
             ->where('material_name', '<>', '')
-            ->whereHas('quotationItems.quotation.purchaseOrders', function ($query) use ($supplierId) {
-                $query->where('purchase_orders.supplier_id', $supplierId)
-                    ->whereNull('purchase_orders.deleted_at');
+            ->whereHas('quotationItems', function ($query) use ($supplierId) {
+                $query->where(function ($query) {
+                    $query->whereNull('quotation_items.is_available')
+                        ->orWhere('quotation_items.is_available', true);
+                })->whereHas('quotation.purchaseOrders', function ($query) use ($supplierId) {
+                    $query->where('purchase_orders.supplier_id', $supplierId)
+                        ->whereNull('purchase_orders.deleted_at');
+                });
             })
             ->orderBy('material_name')
             ->get()

@@ -117,6 +117,7 @@ class MissionFiveImportTest extends TestCase
             'pr_item_id', 'material_name', 'requested_dimension', 'price_per_kg',
             'available_qty', 'available_thickness', 'available_d_inner',
             'available_d_outer', 'available_width', 'available_length', 'notes',
+            'availability', 'offered_weight_per_unit',
         ], $quotationTemplate->headings());
         $this->assertSame(
             $this->pr->items->pluck('id')->all(),
@@ -330,7 +331,7 @@ class MissionFiveImportTest extends TestCase
             'notes', 'available_width', 'price_per_kg', 'material_name', 'pr_item_id',
             'available_qty', 'available_d_outer', 'requested_dimension',
         ], [[
-            'Imported item note', 105, 8.75, 'Spoofed material', $target->id, 7, 999, 'Spoofed dimensions',
+            'Imported item note', 105, 8.75, 'Spoofed material', $target->id, 2, 999, 'Spoofed dimensions',
         ]]);
 
         $response = $this->actingAs($this->supplierA)
@@ -342,7 +343,7 @@ class MissionFiveImportTest extends TestCase
         $row = $response->json('rows.0');
         $this->assertSame($target->id, $row['pr_item_id']);
         $this->assertSame(8.75, $row['price_per_kg']);
-        $this->assertSame(7, $row['available_qty']);
+        $this->assertSame(2, $row['available_qty']);
         $this->assertEquals(105.0, $row['available_width']);
         $this->assertIsNumeric($row['available_width']);
         $this->assertNull($row['available_d_outer']);
@@ -417,6 +418,70 @@ class MissionFiveImportTest extends TestCase
         $this->actingAs($this->supplierA)
             ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $lockedUpload])
             ->assertForbidden();
+    }
+
+    public function test_quotation_preview_normalizes_availability_range_and_offer_weight(): void
+    {
+        $item = $this->pr->items->firstOrFail();
+        $upload = $this->spreadsheetUpload(
+            [
+                'pr_item_id', 'availability', 'price_per_kg', 'available_qty',
+                'available_thickness', 'available_width', 'available_length',
+                'offered_weight_per_unit', 'notes',
+            ],
+            [[$item->id, 'Available', 100, 2, 1.5, 100, '1800-2200', 2.4, 'Range offer']],
+        );
+
+        $response = $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('rows.0.is_available', true)
+            ->assertJsonPath('rows.0.available_length', null)
+            ->assertJsonPath('rows.0.available_length_min', 1800)
+            ->assertJsonPath('rows.0.available_length_max', 2200)
+            ->assertJsonPath('rows.0.offered_weight_per_unit', 2.4);
+
+        $this->assertSame('Available', $response->json('rows.0.availability'));
+    }
+
+    public function test_quotation_preview_rejects_explicit_quantity_above_requested(): void
+    {
+        $item = $this->pr->items->firstOrFail();
+        $upload = $this->spreadsheetUpload(
+            ['pr_item_id', 'availability', 'price_per_kg', 'available_qty'],
+            [[$item->id, 'Available', 100, 3]],
+        );
+
+        $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
+            ->assertOk()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('summary.invalid', 1);
+    }
+
+    public function test_not_available_import_warns_and_clears_numeric_offer_values(): void
+    {
+        $item = $this->pr->items->firstOrFail();
+        $upload = $this->spreadsheetUpload(
+            [
+                'pr_item_id', 'availability', 'price_per_kg', 'available_qty',
+                'available_length', 'offered_weight_per_unit', 'notes',
+            ],
+            [[$item->id, 'Not Available', 100, 2, '2000', 2.4, 'No stock']],
+        );
+
+        $response = $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('rows.0.is_available', false)
+            ->assertJsonPath('rows.0.price_per_kg', null)
+            ->assertJsonPath('rows.0.available_qty', null)
+            ->assertJsonPath('rows.0.offered_weight_per_unit', null);
+
+        $this->assertNotEmpty($response->json('warnings'));
+        $this->assertSame('Not Available', $response->json('rows.0.availability'));
     }
 
     public function test_first_sheet_only_row_limit_and_extra_sheet_warning_are_enforced(): void

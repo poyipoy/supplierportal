@@ -102,7 +102,10 @@ class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWid
             ?: $quotation?->supplier?->name;
         $rate = (float) ($quotation?->exchange_rate?->rate_to_idr ?? 0);
         $prItem = $item->prItem;
-        $amount = $item->resolved_amount;
+        $requestedAmount = $item->requested_amount;
+        $offerAmount = $item->offer_amount;
+        $amount = $offerAmount ?? 0.0;
+        $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
         $requestedDimensions = $prItem?->dimension_label;
         $offeredDimensions = $item->available_dimension_label;
 
@@ -117,13 +120,20 @@ class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWid
             SpreadsheetCellSanitizer::text($requestedDimensions !== '-' ? $requestedDimensions : null),
             $item->available_qty,
             SpreadsheetCellSanitizer::text($offeredDimensions !== '-' ? $offeredDimensions : null),
-            (float) $item->price_per_kg,
+            $pricePerKg,
             $amount,
             $rate,
-            $amount * $rate,
+            $offerAmount === null ? null : $offerAmount * $rate,
             SpreadsheetCellSanitizer::text($item->notes),
             SpreadsheetCellSanitizer::text($quotation?->statusLabel()),
             $quotation?->submitted_at?->format('Y-m-d H:i:s') ?? '-',
+            $item->is_available ? 'Available' : 'Not Available',
+            $item->available_length_display !== '-' ? $item->available_length_display : null,
+            $item->offered_weight_per_unit === null ? null : (float) $item->offered_weight_per_unit,
+            SpreadsheetCellSanitizer::text($item->offered_weight_source),
+            $item->offered_total_weight,
+            $requestedAmount,
+            $offerAmount,
         ];
     }
 
@@ -162,6 +172,13 @@ class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWid
             'Item Notes',
             'Status',
             'Submitted At',
+            'Availability',
+            'Offered Length',
+            'Offer Weight/Unit',
+            'Offer Weight Source',
+            'Offer Total Weight',
+            'Requested Amount',
+            'Offer Amount',
         ];
     }
 
@@ -185,6 +202,13 @@ class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWid
             'O' => 30,
             'P' => 19,
             'Q' => 21,
+            'R' => 18,
+            'S' => 18,
+            'T' => 18,
+            'U' => 18,
+            'V' => 18,
+            'W' => 18,
+            'X' => 18,
         ];
     }
 }

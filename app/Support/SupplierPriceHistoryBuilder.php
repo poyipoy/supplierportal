@@ -197,7 +197,7 @@ class SupplierPriceHistoryBuilder
                 'pr_id' => $purchaseRequisition?->id,
                 'pr_number' => $purchaseRequisition?->pr_number ?? '-',
                 'pr_url' => route('supplier.quotations.show', $item->quotation),
-                'price_per_kg' => (float) $item->price_per_kg,
+                'price_per_kg' => $item->price_per_kg === null ? null : (float) $item->price_per_kg,
                 'currency' => $item->quotation->currency,
                 // Keep the legacy keys for existing consumers, but make
                 // their date explicitly represent the purchase event.
@@ -288,6 +288,10 @@ class SupplierPriceHistoryBuilder
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('quotations.deleted_at')
             ->where('pr_items.material_name', $materialName)
+            ->where(function ($query) {
+                $query->whereNull('quotation_items.is_available')
+                    ->orWhere('quotation_items.is_available', true);
+            })
             ->with([
                 'quotation.purchaseRequisition.period',
                 'prItem.purchaseRequisition' => function ($query) {

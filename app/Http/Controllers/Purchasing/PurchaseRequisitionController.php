@@ -10,7 +10,6 @@ use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
@@ -328,26 +327,9 @@ class PurchaseRequisitionController extends Controller
             'creator',
         ])->findOrFail($id);
 
-        $quotations = $pr->quotations->map(function ($quotation) {
-            $quotation->total_amount = $quotation->items->sum(function ($item) {
-                return $item->prItem
-                    ? QuotationItem::calculateAmount($item->prItem, $item->price_per_kg)
-                    : 0;
-            });
-
-            $rate = $quotation->exchange_rate;
-            $quotation->total_idr = $rate
-                ? $quotation->items->sum(function ($item) use ($rate) {
-                    $amount = $item->prItem
-                        ? QuotationItem::calculateAmount($item->prItem, $item->price_per_kg)
-                        : 0;
-
-                    return $amount * (float) $rate->rate_to_idr;
-                })
-                : null;
-
-            return $quotation;
-        });
+        // Quotation exposes total_amount/total_idr accessors backed by the
+        // stored Offer Amount (with the model's documented legacy fallback).
+        $quotations = $pr->quotations;
 
         $lowestTotalIdr = $quotations
             ->pluck('total_idr')

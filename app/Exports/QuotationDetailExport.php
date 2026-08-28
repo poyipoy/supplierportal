@@ -46,8 +46,10 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
             $prItem = $item->prItem;
             $requestedDimensions = $prItem?->dimension_label;
             $offeredDimensions = $item->available_dimension_label;
-            $pricePerKg = (float) $item->price_per_kg;
-            $amount = $item->resolved_amount;
+            $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
+            $requestedAmount = $item->requested_amount;
+            $offerAmount = $item->offer_amount;
+            $amount = $offerAmount ?? 0.0;
 
             $row = [
                 SpreadsheetCellSanitizer::text($pr?->pr_number),
@@ -77,10 +79,16 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
                 (float) ($prItem?->total_weight ?? 0),
                 $pricePerKg,
                 $amount,
-                $pricePerKg * $rate,
-                $amount * $rate,
+                $pricePerKg === null ? null : $pricePerKg * $rate,
+                $offerAmount === null ? null : $offerAmount * $rate,
                 SpreadsheetCellSanitizer::text($item->notes),
                 $item->attachments->count(),
+                $item->is_available ? 'Available' : 'Not Available',
+                $item->offered_weight_per_unit === null ? null : (float) $item->offered_weight_per_unit,
+                SpreadsheetCellSanitizer::text($item->offered_weight_source),
+                $item->offered_total_weight,
+                $requestedAmount,
+                $offerAmount,
             ]);
 
             return $row;
@@ -121,6 +129,12 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
             'Amount IDR',
             'Item Notes',
             'MTC Attachment Count',
+            'Availability',
+            'Offer Weight/Unit',
+            'Offer Weight Source',
+            'Offer Total Weight',
+            'Requested Amount',
+            'Offer Amount',
         ]);
     }
 
@@ -152,7 +166,7 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
             'J' => 32,
         ];
 
-        $itemWidths = [30, 16, 19, 38, 18, 38, 15, 15, 16, 16, 18, 18, 30, 20];
+        $itemWidths = [30, 16, 19, 38, 18, 38, 15, 15, 16, 16, 18, 18, 30, 20, 18, 18, 18, 18, 18, 18];
         $columnIndex = $this->includeReviewerNotes ? 12 : 11;
 
         if ($this->includeReviewerNotes) {

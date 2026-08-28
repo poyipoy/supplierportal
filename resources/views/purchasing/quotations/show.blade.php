@@ -141,9 +141,9 @@
                                 $quantity = $item->prItem ? $item->prItem->quantity_value : 1;
                                 $weight = $item->prItem ? (float)$item->prItem->weight_needed : 0;
                                 $totalWeight = $item->prItem ? (float)$item->prItem->total_weight : $weight;
-                                $pricePerKg = (float)$item->price_per_kg;
+                                $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
                                 $amount = $item->resolved_amount;
-                                $priceIdr = $rateValue !== null ? $pricePerKg * $rateValue : null;
+                                $priceIdr = $pricePerKg !== null && $rateValue !== null ? $pricePerKg * $rateValue : null;
                                 $amountIdr = $rateValue !== null ? $amount * $rateValue : null;
                                 $totalOriginal += $amount;
                                 $totalIdr += $amountIdr ?? 0;
@@ -168,19 +168,23 @@
                                     </div>
                                     <div class="border rounded tw-p-1.5 tw-bg-surface tw-text-ui-xs">
                                         <span class="text-primary fw-semibold d-block">Offered:</span>
-                                        <span class="fw-medium">Qty {{ $item->available_qty ?? '-' }} &bull; {{ $item->available_dimension_label }}</span>
+                                        @if($availability['specification']['code'] === 'not_available')
+                                            <span class="fw-medium">Not Available</span>
+                                        @else
+                                            <span class="fw-medium">Qty {{ $item->available_qty ?? '-' }} &bull; {{ $item->available_dimension_label }}</span>
+                                        @endif
                                         <div class="d-flex flex-wrap gap-1 mt-1">
                                             <span @class([
                                                 'badge',
-                                                'bg-secondary' => $availability['quantity']['code'] === 'not_specified',
+                                                'bg-secondary' => in_array($availability['quantity']['code'], ['not_specified', 'not_available'], true),
                                                 'bg-warning text-dark' => $availability['quantity']['code'] === 'shortage',
                                                 'bg-success' => in_array($availability['quantity']['code'], ['match', 'surplus'], true),
                                             ]) style="font-size: var(--ui-font-size-xs);">{{ $availability['quantity']['label'] }}</span>
                                             <span @class([
                                                 'badge',
-                                                'bg-secondary' => $availability['specification']['code'] === 'not_specified',
+                                                'bg-secondary' => in_array($availability['specification']['code'], ['not_specified', 'not_available'], true),
                                                 'bg-warning text-dark' => $availability['specification']['code'] === 'different',
-                                                'bg-success' => $availability['specification']['code'] === 'exact',
+                                                'bg-success' => in_array($availability['specification']['code'], ['exact', 'within_range'], true),
                                             ]) style="font-size: var(--ui-font-size-xs);">{{ $availability['specification']['label'] }}</span>
                                         </div>
                                     </div>
@@ -188,7 +192,7 @@
                                 <td class="text-center fw-bold ui-tabular-nums">{{ number_format($quantity, 0) }}</td>
                                 <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($weight, 2) }}</td>
                                 <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($totalWeight, 2) }}</td>
-                                <td class="text-end fw-bold ui-tabular-nums">{{ number_format($pricePerKg, 2) }}</td>
+                                <td class="text-end fw-bold ui-tabular-nums">{{ $pricePerKg === null ? '-' : number_format($pricePerKg, 2) }}</td>
                                 <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
                                 <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">
                                     {{ $amountIdr !== null ? 'Rp ' . number_format($amountIdr, 0, ',', '.') : '-' }}

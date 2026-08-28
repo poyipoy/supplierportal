@@ -330,7 +330,7 @@
                             <td class="text-center">{{ number_format($item->prItem->quantity_value, 0, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($item->prItem->weight_needed, 0, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($item->prItem->total_weight, 0, ',', '.') }}</td>
-                            <td class="text-right">{{ number_format($item->price_per_kg, 4) }}</td>
+                            <td class="text-right">{{ $item->price_per_kg === null ? '-' : number_format($item->price_per_kg, 4) }}</td>
                             <td class="text-right">{{ number_format($totalFx, 2, ',', '.') }}</td>
                             <td class="text-right">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                         </tr>

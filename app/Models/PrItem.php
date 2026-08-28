@@ -60,6 +60,17 @@ class PrItem extends Model
         self::SHAPE_HOLLOW => ['d_inner', 'd_outer', 'length'],
     ];
 
+    /**
+     * Display order is intentionally separate from canonical relevance order.
+     * RELEVANT_DIMENSIONS remains the source of truth for sanitization and
+     * weight calculation; this contract only describes human-facing order.
+     */
+    public const PRESENTATION_DIMENSIONS = [
+        self::SHAPE_FLAT => ['thickness', 'width', 'length'],
+        self::SHAPE_ROUND => ['d_outer', 'length'],
+        self::SHAPE_HOLLOW => ['d_outer', 'd_inner', 'length'],
+    ];
+
     protected $fillable = [
         'pr_id',
         'material_master_id',
@@ -106,6 +117,11 @@ class PrItem extends Model
     public static function relevantDimensionFields(?string $shape): array
     {
         return self::RELEVANT_DIMENSIONS[$shape] ?? [];
+    }
+
+    public static function presentationDimensionFields(?string $shape): array
+    {
+        return self::PRESENTATION_DIMENSIONS[$shape] ?? [];
     }
 
     public static function sanitizeMaterialData(array $item): array

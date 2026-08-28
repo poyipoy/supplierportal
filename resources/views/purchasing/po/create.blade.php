@@ -79,7 +79,7 @@
                                     'quantity' => (int)$i->prItem->quantity_value,
                                     'weight_unit' => (float)$i->prItem->weight_needed,
                                     'weight' => (float)$i->prItem->total_weight,
-                                    'price' => (float)$i->price_per_kg,
+                                    'price' => $i->price_per_kg === null ? null : (float) $i->price_per_kg,
                                     'amount' => $i->resolved_amount,
                                     'rate' => (float)($oq->exchange_rate?->rate_to_idr ?? 0),
                                 ];
@@ -152,7 +152,7 @@
                             <td class="text-center ui-tabular-nums">{{ number_format($item->prItem->quantity_value, 0) }}</td>
                             <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->prItem->weight_needed, 2) }}</td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">{{ number_format($item->prItem->total_weight, 2) }}</td>
-                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ number_format($item->price_per_kg, 4) }}</td>
+                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $item->price_per_kg === null ? '-' : number_format($item->price_per_kg, 4) }}</td>
                             <td class="text-end fw-semibold ui-tabular-nums">{{ number_format($amount, 2) }}</td>
                             <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">Rp {{ number_format($idr, 0, ',', '.') }}</td>
                         </tr>
@@ -215,7 +215,7 @@
             'quantity' => (int)$i->prItem->quantity_value,
             'weight_unit' => (float)$i->prItem->weight_needed,
             'weight' => (float)$i->prItem->total_weight,
-            'price' => (float)$i->price_per_kg,
+            'price' => $i->price_per_kg === null ? null : (float) $i->price_per_kg,
             'amount' => $i->resolved_amount,
             'rate' => (float)($rate?->rate_to_idr ?? 0),
         ];
@@ -228,6 +228,10 @@
     const currency = @json($quotation->currency);
 
     function formatNumber(num, decimals) {
+        if (num === null || num === undefined || num === '') {
+            return '-';
+        }
+
         return Number(num).toLocaleString('id-ID', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
     }
 

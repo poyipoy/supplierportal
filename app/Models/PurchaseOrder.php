@@ -129,6 +129,7 @@ class PurchaseOrder extends Model
         $totalWeightExpression = "ROUND(COALESCE(pi.weight_needed, 0) * ({$quantityExpression}), 4)";
         $resolvedAmountExpression = <<<SQL
             CASE
+                WHEN COALESCE(qi.is_available, 1) = 0 THEN 0
                 WHEN COALESCE(qi.amount, 0) > 0 THEN qi.amount
                 WHEN COALESCE(qi.price_per_kg, 0) > 0
                     AND pi.id IS NOT NULL
