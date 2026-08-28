@@ -1,0 +1,17 @@
+.git
+.gitignore
+.dockerignore
+deployment/
+tests/
+docs/
+node_modules/
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/private/*
+.env
+.env.*
+*.patch
+*.zip
+*.tar.gz
