@@ -111,9 +111,11 @@
                             <col style="width: 165px; min-width: 165px;">
                             <col style="width: 110px; min-width: 110px;">
                             <col style="width: 78px; min-width: 78px;">
-                            <col data-dimension-slot-col="1" style="width: 120px; min-width: 120px;">
-                            <col data-dimension-slot-col="2" style="width: 120px; min-width: 120px;">
-                            <col data-dimension-slot-col="3" style="width: 120px; min-width: 120px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
                             <col style="width: 160px; min-width: 160px;">
                             <col style="width: 180px; min-width: 180px;">
                             <col style="width: 64px; min-width: 64px;">
@@ -125,9 +127,9 @@
                                 <th scope="col">HS Code</th>
                                 <th scope="col">Shape</th>
                                 <th scope="col">Qty <span class="text-danger">*</span></th>
-                                <th scope="col" data-dimension-slot-header="1">Dimension 1 (mm)</th>
-                                <th scope="col" data-dimension-slot-header="2">Dimension 2 (mm)</th>
-                                <th scope="col" data-dimension-slot-header="3">Dimension 3 (mm)</th>
+                                @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)
+                                    <th scope="col">{{ \App\Models\PrItem::DIMENSION_LABELS[$dimensionField] }} (mm)</th>
+                                @endforeach
                                 <th scope="col">KG / Unit (kg)</th>
                                 <th scope="col">Remark</th>
                                 <th scope="col" class="pr-sticky-action">Action</th>
@@ -199,7 +201,6 @@
         resetMaterialPreview($('#itemsBody tr.item-row').last());
         itemIndex++;
         renumberPrRows();
-        updateMaterialDimensionHeaders();
         checkRowCount();
     }
 
@@ -212,7 +213,6 @@
             if (result.isConfirmed) {
                 $(btn).closest('tr').remove();
                 renumberPrRows();
-                updateMaterialDimensionHeaders();
                 checkRowCount();
             }
         });

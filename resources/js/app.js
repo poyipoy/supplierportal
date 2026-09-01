@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import { bootAdasiCalendars } from './calendar';
 import './unsaved-changes';
 import './number-input-helper';
+import './chart-theme';
 
 window.Alpine = Alpine;
 

@@ -22,6 +22,11 @@
     $labelId = $resolvedId . '-label';
     $panelId = $resolvedId . '-calendar-panel';
     $describedBy = collect([$helperId, $errorId])->filter()->implode(' ');
+    $dateDisplay = 'Choose date';
+    if ($resolvedValue && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $resolvedValue)) {
+        [$year, $month, $day] = explode('-', (string) $resolvedValue);
+        $dateDisplay = date('d M Y', mktime(0, 0, 0, (int) $month, (int) $day, (int) $year));
+    }
 @endphp
 
 <div
@@ -77,7 +82,7 @@
             @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
             @disabled($disabled || $readonly)
         >
-            <span data-calendar-display>Choose date</span>
+            <span data-calendar-display>{{ $dateDisplay }}</span>
             <x-ui.icon name="calendar-days" size="sm" aria-hidden="true" />
         </button>
     </div>

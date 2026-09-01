@@ -15,6 +15,7 @@ use App\Services\Materials\MaterialResolver;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
+use App\Support\NumberFormat;
 use App\Support\PurchasingNavigation;
 use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
@@ -83,7 +84,7 @@ class PurchaseRequisitionController extends Controller
                 ->addColumn('period_name', fn ($pr) => $pr->period->display_label ?? '-')
                 ->addColumn('creator_name', fn ($pr) => $pr->creator->name ?? '-')
                 ->addColumn('item_count', fn ($pr) => $pr->items_count.' Item')
-                ->addColumn('total_kg', fn ($pr) => number_format((float) $pr->total_kg, 4, '.', ',').' kg')
+                ->addColumn('total_kg', fn ($pr) => NumberFormat::maxDecimals($pr->total_kg).' kg')
                 ->addColumn('supplier_count', fn ($pr) => $pr->invited_suppliers_count)
                 ->addColumn('status_badge', function ($pr) {
                     $tone = match ($pr->status) {
@@ -381,7 +382,6 @@ class PurchaseRequisitionController extends Controller
                 }
                 if ($matched) {
                     $item->material_master_id = $matched->id;
-                    $item->saveQuietly();
                 }
             }
         }

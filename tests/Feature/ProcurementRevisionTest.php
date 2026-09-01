@@ -125,7 +125,7 @@ class ProcurementRevisionTest extends TestCase
         $statusBadge = $response->json('data.0.status_badge');
         $this->assertStringContainsString('>3</span>', $statusBadge);
         $this->assertStringContainsString('3 supplier quotations submitted', $statusBadge);
-        $this->assertSame('20.0000 kg', $response->json('data.0.total_kg'));
+        $this->assertSame('20 kg', $response->json('data.0.total_kg'));
 
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.show', $pr))

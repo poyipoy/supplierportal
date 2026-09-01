@@ -165,15 +165,17 @@ class MissionFiveImportTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_pr_preview_parses_reordered_columns_sanitizes_shape_and_never_writes_database(): void
+    public function test_pr_preview_maps_canonical_dimensions_for_all_shapes_and_never_writes_database(): void
     {
         $before = $this->databaseSnapshot();
         $upload = $this->spreadsheetUpload([
-            'quantity', 'material_name', 'weight_needed', 'shape', 'hs_code',
-            'thickness', 'd_outer', 'length', 'remark',
-        ], [[
-            4, 'SCM440', 15.75, 'Round', '00990011', 9.9, 30, 500, 'Imported remark',
-        ]]);
+            'quantity', 'material_name', 'shape', 'd_inner', 'width',
+            'd_outer', 'thickness', 'length', 'remark',
+        ], [
+            [2, 'SCM440', 'Flat', 999, 120, 999, 1.2, 240, 'Imported flat'],
+            [3, 'SCM440', 'Round', 999, 999, 20, 999, 300, 'Imported round'],
+            [4, 'SCM440', 'Hollow', 10, 999, 20, 999, 400, 'Imported hollow'],
+        ]);
 
         $response = $this->actingAs($this->purchasing)
             ->post(route('purchasing.requisitions.import-preview'), [
@@ -181,17 +183,37 @@ class MissionFiveImportTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('summary.total', 1)
-            ->assertJsonPath('summary.valid', 1)
+            ->assertJsonPath('summary.total', 3)
+            ->assertJsonPath('summary.valid', 3)
             ->assertJsonPath('summary.invalid', 0);
 
-        $row = $response->json('rows.0');
-        $this->assertSame(4, $row['quantity']);
-        $this->assertEquals(2.7752, $row['weight_needed']);
-        $this->assertNull($row['thickness']);
-        $this->assertEquals(30.0, $row['d_outer']);
-        $this->assertIsNumeric($row['d_outer']);
-        $this->assertSame('7228.30.10', $row['hs_code']);
+        $flat = $response->json('rows.0');
+        $this->assertSame(PrItem::SHAPE_FLAT, $flat['shape']);
+        $this->assertSame(2, $flat['quantity']);
+        $this->assertEquals(1.2, $flat['thickness']);
+        $this->assertNull($flat['d_inner']);
+        $this->assertNull($flat['d_outer']);
+        $this->assertEquals(120.0, $flat['width']);
+        $this->assertEquals(240.0, $flat['length']);
+
+        $round = $response->json('rows.1');
+        $this->assertSame(PrItem::SHAPE_ROUND, $round['shape']);
+        $this->assertSame(3, $round['quantity']);
+        $this->assertNull($round['thickness']);
+        $this->assertNull($round['d_inner']);
+        $this->assertEquals(20.0, $round['d_outer']);
+        $this->assertNull($round['width']);
+        $this->assertEquals(300.0, $round['length']);
+
+        $hollow = $response->json('rows.2');
+        $this->assertSame(PrItem::SHAPE_HOLLOW, $hollow['shape']);
+        $this->assertSame(4, $hollow['quantity']);
+        $this->assertNull($hollow['thickness']);
+        $this->assertEquals(10.0, $hollow['d_inner']);
+        $this->assertEquals(20.0, $hollow['d_outer']);
+        $this->assertNull($hollow['width']);
+        $this->assertEquals(400.0, $hollow['length']);
+
         $this->assertNotEmpty($response->json('warnings'));
         $this->assertSame($before, $this->databaseSnapshot());
     }
@@ -282,11 +304,15 @@ class MissionFiveImportTest extends TestCase
             ->assertSee('Removes the material rows currently shown in this form and replaces them with the validated rows from the spreadsheet.')
             ->assertSee('Keeps the material rows currently shown and adds validated spreadsheet rows below them.')
             ->assertSee('dimension-input', false)
-            ->assertSee('data-dimension-slot="1"', false)
-            ->assertSee('data-dimension-canonical-field="thickness"', false)
-            ->assertDontSee('dimension-source-input', false)
-            ->assertDontSee('data-active-dimension-field', false)
-            ->assertSee('Dimension 1')
+            ->assertSee('Thickness (mm)')
+            ->assertSee('Outer D. (mm)')
+            ->assertSee('Inner D. (mm)')
+            ->assertSee('Width (mm)')
+            ->assertSee('Length (mm)')
+            ->assertSee('data-dimension-field="thickness"', false)
+            ->assertDontSee('data-dimension-slot=', false)
+            ->assertDontSee('data-dimension-canonical-field=', false)
+            ->assertDontSee('Dimension 1')
             ->assertSee('prImportPreviewUrl', false);
 
         $this->actingAs($this->purchasing)
@@ -445,6 +471,41 @@ class MissionFiveImportTest extends TestCase
             ->assertJsonPath('rows.0.offered_weight_per_unit', 2.4);
 
         $this->assertSame('Available', $response->json('rows.0.availability'));
+    }
+
+    public function test_quotation_preview_rejects_invalid_hollow_diameter_pair_without_writes(): void
+    {
+        $item = $this->pr->items()->create([
+            'material_name' => 'Requested Hollow Material',
+            'shape' => PrItem::SHAPE_HOLLOW,
+            'quantity' => 1,
+            'd_inner' => 10,
+            'd_outer' => 20,
+            'length' => 400,
+            'weight_needed' => 2,
+        ]);
+        $before = $this->databaseSnapshot();
+        $upload = $this->spreadsheetUpload(
+            [
+                'pr_item_id', 'availability', 'price_per_kg', 'available_qty',
+                'available_d_inner', 'available_d_outer', 'available_length',
+            ],
+            [[$item->id, 'Available', 100, 1, 20, 20, 400]],
+        );
+
+        $response = $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
+            ->assertOk()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('summary.valid', 0)
+            ->assertJsonPath('summary.invalid', 1);
+
+        $this->assertTrue(collect($response->json('errors'))->contains(
+            fn (array $error) => $error['row'] === 2
+                && $error['column'] === 'available_d_inner'
+                && $error['message'] === 'Inner diameter must be smaller than outer diameter for a Hollow item.'
+        ));
+        $this->assertSame($before, $this->databaseSnapshot());
     }
 
     public function test_quotation_preview_rejects_explicit_quantity_above_requested(): void

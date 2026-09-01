@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\HsCodeRule;
 use App\Models\MaterialMaster;
 use App\Models\Period;
+use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
@@ -61,12 +62,21 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
 
     public function test_create_and_edit_forms_render_adaptive_dimension_table_contract(): void
     {
-        $this->actingAs($this->purchasing)
+        $createResponse = $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.create'))
             ->assertOk()
-            ->assertSee('Dimension 1 (mm)')
-            ->assertSee('Dimension 2 (mm)')
-            ->assertSee('Dimension 3 (mm)')
+            ->assertSee('Thickness (mm)')
+            ->assertSee('Width (mm)')
+            ->assertSee('Outer D. (mm)')
+            ->assertSee('Inner D. (mm)')
+            ->assertSee('Length (mm)')
+            ->assertSeeInOrder([
+                'Thickness (mm)',
+                'Width (mm)',
+                'Outer D. (mm)',
+                'Inner D. (mm)',
+                'Length (mm)',
+            ])
             ->assertSee('KG / Unit (kg)')
             ->assertSee('HS Code')
             ->assertSee('data-pr-row-number', false)
@@ -76,13 +86,23 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertSee('pr-sticky-action', false)
             ->assertSee('border-right: 1px solid var(--md-outline-variant) !important', false)
             ->assertSee('border-collapse: separate !important', false)
-            ->assertSee('width: 100%;', false)
             ->assertSee('dimension-input', false)
-            ->assertSee('data-dimension-slot="1"', false)
-            ->assertSee('data-dimension-slot-header="3"', false)
-            ->assertSee('data-dimension-canonical-field="d_outer"', false)
-            ->assertDontSee('dimension-source-input', false)
-            ->assertSee('data-dimension-slot-cell', false);
+            ->assertSee('name="items[{INDEX}][thickness]"', false)
+            ->assertSee('name="items[{INDEX}][d_outer]"', false)
+            ->assertSee('name="items[{INDEX}][d_inner]"', false)
+            ->assertSee('name="items[{INDEX}][width]"', false)
+            ->assertSee('name="items[{INDEX}][length]"', false)
+            ->assertDontSee('Dimension 1 (mm)')
+            ->assertDontSee('Dimension 2 (mm)')
+            ->assertDontSee('Dimension 3 (mm)')
+            ->assertDontSee('dimension-canonical-input', false)
+            ->assertDontSee('data-dimension-slot=', false)
+            ->assertDontSee('data-dimension-slot-header=', false)
+            ->assertDontSee('data-dimension-canonical-field=', false)
+            ->assertDontSee('materialDimensionSlotCount', false)
+            ->assertDontSee('updateMaterialDimensionHeaders', false);
+
+        $this->assertCanonicalDimensionInputsForRows($createResponse->getContent(), ['{INDEX}']);
 
         $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
         $pr = PurchaseRequisition::create([
@@ -104,18 +124,33 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
         $response = $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.edit', $pr))
             ->assertOk()
-            ->assertSee('Outer Diameter')
-            ->assertSee('Length')
-            ->assertDontSee('Not used')
+            ->assertSee('Thickness (mm)')
+            ->assertSee('Width (mm)')
+            ->assertSee('Outer D. (mm)')
+            ->assertSee('Inner D. (mm)')
+            ->assertSee('Length (mm)')
+            ->assertSeeInOrder([
+                'Thickness (mm)',
+                'Width (mm)',
+                'Outer D. (mm)',
+                'Inner D. (mm)',
+                'Length (mm)',
+            ])
             ->assertSee('name="items[0][d_outer]"', false)
+            ->assertSee('name="items[0][d_inner]"', false)
+            ->assertSee('name="items[0][length]"', false)
+            ->assertSee('name="items[0][thickness]"', false)
+            ->assertSee('name="items[0][width]"', false)
             ->assertSee('data-dimension-field="d_outer"', false)
-            ->assertSee('data-dimension-slot="1"', false)
-            ->assertSee('data-dimension-slot="2"', false)
-            ->assertSee('data-dimension-slot="3"', false)
-            ->assertSee('data-dimension-canonical-field="d_outer"', false)
-            ->assertSee('is-disabled', false);
+            ->assertSee('data-dimension-field="d_inner"', false)
+            ->assertSee('data-dimension-na="thickness"', false)
+            ->assertSee('data-dimension-na="width"', false)
+            ->assertDontSee('Dimension 1 (mm)')
+            ->assertDontSee('data-dimension-slot=', false)
+            ->assertDontSee('data-dimension-canonical-field=', false);
 
         $content = $response->getContent();
+        $this->assertCanonicalDimensionInputsForRows($content, ['0']);
         $this->assertLessThan(
             strpos($content, 'data-dimension-field-cell="d_inner"'),
             strpos($content, 'data-dimension-field-cell="d_outer"'),
@@ -123,7 +158,7 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
         );
     }
 
-    public function test_dimension_slots_render_shape_labels_for_mixed_rows(): void
+    public function test_fixed_dimension_columns_render_canonical_controls_for_mixed_rows(): void
     {
         $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
         $pr = PurchaseRequisition::create([
@@ -171,23 +206,32 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ],
         ]);
 
-        $this->actingAs($this->purchasing)
+        $response = $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.edit', $pr))
             ->assertOk()
-            ->assertSee('Dimension 1 (mm)')
             ->assertSee('Thickness (mm)')
+            ->assertSee('Outer D. (mm)')
+            ->assertSee('Inner D. (mm)')
             ->assertSee('Width (mm)')
-            ->assertSee('Outer Diameter')
-            ->assertSee('Inner Diameter')
-            ->assertSee('data-dimension-canonical-field="thickness"', false)
-            ->assertSee('data-dimension-canonical-field="d_inner"', false)
-            ->assertSee('data-dimension-canonical-field="d_outer"', false)
-            ->assertSee('data-dimension-canonical-field="width"', false)
-            ->assertSee('data-dimension-canonical-field="length"', false)
-            ->assertSee('data-dimension-field-cell=""', false)
-            ->assertSee('aria-label="Dimension 1 unavailable"', false)
-            ->assertSee('materialDimensionSlotCount', false)
-            ->assertSee('updateMaterialDimensionHeaders', false);
+            ->assertSee('Length (mm)')
+            ->assertDontSee('Dimension 1 (mm)')
+            ->assertDontSee('Dimension 2 (mm)')
+            ->assertDontSee('Dimension 3 (mm)')
+            ->assertSee('name="items[0][thickness]"', false)
+            ->assertSee('name="items[1][d_outer]"', false)
+            ->assertSee('name="items[2][d_inner]"', false)
+            ->assertSee('name="items[3][length]"', false)
+            ->assertSee('data-dimension-field-cell="thickness"', false)
+            ->assertSee('data-dimension-field-cell="d_outer"', false)
+            ->assertSee('data-dimension-field-cell="d_inner"', false)
+            ->assertSee('data-dimension-field-cell="width"', false)
+            ->assertSee('data-dimension-field-cell="length"', false)
+            ->assertDontSee('data-dimension-canonical-field=', false)
+            ->assertDontSee('data-dimension-slot=', false)
+            ->assertDontSee('materialDimensionSlotCount', false)
+            ->assertDontSee('updateMaterialDimensionHeaders', false);
+
+        $this->assertCanonicalDimensionInputsForRows($response->getContent(), ['0', '1', '2', '3']);
     }
 
     public function test_submitted_item_is_recomputed_and_valid_auto_match_cannot_be_overridden(): void
@@ -527,6 +571,67 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertJsonPath('item.material_name', 'SCM440')
             ->assertJsonPath('item.hs_code', '7228.30.10')
             ->assertJsonPath('item.weight_needed', '61.6700');
+    }
+
+    public function test_edit_get_request_does_not_mutate_database_even_with_resolvable_legacy_items(): void
+    {
+        $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
+        $pr = PurchaseRequisition::create([
+            'period_id' => $this->period->id,
+            'created_by' => $this->purchasing->id,
+            'status' => 'draft',
+        ]);
+
+        $item = $pr->items()->create([
+            'material_master_id' => null,
+            'material_name' => 'SCM440',
+            'quantity' => 1,
+            'shape' => 'Round',
+            'd_outer' => 100,
+            'length' => 1000,
+            'weight_needed' => 61.67,
+        ]);
+
+        $updatedAtBefore = $item->fresh()->updated_at?->toISOString();
+
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.requisitions.edit', $pr))
+            ->assertOk();
+
+        // Form still receives the resolved master ID in-memory for presentation/submission
+        $response->assertSee('value="'.$scm->id.'"', false);
+
+        // Database row must NOT be modified on GET request
+        $refreshedItem = $item->fresh();
+        $this->assertNull($refreshedItem->material_master_id, 'GET /edit must not mutate material_master_id in database.');
+        $this->assertSame($updatedAtBefore, $refreshedItem->updated_at?->toISOString(), 'GET /edit must not change timestamps.');
+    }
+
+    /** @param  array<int, string>  $rowIndexes */
+    private function assertCanonicalDimensionInputsForRows(string $html, array $rowIndexes): void
+    {
+        foreach ($rowIndexes as $rowIndex) {
+            $previousPosition = -1;
+
+            foreach (PrItem::FIXED_DIMENSION_ORDER as $field) {
+                $inputName = 'name="items['.$rowIndex.']['.$field.']"';
+                $position = strpos($html, $inputName);
+
+                $this->assertSame(
+                    1,
+                    substr_count($html, $inputName),
+                    "Row {$rowIndex} must render exactly one canonical {$field} input."
+                );
+                $this->assertNotFalse($position, "Row {$rowIndex} is missing canonical {$field} input.");
+                $this->assertGreaterThan(
+                    $previousPosition,
+                    $position,
+                    "Row {$rowIndex} canonical inputs must follow FIXED_DIMENSION_ORDER."
+                );
+
+                $previousPosition = $position;
+            }
+        }
     }
 
     private function payload(string $action, array $items): array

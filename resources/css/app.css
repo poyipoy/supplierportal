@@ -1461,6 +1461,19 @@ html[data-sidebar-motion-ready="true"] {
         display: none !important;
     }
 
+    /* When JS is enabled, immediately hide native inputs & native submit buttons, and show enhanced trigger */
+    html.js .ui-calendar [data-calendar-native] {
+        display: none !important;
+    }
+
+    html.js .ui-calendar [data-calendar-enhanced][hidden] {
+        display: block !important;
+    }
+
+    html.js [data-calendar-native-submit] {
+        display: none !important;
+    }
+
     .ui-calendar-trigger,
     .ui-date-range-trigger {
         background: var(--ui-input-bg);

@@ -135,6 +135,63 @@ class QuotationAvailabilityTest extends TestCase
         $this->assertSame('50.0000', $flat->amount);
     }
 
+    public function test_supplier_quotation_create_and_draft_edit_render_width_after_thickness(): void
+    {
+        $pr = $this->createRequisition();
+        $dimensionHeaders = [
+            '<th scope="col">Thickness</th>',
+            '<th scope="col">Width</th>',
+            '<th scope="col">Outer D.</th>',
+            '<th scope="col">Inner D.</th>',
+            '<th scope="col">Length</th>',
+        ];
+
+        $this->actingAs($this->supplier)
+            ->get(route('supplier.quotations.create', $pr))
+            ->assertOk()
+            ->assertSeeInOrder($dimensionHeaders, false);
+
+        $this->createDraftQuotation($pr, $this->supplier, 7.5);
+
+        $this->actingAs($this->supplier)
+            ->get(route('supplier.quotations.create', $pr))
+            ->assertOk()
+            ->assertSeeInOrder($dimensionHeaders, false);
+    }
+
+    public function test_supplier_hollow_availability_rejects_invalid_pair_without_replacing_draft_items(): void
+    {
+        $pr = $this->createRequisition([[
+            'shape' => PrItem::SHAPE_HOLLOW,
+            'quantity' => 1,
+            'd_inner' => 10,
+            'd_outer' => 20,
+            'length' => 400,
+            'weight_needed' => 2,
+        ]]);
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 7.5);
+        $existingItem = $quotation->items()->firstOrFail();
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0] = array_merge($payload['items'][0], [
+            'is_available' => true,
+            'available_qty' => 1,
+            'available_d_inner' => 20,
+            'available_d_outer' => 20,
+            'available_length' => 400,
+            'offered_weight_per_unit' => 2,
+            'price_per_kg' => 9,
+        ]);
+
+        $this->actingAs($this->supplier)
+            ->from(route('supplier.quotations.create', $pr))
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect(route('supplier.quotations.create', $pr))
+            ->assertSessionHasErrors('items.0.available_d_inner');
+
+        $this->assertSame('7.5000', $existingItem->fresh()->price_per_kg);
+        $this->assertCount(1, $quotation->fresh()->items);
+    }
+
     public function test_availability_is_optional_and_legacy_quotation_remains_viewable(): void
     {
         $pr = $this->createRequisition();

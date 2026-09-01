@@ -7,6 +7,7 @@ use App\Data\Materials\ProcessedPrItemResult;
 use App\Data\Materials\WeightCalculationResult;
 use App\Models\MaterialMaster;
 use App\Models\PrItem;
+use App\Support\Materials\MaterialDimensionRules;
 use Illuminate\Support\Collection;
 
 final class PrItemProcessor
@@ -57,9 +58,7 @@ final class PrItemProcessor
             }
         }
         if ($shape === PrItem::SHAPE_HOLLOW
-            && $dimensions['d_inner'] !== null
-            && $dimensions['d_outer'] !== null
-            && $dimensions['d_inner'] >= $dimensions['d_outer']) {
+            && ! MaterialDimensionRules::hasValidHollowDiameterPair($dimensions['d_inner'] ?? null, $dimensions['d_outer'] ?? null)) {
             $errors['d_inner'] = 'Inner diameter must be smaller than outer diameter.';
         }
 

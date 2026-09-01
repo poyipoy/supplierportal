@@ -36,6 +36,23 @@
     $labelId = $resolvedId . '-label';
     $panelId = $resolvedId . '-calendar-panel';
     $describedBy = collect([$helperId, $errorId])->filter()->implode(' ');
+    $formatRangeDisplay = function ($value, $granularity) {
+        if (! $value) {
+            return 'Any time';
+        }
+        if ($granularity === 'month' && preg_match('/^\d{4}-\d{2}$/', (string) $value)) {
+            [$year, $month] = explode('-', (string) $value);
+            return date('M Y', mktime(0, 0, 0, (int) $month, 1, (int) $year));
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $value)) {
+            [$year, $month, $day] = explode('-', (string) $value);
+            return date('d M Y', mktime(0, 0, 0, (int) $month, (int) $day, (int) $year));
+        }
+        return 'Any time';
+    };
+
+    $startDisplay = $formatRangeDisplay($startResolvedValue, $granularity);
+    $endDisplay = $formatRangeDisplay($endResolvedValue, $granularity);
 @endphp
 
 <div
@@ -61,12 +78,12 @@
         <div class="ui-date-range-trigger" role="group" aria-labelledby="{{ $labelId }}" @if($describedBy) aria-describedby="{{ $describedBy }}" @endif>
             <button type="button" class="ui-date-range-trigger__field" data-calendar-boundary="start" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ $panelId }}">
                 <span class="ui-date-range-trigger__label">{{ $startLabel }}</span>
-                <span class="ui-date-range-trigger__value" data-calendar-display="start">Any time</span>
+                <span class="ui-date-range-trigger__value" data-calendar-display="start">{{ $startDisplay }}</span>
             </button>
             <span class="ui-date-range-trigger__divider" aria-hidden="true">–</span>
             <button type="button" class="ui-date-range-trigger__field" data-calendar-boundary="end" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ $panelId }}">
                 <span class="ui-date-range-trigger__label">{{ $endLabel }}</span>
-                <span class="ui-date-range-trigger__value" data-calendar-display="end">Any time</span>
+                <span class="ui-date-range-trigger__value" data-calendar-display="end">{{ $endDisplay }}</span>
             </button>
             <x-ui.icon name="calendar-days" size="sm" class="ui-date-range-trigger__icon" aria-hidden="true" />
         </div>

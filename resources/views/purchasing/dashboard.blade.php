@@ -300,69 +300,56 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const dashboardThemeStyles = getComputedStyle(document.documentElement);
-    const dashboardThemeColor = (token) => dashboardThemeStyles.getPropertyValue(token).trim();
-    const dashboardColors = {
-        surface: dashboardThemeColor('--md-surface'),
-        onSurface: dashboardThemeColor('--md-on-surface'),
-        onSurfaceVariant: dashboardThemeColor('--md-on-surface-variant'),
-        outlineVariant: dashboardThemeColor('--md-outline-variant'),
-        outlineStrong: dashboardThemeColor('--md-outline-strong'),
-        surfaceContainer: dashboardThemeColor('--md-surface-container'),
-        primary: dashboardThemeColor('--md-primary'),
-        warning: dashboardThemeColor('--md-warning'),
-        success: dashboardThemeColor('--md-success'),
-        error: dashboardThemeColor('--md-error'),
-        secondary: dashboardThemeColor('--md-secondary'),
+    const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
+        primary: '#1F5FA6',
+        surface: '#FFFFFF',
+        onSurface: '#1A202C',
+        onSurfaceVariant: '#64748B',
+        gridLine: 'rgba(226, 232, 240, 0.75)',
+        warning: '#D35400',
+        success: '#1E8449',
+        error: '#C0392B',
+        secondary: '#476072',
     };
 
-    const commonTooltip = {
-        backgroundColor: dashboardColors.surface,
-        titleColor: dashboardColors.onSurface,
-        bodyColor: dashboardColors.onSurfaceVariant,
-        borderColor: dashboardColors.outlineVariant,
-        borderWidth: 1,
-        titleFont: { size: 13, family: 'Inter', weight: 'bold' },
-        bodyFont: { size: 12, family: 'Inter' },
-        padding: 10,
-        cornerRadius: 6,
-        boxPadding: 4,
-        displayColors: true,
-    };
-
-    new Chart(document.getElementById('prChart'), {
-        type: 'bar',
-        data: {
-            labels: {!! json_encode(array_column($prPerBulan, 'label')) !!},
-            datasets: [{
-                label: 'Requisitions',
-                data: {!! json_encode(array_column($prPerBulan, 'count')) !!},
-                backgroundColor: dashboardColors.primary,
-                borderRadius: 4,
-                maxBarThickness: 36
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: commonTooltip
+    const prCanvas = document.getElementById('prChart');
+    if (prCanvas) {
+        new Chart(prCanvas, {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode(array_column($prPerBulan, 'label')) !!},
+                datasets: [{
+                    label: 'Requisitions',
+                    data: {!! json_encode(array_column($prPerBulan, 'count')) !!},
+                    backgroundColor: (context) => window.AdasiChart?.createBarGradient(context, colors.primary, 0.95, 0.3) || colors.primary,
+                    borderColor: colors.primary,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    maxBarThickness: 32,
+                    barPercentage: 0.55,
+                }]
             },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Inter', size: 11 }, color: dashboardColors.onSurfaceVariant }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 400 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: window.AdasiChart?.getTooltip({
+                        callbacks: {
+                            label: (ctx) => ' ' + Number(ctx.parsed.y).toLocaleString('id-ID') + ' Requisitions',
+                        }
+                    }) || {},
                 },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: dashboardColors.surfaceContainer },
-                    ticks: { stepSize: 1, font: { family: 'Inter', size: 11 }, color: dashboardColors.onSurfaceVariant }
-                }
+                scales: window.AdasiChart?.getScales({
+                    yMaxTicks: 5,
+                    yBeginAtZero: true,
+                    yFormat: (val) => Number(val).toLocaleString('id-ID'),
+                }) || {},
             }
-        }
-    });
+        });
+    }
 
     @if(count($poStatusDist) > 0)
     @php
@@ -376,38 +363,54 @@
         }
     @endphp
     const poStatusColors = {
-        active: dashboardColors.primary,
-        waiting_qc: dashboardColors.warning,
-        completed: dashboardColors.success,
-        overdue: dashboardColors.error,
-        claim_needed: dashboardColors.error,
-        cancelled: dashboardColors.secondary,
+        active: colors.primary,
+        waiting_qc: colors.warning,
+        completed: colors.success,
+        overdue: colors.error,
+        claim_needed: colors.error,
+        cancelled: colors.secondary,
     };
-    new Chart(document.getElementById('poDonut'), {
-        type: 'doughnut',
-        data: {
-            labels: {!! json_encode($chartLabels) !!},
-            datasets: [{
-                data: {!! json_encode($chartData) !!},
-                backgroundColor: @json($chartStatuses).map((status) => poStatusColors[status] || dashboardColors.outlineStrong),
-                borderWidth: 2,
-                borderColor: dashboardColors.surface
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { boxWidth: 10, boxHeight: 10, font: { family: 'Inter', size: 11 }, color: dashboardColors.onSurfaceVariant, padding: 8 }
-                },
-                tooltip: commonTooltip
+    const poCanvas = document.getElementById('poDonut');
+    if (poCanvas) {
+        new Chart(poCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: {!! json_encode($chartLabels) !!},
+                datasets: [{
+                    data: {!! json_encode($chartData) !!},
+                    backgroundColor: @json($chartStatuses).map((status) => poStatusColors[status] || colors.secondary),
+                    borderWidth: 3,
+                    borderColor: colors.surface,
+                    borderRadius: 4,
+                    spacing: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 400 },
+                cutout: '75%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 8,
+                            boxHeight: 8,
+                            usePointStyle: true,
+                            font: { family: 'Inter', size: 11, weight: '500' },
+                            color: colors.onSurfaceVariant,
+                            padding: 12,
+                        }
+                    },
+                    tooltip: window.AdasiChart?.getTooltip({
+                        callbacks: {
+                            label: (ctx) => ' ' + ctx.label + ': ' + Number(ctx.parsed).toLocaleString('id-ID') + ' POs',
+                        }
+                    }) || {},
+                }
             }
-        }
-    });
+        });
+    }
     @endif
 </script>
 @endpush

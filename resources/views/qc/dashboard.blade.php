@@ -136,30 +136,16 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const themeStyles = getComputedStyle(document.documentElement);
-        const themeColor = (token) => themeStyles.getPropertyValue(token).trim();
-        const colors = {
-            ok: themeColor('--md-success'),
-            ng: themeColor('--md-error'),
-            border: themeColor('--md-outline-variant'),
-            surface: themeColor('--md-surface'),
-            text: themeColor('--md-on-surface'),
-            textMuted: themeColor('--md-on-surface-variant')
+        const themeColors = window.AdasiChart ? window.AdasiChart.getColors() : {
+            success: '#1E8449',
+            error: '#C0392B',
+            surface: '#FFFFFF',
+            onSurfaceVariant: '#64748B',
+            gridLine: 'rgba(226, 232, 240, 0.75)',
         };
 
-        const commonTooltip = {
-            backgroundColor: colors.surface,
-            titleColor: colors.text,
-            bodyColor: colors.textMuted,
-            borderColor: colors.border,
-            borderWidth: 1,
-            titleFont: { size: 12, family: 'Inter', weight: 'bold' },
-            bodyFont: { size: 11, family: 'Inter' },
-            padding: 10,
-            cornerRadius: 6,
-            boxPadding: 4,
-            displayColors: true
-        };
+        const okColor = themeColors.success;
+        const ngColor = themeColors.error;
 
         @if($totalInspections > 0)
             const qualityCanvas = document.getElementById('qualityChart');
@@ -170,19 +156,26 @@
                         labels: ['OK', 'NG'],
                         datasets: [{
                             data: [{{ $totalOk }}, {{ $totalNg }}],
-                            backgroundColor: [colors.ok, colors.ng],
-                            borderWidth: 0
+                            backgroundColor: [okColor, ngColor],
+                            borderWidth: 2,
+                            borderColor: themeColors.surface,
+                            borderRadius: 4,
+                            spacing: 2,
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        animation: false,
+                        animation: { duration: 400 },
+                        cutout: '75%',
                         plugins: {
                             legend: { display: false },
-                            tooltip: commonTooltip
+                            tooltip: window.AdasiChart?.getTooltip({
+                                callbacks: {
+                                    label: (ctx) => ' ' + ctx.label + ': ' + Number(ctx.parsed).toLocaleString('id-ID') + ' Inspections',
+                                }
+                            }) || {},
                         },
-                        cutout: '72%'
                     }
                 });
             }
@@ -198,56 +191,61 @@
                         {
                             label: 'Material OK',
                             data: {!! json_encode(array_column($trendData, 'ok')) !!},
-                            borderColor: colors.ok,
-                            backgroundColor: colors.ok,
-                            fill: false,
-                            tension: 0.2,
-                            borderWidth: 2,
+                            borderColor: okColor,
+                            backgroundColor: (context) => window.AdasiChart?.createAreaGradient(context, okColor, 0.16, 0.01) || 'transparent',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 2.5,
                             pointRadius: 3,
-                            pointHoverRadius: 4
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: okColor,
+                            pointBorderColor: themeColors.surface,
+                            pointBorderWidth: 2,
                         },
                         {
                             label: 'Material NG',
                             data: {!! json_encode(array_column($trendData, 'ng')) !!},
-                            borderColor: colors.ng,
-                            backgroundColor: colors.ng,
-                            fill: false,
-                            tension: 0.2,
-                            borderWidth: 2,
+                            borderColor: ngColor,
+                            backgroundColor: (context) => window.AdasiChart?.createAreaGradient(context, ngColor, 0.12, 0.01) || 'transparent',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 2.5,
                             pointRadius: 3,
-                            pointHoverRadius: 4
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: ngColor,
+                            pointBorderColor: themeColors.surface,
+                            pointBorderWidth: 2,
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: false,
+                    animation: { duration: 400 },
                     plugins: {
                         legend: {
                             position: 'top',
+                            align: 'end',
                             labels: {
-                                boxWidth: 12,
+                                boxWidth: 8,
+                                boxHeight: 8,
                                 usePointStyle: true,
-                                font: { size: 11, family: 'Inter' }
+                                font: { family: 'Inter', size: 11, weight: '500' },
+                                color: themeColors.onSurfaceVariant,
+                                padding: 12,
                             }
                         },
-                        tooltip: commonTooltip
+                        tooltip: window.AdasiChart?.getTooltip({
+                            callbacks: {
+                                label: (ctx) => ' ' + ctx.dataset.label + ': ' + Number(ctx.parsed.y).toLocaleString('id-ID'),
+                            }
+                        }) || {},
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0,
-                                font: { size: 11 }
-                            },
-                            grid: { color: colors.border }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11 } }
-                        }
-                    }
+                    scales: window.AdasiChart?.getScales({
+                        yMaxTicks: 5,
+                        yBeginAtZero: true,
+                        yFormat: (val) => Number(val).toLocaleString('id-ID'),
+                    }) || {},
                 }
             });
         }

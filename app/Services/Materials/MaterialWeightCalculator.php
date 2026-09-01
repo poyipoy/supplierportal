@@ -5,6 +5,7 @@ namespace App\Services\Materials;
 use App\Data\Materials\WeightCalculationResult;
 use App\Models\MaterialMaster;
 use App\Models\PrItem;
+use App\Support\Materials\MaterialDimensionRules;
 
 final class MaterialWeightCalculator
 {
@@ -36,7 +37,7 @@ final class MaterialWeightCalculator
         $width = (float) ($dimensions['width'] ?? 0);
         $length = (float) ($dimensions['length'] ?? 0);
 
-        if ($shape === PrItem::SHAPE_HOLLOW && $inner >= $outer) {
+        if ($shape === PrItem::SHAPE_HOLLOW && ! MaterialDimensionRules::hasValidHollowDiameterPair($inner, $outer)) {
             return $this->invalid('Inner diameter must be smaller than outer diameter.');
         }
 

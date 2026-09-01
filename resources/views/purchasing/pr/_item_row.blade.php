@@ -13,18 +13,9 @@
     $unitKg = (float) ($itemData['weight_needed'] ?? 0);
     $quantity = (int) ($itemData['quantity'] ?? 1);
     $shapeValue = $itemData['shape'] ?? null;
-    $dimensionSlots = array_pad(
-        App\Models\PrItem::presentationDimensionFields($shapeValue),
-        3,
-        null,
-    );
-    $dimensionLabels = [
-        'thickness' => 'Thickness',
-        'd_inner' => 'Inner Diameter',
-        'd_outer' => 'Outer Diameter',
-        'width' => 'Width',
-        'length' => 'Length',
-    ];
+    $fixedDimensionOrder = \App\Models\PrItem::FIXED_DIMENSION_ORDER;
+    $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($shapeValue);
+    $rowMasterId = $itemData['material_master_id'] ?? '';
 @endphp
 <tr class="item-row">
     <td class="pr-sticky-number text-center tw-text-on-surface-variant ui-tabular-nums" data-pr-row-number>
@@ -34,35 +25,7 @@
         @if(!empty($itemData['id']))
             <input type="hidden" name="items[{{ $index }}][id]" value="{{ $itemData['id'] }}">
         @endif
-        @php
-            $rowMasterId = $itemData['material_master_id'] ?? '';
-            if (empty($rowMasterId) && !empty($itemData['material_name'])) {
-                $rawMatName = (string) $itemData['material_name'];
-                $resolver = app(\App\Services\Materials\MaterialResolver::class);
-                $matchedMaster = $resolver->resolveExact($rawMatName);
-                if (! $matchedMaster) {
-                    $stripped = preg_replace('/[\s\-_]+(F|R|H|FLAT|ROUND|HOLLOW)$/i', '', trim($rawMatName));
-                    $matchedMaster = $resolver->resolveExact($stripped);
-                    if (! $matchedMaster) {
-                        $nospace = str_replace(' ', '', $stripped);
-                        $matchedMaster = $resolver->resolveExact($nospace);
-                    }
-                }
-                if ($matchedMaster) {
-                    $rowMasterId = $matchedMaster->id;
-                }
-            }
-        @endphp
         <input type="hidden" name="items[{{ $index }}][material_master_id]" class="material-master-id" value="{{ $rowMasterId }}">
-        @foreach(\App\Models\PrItem::DIMENSION_FIELDS as $dimensionField)
-            <input
-                type="hidden"
-                name="items[{{ $index }}][{{ $dimensionField }}]"
-                class="dimension-canonical-input"
-                data-dimension-canonical-field="{{ $dimensionField }}"
-                value="{{ $itemData[$dimensionField] ?? '' }}"
-            >
-        @endforeach
         <div class="position-relative">
             <input
                 type="text"
@@ -107,40 +70,41 @@
         <input type="number" step="1" min="1" name="items[{{ $index }}][quantity]" class="form-control form-control-sm text-center material-quantity" required value="{{ $quantity }}" aria-label="Material quantity">
         @error("items.{$index}.quantity") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
-    @foreach($dimensionSlots as $slotIndex => $dimensionField)
+    @foreach($fixedDimensionOrder as $dimensionField)
         @php
-            $slot = $slotIndex + 1;
-            $dimensionRelevant = $dimensionField !== null;
-            $dimensionLabel = $dimensionField
-                ? ($dimensionLabels[$dimensionField] ?? ucfirst(str_replace('_', ' ', $dimensionField)))
-                : "Dimension {$slot}";
+            $isRelevant = in_array($dimensionField, $relevantDimensions, true);
+            $dimensionLabel = \App\Models\PrItem::DIMENSION_LABELS[$dimensionField]
+                ?? ucfirst(str_replace('_', ' ', $dimensionField));
         @endphp
         <td
-            class="pr-dimension-cell pr-dimension-slot-cell {{ $dimensionRelevant ? '' : 'is-disabled' }}"
-            data-dimension-slot-cell="{{ $slot }}"
-            data-dimension-field-cell="{{ $dimensionField ?? '' }}"
+            class="pr-dimension-cell {{ $isRelevant ? '' : 'is-disabled' }}"
+            data-dimension-field-cell="{{ $dimensionField }}"
         >
-            <div class="pr-dimension-slot">
-                <span class="pr-dimension-slot-label" data-dimension-slot-label="{{ $slot }}">
-                    {{ $dimensionLabel }}{{ $dimensionRelevant ? ' (mm)' : '' }}
-                </span>
+            <div class="pr-dimension-control">
                 <input
-                    id="item-{{ $index }}-dimension-slot-{{ $slot }}"
+                    id="item-{{ $index }}-dimension-{{ $dimensionField }}"
                     type="number"
                     step="0.0001"
                     min="0.0001"
+                    name="items[{{ $index }}][{{ $dimensionField }}]"
                     class="form-control form-control-sm text-end dimension-input"
-                    data-dimension-slot="{{ $slot }}"
-                    data-dimension-field="{{ $dimensionField ?? '' }}"
-                    aria-label="{{ $dimensionRelevant ? $dimensionLabel . ' in millimeters' : 'Dimension ' . $slot . ' unavailable' }}"
-                    placeholder="&mdash;"
-                    value="{{ $dimensionField ? ($itemData[$dimensionField] ?? '') : '' }}"
-                    {{ $dimensionRelevant ? '' : 'disabled' }}
+                    data-dimension-field="{{ $dimensionField }}"
+                    aria-label="{{ $dimensionLabel }} in millimeters"
+                    value="{{ $itemData[$dimensionField] ?? '' }}"
+                    {{ $isRelevant ? '' : 'disabled' }}
+                    {{ $isRelevant ? '' : 'hidden' }}
                 >
-                @if($dimensionField)
-                    @error("items.{$index}.{$dimensionField}") <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                @endif
+
+                <span
+                    class="pr-dimension-na {{ $isRelevant ? 'd-none' : '' }}"
+                    data-dimension-na="{{ $dimensionField }}"
+                    aria-hidden="{{ $isRelevant ? 'true' : 'false' }}"
+                >&mdash;</span>
             </div>
+
+            @error("items.{$index}.{$dimensionField}")
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
         </td>
     @endforeach
     <td>

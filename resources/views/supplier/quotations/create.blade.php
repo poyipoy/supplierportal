@@ -755,6 +755,14 @@
                     Exchange rate for <strong id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</strong> is not recorded in master exchange rates. Contact Admin before final submission.
                 </x-ui.alert>
 
+                @php
+                    $quotationDimensionOrder = \App\Models\PrItem::FIXED_DIMENSION_ORDER;
+                    $quotationScalarDimensionOrder = array_values(array_filter(
+                        $quotationDimensionOrder,
+                        static fn (string $field): bool => $field !== 'length',
+                    ));
+                @endphp
+
                 {{-- Material Entry Table --}}
                 <div class="border rounded overflow-hidden">
                     <div id="quotationTableScrollHint" class="tw-bg-surface-low border-bottom px-3 tw-py-1.5 tw-text-on-surface-variant tw-text-ui-xs d-flex align-items-center tw-gap-1.5">
@@ -789,11 +797,9 @@
                                     <th scope="col" class="quotation-sticky-material">Material</th>
                                     <th scope="col" class="quotation-sticky-row-type">Row Type</th>
                                     <th scope="col">Qty</th>
-                                    <th scope="col">Thickness</th>
-                                    <th scope="col">Outer D.</th>
-                                    <th scope="col">Inner D.</th>
-                                    <th scope="col">Width</th>
-                                    <th scope="col">Length</th>
+                                    @foreach($quotationDimensionOrder as $dimensionField)
+                                        <th scope="col">{{ \App\Models\PrItem::DIMENSION_LABELS[$dimensionField] }}</th>
+                                    @endforeach
                                     <th scope="col">KG / Unit</th>
                                     <th scope="col">Total KG</th>
                                     <th scope="col">Price / KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
@@ -865,7 +871,7 @@
                                         </td>
                                         <td class="quotation-sticky-row-type"><span class="quotation-row-label">Requested</span></td>
                                         <td class="text-center fw-semibold ui-tabular-nums">{{ $item->quantity_value }}</td>
-                                        @foreach(['thickness', 'd_outer', 'd_inner', 'width'] as $dimension)
+                                        @foreach($quotationScalarDimensionOrder as $dimension)
                                             <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
                                                 {{ in_array($dimension, $relevantDimensions, true) ? \App\Support\NumberFormat::maxDecimals($item->{$dimension}) : '—' }}
                                             </td>
@@ -903,7 +909,7 @@
                                                 @error("items.{$index}.available_qty"){{ $message }}@enderror
                                             </div>
                                         </td>
-                                        @foreach(['thickness', 'd_outer', 'd_inner', 'width'] as $dimension)
+                                        @foreach($quotationScalarDimensionOrder as $dimension)
                                             <td>
                                                 @if(in_array($dimension, $relevantDimensions, true))
                                                     <input
@@ -1237,11 +1243,9 @@
                                         <th scope="col">Availability</th>
                                         <th scope="col">Price/Kg</th>
                                         <th scope="col">Offer Qty</th>
-                                        <th scope="col">Thickness</th>
-                                        <th scope="col">Outer D.</th>
-                                        <th scope="col">Inner D.</th>
-                                        <th scope="col">Width</th>
-                                        <th scope="col">Length</th>
+                                        @foreach($quotationDimensionOrder as $dimensionField)
+                                            <th scope="col">{{ \App\Models\PrItem::DIMENSION_LABELS[$dimensionField] }}</th>
+                                        @endforeach
                                         <th scope="col">Offer KG/Unit</th>
                                         <th scope="col">Notes</th>
                                     </tr>
@@ -1280,9 +1284,9 @@
         price_per_kg: '.price-input',
         available_qty: '[data-availability-field="qty"]',
         available_thickness: '[data-availability-field="thickness"]',
+        available_width: '[data-availability-field="width"]',
         available_d_outer: '[data-availability-field="d_outer"]',
         available_d_inner: '[data-availability-field="d_inner"]',
-        available_width: '[data-availability-field="width"]',
         available_length_input: '[data-availability-field="length"]',
         offered_weight_per_unit: '.offered-weight-input',
         notes: '.quotation-item-notes'
@@ -1341,9 +1345,9 @@
                 row.price_per_kg,
                 row.available_qty ?? '-',
                 row.available_thickness ?? '-',
+                row.available_width ?? '-',
                 row.available_d_outer ?? '-',
                 row.available_d_inner ?? '-',
-                row.available_width ?? '-',
                 importedLengthValue(row) || '-',
                 row.offered_weight_per_unit ?? '-',
                 row.notes ?? '-'

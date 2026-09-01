@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\PrItem;
 use App\Models\QuotationItem;
 use App\Support\Materials\DimensionRange;
+use App\Support\Materials\MaterialDimensionRules;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -196,9 +197,7 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                     ];
                 }
                 if ($prItem->shape === PrItem::SHAPE_HOLLOW
-                    && is_numeric($data['available_d_inner'] ?? null)
-                    && is_numeric($data['available_d_outer'] ?? null)
-                    && (float) $data['available_d_inner'] >= (float) $data['available_d_outer']) {
+                    && ! MaterialDimensionRules::hasValidHollowDiameterPair($data['available_d_inner'] ?? null, $data['available_d_outer'] ?? null)) {
                     $rowErrors[] = [
                         'column' => 'available_d_inner',
                         'message' => 'Inner diameter must be smaller than outer diameter for a Hollow item.',

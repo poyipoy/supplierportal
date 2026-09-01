@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\Materials\MaterialWeightCalculator;
 use App\Services\NotificationService;
 use App\Support\Materials\DimensionRange;
+use App\Support\Materials\MaterialDimensionRules;
 use App\Support\NotificationCategory;
 use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
@@ -56,41 +57,48 @@ class QuotationController extends Controller
             ->orderByDesc('month')
             ->get();
 
-        // Count PRs for each period
+        if ($periods->isEmpty()) {
+            return view('supplier.quotations.index', compact('periods'));
+        }
+
+        $periodIds = $periods->pluck('id');
+
+        // Prefetch visible active PRs for all periods in 1 query
+        $activePrs = PurchaseRequisition::whereIn('period_id', $periodIds)
+            ->whereIn('status', ['submitted', 'bidding'])
+            ->visibleToSupplier($supplierId)
+            ->get(['id', 'period_id']);
+
+        $activePrsByPeriod = $activePrs->groupBy('period_id');
+
+        // Prefetch quotations of this supplier for all periods in 1 query
+        $quotations = Quotation::where('supplier_id', $supplierId)
+            ->whereHas('purchaseRequisition', function ($query) use ($periodIds) {
+                $query->whereIn('period_id', $periodIds);
+            })
+            ->with('purchaseRequisition:id,period_id')
+            ->get(['id', 'pr_id', 'supplier_id', 'status']);
+
+        $quotationsByPeriod = $quotations->groupBy(fn ($q) => $q->purchaseRequisition?->period_id);
+
+        // Derive metrics in-memory per period — zero extra database queries
         foreach ($periods as $period) {
-            $activePrs = PurchaseRequisition::where('period_id', $period->id)
-                ->whereIn('status', ['submitted', 'bidding'])
-                ->visibleToSupplier($supplierId)
-                ->get();
+            $periodActivePrs = $activePrsByPeriod->get($period->id, collect());
+            $periodQuotations = $quotationsByPeriod->get($period->id, collect());
 
-            $quotedPrIds = Quotation::where('supplier_id', $supplierId)
-                ->whereHas('purchaseRequisition', function ($query) use ($period) {
-                    $query->where('period_id', $period->id);
-                })
-                ->pluck('pr_id');
+            $activePrIds = $periodActivePrs->pluck('id');
+            $quotedPrIds = $periodQuotations->pluck('pr_id');
 
-            $period->total_prs = $activePrs->pluck('id')
+            $period->total_prs = $activePrIds
                 ->merge($quotedPrIds)
                 ->unique()
                 ->count();
 
-            // PRs that already have quotations from this supplier, including draft/submitted/rejected/accepted.
-            $respondedCount = Quotation::where('supplier_id', auth()->id())
-                ->whereIn('pr_id', $quotedPrIds)
-                ->count();
+            $period->responded_prs = $periodQuotations->count();
+            $period->rejected_prs = $periodQuotations->where('status', 'rejected')->count();
 
-            $rejectedCount = Quotation::where('supplier_id', auth()->id())
-                ->whereIn('pr_id', $quotedPrIds)
-                ->where('status', 'rejected')
-                ->count();
-
-            $period->responded_prs = $respondedCount;
-            $period->rejected_prs = $rejectedCount;
-            $period->unresponded_prs = $activePrs->filter(function ($pr) use ($supplierId) {
-                return ! Quotation::where('supplier_id', $supplierId)
-                    ->where('pr_id', $pr->id)
-                    ->exists();
-            })->count();
+            $quotedPrIdSet = $quotedPrIds->unique()->flip();
+            $period->unresponded_prs = $periodActivePrs->reject(fn ($pr) => isset($quotedPrIdSet[$pr->id]))->count();
         }
 
         return view('supplier.quotations.index', compact('periods'));
@@ -418,9 +426,7 @@ class QuotationController extends Controller
                         }
                     }
                     if ($prItem->shape === PrItem::SHAPE_HOLLOW
-                        && is_numeric($rawItem['available_d_inner'] ?? null)
-                        && is_numeric($rawItem['available_d_outer'] ?? null)
-                        && (float) $rawItem['available_d_inner'] >= (float) $rawItem['available_d_outer']) {
+                        && ! MaterialDimensionRules::hasValidHollowDiameterPair($rawItem['available_d_inner'] ?? null, $rawItem['available_d_outer'] ?? null)) {
                         $validator->errors()->add(
                             "items.{$index}.available_d_inner",
                             'Inner diameter must be smaller than outer diameter for a Hollow item.'

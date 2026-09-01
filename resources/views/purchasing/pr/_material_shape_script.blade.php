@@ -1,22 +1,5 @@
-const materialDimensionFields = {
-    Flat: [
-        { field: 'thickness', label: 'Thickness' },
-        { field: 'width', label: 'Width' },
-        { field: 'length', label: 'Length' },
-    ],
-    Round: [
-        { field: 'd_outer', label: 'Outer Diameter' },
-        { field: 'length', label: 'Length' },
-    ],
-    Hollow: [
-        { field: 'd_outer', label: 'Outer Diameter' },
-        { field: 'd_inner', label: 'Inner Diameter' },
-        { field: 'length', label: 'Length' },
-    ],
-};
-
-const allMaterialDimensions = ['thickness', 'd_inner', 'd_outer', 'width', 'length'];
-const materialDimensionSlotCount = 3;
+const materialDimensionFields = @json(\App\Models\PrItem::RELEVANT_DIMENSIONS);
+const fixedDimensionOrder = @json(\App\Models\PrItem::FIXED_DIMENSION_ORDER);
 const materialMasterSearchUrl = @json(route('purchasing.material-masters.search'));
 const materialCalculationPreviewUrl = @json(route('purchasing.material-calculations.preview'));
 const materialPreviewTimers = new WeakMap();
@@ -75,68 +58,36 @@ function repositionVisibleMaterialSearchResults() {
     });
 }
 
-function canonicalDimensionInput($row, field) {
-    return $row.find(`.dimension-canonical-input[data-dimension-canonical-field="${field}"]`);
-}
-
 function setMaterialSearchOpen($row, open) {
     $row.find('.pr-sticky-material').toggleClass('material-search-open', open);
-}
-
-function updateMaterialDimensionHeaders() {
-    const rowShapes = $('#itemsBody tr.item-row')
-        .map(function() {
-            return $(this).find('.material-shape-select').val() || '';
-        })
-        .get();
-    const shapes = [...new Set(rowShapes)];
-    const sharedDimensions = shapes.length === 1 ? (materialDimensionFields[shapes[0]] || []) : [];
-
-    for (let slot = 1; slot <= materialDimensionSlotCount; slot++) {
-        const dimension = sharedDimensions[slot - 1];
-        const label = dimension?.label || `Dimension ${slot}`;
-        $(`[data-dimension-slot-header="${slot}"]`).text(`${label} (mm)`);
-    }
 }
 
 function applyMaterialShapeRules(row, clearIrrelevant = true) {
     const $row = $(row);
     const shape = $row.find('.material-shape-select').val();
-    const relevantDimensions = materialDimensionFields[shape] || [];
-    const relevantFields = relevantDimensions.map((dimension) => dimension.field);
+    const relevantFields = materialDimensionFields[shape] || [];
 
-    allMaterialDimensions.forEach((field) => {
+    fixedDimensionOrder.forEach((field) => {
         const isRelevant = relevantFields.includes(field);
-        const $canonicalInput = canonicalDimensionInput($row, field);
+        const $cell = $row.find(`[data-dimension-field-cell="${field}"]`);
+        const $input = $cell.find(`.dimension-input[data-dimension-field="${field}"]`);
+        const $na = $cell.find(`[data-dimension-na="${field}"]`);
 
         if (!isRelevant && clearIrrelevant) {
-            $canonicalInput.val('');
+            $input.val('');
         }
-    });
 
-    for (let slotIndex = 0; slotIndex < materialDimensionSlotCount; slotIndex++) {
-        const slot = slotIndex + 1;
-        const dimension = relevantDimensions[slotIndex] || null;
-        const field = dimension?.field || '';
-        const label = dimension?.label || `Dimension ${slot}`;
-        const value = field ? canonicalDimensionInput($row, field).val() || '' : '';
-        const $cell = $row.find(`[data-dimension-slot-cell="${slot}"]`);
-        const $input = $cell.find('.dimension-input');
-        const $label = $cell.find(`[data-dimension-slot-label="${slot}"]`);
-
-        $label.text(`${label}${field ? ' (mm)' : ''}`);
         $input
-            .val(value)
-            .attr('data-dimension-field', field)
-            .attr('aria-label', field ? `${label} in millimeters` : `Dimension ${slot} unavailable`)
-            .prop('disabled', !field)
-            .attr('aria-disabled', field ? 'false' : 'true');
-        $cell
-            .attr('data-dimension-field-cell', field)
-            .toggleClass('is-disabled', !field);
-    }
+            .prop('disabled', !isRelevant)
+            .prop('hidden', !isRelevant)
+            .attr('aria-disabled', isRelevant ? 'false' : 'true');
 
-    updateMaterialDimensionHeaders();
+        $na
+            .toggleClass('d-none', isRelevant)
+            .attr('aria-hidden', isRelevant ? 'true' : 'false');
+
+        $cell.toggleClass('is-disabled', !isRelevant);
+    });
 }
 
 function resetMaterialPreview($row) {
@@ -230,8 +181,10 @@ function materialPreviewPayload($row) {
         weight_needed: $row.find('.weight-unit-display').val(),
         weight_manual_override: $row.find('.weight-manual-override').val() || 0,
     };
-    allMaterialDimensions.forEach((field) => {
-        payload[field] = canonicalDimensionInput($row, field).val() || '';
+    fixedDimensionOrder.forEach((field) => {
+        payload[field] = $row
+            .find(`.dimension-input[data-dimension-field="${field}"]`)
+            .val() || '';
     });
 
     return payload;
@@ -338,7 +291,6 @@ function initializeMaterialShapeRows() {
         }
     });
     renumberPrRows();
-    updateMaterialDimensionHeaders();
 }
 
 // Remark popover event handlers
@@ -480,10 +432,6 @@ $(document).on('input change', '.weight-unit-display', function() {
 
 $(document).on('input change', '.dimension-input', function() {
     const $row = $(this).closest('tr');
-    const field = $(this).attr('data-dimension-field');
-    if (field) {
-        canonicalDimensionInput($row, field).val($(this).val());
-    }
     resetManualWeightOverride($row);
     scheduleMaterialPreview($row);
 });

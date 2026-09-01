@@ -77,8 +77,8 @@
                                 @endif
                             </td>
                             <td class="ui-tabular-nums text-center fw-semibold">{{ number_format($item->quantity_value, 0) }}</td>
-                            <td class="ui-tabular-nums text-end">{{ number_format($item->weight_needed, 4) }}</td>
-                            <td class="ui-tabular-nums text-end fw-semibold text-primary">{{ number_format($item->total_weight, 4) }}</td>
+                            <td class="ui-tabular-nums text-end">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
+                            <td class="ui-tabular-nums text-end fw-semibold text-primary">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
                             <td>{{ $item->remark ?: '-' }}</td>
                         </tr>
                     @empty

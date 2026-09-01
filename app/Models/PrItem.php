@@ -54,6 +54,14 @@ class PrItem extends Model
         'length' => 'Length',
     ];
 
+    public const FIXED_DIMENSION_ORDER = [
+        'thickness',
+        'width',
+        'd_outer',
+        'd_inner',
+        'length',
+    ];
+
     public const RELEVANT_DIMENSIONS = [
         self::SHAPE_FLAT => ['thickness', 'width', 'length'],
         self::SHAPE_ROUND => ['d_outer', 'length'],

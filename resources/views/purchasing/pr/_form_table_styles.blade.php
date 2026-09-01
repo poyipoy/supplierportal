@@ -358,18 +358,23 @@
         background: var(--md-surface-container-low) !important;
     }
 
-    #itemsTable.pr-items-table .pr-dimension-slot {
-        display: block;
+    #itemsTable.pr-items-table .pr-dimension-cell {
+        vertical-align: middle !important;
+    }
+
+    #itemsTable.pr-items-table .pr-dimension-control {
+        align-items: center;
+        display: flex;
+        justify-content: center;
         min-height: 34px;
         position: relative;
     }
 
-    #itemsTable.pr-items-table .pr-dimension-slot-cell {
-        vertical-align: middle !important;
-    }
-
-    #itemsTable.pr-items-table .pr-dimension-slot-label {
-        display: none;
+    #itemsTable.pr-items-table .pr-dimension-na {
+        color: var(--md-on-surface-variant);
+        font-variant-numeric: tabular-nums;
+        text-align: center;
+        width: 100%;
     }
 
     #itemsTable.pr-items-table .dimension-input,
@@ -436,7 +441,7 @@
             min-height: 44px;
         }
 
-        #itemsTable.pr-items-table .pr-dimension-slot {
+        #itemsTable.pr-items-table .pr-dimension-control {
             min-height: 44px;
         }
     }

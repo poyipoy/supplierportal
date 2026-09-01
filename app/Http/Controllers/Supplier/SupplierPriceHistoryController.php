@@ -8,6 +8,7 @@ use App\Models\ExchangeRate;
 use App\Models\ExportJob;
 use App\Models\PrItem;
 use App\Support\ExportDispatcher;
+use App\Support\NumberFormat;
 use App\Support\SupplierPriceHistoryBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -247,10 +248,10 @@ class SupplierPriceHistoryController extends Controller
                 $min = $row->min_price ?? 0;
                 $max = $row->max_price ?? 0;
 
-                return '<div class="fw-bold text-primary">'.number_format($latest, 4, ',', '.').' '.e($row->currency).'/Kg</div>'
+                return '<div class="fw-bold text-primary">'.NumberFormat::maxDecimals($latest).' '.e($row->currency).'/Kg</div>'
                     .'<div class="small text-muted">'
-                    .'Min: '.number_format($min, 4, ',', '.').' | '
-                    .'Max: '.number_format($max, 4, ',', '.')
+                    .'Min: '.NumberFormat::maxDecimals($min).' | '
+                    .'Max: '.NumberFormat::maxDecimals($max)
                     .'</div>';
             })
             ->addColumn('latest_status_badge', fn ($row) => $this->historyBuilder->statusBadge($row->latest_status ?? ''))

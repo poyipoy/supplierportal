@@ -596,6 +596,15 @@ function historicalResultShellHtml() {
 
 function historicalChartConfig(payload) {
     const chartData = payload.chartData || {};
+    const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
+        primary: '#1F5FA6',
+        error: '#C0392B',
+        surface: '#FFFFFF',
+        onSurfaceVariant: '#64748B',
+        gridLine: 'rgba(226, 232, 240, 0.75)',
+    };
+    const primaryColor = colors.primary;
+    const errorColor = colors.error;
 
     if (payload.periodView === 'yearly') {
         return {
@@ -605,39 +614,53 @@ function historicalChartConfig(payload) {
                 datasets: [{
                     label: 'Average Price/Kg (IDR)',
                     data: chartData.pricesIdr || [],
-                    borderColor: historicalThemeColor('--md-primary'),
-                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.2,
-                    pointRadius: 3,
-                    pointBackgroundColor: historicalThemeColor('--md-primary'),
+                    borderColor: primaryColor,
+                    backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, primaryColor, 0.18, 0.01) || 'transparent',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: primaryColor,
+                    pointBorderColor: colors.surface,
+                    pointBorderWidth: 2,
                 }],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: false,
+                animation: { duration: 400 },
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        ...historicalTooltipTheme,
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 8,
+                            boxHeight: 8,
+                            usePointStyle: true,
+                            font: { family: 'Inter', size: 11, weight: '500' },
+                            color: colors.onSurfaceVariant,
+                            padding: 12,
+                        }
+                    },
+                    tooltip: window.AdasiChart?.getTooltip({
                         callbacks: {
-                            label: (context) => 'Average: ' + formatRupiah(context.parsed.y),
+                            label: (context) => ' Average: ' + formatRupiah(context.parsed.y),
                             afterLabel: (context) => {
                                 const index = context.dataIndex;
                                 return [
-                                    'Highest: ' + formatRupiah(chartData.maxIdr?.[index]),
-                                    'Lowest: ' + formatRupiah(chartData.minIdr?.[index]),
+                                    ' Highest: ' + formatRupiah(chartData.maxIdr?.[index]),
+                                    ' Lowest: ' + formatRupiah(chartData.minIdr?.[index]),
                                 ];
                             },
                         },
-                    },
+                    }) || {},
                 },
-                scales: {
-                    y: { beginAtZero: true, ticks: { callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID') } },
-                },
+                scales: window.AdasiChart?.getScales({
+                    yMaxTicks: 5,
+                    yBeginAtZero: true,
+                    yFormat: (value) => 'Rp ' + Number(value).toLocaleString('id-ID'),
+                }) || {},
             },
         };
     }
@@ -650,25 +673,31 @@ function historicalChartConfig(payload) {
                 {
                     label: 'Price/Kg (Original)',
                     data: chartData.prices || [],
-                    borderColor: historicalThemeColor('--md-primary'),
-                    backgroundColor: historicalThemeRgba('--md-primary-rgb', .1),
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.2,
-                    pointRadius: 3,
-                    pointBackgroundColor: historicalThemeColor('--md-primary'),
+                    borderColor: primaryColor,
+                    backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, primaryColor, 0.16, 0.01) || 'transparent',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: primaryColor,
+                    pointBorderColor: colors.surface,
+                    pointBorderWidth: 2,
                     yAxisID: 'y',
                 },
                 {
                     label: 'Price/Kg (IDR)',
                     data: chartData.pricesIdr || [],
-                    borderColor: historicalThemeColor('--md-error'),
-                    backgroundColor: historicalThemeRgba('--md-error-rgb', .1),
-                    borderWidth: 2,
+                    borderColor: errorColor,
+                    backgroundColor: 'transparent',
+                    borderWidth: 2.5,
                     fill: false,
-                    tension: 0.2,
-                    pointRadius: 3,
-                    pointBackgroundColor: historicalThemeColor('--md-error'),
+                    tension: 0.3,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: errorColor,
+                    pointBorderColor: colors.surface,
+                    pointBorderWidth: 2,
                     yAxisID: 'y1',
                 },
             ],
@@ -676,15 +705,58 @@ function historicalChartConfig(payload) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: false,
+            animation: { duration: 400 },
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'bottom' },
-                tooltip: historicalTooltipTheme,
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        usePointStyle: true,
+                        font: { family: 'Inter', size: 11, weight: '500' },
+                        color: colors.onSurfaceVariant,
+                        padding: 12,
+                    }
+                },
+                tooltip: window.AdasiChart?.getTooltip({
+                    callbacks: {
+                        label: (ctx) => {
+                            const unit = ctx.datasetIndex === 0 ? '' : 'Rp ';
+                            return ' ' + ctx.dataset.label + ': ' + unit + Number(ctx.parsed.y).toLocaleString('id-ID');
+                        }
+                    }
+                }) || {},
             },
             scales: {
-                y: { type: 'linear', position: 'left', title: { display: true, text: 'Original Currency' } },
-                y1: { type: 'linear', position: 'right', title: { display: true, text: 'IDR' }, grid: { drawOnChartArea: false }, ticks: { callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID') } },
+                x: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { font: { family: 'Inter', size: 11, weight: '500' }, color: colors.onSurfaceVariant },
+                },
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    title: { display: true, text: 'Original Currency', font: { family: 'Inter', size: 11, weight: '600' }, color: colors.onSurfaceVariant },
+                    grid: { color: colors.gridLine, drawBorder: false, borderDash: [3, 3] },
+                    border: { display: false },
+                    ticks: { maxTicksLimit: 5, font: { family: 'Inter', size: 11, weight: '500' }, color: colors.onSurfaceVariant },
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    title: { display: true, text: 'IDR', font: { family: 'Inter', size: 11, weight: '600' }, color: colors.onSurfaceVariant },
+                    grid: { drawOnChartArea: false, drawBorder: false },
+                    border: { display: false },
+                    ticks: {
+                        maxTicksLimit: 5,
+                        font: { family: 'Inter', size: 11, weight: '500' },
+                        color: colors.onSurfaceVariant,
+                        callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID'),
+                    },
+                },
             },
         },
     };

@@ -66,6 +66,30 @@ class MaterialCalculationTest extends TestCase
             ->assertJsonPath('weight.unit_kg', 107.9225);
     }
 
+    public function test_hollow_preview_rejects_equal_and_reversed_diameters_without_writes(): void
+    {
+        $scm = MaterialMaster::where('material_code', 'SCM440')->firstOrFail();
+
+        foreach ([[100, 100], [101, 100]] as [$inner, $outer]) {
+            $this->actingAs($this->purchasing)
+                ->postJson(route('purchasing.material-calculations.preview'), [
+                    'material_master_id' => $scm->id,
+                    'shape' => 'Hollow',
+                    'quantity' => 1,
+                    'd_outer' => $outer,
+                    'd_inner' => $inner,
+                    'length' => 1000,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonPath('success', false)
+                ->assertJsonPath('errors.d_inner', 'Inner diameter must be smaller than outer diameter.')
+                ->assertJsonPath('weight.status', 'invalid')
+                ->assertJsonPath('weight.message', 'Inner diameter must be smaller than outer diameter.');
+        }
+
+        $this->assertDatabaseCount('pr_items', 0);
+    }
+
     public function test_aluminium_weight_and_manual_unresolved_preview(): void
     {
         $aluminium = MaterialMaster::where('material_code', 'Aluminium 7075')->firstOrFail();

@@ -218,9 +218,9 @@
                             @if($periodView === 'yearly')
                                 <tr>
                                     <td class="text-center fw-bold tw-text-on-surface">{{ $row['period'] }}</td>
-                                    <td class="text-end text-primary fw-bold ui-tabular-nums">{{ number_format($row['price_per_kg'], 4, ',', '.') }}</td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($row['min_price'], 4, ',', '.') }}</td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ number_format($row['max_price'], 4, ',', '.') }}</td>
+                                    <td class="text-end text-primary fw-bold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg']) }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['min_price']) }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['max_price']) }}</td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                                 </tr>
                             @else
@@ -241,7 +241,7 @@
                                     </td>
                                     <td class="text-center">{!! $row['status_badge'] ?? '-' !!}</td>
                                     <td class="text-end fw-semibold ui-tabular-nums">
-                                        {{ number_format($row['price_per_kg'], 4, ',', '.') }}
+                                        {{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg']) }}
                                     </td>
                                     <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $row['currency'] }}</span></td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
@@ -414,36 +414,49 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (chartCanvas && historicalChartData) {
-        const chartTheme = getComputedStyle(document.documentElement);
-        const chartColor = (token) => chartTheme.getPropertyValue(token).trim();
+        const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
+            primary: '#1F5FA6',
+            success: '#1E8449',
+            error: '#C0392B',
+            surface: '#FFFFFF',
+            onSurfaceVariant: '#64748B',
+            gridLine: 'rgba(226, 232, 240, 0.75)',
+        };
         const chartCurrency = historicalChartData.currency || '';
         const formatChartPrice = (value) => Number(value).toLocaleString('id-ID', {
             minimumFractionDigits: 0,
-            maximumFractionDigits: 4,
+            maximumFractionDigits: 2,
         });
         const datasets = [{
             label: historicalChartData.type === 'yearly' ? `Average Price / Kg (${chartCurrency})` : `Price / Kg (${chartCurrency})`,
             data: historicalChartData.prices || [],
-            borderColor: chartColor('--md-primary'),
-            backgroundColor: chartColor('--md-primary'),
-            borderWidth: 2,
-            fill: false,
-            tension: 0.2,
-            pointRadius: 3,
-            pointHoverRadius: 4,
+            borderColor: colors.primary,
+            backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, colors.primary, 0.16, 0.01) || 'transparent',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3.5,
+            pointHoverRadius: 6,
+            pointBackgroundColor: colors.primary,
+            pointBorderColor: colors.surface,
+            pointBorderWidth: 2,
         }];
 
         if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.minPrices)) {
             datasets.push({
                 label: 'Lowest Price',
                 data: historicalChartData.minPrices,
-                borderColor: chartColor('--md-success'),
-                backgroundColor: chartColor('--md-success'),
+                borderColor: colors.success,
+                backgroundColor: 'transparent',
                 borderWidth: 1.5,
                 borderDash: [4, 3],
                 fill: false,
-                tension: 0.2,
-                pointRadius: 2,
+                tension: 0.3,
+                pointRadius: 2.5,
+                pointHoverRadius: 5,
+                pointBackgroundColor: colors.success,
+                pointBorderColor: colors.surface,
+                pointBorderWidth: 1.5,
             });
         }
 
@@ -451,13 +464,17 @@ document.addEventListener('DOMContentLoaded', () => {
             datasets.push({
                 label: 'Highest Price',
                 data: historicalChartData.maxPrices,
-                borderColor: chartColor('--md-error'),
-                backgroundColor: chartColor('--md-error'),
+                borderColor: colors.error,
+                backgroundColor: 'transparent',
                 borderWidth: 1.5,
                 borderDash: [4, 3],
                 fill: false,
-                tension: 0.2,
-                pointRadius: 2,
+                tension: 0.3,
+                pointRadius: 2.5,
+                pointHoverRadius: 5,
+                pointBackgroundColor: colors.error,
+                pointBorderColor: colors.surface,
+                pointBorderWidth: 1.5,
             });
         }
 
@@ -476,37 +493,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: false,
+                    animation: { duration: 400 },
                     plugins: {
                         legend: {
                             position: 'top',
-                            labels: { boxWidth: 12, usePointStyle: true }
+                            align: 'end',
+                            labels: {
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                usePointStyle: true,
+                                font: { family: 'Inter', size: 11, weight: '500' },
+                                color: colors.onSurfaceVariant,
+                                padding: 12,
+                            }
                         },
-                        tooltip: {
+                        tooltip: window.AdasiChart?.getTooltip({
                             callbacks: {
                                 label: function(context) {
-                                    return `${context.dataset.label}: ${formatChartPrice(context.raw)}`;
+                                    return ' ' + context.dataset.label + ': ' + formatChartPrice(context.raw) + ' ' + chartCurrency + '/Kg';
                                 }
                             }
-                        }
+                        }) || {},
                     },
-                    scales: {
-                        y: {
-                            title: {
-                                display: true,
-                                text: `${chartCurrency} / Kg`
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return formatChartPrice(value);
-                                }
-                            },
-                            grid: { color: chartColor('--md-outline-variant') }
-                        },
-                        x: {
-                            grid: { display: false }
-                        }
-                    }
+                    scales: window.AdasiChart?.getScales({
+                        yMaxTicks: 5,
+                        yBeginAtZero: true,
+                        yTitle: `${chartCurrency} / Kg`,
+                        yFormat: (val) => formatChartPrice(val),
+                    }) || {},
                 }
             });
         } catch (error) {

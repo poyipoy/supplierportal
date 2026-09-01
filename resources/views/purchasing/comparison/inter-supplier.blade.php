@@ -376,45 +376,61 @@ document.addEventListener('click', (event) => {
 <script>
 const comparisonChartData = @json($chartData);
 const comparisonMaterialIds = @json($chartMaterialIds);
-const comparisonTheme = getComputedStyle(document.documentElement);
-const comparisonColor = (token) => comparisonTheme.getPropertyValue(token).trim();
+const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
+    primary: '#1F5FA6',
+    secondary: '#476072',
+    success: '#1E8449',
+    warning: '#D35400',
+    onSurfaceVariant: '#64748B',
+    gridLine: 'rgba(226, 232, 240, 0.75)',
+};
 const comparisonPalette = [
-    comparisonColor('--md-ref-primary-700'),
-    comparisonColor('--md-ref-primary-500'),
-    comparisonColor('--md-ref-primary-300'),
-    comparisonColor('--md-ref-secondary-700'),
-    comparisonColor('--md-ref-secondary-500'),
-    comparisonColor('--md-ref-secondary-300'),
+    colors.primary,
+    '#2563EB',
+    colors.secondary,
+    '#0D9488',
+    '#D97706',
+    '#7C3AED',
 ];
 comparisonChartData.datasets.forEach((dataset, index) => {
-    dataset.backgroundColor = comparisonPalette[index % comparisonPalette.length];
-    dataset.borderColor = comparisonPalette[index % comparisonPalette.length];
+    const baseColor = comparisonPalette[index % comparisonPalette.length];
+    dataset.backgroundColor = (context) => window.AdasiChart?.createBarGradient(context, baseColor, 0.92, 0.35) || baseColor;
+    dataset.borderColor = baseColor;
     dataset.borderWidth = 1;
+    dataset.borderRadius = 6;
+    dataset.borderSkipped = false;
+    dataset.maxBarThickness = 36;
 });
 const comparisonChart = new Chart(document.getElementById('comparisonChart'), {
     type: 'bar',
-    data: JSON.parse(JSON.stringify(comparisonChartData)),
+    data: comparisonChartData,
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false,
+        animation: { duration: 400 },
         plugins: {
             legend: {
                 position: 'bottom',
-                labels: { color: comparisonColor('--md-on-surface-variant'), boxWidth: 10, boxHeight: 10 },
-            },
-        },
-        scales: {
-            x: { grid: { display: false } },
-            y: {
-                beginAtZero: true,
-                grid: { color: comparisonColor('--md-outline-variant') },
-                ticks: {
-                    color: comparisonColor('--md-on-surface-variant'),
-                    callback: v => 'Rp ' + v.toLocaleString('id-ID'),
+                labels: {
+                    boxWidth: 8,
+                    boxHeight: 8,
+                    usePointStyle: true,
+                    font: { family: 'Inter', size: 11, weight: '500' },
+                    color: colors.onSurfaceVariant,
+                    padding: 12,
                 },
-            }
-        }
+            },
+            tooltip: window.AdasiChart?.getTooltip({
+                callbacks: {
+                    label: (ctx) => ' ' + ctx.dataset.label + ': Rp ' + Number(ctx.parsed.y).toLocaleString('id-ID'),
+                }
+            }) || {},
+        },
+        scales: window.AdasiChart?.getScales({
+            yMaxTicks: 5,
+            yBeginAtZero: true,
+            yFormat: (v) => 'Rp ' + Number(v).toLocaleString('id-ID'),
+        }) || {},
     }
 });
 
