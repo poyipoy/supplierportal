@@ -12,10 +12,7 @@ deployment:
     - /bin/mkdir -p $APPPATH/database
     - /bin/mkdir -p $APPPATH/resources
     - /bin/mkdir -p $APPPATH/routes
-    - /bin/mkdir -p $APPPATH/storage/app/private
     - /bin/mkdir -p $APPPATH/storage/framework/cache/data
-    - /bin/mkdir -p $APPPATH/storage/framework/sessions
-    - /bin/mkdir -p $APPPATH/storage/framework/views
     - /bin/mkdir -p $APPPATH/storage/logs
 
     # Deploy Laravel application source
