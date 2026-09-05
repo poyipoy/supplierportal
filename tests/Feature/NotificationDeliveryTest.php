@@ -14,6 +14,7 @@ use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\ShipmentService;
 use App\Support\NotificationCategory;
 use Database\Seeders\MaterialHsCodeMasterSeeder;
 use Illuminate\Broadcasting\BroadcastEvent;
@@ -288,18 +289,32 @@ class NotificationDeliveryTest extends TestCase
         $this->assertSame('po.issued', $poNotification->data['event']);
         $this->assertSame($po->id, $poNotification->data['po_id']);
 
-        $this->actingAs($purchasing)->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+        $shipmentService = app(ShipmentService::class);
+        $shipment = $shipmentService->createDraft($supplier);
+        $shipmentService->submitShipment($shipment, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $quotationItem->id,
+                'shipped_quantity' => 100.0,
+            ]],
+        ]);
+
+        $this->actingAs($purchasing)->post(route('purchasing.shipments.confirm-arrival', $shipment))
             ->assertRedirect();
         $this->assertSame('po.material_arrived', $qc->notifications()->sole()->data['event']);
 
         $document = PoDocument::where('po_id', $po->id)->firstOrFail();
+        $purchasingNotificationCount = $purchasing->notifications()->count();
         $this->actingAs($purchasing)->putJson(route('purchasing.po-documents.update', $document), ['status' => 'pending'])
             ->assertOk();
-        $this->assertSame(0, $purchasing->notifications()->count());
+        $this->assertSame($purchasingNotificationCount, $purchasing->notifications()->count());
 
         $this->actingAs($purchasing)->putJson(route('purchasing.po-documents.update', $document), ['status' => 'received'])
             ->assertOk();
-        $documentNotification = $purchasing->notifications()->sole();
+        $documentNotification = $purchasing->notifications()->get()->first(
+            fn ($notification) => ($notification->data['event'] ?? null) === 'document.status_updated'
+        );
+        $this->assertNotNull($documentNotification);
         $this->assertSame('document.status_updated', $documentNotification->data['event']);
         $this->assertSame($document->id, $documentNotification->data['document_id']);
         $this->assertSame(NotificationCategory::DOCUMENT, $documentNotification->data['category']);

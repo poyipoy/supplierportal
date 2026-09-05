@@ -19,6 +19,8 @@ use Throwable;
 
 class ShipmentService
 {
+    private const LEGACY_ONLY_ARRIVAL_MESSAGE = 'This Purchase Order was already received through the legacy receiving flow and cannot be converted to shipment-based receiving.';
+
     public function __construct(
         protected NotificationService $notifications
     ) {}
@@ -85,6 +87,20 @@ class ShipmentService
      */
     public function syncDraftItems(Shipment $shipment, array $items): void
     {
+        DB::transaction(function () use ($shipment, $items): void {
+            $lockedShipment = Shipment::whereKey($shipment->id)->lockForUpdate()->firstOrFail();
+            $this->syncDraftItemsWithinTransaction($lockedShipment, $items);
+        });
+    }
+
+    /**
+     * Apply draft item changes while the caller's transaction owns the
+     * shipment row and every affected PurchaseOrder row.
+     *
+     * @param  array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_quantity: float, notes?: string|null}>  $items
+     */
+    private function syncDraftItemsWithinTransaction(Shipment $shipment, array $items): void
+    {
         if ($shipment->status !== Shipment::STATUS_DRAFT) {
             throw new InvalidArgumentException("Cannot modify items of a shipment that is already {$shipment->status}.");
         }
@@ -98,18 +114,38 @@ class ShipmentService
             throw new InvalidArgumentException('Duplicate item entries detected for the same Purchase Order item in this shipment.');
         }
 
-        $poIds = collect($items)->pluck('purchase_order_id')->unique()->sort()->values()->all();
-        $pos = PurchaseOrder::with(['awards'])->whereIn('id', $poIds)->get()->keyBy('id');
+        $existingPoIds = $shipment->items()->pluck('purchase_order_id');
+        $poIds = collect($items)
+            ->pluck('purchase_order_id')
+            ->merge($existingPoIds)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+        $pos = PurchaseOrder::with(['awards'])
+            ->whereIn('id', $poIds)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($pos->count() !== count($poIds)) {
+            throw new InvalidArgumentException('One or more referenced Purchase Orders could not be found.');
+        }
 
         // Validate supplier ownership on every PO
         foreach ($pos as $po) {
             if ((int) $po->supplier_id !== (int) $shipment->supplier_id) {
                 throw new InvalidArgumentException("Purchase Order #{$po->po_number} does not belong to supplier #{$shipment->supplier_id}.");
             }
+
+            if ($po->hasLegacyOnlyArrivalState()) {
+                throw new InvalidArgumentException(self::LEGACY_ONLY_ARRIVAL_MESSAGE);
+            }
         }
 
-        $shipment->items()->delete();
-
+        $validatedItems = [];
         foreach ($items as $item) {
             $shippedUnits = PurchaseOrder::quantityToUnits($item['shipped_quantity']);
             if ($shippedUnits <= 0) {
@@ -151,12 +187,25 @@ class ShipmentService
                 }
             }
 
+            $validatedItems[] = [
+                'item' => $item,
+                'po_id' => $poId,
+                'award_id' => $award?->id,
+                'shipped_quantity' => $shippedQty,
+            ];
+        }
+
+        $shipment->items()->delete();
+
+        foreach ($validatedItems as $validatedItem) {
+            $item = $validatedItem['item'];
+
             ShipmentItem::create([
                 'shipment_id' => $shipment->id,
-                'purchase_order_id' => $poId,
-                'quotation_item_id' => $qItemId,
-                'pr_item_award_id' => $award?->id,
-                'shipped_quantity' => $shippedQty,
+                'purchase_order_id' => $validatedItem['po_id'],
+                'quotation_item_id' => (int) $item['quotation_item_id'],
+                'pr_item_award_id' => $validatedItem['award_id'],
+                'shipped_quantity' => $validatedItem['shipped_quantity'],
                 'notes' => $item['notes'] ?? null,
             ]);
         }
@@ -267,6 +316,10 @@ class ShipmentService
 
                 if (! in_array($po->status, ['active', 'overdue', 'waiting_qc'])) {
                     throw new InvalidArgumentException("Purchase Order #{$po->po_number} is not eligible for delivery (status: {$po->status}).");
+                }
+
+                if ($po->hasLegacyOnlyArrivalState()) {
+                    throw new InvalidArgumentException(self::LEGACY_ONLY_ARRIVAL_MESSAGE);
                 }
             }
 

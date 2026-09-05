@@ -13,6 +13,7 @@ use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
@@ -265,17 +266,39 @@ class PurchaseOrderController extends Controller
      */
     public function confirmArrival(Request $request, $id)
     {
-        $po = PurchaseOrder::findOrFail($id);
+        $result = DB::transaction(function () use ($id) {
+            $po = PurchaseOrder::query()
+                ->whereKey($id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if (! in_array($po->status, ['active', 'overdue'])) {
+            if (! $po->isLegacyArrivalEligible()) {
+                return [
+                    'po' => $po,
+                    'error' => 'This Purchase Order uses shipment-based receiving. Confirm physical arrival from the relevant Shipment.',
+                ];
+            }
+
+            if (! in_array($po->status, ['active', 'overdue'], true)) {
+                return [
+                    'po' => $po,
+                    'error' => 'Material arrival can only be confirmed for Active or Overdue PO records.',
+                ];
+            }
+
+            $po->update([
+                'actual_arrival' => now()->toDateString(),
+                'status' => 'waiting_qc',
+            ]);
+
+            return ['po' => $po->fresh(), 'error' => null];
+        });
+
+        $po = $result['po'];
+        if ($result['error']) {
             return redirect()->route('purchasing.purchase-orders.show', $po)
-                ->with('error', 'Material arrival can only be confirmed for Active or Overdue PO records.');
+                ->with('error', $result['error']);
         }
-
-        $po->update([
-            'actual_arrival' => now()->toDateString(),
-            'status' => 'waiting_qc',
-        ]);
 
         // Notify all QC users: material arrived
         $qcUsers = User::where('role', 'qc')->where('is_active', true)->get();

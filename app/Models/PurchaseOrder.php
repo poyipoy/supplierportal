@@ -188,6 +188,36 @@ class PurchaseOrder extends Model
     }
 
     /**
+     * Determine whether this PO is still eligible for the historical
+     * PO-level arrival workflow.
+     *
+     * New award-based and shipment-aware POs must be received through a
+     * Shipment, even before the first ShipmentItem exists.
+     */
+    public function isLegacyArrivalEligible(): bool
+    {
+        return ! $this->awards()->exists()
+            && ! $this->shipmentItems()->exists();
+    }
+
+    /**
+     * Determine whether this PO was received through the legacy PO-level path
+     * without an arrived Shipment establishing shipment-based receiving.
+     */
+    public function hasLegacyOnlyArrivalState(): bool
+    {
+        if ($this->awards()->exists() || ! $this->actual_arrival) {
+            return false;
+        }
+
+        return ! $this->shipmentItems()
+            ->whereHas('shipment', fn ($query) => $query
+                ->withTrashed()
+                ->where('status', Shipment::STATUS_ARRIVED))
+            ->exists();
+    }
+
+    /**
      * Unique shipments associated with this PO.
      *
      * @return Collection<int, Shipment>

@@ -198,9 +198,21 @@ class QcInspectionController extends Controller
                 ?? (is_numeric($rawShipmentId) ? Shipment::find($rawShipmentId) : null);
         }
         $shipmentId = $shipment?->id;
+        $shipment = null;
 
         try {
             DB::beginTransaction();
+
+            if ($shipmentId) {
+                $shipment = Shipment::query()
+                    ->whereKey($shipmentId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $shipment) {
+                    throw new \RuntimeException('The specified shipment could not be found.');
+                }
+            }
 
             $po = PurchaseOrder::whereKey($po_id)
                 ->lockForUpdate()
@@ -227,15 +239,6 @@ class QcInspectionController extends Controller
 
             $expectedShipmentItems = collect();
             if ($shipmentId) {
-                $shipment = Shipment::query()
-                    ->whereKey($shipmentId)
-                    ->lockForUpdate()
-                    ->first();
-
-                if (! $shipment) {
-                    throw new \RuntimeException('The specified shipment could not be found.');
-                }
-
                 if ($shipment->status !== Shipment::STATUS_ARRIVED) {
                     throw new \RuntimeException('QC inspection is only allowed for an arrived shipment.');
                 }

@@ -588,7 +588,7 @@
             @endif
 
             {{-- Confirm Arrival Action Button --}}
-            @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival)
+            @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival && $po->isLegacyArrivalEligible())
                 <x-ui.card title="Delivery Status Action">
                     <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po) }}" method="POST" id="arrivalForm">
                         @csrf

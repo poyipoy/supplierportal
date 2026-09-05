@@ -21,6 +21,7 @@ use App\Services\ShipmentService;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
@@ -769,6 +770,45 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 'shipment_id' => $shipment->id,
             ]);
         }
+    }
+
+    public function test_shipment_aware_qc_locks_shipment_before_purchase_order(): void
+    {
+        [, $prItem, , $qItem, $po] = $this->createAwardedPo(20.0);
+        $shipment = $this->createShipment($po, $qItem, 20.0, true);
+        $lockQueries = [];
+
+        DB::listen(function ($query) use (&$lockQueries): void {
+            if (str_contains(strtolower($query->sql), 'for update')) {
+                $lockQueries[] = strtolower($query->sql);
+            }
+        });
+
+        $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
+            'shipment_id' => $shipment->hash,
+            'items' => [$this->qcItemPayload($prItem, 20.0)],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('qc_inspections', [
+            'po_id' => $po->id,
+            'shipment_id' => $shipment->id,
+        ]);
+
+        $shipmentLockIndex = collect($lockQueries)->search(
+            fn (string $sql): bool => str_contains($sql, '`shipments`')
+        );
+        $purchaseOrderLockIndex = collect($lockQueries)->search(
+            fn (string $sql): bool => str_contains($sql, '`purchase_orders`')
+        );
+
+        $this->assertNotFalse($shipmentLockIndex, 'Expected shipment row to be locked for update.');
+        $this->assertNotFalse($purchaseOrderLockIndex, 'Expected Purchase Order row to be locked for update.');
+        $this->assertLessThan(
+            $purchaseOrderLockIndex,
+            $shipmentLockIndex,
+            'Shipment-aware QC must lock Shipment before Purchase Order to match the Shipment lifecycle lock order.'
+        );
     }
 
     public function test_shipment_aware_qc_requires_every_expected_line_exactly_once(): void

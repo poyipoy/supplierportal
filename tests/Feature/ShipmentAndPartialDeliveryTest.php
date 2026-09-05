@@ -695,6 +695,343 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertDatabaseCount('shipments', 0);
     }
 
+    public function test_award_based_po_without_shipments_cannot_use_legacy_arrival(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qc = User::factory()->create(['role' => 'qc', 'is_active' => true]);
+
+        $response = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po));
+
+        $response->assertRedirect(route('purchasing.purchase-orders.show', $po))
+            ->assertSessionHas(
+                'error',
+                'This Purchase Order uses shipment-based receiving. Confirm physical arrival from the relevant Shipment.'
+            );
+
+        $po->refresh();
+        $this->assertNull($po->actual_arrival);
+        $this->assertSame('active', $po->status);
+        $this->assertSame(0, $qc->notifications()->count());
+    }
+
+    public function test_award_based_po_with_a_draft_shipment_cannot_use_legacy_arrival(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $po = $po->fresh();
+        $this->assertNull($po->actual_arrival);
+        $this->assertSame('active', $po->status);
+        $this->assertSame(Shipment::STATUS_DRAFT, $shipment->fresh()->status);
+    }
+
+    public function test_legacy_arrival_remains_available_for_genuine_legacy_po(): void
+    {
+        $qc = User::factory()->create(['role' => 'qc', 'is_active' => true]);
+        $po = PurchaseOrder::create([
+            'po_number' => 'PO/09/2026/LEGACY',
+            'supplier_id' => $this->supplierA->id,
+            'currency' => 'USD',
+            'exchange_rate_id' => $this->exchangeRate->id,
+            'status' => 'active',
+            'created_by' => $this->purchasing->id,
+            'actual_arrival' => null,
+        ]);
+
+        $this->assertTrue($po->isLegacyArrivalEligible());
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.purchase-orders.show', $po))
+            ->assertOk()
+            ->assertSee('id="btnConfirmArrival"', false);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect(route('purchasing.purchase-orders.show', $po));
+
+        $po->refresh();
+        $this->assertNotNull($po->actual_arrival);
+        $this->assertSame('waiting_qc', $po->status);
+        $this->assertSame('po.material_arrived', $qc->notifications()->sole()->data['event']);
+    }
+
+    public function test_legacy_arrival_is_blocked_once_a_po_has_shipment_items(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+        $po->awards()->delete();
+        $this->assertFalse($po->awards()->exists());
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($shipment, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 5.0,
+            ]],
+        ]);
+
+        $response = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po));
+
+        $response->assertRedirect()->assertSessionHas('error');
+        $this->assertNull($po->fresh()->actual_arrival);
+        $this->assertSame('active', $po->fresh()->status);
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $shipment->fresh()->status);
+    }
+
+    public function test_legacy_arrival_is_blocked_after_arrived_shipment(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($shipment, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 10.0,
+            ]],
+        ]);
+        $this->shipmentService->confirmArrival($shipment, $this->purchasing);
+
+        $po->refresh();
+        $arrivalDate = $po->actual_arrival;
+        $status = $po->status;
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertSame($arrivalDate?->toDateString(), $po->fresh()->actual_arrival?->toDateString());
+        $this->assertSame($status, $po->fresh()->status);
+        $this->assertSame(Shipment::STATUS_ARRIVED, $shipment->fresh()->status);
+    }
+
+    public function test_legacy_arrival_is_blocked_after_cancelled_shipment_history(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($shipment, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 5.0,
+            ]],
+        ]);
+        $this->shipmentService->cancelShipment($shipment, $this->supplierA);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNull($po->fresh()->actual_arrival);
+        $this->assertSame('active', $po->fresh()->status);
+        $this->assertSame(Shipment::STATUS_CANCELLED, $shipment->fresh()->status);
+    }
+
+    public function test_po_detail_hides_legacy_arrival_for_award_based_po(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.purchase-orders.show', $po))
+            ->assertOk()
+            ->assertDontSee('id="btnConfirmArrival"', false)
+            ->assertDontSee('id="arrivalForm"', false);
+    }
+
+    public function test_legacy_arrival_first_rejects_first_shipment_and_rolls_back_draft(): void
+    {
+        [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect();
+
+        $po->refresh();
+        $shipmentsBefore = Shipment::count();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('already received through the legacy receiving flow');
+
+        try {
+            $this->shipmentService->createDraft($this->supplierA, [
+                'items' => [[
+                    'purchase_order_id' => $po->id,
+                    'quotation_item_id' => $qItem->id,
+                    'shipped_quantity' => 4.0,
+                ]],
+            ]);
+        } finally {
+            $this->assertSame($shipmentsBefore, Shipment::count());
+            $this->assertDatabaseMissing('shipment_items', [
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+            ]);
+            $this->assertNotNull($po->fresh()->actual_arrival);
+            $this->assertSame('waiting_qc', $po->fresh()->status);
+        }
+    }
+
+    public function test_first_shipment_participation_blocks_legacy_arrival(): void
+    {
+        [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
+        $shipment = $this->shipmentService->createDraft($this->supplierA, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 4.0,
+            ]],
+        ]);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNull($po->fresh()->actual_arrival);
+        $this->assertSame('active', $po->fresh()->status);
+        $this->assertSame(Shipment::STATUS_DRAFT, $shipment->fresh()->status);
+        $this->assertDatabaseHas('shipment_items', [
+            'shipment_id' => $shipment->id,
+            'purchase_order_id' => $po->id,
+            'quotation_item_id' => $qItem->id,
+        ]);
+    }
+
+    public function test_submit_rejects_pre_existing_mixed_legacy_arrival_draft(): void
+    {
+        [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
+        $shipment = $this->shipmentService->createDraft($this->supplierA, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 4.0,
+            ]],
+        ]);
+        $po->update([
+            'actual_arrival' => now()->toDateString(),
+            'status' => 'waiting_qc',
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('already received through the legacy receiving flow');
+
+        try {
+            $this->shipmentService->submitShipment($shipment);
+        } finally {
+            $this->assertSame(Shipment::STATUS_DRAFT, $shipment->fresh()->status);
+            $this->assertNull($shipment->fresh()->submitted_at);
+            $this->assertSame('waiting_qc', $po->fresh()->status);
+            $this->assertNotNull($po->fresh()->actual_arrival);
+            $this->assertDatabaseHas('shipment_items', [
+                'shipment_id' => $shipment->id,
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+            ]);
+        }
+    }
+
+    public function test_partial_shipment_after_shipment_arrival_remains_allowed_for_legacy_po(): void
+    {
+        [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
+        $first = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($first, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 4.0,
+            ]],
+        ]);
+        $this->shipmentService->confirmArrival($first, $this->purchasing);
+
+        $this->assertNotNull($po->fresh()->actual_arrival);
+
+        $second = $this->shipmentService->createDraft($this->supplierA);
+        $submitted = $this->shipmentService->submitShipment($second, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 6.0,
+            ]],
+        ]);
+
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $submitted->status);
+        $this->assertDatabaseHas('shipment_items', [
+            'shipment_id' => $second->id,
+            'purchase_order_id' => $po->id,
+            'quotation_item_id' => $qItem->id,
+            'shipped_quantity' => '6.0000',
+        ]);
+    }
+
+    public function test_cancelled_shipment_history_blocks_legacy_fallback_and_allows_new_allocation(): void
+    {
+        [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
+        $cancelled = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($cancelled, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 4.0,
+            ]],
+        ]);
+        $this->shipmentService->cancelShipment($cancelled, $this->supplierA);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNull($po->fresh()->actual_arrival);
+        $this->assertSame(Shipment::STATUS_CANCELLED, $cancelled->fresh()->status);
+
+        $replacement = $this->shipmentService->createDraft($this->supplierA);
+        $submitted = $this->shipmentService->submitShipment($replacement, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 10.0,
+            ]],
+        ]);
+
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $submitted->status);
+    }
+
+    public function test_sync_draft_items_rejects_legacy_only_arrival_without_outer_transaction(): void
+    {
+        [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.confirm-arrival', $po))
+            ->assertRedirect();
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('already received through the legacy receiving flow');
+
+        try {
+            $this->shipmentService->syncDraftItems($shipment, [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 4.0,
+            ]]);
+        } finally {
+            $this->assertDatabaseMissing('shipment_items', [
+                'shipment_id' => $shipment->id,
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+            ]);
+        }
+    }
+
     private function createPoForSupplier(User $supplier, float $totalWeight): PurchaseOrder
     {
         $period = Period::create([
@@ -753,5 +1090,17 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $pos = $this->poService->generateFromAwards(collect([$award]), $this->purchasing);
 
         return $pos->first();
+    }
+
+    private function createLegacyPoForShipment(User $supplier, float $totalWeight): array
+    {
+        $po = $this->createPoForSupplier($supplier, $totalWeight);
+        $award = $po->awards()->with('quotationItem')->firstOrFail();
+        $qItem = $award->quotationItem;
+
+        $po->awards()->delete();
+        $po->unsetRelation('awards');
+
+        return [$po->fresh(), $qItem];
     }
 }
