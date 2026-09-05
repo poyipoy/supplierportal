@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
-use App\Models\ExchangeRate;
 use App\Models\MaterialClaim;
-use App\Models\PoDocument;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\Quotation;
@@ -14,9 +12,7 @@ use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
@@ -200,192 +196,32 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * Build a PO from the selected quotation.
-     * Supports consolidation across quotations with the same supplier and currency.
+     * Redirect the retired quotation-level PO entry point to item-level awards.
      */
     public function create($quotation_id)
     {
-        $quotation = Quotation::with([
-            'supplier',
-            'items.prItem',
-            'purchaseRequisition.period',
-            'exchange_rate',
-        ])->findOrFail($quotation_id);
+        $quotation = Quotation::with('purchaseRequisition')->findOrFail($quotation_id);
 
-        if (! in_array($quotation->status, ['submitted', 'accepted'], true)) {
-            return redirect()->back()->with('error', 'This quotation is not valid for PO creation.');
-        }
-
-        if (! $quotation->hasAvailableItems()) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
-                ->with('error', 'Cannot create a Purchase Order because all items in this quotation are marked as not available.');
-        }
-
-        if ($quotation->isExpired()) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.quotations.index'))
-                ->with('error', 'The quotation validity has expired. Ask the supplier to resubmit the quotation before creating a PO.');
-        }
-
-        // Check if this quotation is already in a PO
-        if ($quotation->purchaseOrders()->exists()) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.purchase-orders.index'))
-                ->with('error', 'A PO has already been created for this quotation.');
-        }
-
-        $rate = $quotation->exchange_rate;
-
-        // Search other quotations from the same supplier and currency that can be combined.
-        $otherQuotations = Quotation::with(['items.prItem', 'purchaseRequisition.period', 'exchange_rate'])
-            ->where('supplier_id', $quotation->supplier_id)
-            ->where('currency', $quotation->currency)
-            ->whereIn('status', ['submitted', 'accepted'])
-            ->where('id', '!=', $quotation->id)
-            ->whereDoesntHave('purchaseOrders') // Does not have a PO yet.
-            ->whereHas('items', fn ($q) => $q->where('is_available', true))
-            ->where(function ($q) {
-                $q->whereNull('validity_period')
-                    ->orWhereDate('validity_period', '>=', today());
-            })
-            ->get();
-
-        return view('purchasing.po.create', compact('quotation', 'rate', 'otherQuotations'));
+        return redirect()->route('purchasing.comparison.show', $quotation->purchaseRequisition)
+            ->with('error', 'New Purchase Orders must be finalized through item-level award selection.');
     }
 
     /**
-     * Save a new PO in an atomic transaction.
-     * Supports multiple quotation_ids for consolidation.
+     * Reject the retired quotation-level PO write contract.
      */
     public function store(Request $request)
     {
         $request->validate([
             'quotation_ids' => 'required|array|min:1',
-            'quotation_ids.*' => 'required|exists:quotations,id',
+            'quotation_ids.*' => 'required|integer|distinct|exists:quotations,id',
             'estimated_arrival' => 'required|date',
             'notes' => 'nullable|string',
         ]);
 
-        // Load all selected quotations.
-        /** @var Collection<Quotation> $quotations */
-        $quotations = Quotation::with(['purchaseRequisition', 'exchange_rate'])
-            ->whereIn('id', $request->quotation_ids)
-            ->get();
-
-        // Validate that all quotations are submitted.
-        foreach ($quotations as $q) {
-            /** @var Quotation $q */
-            if (! in_array($q->status, ['submitted', 'accepted'], true)) {
-                return redirect()->back()->with('error', "Quotation #{$q->id} not valid (status: {$q->status}).");
-            }
-            if ($q->isExpired()) {
-                return redirect()->back()->with('error', "Quotation #{$q->id} already expired.");
-            }
-            if ($q->purchaseOrders()->exists()) {
-                return redirect()->back()->with('error', "Quotation #{$q->id} already has a PO.");
-            }
-            if (! $q->hasAvailableItems()) {
-                return redirect()->back()->with('error', "Quotation #{$q->id} cannot be converted to a PO because all items are marked as not available.");
-            }
-        }
-
-        // Validate that all quotations are from the same supplier.
-        $supplierIds = $quotations->pluck('supplier_id')->unique();
-        if ($supplierIds->count() !== 1) {
-            return back()->with('error', 'All quotations must come from the same supplier.');
-        }
-
-        // Validate that all quotations use the same currency.
-        $currencies = $quotations->pluck('currency')->unique();
-        if ($currencies->count() !== 1) {
-            return back()->with('error', 'All quotations must use the same currency.');
-        }
-
-        $supplierId = $supplierIds->first();
-        $currency = $currencies->first();
-
-        // Use the latest exchange rate as a fallback.
-        $latestRate = ExchangeRate::where('currency', $currency)
-            ->orderBy('valid_from', 'desc')
-            ->first();
-
-        try {
-            DB::beginTransaction();
-
-            // 1. Create PO
-            $po = PurchaseOrder::create([
-                'supplier_id' => $supplierId,
-                'currency' => $currency,
-                'exchange_rate_id' => $latestRate?->id,
-                'po_number' => PurchaseOrder::generatePoNumber(),
-                'status' => 'active',
-                'created_by' => auth()->id(),
-                'estimated_arrival' => $request->estimated_arrival,
-                'notes' => $request->notes,
-            ]);
-
-            // 2. Attach all quotations to PO via pivot
-            $po->quotations()->attach($quotations->pluck('id'));
-
-            // 3. Create 4 default po_documents
-            $docTypes = ['invoice', 'bl', 'packing_list', 'form_e'];
-            foreach ($docTypes as $type) {
-                PoDocument::create([
-                    'po_id' => $po->id,
-                    'doc_type' => $type,
-                    'status' => 'pending',
-                ]);
-            }
-
-            // 4. Accept all selected quotations
-            foreach ($quotations as $q) {
-                /** @var Quotation $q */
-                $q->update(['status' => 'accepted']);
-
-                // 5. Reject all other quotations for the same PR
-                Quotation::where('pr_id', $q->pr_id)
-                    ->where('id', '!=', $q->id)
-                    ->whereIn('status', ['submitted', 'accepted'])
-                    ->update(['status' => 'rejected']);
-
-                // 6. Mark the PR as completed
-                $q->purchaseRequisition->update(['status' => 'completed']);
-            }
-
-            DB::commit();
-
-            // Notify the supplier that the PO has been issued.
-            $supplierUser = $quotations->first()->supplier;
-            if ($supplierUser) {
-                $prCount = $quotations->count();
-                $prLabel = $prCount > 1 ? " (combining {$prCount} PR)" : '';
-                $this->notifications->send(
-                    $supplierUser,
-                    'po.issued',
-                    "po.issued:{$po->id}",
-                    'New PO Issued',
-                    "Purchase Order {$po->po_number} has been issued for your quotation{$prLabel}.",
-                    route('supplier.purchase-orders.show', $po, absolute: false),
-                    'receipt text-primary',
-                    [
-                        'category' => NotificationCategory::OTHER,
-                        'po_id' => $po->id,
-                        'po_number' => $po->po_number,
-                    ],
-                );
-            }
-
-            $showParameters = [$po];
-            if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
-                $showParameters['return_url'] = $request->input('return_url');
-            }
-
-            return redirect()->route('purchasing.purchase-orders.show', $showParameters)
-                ->with('success', 'Purchase Order '.$po->po_number.' successfully created!');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return back()->withInput()->with('error', 'Failed to create PO: '.$e->getMessage());
-        }
+        return back()->withInput()->with(
+            'error',
+            'New Purchase Orders must be created from valid item-level awards.'
+        );
     }
 
     /**

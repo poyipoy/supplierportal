@@ -4,14 +4,18 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Models\PrItem;
+use App\Models\PrItemAward;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Services\PrItemAwardService;
+use App\Services\PurchaseOrderGenerationService;
 use App\Support\NumberFormat;
 use App\Support\PurchasingNavigation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -59,6 +63,9 @@ class PriceComparisonController extends Controller
         $materialOptions = collect();
         $selectedPr = null;
         $selectedPrOption = null;
+        $existingAwards = collect();
+        $awardCoverage = null;
+        $supplierGrouping = collect();
 
         $eligiblePrOptions = $eligiblePrs->map(function ($pr) {
             $quotationCount = (int) $pr->eligible_quotation_count;
@@ -88,7 +95,7 @@ class PriceComparisonController extends Controller
 
         if ($request->filled('pr_id')) {
             $selectedPr = $this->resolveHashedQueryModel(PurchaseRequisition::class, $request->query('pr_id'));
-            $selectedPr->loadMissing(['items', 'period']);
+            $selectedPr->loadMissing(['items', 'period', 'awards.supplier', 'awards.quotationItem']);
 
             if ($selectedPr) {
                 $selectedPrOption = $eligiblePrOptions->firstWhere('id', $selectedPr->getRouteKey());
@@ -98,6 +105,11 @@ class PriceComparisonController extends Controller
                 ];
                 $comparisonItems = $selectedPr->items->values();
                 $materialOptions = $comparisonItems;
+                $existingAwards = $selectedPr->awards->keyBy('pr_item_id');
+                $awardService = app(PrItemAwardService::class);
+                $awardCoverage = $awardService->getCoverage($selectedPr);
+                $supplierGrouping = $awardService->getSupplierGrouping($selectedPr);
+
                 $quotations = Quotation::with(['supplier', 'items.prItem', 'exchange_rate'])
                     ->where('pr_id', $selectedPr->id)
                     ->whereIn('status', ['submitted', 'accepted', 'rejected'])
@@ -113,8 +125,10 @@ class PriceComparisonController extends Controller
 
                 $matrix = [];
                 foreach ($comparisonItems as $item) {
+                    $award = $existingAwards->get($item->id);
                     $row = [
                         'item' => $item,
+                        'award' => $award,
                         'prices' => [],
                     ];
 
@@ -137,6 +151,9 @@ class PriceComparisonController extends Controller
                             ? $offerAmount * (float) $rate->rate_to_idr
                             : null;
 
+                        $isAwarded = $award && (int) $award->quotation_item_id === (int) $quotationItem?->id;
+                        $isSelectable = $isAvailable && in_array($quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true) && (! $award || $award->purchase_order_id === null);
+
                         $row['prices'][$quotation->id] = [
                             'quotation_id' => $quotation->id,
                             'quotation_item_id' => $quotationItem?->id,
@@ -151,6 +168,8 @@ class PriceComparisonController extends Controller
                             'offer_amount' => $offerAmount,
                             'offer_amount_idr' => $offerAmountIdr,
                             'is_available' => $isAvailable,
+                            'is_awarded' => $isAwarded,
+                            'is_selectable' => $isSelectable,
                             'available_qty' => $quotationItem?->available_qty,
                             'available_dimension_label' => $quotationItem?->available_dimension_label,
                             'offered_weight_per_unit' => $quotationItem?->offered_weight_per_unit,
@@ -209,7 +228,10 @@ class PriceComparisonController extends Controller
             'materialOptions',
             'selectedPr',
             'eligiblePrOptions',
-            'selectedPrOption'
+            'selectedPrOption',
+            'existingAwards',
+            'awardCoverage',
+            'supplierGrouping'
         ));
     }
 
@@ -1232,5 +1254,138 @@ class PriceComparisonController extends Controller
             '5y' => now()->subYears(5),
             default => null,
         };
+    }
+
+    /**
+     * Save item-level awards and optionally generate PO(s).
+     */
+    public function saveItemAwards(
+        Request $request,
+        PrItemAwardService $awardService,
+        PurchaseOrderGenerationService $poService
+    ) {
+        $request->validate([
+            'pr_id' => 'required',
+            'awards' => 'required|array|min:1',
+            'awards.*' => 'required|integer|distinct|exists:quotation_items,id',
+            'action' => 'nullable|string|in:save,generate_pos',
+            'notes' => 'nullable|string',
+            'estimated_arrival' => 'nullable|date',
+        ]);
+
+        $pr = $this->resolveHashedQueryModel(PurchaseRequisition::class, $request->input('pr_id'));
+
+        // Filter and sanitize award selections: [pr_item_id => quotation_item_id]
+        $selections = [];
+        foreach ($request->input('awards', []) as $prItemId => $quotationItemId) {
+            if ($prItemId && $quotationItemId) {
+                $selections[(int) $prItemId] = (int) $quotationItemId;
+            }
+        }
+
+        if (empty($selections)) {
+            return back()->with('error', 'Please select at least one winning item offer.');
+        }
+
+        try {
+            if ($request->input('action') === 'generate_pos') {
+                $pos = DB::transaction(function () use ($pr, $selections, $awardService, $poService, $request) {
+                    $lockedPr = PurchaseRequisition::whereKey($pr->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $prItemIds = array_keys($selections);
+                    sort($prItemIds);
+                    $lockedPrItems = PrItem::query()
+                        ->where('pr_id', $lockedPr->id)
+                        ->whereIn('id', $prItemIds)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($lockedPrItems->count() !== count($prItemIds)) {
+                        throw new \InvalidArgumentException('One or more selected PR items do not belong to this requisition.');
+                    }
+
+                    $quotationItemIds = array_values($selections);
+                    sort($quotationItemIds);
+                    $quotationIds = QuotationItem::query()
+                        ->whereIn('id', $quotationItemIds)
+                        ->pluck('quotation_id')
+                        ->unique()
+                        ->sort()
+                        ->values()
+                        ->all();
+
+                    $lockedQuotations = Quotation::query()
+                        ->whereIn('id', $quotationIds)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($lockedQuotations->count() !== count($quotationIds)) {
+                        throw new \InvalidArgumentException('One or more selected quotations could not be found.');
+                    }
+
+                    foreach ($lockedQuotations as $quotation) {
+                        if (! in_array($quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
+                            throw new \InvalidArgumentException(
+                                "Quotation #{$quotation->id} has ineligible status '{$quotation->status}'."
+                            );
+                        }
+                    }
+
+                    $lockedQuotationItems = QuotationItem::query()
+                        ->whereIn('id', $quotationItemIds)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($lockedQuotationItems->count() !== count($quotationItemIds)) {
+                        throw new \InvalidArgumentException('One or more selected quotation items could not be found.');
+                    }
+
+                    PrItemAward::query()
+                        ->whereIn('pr_item_id', $prItemIds)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    $awards = $awardService->awardBatch($lockedPr, $selections, auth()->user());
+
+                    return $poService->generateFromAwards($awards, auth()->user(), [
+                        'estimated_arrival' => $request->input('estimated_arrival'),
+                        'notes' => $request->input('notes'),
+                    ]);
+                });
+
+                if ($pos->count() === 1) {
+                    return redirect()->route('purchasing.purchase-orders.show', $pos->first())
+                        ->with('success', "Item awards finalized and Purchase Order {$pos->first()->po_number} successfully created!");
+                }
+
+                $poNumbers = $pos->pluck('po_number')->implode(', ');
+
+                return redirect()->route('purchasing.purchase-orders.index')
+                    ->with('success', "Item awards finalized and {$pos->count()} Purchase Orders created ({$poNumbers})!");
+            }
+
+            $awardService->awardBatch($pr, $selections, auth()->user());
+
+            return back()->with('success', 'Item-level awards saved successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        } catch (UniqueConstraintViolationException $e) {
+            report($e);
+
+            return back()->withInput()->with(
+                'error',
+                'The award or Purchase Order state changed while it was being finalized. Please refresh and try again.'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->with('error', 'Failed to finalize item awards and Purchase Orders.');
+        }
     }
 }

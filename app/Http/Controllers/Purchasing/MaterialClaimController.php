@@ -206,23 +206,26 @@ class MaterialClaimController extends Controller
 
     public function resolve($id)
     {
-        $claim = MaterialClaim::with('purchaseOrder')->findOrFail($id);
+        $claimReference = MaterialClaim::findOrFail($id);
 
-        if ($claim->status !== 'responded') {
-            return back()->with('error', 'Only responded claims can be resolved.');
-        }
+        try {
+            $claim = DB::transaction(function () use ($claimReference) {
+                $po = $claimReference->po_id
+                    ? PurchaseOrder::whereKey($claimReference->po_id)->lockForUpdate()->first()
+                    : null;
+                $claim = MaterialClaim::whereKey($claimReference->id)->lockForUpdate()->firstOrFail();
 
-        $claim->update(['status' => 'resolved']);
+                if ($claim->status !== 'responded') {
+                    throw new \RuntimeException('Only responded claims can be resolved.');
+                }
 
-        if ($claim->purchaseOrder) {
-            $hasActiveClaims = MaterialClaim::where('po_id', $claim->po_id)
-                ->where('id', '!=', $claim->id)
-                ->whereIn('status', ['pending', 'responded', 'escalated'])
-                ->exists();
+                $claim->update(['status' => 'resolved']);
+                $po?->reconcileOperationalStatus();
 
-            if (! $hasActiveClaims) {
-                $claim->purchaseOrder->update(['status' => 'completed']);
-            }
+                return $claim->fresh('purchaseOrder');
+            });
+        } catch (\RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
 
         // Notify supplier: claim completed

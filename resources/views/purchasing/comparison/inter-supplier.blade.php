@@ -146,8 +146,36 @@
         </div>
     </x-ui.card>
 
-    {{-- Side-by-side comparison table --}}
-    <x-ui.data-table :title="'Comparison Table - ' . $selectedPr->pr_number" description="Lowest converted price per material is highlighted for fast review.">
+    {{-- Item-Level Award Coverage Banner --}}
+    @if($awardCoverage)
+        <div class="tw-p-4 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
+            <div class="tw-flex tw-items-center tw-gap-3">
+                <div class="tw-rounded-full tw-p-2.5 tw-bg-primary-container tw-text-primary">
+                    <x-ui.icon name="award" size="md" />
+                </div>
+                <div>
+                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface">Item-Level Award Status</div>
+                    <div class="tw-text-ui-xs tw-text-on-surface-variant">
+                        {{ $awardCoverage['awarded_items'] }} of {{ $awardCoverage['total_items'] }} items awarded ({{ $awardCoverage['coverage_percentage'] }}% coverage)
+                    </div>
+                </div>
+            </div>
+            <div class="tw-flex tw-items-center tw-gap-2">
+                @if($awardCoverage['is_fully_awarded'])
+                    <span class="ui-status-chip ui-status-chip--success">100% Fully Awarded</span>
+                @else
+                    <span class="ui-status-chip ui-status-chip--warning">{{ $awardCoverage['unawarded_items'] }} Item(s) Pending Award</span>
+                @endif
+            </div>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('purchasing.comparison.save-awards') }}" id="itemAwardForm">
+        @csrf
+        <input type="hidden" name="pr_id" value="{{ $selectedPr->getRouteKey() }}">
+
+        {{-- Side-by-side comparison table --}}
+        <x-ui.data-table :title="'Comparison Table - ' . $selectedPr->pr_number" description="Select winning supplier offers per PR item. Maximum one winner per item.">
                 <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs">
                     <thead class="table-light text-center">
                         <tr>
@@ -221,6 +249,32 @@
                                         <td class="text-end fw-semibold ui-tabular-nums">
                                             {{ \App\Support\NumberFormat::maxDecimals($p['offer_amount']) }} {{ $p['currency'] }}
                                             <div class="tw-text-on-surface-variant tw-text-ui-xs">Rp {{ \App\Support\NumberFormat::maxDecimals($p['offer_amount_idr']) }}</div>
+                                            @if(!empty($p['is_selectable']))
+                                                <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
+                                                    <label class="tw-inline-flex tw-items-center tw-gap-1.5 tw-cursor-pointer">
+                                                        <input type="radio"
+                                                               name="awards[{{ $row['item']->id }}]"
+                                                               value="{{ $p['quotation_item_id'] }}"
+                                                               {{ !empty($p['is_awarded']) ? 'checked' : '' }}
+                                                               class="form-check-input tw-mt-0 award-radio"
+                                                               data-pr-item-id="{{ $row['item']->id }}"
+                                                               data-pr-item-name="{{ $row['item']->material_name }}"
+                                                               data-supplier-id="{{ $sup['id'] }}"
+                                                               data-supplier-name="{{ $sup['name'] }}"
+                                                               data-price="Rp {{ \App\Support\NumberFormat::maxDecimals($p['price_idr'] ?? 0) }}"
+                                                        >
+                                                        <span class="tw-text-ui-xs fw-bold {{ !empty($p['is_awarded']) ? 'text-success' : 'text-primary' }}">
+                                                            {{ !empty($p['is_awarded']) ? 'Awarded Winner' : 'Select Winner' }}
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            @elseif(!empty($p['is_awarded']))
+                                                <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
+                                                    <span class="ui-status-chip ui-status-chip--success">
+                                                        <x-ui.icon name="check" size="xs" /> Awarded
+                                                    </span>
+                                                </div>
+                                            @endif
                                         </td>
                                     @else
                                         <td class="text-center text-muted" colspan="3">- no quotation -</td>
@@ -230,7 +284,56 @@
                         @endforeach
                     </tbody>
                 </table>
-    </x-ui.data-table>
+        </x-ui.data-table>
+
+        {{-- Item Award Confirmation & PO Grouping Preview Card --}}
+        <x-ui.card title="Item Award Confirmation & PO Grouping Preview" class="tw-mt-4">
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+                <div>
+                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
+                        <x-ui.icon name="check-check" size="sm" class="me-1 text-primary" />
+                        Selected Line-Item Winners
+                    </div>
+                    <div id="awardPreviewItems" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface tw-text-ui-xs">
+                        <span class="tw-text-on-surface-variant">Select winning offers in the table above to preview awards and supplier PO groups.</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
+                        <x-ui.icon name="building" size="sm" class="me-1 text-primary" />
+                        Resulting PO Grouping Preview (1 PO per Winning Supplier)
+                    </div>
+                    <div id="supplierGroupPreview" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface-container tw-text-ui-xs">
+                        <span class="tw-text-on-surface-variant">1 PO will be created per winning supplier group upon confirmation.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-grid tw-gap-3 sm:tw-grid-cols-2">
+                <div>
+                    <label for="poEstimatedArrival" class="form-label small fw-semibold">Target Estimated Arrival Date</label>
+                    <input type="date" name="estimated_arrival" id="poEstimatedArrival" class="form-control form-control-sm" value="{{ now()->addDays(14)->format('Y-m-d') }}">
+                </div>
+                <div>
+                    <label for="poNotes" class="form-label small fw-semibold">PO Notes / Remarks</label>
+                    <input type="text" name="notes" id="poNotes" class="form-control form-control-sm" placeholder="Optional notes for generated PO(s)...">
+                </div>
+            </div>
+
+            <x-slot:actions>
+                <div class="tw-flex tw-flex-wrap tw-gap-2">
+                    <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
+                        <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
+                        Save Award Selections
+                    </x-ui.button>
+                    <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos">
+                        <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
+                        Confirm Awards &amp; Generate PO(s)
+                    </x-ui.button>
+                </div>
+            </x-slot:actions>
+        </x-ui.card>
+    </form>
 @elseif(request('pr_id'))
     <x-ui.alert tone="warning">No data found for the selected PR.</x-ui.alert>
 @else
@@ -456,6 +559,58 @@ document.getElementById('comparisonMaterialFilter').addEventListener('change', f
     }));
     comparisonChart.update();
 });
+
+const updateAwardPreviews = () => {
+    const radios = document.querySelectorAll('.award-radio:checked');
+    const previewContainer = document.getElementById('awardPreviewItems');
+    const groupContainer = document.getElementById('supplierGroupPreview');
+
+    if (!previewContainer || !groupContainer) return;
+
+    if (radios.length === 0) {
+        previewContainer.innerHTML = '<span class="tw-text-on-surface-variant">No items selected yet. Select winning offers above.</span>';
+        groupContainer.innerHTML = '<span class="tw-text-on-surface-variant">1 PO will be created per winning supplier group upon confirmation.</span>';
+        return;
+    }
+
+    let itemsHtml = '<ul class="tw-list-disc tw-ps-4 tw-space-y-1">';
+    const supplierMap = {};
+
+    radios.forEach(radio => {
+        const itemName = radio.dataset.prItemName;
+        const supplierName = radio.dataset.supplierName;
+        const supplierId = radio.dataset.supplierId;
+        const price = radio.dataset.price;
+
+        itemsHtml += `<li><strong>${itemName}</strong> &rarr; <span class="text-primary fw-semibold">${supplierName}</span> (${price})</li>`;
+
+        if (!supplierMap[supplierId]) {
+            supplierMap[supplierId] = { name: supplierName, items: [] };
+        }
+        supplierMap[supplierId].items.push(itemName);
+    });
+    itemsHtml += '</ul>';
+    previewContainer.innerHTML = itemsHtml;
+
+    let groupHtml = '<div class="tw-space-y-2">';
+    let poCount = 0;
+    for (const sId in supplierMap) {
+        poCount++;
+        const s = supplierMap[sId];
+        groupHtml += `<div class="tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant">
+            <div class="fw-bold tw-text-ui-xs text-primary">PO #${poCount} &bull; ${s.name}</div>
+            <div class="tw-text-on-surface-variant tw-text-ui-xs">${s.items.length} item(s): ${s.items.join(', ')}</div>
+        </div>`;
+    }
+    groupHtml += '</div>';
+    groupContainer.innerHTML = groupHtml;
+};
+
+document.querySelectorAll('.award-radio').forEach(radio => {
+    radio.addEventListener('change', updateAwardPreviews);
+});
+
+updateAwardPreviews();
 </script>
 @endif
 @endpush

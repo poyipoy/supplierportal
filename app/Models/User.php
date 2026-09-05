@@ -137,4 +137,22 @@ class User extends Authenticatable
 
         $this->notify(new AdasiResetPasswordNotification($token));
     }
+
+    /**
+     * Determine whether this user participates in active or historical procurement
+     * records that prevent hard database deletion.
+     */
+    public function hasBlockingProcurementHistory(): bool
+    {
+        return \Illuminate\Support\Facades\DB::table('quotations')->where('supplier_id', $this->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('purchase_orders')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('created_by', $this->id))->exists()
+            || \Illuminate\Support\Facades\DB::table('purchase_requisitions')->where('created_by', $this->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('material_claims')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('submitted_by', $this->id))->exists()
+            || \Illuminate\Support\Facades\DB::table('qc_inspections')->where('inspected_by', $this->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('announcements')->where('created_by', $this->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('attachments')->where('uploaded_by', $this->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('claim_attachments')->where('uploaded_by', $this->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('periods')->where('created_by', $this->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('exchange_rates')->where('created_by', $this->id)->exists();
+    }
 }

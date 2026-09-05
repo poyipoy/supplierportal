@@ -134,6 +134,7 @@
                         <select name="status" class="form-select form-select-sm" aria-label="Filter by Status">
                             <option value="">All Statuses</option>
                             <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
+                            <option value="all_unavailable" {{ request('status') == 'all_unavailable' ? 'selected' : '' }}>All Unavailable</option>
                             <option value="revision_requested" {{ request('status') == 'revision_requested' ? 'selected' : '' }}>Needs Revision</option>
                             <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>Accepted</option>
                             <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>

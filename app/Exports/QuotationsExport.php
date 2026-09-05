@@ -34,6 +34,7 @@ class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWid
             Quotation::STATUS_REVISION_REQUESTED,
             Quotation::STATUS_ACCEPTED,
             Quotation::STATUS_REJECTED,
+            Quotation::STATUS_ALL_UNAVAILABLE,
         ];
 
         if ($this->includeDrafts) {

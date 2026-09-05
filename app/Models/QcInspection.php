@@ -16,6 +16,7 @@ class QcInspection extends Model
 
     protected $fillable = [
         'po_id',
+        'shipment_id',
         'inspected_by',
         'status',
         'inspected_at',
@@ -33,6 +34,11 @@ class QcInspection extends Model
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class, 'po_id');
+    }
+
+    public function shipment(): BelongsTo
+    {
+        return $this->belongsTo(Shipment::class, 'shipment_id');
     }
 
     public function inspector(): BelongsTo

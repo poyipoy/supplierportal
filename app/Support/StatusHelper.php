@@ -47,6 +47,7 @@ class StatusHelper
         'accepted' => 'bg-success',
         'rejected' => 'bg-danger',
         'revision_requested' => 'bg-warning text-dark',
+        'all_unavailable' => 'bg-secondary',
     ];
 
     private static array $quotationLabels = [
@@ -55,6 +56,7 @@ class StatusHelper
         'accepted' => 'Accepted',
         'rejected' => 'Rejected',
         'revision_requested' => 'Revision Requested',
+        'all_unavailable' => 'All Unavailable',
     ];
 
     public static function quotationBadge(string $status): string

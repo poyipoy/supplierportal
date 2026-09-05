@@ -115,4 +115,9 @@ class PurchaseRequisition extends Model
     {
         return $this->morphMany(Attachment::class, 'attachable');
     }
+
+    public function awards(): HasMany
+    {
+        return $this->hasMany(PrItemAward::class, 'pr_id');
+    }
 }

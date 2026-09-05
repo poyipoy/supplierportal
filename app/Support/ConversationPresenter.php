@@ -128,11 +128,11 @@ class ConversationPresenter
 
         $actions = [];
 
-        if (in_array($quotation->status, [Quotation::STATUS_SUBMITTED, Quotation::STATUS_REVISION_REQUESTED], true)) {
-            if ($quotation->status === Quotation::STATUS_SUBMITTED) {
+        if (in_array($quotation->status, [Quotation::STATUS_SUBMITTED, Quotation::STATUS_ALL_UNAVAILABLE, Quotation::STATUS_REVISION_REQUESTED], true)) {
+            if (in_array($quotation->status, [Quotation::STATUS_SUBMITTED, Quotation::STATUS_ALL_UNAVAILABLE], true)) {
                 $actions[] = [
                     'key' => 'request_price_revision',
-                    'label' => 'Request Price Revision',
+                    'label' => 'Request Revision',
                     'icon' => 'badge-dollar-sign',
                     'type' => 'prompt',
                     'requires_note' => true,

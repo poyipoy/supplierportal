@@ -269,15 +269,17 @@ class NotificationDeliveryTest extends TestCase
             'status' => 'submitted',
             'submitted_at' => now(),
         ]);
-        $quotation->items()->create([
+        $quotationItem = $quotation->items()->create([
             'pr_item_id' => $item->id,
             'is_available' => true,
             'price_per_kg' => 2.5,
             'amount' => 250,
         ]);
 
-        $this->actingAs($purchasing)->post(route('purchasing.purchase-orders.store'), [
-            'quotation_ids' => [$quotation->id],
+        $this->actingAs($purchasing)->post(route('purchasing.comparison.save-awards'), [
+            'pr_id' => $pr->getRouteKey(),
+            'awards' => [$item->id => $quotationItem->id],
+            'action' => 'generate_pos',
             'estimated_arrival' => now()->addMonth()->toDateString(),
         ])->assertRedirect()->assertSessionHasNoErrors();
 

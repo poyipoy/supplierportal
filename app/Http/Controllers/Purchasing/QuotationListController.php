@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class QuotationListController extends Controller
 {
@@ -130,7 +131,7 @@ class QuotationListController extends Controller
 
         $canRequestRevision = $quotation->canRequestRevision()
             && $quotation->purchaseRequisition->status !== 'completed';
-        $chatAvailable = in_array($quotation->status, ['submitted', 'revision_requested', 'accepted'], true);
+        $chatAvailable = in_array($quotation->status, ['submitted', 'revision_requested', 'accepted', 'all_unavailable'], true);
         $supplierDisplayName = $quotation->supplier->supplier->company_name
             ?? $quotation->supplier->name
             ?? 'Supplier';
@@ -149,26 +150,33 @@ class QuotationListController extends Controller
 
     public function accept(Request $request, $id)
     {
-        $quotation = Quotation::with(['supplier', 'purchaseRequisition', 'purchaseOrders'])->findOrFail($id);
+        try {
+            $quotation = DB::transaction(function () use ($id, $request) {
+                $quotation = Quotation::whereKey($id)->lockForUpdate()->firstOrFail();
+                $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
 
-        if (! $quotation->canApproveBy(auth()->user())) {
-            return back()->with('error', 'This quotation cannot be accepted.');
+                if (! $quotation->canApproveBy(auth()->user())) {
+                    throw new InvalidArgumentException('This quotation cannot be accepted.');
+                }
+                if (! $quotation->hasAvailableItems()) {
+                    throw new InvalidArgumentException('This quotation cannot be accepted because all items are marked as not available by the supplier.');
+                }
+                if ($quotation->isExpired()) {
+                    throw new InvalidArgumentException('This quotation has expired. Ask the supplier to submit a revision before accepting it.');
+                }
+
+                $quotation->update([
+                    'status' => Quotation::STATUS_ACCEPTED,
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                    'reviewer_notes' => $request->input('reviewer_notes'),
+                ]);
+
+                return $quotation;
+            });
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
-
-        if (! $quotation->hasAvailableItems()) {
-            return back()->with('error', 'This quotation cannot be accepted because all items are marked as not available by the supplier.');
-        }
-
-        if ($quotation->isExpired()) {
-            return back()->with('error', 'This quotation has expired. Ask the supplier to submit a revision before accepting it.');
-        }
-
-        $quotation->update([
-            'status' => Quotation::STATUS_ACCEPTED,
-            'reviewed_at' => now(),
-            'reviewed_by' => auth()->id(),
-            'reviewer_notes' => $request->input('reviewer_notes'),
-        ]);
 
         $this->notifySupplierOfReview($quotation, 'accepted', 'Quotation Accepted', 'Quotation for PR :pr_number has been accepted by Purchasing.');
 
@@ -183,22 +191,30 @@ class QuotationListController extends Controller
             'reviewer_notes.required' => 'Rejection notes are required.',
         ]);
 
-        $quotation = Quotation::with(['supplier', 'purchaseRequisition', 'purchaseOrders'])->findOrFail($id);
+        try {
+            $quotation = DB::transaction(function () use ($id, $request) {
+                $quotation = Quotation::whereKey($id)->lockForUpdate()->firstOrFail();
+                $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
 
-        if (! $quotation->canApproveBy(auth()->user())) {
-            return back()->with('error', 'This quotation cannot be rejected.');
+                if (! $quotation->canApproveBy(auth()->user())) {
+                    throw new InvalidArgumentException('This quotation cannot be rejected.');
+                }
+                if (! $quotation->hasAvailableItems()) {
+                    throw new InvalidArgumentException('Cannot reject a quotation that has no available items.');
+                }
+
+                $quotation->update([
+                    'status' => Quotation::STATUS_REJECTED,
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                    'reviewer_notes' => $request->reviewer_notes,
+                ]);
+
+                return $quotation;
+            });
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
-
-        if (! $quotation->hasAvailableItems()) {
-            return back()->with('error', 'Cannot reject a quotation that has no available items.');
-        }
-
-        $quotation->update([
-            'status' => Quotation::STATUS_REJECTED,
-            'reviewed_at' => now(),
-            'reviewed_by' => auth()->id(),
-            'reviewer_notes' => $request->reviewer_notes,
-        ]);
 
         $this->notifySupplierOfReview($quotation, 'rejected', 'Quotation Rejected', 'Quotation for PR :pr_number was rejected by Purchasing.');
 
@@ -216,50 +232,55 @@ class QuotationListController extends Controller
             'revision_note.required' => 'Revision notes are required.',
         ]);
 
-        $quotation = Quotation::with([
-            'supplier.supplier',
-            'purchaseRequisition',
-            'purchaseOrders',
-        ])->findOrFail($id);
-
-        if ($quotation->purchaseRequisition->status === 'completed') {
-            return back()->with('error', 'The PR is completed. A quotation revision cannot be requested.');
-        }
-
-        if (! $quotation->canRequestRevision()) {
-            return back()->with('error', 'A revision can only be requested for submitted quotations that have expired and have not been used to create a PO.');
-        }
-
         $revisionNote = trim((string) $request->input('revision_note', ''));
-        DB::transaction(function () use ($quotation, $revisionNote) {
-            $quotation->update([
-                'status' => Quotation::STATUS_REVISION_REQUESTED,
-                'reviewed_at' => now(),
-                'reviewed_by' => auth()->id(),
-                'reviewer_notes' => $revisionNote !== '' ? $revisionNote : null,
-            ]);
+        try {
+            $quotation = DB::transaction(function () use ($id, $revisionNote) {
+                $quotation = Quotation::whereKey($id)->lockForUpdate()->firstOrFail();
+                $quotation->load(['supplier.supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
 
-            $conversation = Conversation::firstOrCreate([
-                'conversable_type' => PurchaseRequisition::class,
-                'conversable_id' => $quotation->pr_id,
-                'purchasing_user_id' => auth()->id(),
-                'supplier_user_id' => $quotation->supplier_id,
-            ]);
+                if ($quotation->purchaseRequisition->status === 'completed') {
+                    throw new InvalidArgumentException('The PR is completed. A quotation revision cannot be requested.');
+                }
+                if (! $quotation->canRequestRevision()) {
+                    throw new InvalidArgumentException('A revision can only be requested for submitted or unavailable quotations that have not been used to create a PO.');
+                }
 
-            $message = 'Please revise the quotation for PR '
-                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
-                .' because the quotation validity has expired.';
+                $quotation->update([
+                    'status' => Quotation::STATUS_REVISION_REQUESTED,
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                    'reviewer_notes' => $revisionNote !== '' ? $revisionNote : null,
+                ]);
 
-            if ($revisionNote !== '') {
-                $message .= "\n\nRevision notes: ".$revisionNote;
-            }
+                $conversation = Conversation::firstOrCreate([
+                    'conversable_type' => PurchaseRequisition::class,
+                    'conversable_id' => $quotation->pr_id,
+                    'purchasing_user_id' => auth()->id(),
+                    'supplier_user_id' => $quotation->supplier_id,
+                ]);
 
-            $conversation->messages()->create([
-                'sender_id' => auth()->id(),
-                'body' => $message,
-            ]);
+                $reason = ! $quotation->hasAvailableItems()
+                    ? 'because all items were marked as not available.'
+                    : 'because the quotation validity has expired.';
 
-        });
+                $message = 'Please revise the quotation for PR '
+                    .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
+                    .' '.$reason;
+
+                if ($revisionNote !== '') {
+                    $message .= "\n\nRevision notes: ".$revisionNote;
+                }
+
+                $conversation->messages()->create([
+                    'sender_id' => auth()->id(),
+                    'body' => $message,
+                ]);
+
+                return $quotation;
+            });
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
 
         $this->notifySupplierOfReview(
             $quotation,

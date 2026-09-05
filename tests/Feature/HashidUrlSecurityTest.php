@@ -333,9 +333,12 @@ class HashidUrlSecurityTest extends TestCase
         $claimResponse->assertRedirect(route('purchasing.claims.show', $createdClaim));
 
         $poQuotation = $this->createStandaloneQuotation('REQ/08/2026/903', $this->supplier);
+        $poItem = $poQuotation->items()->firstOrFail();
         $poResponse = $this->actingAs($this->purchasing)
-            ->post(route('purchasing.purchase-orders.store'), [
-                'quotation_ids' => [$poQuotation->id],
+            ->post(route('purchasing.comparison.save-awards'), [
+                'pr_id' => $poQuotation->purchaseRequisition->getRouteKey(),
+                'awards' => [$poItem->pr_item_id => $poItem->id],
+                'action' => 'generate_pos',
                 'estimated_arrival' => now()->addMonth()->toDateString(),
             ]);
         $createdPo = PurchaseOrder::whereHas('quotations', fn ($query) => $query->whereKey($poQuotation->id))->sole();

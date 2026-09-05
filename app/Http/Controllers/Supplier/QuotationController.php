@@ -157,6 +157,7 @@ class QuotationController extends Controller
                         'draft' => '<span class="ui-status-chip ui-status-chip--neutral">Draft</span>',
                         'revision_requested' => '<span class="ui-status-chip ui-status-chip--warning">Revision Requested</span>',
                         'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at?->format('d M Y H:i') ?? '-').')</span>',
+                        'all_unavailable' => '<span class="ui-status-chip ui-status-chip--neutral">All Unavailable</span>',
                         'accepted' => '<span class="ui-status-chip ui-status-chip--info">Accepted</span>',
                         'rejected' => '<span class="ui-status-chip ui-status-chip--error">Rejected</span>',
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e(ucwords($status)).'</span>',
@@ -583,6 +584,8 @@ class QuotationController extends Controller
 
             $quotation->items()->delete();
 
+            $oldFilesToDelete = [];
+
             // Save the validated, exact PR item set without trusting request indexes or IDs.
             // Re-query each item so a long-lived/cached PR relation can never
             // produce an amount from stale weight or quantity values.
@@ -665,6 +668,12 @@ class QuotationController extends Controller
                 $mtcFile = $request->file("items.{$index}.mtc_file");
                 if ($mtcFile && $mtcFile->isValid()) {
                     $this->storeMtcAttachment($quotationItem, $mtcFile);
+                    if ($existingItemAttachments->has($prItem->id)) {
+                        foreach ($existingItemAttachments->get($prItem->id) as $oldAttachment) {
+                            $oldFilesToDelete[] = $oldAttachment->file_path;
+                            $oldAttachment->delete();
+                        }
+                    }
                 } elseif ($existingItemAttachments->has($prItem->id)) {
                     foreach ($existingItemAttachments->get($prItem->id) as $attachment) {
                         $attachment->update([
@@ -679,7 +688,20 @@ class QuotationController extends Controller
                 $pr->update(['status' => 'bidding']);
             }
 
+            // Automatic quotation availability state determination (BUG-001)
+            if ($request->action === 'submitted') {
+                $hasAvailable = $quotation->items()->where('is_available', true)->exists();
+                $finalStatus = $hasAvailable ? Quotation::STATUS_SUBMITTED : Quotation::STATUS_ALL_UNAVAILABLE;
+                $quotation->update(['status' => $finalStatus]);
+            }
+
             DB::commit();
+
+            foreach ($oldFilesToDelete as $oldFilePath) {
+                if ($oldFilePath && Storage::disk('private')->exists($oldFilePath)) {
+                    Storage::disk('private')->delete($oldFilePath);
+                }
+            }
 
             // Notify purchasing when quotation submitted
             if ($request->action === 'submitted') {

@@ -7,6 +7,8 @@ use App\Models\PrItem;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\QcItem;
+use App\Models\Shipment;
+use App\Models\ShipmentItem;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
@@ -38,7 +40,7 @@ class QcInspectionController extends Controller
      */
     public function index()
     {
-        $waitingCount = PurchaseOrder::where('status', 'waiting_qc')->count();
+        $waitingCount = $this->waitingPurchaseOrdersQuery()->count();
         $historyCount = QcInspection::count();
 
         return view('qc.inspections.index', compact('waitingCount', 'historyCount'));
@@ -46,11 +48,10 @@ class QcInspectionController extends Controller
 
     public function dataWaiting(Request $request)
     {
-        $query = PurchaseOrder::with([
+        $query = $this->waitingPurchaseOrdersQuery()->with([
             'supplier',
             'quotations' => fn ($query) => $query->withCount('items'),
         ])
-            ->where('status', 'waiting_qc')
             ->orderBy('actual_arrival', 'asc');
 
         return DataTables::eloquent($query)
@@ -58,14 +59,27 @@ class QcInspectionController extends Controller
             ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
             ->addColumn('arrival_date', fn ($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
             ->addColumn('item_count', fn ($po) => $po->quotations->sum('items_count').' Item')
-            ->addColumn('action', fn ($po) => '<a href="'.route('qc.inspections.create', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Start Inspection</a>')
+            ->addColumn('action', function ($po) {
+                $inspectedShipmentIds = QcInspection::where('po_id', $po->id)
+                    ->whereNotNull('shipment_id')
+                    ->pluck('shipment_id')
+                    ->all();
+                $waitingShipment = $po->shipments()
+                    ->first(fn ($s) => $s->status === Shipment::STATUS_ARRIVED && ! in_array($s->id, $inspectedShipmentIds, true));
+
+                $url = $waitingShipment
+                    ? route('qc.inspections.create', ['id' => $po, 'shipment_id' => $waitingShipment])
+                    : route('qc.inspections.create', $po);
+
+                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">Start Inspection</a>';
+            })
             ->rawColumns(['action'])
             ->make(true);
     }
 
     public function dataHistory(Request $request)
     {
-        $query = QcInspection::with(['purchaseOrder.supplier', 'inspector'])
+        $query = QcInspection::with(['purchaseOrder.supplier', 'shipment', 'inspector'])
             ->orderBy('inspected_at', 'desc');
 
         if ($request->filled('status') && in_array($request->status, ['ok', 'ng'], true)) {
@@ -89,20 +103,47 @@ class QcInspectionController extends Controller
     /**
      * Start inspection form.
      */
-    public function create($po_id)
+    public function create(Request $request, $po_id)
     {
         $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem'])->findOrFail($po_id);
 
-        if ($po->status !== 'waiting_qc') {
+        if (! in_array($po->status, ['waiting_qc', 'claim_needed'], true)) {
             return redirect()->route('qc.inspections.index')->with('error', 'This PO is not in Waiting QC status.');
         }
 
-        // Prevent duplicate inspections.
-        if (QcInspection::where('po_id', $po->id)->exists()) {
-            return redirect()->route('qc.inspections.index')->with('error', 'This PO has already been inspected.');
+        $shipment = null;
+        if ($request->filled('shipment_id')) {
+            $rawShipmentId = $request->query('shipment_id');
+            $shipment = (new Shipment)->resolveRouteBinding($rawShipmentId)
+                ?? (is_numeric($rawShipmentId) ? Shipment::find($rawShipmentId) : null);
         }
 
-        return view('qc.inspections.create', compact('po'));
+        if (! $shipment) {
+            $inspectedShipmentIds = QcInspection::where('po_id', $po->id)
+                ->whereNotNull('shipment_id')
+                ->pluck('shipment_id')
+                ->all();
+
+            $shipment = $po->shipments()
+                ->first(fn ($s) => $s->status === Shipment::STATUS_ARRIVED && ! in_array($s->id, $inspectedShipmentIds, true));
+        }
+
+        if ($shipment) {
+            $hasPoItems = $shipment->items()->where('purchase_order_id', $po->id)->exists();
+            if (! $hasPoItems) {
+                return redirect()->route('qc.inspections.index')->with('error', 'The specified shipment does not contain items for this PO.');
+            }
+
+            if (QcInspection::where('po_id', $po->id)->where('shipment_id', $shipment->id)->exists()) {
+                return redirect()->route('qc.inspections.index')->with('error', 'This shipment for PO '.$po->po_number.' has already been inspected.');
+            }
+        } else {
+            if (QcInspection::where('po_id', $po->id)->whereNull('shipment_id')->exists()) {
+                return redirect()->route('qc.inspections.index')->with('error', 'This PO has already been inspected.');
+            }
+        }
+
+        return view('qc.inspections.create', compact('po', 'shipment'));
     }
 
     /**
@@ -150,6 +191,14 @@ class QcInspectionController extends Controller
             'attachments.*.*.max' => 'Each NG evidence photo must not exceed 10MB.',
         ]);
 
+        $shipment = null;
+        if ($request->filled('shipment_id')) {
+            $rawShipmentId = $request->input('shipment_id');
+            $shipment = (new Shipment)->resolveRouteBinding($rawShipmentId)
+                ?? (is_numeric($rawShipmentId) ? Shipment::find($rawShipmentId) : null);
+        }
+        $shipmentId = $shipment?->id;
+
         try {
             DB::beginTransaction();
 
@@ -158,12 +207,79 @@ class QcInspectionController extends Controller
                 ->firstOrFail();
             $po->load(['supplier', 'quotations.items.prItem']);
 
-            if ($po->status !== 'waiting_qc') {
+            if (! in_array($po->status, ['waiting_qc', 'claim_needed'], true)) {
                 throw new \RuntimeException('This PO is not valid for inspection.');
             }
 
-            if (QcInspection::where('po_id', $po->id)->exists()) {
-                throw new \RuntimeException('This PO has already been inspected.');
+            $poShipmentItems = ShipmentItem::query()
+                ->where('purchase_order_id', $po->id)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($poShipmentItems->isNotEmpty() && ! $request->filled('shipment_id')) {
+                throw new \RuntimeException('A shipment is required for inspection because this Purchase Order has shipment items.');
+            }
+
+            if ($request->filled('shipment_id') && ! $shipmentId) {
+                throw new \RuntimeException('The specified shipment could not be found.');
+            }
+
+            $expectedShipmentItems = collect();
+            if ($shipmentId) {
+                $shipment = Shipment::query()
+                    ->whereKey($shipmentId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $shipment) {
+                    throw new \RuntimeException('The specified shipment could not be found.');
+                }
+
+                if ($shipment->status !== Shipment::STATUS_ARRIVED) {
+                    throw new \RuntimeException('QC inspection is only allowed for an arrived shipment.');
+                }
+
+                $expectedShipmentItems = ShipmentItem::query()
+                    ->with('quotationItem')
+                    ->where('shipment_id', $shipment->id)
+                    ->where('purchase_order_id', $po->id)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($expectedShipmentItems->isEmpty()) {
+                    throw new \RuntimeException('The specified shipment does not contain items for this Purchase Order.');
+                }
+
+                if (QcInspection::where('po_id', $po->id)->where('shipment_id', $shipment->id)->exists()) {
+                    throw new \RuntimeException('This shipment for Purchase Order '.$po->po_number.' has already been inspected.');
+                }
+
+                $expectedByPrItem = $expectedShipmentItems->mapWithKeys(function (ShipmentItem $shipmentItem) {
+                    return [(int) $shipmentItem->quotationItem->pr_item_id => $shipmentItem];
+                });
+                $submittedPrItemIds = collect($validated['items'])
+                    ->pluck('pr_item_id')
+                    ->map(fn ($id) => (int) $id);
+
+                if ($submittedPrItemIds->duplicates()->isNotEmpty()) {
+                    throw new \RuntimeException('Each shipment item must be inspected exactly once; duplicate lines were submitted.');
+                }
+
+                $submittedKeys = $submittedPrItemIds->sort()->values()->all();
+                $expectedKeys = $expectedByPrItem->keys()->sort()->values()->all();
+                if ($submittedKeys !== $expectedKeys) {
+                    throw new \RuntimeException('The inspection must contain every item from the selected shipment for this Purchase Order exactly once.');
+                }
+            } else {
+                if ($poShipmentItems->isNotEmpty()) {
+                    throw new \RuntimeException('Shipment-aware QC items must reference a shipment item.');
+                }
+
+                if (QcInspection::where('po_id', $po->id)->whereNull('shipment_id')->exists()) {
+                    throw new \RuntimeException('This PO has already been inspected.');
+                }
             }
 
             // Determine the overall inspection status.
@@ -178,6 +294,7 @@ class QcInspectionController extends Controller
             // Create Inspection
             $inspection = QcInspection::create([
                 'po_id' => $po->id,
+                'shipment_id' => $shipment?->id,
                 'inspected_by' => auth()->id(),
                 'status' => $overallStatus,
                 'inspected_at' => now(),
@@ -192,8 +309,17 @@ class QcInspectionController extends Controller
                     $poPrItems->get((int) $itemData['pr_item_id'])
                 );
 
+                $shipmentItemId = $shipment
+                    ? $expectedByPrItem->get((int) $itemData['pr_item_id'])?->id
+                    : null;
+
+                if ($shipment && ! $shipmentItemId) {
+                    throw new \RuntimeException('Shipment-aware QC items must reference a shipment item.');
+                }
+
                 $qcItem = QcItem::create($measurements + [
                     'inspection_id' => $inspection->id,
+                    'shipment_item_id' => $shipmentItemId,
                     'pr_item_id' => $itemData['pr_item_id'],
                     'status' => $itemData['status'],
                     'notes' => $itemData['notes'] ?? null,
@@ -214,12 +340,8 @@ class QcInspectionController extends Controller
                 throw new \RuntimeException('NG evidence photos were not uploaded. Please upload the evidence photos again before saving the inspection.');
             }
 
-            // Update PO status. Notifications are sent only after commit.
-            if ($overallStatus === 'ok') {
-                $po->update(['status' => 'completed']);
-            } else {
-                $po->update(['status' => 'claim_needed']);
-            }
+            // One authoritative precedence rule owns the resulting PO state.
+            $po->reconcileOperationalStatus();
 
             DB::commit();
 
@@ -312,12 +434,22 @@ class QcInspectionController extends Controller
     {
         $inspection = QcInspection::with([
             'purchaseOrder.supplier',
+            'shipment',
             'inspector',
             'items.prItem',
+            'items.shipmentItem',
             'attachments',
         ])->findOrFail($id);
 
         return view('qc.inspections.show', compact('inspection'));
+    }
+
+    /**
+     * Check if the PO is fully fulfilled and all deliveries have passed QC inspection.
+     */
+    protected function isPoFullyFulfilledAndInspected(PurchaseOrder $po, ?Shipment $currentShipment = null): bool
+    {
+        return $po->isFullyFulfilledAndInspected($currentShipment);
     }
 
     /**
@@ -373,5 +505,20 @@ class QcInspectionController extends Controller
             'file_type' => $file->getMimeType(),
             'uploaded_by' => auth()->id(),
         ]);
+    }
+
+    private function waitingPurchaseOrdersQuery()
+    {
+        return PurchaseOrder::query()->where(function ($query) {
+            $query->where('status', 'waiting_qc')
+                ->orWhere(function ($claimQuery) {
+                    $claimQuery->where('status', 'claim_needed')
+                        ->whereHas('shipmentItems', function ($itemQuery) {
+                            $itemQuery->whereHas('shipment', fn ($shipmentQuery) => $shipmentQuery
+                                ->where('status', Shipment::STATUS_ARRIVED))
+                                ->whereDoesntHave('qcItems');
+                        });
+                });
+        });
     }
 }

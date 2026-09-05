@@ -7,6 +7,7 @@ use App\Models\PoDocument;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PoDocumentController extends Controller
 {
@@ -18,7 +19,7 @@ class PoDocumentController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|string',
+            'status' => ['required', 'string', Rule::in(PoDocument::STATUSES)],
         ]);
 
         $doc = PoDocument::with('purchaseOrder.creator')->findOrFail($id);

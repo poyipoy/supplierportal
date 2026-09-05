@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Supplier;
 
 use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
+use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -71,9 +73,9 @@ class ClaimController extends Controller
 
     public function respond(Request $request, $id)
     {
-        $claim = MaterialClaim::findOrFail($id);
+        $claimReference = MaterialClaim::findOrFail($id);
 
-        if ($claim->supplier_id !== auth()->id()) {
+        if ((int) $claimReference->supplier_id !== (int) auth()->id()) {
             abort(403, 'Access denied.');
         }
 
@@ -82,10 +84,32 @@ class ClaimController extends Controller
             'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,xlsx,doc,docx|max:10240',
         ]);
 
-        $claim->update([
-            'supplier_response' => $request->supplier_response,
-            'status' => 'responded',
-        ]);
+        try {
+            $claim = DB::transaction(function () use ($claimReference, $request) {
+                $po = $claimReference->po_id
+                    ? PurchaseOrder::whereKey($claimReference->po_id)->lockForUpdate()->first()
+                    : null;
+                $claim = MaterialClaim::whereKey($claimReference->id)->lockForUpdate()->firstOrFail();
+
+                if ((int) $claim->supplier_id !== (int) auth()->id()) {
+                    abort(403, 'Access denied.');
+                }
+
+                if (! in_array($claim->status, ['pending', 'escalated'], true)) {
+                    throw new \RuntimeException('This claim can no longer accept a supplier response.');
+                }
+
+                $claim->update([
+                    'supplier_response' => $request->supplier_response,
+                    'status' => 'responded',
+                ]);
+                $po?->reconcileOperationalStatus();
+
+                return $claim->fresh('purchaseOrder');
+            });
+        } catch (\RuntimeException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
+        }
 
         // Upload supplier response attachments
         if ($request->hasFile('attachments')) {

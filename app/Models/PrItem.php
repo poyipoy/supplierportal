@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PrItem extends Model
 {
@@ -267,5 +268,10 @@ class PrItem extends Model
     public function qcItems(): HasMany
     {
         return $this->hasMany(QcItem::class, 'pr_item_id');
+    }
+
+    public function award(): HasOne
+    {
+        return $this->hasOne(PrItemAward::class, 'pr_item_id');
     }
 }
