@@ -65,7 +65,7 @@
     <form action="{{ route('qc.inspections.store', $po) }}" method="POST" enctype="multipart/form-data" id="inspectionForm" class="tw-grid tw-gap-4">
         @csrf
         @if(isset($shipment) && $shipment)
-            <input type="hidden" name="shipment_id" value="{{ $shipment->id }}">
+            <input type="hidden" name="shipment_id" value="{{ $shipment->getRouteKey() }}">
         @endif
 
         {{-- Section 1: Order & Arrival Context --}}

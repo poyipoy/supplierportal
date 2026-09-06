@@ -283,7 +283,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // QC performs inspection on partial shipment 1
         $response = $this->actingAs($this->qcUser)
             ->post(route('qc.inspections.store', $po), [
-                'shipment_id' => $shipment1->id,
+                'shipment_id' => $shipment1->hash,
                 'items' => [
                     [
                         'pr_item_id' => $prItem->id,
@@ -338,7 +338,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $shipmentService->confirmArrival($shipment1, $this->purchasingUser);
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
-            'shipment_id' => $shipment1->id,
+            'shipment_id' => $shipment1->hash,
             'items' => [
                 [
                     'pr_item_id' => $prItem->id,
@@ -371,7 +371,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         // QC performs inspection on Shipment 2
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
-            'shipment_id' => $shipment2->id,
+            'shipment_id' => $shipment2->hash,
             'items' => [
                 [
                     'pr_item_id' => $prItem->id,
@@ -421,7 +421,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $evidencePhoto = UploadedFile::fake()->image('defect_crack.jpg');
 
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
-            'shipment_id' => $shipment->id,
+            'shipment_id' => $shipment->hash,
             'items' => [
                 [
                     'pr_item_id' => $prItem->id,
@@ -770,6 +770,48 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 'shipment_id' => $shipment->id,
             ]);
         }
+    }
+
+    public function test_qc_shipment_identifier_requires_hashid_for_create_and_store(): void
+    {
+        [, $prItem, , $qItem, $po] = $this->createAwardedPo(20.0);
+        $shipment = $this->createShipment($po, $qItem, 20.0, true);
+        $items = [$this->qcItemPayload($prItem, 20.0)];
+
+        $this->actingAs($this->qcUser)
+            ->get(route('qc.inspections.create', ['po_id' => $po, 'shipment_id' => $shipment->id]))
+            ->assertRedirect(route('qc.inspections.index'))
+            ->assertSessionHas('error', 'The specified shipment could not be found.');
+
+        $this->actingAs($this->qcUser)
+            ->get(route('qc.inspections.create', ['po_id' => $po, 'shipment_id' => $shipment->hash]))
+            ->assertOk()
+            ->assertSee('name="shipment_id" value="'.$shipment->hash.'"', false);
+
+        $this->actingAs($this->qcUser)
+            ->post(route('qc.inspections.store', $po), [
+                'shipment_id' => $shipment->id,
+                'items' => $items,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error', 'The specified shipment could not be found.');
+
+        $this->assertDatabaseMissing('qc_inspections', [
+            'po_id' => $po->id,
+            'shipment_id' => $shipment->id,
+        ]);
+
+        $this->actingAs($this->qcUser)
+            ->post(route('qc.inspections.store', $po), [
+                'shipment_id' => $shipment->hash,
+                'items' => $items,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('qc_inspections', [
+            'po_id' => $po->id,
+            'shipment_id' => $shipment->id,
+        ]);
     }
 
     public function test_shipment_aware_qc_locks_shipment_before_purchase_order(): void
