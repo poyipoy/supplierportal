@@ -38,8 +38,7 @@
                 title="Material Price Breakdown"
                 description="Commercial values reflect your quotation's locked exchange-rate snapshot."
             >
-                <div class="table-responsive border rounded overflow-hidden">
-                    <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
+                <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" style="min-width: 1200px;">
                         <thead class="table-light align-middle text-center">
                             <tr class="border-bottom">
                                 <th scope="col" rowspan="2" style="width: 40px;" class="text-center">#</th>
@@ -168,7 +167,6 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
             </x-ui.data-table>
         </div>
 

@@ -9,6 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
+use App\Models\ShipmentDocument;
 use App\Models\User;
 
 class AttachmentPolicy
@@ -56,6 +57,9 @@ class AttachmentPolicy
                     && $attachable->purchaseOrder->supplier_id === $user->id,
 
                 MaterialClaim::class => $attachable->supplier_id === $user->id,
+
+                ShipmentDocument::class => $attachable->shipment
+                    && (int) $attachable->shipment->supplier_id === (int) $user->id,
 
                 Message::class => $attachable->conversation
                     && $attachable->conversation->isMember($user->id),

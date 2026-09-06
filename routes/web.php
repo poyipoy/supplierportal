@@ -15,6 +15,7 @@ use App\Http\Controllers\ConversationMessageController;
 use App\Http\Controllers\ExportDownloadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Purchasing\AwardConsolidationController;
 use App\Http\Controllers\Purchasing\ConversationController;
 use App\Http\Controllers\Purchasing\ExportController;
 use App\Http\Controllers\Purchasing\MaterialCalculationController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Purchasing\QuotationListController;
 use App\Http\Controllers\Purchasing\ReportController;
+use App\Http\Controllers\Purchasing\ShipmentController;
 use App\Http\Controllers\Qc\DashboardController;
 use App\Http\Controllers\Qc\QcExportController;
 use App\Http\Controllers\Qc\QcInspectionController;
@@ -38,6 +40,7 @@ use App\Http\Controllers\Supplier\QuotationController;
 use App\Http\Controllers\Supplier\SupplierController;
 use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
+use App\Http\Controllers\Supplier\SupplierShipmentController;
 use App\Models\PurchaseRequisition;
 use Illuminate\Support\Facades\Route;
 
@@ -157,8 +160,13 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/purchase-orders/create/{quotation_id}', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
     Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
     Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::get('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'create'])->name('purchase-orders.consolidate-awards');
+    Route::post('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'store'])->name('purchase-orders.consolidate-awards.store');
     Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
     Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
+    Route::resource('shipments', ShipmentController::class)->only(['index', 'show']);
+    Route::post('/shipments/{id}/confirm-arrival', [ShipmentController::class, 'confirmArrival'])->name('shipments.confirm-arrival');
+    Route::put('/shipments/{id}/documents/{document_id}/status', [ShipmentController::class, 'updateDocumentStatus'])->name('shipments.documents.status');
     Route::put('/po-documents/{id}', [PoDocumentController::class, 'update'])->name('po-documents.update');
     Route::get('/claims/data-action', [MaterialClaimController::class, 'dataActionNeeded'])->name('claims.data-action');
     Route::get('/claims/data-history', [MaterialClaimController::class, 'dataHistory'])->name('claims.data-history');
@@ -182,6 +190,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/comparison/historical/materials', [PriceComparisonController::class, 'historicalMaterials'])->name('comparison.historical.materials');
     Route::get('/comparison/vs-best', [PriceComparisonController::class, 'vsBestPrice'])->name('comparison.vs-best');
     Route::get('/comparison/vs-best/data', [PriceComparisonController::class, 'vsBestPriceData'])->name('comparison.vs-best.data');
+    Route::post('/comparison/awards', [PriceComparisonController::class, 'saveItemAwards'])->name('comparison.save-awards');
     Route::get('/comparison/{pr_id}', function ($pr_id) {
         $requisition = PurchaseRequisition::findOrFail($pr_id);
 
@@ -232,6 +241,12 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     Route::resource('quotations', QuotationController::class)->only(['index', 'show']);
     Route::get('/purchase-orders', [SupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('/purchase-orders/{id}', [SupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    // Shipments
+    Route::resource('shipments', SupplierShipmentController::class)
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
+    Route::post('/shipments/{id}/submit', [SupplierShipmentController::class, 'submit'])->name('shipments.submit');
+    Route::post('/shipments/{id}/cancel', [SupplierShipmentController::class, 'cancel'])->name('shipments.cancel');
+    Route::post('/shipments/{id}/documents/{document_id}', [SupplierShipmentController::class, 'uploadDocument'])->name('shipments.documents.upload');
     Route::get('/claims', [ClaimController::class, 'index'])->name('claims.index');
     Route::get('/claims/{id}', [ClaimController::class, 'show'])->name('claims.show');
     Route::post('/claims/{id}/respond', [ClaimController::class, 'respond'])->name('claims.respond');

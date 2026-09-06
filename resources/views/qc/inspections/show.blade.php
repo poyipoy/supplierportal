@@ -77,10 +77,16 @@
 
     {{-- Inspection Metadata & Order Overview --}}
         <x-ui.card title="Inspection and Arrival Summary">
-        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
+        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-5">
             <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
                 <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $inspection->purchaseOrder->supplier->company_name ?? $inspection->purchaseOrder->supplier->name ?? '-' }}</div>
+            </div>
+            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Shipment Package</div>
+                <div class="fw-bold text-primary tw-text-ui-xs tw-mt-0.5">
+                    {{ $inspection->shipment ? $inspection->shipment->shipment_number : 'Direct Delivery (Legacy)' }}
+                </div>
             </div>
             <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Inspected By</div>
@@ -132,6 +138,9 @@
                     <div class="tw-flex tw-items-center tw-gap-2 tw-text-ui-xs tw-font-bold {{ $item->status === 'ng' ? 'tw-text-error' : 'tw-text-on-surface' }}">
                         <span class="ui-status-chip {{ $item->status === 'ng' ? 'ui-status-chip--error' : 'ui-status-chip--info' }}">Item #{{ $index + 1 }}</span>
                         <span>{{ $prItem->material_name }}</span>
+                        @if($item->shipmentItem)
+                            <span class="ui-status-chip ui-status-chip--neutral">Consignment: {{ number_format($item->shipmentItem->shipped_quantity, 2) }} Kg</span>
+                        @endif
                     </div>
                     @if($item->status === 'ok')
                         <span class="ui-status-chip ui-status-chip--success">

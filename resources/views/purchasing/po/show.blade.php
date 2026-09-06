@@ -311,7 +311,7 @@
                             $grandTotalIdr = 0;
                             $poRemark = trim((string) $po->notes);
                         @endphp
-                        @foreach($po->quotations as $quotation)
+                        @foreach($po->commercialQuotations() as $quotation)
                             @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                             @if($po->quotations->count() > 1)
                                 <tr class="bg-primary-subtle text-primary border-top border-bottom">
@@ -588,7 +588,7 @@
             @endif
 
             {{-- Confirm Arrival Action Button --}}
-            @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival)
+            @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival && $po->isLegacyArrivalEligible())
                 <x-ui.card title="Delivery Status Action">
                     <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po) }}" method="POST" id="arrivalForm">
                         @csrf

@@ -9,6 +9,7 @@ use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\Period;
 use App\Models\PrItem;
+use App\Models\PrItemAward;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -157,6 +158,7 @@ class QuotationController extends Controller
                         'draft' => '<span class="ui-status-chip ui-status-chip--neutral">Draft</span>',
                         'revision_requested' => '<span class="ui-status-chip ui-status-chip--warning">Revision Requested</span>',
                         'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at?->format('d M Y H:i') ?? '-').')</span>',
+                        'all_unavailable' => '<span class="ui-status-chip ui-status-chip--neutral">All Unavailable</span>',
                         'accepted' => '<span class="ui-status-chip ui-status-chip--info">Accepted</span>',
                         'rejected' => '<span class="ui-status-chip ui-status-chip--error">Rejected</span>',
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e(ucwords($status)).'</span>',
@@ -506,6 +508,22 @@ class QuotationController extends Controller
         try {
             DB::beginTransaction();
 
+            $pr = PurchaseRequisition::whereKey($pr->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
+                throw new \RuntimeException('This requisition is no longer available for quotation.');
+            }
+            $lockedPrItems = PrItem::where('pr_id', $pr->id)
+                ->orderBy('id')->lockForUpdate()->get();
+            $quotation = Quotation::where('pr_id', $pr->id)
+                ->where('supplier_id', auth()->id())->lockForUpdate()->first();
+            if ($quotation && (! $quotation->canBeRevisedBySupplier()
+                || $quotation->purchaseOrders()->withTrashed()->exists()
+                || PrItemAward::where('quotation_id', $quotation->id)
+                    ->orWhereIn('quotation_item_id', $quotation->items()->select('id'))->exists())) {
+                throw new \RuntimeException('This quotation is locked or used by an award or Purchase Order and cannot be changed.');
+            }
+            $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
+
             $nextStatus = $request->action === 'submitted'
                 ? Quotation::STATUS_SUBMITTED
                 : ($wasRevisionRequested ? Quotation::STATUS_REVISION_REQUESTED : Quotation::STATUS_DRAFT);
@@ -531,10 +549,7 @@ class QuotationController extends Controller
             // request was validated against the pre-transaction snapshot, so
             // this prevents a concurrent PR edit from silently producing an
             // incomplete quotation response set.
-            $currentPrItemIds = PrItem::query()
-                ->where('pr_id', $pr->id)
-                ->lockForUpdate()
-                ->pluck('id')
+            $currentPrItemIds = $lockedPrItems->pluck('id')
                 ->map(fn ($id) => (int) $id)
                 ->sort()
                 ->values()
@@ -582,6 +597,8 @@ class QuotationController extends Controller
                 ->map(fn ($item) => $item->attachments);
 
             $quotation->items()->delete();
+
+            $oldFilesToDelete = [];
 
             // Save the validated, exact PR item set without trusting request indexes or IDs.
             // Re-query each item so a long-lived/cached PR relation can never
@@ -665,6 +682,12 @@ class QuotationController extends Controller
                 $mtcFile = $request->file("items.{$index}.mtc_file");
                 if ($mtcFile && $mtcFile->isValid()) {
                     $this->storeMtcAttachment($quotationItem, $mtcFile);
+                    if ($existingItemAttachments->has($prItem->id)) {
+                        foreach ($existingItemAttachments->get($prItem->id) as $oldAttachment) {
+                            $oldFilesToDelete[] = $oldAttachment->file_path;
+                            $oldAttachment->delete();
+                        }
+                    }
                 } elseif ($existingItemAttachments->has($prItem->id)) {
                     foreach ($existingItemAttachments->get($prItem->id) as $attachment) {
                         $attachment->update([
@@ -679,7 +702,20 @@ class QuotationController extends Controller
                 $pr->update(['status' => 'bidding']);
             }
 
+            // Automatic quotation availability state determination (BUG-001)
+            if ($request->action === 'submitted') {
+                $hasAvailable = $quotation->items()->where('is_available', true)->exists();
+                $finalStatus = $hasAvailable ? Quotation::STATUS_SUBMITTED : Quotation::STATUS_ALL_UNAVAILABLE;
+                $quotation->update(['status' => $finalStatus]);
+            }
+
             DB::commit();
+
+            foreach ($oldFilesToDelete as $oldFilePath) {
+                if ($oldFilePath && Storage::disk('private')->exists($oldFilePath)) {
+                    Storage::disk('private')->delete($oldFilePath);
+                }
+            }
 
             // Notify purchasing when quotation submitted
             if ($request->action === 'submitted') {

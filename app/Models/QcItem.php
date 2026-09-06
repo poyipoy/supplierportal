@@ -9,6 +9,7 @@ class QcItem extends Model
 {
     protected $fillable = [
         'inspection_id',
+        'shipment_item_id',
         'pr_item_id',
         'actual_thickness',
         'actual_d_inner',
@@ -37,6 +38,11 @@ class QcItem extends Model
     public function inspection(): BelongsTo
     {
         return $this->belongsTo(QcInspection::class, 'inspection_id');
+    }
+
+    public function shipmentItem(): BelongsTo
+    {
+        return $this->belongsTo(ShipmentItem::class, 'shipment_item_id');
     }
 
     public function prItem(): BelongsTo

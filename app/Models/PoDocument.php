@@ -8,6 +8,15 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class PoDocument extends Model
 {
+    public const STATUSES = [
+        'pending',
+        'received',
+        'verified',
+        'issued',
+        'processing',
+        'done',
+    ];
+
     protected $fillable = [
         'po_id',
         'doc_type',

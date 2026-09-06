@@ -57,6 +57,7 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.quotations.index')" icon="tags" :active="request()->routeIs('purchasing.quotations.*')" label="Quotation">Quotation</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier')" icon="chart-no-axes-combined" :active="request()->routeIs('purchasing.comparison.*')" label="Price Comparison">Price Comparison</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.purchase-orders.index')" icon="receipt" :active="request()->routeIs('purchasing.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.shipments.index')" icon="truck" :active="request()->routeIs('purchasing.shipments.*')" label="Shipments and Logistics">Shipments &amp; Logistics</x-ui.sidebar-item>
 
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Collaboration</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index')" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" label="Negotiation and Chat">
@@ -78,6 +79,7 @@
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Business</span></div>
             <x-ui.sidebar-item :href="route('supplier.quotations.index')" icon="calendar-days" :active="request()->routeIs('supplier.quotations.*')" label="Quotation Period">Quotation Period</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('supplier.purchase-orders.index')" icon="receipt" :active="request()->routeIs('supplier.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('supplier.shipments.index')" icon="truck" :active="request()->routeIs('supplier.shipments.*')" label="Shipments and Deliveries">Shipments &amp; Deliveries</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" label="Negotiation and Chat">
                 Negotiation &amp; Chat
                 <x-slot:trailing>

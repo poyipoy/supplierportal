@@ -64,13 +64,16 @@
 
     <form action="{{ route('qc.inspections.store', $po) }}" method="POST" enctype="multipart/form-data" id="inspectionForm" class="tw-grid tw-gap-4">
         @csrf
+        @if(isset($shipment) && $shipment)
+            <input type="hidden" name="shipment_id" value="{{ $shipment->id }}">
+        @endif
 
         {{-- Section 1: Order & Arrival Context --}}
         <x-ui.form-section
             title="Purchase Order and Shipment Arrival Context"
             description="Verified arrival and commercial reference information for this shipment."
         >
-            <div class="tw-grid tw-gap-3 sm:tw-grid-cols-3">
+            <div class="tw-grid tw-gap-3 sm:tw-grid-cols-4">
                 <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                     <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Number</div>
                     <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->po_number }}</div>
@@ -80,6 +83,12 @@
                     <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->supplier->company_name ?? $po->supplier->name }}</div>
                 </div>
                 <div class="tw-p-2.5 tw-bg-surface-low border rounded">
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Shipment Reference</div>
+                    <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">
+                        {{ isset($shipment) && $shipment ? $shipment->shipment_number : 'Direct PO Delivery' }}
+                    </div>
+                </div>
+                <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                     <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Material Arrival Date</div>
                     <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->actual_arrival ? $po->actual_arrival->format('d F Y') : '-' }}</div>
                 </div>
@@ -87,7 +96,18 @@
         </x-ui.form-section>
 
         {{-- Section 2: Line Items Physical Inspection --}}
-        @php $allItems = $po->quotations->flatMap(fn($q) => $q->items); @endphp
+        @php
+            if (isset($shipment) && $shipment) {
+                $allItems = $shipment->items->where('purchase_order_id', $po->id)->map(function ($si) {
+                    $item = $si->quotationItem;
+                    $item->shipped_delivery_qty = $si->shipped_quantity;
+                    $item->shipment_item_id = $si->id;
+                    return $item;
+                });
+            } else {
+                $allItems = $po->quotations->flatMap(fn($q) => $q->items);
+            }
+        @endphp
         @php
             $qcDimensionLabels = [
                 'thickness' => 'Thickness (mm)',
@@ -152,6 +172,12 @@
                                             <div class="tw-text-on-surface-variant tw-text-ui-xs">Quantity</div>
                                             <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ number_format($prItem->quantity_value, 0) }}</div>
                                         </div>
+                                        @if(isset($item->shipped_delivery_qty))
+                                            <div class="qc-spec-box tw-bg-primary-container/20 border-primary">
+                                                <div class="tw-text-primary tw-text-ui-xs fw-semibold">Consignment Shipped</div>
+                                                <div class="fw-bold text-primary tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ number_format($item->shipped_delivery_qty, 2) }} Kg</div>
+                                            </div>
+                                        @endif
                                         @foreach($visibleDimensions as $dimension)
                                             @php
                                                 $specField = $qcSpecFields[$dimension];

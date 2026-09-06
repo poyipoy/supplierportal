@@ -30,6 +30,18 @@ class Quotation extends Model
 
     public const STATUS_REJECTED = 'rejected';
 
+    public const STATUS_ALL_UNAVAILABLE = 'all_unavailable';
+
+    public const AWARD_ELIGIBLE_STATUSES = [
+        self::STATUS_SUBMITTED,
+        self::STATUS_ACCEPTED,
+    ];
+
+    public function isAwardEligible(): bool
+    {
+        return in_array($this->status, self::AWARD_ELIGIBLE_STATUSES, true);
+    }
+
     protected $fillable = [
         'pr_id',
         'supplier_id',
@@ -63,7 +75,7 @@ class Quotation extends Model
 
     public function canRequestRevision(): bool
     {
-        return $this->status === self::STATUS_SUBMITTED
+        return in_array($this->status, [self::STATUS_SUBMITTED, self::STATUS_ALL_UNAVAILABLE], true)
             && $this->purchaseOrders()->count() === 0;
     }
 
@@ -110,6 +122,7 @@ class Quotation extends Model
             self::STATUS_REVISION_REQUESTED => 'Needs Revision',
             self::STATUS_ACCEPTED => 'Accepted',
             self::STATUS_REJECTED => 'Rejected',
+            self::STATUS_ALL_UNAVAILABLE => 'All Unavailable',
             default => ucwords(str_replace('_', ' ', (string) $this->status)),
         };
     }
@@ -122,6 +135,7 @@ class Quotation extends Model
             self::STATUS_REVISION_REQUESTED => 'bg-warning text-dark',
             self::STATUS_ACCEPTED => 'bg-success',
             self::STATUS_REJECTED => 'bg-danger',
+            self::STATUS_ALL_UNAVAILABLE => 'bg-secondary',
             default => 'bg-secondary',
         };
     }

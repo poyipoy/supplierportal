@@ -1,0 +1,1595 @@
+# Planning Revisi Warehouse Consumable
+
+Repository: `https://github.com/poyipoy/fastware_adsi_1`
+
+## 1. Scope Final
+
+| No | Modul | Revisi |
+|---|---|---|
+| 1 | Riwayat Transaksi | Tambahkan **Hutang Barang Bekas** |
+| 2 | Dashboard | **Analitik Pergerakan diganti menjadi Pergerakan Stok** sesuai PPT |
+| 2a | Pergerakan Stok | Tambahkan grafik **Masuk, Keluar, Rata-rata 7 hari** |
+| 2b | Pergerakan Stok | Tambahkan **Dropdown Mesin** |
+| 2c | Pergerakan Stok | Tambahkan **Dropdown Insert** |
+| 3 | Dashboard → Agregasi Stock Out | Tambahkan **Dropdown Mesin** untuk memfilter **Top Item Stock Out** |
+| 4 | Penyesuaian Stok | Tambahkan **Riwayat Log Penyesuaian Stok** seperti Riwayat Transaksi, tetapi khusus `ADJUSTMENT` |
+
+Secara arsitektur, repository sekarang sudah cukup siap untuk revisi ini. Dashboard sudah mempunyai DTO filter dan service agregasi sendiri; Riwayat Transaksi sudah mempunyai query service; adjustment juga sudah menghasilkan record `ADJUSTMENT` di transaction ledger yang sama. Jadi sebagian besar pekerjaan seharusnya berupa **extension terhadap struktur existing**, bukan membuat modul paralel baru.
+
+---
+
+# 2. Revisi 1 — Hutang Barang Bekas
+
+## 2.1 Current State
+
+Di halaman Riwayat Transaksi sekarang bagian summary/footer berisi:
+
+- Transaksi
+- Stock In
+- Stock Out
+- Adjustment
+
+Target penambahan:
+
+- Hutang Barang Bekas
+
+Target UI minimal:
+
+```text
+┌──────────┬──────────┬───────────┬────────────┬────────────────────┐
+│Transaksi │ Stock In │ Stock Out │ Adjustment │ Hutang Barang Bekas│
+│   120    │  450     │   300     │     20     │        45          │
+└──────────┴──────────┴───────────┴────────────┴────────────────────┘
+```
+
+Jangan menambahkan halaman hutang baru dulu karena requirement saat ini hanya meminta informasi Hutang Barang Bekas pada Riwayat Transaksi.
+
+## 2.2 Business Rule yang Harus Dikunci
+
+Sistem saat ini memungkinkan:
+
+```text
+Stock Out barang NEW
+        +
+Stock In barang USED
+```
+
+dijalankan bersamaan.
+
+Masalah muncul ketika pengembalian barang bekas dilakukan pada transaksi berbeda, misalnya:
+
+```text
+Hari ini:
+OUT NEW = 10
+
+Besok:
+IN USED = 4
+```
+
+Kalau tidak ada relasi yang jelas antara OUT dan USED IN, jangan menghitung hutang dengan rumus global:
+
+```text
+Total OUT NEW - Total IN USED
+```
+
+karena bisa salah lintas user, item, dan transaksi.
+
+### Recommended business rule
+
+```text
+OUT barang NEW
+      ↓
+membentuk kewajiban pengembalian
+      ↓
+USED dikembalikan
+      ↓
+mengurangi kewajiban
+      ↓
+0 = lunas
+```
+
+Status:
+
+```text
+OPEN
+PARTIAL
+SETTLED
+```
+
+Contoh:
+
+```text
+OUT NEW        = 10
+Return USED    = 4
+------------------
+Hutang         = 6
+
+Return USED    = 6
+------------------
+Hutang         = 0 / SETTLED
+```
+
+### Decision point
+
+Harus dikunci apakah hutang dihitung:
+
+#### Opsi A — Per karyawan
+
+```text
+Karyawan A:
+NEW keluar     20
+USED kembali   12
+Hutang          8
+```
+
+#### Opsi B — Per karyawan + jenis barang
+
+```text
+Karyawan A
+
+Insert CNMG:
+OUT 10 - USED 7 = 3
+
+Insert DNMG:
+OUT 5 - USED 1 = 4
+```
+
+Rekomendasi: gunakan **per karyawan + jenis barang**, kecuali business user menentukan rule lain.
+
+---
+
+# 3. Recommended Technical Design Hutang Barang Bekas
+
+Jika hutang bisa dilunasi pada transaksi berikutnya, gunakan ledger khusus.
+
+## 3.1 Tabel Obligation
+
+Contoh:
+
+```text
+trs_wh_used_return_obligations
+```
+
+Field utama:
+
+```text
+id
+source_transaction_id
+verified_user_id
+consumable_id
+required_quantity
+status
+created_at
+updated_at
+```
+
+## 3.2 Tabel Settlement
+
+```text
+trs_wh_used_return_settlements
+```
+
+Field:
+
+```text
+id
+obligation_id
+return_transaction_id
+quantity
+created_at
+```
+
+Outstanding dihitung:
+
+```text
+required_quantity
+-
+SUM(settlements.quantity)
+```
+
+Jangan hanya menyimpan satu angka hutang mutable tanpa settlement history.
+
+## 3.3 Integration Flow
+
+### Saat OUT NEW
+
+```text
+Create transaction OUT
+↓
+Create obligation
+↓
+required = quantity OUT
+```
+
+### Saat langsung return USED
+
+```text
+OUT NEW
++ IN USED
+↓
+operation_key sama
+↓
+create obligation
+↓
+create settlement
+```
+
+### Saat return berikutnya
+
+```text
+USED IN
+↓
+hubungkan ke obligation OPEN
+↓
+create settlement
+↓
+update status
+```
+
+## 3.4 Reversal
+
+Harus ditangani.
+
+```text
+OUT NEW 10
+→ debt 10
+→ reversal OUT
+→ obligation tidak boleh tetap aktif
+```
+
+Begitu juga jika return USED direversal:
+
+```text
+Debt 10
+Return 4
+Debt 6
+Reverse Return
+Debt kembali 10
+```
+
+## 3.5 Riwayat Transaksi
+
+Update summary:
+
+```text
+Transaksi
+Stock In
+Stock Out
+Adjustment
+Hutang Barang Bekas
+```
+
+Versi pertama cukup berupa angka summary.
+
+---
+
+# 4. Revisi 2 — Analitik Pergerakan → Pergerakan Stok
+
+Current implementation:
+
+```text
+Analitik Pergerakan
+Filter periode
+
+Tren Stock In/Out
+
+Tanggal | Masuk | Keluar
+```
+
+Target:
+
+```text
+Pergerakan stok
+
+[ Mesin ▼ ] [ Insert ▼ ]
+
+                ─ ─ Rata-rata 7 hari
+
+Qty
+│
+│       ██
+│ ██    ██       ██
+│ ██ ██ ██ ██    ██
+│────────────────────────
+  20 21 22 23 24 25 26
+```
+
+Dataset:
+
+```text
+Masuk
+Keluar
+Rata-rata 7 hari
+```
+
+Ini adalah **replacement section**, bukan penambahan section baru.
+
+---
+
+# 5. Data Source Pergerakan Stok
+
+Current service pergerakan sudah mengambil transaksi:
+
+```text
+IN
+OUT
+```
+
+dan mengelompokkan berdasarkan tanggal.
+
+Output sebaiknya dibuat chart-ready:
+
+```php
+[
+    'labels' => [
+        '20/08',
+        '21/08',
+        '22/08',
+    ],
+
+    'stock_in' => [
+        20,
+        12,
+        30,
+    ],
+
+    'stock_out' => [
+        15,
+        18,
+        25,
+    ],
+
+    'average_7_days' => [
+        14.1,
+        15.6,
+        17.2,
+    ],
+]
+```
+
+---
+
+# 6. Continuous Date Series
+
+Current query hanya menghasilkan tanggal yang memiliki transaksi.
+
+Contoh:
+
+```text
+20 Agustus → ada
+21 Agustus → tidak ada
+22 Agustus → ada
+```
+
+Jangan menghasilkan:
+
+```text
+20
+22
+```
+
+Target:
+
+```text
+20 → IN 10 / OUT 5
+21 → IN 0  / OUT 0
+22 → IN 4  / OUT 8
+```
+
+Service perlu melakukan **date gap filling**.
+
+---
+
+# 7. Rata-rata 7 Hari
+
+Rekomendasi: rata-rata 7 hari dihitung dari **Stock Out/pemakaian**.
+
+Formula:
+
+```text
+Average(day N)
+=
+OUT(N-6)
++ OUT(N-5)
++ ...
++ OUT(N)
+──────────────
+      7
+```
+
+Backend sebaiknya mengambil enam hari tambahan sebelum range yang ditampilkan agar titik awal chart tidak kosong.
+
+---
+
+# 8. Filter Insert
+
+Source:
+
+```text
+mst_wh_consumables
+```
+
+Dropdown:
+
+```text
+Semua Insert
+-----------------------
+CNMG120408 — Insert A
+DNMG150608 — Insert B
+...
+```
+
+Parameter:
+
+```text
+movement_consumable_id
+```
+
+Gunakan prefix `movement_` agar tidak bertabrakan dengan filter dashboard lain.
+
+---
+
+# 9. Filter Mesin pada Pergerakan Stok
+
+Perlu implementasi hati-hati.
+
+Ada dua konsep:
+
+```text
+mst_wh_consumables.machine_type
+```
+
+dan:
+
+```text
+trs_wh_stock_transactions.machine_type_used
+```
+
+Masalahnya, `machine_type_used` secara natural terisi pada transaksi Stock Out, sementara grafik tetap membutuhkan seri **Masuk dan Keluar**.
+
+Kalau filter seluruh grafik dengan:
+
+```php
+where('machine_type_used', $machine)
+```
+
+maka kemungkinan:
+
+```text
+Stock Out → benar
+Stock In  → 0
+```
+
+### Rekomendasi
+
+Untuk **Pergerakan Stok**, gunakan `mst_wh_consumables.machine_type` sebagai asosiasi Insert → Mesin.
+
+Flow:
+
+```text
+Mesin M1
+↓
+ambil consumable yang machine_type-nya M1
+↓
+hitung IN dan OUT consumable tersebut
+```
+
+Untuk **Agregasi Stock Out**, gunakan `transaction.machine_type_used`.
+
+Dua konsep tersebut jangan dicampur.
+
+---
+
+# 10. Dependent Filter Mesin → Insert
+
+Disarankan:
+
+```text
+Mesin = M1
+```
+
+maka dropdown Insert hanya menampilkan item yang relevan untuk M1.
+
+Backend tetap wajib melakukan validation.
+
+---
+
+# 11. Dashboard Filter DTO
+
+Tambahkan support field:
+
+```text
+machineType
+```
+
+Tetapi jangan apply secara global ke semua query.
+
+Konsep:
+
+```text
+movementStockChart()
+    → machine filter berdasarkan consumable.machine_type
+
+topUsage()
+    → machine filter berdasarkan transaction.machine_type_used
+
+topUsageByMachineType()
+    → jangan filter machine
+```
+
+---
+
+# 12. Dashboard Request Validation
+
+Tambahkan parameter:
+
+```text
+movement_machine
+movement_consumable_id
+stockout_machine
+```
+
+Rules contoh:
+
+```text
+movement_machine
+nullable
+string
+max:120
+```
+
+```text
+movement_consumable_id
+nullable
+integer
+exists:mst_wh_consumables,id
+```
+
+```text
+stockout_machine
+nullable
+string
+max:120
+```
+
+---
+
+# 13. Replacement UI Analitik Pergerakan
+
+File utama:
+
+```text
+resources/views/warehouse/dashboard/index.blade.php
+```
+
+Rework block:
+
+```text
+Analitik Pergerakan
+Tren Stock In/Out
+<table>
+```
+
+menjadi:
+
+```text
+Pergerakan stok
+
+[Mesin          ▼]
+[Insert         ▼]
+
+┌────────────────────────────────────────────┐
+│                                            │
+│           MIXED BAR + LINE CHART           │
+│                                            │
+└────────────────────────────────────────────┘
+
+■ Masuk
+■ Keluar
+-- Rata-rata 7 hari
+```
+
+## Chart Type
+
+Gunakan Chart.js mixed chart:
+
+```text
+Masuk       → bar
+Keluar      → bar
+Average 7D  → line
+```
+
+Tambahkan initializer khusus, misalnya:
+
+```text
+data-warehouse-movement-chart
+```
+
+Jangan reuse horizontal bar chart existing secara paksa.
+
+---
+
+# 14. Filter Periode Existing
+
+PPT tidak cukup jelas apakah filter tanggal existing harus tetap tampil.
+
+Rekomendasi teknis:
+
+- jangan hapus support `from/to` di backend,
+- UI bisa disesuaikan dengan mockup PPT,
+- keputusan akhir bisa dikunci saat UAT.
+
+---
+
+# 15. Revisi 3 — Filter Mesin pada Agregasi Stock Out
+
+Current:
+
+```text
+Agregasi Stock Out
+
+[Bulan]
+
+Top Item Stock Out
+Top Tipe Mesin Stock Out
+```
+
+Target:
+
+```text
+Agregasi Stock Out
+
+Bulan: [2026-09]
+Mesin: [M1 ▼]
+
+Top Item Stock Out
+--------------------
+CNMG       125
+DNMG        84
+...
+```
+
+---
+
+# 16. Scope Filter Mesin Stock Out
+
+Filter mesin harus mempengaruhi:
+
+### Top Item Stock Out
+
+YES.
+
+```text
+Machine M1
+↓
+Top item yang dipakai di M1
+```
+
+### Top Tipe Mesin Stock Out
+
+NO.
+
+Kalau Top Tipe Mesin ikut difilter:
+
+```text
+filter = M1
+```
+
+hasilnya hanya:
+
+```text
+M1 = 100%
+```
+
+dan ranking kehilangan fungsi.
+
+---
+
+# 17. Query Agregasi Stock Out
+
+Target:
+
+```text
+Top Item
+↓
+stockout_month
++
+stockout_machine
+```
+
+Sedangkan:
+
+```text
+Top Machine
+↓
+stockout_month saja
+```
+
+Controller sebaiknya memisahkan filter secara eksplisit.
+
+---
+
+# 18. Source Dropdown Mesin Stock Out
+
+Gunakan:
+
+```text
+DISTINCT trs_wh_stock_transactions.machine_type_used
+```
+
+dengan:
+
+```text
+transaction_type = OUT
+machine_type_used IS NOT NULL
+machine_type_used <> ''
+```
+
+Ini merepresentasikan mesin yang benar-benar digunakan pada transaksi Stock Out.
+
+---
+
+# 19. Preserve Dashboard Filter State
+
+Query-state target:
+
+```text
+movement_machine
+movement_consumable_id
+movement_date_from
+movement_date_to
+
+stockout_month
+stockout_machine
+```
+
+Reset Pergerakan Stok hanya mereset:
+
+```text
+movement_*
+```
+
+Reset Stock Out hanya mereset:
+
+```text
+stockout_*
+```
+
+Jangan sampai satu reset merusak section lain.
+
+---
+
+# 20. Revisi 4 — Riwayat Log Penyesuaian Stok
+
+Target:
+
+```text
+┌───────────────────────┬──────────────────────────────────────┐
+│ PENYESUAIAN STOK      │ RIWAYAT LOG PENYESUAIAN STOK        │
+│                       │                                      │
+│ Barang                │ Filter                               │
+│ Kondisi               │                                      │
+│ Lokasi                │ Waktu | Barang | Arah | Qty | ...    │
+│ Arah                  │ -----------------------------------  │
+│ Qty                   │ ...                                  │
+│ Reason                │ ...                                  │
+│ Verifikator           │                                      │
+│                       │                                      │
+│ [Simpan]              │ Pagination                           │
+└───────────────────────┴──────────────────────────────────────┘
+```
+
+Mobile:
+
+```text
+Form adjustment
+↓
+Riwayat adjustment
+```
+
+Riwayat ini harus seperti Riwayat Transaksi tetapi hanya:
+
+```text
+transaction_type = ADJUSTMENT
+```
+
+Tidak perlu membuat tabel log baru.
+
+---
+
+# 21. Current Adjustment Page
+
+Current:
+
+```text
+Penyesuaian Stok
+
+[Form adjustment]
+```
+
+Target controller:
+
+```text
+active consumables
++
+adjustment history
++
+adjustment filter options
+```
+
+---
+
+# 22. Reuse Transaction History Query
+
+Reuse `WarehouseTransactionQueryService`.
+
+Controller harus memaksa:
+
+```text
+transaction_type = ADJUSTMENT
+```
+
+Jangan menyediakan filter tipe transaksi karena halaman ini memang adjustment-only.
+
+---
+
+# 23. Dedicated Adjustment History Request
+
+Disarankan buat:
+
+```text
+WarehouseAdjustmentHistoryRequest
+```
+
+Parameter:
+
+```text
+adjustment_date_from
+adjustment_date_to
+adjustment_consumable_id
+adjustment_condition
+adjustment_direction
+adjustment_verified_user_id
+```
+
+Controller dapat mapping ke query service existing.
+
+---
+
+# 24. Kolom Riwayat Adjustment
+
+| Kolom | Isi |
+|---|---|
+| Waktu | `transaction_at` |
+| No. Transaksi | `transaction_number` |
+| Arah | IN / OUT adjustment |
+| Kondisi | NEW / USED |
+| Barang | Code + name |
+| Jumlah | quantity |
+| Lokasi | location |
+| Stok Awal | stock_before |
+| Stok Akhir | stock_after |
+| Karyawan | verified user |
+| Alasan | reason/category |
+| Aksi | Detail |
+
+---
+
+# 25. Adjustment Direction
+
+Karena record tetap:
+
+```text
+transaction_type = ADJUSTMENT
+```
+
+direction dapat ditentukan dari delta:
+
+```text
+stock_after > stock_before
+→ IN / +
+
+stock_after < stock_before
+→ OUT / -
+```
+
+Sebaiknya buat helper/accessor seperti:
+
+```text
+adjustment_direction
+movement_delta
+```
+
+Jangan hitung logic tersebut di Blade.
+
+---
+
+# 26. Reason Adjustment
+
+Jika reason sekarang tersimpan di notes, versi pertama bisa langsung menampilkan notes tersebut.
+
+Jika nanti perlu filter reason category secara terpisah, baru pertimbangkan kolom dedicated.
+
+---
+
+# 27. Setelah Adjustment Berhasil
+
+Current behavior sebaiknya diubah dari:
+
+```text
+submit adjustment
+↓
+redirect Warehouse Dashboard
+```
+
+menjadi:
+
+```text
+submit adjustment
+↓
+redirect Penyesuaian Stok
+↓
+flash success
+↓
+record baru terlihat paling atas
+```
+
+---
+
+# 28. Pagination
+
+Gunakan pagination.
+
+Rekomendasi:
+
+```text
+20 rows per page
+```
+
+Order:
+
+```text
+transaction_at DESC
+id DESC
+```
+
+---
+
+# 29. Reversed Adjustment
+
+Jangan memasukkan `REVERSAL` sebagai adjustment biasa.
+
+Tetap query:
+
+```text
+transaction_type = ADJUSTMENT
+```
+
+Jika adjustment memiliki reversal, tampilkan badge:
+
+```text
+Dibatalkan
+```
+
+Audit trail tetap dipertahankan.
+
+---
+
+# 30. Refactoring UI
+
+Boleh extract partial reusable, misalnya:
+
+```text
+resources/views/warehouse/partials/history-table.blade.php
+```
+
+Tetapi jangan membuat abstraction berlebihan.
+
+Jika component akhirnya memiliki terlalu banyak conditional props, duplication kecil lebih aman.
+
+---
+
+# 31. File Impact Map
+
+## Existing files yang kemungkinan berubah
+
+```text
+app/
+├── Data/Warehouse/
+│   └── WarehouseDashboardFilter.php
+│
+├── Http/
+│   ├── Controllers/Warehouse/
+│   │   ├── WarehouseDashboardController.php
+│   │   ├── WarehouseTransactionHistoryController.php
+│   │   ├── WarehouseTransactionController.php
+│   │   └── WarehouseStockAdjustmentController.php
+│   │
+│   └── Requests/Warehouse/
+│       ├── WarehouseDashboardFilterRequest.php
+│       └── WarehouseAdjustmentHistoryRequest.php   [NEW]
+│
+├── Models/Warehouse/
+│   └── WarehouseStockTransaction.php
+│
+└── Services/Warehouse/
+    ├── WarehouseDashboardService.php
+    ├── WarehouseTransactionQueryService.php
+    ├── WarehouseStockService.php
+    └── WarehouseUsedReturnDebtService.php          [NEW, jika ledger dipilih]
+```
+
+Views/assets:
+
+```text
+resources/
+├── views/warehouse/
+│   ├── dashboard/index.blade.php
+│   ├── transactions/index.blade.php
+│   └── adjustments-create.blade.php
+│
+├── js/warehouse/
+│   └── dashboard.js
+│
+└── css/warehouse/
+    ├── dashboard.css
+    └── management.css
+```
+
+Jika debt ledger digunakan:
+
+```text
+database/migrations/
+├── *_create_wh_used_return_obligations_table.php
+└── *_create_wh_used_return_settlements_table.php
+```
+
+Models:
+
+```text
+WarehouseUsedReturnObligation
+WarehouseUsedReturnSettlement
+```
+
+---
+
+# 32. Controller Responsibility Target
+
+## WarehouseDashboardController
+
+Target data:
+
+```text
+movementStockFilter
+movementStockChart
+movementMachineOptions
+movementInsertOptions
+
+stockOutFilter
+stockOutMachineOptions
+topUsage
+topMachineUsage
+```
+
+## WarehouseDashboardService
+
+Tambahkan method yang eksplisit, misalnya:
+
+```text
+movementStockChart()
+movementMachineOptions()
+stockOutMachineOptions()
+```
+
+## WarehouseTransactionHistoryController
+
+Tambahkan:
+
+```text
+usedReturnDebtTotal
+```
+
+ke totals.
+
+## WarehouseStockAdjustmentController
+
+Target:
+
+```text
+active consumables
++
+adjustment history
++
+adjustment filter options
+```
+
+---
+
+# 33. Query Performance
+
+Perlu cek index untuk:
+
+```text
+transaction_at
+transaction_type
+consumable_id
+machine_type_used
+verified_user_id
+operation_key
+reversal_of_id
+```
+
+Candidate index:
+
+```text
+(transaction_type, transaction_at)
+(transaction_type, machine_type_used, transaction_at)
+(consumable_id, transaction_at)
+```
+
+Jangan langsung membuat semua index. Jalankan `EXPLAIN` pada query final.
+
+---
+
+# 34. Testing Strategy
+
+Tambahkan test ke test suite Warehouse existing.
+
+Area utama:
+
+```text
+WarehouseDashboardQueryTest
+WarehouseDashboardTest
+WarehouseAdjustmentTest
+WarehouseReversalTest
+WarehouseStockServiceTest
+WarehouseTransactionHistoryTest
+WarehouseUiContractTest
+```
+
+---
+
+# 35. Tests — Pergerakan Stok
+
+## Base chart
+
+```text
+Day 1 IN  = 10
+Day 1 OUT = 4
+Day 2 = no movement
+Day 3 IN  = 5
+Day 3 OUT = 8
+```
+
+Expected:
+
+```text
+Day 1 → 10 / 4
+Day 2 → 0  / 0
+Day 3 → 5  / 8
+```
+
+## Insert filter
+
+```text
+Insert A IN 10 / OUT 5
+Insert B IN 20 / OUT 15
+```
+
+Filter A:
+
+```text
+IN 10
+OUT 5
+```
+
+## Mesin filter
+
+Pastikan data IN tidak hilang karena salah memakai `machine_type_used`.
+
+## Kombinasi
+
+```text
+Machine M1
++
+Insert A
+```
+
+## Average
+
+Pastikan rolling average benar mulai titik ke-7 dan seterusnya.
+
+## Reversal
+
+Original transaction yang sudah direversal tidak boleh membuat chart double count.
+
+---
+
+# 36. Tests — Stock Out Machine Filter
+
+Dataset:
+
+```text
+Machine M1
+Insert A = 100
+Insert B = 20
+
+Machine M2
+Insert A = 10
+Insert C = 150
+```
+
+No filter:
+
+```text
+C = 150
+A = 110
+B = 20
+```
+
+Filter M1:
+
+```text
+A = 100
+B = 20
+```
+
+Top Tipe Mesin tetap:
+
+```text
+M2
+M1
+```
+
+bukan hanya:
+
+```text
+M1
+```
+
+---
+
+# 37. Tests — Adjustment History
+
+Create:
+
+```text
+ADJUSTMENT IN
+Insert A
+NEW
+DS8
+Qty 10
+Reason Stock Opname
+```
+
+Expected:
+
+```text
+history row exists
+direction = IN
+qty = 10
+stock_before correct
+stock_after correct
+reason correct
+verified user correct
+```
+
+Tambahkan test:
+
+```text
+date
+item
+condition
+direction
+pagination
+reversal badge
+```
+
+Pastikan history tidak memasukkan:
+
+```text
+IN biasa
+OUT biasa
+TRANSFER
+REVERSAL sebagai row adjustment
+```
+
+---
+
+# 38. Tests — Hutang Barang Bekas
+
+## Full debt
+
+```text
+OUT NEW 10
+→ outstanding 10
+```
+
+## Immediate full return
+
+```text
+OUT NEW 10
+USED IN 10
+→ outstanding 0
+```
+
+## Immediate partial
+
+```text
+OUT NEW 10
+USED IN 4
+→ outstanding 6
+```
+
+## Later settlement
+
+```text
+Debt 6
+USED IN 2
+→ 4
+```
+
+## Complete
+
+```text
+Debt 4
+USED IN 4
+→ SETTLED
+```
+
+## Over-return
+
+```text
+Debt = 4
+Return = 5
+```
+
+Tidak boleh menghasilkan outstanding negatif.
+
+## Reversal OUT
+
+```text
+OUT 10
+debt 10
+reverse OUT
+→ debt tidak aktif
+```
+
+## Reversal return
+
+```text
+debt 10
+return 4
+debt 6
+reverse return
+→ debt 10
+```
+
+## Idempotency
+
+Replay transaction tidak boleh membuat obligation atau settlement dua kali.
+
+## Concurrency
+
+Dua return simultan tidak boleh melunasi debt melebihi outstanding.
+
+---
+
+# 39. Implementation Order
+
+| Phase | Task | Dependency | Priority |
+|---|---|---|---|
+| 0 | Lock business rule Hutang Barang Bekas | Business confirmation | P0 |
+| 1 | Extend dashboard request/filter architecture | - | P1 |
+| 2 | Implement Pergerakan Stok backend dataset | Phase 1 | P1 |
+| 3 | Implement 7-day moving average | Phase 2 | P1 |
+| 4 | Implement dropdown Mesin + Insert | Phase 1 | P1 |
+| 5 | Replace Analitik Pergerakan UI | Phase 2–4 | P1 |
+| 6 | Implement mixed bar/line chart | Phase 5 | P1 |
+| 7 | Implement Stock Out Machine filter | Phase 1 | P1 |
+| 8 | Pisahkan filter Top Item vs Top Machine | Phase 7 | P1 |
+| 9 | Implement Adjustment History query | - | P1 |
+| 10 | Implement Adjustment History UI | Phase 9 | P1 |
+| 11 | Redirect adjustment kembali ke page adjustment | Phase 10 | P1 |
+| 12 | Implement debt data model/service | Phase 0 | P1 |
+| 13 | Integrate debt ke OUT/USED return/reversal | Phase 12 | P1 |
+| 14 | Add Hutang Barang Bekas summary | Phase 13 | P1 |
+| 15 | Regression + feature test | Semua | P1 |
+| 16 | Query profiling/index review | Semua | P2 |
+| 17 | Responsive/UI polish | Semua | P2 |
+| 18 | UAT | Semua | P1 |
+
+---
+
+# 40. Recommended Development Breakdown
+
+## Workstream A — Dashboard Pergerakan Stok
+
+Scope:
+
+```text
+Analitik Pergerakan
+→ Pergerakan Stok
+
++ mixed chart
++ machine
++ insert
++ average 7 hari
+```
+
+## Workstream B — Stock Out Machine Filter
+
+Scope:
+
+```text
+Agregasi Stock Out
++ Machine filter
+```
+
+Pastikan Top Tipe Mesin tidak ikut difilter.
+
+## Workstream C — Adjustment History
+
+Scope:
+
+```text
+Adjustment form
++
+adjustment-only transaction history
+```
+
+Reuse query/service existing.
+
+## Workstream D — Hutang Barang Bekas
+
+Dikerjakan setelah business rule dikunci karena paling banyak menyentuh lifecycle transaksi.
+
+---
+
+# 41. Definition of Done
+
+## Hutang Barang Bekas
+
+- [ ] Card tampil di Riwayat Transaksi desktop
+- [ ] Card tampil di mobile
+- [ ] Business rule deterministic
+- [ ] Partial return benar
+- [ ] Full return benar
+- [ ] Reversal benar
+- [ ] Idempotent
+- [ ] Tidak ada outstanding negatif
+- [ ] Historical data policy jelas
+
+## Pergerakan Stok
+
+- [ ] “Analitik Pergerakan” sudah tidak tampil
+- [ ] Section menjadi **Pergerakan stok**
+- [ ] Tabel existing diganti grafik
+- [ ] Ada bar Masuk
+- [ ] Ada bar Keluar
+- [ ] Ada dotted line Rata-rata 7 Hari
+- [ ] Ada Dropdown Mesin
+- [ ] Ada Dropdown Insert
+- [ ] Missing dates menjadi zero
+- [ ] Filter combination benar
+- [ ] Reset filter benar
+- [ ] Mobile responsive
+- [ ] Empty-state tersedia
+
+## Agregasi Stock Out
+
+- [ ] Dropdown Mesin tersedia
+- [ ] Top Item berubah berdasarkan mesin
+- [ ] Month filter tetap bekerja
+- [ ] Top Tipe Mesin tidak terpengaruh machine filter
+- [ ] Reset tidak menghapus filter section lain
+
+## Adjustment History
+
+- [ ] Form tetap berfungsi
+- [ ] Log muncul pada halaman yang sama
+- [ ] Hanya transaction type `ADJUSTMENT`
+- [ ] Layout desktop form + history
+- [ ] Mobile stacked
+- [ ] Ada pagination
+- [ ] Ada filter
+- [ ] Direction IN/OUT jelas
+- [ ] Reason terlihat
+- [ ] Stock before/after terlihat
+- [ ] Karyawan/verifier terlihat
+- [ ] Detail transaction bisa dibuka
+- [ ] Reversed adjustment ditandai
+- [ ] Setelah adjustment berhasil, record baru terlihat
+
+---
+
+# 42. Hal yang Jangan Dilakukan
+
+1. Jangan hitung hutang sebagai global `OUT NEW - IN USED` sebelum business rule dipastikan.
+2. Jangan pakai `machine_type_used` untuk seluruh Pergerakan Stok.
+3. Jangan apply filter Mesin Stock Out ke Top Tipe Mesin.
+4. Jangan membuat database log adjustment baru.
+5. Jangan copy seluruh Riwayat Transaksi ke controller baru.
+6. Jangan hitung rolling average di Blade jika datanya berasal dari backend.
+7. Jangan menghilangkan reversal/idempotency behavior existing saat menambahkan debt lifecycle.
+
+---
+
+# 43. Target Arsitektur Akhir
+
+```text
+Warehouse
+│
+├── Dashboard
+│   │
+│   ├── Summary
+│   ├── Perhatian Stok
+│   │
+│   ├── Pergerakan Stok
+│   │   ├── Mesin
+│   │   ├── Insert
+│   │   └── Chart
+│   │       ├── Masuk
+│   │       ├── Keluar
+│   │       └── Rata-rata 7 Hari
+│   │
+│   └── Agregasi Stock Out
+│       ├── Bulan
+│       ├── Mesin
+│       ├── Top Item Stock Out
+│       └── Top Tipe Mesin Stock Out
+│
+├── Riwayat Transaksi
+│   ├── Existing filters
+│   ├── Existing transaction history
+│   └── Summary
+│       ├── Transaksi
+│       ├── Stock In
+│       ├── Stock Out
+│       ├── Adjustment
+│       └── Hutang Barang Bekas
+│
+└── Penyesuaian Stok
+    ├── Form Penyesuaian
+    └── Riwayat Log Penyesuaian
+        ├── Filters
+        ├── ADJUSTMENT only
+        ├── Detail
+        └── Pagination
+```
+
+---
+
+# 44. Kesimpulan
+
+Dari empat revisi:
+
+- Pergerakan Stok
+- Filter Mesin Agregasi Stock Out
+- Riwayat Log Penyesuaian Stok
+
+sudah cukup jelas untuk langsung diimplementasikan.
+
+Yang perlu dikunci terlebih dahulu adalah **business rule Hutang Barang Bekas**, terutama:
+
+```text
+- dihitung per siapa?
+- dihitung per item atau tidak?
+- bagaimana partial return?
+- bagaimana return di transaksi berbeda?
+- bagaimana reversal?
+- bagaimana historical data existing?
+```
+
+Urutan paling aman:
+
+```text
+1. Dashboard Pergerakan Stok
+2. Filter Mesin Stock Out
+3. Adjustment History
+4. Lock business rule Hutang Barang Bekas
+5. Implement debt lifecycle
+6. Regression test
+7. Performance review
+8. UAT
+```

@@ -2,14 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\MaterialMaster;
 use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
+use App\Models\Shipment;
+use App\Models\ShipmentItem;
 use App\Models\User;
+use App\Services\PrItemAwardService;
+use App\Services\PurchaseOrderGenerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -683,7 +689,7 @@ class QuotationAvailabilityTest extends TestCase
 
         $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
         $item = $quotation->items()->firstOrFail();
-        $this->assertSame('submitted', $quotation->status);
+        $this->assertSame('all_unavailable', $quotation->status);
         $this->assertFalse($item->is_available);
         $this->assertNull($item->price_per_kg);
         $this->assertSame('0.0000', $item->amount);
@@ -735,6 +741,208 @@ class QuotationAvailabilityTest extends TestCase
             ])
             ->assertRedirect()
             ->assertSessionHas('error');
+
+        // Purchasing CAN request revision for an all_unavailable quotation
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.request-revision', $quotation), [
+                'revision_note' => 'Please provide alternative specifications.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('revision_requested', $quotation->fresh()->status);
+    }
+
+    public function test_quotation_state_machine_transitions_between_all_unavailable_and_submitted_on_revision(): void
+    {
+        ExchangeRate::create([
+            'currency' => 'USD',
+            'rate_to_idr' => 16000,
+            'valid_from' => now()->subMinute(),
+            'created_by' => $this->purchasing->id,
+        ]);
+
+        $pr = $this->createRequisition([
+            ['material_name' => 'Plate A', 'shape' => 'Flat', 'thickness' => 10, 'width' => 1000, 'length' => 2000, 'quantity' => 2, 'weight_needed' => 100],
+            ['material_name' => 'Plate B', 'shape' => 'Flat', 'thickness' => 12, 'width' => 1000, 'length' => 2000, 'quantity' => 1, 'weight_needed' => 120],
+        ]);
+        $prItemA = $pr->items[0];
+        $prItemB = $pr->items[1];
+
+        // 1. Initial submit with all items NOT available -> status = all_unavailable
+        $payloadUnavailable = $this->quotationPayload($pr);
+        $payloadUnavailable['action'] = 'submitted';
+        $payloadUnavailable['items'] = [
+            [
+                'pr_item_id' => $prItemA->id,
+                'is_available' => false,
+                'notes' => 'Out of stock',
+            ],
+            [
+                'pr_item_id' => $prItemB->id,
+                'is_available' => false,
+                'notes' => 'Out of stock',
+            ],
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payloadUnavailable)
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
+        $this->assertSame('all_unavailable', $quotation->status);
+        $this->assertSame('bidding', $pr->fresh()->status);
+
+        // 2. Purchasing requests revision
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.request-revision', $quotation), [
+                'revision_note' => 'Please check if Plate A can be supplied.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('revision_requested', $quotation->fresh()->status);
+
+        // 3. Supplier resubmits with Plate A available and Plate B unavailable -> status becomes 'submitted'
+        $payloadPartial = $this->quotationPayload($pr);
+        $payloadPartial['action'] = 'submitted';
+        $payloadPartial['items'] = [
+            [
+                'pr_item_id' => $prItemA->id,
+                'is_available' => true,
+                'available_qty' => 2,
+                'available_thickness' => 10,
+                'available_width' => 1000,
+                'available_length_input' => '2000',
+                'offered_weight_per_unit' => 100,
+                'price_per_kg' => 3.50,
+            ],
+            [
+                'pr_item_id' => $prItemB->id,
+                'is_available' => false,
+                'notes' => 'Still out of stock',
+            ],
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payloadPartial)
+            ->assertRedirect();
+
+        $this->assertSame('submitted', $quotation->fresh()->status);
+
+        // 4. Purchasing requests another revision
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.request-revision', $quotation), [
+                'revision_note' => 'Please recheck Plate A stock.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('revision_requested', $quotation->fresh()->status);
+
+        // 5. Supplier resubmits with all items unavailable again -> status transitions back to 'all_unavailable'
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payloadUnavailable)
+            ->assertRedirect();
+
+        $this->assertSame('all_unavailable', $quotation->fresh()->status);
+        $this->assertSame('bidding', $pr->fresh()->status);
+    }
+
+    public function test_revision_cannot_delete_awards_or_shipment_lineage(): void
+    {
+        $pr = $this->createRequisition([[], []]);
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $quotation->update(['status' => 'submitted']);
+        $item = $quotation->items()->firstOrFail();
+        $award = app(PrItemAwardService::class)->awardItem($pr->items[0], $item, $this->purchasing);
+        $po = app(PurchaseOrderGenerationService::class)->generateFromAwards([$award->id], $this->purchasing)->first();
+        $shipment = Shipment::create([
+            'supplier_id' => $this->supplier->id, 'shipment_number' => 'SHP/LOCK/001',
+            'status' => 'draft', 'created_by' => $this->supplier->id,
+        ]);
+        $line = ShipmentItem::create([
+            'shipment_id' => $shipment->id, 'purchase_order_id' => $po->id,
+            'quotation_item_id' => $item->id, 'pr_item_award_id' => $award->id, 'shipped_quantity' => '1.0000',
+        ]);
+        $conversation = $this->quotationConversation($quotation);
+        $this->actingAs($this->purchasing)->postJson(route('conversations.quick-action', $conversation), [
+            'action' => 'request_price_revision', 'note' => 'Stale revision attempt',
+        ])->assertUnprocessable()->assertJsonValidationErrors('action');
+        $this->assertSame('accepted', $quotation->fresh()->status);
+        $this->assertDatabaseCount('messages', 0);
+
+        // Defense in depth for an old/inconsistent revision state with a PO link.
+        $quotation->update(['status' => 'revision_requested']);
+        $ids = $quotation->items()->pluck('id')->all();
+        $this->actingAs($this->supplier)->post(route('supplier.quotations.store', $pr), $this->quotationPayload($pr))
+            ->assertRedirect()->assertSessionHas('error');
+        $this->assertSame($ids, $quotation->items()->pluck('id')->all());
+        $this->assertDatabaseHas('pr_item_awards', ['id' => $award->id, 'purchase_order_id' => $po->id]);
+        $this->assertDatabaseHas('shipment_items', ['id' => $line->id, 'quotation_item_id' => $item->id, 'pr_item_award_id' => $award->id]);
+    }
+
+    public function test_unassigned_award_also_blocks_destructive_supplier_revision(): void
+    {
+        $pr = $this->createRequisition();
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $quotation->update(['status' => 'submitted']);
+        $item = $quotation->items()->firstOrFail();
+        $award = app(PrItemAwardService::class)->awardItem($pr->items[0], $item, $this->purchasing);
+        $quotation->update(['status' => 'revision_requested']);
+        $this->actingAs($this->supplier)->post(route('supplier.quotations.store', $pr), $this->quotationPayload($pr))
+            ->assertRedirect()->assertSessionHas('error');
+        $this->assertDatabaseHas('quotation_items', ['id' => $item->id, 'quotation_id' => $quotation->id]);
+        $this->assertDatabaseHas('pr_item_awards', ['id' => $award->id, 'quotation_item_id' => $item->id, 'purchase_order_id' => null]);
+    }
+
+    public function test_supplier_save_revalidates_a_quotation_changed_after_its_initial_read(): void
+    {
+        $pr = $this->createRequisition();
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $ids = $quotation->items()->pluck('id')->all();
+        $changed = false;
+        Quotation::retrieved(function (Quotation $loaded) use ($quotation, &$changed): void {
+            if (! $changed && $loaded->id === $quotation->id) {
+                $changed = true;
+                DB::table('quotations')->where('id', $quotation->id)->update(['status' => 'accepted']);
+            }
+        });
+        $this->actingAs($this->supplier)->post(route('supplier.quotations.store', $pr), $this->quotationPayload($pr))
+            ->assertRedirect()->assertSessionHas('error');
+        $this->assertTrue($changed);
+        $this->assertSame('accepted', $quotation->fresh()->status);
+        $this->assertSame($ids, $quotation->items()->pluck('id')->all());
+    }
+
+    public function test_quick_action_revalidates_after_the_initial_quotation_read(): void
+    {
+        $pr = $this->createRequisition();
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $quotation->update(['status' => 'submitted']);
+        $conversation = $this->quotationConversation($quotation);
+        $changed = false;
+        Quotation::retrieved(function (Quotation $loaded) use ($quotation, &$changed): void {
+            if (! $changed && $loaded->id === $quotation->id) {
+                $changed = true;
+                DB::table('quotations')->where('id', $quotation->id)->update(['status' => 'accepted']);
+            }
+        });
+        $this->actingAs($this->purchasing)->postJson(route('conversations.quick-action', $conversation), [
+            'action' => 'request_price_revision', 'note' => 'Please revise',
+        ])->assertUnprocessable()->assertJsonValidationErrors('action');
+        $this->assertTrue($changed);
+        $this->assertSame('accepted', $quotation->fresh()->status);
+        $this->assertDatabaseCount('messages', 0);
+    }
+
+    private function quotationConversation(Quotation $quotation): Conversation
+    {
+        return Conversation::create([
+            'conversable_type' => PurchaseRequisition::class, 'conversable_id' => $quotation->pr_id,
+            'purchasing_user_id' => $this->purchasing->id, 'supplier_user_id' => $this->supplier->id,
+            'status' => Conversation::STATUS_OPEN,
+        ]);
     }
 
     private function createRequisition(array $items = [[]]): PurchaseRequisition

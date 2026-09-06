@@ -29,6 +29,7 @@ class ExportController extends Controller
                 Quotation::STATUS_SUBMITTED,
                 Quotation::STATUS_ACCEPTED,
                 Quotation::STATUS_REJECTED,
+                Quotation::STATUS_ALL_UNAVAILABLE,
             ])],
             'search' => ['nullable', 'string', 'max:255'],
         ]);

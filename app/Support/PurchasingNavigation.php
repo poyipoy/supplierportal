@@ -18,6 +18,7 @@ class PurchasingNavigation
         'purchasing.comparison.historical',
         'purchasing.comparison.vs-best',
         'purchasing.purchase-orders.index',
+        'purchasing.shipments.index',
         'purchasing.conversations.index',
         'purchasing.claims.index',
         'purchasing.reports.index',

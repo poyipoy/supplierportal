@@ -9,6 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QcInspection;
+use App\Models\Shipment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -119,25 +120,31 @@ class NotificationUrlResolver
 
             $quotation = $this->resolveModel(Quotation::class, $parameters['quotation'] ?? $parameters['id'] ?? null);
 
-            return $quotation?->supplier_id === $user->id;
+            return $quotation !== null && (int) $quotation->supplier_id === (int) $user->id;
         }
 
         if (Str::startsWith($name, 'supplier.purchase-orders.')) {
             $po = $this->resolveModel(PurchaseOrder::class, $parameters['id'] ?? null);
 
-            return $po?->supplier_id === $user->id;
+            return $po !== null && (int) $po->supplier_id === (int) $user->id;
         }
 
         if (Str::startsWith($name, 'supplier.claims.')) {
             $claim = $this->resolveModel(MaterialClaim::class, $parameters['claim'] ?? $parameters['id'] ?? null);
 
-            return $claim?->supplier_id === $user->id;
+            return $claim !== null && (int) $claim->supplier_id === (int) $user->id;
         }
 
         if (Str::startsWith($name, 'supplier.conversations.')) {
             $conversation = $this->resolveModel(Conversation::class, $parameters['id'] ?? null);
 
-            return $conversation?->supplier_user_id === $user->id;
+            return $conversation !== null && (int) $conversation->supplier_user_id === (int) $user->id;
+        }
+
+        if (Str::startsWith($name, 'supplier.shipments.')) {
+            $shipment = $this->resolveModel(Shipment::class, $parameters['shipment'] ?? $parameters['id'] ?? null);
+
+            return $shipment !== null && (int) $shipment->supplier_id === (int) $user->id;
         }
 
         return true;
@@ -222,6 +229,9 @@ class NotificationUrlResolver
             'purchasing.conversations.show',
             'supplier.conversations.show' => ['id', Conversation::class],
 
+            'purchasing.shipments.show',
+            'supplier.shipments.show' => ['shipment', Shipment::class],
+
             'admin.users.show',
             'admin.users.edit' => ['user', User::class],
             default => null,
@@ -267,7 +277,7 @@ class NotificationUrlResolver
                     return null;
                 }
 
-                if ($model instanceof User && $model->id !== $user->id) {
+                if ($model instanceof User && (int) $model->id !== (int) $user->id) {
                     return null;
                 }
             }
@@ -336,7 +346,7 @@ class NotificationUrlResolver
 
     private function purchaseOrderUrl(?PurchaseOrder $po, User $user): ?string
     {
-        if (! $po || ($user->role === 'supplier' && $po->supplier_id !== $user->id)) {
+        if (! $po || ($user->role === 'supplier' && (int) $po->supplier_id !== (int) $user->id)) {
             return null;
         }
 
@@ -367,7 +377,7 @@ class NotificationUrlResolver
     private function quotationUrl(mixed $id, User $user): ?string
     {
         $quotation = $this->resolveModel(Quotation::class, $id);
-        if (! $quotation || ($user->role === 'supplier' && $quotation->supplier_id !== $user->id)) {
+        if (! $quotation || ($user->role === 'supplier' && (int) $quotation->supplier_id !== (int) $user->id)) {
             return null;
         }
 
@@ -381,7 +391,7 @@ class NotificationUrlResolver
     private function claimUrl(mixed $id, User $user): ?string
     {
         $claim = $this->resolveModel(MaterialClaim::class, $id);
-        if (! $claim || ($user->role === 'supplier' && $claim->supplier_id !== $user->id)) {
+        if (! $claim || ($user->role === 'supplier' && (int) $claim->supplier_id !== (int) $user->id)) {
             return null;
         }
 

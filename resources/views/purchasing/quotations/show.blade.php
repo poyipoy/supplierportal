@@ -292,8 +292,8 @@
 
             {{-- Review Actions Card --}}
             <x-ui.card title="Commercial Review Actions" description="Actions based on quotation state.">
-                @if($quotation->status === 'submitted' && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
-                    @if($hasAvailableItems)
+                @if(in_array($quotation->status, ['submitted', 'all_unavailable'], true) && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
+                    @if($hasAvailableItems && $quotation->status === 'submitted')
                         <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="tw-mb-2.5">
                             @csrf
                             <x-ui.button type="submit" size="sm" class="tw-w-full">
@@ -336,9 +336,9 @@
                 @endif
 
                 @if($canCreatePo)
-                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.create', $quotation)" size="sm" class="tw-w-full tw-mb-2.5">
+                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.comparison.show', $quotation->purchaseRequisition)" size="sm" class="tw-w-full tw-mb-2.5">
                         <x-ui.icon name="receipt" size="sm" />
-                        <span>Create PO from Quotation</span>
+                        <span>Select Item Awards / Generate PO</span>
                     </x-ui.button>
                 @elseif(! $hasAvailableItems && in_array($quotation->status, ['submitted', 'accepted'], true) && $quotation->purchaseOrders->isEmpty() && $quotation->status === 'accepted')
                     <x-ui.alert tone="warning" title="No available materials" class="tw-mb-2.5">

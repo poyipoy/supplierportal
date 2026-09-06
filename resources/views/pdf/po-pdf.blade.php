@@ -299,7 +299,7 @@
             </thead>
             <tbody>
                 @php $grandTotalFx = 0; $grandTotalIdr = 0; $globalNo = 1; @endphp
-                @foreach($po->quotations as $quotation)
+                @foreach($po->commercialQuotations() as $quotation)
                     @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                     @if($po->quotations->count() > 1)
                         <tr>

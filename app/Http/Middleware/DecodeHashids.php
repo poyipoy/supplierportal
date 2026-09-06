@@ -31,12 +31,14 @@ class DecodeHashids
         'quotation_id',  // Purchasing: purchase-orders/create
         'inspection_id', // Purchasing: claims/create
         'supplier_id',   // Purchasing: conversations/start-pr
+        'shipment_id',   // Shipments
 
         // ── Route::resource() auto-named singular parameters ───────────────────
         'requisition',   // Route::resource('requisitions') → PurchaseRequisition
         'quotation',     // Route::resource('quotations')   → Quotation (purchasing + supplier)
         'claim',         // Route::resource('claims')       → MaterialClaim (purchasing resource)
         'user',          // Route::resource('users')        → User (admin)
+        'shipment',      // Route::resource('shipments')    → Shipment
     ];
 
     /**

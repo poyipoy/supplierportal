@@ -904,7 +904,15 @@ class AsyncExportQueueTest extends TestCase
             'length' => 1000,
             'weight_needed' => 25,
         ]);
-        $this->quotation->items()->create([
+        $secondQuotation = Quotation::create([
+            'pr_id' => $this->requisition->id,
+            'supplier_id' => $this->supplier->id,
+            'exchange_rate_id' => $this->quotation->exchange_rate_id,
+            'currency' => 'USD',
+            'status' => 'submitted',
+            'submitted_at' => '2026-08-15 10:00:00',
+        ]);
+        $secondQuotation->items()->create([
             'pr_item_id' => $secondItem->id,
             'price_per_kg' => 12,
             'amount' => 300,
@@ -917,7 +925,7 @@ class AsyncExportQueueTest extends TestCase
             'created_by' => $this->purchasing->id,
             'estimated_arrival' => '2026-09-05',
         ]);
-        $secondPo->quotations()->attach($this->quotation->id);
+        $secondPo->quotations()->attach($secondQuotation->id);
 
         $inspection = QcInspection::query()->firstOrFail();
         $inspection->items()->create(['pr_item_id' => $this->requisition->items()->firstOrFail()->id, 'status' => 'ok']);

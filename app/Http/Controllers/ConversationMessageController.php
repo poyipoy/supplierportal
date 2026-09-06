@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
@@ -216,6 +217,20 @@ class ConversationMessageController extends Controller
         }
 
         $message = DB::transaction(function () use ($conversation, $quotation, $validated, $note) {
+            $pr = PurchaseRequisition::whereKey($quotation->pr_id)->lockForUpdate()->firstOrFail();
+            $quotation = Quotation::whereKey($quotation->id)->where('pr_id', $pr->id)
+                ->lockForUpdate()->firstOrFail();
+            $quotation->setRelation('purchaseRequisition', $pr);
+
+            if (in_array($validated['action'], ['request_price_revision', 'accept_quotation', 'reject_quotation'], true)
+                && ($quotation->purchaseOrders()->withTrashed()->exists()
+                    || PrItemAward::where('quotation_id', $quotation->id)
+                        ->orWhereIn('quotation_item_id', $quotation->items()->select('id'))->exists())) {
+                throw ValidationException::withMessages([
+                    'action' => 'This quotation is used by an award or Purchase Order and cannot be changed.',
+                ]);
+            }
+
             return match ($validated['action']) {
                 'request_price_revision' => $this->requestPriceRevision($conversation, $quotation, $note),
                 'request_validity_extension' => $this->sendActionMessage(
