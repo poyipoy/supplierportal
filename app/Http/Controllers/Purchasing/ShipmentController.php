@@ -8,6 +8,7 @@ use App\Models\ShipmentDocument;
 use App\Models\User;
 use App\Services\ShipmentService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ShipmentController extends Controller
 {
@@ -20,22 +21,41 @@ class ShipmentController extends Controller
      */
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'status' => ['nullable', 'string', Rule::in(Shipment::STATUSES)],
+        ]);
+
         $query = Shipment::query()
             ->with(['supplier', 'items.purchaseOrder', 'documents.latestAttachment'])
             ->latest();
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+        if (($validated['status'] ?? null) !== null && $validated['status'] !== '') {
+            $query->where('status', $validated['status']);
         }
 
         if ($request->filled('supplier_id')) {
-            $query->where('supplier_id', $request->query('supplier_id'));
+            $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
+            $query->where('supplier_id', $supplier->getKey());
         }
 
         $shipments = $query->paginate(15)->withQueryString();
         $suppliers = User::where('role', 'supplier')->orderBy('name')->get();
 
         return view('purchasing.shipments.index', compact('shipments', 'suppliers'));
+    }
+
+    private function resolveSupplierFilter(mixed $value): ?User
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        abort_unless(is_string($value) && ! ctype_digit($value), 404);
+
+        $supplier = (new User)->resolveRouteBinding($value);
+        abort_unless($supplier instanceof User && $supplier->role === 'supplier', 404);
+
+        return $supplier;
     }
 
     /**

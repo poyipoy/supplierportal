@@ -41,7 +41,7 @@
                     <select name="supplier_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">All Suppliers</option>
                         @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" {{ (string) request('supplier_id') === (string) $supplier->id ? 'selected' : '' }}>
+                            <option value="{{ $supplier->getRouteKey() }}" {{ (string) request('supplier_id') === (string) $supplier->getRouteKey() ? 'selected' : '' }}>
                                 {{ $supplier->name }}
                             </option>
                         @endforeach

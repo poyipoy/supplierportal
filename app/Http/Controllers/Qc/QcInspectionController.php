@@ -114,8 +114,11 @@ class QcInspectionController extends Controller
         $shipment = null;
         if ($request->filled('shipment_id')) {
             $rawShipmentId = $request->query('shipment_id');
-            $shipment = (new Shipment)->resolveRouteBinding($rawShipmentId)
-                ?? (is_numeric($rawShipmentId) ? Shipment::find($rawShipmentId) : null);
+            $shipment = (new Shipment)->resolveRouteBinding($rawShipmentId);
+
+            if (! $shipment) {
+                return redirect()->route('qc.inspections.index')->with('error', 'The specified shipment could not be found.');
+            }
         }
 
         if (! $shipment) {
@@ -194,8 +197,7 @@ class QcInspectionController extends Controller
         $shipment = null;
         if ($request->filled('shipment_id')) {
             $rawShipmentId = $request->input('shipment_id');
-            $shipment = (new Shipment)->resolveRouteBinding($rawShipmentId)
-                ?? (is_numeric($rawShipmentId) ? Shipment::find($rawShipmentId) : null);
+            $shipment = (new Shipment)->resolveRouteBinding($rawShipmentId);
         }
         $shipmentId = $shipment?->id;
         $shipment = null;

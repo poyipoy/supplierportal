@@ -12,6 +12,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
+use App\Models\Shipment;
 use App\Models\User;
 use App\Support\PurchasingNavigation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -242,6 +243,44 @@ class HashidUrlSecurityTest extends TestCase
         $this->assertFalse(PurchasingNavigation::isSafeUrl('/purchasing/claims/data-action'));
         $this->assertFalse(PurchasingNavigation::isSafeUrl('/purchasing/claims/data-history'));
         $this->assertTrue(PurchasingNavigation::isSafeUrl('/purchasing/claims'));
+    }
+
+    public function test_purchasing_shipment_supplier_filter_requires_supplier_hashid_and_valid_status(): void
+    {
+        $supplierShipment = Shipment::create([
+            'shipment_number' => 'SHP/HASH/001',
+            'supplier_id' => $this->supplier->id,
+            'status' => Shipment::STATUS_DRAFT,
+            'created_by' => $this->purchasing->id,
+        ]);
+        $otherSupplierShipment = Shipment::create([
+            'shipment_number' => 'SHP/HASH/002',
+            'supplier_id' => $this->otherSupplier->id,
+            'status' => Shipment::STATUS_DRAFT,
+            'created_by' => $this->purchasing->id,
+        ]);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.shipments.index', ['supplier_id' => $this->supplier->id]))
+            ->assertNotFound();
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.shipments.index', ['supplier_id' => 'invalid-hash']))
+            ->assertNotFound();
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.shipments.index', [
+                'supplier_id' => $this->supplier->getRouteKey(),
+                'status' => Shipment::STATUS_DRAFT,
+            ]))
+            ->assertOk()
+            ->assertSee($supplierShipment->shipment_number)
+            ->assertDontSee($otherSupplierShipment->shipment_number)
+            ->assertSee('value="'.$this->supplier->getRouteKey().'" selected', false);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.shipments.index', ['status' => 'not-a-shipment-status']))
+            ->assertSessionHasErrors('status');
     }
 
     public function test_rendered_links_comparison_history_pdf_and_chat_payload_use_hashes(): void
