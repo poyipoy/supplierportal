@@ -567,14 +567,21 @@ const updateAwardPreviews = () => {
 
     if (!previewContainer || !groupContainer) return;
 
+    const textElement = (tag, className, text) => {
+        const element = document.createElement(tag);
+        element.className = className;
+        element.textContent = text;
+        return element;
+    };
+
     if (radios.length === 0) {
-        previewContainer.innerHTML = '<span class="tw-text-on-surface-variant">No items selected yet. Select winning offers above.</span>';
-        groupContainer.innerHTML = '<span class="tw-text-on-surface-variant">1 PO will be created per winning supplier group upon confirmation.</span>';
+        previewContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', 'No items selected yet. Select winning offers above.'));
+        groupContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', '1 PO will be created per winning supplier group upon confirmation.'));
         return;
     }
 
-    let itemsHtml = '<ul class="tw-list-disc tw-ps-4 tw-space-y-1">';
-    const supplierMap = {};
+    const itemsList = textElement('ul', 'tw-list-disc tw-ps-4 tw-space-y-1', '');
+    const supplierMap = new Map();
 
     radios.forEach(radio => {
         const itemName = radio.dataset.prItemName;
@@ -582,28 +589,34 @@ const updateAwardPreviews = () => {
         const supplierId = radio.dataset.supplierId;
         const price = radio.dataset.price;
 
-        itemsHtml += `<li><strong>${itemName}</strong> &rarr; <span class="text-primary fw-semibold">${supplierName}</span> (${price})</li>`;
+        const item = document.createElement('li');
+        item.append(
+            textElement('strong', '', itemName),
+            document.createTextNode(' → '),
+            textElement('span', 'text-primary fw-semibold', supplierName),
+            document.createTextNode(` (${price})`),
+        );
+        itemsList.append(item);
 
-        if (!supplierMap[supplierId]) {
-            supplierMap[supplierId] = { name: supplierName, items: [] };
+        if (!supplierMap.has(supplierId)) {
+            supplierMap.set(supplierId, { name: supplierName, items: [] });
         }
-        supplierMap[supplierId].items.push(itemName);
+        supplierMap.get(supplierId).items.push(itemName);
     });
-    itemsHtml += '</ul>';
-    previewContainer.innerHTML = itemsHtml;
+    previewContainer.replaceChildren(itemsList);
 
-    let groupHtml = '<div class="tw-space-y-2">';
+    const groups = textElement('div', 'tw-space-y-2', '');
     let poCount = 0;
-    for (const sId in supplierMap) {
+    for (const supplier of supplierMap.values()) {
         poCount++;
-        const s = supplierMap[sId];
-        groupHtml += `<div class="tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant">
-            <div class="fw-bold tw-text-ui-xs text-primary">PO #${poCount} &bull; ${s.name}</div>
-            <div class="tw-text-on-surface-variant tw-text-ui-xs">${s.items.length} item(s): ${s.items.join(', ')}</div>
-        </div>`;
+        const group = textElement('div', 'tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant', '');
+        group.append(
+            textElement('div', 'fw-bold tw-text-ui-xs text-primary', `PO #${poCount} • ${supplier.name}`),
+            textElement('div', 'tw-text-on-surface-variant tw-text-ui-xs', `${supplier.items.length} item(s): ${supplier.items.join(', ')}`),
+        );
+        groups.append(group);
     }
-    groupHtml += '</div>';
-    groupContainer.innerHTML = groupHtml;
+    groupContainer.replaceChildren(groups);
 };
 
 document.querySelectorAll('.award-radio').forEach(radio => {

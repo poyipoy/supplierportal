@@ -18,6 +18,7 @@ use App\Services\ShipmentService;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
 use Tests\TestCase;
@@ -331,6 +332,35 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 7.0],
             ],
         ]);
+    }
+
+    public function test_saved_draft_submission_locks_lines_before_any_snapshot_and_revalidates_balance(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+        $items = [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => '10.0000']];
+        $first = $this->shipmentService->createDraft($this->supplierA, ['items' => $items]);
+        $second = $this->shipmentService->createDraft($this->supplierA, ['items' => $items]);
+        $queries = [];
+        DB::listen(function ($query) use (&$queries): void {
+            $queries[] = strtolower($query->sql);
+        });
+        $this->actingAs($this->supplierA)->post(route('supplier.shipments.submit', $first))
+            ->assertRedirect()->assertSessionHas('success');
+        $this->post(route('supplier.shipments.submit', $second))->assertRedirect()->assertSessionHas('error');
+        $this->assertSame('submitted', $first->fresh()->status);
+        $this->assertSame('draft', $second->fresh()->status);
+        $this->assertNull($second->fresh()->submitted_at);
+        $this->assertSame('10.0000', $second->items()->sole()->shipped_quantity);
+        $this->assertSame(100000, $po->itemFulfillmentStatus($qItem->id)['allocated_units']);
+        $poLock = collect($queries)->search(fn ($sql) => str_contains($sql, 'from `purchase_orders`') && str_contains($sql, 'for update'));
+        $this->assertNotFalse($poLock);
+        $earlySelects = collect(array_slice($queries, 0, $poLock))
+            ->filter(fn ($sql) => str_starts_with($sql, 'select') && str_contains($sql, 'shipment_items'));
+        $this->assertNotEmpty($earlySelects);
+        foreach ($earlySelects as $sql) {
+            $this->assertStringContainsString('for update', $sql);
+        }
     }
 
     public function test_cannot_allocate_item_belonging_to_different_po(): void

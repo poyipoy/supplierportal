@@ -8,7 +8,6 @@ use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -28,11 +27,20 @@ class PrItemAwardService
         $prItemId = $prItem instanceof PrItem ? $prItem->id : $prItem;
         $quotationItemId = $quotationItem instanceof QuotationItem ? $quotationItem->id : $quotationItem;
 
-        return DB::transaction(function () use ($prItemId, $quotationItemId, $user) {
-            // Deterministic pessimistic lock on PR item
+        // Resolve only the parent identity before starting the transaction.
+        $prId = PrItem::whereKey($prItemId)->value('pr_id');
+        if (! $prId) {
+            throw new InvalidArgumentException("PR item #{$prItemId} not found.");
+        }
+
+        return DB::transaction(function () use ($prId, $prItemId, $quotationItemId, $user) {
+            PurchaseRequisition::whereKey($prId)->lockForUpdate()->firstOrFail();
+
+            // Parent PR always precedes PR items and quotation locks.
             /** @var PrItem|null $lockedPrItem */
             $lockedPrItem = PrItem::query()
                 ->where('id', $prItemId)
+                ->where('pr_id', $prId)
                 ->lockForUpdate()
                 ->first();
 
@@ -40,10 +48,12 @@ class PrItemAwardService
                 throw new InvalidArgumentException("PR item #{$prItemId} not found.");
             }
 
-            // Deterministic pessimistic lock on Quotation item with quotation loaded
+            $quotationId = QuotationItem::whereKey($quotationItemId)->value('quotation_id');
+            $quotation = Quotation::whereKey($quotationId)->lockForUpdate()->first();
+
+            // Lock the child only after its quotation, then revalidate both.
             /** @var QuotationItem|null $lockedQuotationItem */
             $lockedQuotationItem = QuotationItem::query()
-                ->with(['quotation.supplier'])
                 ->where('id', $quotationItemId)
                 ->lockForUpdate()
                 ->first();
@@ -52,22 +62,21 @@ class PrItemAwardService
                 throw new InvalidArgumentException("Quotation item #{$quotationItemId} not found.");
             }
 
-            $quotation = $lockedQuotationItem->quotation;
-            if (! $quotation) {
+            if (! $quotation || (int) $lockedQuotationItem->quotation_id !== (int) $quotation->id) {
                 throw new InvalidArgumentException("Quotation item #{$quotationItemId} has no associated quotation.");
             }
 
             // Invariant & validation checks
             if ((int) $lockedQuotationItem->pr_item_id !== (int) $lockedPrItem->id) {
-                throw new InvalidArgumentException("Quotation item does not match the requested PR item.");
+                throw new InvalidArgumentException('Quotation item does not match the requested PR item.');
             }
 
             if ((int) $quotation->pr_id !== (int) $lockedPrItem->pr_id) {
-                throw new InvalidArgumentException("Quotation does not belong to the same Purchase Requisition.");
+                throw new InvalidArgumentException('Quotation does not belong to the same Purchase Requisition.');
             }
 
             if (! $lockedQuotationItem->is_available) {
-                throw new InvalidArgumentException("Cannot award an item that is marked as unavailable by the supplier.");
+                throw new InvalidArgumentException('Cannot award an item that is marked as unavailable by the supplier.');
             }
 
             if ($quotation->status === Quotation::STATUS_ALL_UNAVAILABLE) {
@@ -113,9 +122,7 @@ class PrItemAwardService
     /**
      * Award multiple PR items atomically (alias for awardBatch).
      *
-     * @param PurchaseRequisition $pr
-     * @param array<int, int> $selections Map of pr_item_id => quotation_item_id
-     * @param User $user
+     * @param  array<int, int>  $selections  Map of pr_item_id => quotation_item_id
      * @return Collection<int, PrItemAward>
      */
     public function saveAwards(
@@ -129,9 +136,7 @@ class PrItemAwardService
     /**
      * Award multiple PR items atomically.
      *
-     * @param PurchaseRequisition $pr
-     * @param array<int, int> $selections Map of pr_item_id => quotation_item_id
-     * @param User $user
+     * @param  array<int, int>  $selections  Map of pr_item_id => quotation_item_id
      * @return Collection<int, PrItemAward>
      */
     public function awardBatch(
@@ -144,6 +149,7 @@ class PrItemAwardService
         }
 
         return DB::transaction(function () use ($pr, $selections, $user) {
+            $pr = PurchaseRequisition::whereKey($pr->id)->lockForUpdate()->firstOrFail();
             $prItemIds = array_keys($selections);
             sort($prItemIds);
 
@@ -162,8 +168,13 @@ class PrItemAwardService
                 throw new InvalidArgumentException("One or more PR items do not belong to PR #{$pr->id}.");
             }
 
-            // Lock all Quotation items deterministically by ID
-            $lockedQuotationItems = QuotationItem::with(['quotation.supplier'])
+            $quotationIds = QuotationItem::whereIn('id', $quotationItemIds)
+                ->pluck('quotation_id')->unique()->sort()->values()->all();
+            $lockedQuotations = Quotation::whereIn('id', $quotationIds)
+                ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+
+            // Quotation parents precede their item rows.
+            $lockedQuotationItems = QuotationItem::query()
                 ->whereIn('id', $quotationItemIds)
                 ->orderBy('id')
                 ->lockForUpdate()
@@ -171,11 +182,12 @@ class PrItemAwardService
                 ->keyBy('id');
 
             if ($lockedQuotationItems->count() !== count(array_unique($quotationItemIds))) {
-                throw new InvalidArgumentException("One or more quotation items could not be found.");
+                throw new InvalidArgumentException('One or more quotation items could not be found.');
             }
 
             // Lock existing awards for these PR items
             $existingAwards = PrItemAward::whereIn('pr_item_id', $prItemIds)
+                ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('pr_item_id');
@@ -190,7 +202,10 @@ class PrItemAwardService
                     throw new InvalidArgumentException("Invalid item selection for PR item #{$prItemId}.");
                 }
 
-                $quotation = $quotationItem->quotation;
+                $quotation = $lockedQuotations->get($quotationItem->quotation_id);
+                if (! $quotation) {
+                    throw new InvalidArgumentException("Quotation for item #{$quotationItemId} changed or could not be found.");
+                }
 
                 if ((int) $quotationItem->pr_item_id !== (int) $prItem->id) {
                     throw new InvalidArgumentException("Quotation item #{$quotationItemId} does not match PR item #{$prItemId}.");

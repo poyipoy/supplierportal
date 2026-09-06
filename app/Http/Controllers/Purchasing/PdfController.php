@@ -18,6 +18,7 @@ class PdfController extends Controller
             'supplier',
             'quotations.supplier',
             'quotations.items.prItem',
+            'awards',
             'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
             'creator',
@@ -29,7 +30,7 @@ class PdfController extends Controller
 
         $po = $query->findOrFail($id);
 
-        $quotationRates = $po->quotations->mapWithKeys(function ($q) {
+        $quotationRates = $po->commercialQuotations()->mapWithKeys(function ($q) {
             return [$q->id => $q->exchange_rate];
         });
 

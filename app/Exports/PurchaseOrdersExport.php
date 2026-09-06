@@ -55,6 +55,7 @@ class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColum
             'supplier',
             'quotations.purchaseRequisition.period',
             'quotations.items.prItem',
+            'awards',
             'quotations.exchange_rate',
         ]);
 
@@ -106,15 +107,16 @@ class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColum
     public function map($po): array
     {
         $prNumbers = $po->pr_reference;
-        $materials = $po->quotations
+        $commercialQuotations = $po->commercialQuotations();
+        $materials = $commercialQuotations
             ->flatMap(fn ($quotation) => $quotation->items->map(fn ($item) => $item->prItem?->material_name))
             ->filter()
             ->implode(', ') ?: '-';
-        $totalAmount = (float) $po->quotations->sum(fn ($quotation) => $quotation->items->sum(fn ($item) => $item->resolved_amount));
+        $totalAmount = (float) $commercialQuotations->sum(fn ($quotation) => $quotation->items->sum(fn ($item) => $item->resolved_amount));
         $currency = $po->currency ?? '-';
         $totalIdr = 0.0;
 
-        foreach ($po->quotations as $quotation) {
+        foreach ($commercialQuotations as $quotation) {
             $rate = (float) ($quotation->exchange_rate?->rate_to_idr ?? 0);
             foreach ($quotation->items as $item) {
                 $totalIdr += $item->resolved_amount * $rate;

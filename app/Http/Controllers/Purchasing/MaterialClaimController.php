@@ -106,8 +106,8 @@ class MaterialClaimController extends Controller
             return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'This inspection is not NG and does not require a claim.');
         }
 
-        // Ensure there is no active claim.
-        if (MaterialClaim::where('inspection_id', $inspection_id)->whereIn('status', ['pending', 'responded', 'escalated'])->exists()) {
+        // One inspection has one claim lifecycle, including resolved history.
+        if (MaterialClaim::withTrashed()->where('inspection_id', $inspection_id)->exists()) {
             return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'A claim has already been created for this inspection.');
         }
 
@@ -123,11 +123,12 @@ class MaterialClaimController extends Controller
             'deadline' => 'required|date|after:today',
         ]);
 
-        [$claim, $inspection] = DB::transaction(function () use ($request) {
-            $inspection = QcInspection::whereKey($request->inspection_id)
-                ->lockForUpdate()
-                ->firstOrFail();
-            $inspection->load('purchaseOrder.supplier');
+        $inspectionReference = QcInspection::findOrFail($request->inspection_id);
+        [$claim, $inspection] = DB::transaction(function () use ($request, $inspectionReference) {
+            $po = PurchaseOrder::whereKey($inspectionReference->po_id)->lockForUpdate()->firstOrFail();
+            $inspection = QcInspection::whereKey($inspectionReference->id)
+                ->where('po_id', $po->id)->lockForUpdate()->firstOrFail();
+            $inspection->setRelation('purchaseOrder', $po->load('supplier'));
 
             if ($inspection->status !== 'ng') {
                 throw ValidationException::withMessages([
@@ -141,11 +142,10 @@ class MaterialClaimController extends Controller
                 ]);
             }
 
-            if (MaterialClaim::where('inspection_id', $inspection->id)
-                ->whereIn('status', ['pending', 'responded', 'escalated'])
-                ->exists()) {
+            if (MaterialClaim::withTrashed()->where('inspection_id', $inspection->id)
+                ->orderBy('id')->lockForUpdate()->get()->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'inspection_id' => 'An active claim already exists for this inspection.',
+                    'inspection_id' => 'A claim already exists for this inspection, including resolved history.',
                 ]);
             }
 
@@ -159,6 +159,8 @@ class MaterialClaimController extends Controller
                 'resolution_expected' => $request->resolution_expected,
                 'deadline' => $request->deadline,
             ]);
+
+            $po->reconcileOperationalStatus();
 
             return [$claim, $inspection];
         });
@@ -213,6 +215,7 @@ class MaterialClaimController extends Controller
                 $po = $claimReference->po_id
                     ? PurchaseOrder::whereKey($claimReference->po_id)->lockForUpdate()->first()
                     : null;
+                QcInspection::withTrashed()->whereKey($claimReference->inspection_id)->lockForUpdate()->firstOrFail();
                 $claim = MaterialClaim::whereKey($claimReference->id)->lockForUpdate()->firstOrFail();
 
                 if ($claim->status !== 'responded') {

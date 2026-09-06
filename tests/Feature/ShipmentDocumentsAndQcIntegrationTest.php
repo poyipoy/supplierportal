@@ -794,6 +794,11 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             'po_id' => $po->id,
             'shipment_id' => $shipment->id,
         ]);
+        foreach ($lockQueries as $sql) {
+            if (str_contains($sql, 'from `shipment_items`')) {
+                $this->assertStringContainsString('`shipment_id`', $sql, 'QC must not lock sibling draft lines while holding PO.');
+            }
+        }
 
         $shipmentLockIndex = collect($lockQueries)->search(
             fn (string $sql): bool => str_contains($sql, '`shipments`')
@@ -974,6 +979,62 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $this->assertSame('completed', $po->fresh()->status);
         $this->assertTrue($po->fresh()->isFullyFulfilledAndInspected());
+
+        $before = $po->fresh()->itemFulfillmentStatus($qItem->id);
+        $claimCount = MaterialClaim::count();
+        $this->actingAs($this->purchasingUser)->post(route('purchasing.claims.store'), [
+            'inspection_id' => $inspection->id,
+            'description' => 'Attempt to recreate resolved claim',
+            'resolution_expected' => 'replacement',
+            'deadline' => now()->addDays(7)->toDateString(),
+        ])->assertRedirect()->assertSessionHasErrors('inspection_id');
+        $this->assertSame($claimCount, MaterialClaim::count());
+        $this->assertSame('completed', $po->fresh()->status);
+        $this->assertSame($before, $po->fresh()->itemFulfillmentStatus($qItem->id));
+        $this->assertSame(200000, $before['accepted_units']);
+        $this->assertSame(0, $before['reserved_units']);
+        $this->assertSame(0, $before['remaining_units']);
+    }
+
+    public function test_claim_creation_serializes_po_and_allows_a_different_ng_inspection(): void
+    {
+        [, $prItem, , $qItem, $po] = $this->createAwardedPo(20.0);
+        $first = $this->createShipment($po, $qItem, 5.0, true);
+        $second = $this->createShipment($po, $qItem, 5.0, true);
+        foreach ([$first, $second] as $shipment) {
+            $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
+                'shipment_id' => $shipment->hash,
+                'items' => [$this->qcItemPayload($prItem, 5.0, 'ng')],
+                'attachments' => [0 => [UploadedFile::fake()->image('claim-ng.jpg')]],
+            ])->assertRedirect();
+        }
+        $inspections = QcInspection::where('po_id', $po->id)->orderBy('id')->get();
+        $this->assertCount(2, $inspections);
+        $po->update(['status' => 'active']);
+        $lockQueries = [];
+        DB::listen(function ($query) use (&$lockQueries): void {
+            if (str_contains(strtolower($query->sql), 'for update')) {
+                $lockQueries[] = strtolower($query->sql);
+            }
+        });
+        foreach ($inspections as $inspection) {
+            $payload = [
+                'inspection_id' => $inspection->id,
+                'description' => 'NG material', 'resolution_expected' => 'replacement',
+                'deadline' => now()->addDays(7)->toDateString(),
+            ];
+            $this->actingAs($this->purchasingUser)->post(route('purchasing.claims.store'), $payload)
+                ->assertRedirect()->assertSessionHas('success');
+            $this->assertSame('claim_needed', $po->fresh()->status);
+            $this->assertSame(1, MaterialClaim::where('inspection_id', $inspection->id)->count());
+            $this->post(route('purchasing.claims.store'), $payload)->assertRedirect()->assertSessionHasErrors('inspection_id');
+            $this->assertSame(1, MaterialClaim::where('inspection_id', $inspection->id)->count());
+        }
+        $this->assertDatabaseCount('material_claims', 2);
+        $this->assertGreaterThanOrEqual(3, count($lockQueries), 'Claim creation must lock PO, inspection, and claim rows.');
+        $this->assertStringContainsString('purchase_orders', $lockQueries[0]);
+        $this->assertStringContainsString('qc_inspections', $lockQueries[1]);
+        $this->assertStringContainsString('material_claims', $lockQueries[2]);
     }
 
     public function test_mixed_ok_and_ng_lines_count_fulfillment_per_shipment_item(): void

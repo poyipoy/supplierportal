@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Supplier;
 use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
+use App\Models\QcInspection;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
@@ -89,6 +90,7 @@ class ClaimController extends Controller
                 $po = $claimReference->po_id
                     ? PurchaseOrder::whereKey($claimReference->po_id)->lockForUpdate()->first()
                     : null;
+                QcInspection::withTrashed()->whereKey($claimReference->inspection_id)->lockForUpdate()->firstOrFail();
                 $claim = MaterialClaim::whereKey($claimReference->id)->lockForUpdate()->firstOrFail();
 
                 if ((int) $claim->supplier_id !== (int) auth()->id()) {

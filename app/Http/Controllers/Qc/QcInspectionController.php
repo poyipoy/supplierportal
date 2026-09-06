@@ -223,13 +223,12 @@ class QcInspectionController extends Controller
                 throw new \RuntimeException('This PO is not valid for inspection.');
             }
 
-            $poShipmentItems = ShipmentItem::query()
-                ->where('purchase_order_id', $po->id)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
+            // The PO lock serializes participation. Lock only the inspected
+            // Shipment's expected lines below, never a sibling draft's rows.
+            $hasShipmentItems = ShipmentItem::query()
+                ->where('purchase_order_id', $po->id)->exists();
 
-            if ($poShipmentItems->isNotEmpty() && ! $request->filled('shipment_id')) {
+            if ($hasShipmentItems && ! $request->filled('shipment_id')) {
                 throw new \RuntimeException('A shipment is required for inspection because this Purchase Order has shipment items.');
             }
 
@@ -276,7 +275,7 @@ class QcInspectionController extends Controller
                     throw new \RuntimeException('The inspection must contain every item from the selected shipment for this Purchase Order exactly once.');
                 }
             } else {
-                if ($poShipmentItems->isNotEmpty()) {
+                if ($hasShipmentItems) {
                     throw new \RuntimeException('Shipment-aware QC items must reference a shipment item.');
                 }
 

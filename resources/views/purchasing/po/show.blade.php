@@ -311,7 +311,7 @@
                             $grandTotalIdr = 0;
                             $poRemark = trim((string) $po->notes);
                         @endphp
-                        @foreach($po->quotations as $quotation)
+                        @foreach($po->commercialQuotations() as $quotation)
                             @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                             @if($po->quotations->count() > 1)
                                 <tr class="bg-primary-subtle text-primary border-top border-bottom">

@@ -35,6 +35,7 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
             'quotations.purchaseRequisition.period',
             'quotations.exchange_rate',
             'quotations.items.prItem',
+            'awards',
             'documents',
             'qcInspections',
             'materialClaims' => $claimRelation,
@@ -60,7 +61,7 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
                 : '-';
         };
 
-        return $po->quotations->flatMap(function ($quotation) use (
+        return $po->commercialQuotations()->flatMap(function ($quotation) use (
             $po,
             $supplierName,
             $latestInspection,
@@ -192,9 +193,7 @@ class PurchaseOrderDetailExport implements FromCollection, TracksExportProgress,
 
         $purchaseOrder = $query->firstOrFail();
 
-        return $purchaseOrder->quotations()
-            ->join('quotation_items', 'quotation_items.quotation_id', '=', 'quotations.id')
-            ->count('quotation_items.id');
+        return $purchaseOrder->commercialQuotationItems()->count();
     }
 
     public function columnWidths(): array

@@ -9,6 +9,7 @@ use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\Period;
 use App\Models\PrItem;
+use App\Models\PrItemAward;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -507,6 +508,22 @@ class QuotationController extends Controller
         try {
             DB::beginTransaction();
 
+            $pr = PurchaseRequisition::whereKey($pr->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
+                throw new \RuntimeException('This requisition is no longer available for quotation.');
+            }
+            $lockedPrItems = PrItem::where('pr_id', $pr->id)
+                ->orderBy('id')->lockForUpdate()->get();
+            $quotation = Quotation::where('pr_id', $pr->id)
+                ->where('supplier_id', auth()->id())->lockForUpdate()->first();
+            if ($quotation && (! $quotation->canBeRevisedBySupplier()
+                || $quotation->purchaseOrders()->withTrashed()->exists()
+                || PrItemAward::where('quotation_id', $quotation->id)
+                    ->orWhereIn('quotation_item_id', $quotation->items()->select('id'))->exists())) {
+                throw new \RuntimeException('This quotation is locked or used by an award or Purchase Order and cannot be changed.');
+            }
+            $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
+
             $nextStatus = $request->action === 'submitted'
                 ? Quotation::STATUS_SUBMITTED
                 : ($wasRevisionRequested ? Quotation::STATUS_REVISION_REQUESTED : Quotation::STATUS_DRAFT);
@@ -532,10 +549,7 @@ class QuotationController extends Controller
             // request was validated against the pre-transaction snapshot, so
             // this prevents a concurrent PR edit from silently producing an
             // incomplete quotation response set.
-            $currentPrItemIds = PrItem::query()
-                ->where('pr_id', $pr->id)
-                ->lockForUpdate()
-                ->pluck('id')
+            $currentPrItemIds = $lockedPrItems->pluck('id')
                 ->map(fn ($id) => (int) $id)
                 ->sort()
                 ->values()

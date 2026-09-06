@@ -267,12 +267,15 @@ class ShipmentService
                 throw new InvalidArgumentException("Shipment #{$lockedShipment->shipment_number} cannot be submitted because its status is {$lockedShipment->status}.");
             }
 
-            $itemsData = $data['items'] ?? $lockedShipment->items->map(fn ($i) => [
-                'purchase_order_id' => $i->purchase_order_id,
-                'quotation_item_id' => $i->quotation_item_id,
-                'shipped_quantity' => (float) $i->shipped_quantity,
-                'notes' => $i->notes,
-            ])->all();
+            // A locking read does not establish a REPEATABLE READ snapshot.
+            // The first ordinary read must follow acquisition of every PO lock.
+            $itemsData = $data['items'] ?? $lockedShipment->items()
+                ->orderBy('id')->lockForUpdate()->get()->map(fn ($item) => [
+                    'purchase_order_id' => $item->purchase_order_id,
+                    'quotation_item_id' => $item->quotation_item_id,
+                    'shipped_quantity' => $item->shipped_quantity,
+                    'notes' => $item->notes,
+                ])->all();
 
             if (empty($itemsData)) {
                 throw new InvalidArgumentException('A shipment must contain at least one item allocation.');
@@ -379,13 +382,9 @@ class ShipmentService
                     throw new InvalidArgumentException("Quotation item #{$qItemId} not found.");
                 }
 
-                ShipmentItem::query()
-                    ->where('purchase_order_id', $poId)
-                    ->where('quotation_item_id', $qItemId)
-                    ->where('shipment_id', '!=', $lockedShipment->id)
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get();
+                // PO serialization precedes the consistent-read snapshot used by
+                // fulfillment, including QC and claims. Do not lock another
+                // draft's lines here: its submitter may already be waiting on PO.
                 $fulfillment = $po->itemFulfillmentStatus($qItemId, $lockedShipment->id);
                 $remainingUnits = $fulfillment['remaining_units'];
                 $remainingQty = PurchaseOrder::quantityUnitsToDecimal($remainingUnits);

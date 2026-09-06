@@ -56,6 +56,29 @@ class PriceComparisonItemAwardTest extends TestCase
         $response->assertSee('Confirm Awards &amp; Generate PO(s)', false);
     }
 
+    public function test_supplier_html_name_is_literal_text_in_both_award_previews(): void
+    {
+        $payload = '<img src=x onerror="window.astraXss=1">';
+        $this->supplierA->update(['name' => $payload]);
+        $pr = $this->createRequisition(1);
+        $this->createSubmittedQuotation($pr, $this->supplierA, 2.0);
+
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]));
+
+        $response->assertOk()->assertSee($payload)->assertDontSee($payload, false);
+        $html = $response->getContent();
+        $start = strpos($html, 'const updateAwardPreviews =');
+        $end = strpos($html, "document.querySelectorAll('.award-radio').forEach", $start);
+        $preview = substr($html, $start, $end - $start);
+        $this->assertStringNotContainsString('innerHTML', $preview);
+        $this->assertStringNotContainsString('insertAdjacentHTML', $preview);
+        $this->assertStringContainsString('element.textContent = text', $preview);
+        $this->assertStringContainsString('previewContainer.replaceChildren(itemsList)', $preview);
+        $this->assertStringContainsString('groupContainer.replaceChildren(groups)', $preview);
+        $this->assertSame($payload, $this->supplierA->fresh()->name);
+    }
+
     public function test_purchasing_can_save_item_level_awards_via_http(): void
     {
         $pr = $this->createRequisition(2);

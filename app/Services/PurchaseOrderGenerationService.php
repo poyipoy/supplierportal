@@ -75,15 +75,14 @@ class PurchaseOrderGenerationService
 
         sort($awardIds);
 
-        return DB::transaction(function () use ($awardIds, $creator, $options) {
-            $awardReferences = PrItemAward::query()
-                ->whereIn('id', $awardIds)
-                ->orderBy('id')
-                ->get(['id', 'pr_id', 'pr_item_id', 'quotation_id', 'quotation_item_id']);
-            if ($awardReferences->count() !== count($awardIds)) {
-                throw new InvalidArgumentException('One or more selected item awards could not be found.');
-            }
+        // Parent identities only; no transaction snapshot before PR serialization.
+        $awardReferences = PrItemAward::query()->whereIn('id', $awardIds)->orderBy('id')
+            ->get(['id', 'pr_id', 'pr_item_id']);
+        if ($awardReferences->count() !== count($awardIds)) {
+            throw new InvalidArgumentException('One or more selected item awards could not be found.');
+        }
 
+        return DB::transaction(function () use ($awardIds, $awardReferences, $creator, $options) {
             $prIds = $awardReferences->pluck('pr_id')->unique()->sort()->values()->all();
             PurchaseRequisition::query()
                 ->whereIn('id', $prIds)
@@ -108,18 +107,18 @@ class PurchaseOrderGenerationService
             }
 
             $quotationIds = $awardReferences->pluck('quotation_id')->unique()->sort()->values()->all();
-            Quotation::query()
+            $lockedQuotations = Quotation::with(['supplier', 'exchange_rate'])
                 ->whereIn('id', $quotationIds)
                 ->orderBy('id')
                 ->lockForUpdate()
-                ->get();
+                ->get()->keyBy('id');
 
             $quotationItemIds = $awardReferences->pluck('quotation_item_id')->unique()->sort()->values()->all();
-            QuotationItem::query()
+            $lockedQuotationItems = QuotationItem::query()
                 ->whereIn('id', $quotationItemIds)
                 ->orderBy('id')
                 ->lockForUpdate()
-                ->get();
+                ->get()->keyBy('id');
 
             // Lock all awards last in the shared deterministic finalization order.
             /** @var Collection<int, PrItemAward> $lockedAwards */
@@ -133,13 +132,15 @@ class PurchaseOrderGenerationService
                 throw new InvalidArgumentException('One or more selected item awards could not be found.');
             }
 
-            $lockedAwards->load([
-                'prItem',
-                'quotationItem',
-                'quotation.supplier',
-                'quotation.exchange_rate',
-                'purchaseRequisition',
-            ]);
+            $lockedAwards->load(['prItem', 'purchaseRequisition']);
+            foreach ($lockedAwards as $award) {
+                $award->setRelation('quotation', $lockedQuotations->get($award->quotation_id));
+                $award->setRelation('quotationItem', $lockedQuotationItems->get($award->quotation_item_id));
+            }
+            if (($options['require_single_supplier'] ?? false)
+                && $lockedAwards->pluck('supplier_id')->unique()->count() !== 1) {
+                throw new InvalidArgumentException('Select awards from exactly one supplier for consolidation.');
+            }
 
             // Revalidate every award
             foreach ($lockedAwards as $award) {
@@ -151,8 +152,8 @@ class PurchaseOrderGenerationService
                     throw new InvalidArgumentException("Award #{$award->id} contains an item that is no longer marked as available.");
                 }
 
-                if ($award->quotation && ! in_array($award->quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
-                    throw new InvalidArgumentException("Award #{$award->id} belongs to a quotation with ineligible status '{$award->quotation->status}'.");
+                if (! $award->quotation || ! in_array($award->quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
+                    throw new InvalidArgumentException("Award #{$award->id} belongs to a quotation with ineligible status '{$award->quotation?->status}'.");
                 }
             }
 

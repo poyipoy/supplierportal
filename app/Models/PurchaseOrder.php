@@ -90,6 +90,32 @@ class PurchaseOrder extends Model
         return $this->quotations->first();
     }
 
+    /**
+     * Commercial lines are award-scoped; quotation-wide lines are legacy only.
+     * Keep the source quotation attached for its PR and exchange-rate snapshot.
+     */
+    public function commercialQuotationItems(): Collection
+    {
+        $this->loadMissing(['awards', 'quotations.items.prItem']);
+        $awardedIds = $this->awards->pluck('quotation_item_id');
+
+        return $this->quotations->sortBy('id')->flatMap(function (Quotation $quotation) use ($awardedIds) {
+            return $quotation->items->sortBy('id')
+                ->filter(fn (QuotationItem $item) => $this->awards->isEmpty() || $awardedIds->contains($item->id))
+                ->map(function (QuotationItem $item) use ($quotation) {
+                    return (clone $item)->setRelation('quotation', $quotation);
+                });
+        })->values();
+    }
+
+    /** Group output without changing the original quotation's complete item relation. */
+    public function commercialQuotations(): Collection
+    {
+        return $this->commercialQuotationItems()->groupBy('quotation_id')->map(function (Collection $items) {
+            return (clone $items->first()->quotation)->setRelation('items', $items);
+        })->values();
+    }
+
     public function getPrReferenceAttribute(): string
     {
         $reference = $this->purchaseRequisitions()
@@ -147,6 +173,16 @@ class PurchaseOrder extends Model
                 ->leftJoin('exchange_rates as er', 'er.id', '=', 'q.exchange_rate_id')
                 ->whereColumn('links.po_id', 'purchase_orders.id')
                 ->whereNull('q.deleted_at')
+                ->where(function ($lines) {
+                    $lines->whereExists(function ($awards) {
+                        $awards->selectRaw('1')->from('pr_item_awards as line_awards')
+                            ->whereColumn('line_awards.purchase_order_id', 'purchase_orders.id')
+                            ->whereColumn('line_awards.quotation_item_id', 'qi.id');
+                    })->orWhereNotExists(function ($awards) {
+                        $awards->selectRaw('1')->from('pr_item_awards as po_awards')
+                            ->whereColumn('po_awards.purchase_order_id', 'purchase_orders.id');
+                    });
+                })
                 ->selectRaw("COALESCE(SUM(({$resolvedAmountExpression}) * COALESCE(er.rate_to_idr, 1)), 0)"),
             'resolved_total_idr',
         );
