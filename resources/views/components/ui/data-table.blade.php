@@ -7,7 +7,7 @@
     'density' => 'compact',
 ])
 
-<section {{ $attributes->class(['ui-data-table tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface tw-shadow-none', 'ui-table--compact' => $density === 'compact']) }}>
+<section {{ $attributes->class(['ui-data-table tw-min-w-0 tw-max-w-full tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface tw-shadow-none', 'ui-table--compact' => $density === 'compact']) }}>
     @if($title || $description || isset($toolbar) || isset($filters))
         <header class="tw-grid tw-gap-2.5 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-p-3.5 shell:tw-px-4">
             <div class="tw-flex tw-flex-col tw-gap-2.5 shell:tw-flex-row shell:tw-items-center shell:tw-justify-between">
@@ -30,7 +30,7 @@
     @elseif($empty)
         @isset($emptyState){{ $emptyState }}@else<x-ui.empty-state title="No data available" description="Records will appear here when they become available." />@endisset
     @else
-        <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full">{{ $slot }}</div>
+        <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full tw-min-w-0 tw-max-w-full">{{ $slot }}</div>
     @endif
 
     @isset($pagination)<footer class="tw-border-t tw-border-outline-variant tw-bg-surface-low tw-p-3.5 shell:tw-px-4">{{ $pagination }}</footer>@endisset

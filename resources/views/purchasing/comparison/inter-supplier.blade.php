@@ -3,7 +3,56 @@
 @section('page-title', 'Price Comparison')
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<style>
+.comparison-matrix-table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+    min-width: max-content;
+    width: max-content;
+    max-width: none;
+}
+.comparison-matrix-table th,
+.comparison-matrix-table td {
+    border-right: 1px solid var(--md-outline-variant);
+    border-bottom: 1px solid var(--md-outline-variant);
+    background-color: var(--md-surface);
+}
+.comparison-matrix-table thead th {
+    background-color: var(--md-surface-container-low) !important;
+    vertical-align: middle;
+}
+.col-sticky-material {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background-color: var(--md-surface) !important;
+    box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
+    min-width: 200px;
+    max-width: 240px;
+    width: 220px;
+}
+thead th.col-sticky-material {
+    background-color: var(--md-surface-container-low) !important;
+    z-index: 12;
+}
+.col-ref-qty {
+    min-width: 65px;
+}
+.col-ref-weight {
+    min-width: 110px;
+}
+.col-ref-total-weight {
+    min-width: 120px;
+}
+.col-supplier-group {
+    min-width: 360px;
+}
+.col-supplier-cell {
+    min-width: 120px;
+}
+</style>
+
+<div class="tw-grid tw-gap-6 tw-min-w-0 tw-max-w-full">
     <x-ui.page-header
         title="Price Comparison"
         description="Compare supplier offers for a PR, inspect historical movement, and benchmark current prices."
@@ -20,11 +69,11 @@
                     <div class="input-group input-group-sm">
                         <span class="input-group-text tw-bg-surface"><x-ui.icon name="search" /></span>
                         <input type="text"
-                               class="form-control"
-                               id="comparisonPrSearch"
-                               value="{{ $selectedPrOption['label'] ?? '' }}"
-                               placeholder="Type a PR number or period..."
-                               autocomplete="off">
+                                class="form-control"
+                                id="comparisonPrSearch"
+                                value="{{ $selectedPrOption['label'] ?? '' }}"
+                                placeholder="Type a PR number or period..."
+                                autocomplete="off">
                         <x-ui.icon-button
                             icon="x"
                             label="Clear PR selection"
@@ -146,46 +195,46 @@
         </div>
     </x-ui.card>
 
-    {{-- Item-Level Award Coverage Banner --}}
+    {{-- Item-Level Selection Coverage Banner --}}
     @if($awardCoverage)
         <div class="tw-p-4 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
             <div class="tw-flex tw-items-center tw-gap-3">
                 <div class="tw-rounded-full tw-p-2.5 tw-bg-primary-container tw-text-primary">
-                    <x-ui.icon name="award" size="md" />
+                    <x-ui.icon name="clipboard-check" size="md" />
                 </div>
                 <div>
-                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface">Item-Level Award Status</div>
+                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface">Item Selection Status</div>
                     <div class="tw-text-ui-xs tw-text-on-surface-variant">
-                        {{ $awardCoverage['awarded_items'] }} of {{ $awardCoverage['total_items'] }} items awarded ({{ $awardCoverage['coverage_percentage'] }}% coverage)
+                        {{ $awardCoverage['awarded_items'] }} of {{ $awardCoverage['total_items'] }} items selected ({{ $awardCoverage['coverage_percentage'] }}% coverage)
                     </div>
                 </div>
             </div>
             <div class="tw-flex tw-items-center tw-gap-2">
                 @if($awardCoverage['is_fully_awarded'])
-                    <span class="ui-status-chip ui-status-chip--success">100% Fully Awarded</span>
+                    <span class="ui-status-chip ui-status-chip--success">100% Fully Selected</span>
                 @else
-                    <span class="ui-status-chip ui-status-chip--warning">{{ $awardCoverage['unawarded_items'] }} Item(s) Pending Award</span>
+                    <span class="ui-status-chip ui-status-chip--warning">{{ $awardCoverage['unawarded_items'] }} Item(s) Pending Selection</span>
                 @endif
             </div>
         </div>
     @endif
 
-    <form method="POST" action="{{ route('purchasing.comparison.save-awards') }}" id="itemAwardForm">
+    <form method="POST" action="{{ route('purchasing.comparison.save-awards') }}" id="itemAwardForm" class="tw-min-w-0 tw-max-w-full">
         @csrf
         <input type="hidden" name="pr_id" value="{{ $selectedPr->getRouteKey() }}">
 
         {{-- Side-by-side comparison table --}}
-        <x-ui.data-table :title="'Comparison Table - ' . $selectedPr->pr_number" description="Select winning supplier offers per PR item. Maximum one winner per item.">
-                <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs">
+        <x-ui.data-table :title="'Comparison Table - ' . $selectedPr->pr_number" description="Select supplier offers per PR item. Maximum one offer per item." class="tw-min-w-0 tw-max-w-full">
+                <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs comparison-matrix-table">
                     <thead class="table-light text-center">
                         <tr>
-                            <th scope="col" rowspan="2" class="align-middle">Material</th>
-                            <th scope="col" rowspan="2" class="align-middle">Qty</th>
-                            <th scope="col" rowspan="2" class="align-middle">Weight/Unit (Kg)</th>
-                            <th scope="col" rowspan="2" class="align-middle">Total Weight (Kg)</th>
+                            <th scope="col" rowspan="2" class="align-middle col-sticky-material">Material</th>
+                            <th scope="col" rowspan="2" class="align-middle col-ref-qty text-center">Qty</th>
+                            <th scope="col" rowspan="2" class="align-middle col-ref-weight text-center">Weight/Unit (Kg)</th>
+                            <th scope="col" rowspan="2" class="align-middle col-ref-total-weight text-center">Total Weight (Kg)</th>
                             @foreach($comparison['suppliers'] as $sup)
-                                <th scope="colgroup" colspan="3" class="text-center">
-                                    {{ $sup['name'] }}
+                                <th scope="colgroup" colspan="3" class="text-center col-supplier-group">
+                                    <div class="fw-bold tw-text-on-surface">{{ $sup['name'] }}</div>
                                     <div class="tw-mt-1">
                                         <x-ui.status-chip :tone="$sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'error' : 'info')" size="sm">
                                             {{ strtoupper($sup['status']) }}
@@ -196,9 +245,9 @@
                         </tr>
                         <tr>
                             @foreach($comparison['suppliers'] as $sup)
-                                <th scope="col" class="text-center small">Price/Kg ({{ $sup['currency'] }})</th>
-                                <th scope="col" class="text-center small">Price/Kg (IDR)</th>
-                                <th scope="col" class="text-center small">Offer Amount</th>
+                                <th scope="col" class="text-center small col-supplier-cell">Price/Kg ({{ $sup['currency'] }})</th>
+                                <th scope="col" class="text-center small col-supplier-cell">Price/Kg (IDR)</th>
+                                <th scope="col" class="text-center small col-supplier-cell">Offer Amount</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -209,17 +258,17 @@
                                 $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
                             @endphp
                             <tr data-comparison-row data-material-id="{{ $row['item']->id }}" class="{{ ($row['spread_pct'] ?? 0) > 15 ? 'bg-warning bg-opacity-10' : '' }}">
-                                <td class="fw-medium">
-                                    {{ $row['item']->material_name }}
+                                <td class="fw-medium col-sticky-material">
+                                    <div class="tw-font-semibold tw-text-on-surface">{{ $row['item']->material_name }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)
                                         <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="High price spread (>15%)">
                                             <x-ui.icon name="triangle-alert" class="me-1" />Spread {{ number_format($row['spread_pct'], 1) }}%
                                         </div>
                                     @endif
                                 </td>
-                                <td class="text-center">{{ number_format($row['item']->quantity_value, 0) }}</td>
-                                <td class="text-center">{{ \App\Support\NumberFormat::maxDecimals($row['item']->weight_needed) }}</td>
-                                <td class="text-center fw-medium text-primary">{{ \App\Support\NumberFormat::maxDecimals($row['item']->total_weight) }}</td>
+                                <td class="text-center col-ref-qty">{{ number_format($row['item']->quantity_value, 0) }}</td>
+                                <td class="text-center col-ref-weight">{{ \App\Support\NumberFormat::maxDecimals($row['item']->weight_needed) }}</td>
+                                <td class="text-center fw-medium text-primary col-ref-total-weight">{{ \App\Support\NumberFormat::maxDecimals($row['item']->total_weight) }}</td>
                                 @foreach($comparison['suppliers'] as $sup)
                                     @php $p = $row['prices'][$sup['quotation_id']] ?? null; @endphp
                                     @if($p && !$p['is_available'])
@@ -231,7 +280,7 @@
                                         </td>
                                     @elseif($p && $p['price_per_kg'])
                                         <td class="text-end">
-                                            {{ \App\Support\NumberFormat::maxDecimals($p['price_per_kg']) }}
+                                            {{ \App\Support\NumberFormat::maxDecimals($p['price_per_kg'], 4) }}
                                             <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
                                                 Qty {{ $p['available_qty'] ?? '-' }} · {{ \App\Support\NumberFormat::maxDecimals($p['offered_total_weight']) }} kg
                                                 @if($p['is_estimated_weight']) · Est Weight @endif
@@ -264,15 +313,22 @@
                                                                data-price="Rp {{ \App\Support\NumberFormat::maxDecimals($p['price_idr'] ?? 0) }}"
                                                         >
                                                         <span class="tw-text-ui-xs fw-bold {{ !empty($p['is_awarded']) ? 'text-success' : 'text-primary' }}">
-                                                            {{ !empty($p['is_awarded']) ? 'Awarded Winner' : 'Select Winner' }}
+                                                            {{ !empty($p['is_awarded']) ? 'Selected Offer' : 'Select Offer' }}
                                                         </span>
                                                     </label>
                                                 </div>
                                             @elseif(!empty($p['is_awarded']))
                                                 <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
                                                     <span class="ui-status-chip ui-status-chip--success">
-                                                        <x-ui.icon name="check" size="xs" /> Awarded
+                                                        <x-ui.icon name="check" size="xs" /> PO Created
                                                     </span>
+                                                    @if(!empty($p['purchase_order_url']))
+                                                        <a href="{{ $p['purchase_order_url'] }}" class="d-block tw-mt-1 tw-text-ui-xs text-primary fw-semibold text-decoration-underline">
+                                                            {{ $p['purchase_order_number'] ?? 'View Purchase Order' }}
+                                                        </a>
+                                                    @else
+                                                        <span class="d-block tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Purchase Order assigned</span>
+                                                    @endif
                                                 </div>
                                             @endif
                                         </td>
@@ -286,53 +342,91 @@
                 </table>
         </x-ui.data-table>
 
-        {{-- Item Award Confirmation & PO Grouping Preview Card --}}
-        <x-ui.card title="Item Award Confirmation & PO Grouping Preview" class="tw-mt-4">
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
-                <div>
-                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
-                        <x-ui.icon name="check-check" size="sm" class="me-1 text-primary" />
-                        Selected Line-Item Winners
+        @if($hasActionableAwardSelections)
+            {{-- Existing PO assignments remain visible while unassigned items stay actionable. --}}
+            @if($assignedPurchaseOrders->isNotEmpty() || $assignedPurchaseOrderCount > 0)
+                <x-ui.card title="Existing Purchase Order(s)" class="tw-mt-4">
+                    <div class="tw-flex tw-flex-wrap tw-gap-2">
+                        @forelse($assignedPurchaseOrders as $assignedPurchaseOrder)
+                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $assignedPurchaseOrder) }}" class="ui-status-chip ui-status-chip--success text-decoration-none">
+                                <x-ui.icon name="receipt" size="xs" /> {{ $assignedPurchaseOrder->po_number }}
+                            </a>
+                        @empty
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant">Purchase Order assignment is recorded, but its detail is unavailable.</span>
+                        @endforelse
                     </div>
-                    <div id="awardPreviewItems" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface tw-text-ui-xs">
-                        <span class="tw-text-on-surface-variant">Select winning offers in the table above to preview awards and supplier PO groups.</span>
-                    </div>
-                </div>
-                <div>
-                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
-                        <x-ui.icon name="building" size="sm" class="me-1 text-primary" />
-                        Resulting PO Grouping Preview (1 PO per Winning Supplier)
-                    </div>
-                    <div id="supplierGroupPreview" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface-container tw-text-ui-xs">
-                        <span class="tw-text-on-surface-variant">1 PO will be created per winning supplier group upon confirmation.</span>
-                    </div>
-                </div>
-            </div>
+                </x-ui.card>
+            @endif
 
-            <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-grid tw-gap-3 sm:tw-grid-cols-2">
-                <div>
-                    <label for="poEstimatedArrival" class="form-label small fw-semibold">Target Estimated Arrival Date</label>
-                    <input type="date" name="estimated_arrival" id="poEstimatedArrival" class="form-control form-control-sm" value="{{ now()->addDays(14)->format('Y-m-d') }}">
+            {{-- Offer Selection & PO Grouping Preview Card --}}
+            <x-ui.card title="Offer Selection & PO Grouping Preview" class="tw-mt-4">
+                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+                    <div>
+                        <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
+                            <x-ui.icon name="check-check" size="sm" class="me-1 text-primary" />
+                            Selected Line-Item Offers
+                        </div>
+                        <div id="awardPreviewItems" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface tw-text-ui-xs">
+                            <span class="tw-text-on-surface-variant">Select offers in the table above to preview selection and supplier PO groups.</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
+                            <x-ui.icon name="building" size="sm" class="me-1 text-primary" />
+                            Resulting PO Grouping Preview (1 PO per Selected Supplier)
+                        </div>
+                        <div id="supplierGroupPreview" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface-container tw-text-ui-xs">
+                            <span class="tw-text-on-surface-variant">1 PO will be created per selected supplier group upon confirmation.</span>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label for="poNotes" class="form-label small fw-semibold">PO Notes / Remarks</label>
-                    <input type="text" name="notes" id="poNotes" class="form-control form-control-sm" placeholder="Optional notes for generated PO(s)...">
-                </div>
-            </div>
 
-            <x-slot:actions>
-                <div class="tw-flex tw-flex-wrap tw-gap-2">
-                    <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
-                        <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
-                        Save Award Selections
-                    </x-ui.button>
-                    <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos">
-                        <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
-                        Confirm Awards &amp; Generate PO(s)
-                    </x-ui.button>
+                <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-grid tw-gap-3 sm:tw-grid-cols-2">
+                    <div>
+                        <label for="poEstimatedArrival" class="form-label small fw-semibold">Target Estimated Arrival Date</label>
+                        <input type="date" name="estimated_arrival" id="poEstimatedArrival" class="form-control form-control-sm" value="{{ now()->addDays(14)->format('Y-m-d') }}">
+                    </div>
+                    <div>
+                        <label for="poNotes" class="form-label small fw-semibold">PO Notes / Remarks</label>
+                        <input type="text" name="notes" id="poNotes" class="form-control form-control-sm" placeholder="Optional notes for generated PO(s)...">
+                    </div>
                 </div>
-            </x-slot:actions>
-        </x-ui.card>
+
+                <x-slot:actions>
+                    <div class="tw-flex tw-flex-wrap tw-gap-2">
+                        <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
+                            <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
+                            Save Selected Offers
+                        </x-ui.button>
+                        <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos">
+                            <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
+                            Confirm Selection &amp; Generate PO(s)
+                        </x-ui.button>
+                    </div>
+                </x-slot:actions>
+            </x-ui.card>
+        @elseif($allItemsAssignedToPurchaseOrder)
+            <x-ui.card title="Purchase Order(s) Already Generated" class="tw-mt-4">
+                <div class="tw-flex tw-flex-col tw-gap-3">
+                    <div class="tw-text-ui-sm tw-text-on-surface-variant">
+                        All PR items have been assigned to Purchase Order(s). No additional selection or PO action is required.
+                    </div>
+                    <div class="tw-flex tw-flex-wrap tw-gap-2">
+                        @forelse($assignedPurchaseOrders as $assignedPurchaseOrder)
+                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $assignedPurchaseOrder) }}" class="ui-status-chip ui-status-chip--success text-decoration-none">
+                                <x-ui.icon name="receipt" size="xs" /> {{ $assignedPurchaseOrder->po_number }}
+                            </a>
+                        @empty
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant">Purchase Order assignment is recorded, but its detail is unavailable.</span>
+                        @endforelse
+                    </div>
+                </div>
+            </x-ui.card>
+        @else
+            <x-ui.card title="Item Selection Status" class="tw-mt-4">
+                <div class="tw-text-ui-sm tw-text-on-surface-variant">No additional offer selections are currently available for this PR.</div>
+            </x-ui.card>
+        @endif
     </form>
 @elseif(request('pr_id'))
     <x-ui.alert tone="warning">No data found for the selected PR.</x-ui.alert>
@@ -575,8 +669,8 @@ const updateAwardPreviews = () => {
     };
 
     if (radios.length === 0) {
-        previewContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', 'No items selected yet. Select winning offers above.'));
-        groupContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', '1 PO will be created per winning supplier group upon confirmation.'));
+        previewContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', 'No items selected yet. Select supplier offers above.'));
+        groupContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', '1 PO will be created per selected supplier group upon confirmation.'));
         return;
     }
 

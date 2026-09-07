@@ -334,6 +334,7 @@ html[data-sidebar-motion-ready="true"] {
     .content-container {
         margin-inline: auto;
         max-width: 100%;
+        min-width: 0;
         width: 100%;
     }
 
@@ -587,6 +588,8 @@ html[data-sidebar-motion-ready="true"] {
     .main-wrapper {
         margin-left: var(--sidebar-width);
         min-height: 100vh;
+        min-width: 0;
+        max-width: 100%;
         display: flex;
         flex-direction: column;
         transition: margin-left var(--ui-sidebar-motion-duration) var(--ui-easing-sidebar);
@@ -792,6 +795,8 @@ html[data-sidebar-motion-ready="true"] {
         display: flex;
         flex-direction: column;
         min-height: calc(100vh - var(--topbar-height));
+        min-width: 0;
+        max-width: 100%;
     }
 
     /* Role Badges — Sharp Enterprise Badges */
@@ -977,6 +982,17 @@ html[data-sidebar-motion-ready="true"] {
 
     .ui-button {
         text-decoration: none;
+    }
+
+    .ui-button.is-loading,
+    .ui-button[aria-busy="true"] {
+        cursor: wait !important;
+        opacity: 0.92 !important;
+    }
+
+    .ui-button .ui-spinner {
+        flex-shrink: 0;
+        vertical-align: -0.125em;
     }
 
     .ui-status-chip {
@@ -1509,6 +1525,25 @@ html[data-sidebar-motion-ready="true"] {
         background: var(--md-surface-container-low);
     }
 
+    .ui-calendar-trigger:disabled,
+    .ui-calendar-trigger[disabled],
+    .ui-calendar.is-disabled .ui-calendar-trigger {
+        background-color: var(--md-surface-container) !important;
+        border-color: var(--ui-control-border) !important;
+        color: var(--md-on-surface-variant) !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+
+    .ui-calendar.is-disabled {
+        cursor: not-allowed !important;
+    }
+
+    .ui-calendar.is-disabled label {
+        color: var(--md-on-surface-variant);
+    }
+
     .ui-calendar-trigger:focus-visible,
     .ui-date-range-trigger__field:focus-visible,
     .ui-calendar-panel__close:focus-visible,
@@ -1530,6 +1565,13 @@ html[data-sidebar-motion-ready="true"] {
         grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
         min-height: var(--ui-calendar-cell-size);
         overflow: hidden;
+        transition: border-color var(--ui-motion-fast) var(--ui-easing-standard), box-shadow var(--ui-motion-fast) var(--ui-easing-standard);
+    }
+
+    .ui-date-range-trigger:focus-within,
+    .ui-calendar[data-calendar-open="true"] .ui-date-range-trigger {
+        border-color: var(--md-primary);
+        box-shadow: 0 0 0 2px rgba(31, 95, 166, 0.15);
     }
 
     .ui-date-range-trigger__field {
@@ -1543,6 +1585,16 @@ html[data-sidebar-motion-ready="true"] {
         min-width: 0;
         padding: .5rem var(--ui-space-3);
         text-align: start;
+        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard);
+    }
+
+    .ui-date-range-trigger__field.is-active {
+        background: rgba(31, 95, 166, 0.08);
+    }
+
+    .ui-date-range-trigger__field.is-active .ui-date-range-trigger__label {
+        color: var(--md-primary);
+        font-weight: 600;
     }
 
     .ui-date-range-trigger__field + .ui-date-range-trigger__divider {
@@ -1605,7 +1657,19 @@ html[data-sidebar-motion-ready="true"] {
     }
 
     .ui-calendar-panel--range {
+        --ui-calendar-cell-size: 27px;
+        width: 424px;
         max-width: calc(100vw - (2 * var(--ui-space-3)));
+        padding: 10px 12px 8px;
+    }
+
+    .ui-calendar-panel--day-range {
+        width: 424px;
+    }
+
+    .ui-calendar-panel--month-range {
+        width: 316px;
+        padding: 12px 14px 10px;
     }
 
     .ui-calendar-panel.is-open {
@@ -1902,14 +1966,26 @@ html[data-sidebar-motion-ready="true"] {
         gap: var(--ui-calendar-grid-gap);
     }
 
+    .ui-calendar-panel calendar-range::part(months) {
+        display: flex;
+        flex-direction: row;
+        gap: 0.625rem;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
     .ui-calendar-panel calendar-month::part(container) {
         gap: var(--ui-calendar-grid-gap);
     }
 
     .ui-calendar-panel calendar-date::part(header),
     .ui-calendar-panel calendar-range::part(header) {
+        align-items: center;
         column-gap: var(--ui-space-2);
-        min-height: var(--ui-calendar-cell-size);
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.25rem;
+        min-height: 28px;
         padding-inline: var(--ui-space-1);
     }
 
@@ -1931,9 +2007,30 @@ html[data-sidebar-motion-ready="true"] {
 
     .ui-calendar-panel calendar-date::part(button),
     .ui-calendar-panel calendar-range::part(button) {
-        border-radius: var(--md-shape-sm);
-        min-height: var(--ui-calendar-cell-size);
-        min-width: var(--ui-calendar-cell-size);
+        align-items: center;
+        background: var(--md-surface-container);
+        border: 1px solid transparent;
+        border-radius: 7px;
+        color: var(--md-on-surface-variant);
+        cursor: pointer;
+        display: inline-flex;
+        height: 28px;
+        justify-content: center;
+        min-height: 28px;
+        min-width: 28px;
+        transition: background var(--ui-motion-standard), color var(--ui-motion-standard), border-color var(--ui-motion-standard), transform 80ms ease;
+        width: 28px;
+    }
+
+    .ui-calendar-panel calendar-date::part(button):hover,
+    .ui-calendar-panel calendar-range::part(button):hover {
+        background: var(--md-primary-container);
+        color: var(--md-primary);
+    }
+
+    .ui-calendar-panel calendar-date::part(button):active,
+    .ui-calendar-panel calendar-range::part(button):active {
+        transform: translateY(1px);
     }
 
     .ui-calendar-panel calendar-date::part(previous),
@@ -1941,6 +2038,16 @@ html[data-sidebar-motion-ready="true"] {
     .ui-calendar-panel calendar-range::part(previous),
     .ui-calendar-panel calendar-range::part(next) {
         color: var(--md-on-surface-variant);
+    }
+
+    .ui-calendar-panel calendar-month::part(heading) {
+        color: var(--md-on-surface);
+        font-size: 13.5px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 1.25;
+        margin-bottom: 4px;
+        text-align: center;
     }
 
     .ui-calendar-panel calendar-month::part(th),
@@ -1953,39 +2060,80 @@ html[data-sidebar-motion-ready="true"] {
 
     .ui-calendar-panel calendar-month::part(th) {
         color: var(--md-on-surface-variant);
-        font-size: var(--ui-font-size-xs);
-        font-weight: 600;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: .03em;
+        line-height: 22px;
+        height: 22px;
+        min-height: 22px;
+        opacity: 0.8;
+        padding: 0;
+        text-align: center;
     }
 
     .ui-calendar-panel calendar-month::part(button) {
+        align-items: center;
+        aspect-ratio: 1;
+        background: transparent;
+        border: 0;
         border-radius: var(--md-shape-sm);
+        color: var(--md-on-surface);
+        cursor: pointer;
+        display: inline-flex;
+        font-family: inherit;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+        justify-content: center;
+        line-height: 1;
+        margin: 1px 0;
+        position: relative;
+        transition: background var(--ui-motion-standard), color var(--ui-motion-standard);
+    }
+
+    .ui-calendar-panel calendar-month::part(button):hover:not([disabled]) {
+        background: var(--md-surface-container);
     }
 
     .ui-calendar-panel calendar-month::part(range-start),
     .ui-calendar-panel calendar-month::part(range-end),
     .ui-calendar-panel calendar-month::part(selected) {
-        background: var(--md-primary);
-        color: var(--md-on-primary);
+        background: var(--md-primary) !important;
+        color: var(--md-on-primary) !important;
+        font-weight: 700 !important;
+        box-shadow: 0 2px 6px -1px rgba(31, 95, 166, 0.4);
     }
 
     .ui-calendar-panel calendar-month::part(range-start) {
-        border-bottom-right-radius: 0;
-        border-top-right-radius: 0;
+        border-bottom-left-radius: 8px !important;
+        border-bottom-right-radius: 0 !important;
+        border-top-left-radius: 8px !important;
+        border-top-right-radius: 0 !important;
     }
 
     .ui-calendar-panel calendar-month::part(range-end) {
-        border-bottom-left-radius: 0;
-        border-top-left-radius: 0;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 8px !important;
+        border-top-left-radius: 0 !important;
+        border-top-right-radius: 8px !important;
+    }
+
+    .ui-calendar-panel calendar-month::part(range-start range-end) {
+        border-radius: 8px !important;
     }
 
     .ui-calendar-panel calendar-month::part(range-inner) {
-        background: var(--ui-calendar-range-bg);
-        border-radius: 0;
-        color: var(--ui-calendar-range-fg);
+        background: var(--ui-calendar-range-bg) !important;
+        border-radius: 0 !important;
+        color: var(--ui-calendar-range-fg) !important;
+        font-weight: 600;
     }
 
-    .ui-calendar-panel calendar-month::part(today) {
-        box-shadow: inset 0 0 0 1px var(--md-primary);
+    .ui-calendar-panel calendar-month::part(today):not([aria-pressed="true"]) {
+        color: var(--md-primary);
+        font-weight: 700;
+        box-shadow: inset 0 0 0 1.5px var(--md-primary);
+        border-radius: 6px;
     }
 
     .ui-calendar-panel calendar-month::part(disallowed),
@@ -1995,18 +2143,27 @@ html[data-sidebar-motion-ready="true"] {
     }
 
     .ui-calendar-panel calendar-select-year::part(select) {
-        background: var(--md-surface);
+        background: var(--md-surface-container);
         border: 1px solid var(--ui-control-border);
-        border-radius: var(--md-shape-sm);
+        border-radius: 6px;
         color: var(--md-on-surface);
+        cursor: pointer;
         font: inherit;
-        font-size: var(--ui-font-size-sm);
-        min-height: 2.25rem;
-        padding-inline: .625rem 1.75rem;
+        font-size: 12px;
+        font-weight: 600;
+        height: 26px;
+        min-height: 26px;
+        padding-inline: .5rem 1.5rem;
+        transition: border-color var(--ui-motion-standard), background var(--ui-motion-standard);
+    }
+
+    .ui-calendar-panel calendar-select-year::part(select):hover {
+        background: var(--md-surface-container-high);
+        border-color: var(--md-primary);
     }
 
     .ui-calendar-panel calendar-select-year::part(label) {
-        font-size: var(--ui-font-size-sm);
+        font-size: 12px;
         font-weight: 600;
         margin-inline-end: var(--ui-space-2);
     }
@@ -2014,18 +2171,20 @@ html[data-sidebar-motion-ready="true"] {
     .ui-calendar-presets {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--ui-space-1);
-        margin-bottom: var(--ui-space-2);
+        gap: 4px;
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--md-outline-variant);
     }
 
     .ui-calendar-preset,
     .ui-calendar-text-action,
     .ui-calendar-apply-action {
-        border-radius: var(--md-shape-sm);
-        font-size: var(--ui-font-size-sm);
+        border-radius: 6px;
+        font-size: 12px;
         font-weight: 600;
-        min-height: 2.25rem;
-        padding-inline: var(--ui-space-2);
+        min-height: 1.75rem;
+        padding-inline: 8px;
     }
 
     .ui-calendar-preset,
@@ -2035,6 +2194,19 @@ html[data-sidebar-motion-ready="true"] {
         color: var(--md-primary);
     }
 
+    .ui-calendar-preset {
+        font-size: 11.5px;
+        height: 24px;
+        min-height: 24px;
+        padding-inline: 8px;
+    }
+
+    .ui-calendar-text-action {
+        height: 28px;
+        min-height: 28px;
+        padding-inline: 10px;
+    }
+
     .ui-calendar-preset:hover,
     .ui-calendar-text-action:hover {
         background: var(--md-primary-container);
@@ -2042,26 +2214,59 @@ html[data-sidebar-motion-ready="true"] {
         color: var(--md-on-primary-container);
     }
 
+    .ui-calendar-preset.is-active {
+        background: var(--md-primary);
+        border-color: var(--md-primary);
+        color: var(--md-on-primary);
+    }
+
     .ui-calendar-apply-action {
         background: var(--md-primary);
         border: 1px solid var(--md-primary);
         color: var(--md-on-primary);
+        box-shadow: 0 2px 6px -1px rgba(31, 95, 166, 0.35);
+        height: 28px;
+        min-height: 28px;
+        padding-inline: 12px;
+        transition: background var(--ui-motion-standard), transform 80ms ease;
     }
 
     .ui-calendar-apply-action:hover {
-        background: var(--md-on-primary-container);
-        border-color: var(--md-on-primary-container);
+        background: var(--md-primary-hover, #184c85);
+        border-color: var(--md-primary-hover, #184c85);
+    }
+
+    .ui-calendar-apply-action:active {
+        transform: translateY(1px);
+    }
+
+    .ui-calendar-panel__range-summary {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--md-primary);
+        background: rgba(31, 95, 166, 0.08);
+        padding: 2px 8px;
+        border-radius: 6px;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 220px;
+    }
+
+    .ui-calendar-panel__range-summary:empty {
+        display: none;
     }
 
     .ui-calendar-panel__footer {
         border-top: 1px solid var(--md-outline-variant);
         justify-content: space-between;
-        margin-top: var(--ui-space-2);
-        padding-top: var(--ui-space-2);
+        margin-top: 6px;
+        padding-top: 6px;
     }
 
     .ui-calendar-panel__footer-actions {
-        gap: var(--ui-space-2);
+        gap: var(--ui-space-1);
     }
 
     .ui-calendar-panel__footer--single {
@@ -2069,6 +2274,8 @@ html[data-sidebar-motion-ready="true"] {
     }
 
     .ui-month-grid__header {
+        align-items: center;
+        display: flex;
         gap: var(--ui-space-1);
         justify-content: center;
         margin-bottom: var(--ui-space-2);
@@ -2080,23 +2287,34 @@ html[data-sidebar-motion-ready="true"] {
         border-radius: var(--md-shape-sm);
         color: var(--md-on-surface);
         font: inherit;
-        min-height: var(--ui-calendar-cell-size);
-        padding-inline: var(--ui-space-3);
+        font-size: 13px;
+        font-weight: 600;
+        height: 28px;
+        min-height: 28px;
+        padding-inline: var(--ui-space-2);
     }
 
     .ui-month-grid {
         display: grid;
-        gap: var(--ui-calendar-grid-gap);
+        gap: 5px;
         grid-template-columns: repeat(4, minmax(var(--ui-calendar-cell-size), 1fr));
     }
 
     .ui-month-grid__month {
+        align-items: center;
         background: var(--md-surface);
         border: 1px solid var(--md-outline);
-        border-radius: var(--md-shape-sm);
+        border-radius: 6px;
         color: var(--md-on-surface);
-        min-height: var(--ui-calendar-cell-size);
-        padding-inline: var(--ui-space-2);
+        cursor: pointer;
+        display: inline-flex;
+        font-size: 12px;
+        font-weight: 600;
+        height: 30px;
+        justify-content: center;
+        min-height: 30px;
+        padding-inline: 4px;
+        transition: background var(--ui-motion-standard), color var(--ui-motion-standard), border-color var(--ui-motion-standard);
     }
 
     .ui-month-grid__month:hover:not(:disabled) {
@@ -2107,13 +2325,25 @@ html[data-sidebar-motion-ready="true"] {
         background: var(--ui-calendar-range-bg);
         border-color: var(--ui-calendar-range-bg);
         color: var(--ui-calendar-range-fg);
+        border-radius: 0;
     }
 
-    .ui-month-grid__month[data-range-start="true"],
+    .ui-month-grid__month[data-range-start="true"] {
+        background: var(--md-primary);
+        border-color: var(--md-primary);
+        color: var(--md-on-primary);
+        border-radius: 6px 0 0 6px;
+    }
+
     .ui-month-grid__month[data-range-end="true"] {
         background: var(--md-primary);
         border-color: var(--md-primary);
         color: var(--md-on-primary);
+        border-radius: 0 6px 6px 0;
+    }
+
+    .ui-month-grid__month[data-range-start="true"][data-range-end="true"] {
+        border-radius: 6px;
     }
 
     .ui-month-grid__month:disabled {
