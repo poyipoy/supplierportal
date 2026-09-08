@@ -330,7 +330,7 @@
                             <td class="text-center">{{ number_format($item->prItem->quantity_value, 0, ',', '.') }}</td>
                             <td class="text-right">{{ \App\Support\NumberFormat::maxDecimals($item->prItem->weight_needed) }}</td>
                             <td class="text-right">{{ \App\Support\NumberFormat::maxDecimals($item->prItem->total_weight) }}</td>
-                            <td class="text-right">{{ $item->price_per_kg === null ? '-' : \App\Support\NumberFormat::maxDecimals($item->price_per_kg) }}</td>
+                            <td class="text-right">{{ $item->price_per_kg === null ? '-' : \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) }}</td>
                             <td class="text-right">{{ number_format($totalFx, 2, ',', '.') }}</td>
                             <td class="text-right">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                         </tr>

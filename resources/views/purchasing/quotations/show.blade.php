@@ -17,7 +17,7 @@
             $quotation->purchaseRequisition,
             \App\Support\PurchasingNavigation::RETURN_URL_KEY => \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index'),
         ]);
-    $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($quotation->validity_period);
+    $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($quotation->validity_period, $quotation->status);
 @endphp
 
 <div class="tw-grid tw-gap-4">
@@ -69,7 +69,7 @@
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}</div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Estimated Delivery</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier Estimated Ready / Dispatch Date</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $quotation->estimated_delivery ? $quotation->estimated_delivery->format('d M Y') : '-' }}</div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
@@ -206,7 +206,7 @@
                                     <div class="tw-text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($totalWeight) }}</div>
                                     <div class="fw-bold text-primary">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight) : '—' }}</div>
                                 </td>
-                                <td class="text-end fw-bold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($pricePerKg) }}</td>
+                                <td class="text-end fw-bold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($pricePerKg, 4) }}</td>
                                 <td class="text-end ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($requestedAmount) : '—' }}</td>
                                 <td class="text-end fw-semibold ui-tabular-nums" data-offer-amount="{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '' }}">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}</td>
                                 <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">
@@ -256,7 +256,7 @@
             {{-- Chat Action Card --}}
             <x-ui.card title="Direct Negotiation">
                 @if($chatAvailable)
-                    <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $quotation->purchaseRequisition, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form>
+                    <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $quotation->purchaseRequisition, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form data-managed-submit>
                         @csrf
                         <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                         <x-ui.button type="submit" variant="outline" size="sm" class="tw-w-full tw-justify-between">
@@ -307,7 +307,7 @@
                         </x-ui.alert>
                     @endif
 
-                    <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-2.5" id="requestRevisionForm">
+                    <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-2.5" id="requestRevisionForm" data-managed-submit>
                         @csrf
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                         <div class="mb-2">
@@ -336,9 +336,13 @@
                 @endif
 
                 @if($canCreatePo)
-                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.comparison.show', $quotation->purchaseRequisition)" size="sm" class="tw-w-full tw-mb-2.5">
-                        <x-ui.icon name="receipt" size="sm" />
-                        <span>Select Item Awards / Generate PO</span>
+                    <x-ui.button type="button" size="sm" class="tw-w-full tw-mb-2" data-bs-toggle="modal" data-bs-target="#generatePoModal">
+                        <x-slot:leading><x-ui.icon name="receipt" /></x-slot:leading>
+                        Generate Purchase Order
+                    </x-ui.button>
+                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.comparison.show', $quotation->purchaseRequisition)" variant="outline" size="sm" class="tw-w-full tw-mb-2.5">
+                        <x-ui.icon name="chart-column" size="sm" />
+                        <span>Open Inter-Supplier Comparison</span>
                     </x-ui.button>
                 @elseif(! $hasAvailableItems && in_array($quotation->status, ['submitted', 'accepted'], true) && $quotation->purchaseOrders->isEmpty() && $quotation->status === 'accepted')
                     <x-ui.alert tone="warning" title="No available materials" class="tw-mb-2.5">
@@ -350,7 +354,7 @@
                     </x-ui.button>
                 @elseif($quotation->status === 'submitted' && $quotation->isExpired())
                     @if($canRequestRevision)
-                        <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-2.5" id="requestRevisionForm">
+                        <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-2.5" id="requestRevisionForm" data-managed-submit>
                             @csrf
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                             <x-ui.alert tone="warning" title="Validity update required" class="tw-mb-2">Request the supplier to extend the expired offer.</x-ui.alert>
@@ -396,28 +400,175 @@
         </aside>
     </div>
 </div>
+
+@if($canCreatePo)
+    <div class="modal fade" id="generatePoModal" tabindex="-1" aria-labelledby="generatePoModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <form action="{{ route('purchasing.quotations.generate-po', $quotation) }}" method="POST" id="generatePoForm">
+                    @csrf
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title fw-bold" id="generatePoModalTitle">Generate Purchase Order</h5>
+                            <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-0.5">
+                                {{ $quotation->purchaseRequisition->pr_number ?? '-' }} &middot; {{ $supplierDisplayName }}
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body tw-grid tw-gap-4">
+                        <div class="tw-grid tw-gap-2 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
+                            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-p-2.5">
+                                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-text-on-surface-variant">PR Number</div>
+                                <div class="tw-mt-0.5 tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
+                            </div>
+                            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-p-2.5">
+                                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-text-on-surface-variant">Supplier</div>
+                                <div class="tw-mt-0.5 tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ $supplierDisplayName }}</div>
+                            </div>
+                            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-p-2.5">
+                                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-text-on-surface-variant">Currency</div>
+                                <div class="tw-mt-0.5 tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ $quotation->currency }}</div>
+                            </div>
+                            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-low tw-p-2.5">
+                                <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-text-on-surface-variant">IDR Snapshot</div>
+                                <div class="tw-mt-0.5 tw-text-ui-sm tw-font-semibold tw-text-on-surface">
+                                    {{ $quotationRate ? 'Rp '.\App\Support\NumberFormat::maxDecimals($quotationRate->rate_to_idr) : 'Unavailable' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive tw-rounded-ui-sm tw-border tw-border-outline-variant">
+                            <table class="table table-sm align-middle mb-0 tw-text-ui-xs">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">Material</th>
+                                        <th scope="col" class="text-end">Quantity</th>
+                                        <th scope="col" class="text-end">Total Weight (KG)</th>
+                                        <th scope="col" class="text-end">Price/KG</th>
+                                        <th scope="col" class="text-end">Amount</th>
+                                        <th scope="col">PO Scope</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($directPoItems as $preview)
+                                        @php($previewItem = $preview['item'])
+                                        <tr @class(['table-light' => ! $preview['eligible']])>
+                                            <td class="fw-semibold">{{ $previewItem->prItem->material_name ?? '-' }}</td>
+                                            <td class="text-end ui-tabular-nums">{{ $previewItem->prItem?->quantity_value ?? '-' }}</td>
+                                            <td class="text-end ui-tabular-nums">
+                                                {{ \App\Support\NumberFormat::maxDecimals($previewItem->offered_total_weight ?? $previewItem->prItem?->total_weight ?? 0) }}
+                                            </td>
+                                            <td class="text-end ui-tabular-nums">
+                                                {{ $previewItem->price_per_kg !== null ? \App\Support\NumberFormat::maxDecimals($previewItem->price_per_kg, 4) : '-' }}
+                                            </td>
+                                            <td class="text-end ui-tabular-nums">
+                                                {{ $preview['eligible'] ? \App\Support\NumberFormat::maxDecimals($preview['amount']) : '-' }}
+                                            </td>
+                                            <td>
+                                                @if($preview['eligible'])
+                                                    <span class="ui-status-chip ui-status-chip--success">Included in PO</span>
+                                                @else
+                                                    <span class="ui-status-chip ui-status-chip--error">{{ $preview['skip_reason'] }}</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <td colspan="4" class="text-end">PO Total ({{ $quotation->currency }})</td>
+                                        <td class="text-end ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($directPoTotalAmount) }}</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="4" class="text-end">Estimated Total (IDR)</td>
+                                        <td class="text-end text-primary ui-tabular-nums">
+                                            {{ $directPoTotalIdr !== null ? 'Rp '.\App\Support\NumberFormat::maxDecimals($directPoTotalIdr) : '-' }}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <x-ui.alert tone="warning" title="Final Item Selection">
+                            Confirming will select every eligible line shown above for this supplier and create one Purchase Order atomically.
+                        </x-ui.alert>
+
+                        <div class="tw-grid tw-gap-3 md:tw-grid-cols-2">
+                            <div>
+                                <label for="directPoEstimatedArrival" class="form-label small fw-semibold tw-text-on-surface">Target Estimated Arrival Date</label>
+                                <input
+                                    type="date"
+                                    class="form-control form-control-sm"
+                                    id="directPoEstimatedArrival"
+                                    name="estimated_arrival"
+                                    value="{{ old('estimated_arrival', now()->addDays(14)->format('Y-m-d')) }}"
+                                >
+                            </div>
+                            <div>
+                                <label for="directPoNotes" class="form-label small fw-semibold tw-text-on-surface">PO Notes / Remarks</label>
+                                <textarea
+                                    class="form-control form-control-sm"
+                                    id="directPoNotes"
+                                    name="notes"
+                                    rows="2"
+                                    maxlength="1000"
+                                    placeholder="Optional delivery or commercial instructions..."
+                                >{{ old('notes') }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer tw-bg-surface-low">
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
+                        <x-ui.button type="submit" size="sm" id="generatePoSubmit" data-no-auto-spinner>
+                            <span id="generatePoSpinner" class="ui-spinner" hidden aria-hidden="true"></span>
+                            <span id="generatePoSubmitLabel">Confirm &amp; Generate PO</span>
+                        </x-ui.button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
 @endsection
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('requestRevisionForm');
-        if (!form) return;
+        const revisionForm = document.getElementById('requestRevisionForm');
+        if (revisionForm) {
+            revisionForm.addEventListener('submit', (event) => {
+                event.preventDefault();
 
-        form.addEventListener('submit', (event) => {
-            event.preventDefault();
-
-            AdasiAlert.confirm({
-                title: @json('Request Quotation Revision?'),
-                text: @json('The supplier will be notified and the quotation will be reopened for resubmission.'),
-                type: 'warning',
-                confirmText: @json('Yes, Request Revision'),
-                cancelText: @json('Cancel')
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
+                AdasiAlert.confirm({
+                    title: @json('Request Quotation Revision?'),
+                    text: @json('The supplier will be notified and the quotation will be reopened for resubmission.'),
+                    type: 'warning',
+                    confirmText: @json('Yes, Request Revision'),
+                    cancelText: @json('Cancel')
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const btn = revisionForm.querySelector('button[type="submit"]');
+                        window.AdasiButton?.startLoading(btn);
+                        revisionForm.submit();
+                    }
+                });
             });
+        }
+
+        const generatePoForm = document.getElementById('generatePoForm');
+        generatePoForm?.addEventListener('submit', () => {
+            const submitButton = document.getElementById('generatePoSubmit');
+            const spinner = document.getElementById('generatePoSpinner');
+            const label = document.getElementById('generatePoSubmitLabel');
+
+            if (submitButton) submitButton.disabled = true;
+            if (spinner) spinner.hidden = false;
+            if (label) label.textContent = @json('Generating PO...');
         });
     });
 </script>

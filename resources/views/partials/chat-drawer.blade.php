@@ -105,6 +105,41 @@
                     let pollTimer = null;
                     let searchTimer = null;
                     let isSending = false;
+                    let activeOpenerButton = null;
+
+                    const drafts = {};
+                    const getDraftKey = (conversationId) => `adasi_chat_draft_${config.myId}_${conversationId}`;
+
+                    const getDraft = (conversationId) => {
+                        if (!conversationId) return '';
+                        try {
+                            const stored = sessionStorage.getItem(getDraftKey(conversationId));
+                            return stored !== null ? stored : (drafts[conversationId] || '');
+                        } catch {
+                            return drafts[conversationId] || '';
+                        }
+                    };
+
+                    const saveDraft = (conversationId, text) => {
+                        if (!conversationId) return;
+                        const content = text ?? '';
+                        if (content.trim() === '') {
+                            clearDraft(conversationId);
+                            return;
+                        }
+                        drafts[conversationId] = content;
+                        try {
+                            sessionStorage.setItem(getDraftKey(conversationId), content);
+                        } catch {}
+                    };
+
+                    const clearDraft = (conversationId) => {
+                        if (!conversationId) return;
+                        delete drafts[conversationId];
+                        try {
+                            sessionStorage.removeItem(getDraftKey(conversationId));
+                        } catch {}
+                    };
 
                     const setSendButtonLoading = (loading) => {
                         sendButton.disabled = loading || sendButtonDefaultDisabled;
@@ -167,9 +202,14 @@
                     };
 
                     const setListMode = () => {
+                        if (activeConversationId) {
+                            saveDraft(activeConversationId, inputEl.value);
+                        }
                         activeConversationId = null;
                         lastMessageId = 0;
                         clearInterval(pollTimer);
+                        inputEl.value = '';
+                        clearAttachments();
                         backButton.classList.add('d-none');
                         titleEl.textContent = 'Negotiation & Chat';
                         subtitleEl.textContent = 'Active conversation list';
@@ -179,8 +219,6 @@
                         actionsEl.classList.add('d-none');
                         templatesEl.classList.add('d-none');
                         templateMenuEl.innerHTML = '';
-                        attachmentListEl.classList.add('d-none');
-                        attachmentInput.value = '';
                     };
 
                     const setConversationMode = (conversation) => {
@@ -349,6 +387,11 @@
                         attachmentListEl.classList.remove('d-none');
                     };
 
+                    const clearAttachments = () => {
+                        attachmentInput.value = '';
+                        renderAttachmentList();
+                    };
+
                     const readReceiptHtml = (message) => {
                         if (!message.is_me) return '';
 
@@ -415,7 +458,17 @@
                     };
 
                     const loadConversation = (conversationId) => {
-                        activeConversationId = String(conversationId);
+                        const nextConversationId = String(conversationId);
+                        const isSwitching = activeConversationId !== nextConversationId;
+
+                        if (isSwitching) {
+                            if (activeConversationId) {
+                                saveDraft(activeConversationId, inputEl.value);
+                            }
+                            activeConversationId = nextConversationId;
+                            inputEl.value = getDraft(activeConversationId);
+                            clearAttachments();
+                        }
                         messagesEl.innerHTML = `
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm me-1"></div>
@@ -431,6 +484,9 @@
                                 return response.json();
                             })
                             .then((data) => {
+                                if (activeConversationId !== nextConversationId) {
+                                    return;
+                                }
                                 setConversationMode(data.conversation);
                                 renderContext(data.context);
                                 renderActions(data.quick_actions);
@@ -456,6 +512,9 @@
                                 if (typeof updateBadges === 'function') updateBadges();
                             })
                             .catch(() => {
+                                if (activeConversationId !== nextConversationId) {
+                                    return;
+                                }
                                 messagesEl.innerHTML = `
                                     <div class="tw-m-3 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-error-container-foreground" role="alert">
                                         Failed to load chat details. Please try again later.
@@ -466,13 +525,14 @@
 
                     const appendLatestMessages = () => {
                         if (!activeConversationId || document.hidden) return;
+                        const currentPollingId = activeConversationId;
 
                         fetch(`${buildUrl(config.latestUrlTemplate, activeConversationId)}?after=${lastMessageId}`, {
                             headers: { 'Accept': 'application/json' }
                         })
                             .then((response) => response.ok ? response.json() : null)
                             .then((data) => {
-                                if (!data) return;
+                                if (!data || activeConversationId !== currentPollingId) return;
                                 updateReadReceipts(data.read_receipts);
                                 if (!data.messages || data.messages.length === 0) return;
 
@@ -648,6 +708,9 @@
                             inputEl.value = inputEl.value
                                 ? `${inputEl.value.trim()}\n${template}`
                                 : template;
+                            if (activeConversationId) {
+                                saveDraft(activeConversationId, inputEl.value);
+                            }
                             inputEl.focus();
                             return;
                         }
@@ -664,11 +727,14 @@
 
                         event.preventDefault();
                         const submitButton = form.querySelector('button[type="submit"]');
-                        const originalHtml = submitButton ? submitButton.innerHTML : '';
 
+                        activeOpenerButton = submitButton;
                         if (submitButton) {
-                            submitButton.disabled = true;
-                            submitButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Opening...`;
+                            if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+                                window.AdasiButton.startLoading(submitButton, { text: 'Opening...' });
+                            } else {
+                                submitButton.disabled = true;
+                            }
                         }
 
                         fetch(form.action, {
@@ -700,8 +766,11 @@
                             })
                             .finally(() => {
                                 if (submitButton) {
-                                    submitButton.disabled = false;
-                                    submitButton.innerHTML = originalHtml;
+                                    if (window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
+                                        window.AdasiButton.stopLoading(submitButton);
+                                    } else {
+                                        submitButton.disabled = false;
+                                    }
                                 }
                             });
                     });
@@ -736,9 +805,9 @@
                                 const emptyState = document.getElementById('chatDrawerEmpty');
                                 if (emptyState) emptyState.remove();
 
+                                clearDraft(activeConversationId);
                                 inputEl.value = '';
-                                attachmentInput.value = '';
-                                renderAttachmentList();
+                                clearAttachments();
                                 renderMessage(data.message);
                                 scrollMessagesToBottom();
                                 loadConversations();
@@ -756,6 +825,12 @@
                                 setSendButtonLoading(false);
                                 inputEl.focus();
                             });
+                    });
+
+                    inputEl.addEventListener('input', () => {
+                        if (activeConversationId) {
+                            saveDraft(activeConversationId, inputEl.value);
+                        }
                     });
 
                     inputEl.addEventListener('keydown', (event) => {
@@ -776,7 +851,21 @@
                     });
                     drawerEl.addEventListener('hidden.bs.offcanvas', () => {
                         clearInterval(pollTimer);
+                        if (activeConversationId) {
+                            saveDraft(activeConversationId, inputEl.value);
+                        }
                         activeConversationId = null;
+                        inputEl.value = '';
+                        clearAttachments();
+
+                        if (activeOpenerButton) {
+                            if (window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
+                                window.AdasiButton.stopLoading(activeOpenerButton);
+                            } else {
+                                activeOpenerButton.disabled = false;
+                            }
+                            activeOpenerButton = null;
+                        }
                     });
                 })();
             </script>

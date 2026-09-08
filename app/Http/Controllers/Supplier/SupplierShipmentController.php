@@ -7,7 +7,10 @@ use App\Models\PurchaseOrder;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Services\ShipmentService;
+use App\Support\NumberFormat;
+use App\Support\StatusHelper;
 use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
 
 class SupplierShipmentController extends Controller
 {
@@ -25,10 +28,91 @@ class SupplierShipmentController extends Controller
         $query = Shipment::query()
             ->where('supplier_id', $supplierId)
             ->with(['items.purchaseOrder', 'documents.latestAttachment'])
-            ->latest();
+            ->latest('shipment_date');
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('shipment_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('shipment_date', '<=', $request->date_to);
+        }
+
+        if ($search = trim((string) $request->input('search.value', $request->input('search')))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('shipment_number', 'like', "%{$search}%")
+                    ->orWhere('notes', 'like', "%{$search}%")
+                    ->orWhereHas('items.purchaseOrder', fn ($po) => $po->where('po_number', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->ajax()) {
+            return DataTables::eloquent($query)
+                ->addColumn('shipment_number_display', function ($shp) {
+                    $url = route('supplier.shipments.show', $shp);
+                    return '<a href="'.e($url).'" class="fw-bold text-primary text-decoration-none">'.e($shp->shipment_number).'</a>';
+                })
+                ->addColumn('po_references', function ($shp) {
+                    $pos = $shp->purchaseOrders();
+                    if ($pos->isEmpty()) {
+                        return '<span class="tw-text-outline">-</span>';
+                    }
+                    return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
+                })
+                ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.$shp->items->count().'</span>')
+                ->addColumn('total_qty', function ($shp) {
+                    $total = (int) $shp->items->sum('shipped_qty');
+                    return '<span class="fw-bold text-primary ui-tabular-nums">'.number_format($total).' pcs</span>';
+                })
+                ->addColumn('actual_weight', function ($shp) {
+                    $total = (float) $shp->items->sum('actual_weight_kg');
+                    return '<span class="ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
+                })
+                ->addColumn('total_weight', function ($shp) {
+                    $total = (float) $shp->items->sum('actual_weight_kg');
+                    return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
+                })
+                ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.$shp->shipment_date->format('d M Y').'</span>' : '-')
+                ->addColumn('estimated_arrival', fn ($shp) => $shp->estimated_arrival_date ? '<span class="ui-tabular-nums">'.$shp->estimated_arrival_date->format('d M Y').'</span>' : '-')
+                ->addColumn('status_badge', function ($shp) {
+                    return StatusHelper::badge(
+                        StatusHelper::shipmentBadge($shp->status),
+                        StatusHelper::shipmentLabel($shp->status)
+                    );
+                })
+                ->addColumn('action', function ($shp) {
+                    $viewUrl = route('supplier.shipments.show', $shp);
+                    $editUrl = route('supplier.shipments.edit', $shp);
+                    $isOwner = (int) $shp->supplier_id === (int) auth()->id();
+                    $secondaryActions = [];
+
+                    if ($isOwner && $shp->status === 'draft') {
+                        $primaryAction = '<form action="'.route('supplier.shipments.submit', $shp).'" method="POST" class="draft-submit-form tw-m-0">'
+                            .csrf_field()
+                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="Submit draft '.e($shp->shipment_number).'">'
+                            .'Submit'
+                            .'</button></form>';
+                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">View details</a></li>';
+                        $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">Edit draft</a></li>';
+                        $secondaryActions[] = '<li><form action="'.route('supplier.shipments.cancel', $shp).'" method="POST" class="cancel-form">'.csrf_field().'<button type="button" class="dropdown-item text-danger btn-cancel-shipment btn-delete">Cancel shipment</button></form></li>';
+                    } else {
+                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="View '.e($shp->shipment_number).'">Details</a>';
+                    }
+
+                    if ($secondaryActions === []) {
+                        return '<div class="d-inline-flex justify-content-end">'.$primaryAction.'</div>';
+                    }
+
+                    return '<div class="d-inline-flex align-items-center justify-content-end gap-1">'.$primaryAction
+                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($shp->shipment_number).'">More</button>'
+                        .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
+                })
+                ->rawColumns(['shipment_number_display', 'po_references', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'estimated_arrival', 'status_badge', 'action'])
+                ->toJson();
         }
 
         $shipments = $query->paginate(15)->withQueryString();
@@ -65,11 +149,14 @@ class SupplierShipmentController extends Controller
             foreach ($items as $item) {
                 $status = $this->shipmentService->getItemDeliveryStatus($po->id, $item->id);
 
-                if ($status['remaining'] > 0) {
+                if (($status['remaining_qty'] ?? $status['remaining']) > 0) {
                     $poItems->push([
                         'po' => $po,
                         'quotation_item' => $item,
                         'pr_item' => $item->prItem,
+                        'ordered_qty' => $status['ordered_qty'] ?? (int) $status['ordered'],
+                        'allocated_qty' => $status['allocated_qty'] ?? (int) $status['allocated'],
+                        'remaining_qty' => $status['remaining_qty'] ?? (int) $status['remaining'],
                         'ordered' => $status['ordered'],
                         'allocated' => $status['allocated'],
                         'remaining' => $status['remaining'],
@@ -121,15 +208,20 @@ class SupplierShipmentController extends Controller
                 $status = $this->shipmentService->getItemDeliveryStatus($po->id, $item->id);
                 $current = $currentQuantities->get($po->id.':'.$item->id);
 
-                if ($status['remaining'] > 0 || $current) {
+                if (($status['remaining_qty'] ?? $status['remaining']) > 0 || $current) {
                     $poItems->push([
                         'po' => $po,
                         'quotation_item' => $item,
                         'pr_item' => $item->prItem,
+                        'ordered_qty' => $status['ordered_qty'] ?? (int) $status['ordered'],
+                        'allocated_qty' => $status['allocated_qty'] ?? (int) $status['allocated'],
+                        'remaining_qty' => $status['remaining_qty'] ?? (int) $status['remaining'],
                         'ordered' => $status['ordered'],
                         'allocated' => $status['allocated'],
                         'remaining' => $status['remaining'],
-                        'current_quantity' => $current?->shipped_quantity,
+                        'current_qty' => $current?->shipped_qty,
+                        'current_actual_weight_kg' => $current?->actual_weight_kg,
+                        'current_quantity' => $current?->shipped_qty,
                     ]);
                 }
             }
@@ -312,7 +404,9 @@ class SupplierShipmentController extends Controller
             'items.*' => 'required|array',
             'items.*.purchase_order_id' => 'required|integer|exists:purchase_orders,id',
             'items.*.quotation_item_id' => 'required|integer|exists:quotation_items,id',
-            'items.*.shipped_quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,4'],
+            'items.*.shipped_qty' => ['required_without:items.*.shipped_quantity', 'nullable', 'integer', 'min:1'],
+            'items.*.actual_weight_kg' => ['required_without:items.*.shipped_quantity', 'nullable', 'numeric', 'gt:0', 'decimal:0,4'],
+            'items.*.shipped_quantity' => ['sometimes', 'nullable'],
         ];
         if ($allowAction) {
             $rules['action'] = 'nullable|string|in:draft,submit';
@@ -354,9 +448,9 @@ class SupplierShipmentController extends Controller
                 return true;
             }
 
-            $quantity = $item['shipped_quantity'] ?? null;
+            $qty = $item['shipped_qty'] ?? $item['shipped_quantity'] ?? null;
 
-            return $quantity !== null && trim((string) $quantity) !== '';
+            return $qty !== null && trim((string) $qty) !== '';
         });
 
         $request->merge(['items' => $items]);

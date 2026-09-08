@@ -193,12 +193,12 @@
             <div class="tw-text-outline tw-text-ui-xs">{{ $po->created_at->format('H:i') }} WIB</div>
         </div>
         <div class="po-tracking-step {{ $po->estimated_arrival ? 'is-active' : '' }}">
-            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">3. Estimated Arrival</div>
+            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">3. PO Target Arrival Date</div>
             <div class="fw-bold {{ $po->is_overdue ? 'text-danger' : 'tw-text-on-surface' }} tw-text-ui-sm tw-mt-0.5">
                 {{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}
             </div>
             <div class="tw-text-outline tw-text-ui-xs">
-                {{ $po->is_overdue ? 'Overdue' : 'Target delivery' }}
+                {{ $po->is_overdue ? 'Overdue' : 'Purchasing target at ADASI' }}
             </div>
         </div>
         <div class="po-tracking-step {{ $po->actual_arrival ? 'is-active' : '' }}">
@@ -222,6 +222,9 @@
         <ul class="nav po-nav-pills" id="po-section-nav">
             <li class="nav-item"><a class="nav-link active" href="#sec-info">Order Info</a></li>
             <li class="nav-item"><a class="nav-link" href="#sec-material">Materials &amp; Commercials</a></li>
+            @if(isset($itemProjections) && $itemProjections->isNotEmpty())
+                <li class="nav-item"><a class="nav-link" href="#sec-material-progress">Material Progress</a></li>
+            @endif
             @if($po->qcInspections->isNotEmpty())
                 <li class="nav-item"><a class="nav-link" href="#sec-inspection">QC Inspection</a></li>
             @endif
@@ -354,7 +357,7 @@
                                     </td>
                                     <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
-                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg) }}
+                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) }}
                                     </td>
                                     <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}</td>
                                     <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($idr) : '—' }}</td>
@@ -390,6 +393,97 @@
                     </tfoot>
                 </table>
             </x-ui.data-table>
+
+            {{-- Supplier Material Progress Section --}}
+            @if(isset($itemProjections) && $itemProjections->isNotEmpty())
+                <x-ui.data-table
+                    title="Supplier Material Progress"
+                    description="Live tracking of supplier manufacturing and dispatch preparation per awarded item."
+                    id="sec-material-progress"
+                    class="tw-scroll-mt-24"
+                >
+                    <x-slot:actions>
+                        @if(isset($poProgressSummary))
+                            <span class="ui-status-chip ui-status-chip--info">
+                                {{ $poProgressSummary['text'] }}
+                            </span>
+                        @endif
+                    </x-slot:actions>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
+                            <thead class="table-light text-center">
+                                <tr>
+                                    <th scope="col" style="width: 35px;">No</th>
+                                    <th scope="col" class="text-start">Material</th>
+                                    <th scope="col">Ordered</th>
+                                    <th scope="col">Accepted</th>
+                                    <th scope="col">In Transit</th>
+                                    <th scope="col">Waiting QC</th>
+                                    <th scope="col">Supplier-Controlled</th>
+                                    <th scope="col">Supplier Progress</th>
+                                    <th scope="col">Original Ready Date</th>
+                                    <th scope="col">Current Estimated Ready</th>
+                                    <th scope="col">Last Supplier Update</th>
+                                    <th scope="col" class="text-end">History</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($itemProjections as $idx => $p)
+                                    <tr>
+                                        <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
+                                        <td class="text-start">
+                                            <div class="fw-bold tw-text-on-surface">{{ $p['material_name'] }}</div>
+                                            @if($p['hs_code'])
+                                                <div class="tw-text-on-surface-variant tw-text-ui-xs">HS: {{ $p['hs_code'] }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="text-center ui-tabular-nums fw-semibold">{{ $p['ordered_qty'] }} pcs</td>
+                                        <td class="text-center ui-tabular-nums text-success fw-semibold">{{ $p['accepted_qty'] }} pcs</td>
+                                        <td class="text-center ui-tabular-nums text-primary fw-semibold">{{ $p['in_transit_qty'] }} pcs</td>
+                                        <td class="text-center ui-tabular-nums fw-semibold {{ $p['arrived_pending_qc_qty'] > 0 ? 'text-warning' : 'tw-text-on-surface-variant' }}">
+                                            {{ $p['arrived_pending_qc_qty'] }} pcs
+                                        </td>
+                                        <td class="text-center ui-tabular-nums fw-bold">
+                                            <span class="badge {{ $p['supplier_controlled_qty'] > 0 ? 'bg-primary' : 'bg-secondary' }}">
+                                                {{ $p['supplier_controlled_qty'] }} pcs
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="ui-status-chip ui-status-chip--{{ $p['manual_progress_tone'] }}">
+                                                {{ $p['manual_progress_label'] }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center ui-tabular-nums tw-text-on-surface-variant" title="Supplier Original Estimated Ready / Dispatch Date">
+                                            {{ $p['original_supplier_ready_date'] ? \Carbon\Carbon::parse($p['original_supplier_ready_date'])->format('d M Y') : '-' }}
+                                        </td>
+                                        <td class="text-center ui-tabular-nums fw-semibold {{ $p['current_estimated_ready_date'] ? 'text-primary' : 'tw-text-on-surface-variant' }}">
+                                            {{ $p['current_estimated_ready_date'] ? $p['current_estimated_ready_date']->format('d M Y') : '-' }}
+                                        </td>
+                                        <td class="text-center tw-text-on-surface-variant" style="font-size: 0.75rem;">
+                                            @if($p['last_progress_update_at'])
+                                                <div>{{ $p['last_progress_update_at']->format('d M Y H:i') }}</div>
+                                                <div class="tw-text-outline">{{ $p['last_updated_by'] ?? 'Supplier' }}</div>
+                                            @else
+                                                <span class="text-muted">No updates</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary btn-sm px-2 py-1 tw-text-ui-xs btn-view-purchasing-history"
+                                                    data-award-id="{{ $p['award_id'] }}"
+                                                    data-material-name="{{ $p['material_name'] }}"
+                                                    data-history-url="{{ route('purchasing.purchase-orders.item-progress.history', ['po_id' => $po, 'award_id' => $p['award']]) }}">
+                                                History
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </x-ui.data-table>
+            @endif
 
             {{-- QC Inspection Results --}}
             @php
@@ -497,7 +591,7 @@
                     </x-ui.alert>
                 </template>
 
-                <div class="tw-grid tw-gap-px tw-overflow-hidden tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4">
+                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
                     @php
                         $docConfig = [
                             'invoice' => ['label' => 'Invoice', 'icon' => 'receipt', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
@@ -507,35 +601,91 @@
                         ];
                     @endphp
 
+                    @php
+                        $customsSummary = $customsSummary ?? $po->customsDocumentationSummary();
+                    @endphp
+
                     @foreach($po->documents as $doc)
                         @php
                             $config = $docConfig[$doc->doc_type] ?? ['label' => $doc->doc_type, 'icon' => 'file', 'statuses' => []];
-                            $statusLabel = $config['statuses'][$doc->status] ?? $doc->status;
-                            $statusTone = match($doc->status) {
-                                'pending' => 'neutral',
-                                'received', 'issued', 'processing' => 'info',
-                                'verified', 'done' => 'success',
-                                default => 'neutral'
+                            $summaryItem = $customsSummary[$doc->doc_type] ?? null;
+                            $effectiveStatus = $summaryItem['status'] ?? $doc->status;
+                            $statusLabel = $config['statuses'][$effectiveStatus] ?? ucfirst($effectiveStatus);
+                            $chipClasses = match($effectiveStatus) {
+                                'pending' => 'ui-status-chip--neutral',
+                                'received', 'issued', 'processing' => 'ui-status-chip--info',
+                                'verified', 'done' => 'ui-status-chip--success',
+                                default => 'ui-status-chip--neutral'
                             };
+                            $iconClasses = match($effectiveStatus) {
+                                'pending' => 'tw-bg-surface-container-high tw-text-on-surface-variant/80',
+                                'verified', 'done' => 'tw-bg-success-container/40 text-success',
+                                default => 'tw-bg-primary/10 text-primary'
+                            };
+                            $shipmentDocs = collect($summaryItem['shipment_documents'] ?? []);
+                            $uploadedDocs = $shipmentDocs->filter(fn($sd) => !empty($sd['attachment']));
                         @endphp
-                        <div class="tw-bg-surface-container">
-                            <div class="po-doc-card tw-h-full tw-bg-surface-container" id="doc-card-{{ $doc->id }}">
-                                <div class="text-center p-3">
-                                    <x-ui.icon :name="$config['icon']" size="lg" class="tw-mb-1.5 d-block {{ $doc->status === 'pending' ? 'tw-text-outline' : 'text-primary' }}" />
-                                    <h6 class="fw-bold tw-text-on-surface tw-text-ui-sm mb-1">{{ $config['label'] }}</h6>
-                                    <span class="ui-status-chip ui-status-chip--{{ $statusTone }} tw-mb-1.5 doc-status-badge" id="doc-badge-{{ $doc->id }}" data-status="{{ $doc->status }}">{{ $statusLabel }}</span>
-                                    <div class="tw-text-on-surface-variant tw-text-ui-xs mb-2" id="doc-date-{{ $doc->id }}">
-                                        {{ $doc->status !== 'pending' ? $doc->updated_at->format('d M Y, H:i') : '' }}
-                                    </div>
-                                    <x-ui.button type="button" variant="outline" size="sm" class="btn-update-doc tw-w-full"
-                                            data-doc-id="{{ $doc->id }}"
-                                            data-doc-type="{{ $doc->doc_type }}"
-                                            data-doc-label="{{ $config['label'] }}"
-                                            data-doc-status="{{ $doc->status }}"
-                                            :data-doc-statuses="json_encode($config['statuses'])">
-                                        <x-ui.icon name="square-pen" size="sm" class="me-1" /> Update Status
-                                    </x-ui.button>
+                        <div class="po-doc-card tw-h-full tw-rounded-xl tw-border tw-border-outline-variant/80 tw-bg-surface tw-p-3.5 tw-shadow-2xs tw-flex tw-flex-col tw-justify-between tw-transition-all hover:tw-border-primary/40 hover:tw-shadow-xs" id="doc-card-{{ $doc->id }}">
+                            {{-- Zone 1: Document Header (Centered & Uniform) --}}
+                            <div class="tw-flex tw-flex-col tw-items-center tw-text-center">
+                                <div class="tw-w-10 tw-h-10 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-mb-2 {{ $iconClasses }}">
+                                    <x-ui.icon :name="$config['icon']" size="md" />
                                 </div>
+                                <h6 class="fw-bold tw-text-on-surface tw-text-ui-sm mb-1.5">{{ $config['label'] }}</h6>
+                                <span class="ui-status-chip {{ $chipClasses }} tw-mb-1 doc-status-badge" id="doc-badge-{{ $doc->id }}" data-status="{{ $effectiveStatus }}">
+                                    {{ $statusLabel }}
+                                </span>
+                                <div class="tw-text-on-surface-variant tw-text-ui-xs tw-h-5 tw-flex tw-items-center tw-justify-center" id="doc-date-{{ $doc->id }}">
+                                    @if($effectiveStatus !== 'pending')
+                                        <span>{{ $doc->updated_at->format('d M Y, H:i') }}</span>
+                                    @else
+                                        <span class="tw-text-outline/50">&mdash;</span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            {{-- Zone 2: Shipment Files (Equal height container with clean stacked action) --}}
+                            <div class="tw-my-2.5 tw-pt-2.5 tw-border-t tw-border-outline-variant/60 tw-flex-1 tw-flex tw-flex-col tw-justify-center" style="min-height: 72px;">
+                                @if($uploadedDocs->isNotEmpty())
+                                    <div class="tw-space-y-2 w-100">
+                                        @foreach($uploadedDocs as $sDoc)
+                                            <div class="tw-rounded-lg tw-bg-surface-container-low tw-border tw-border-outline-variant/70 tw-p-2 tw-transition-colors">
+                                                <div class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-mb-1.5 tw-min-w-0">
+                                                    <x-ui.icon name="truck" size="xs" class="text-primary flex-shrink-0" />
+                                                    <a href="{{ route('purchasing.shipments.show', $sDoc['shipment']) }}" 
+                                                       class="tw-text-ui-xs tw-font-semibold text-primary text-decoration-none hover:tw-underline tw-truncate" 
+                                                       title="Open shipment {{ $sDoc['shipment_number'] }}">
+                                                        {{ $sDoc['shipment_number'] }}
+                                                    </a>
+                                                </div>
+                                                <a href="{{ route('attachments.show', $sDoc['attachment']->id) }}" 
+                                                   target="_blank" 
+                                                   class="btn btn-outline-primary btn-sm py-1 px-2 tw-text-ui-xs tw-w-full d-inline-flex align-items-center justify-content-center gap-1.5 rounded" 
+                                                   title="View {{ $sDoc['attachment']->file_name }}">
+                                                    <x-ui.icon name="file-text" size="sm" />
+                                                    <span class="tw-truncate">View File</span>
+                                                </a>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="tw-rounded-lg tw-bg-surface-container-low/50 tw-border tw-border-dashed tw-border-outline-variant/60 tw-p-2 tw-text-center tw-flex tw-flex-col tw-items-center tw-justify-center" style="min-height: 72px;">
+                                        <x-ui.icon name="file" size="sm" class="tw-text-outline/40 tw-mb-1" />
+                                        <span class="tw-text-outline/70 tw-text-ui-xs tw-font-medium">No file uploaded</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- Zone 3: Footer Action --}}
+                            <div class="tw-pt-1 tw-mt-auto">
+                                <x-ui.button type="button" variant="outline" size="sm" class="btn-update-doc tw-w-full"
+                                        data-doc-id="{{ $doc->id }}"
+                                        data-doc-type="{{ $doc->doc_type }}"
+                                        data-doc-label="{{ $config['label'] }}"
+                                        data-doc-status="{{ $effectiveStatus }}"
+                                        :data-doc-statuses="json_encode($config['statuses'])">
+                                    <x-ui.icon name="square-pen" size="sm" class="me-1" /> Update Status
+                                </x-ui.button>
                             </div>
                         </div>
                     @endforeach
@@ -547,7 +697,7 @@
         <aside class="tw-grid tw-gap-4" aria-label="PO operations and timeline">
             {{-- Supplier Chat Channel --}}
             <x-ui.card title="Supplier Negotiation">
-                <form action="{{ route('purchasing.conversations.start.po', $po) }}" method="POST" data-chat-start-form>
+                <form action="{{ route('purchasing.conversations.start.po', $po) }}" method="POST" data-chat-start-form data-managed-submit>
                     @csrf
                     <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                     <x-ui.button type="submit" variant="outline" size="sm" class="tw-w-full tw-justify-between">
@@ -667,6 +817,28 @@
                     <span class="spinner-border spinner-border-sm d-none me-1" id="docSpinner"></span>
                     Save Changes
                 </x-ui.button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Shared Progress History Modal --}}
+<div class="modal fade" id="progressHistoryModal" tabindex="-1" aria-labelledby="progressHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title tw-text-ui-base fw-bold" id="progressHistoryModalLabel">
+                    Material Progress History
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="progressHistoryModalBody">
+                <div class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Loading history...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -937,6 +1109,54 @@
             if (result.isConfirmed) {
                 $('#arrivalForm').submit();
             }
+        });
+    });
+
+    $(document).on('click', '.btn-view-purchasing-history', function() {
+        const materialName = $(this).data('materialName');
+        const historyUrl = $(this).data('historyUrl');
+        const modalEl = document.getElementById('progressHistoryModal');
+        const titleEl = document.getElementById('progressHistoryModalLabel');
+        const bodyEl = document.getElementById('progressHistoryModalBody');
+
+        titleEl.textContent = `Progress History: ${materialName}`;
+        bodyEl.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Loading history...</div>';
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        fetch(historyUrl, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.history || data.history.length === 0) {
+                bodyEl.innerHTML = '<div class="text-center py-4 text-muted">No progress updates recorded yet. Default state is <strong>Awaiting Confirmation</strong>.</div>';
+                return;
+            }
+
+            let html = '<div class="tw-space-y-3">';
+            data.history.forEach(item => {
+                html += `
+                    <div class="tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-text-ui-xs">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="ui-status-chip ui-status-chip--${item.status_tone} fw-bold">${item.status_label}</span>
+                            <span class="text-muted">${item.created_at || '-'}</span>
+                        </div>
+                        <div class="tw-text-on-surface-variant mb-1">
+                            <strong>Supplier-controlled Qty snapshot:</strong> ${item.supplier_controlled_qty_snapshot} pcs
+                            ${item.estimated_ready_date ? ` &bull; <strong>Estimated Ready:</strong> ${item.estimated_ready_date}` : ''}
+                            &bull; <strong>Updated by:</strong> ${item.updated_by}
+                        </div>
+                        ${item.note ? `<div class="tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant text-dark mt-1"><em>"${item.note}"</em></div>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            bodyEl.innerHTML = html;
+        })
+        .catch(() => {
+            bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">Failed to load progress history.</div>';
         });
     });
 </script>

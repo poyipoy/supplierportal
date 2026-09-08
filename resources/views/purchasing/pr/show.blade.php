@@ -337,7 +337,7 @@
                 <x-ui.card title="Supplier Discussions" description="Open direct supplier chat threads for this PR.">
                     <div class="tw-grid tw-gap-2">
                         @foreach($pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->unique('supplier_id') as $quotation)
-                            <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form>
+                            <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form data-managed-submit>
                                 @csrf
                                 <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                                 <x-ui.button type="submit" variant="outline" size="sm" class="tw-w-full tw-justify-start">
@@ -379,7 +379,8 @@
 @push('scripts')
 <script>
     $('.btn-submit').on('click', function() {
-        const form = $(this).closest('form');
+        const $btn = $(this);
+        const form = $btn.closest('form');
         AdasiAlert.confirm({
             title: @json('Submit Requisition?'),
             text: @json('Status will change to Submitted and cannot be edited anymore.'),
@@ -387,6 +388,7 @@
             cancelText: @json('Cancel')
         }).then((result) => {
             if (result.isConfirmed) {
+                window.AdasiButton?.startLoading($btn[0]);
                 form.submit();
             }
         });

@@ -75,7 +75,12 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('resetAnnouncementFilters').addEventListener('click', function () { search.value = ''; status.value = ''; filterRows(); });
     document.querySelectorAll('.btn-delete-announcement').forEach((button) => button.addEventListener('click', function () {
         const form = this.closest('form');
-        AdasiAlert.confirmDanger({ title: @json('Delete this announcement?'), text: @json('The announcement will be permanently removed from the portal.'), confirmText: @json('Delete Announcement'), cancelText: @json('Cancel') }).then((result) => { if (result.isConfirmed) form.submit(); });
+        AdasiAlert.confirmDanger({ title: @json('Delete this announcement?'), text: @json('The announcement will be permanently removed from the portal.'), confirmText: @json('Delete Announcement'), cancelText: @json('Cancel') }).then((result) => {
+            if (result.isConfirmed) {
+                window.AdasiButton?.startLoading(button);
+                form.submit();
+            }
+        });
     }));
 });
 </script>

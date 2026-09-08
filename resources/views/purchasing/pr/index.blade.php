@@ -198,7 +198,8 @@
 
         // ADASI Alert delete confirmation
         $(document).on('click', '.btn-delete', function() {
-            const form = $(this).closest('form');
+            const $btn = $(this);
+            const form = $btn.closest('form');
             AdasiAlert.confirmDanger({
                 title: @json('Are you sure you want to delete?'),
                 text: @json('This material requisition will be permanently deleted!'),
@@ -206,6 +207,7 @@
                 cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
+                    window.AdasiButton?.startLoading($btn[0]);
                     form.submit();
                 }
             });
@@ -230,7 +232,7 @@
                 draftSubmitConfirmationOpen = false;
 
                 if (result.isConfirmed) {
-                    $button.data('submitting', true).prop('disabled', true);
+                    window.AdasiButton?.startLoading($button[0]);
                     form.submit();
                 }
             });

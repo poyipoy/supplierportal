@@ -754,7 +754,9 @@ class MissionFiveImportTest extends TestCase
             ->assertSee(route('supplier.quotations.import-template', $this->pr), false)
             ->assertSee('Fill Empty Fields Only')
             ->assertSee('Replace Imported Fields')
-            ->assertSee('quotationImportPreviewUrl', false);
+            ->assertSee('quotationImportPreviewUrl', false)
+            ->assertSee('autoCalculateOfferWeight($formRow)', false)
+            ->assertSee('field === \'offered_weight_per_unit\'', false);
     }
 
     /**

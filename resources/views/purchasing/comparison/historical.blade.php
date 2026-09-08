@@ -36,7 +36,7 @@
     <x-purchasing.comparison-tabs active="historical" />
 
     <x-ui.toolbar class="tw-mb-0">
-        <form method="GET" action="{{ route('purchasing.comparison.historical') }}" class="tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-12 xl:tw-items-end" id="historicalFilterForm">
+        <form method="GET" action="{{ route('purchasing.comparison.historical') }}" class="tw-grid tw-w-full tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-12 xl:tw-items-end" id="historicalFilterForm" data-managed-submit>
             <div class="xl:tw-col-span-3">
                 <label class="form-label tw-mb-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="historicalSupplierSelect">Supplier</label>
                 <select name="supplier_id" class="form-select form-select-sm" id="historicalSupplierSelect" required>
@@ -195,7 +195,7 @@
                                 </td>
                                 <td class="text-center">{{ $row['supplier'] ?? '-' }}</td>
                                 <td class="text-end ui-tabular-nums">
-                                    {{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg']) }}
+                                    {{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg'], 4) }}
                                     <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">{{ $row['currency'] }}</span>
                                 </td>
                                 <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] ? 'Rp '.\App\Support\NumberFormat::maxDecimals($row['total_idr']) : '-' }}</td>
@@ -493,6 +493,14 @@ function formatNumber(value, decimals = 2) {
     return Number(value).toLocaleString('id-ID', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
+    });
+}
+
+function formatMaxDecimals(value, maxDecimals = 2) {
+    if (value === null || value === undefined || value === '') return '-';
+    return Number(value).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: maxDecimals,
     });
 }
 
@@ -829,7 +837,7 @@ function renderTable(payload) {
                     : escapeHtml(row.pr_number || '-')}
             </td>
             <td class="text-center">${escapeHtml(row.supplier || '-')}</td>
-            <td class="text-end ui-tabular-nums">${formatNumber(row.price_per_kg)} <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">${escapeHtml(row.currency)}</span></td>
+            <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">${escapeHtml(row.currency)}</span></td>
             <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
             <td class="text-center">${row.purchase_order_at_display ? escapeHtml(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">Draft</span>'}</td>
             <td class="text-center">${changeHtml(row.change_pct)}</td>
@@ -919,6 +927,11 @@ window.loadHistorycalPayloadFromFilters = async function (historyPage = 1) {
     }
     resultsContainer?.setAttribute('aria-busy', 'true');
 
+    const submitBtn = filterForm?.querySelector('button[type="submit"]');
+    if (submitBtn && window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+        window.AdasiButton.startLoading(submitBtn);
+    }
+
     try {
         const response = await fetch(url.toString(), {
             headers: {
@@ -947,6 +960,9 @@ window.loadHistorycalPayloadFromFilters = async function (historyPage = 1) {
             resultsContainer.innerHTML = emptyHistorycalResultHtml('Failed to load historical data. Try selecting filters again.', 'warning');
         }
     } finally {
+        if (submitBtn && window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
+            window.AdasiButton.stopLoading(submitBtn);
+        }
         resultsContainer?.setAttribute('aria-busy', 'false');
     }
 };

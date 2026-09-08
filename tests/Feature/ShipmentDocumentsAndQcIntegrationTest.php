@@ -99,7 +99,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             'pr_id' => $pr->id,
             'material_name' => 'SKD11 Tool Steel Bar',
             'shape' => 'round',
-            'quantity' => 1,
+            'quantity' => (int) $orderedWeight,
             'weight_needed' => $orderedWeight,
             'd_outer' => 120.0,
             'length' => 1000.0,
@@ -119,6 +119,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             'pr_item_id' => $prItem->id,
             'price_per_kg' => 15.0,
             'amount' => 15.0 * $orderedWeight,
+            'available_qty' => (int) $orderedWeight,
             'is_available' => true,
         ]);
 
@@ -222,7 +223,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 10.0,
+                    'shipped_qty' => 10,
+                    'actual_weight_kg' => 10.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -273,7 +275,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 8.0,
+                    'shipped_qty' => 8,
+                    'actual_weight_kg' => 8.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -331,7 +334,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 8.0,
+                    'shipped_qty' => 8,
+                    'actual_weight_kg' => 8.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -353,14 +357,15 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $po->refresh();
         $this->assertSame('active', $po->status);
 
-        // Shipment 2: 12 kg (completing the 20 kg ordered)
+        // Shipment 2: 12 pcs (completing the 20 pcs ordered)
         $draft2 = $shipmentService->createDraft($this->supplierUserA);
         $shipment2 = $shipmentService->submitShipment($draft2, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 12.0,
+                    'shipped_qty' => 12,
+                    'actual_weight_kg' => 12.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -412,7 +417,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 20.0,
+                    'shipped_qty' => 20,
+                    'actual_weight_kg' => 20.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -613,7 +619,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $poB->id,
                     'quotation_item_id' => $qItemB->id,
-                    'shipped_quantity' => 15.0,
+                    'shipped_qty' => 15,
+                    'actual_weight_kg' => 15.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -664,12 +671,14 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $poA->id,
                     'quotation_item_id' => $qItemA->id,
-                    'shipped_quantity' => 10.0,
+                    'shipped_qty' => 10,
+                    'actual_weight_kg' => 10.0,
                 ],
                 [
                     'purchase_order_id' => $poB->id,
                     'quotation_item_id' => $qItemB->id,
-                    'shipped_quantity' => 15.0,
+                    'shipped_qty' => 15,
+                    'actual_weight_kg' => 15.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -746,14 +755,16 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'items' => [[
                         'purchase_order_id' => $po->id,
                         'quotation_item_id' => $qItem->id,
-                        'shipped_quantity' => 20.0,
+                        'shipped_qty' => 20,
+                        'actual_weight_kg' => 20.0,
                     ]],
                 ]);
             } else {
                 $shipmentService->syncDraftItems($shipment, [[
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 20.0,
+                    'shipped_qty' => 20,
+                    'actual_weight_kg' => 20.0,
                 ]]);
             }
 
@@ -868,12 +879,14 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItems[0]->id,
-                    'shipped_quantity' => 10.0,
+                    'shipped_qty' => 10,
+                    'actual_weight_kg' => 10.0,
                 ],
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItems[1]->id,
-                    'shipped_quantity' => 12.0,
+                    'shipped_qty' => 12,
+                    'actual_weight_kg' => 12.0,
                 ],
             ],
         ]);
@@ -928,7 +941,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 5.0,
+                    'shipped_qty' => 5,
+                    'actual_weight_kg' => 5.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -989,14 +1003,15 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $this->assertSame(20.0, $shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining']);
 
         // Verify remaining delivery can continue:
-        // Supplier can submit remaining 15 kg
+        // Supplier can submit remaining 15 pcs
         $draft2 = $shipmentService->createDraft($this->supplierUserA);
         $shipment2 = $shipmentService->submitShipment($draft2, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 15.0,
+                    'shipped_qty' => 15,
+                    'actual_weight_kg' => 15.0,
                 ],
             ],
         ], $this->supplierUserA);
@@ -1033,7 +1048,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $this->assertSame($claimCount, MaterialClaim::count());
         $this->assertSame('completed', $po->fresh()->status);
         $this->assertSame($before, $po->fresh()->itemFulfillmentStatus($qItem->id));
-        $this->assertSame(200000, $before['accepted_units']);
+        $this->assertSame(20, $before['accepted_units']);
+        $this->assertSame(20, $before['accepted_qty']);
         $this->assertSame(0, $before['reserved_units']);
         $this->assertSame(0, $before['remaining_units']);
     }
@@ -1086,8 +1102,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $shipment = $shipmentService->createDraft($this->supplierUserA);
         $shipment = $shipmentService->submitShipment($shipment, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItems[0]->id, 'shipped_quantity' => 10.0],
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItems[1]->id, 'shipped_quantity' => 12.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItems[0]->id, 'shipped_qty' => 10, 'actual_weight_kg' => 10.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItems[1]->id, 'shipped_qty' => 12, 'actual_weight_kg' => 12.0],
             ],
         ]);
         $shipmentService->confirmArrival($shipment, $this->purchasingUser);
@@ -1317,7 +1333,8 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => $quantity,
+                'shipped_qty' => (int) $quantity,
+                'actual_weight_kg' => $quantity,
             ]],
         ]);
 
@@ -1345,7 +1362,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             'pr_id' => $pr->id,
             'material_name' => 'SKD11 Tool Steel Bar B',
             'shape' => 'round',
-            'quantity' => 1,
+            'quantity' => 12,
             'weight_needed' => 12.0,
             'd_outer' => 130.0,
             'length' => 900.0,
@@ -1355,6 +1372,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             'pr_item_id' => $secondPrItem->id,
             'price_per_kg' => 16.0,
             'amount' => 192.0,
+            'available_qty' => 12,
             'is_available' => true,
         ]);
 
@@ -1369,4 +1387,74 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         return [$po, [$firstPrItem, $secondPrItem], [$firstQItem, $secondQItem]];
     }
+
+    public function test_qc_waiting_inspections_data_endpoint_resolves_shipments_and_renders_action_url(): void
+    {
+        [, $prItem, , $qItem, $po] = $this->createAwardedPo(20.0);
+        $shipment = $this->createShipment($po, $qItem, 20.0, true);
+
+        $response = $this->actingAs($this->qcUser)
+            ->getJson(route('qc.inspections.data-waiting'));
+
+        $response->assertOk();
+        $this->assertNull($response->json('error'));
+        $data = $response->json('data');
+        $this->assertNotEmpty($data);
+
+        $matchingRow = collect($data)->first(fn ($row) => str_contains($row['po_number_display'] ?? '', $po->po_number));
+        $this->assertNotNull($matchingRow, 'Expected arrived PO was not found in QC waiting data.');
+        $this->assertStringContainsString('Start Inspection', $matchingRow['action']);
+        $this->assertStringContainsString($shipment->hash, $matchingRow['action']);
+    }
+
+    public function test_qc_inspection_create_without_shipment_id_auto_resolves_single_arrived_shipment(): void
+    {
+        [, $prItem, , $qItem, $po] = $this->createAwardedPo(20.0);
+        $shipment = $this->createShipment($po, $qItem, 20.0, true);
+
+        $response = $this->actingAs($this->qcUser)
+            ->get(route('qc.inspections.create', ['po_id' => $po->hash]));
+
+        $response->assertOk();
+        $response->assertViewIs('qc.inspections.create');
+        $response->assertViewHas('shipment', fn ($resolved) => $resolved && (int) $resolved->id === (int) $shipment->id);
+    }
+
+    public function test_qc_inspection_create_without_shipment_id_auto_resolves_earliest_arrived_shipment_when_multiple_exist(): void
+    {
+        [$po, $prItems, $qItems] = $this->createTwoItemAwardedPo();
+        $shipmentService = app(ShipmentService::class);
+
+        // First arrived shipment
+        $shipment1 = $shipmentService->createDraft($this->supplierUserA);
+        $shipment1 = $shipmentService->submitShipment($shipment1, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItems[0]->id,
+                'shipped_qty' => 5,
+                'actual_weight_kg' => 5.0,
+            ]],
+        ]);
+        $shipmentService->confirmArrival($shipment1, $this->purchasingUser);
+
+        // Second arrived shipment
+        $shipment2 = $shipmentService->createDraft($this->supplierUserA);
+        $shipment2 = $shipmentService->submitShipment($shipment2, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItems[1]->id,
+                'shipped_qty' => 6,
+                'actual_weight_kg' => 6.0,
+            ]],
+        ]);
+        $shipmentService->confirmArrival($shipment2, $this->purchasingUser);
+
+        $response = $this->actingAs($this->qcUser)
+            ->get(route('qc.inspections.create', ['po_id' => $po->hash]));
+
+        $response->assertOk();
+        $response->assertViewIs('qc.inspections.create');
+        $response->assertViewHas('shipment', fn ($resolved) => $resolved && in_array((int) $resolved->id, [(int) $shipment1->id, (int) $shipment2->id], true));
+    }
 }
+

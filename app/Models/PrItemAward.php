@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PrItemAward extends Model
 {
+    use HasHashids;
+
     protected $fillable = [
         'pr_id',
         'pr_item_id',
@@ -61,6 +66,16 @@ class PrItemAward extends Model
     public function awardedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'awarded_by');
+    }
+
+    public function progressUpdates(): HasMany
+    {
+        return $this->hasMany(PoItemProgressUpdate::class, 'pr_item_award_id');
+    }
+
+    public function latestProgressUpdate(): HasOne
+    {
+        return $this->hasOne(PoItemProgressUpdate::class, 'pr_item_award_id')->latestOfMany();
     }
 
     // ─── Scopes ───

@@ -12,7 +12,7 @@ date_added: "2026-02-27"
 
 Name: laravel-security-audit  
 Focus: Security Review & Vulnerability Detection  
-Scope: Laravel 10/11+ Applications
+Scope: Laravel 10/11/12+ Applications
 
 ---
 

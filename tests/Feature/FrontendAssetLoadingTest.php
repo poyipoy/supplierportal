@@ -63,7 +63,7 @@ class FrontendAssetLoadingTest extends TestCase
             $initializers[] = $relativePath;
         }
 
-        $this->assertCount(13, $initializers);
+        $this->assertCount(15, $initializers);
     }
 
     public function test_unused_axios_runtime_and_dependency_are_removed(): void

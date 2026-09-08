@@ -202,7 +202,7 @@ class CustomAdasiToastTest extends TestCase
             }
         }
 
-        $this->assertSame(15, $controlCount);
+        $this->assertSame(16, $controlCount);
     }
 
     public function test_async_export_toast_rehydrates_before_polling_with_scoped_view_transition(): void

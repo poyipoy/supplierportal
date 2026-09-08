@@ -72,12 +72,14 @@
                 <div class="list-group list-group-flush">
                     @foreach($otherQuotations as $oq)
                         @php
+                            $prNumber = $oq->purchaseRequisition->pr_number ?? '-';
                             $oqItems = [];
                             foreach ($oq->items as $i) {
                                 if (!$i->isAvailable()) {
                                     continue;
                                 }
                                 $oqItems[] = [
+                                    'pr_number' => $prNumber,
                                     'material' => $i->prItem->material_name,
                                     'quantity' => (int)($i->available_qty ?? $i->prItem->quantity_value),
                                     'weight_unit' => (float)($i->offered_weight_per_unit ?? $i->prItem->weight_needed),
@@ -92,9 +94,9 @@
                             $oqIdr = $oqTotal * ($oqRate ? $oqRate->rate_to_idr : 1);
                         @endphp
                         <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 tw-py-2.5 px-3 consolidate-item tw-cursor-pointer" for="oq_{{ $oq->id }}">
-                            <input type="checkbox" class="form-check-input consolidate-check mt-0" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)'>
+                            <input type="checkbox" class="form-check-input consolidate-check mt-0" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)' data-pr-number="{{ $prNumber }}">
                             <div class="flex-grow-1">
-                                <div class="fw-bold tw-text-on-surface tw-text-ui-sm">{{ $oq->purchaseRequisition->pr_number ?? '-' }}</div>
+                                <div class="fw-bold tw-text-on-surface tw-text-ui-sm pr-label">{{ $prNumber }}</div>
                                 <div class="tw-text-on-surface-variant tw-text-ui-xs">
                                     {{ $oq->purchaseRequisition->period->display_label ?? $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ $oq->items->count() }} item(s)
                                     @if($oq->exchange_rate)
@@ -161,7 +163,7 @@
                             <td class="text-center ui-tabular-nums">{{ $isAvail ? number_format($item->available_qty ?? $item->prItem->quantity_value, 0) : '—' }}</td>
                             <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $isAvail ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed) : '—' }}</td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $isAvail ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
-                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $isAvail && $item->price_per_kg !== null ? \App\Support\NumberFormat::maxDecimals($item->price_per_kg) : '—' }}</td>
+                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $isAvail && $item->price_per_kg !== null ? \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) : '—' }}</td>
                             <td class="text-end fw-semibold ui-tabular-nums">{{ $isAvail ? number_format($amount, 2) : '—' }}</td>
                             <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $isAvail ? 'Rp '.number_format($idr, 0, ',', '.') : '—' }}</td>
                         </tr>
@@ -253,10 +255,10 @@
         // Additional checked quotation items
         $('.consolidate-check:checked').each(function() {
             const items = $(this).data('items');
-            const prLabel = $(this).closest('.consolidate-item').find('.fw-bold').text().trim();
+            const fallbackPrLabel = $(this).data('pr-number') || $(this).closest('.consolidate-item').find('.pr-label').text().trim();
             items.forEach(item => {
                 allItems.push({
-                    pr_number: prLabel,
+                    pr_number: item.pr_number || fallbackPrLabel,
                     material: item.material,
                     quantity: item.quantity,
                     weight_unit: item.weight_unit,
@@ -321,6 +323,7 @@
             cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
+                window.AdasiButton?.startLoading('#btnCreatePo');
                 $('#poForm').submit();
             }
         });

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Claim Details #' . $claim->id . ' - ADASI Portal')
-@section('page-title', 'Material Claim Details')
+@section('title', 'Claim Details: ' . ($claim->purchaseOrder->po_number ?? $claim->claim_number) . ' - ADASI Portal')
+@section('page-title', 'Material Claim: ' . ($claim->purchaseOrder->po_number ?? $claim->claim_number))
 
 @section('content')
 <div class="tw-grid tw-gap-4">
@@ -9,11 +9,11 @@
     <x-ui.breadcrumb :items="[
         'Dashboard' => route('purchasing.dashboard'),
         'Material Claims' => route('purchasing.claims.index'),
-        'Claim #' . $claim->id => null,
+        'Claim: ' . ($claim->purchaseOrder->po_number ?? $claim->claim_number) => null,
     ]" />
 
     <x-ui.page-header
-        :title="'Claim #' . $claim->id"
+        :title="'Material Claim: ' . ($claim->purchaseOrder->po_number ?? $claim->claim_number)"
         eyebrow="Material Claim Details"
         :description="'Material claim for ' . $claim->purchaseOrder->po_number . ' from ' . $claim->purchaseOrder->supplier->name . '.'"
     >
@@ -30,7 +30,7 @@
         {{-- Main Column --}}
         <div class="tw-grid tw-min-w-0 tw-gap-4">
             {{-- Claim Details Card --}}
-            <x-ui.card :title="'Claim Particulars #' . $claim->id">
+            <x-ui.card title="Claim Particulars">
                 <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4 mb-4">
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Number</div>

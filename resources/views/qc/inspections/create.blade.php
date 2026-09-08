@@ -100,7 +100,8 @@
             if (isset($shipment) && $shipment) {
                 $allItems = $shipment->items->where('purchase_order_id', $po->id)->map(function ($si) {
                     $item = $si->quotationItem;
-                    $item->shipped_delivery_qty = $si->shipped_quantity;
+                    $item->shipped_delivery_qty = $si->shipped_qty;
+                    $item->shipment_actual_weight_kg = $si->actual_weight_kg;
                     $item->shipment_item_id = $si->id;
                     return $item;
                 });
@@ -174,9 +175,15 @@
                                         </div>
                                         @if(isset($item->shipped_delivery_qty))
                                             <div class="qc-spec-box tw-bg-primary-container/20 border-primary">
-                                                <div class="tw-text-primary tw-text-ui-xs fw-semibold">Consignment Shipped</div>
-                                                <div class="fw-bold text-primary tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ number_format($item->shipped_delivery_qty, 2) }} Kg</div>
+                                                <div class="tw-text-primary tw-text-ui-xs fw-semibold">Consignment Qty</div>
+                                                <div class="fw-bold text-primary tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ number_format($item->shipped_delivery_qty, 0) }} pcs</div>
                                             </div>
+                                            @if(isset($item->shipment_actual_weight_kg))
+                                                <div class="qc-spec-box tw-bg-surface-low border-outline-variant">
+                                                    <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold">Shipment Actual Weight</div>
+                                                    <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->shipment_actual_weight_kg) }} Kg</div>
+                                                </div>
+                                            @endif
                                         @endif
                                         @foreach($visibleDimensions as $dimension)
                                             @php
@@ -414,6 +421,7 @@
                 cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
+                    window.AdasiButton?.startLoading('#btnSubmit');
                     $('#inspectionForm').submit();
                 }
             });

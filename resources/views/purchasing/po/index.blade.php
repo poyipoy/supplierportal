@@ -22,7 +22,7 @@
         description="Track supplier orders, reference requisitions, arrival targets, and workflow statuses."
     >
         <x-slot:actions>
-            <x-ui.button :href="route('purchasing.purchase-orders.consolidate-awards')" size="sm">Consolidate Item Awards</x-ui.button>
+            <x-ui.button :href="route('purchasing.purchase-orders.consolidate-awards')" size="sm">Consolidate Selected Items</x-ui.button>
             <x-ui.button
                 :href="route('purchasing.export.purchase-orders')"
                 variant="outline"

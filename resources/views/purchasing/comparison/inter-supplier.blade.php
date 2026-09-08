@@ -240,6 +240,10 @@ thead th.col-sticky-material {
                                             {{ strtoupper($sup['status']) }}
                                         </x-ui.status-chip>
                                     </div>
+                                    <div class="tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant" title="Supplier Original Estimated Ready / Dispatch Date">
+                                        <span class="fw-semibold">Ready / Dispatch:</span>
+                                        <span class="tw-text-on-surface">{{ $sup['estimated_delivery_formatted'] ?? '-' }}</span>
+                                    </div>
                                 </th>
                             @endforeach
                         </tr>
@@ -310,6 +314,7 @@ thead th.col-sticky-material {
                                                                data-pr-item-name="{{ $row['item']->material_name }}"
                                                                data-supplier-id="{{ $sup['id'] }}"
                                                                data-supplier-name="{{ $sup['name'] }}"
+                                                               data-supplier-estimated-ready="{{ $sup['estimated_delivery'] ?? '' }}"
                                                                data-price="Rp {{ \App\Support\NumberFormat::maxDecimals($p['price_idr'] ?? 0) }}"
                                                         >
                                                         <span class="tw-text-ui-xs fw-bold {{ !empty($p['is_awarded']) ? 'text-success' : 'text-primary' }}">
@@ -383,8 +388,16 @@ thead th.col-sticky-material {
 
                 <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-grid tw-gap-3 sm:tw-grid-cols-2">
                     <div>
-                        <label for="poEstimatedArrival" class="form-label small fw-semibold">Target Estimated Arrival Date</label>
+                        <label for="poEstimatedArrival" class="form-label small fw-semibold">PO Target Arrival Date</label>
                         <input type="date" name="estimated_arrival" id="poEstimatedArrival" class="form-control form-control-sm" value="{{ now()->addDays(14)->format('Y-m-d') }}">
+                        <div class="form-text tw-text-ui-xs tw-text-on-surface-variant tw-mt-1">
+                            <span class="fw-semibold">Supplier Ready / Dispatch Date:</span> when Supplier expects material ready to send.<br>
+                            <span class="fw-semibold">PO Target Arrival Date:</span> when Purchasing expects material at ADSI.
+                        </div>
+                        <div id="targetArrivalWarning" class="alert alert-warning py-1.5 px-2.5 tw-text-ui-xs tw-mt-2 d-none" role="alert">
+                            <x-ui.icon name="triangle-alert" size="sm" class="me-1 text-warning" />
+                            <span>PO Target Arrival Date is earlier than the selected Supplier's estimated ready / dispatch date. Review the target before generating the PO.</span>
+                        </div>
                     </div>
                     <div>
                         <label for="poNotes" class="form-label small fw-semibold">PO Notes / Remarks</label>
@@ -711,11 +724,34 @@ const updateAwardPreviews = () => {
         groups.append(group);
     }
     groupContainer.replaceChildren(groups);
+
+    // Target arrival date warning check against selected suppliers' estimated ready dates
+    const arrivalInput = document.getElementById('poEstimatedArrival');
+    const warningEl = document.getElementById('targetArrivalWarning');
+    if (arrivalInput && warningEl) {
+        const arrivalVal = arrivalInput.value;
+        let isEarlier = false;
+        if (arrivalVal) {
+            radios.forEach(radio => {
+                const readyDate = radio.dataset.supplierEstimatedReady;
+                if (readyDate && arrivalVal < readyDate) {
+                    isEarlier = true;
+                }
+            });
+        }
+        warningEl.classList.toggle('d-none', !isEarlier);
+    }
 };
 
 document.querySelectorAll('.award-radio').forEach(radio => {
     radio.addEventListener('change', updateAwardPreviews);
 });
+
+const poEstimatedArrivalInput = document.getElementById('poEstimatedArrival');
+if (poEstimatedArrivalInput) {
+    poEstimatedArrivalInput.addEventListener('change', updateAwardPreviews);
+    poEstimatedArrivalInput.addEventListener('input', updateAwardPreviews);
+}
 
 updateAwardPreviews();
 </script>

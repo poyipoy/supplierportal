@@ -218,9 +218,9 @@
                             @if($periodView === 'yearly')
                                 <tr>
                                     <td class="text-center fw-bold tw-text-on-surface">{{ $row['period'] }}</td>
-                                    <td class="text-end text-primary fw-bold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg']) }}</td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['min_price']) }}</td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['max_price']) }}</td>
+                                    <td class="text-end text-primary fw-bold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg'], 4) }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['min_price'], 4) }}</td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($row['max_price'], 4) }}</td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                                 </tr>
                             @else
@@ -241,7 +241,7 @@
                                     </td>
                                     <td class="text-center">{!! $row['status_badge'] ?? '-' !!}</td>
                                     <td class="text-end fw-semibold ui-tabular-nums">
-                                        {{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg']) }}
+                                        {{ \App\Support\NumberFormat::maxDecimals($row['price_per_kg'], 4) }}
                                     </td>
                                     <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $row['currency'] }}</span></td>
                                     <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>

@@ -83,7 +83,7 @@
             @endforeach
         </div>
         <div class="tw-flex tw-gap-2 tw-border-t tw-border-outline-variant tw-bg-surface tw-p-2">
-            <form action="{{ route('notifications.mark-all-read') }}" method="POST" class="flex-fill" data-notification-mark-form>
+            <form action="{{ route('notifications.mark-all-read') }}" method="POST" class="flex-fill" data-notification-mark-form data-managed-submit>
                 @csrf
                 <input type="hidden" name="category" value="{{ \App\Support\NotificationCategory::ALL }}" data-notification-category-input>
                 <x-ui.button type="submit" size="sm" class="tw-w-full" data-notification-mark-button>Mark All as Read</x-ui.button>

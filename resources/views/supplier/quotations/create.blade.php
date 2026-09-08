@@ -295,18 +295,16 @@
         border: 1px solid var(--md-outline-variant);
         border-radius: 12px;
         box-shadow: 0 4px 24px -2px rgba(20, 24, 43, 0.16), 0 12px 32px -4px rgba(20, 24, 43, 0.12);
-        left: 0;
         min-width: 280px;
         max-width: 320px;
         padding: .75rem;
-        position: absolute;
-        top: calc(100% + 4px);
-        width: max-content;
-        z-index: 1050;
+        position: fixed;
+        width: 320px;
+        z-index: 1080;
     }
 
     .quotation-notes-popover[hidden] {
-        display: none;
+        display: none !important;
     }
 
     .quotation-notes-popover__header {
@@ -355,6 +353,7 @@
         line-height: 1.35;
         resize: vertical;
         min-height: 70px;
+        max-height: 140px;
     }
 
     .quotation-notes-popover__hint {
@@ -831,6 +830,7 @@
                                 <tbody
                                     class="quotation-item-group"
                                     data-pr-item-id="{{ $item->id }}"
+                                    data-material-name="{{ $item->material_name }}"
                                     data-shape="{{ $item->shape }}"
                                     data-density-profile="{{ $item->materialMaster?->density_profile ?? 'steel' }}"
                                     data-requested-qty="{{ $item->quantity_value }}"
@@ -1040,7 +1040,7 @@
                                         </td>
                                         <td>
                                             @php $hasMtc = !empty($mtcAttachment); @endphp
-                                            <div class="mtc-upload-container @error("items.{$index}.mtc_file") border-danger @enderror" data-mtc-container>
+                                            <div class="mtc-upload-container @error("items.{$index}.mtc_file") border-danger @enderror" data-mtc-container data-existing-attachment-id="{{ $mtcAttachment?->id ?? '' }}">
                                                 <input
                                                     id="mtcFile{{ $index }}"
                                                     type="file"
@@ -1049,6 +1049,18 @@
                                                     accept=".pdf,.jpg,.jpeg,.png"
                                                     aria-label="MTC file for {{ $item->material_name }}"
                                                     aria-describedby="mtcFileHelp{{ $index }}"
+                                                >
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $index }}][copy_from_attachment_id]"
+                                                    class="mtc-copy-attachment-id"
+                                                    value=""
+                                                >
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $index }}][keep_existing_attachment]"
+                                                    class="mtc-keep-existing-attachment"
+                                                    value="{{ $hasMtc ? '1' : '0' }}"
                                                 >
 
                                                 {{-- State 1: Empty State (Upload MTC Button) --}}
@@ -1075,6 +1087,33 @@
                                                                 <span>View</span>
                                                             </a>
                                                         @endif
+                                                        <div class="dropdown d-inline-block mtc-copy-dropdown">
+                                                            <button
+                                                                type="button"
+                                                                class="mtc-file-action-btn"
+                                                                data-bs-toggle="dropdown"
+                                                                data-bs-display="static"
+                                                                aria-expanded="false"
+                                                                title="Copy MTC to other items"
+                                                                data-mtc-copy-trigger
+                                                            >
+                                                                <x-ui.icon name="copy" size="sm" />
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
+                                                                <li>
+                                                                    <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="same_material">
+                                                                        <x-ui.icon name="layers" size="sm" class="tw-text-on-surface-variant flex-shrink-0" />
+                                                                        <span>Apply to same material (<strong class="text-truncate d-inline-block align-bottom" style="max-width: 105px;">{{ $item->material_name }}</strong>)</span>
+                                                                    </button>
+                                                                </li>
+                                                                <li>
+                                                                    <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="all_available">
+                                                                        <x-ui.icon name="check-check" size="sm" class="tw-text-on-surface-variant flex-shrink-0" />
+                                                                        <span>Apply to all available items</span>
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
                                                         <label for="mtcFile{{ $index }}" class="mtc-file-action-btn" title="Change file" role="button">
                                                             <x-ui.icon name="refresh-cw" size="sm" />
                                                         </label>
@@ -1135,11 +1174,16 @@
                 title="Commercial Terms and Logistics"
                 description="Specify estimated delivery timeline, proposal validity duration, and payment arrangements."
             >
+                <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw-mb-4 d-none">
+                    All requested items are marked <strong>Not Available</strong>. Delivery timeline, validity period, and payment terms are disabled. You may still provide General Supplier Notes before submitting.
+                </x-ui.alert>
+
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <x-ui.date-picker
                         name="estimated_delivery"
-                        label="Estimated Material Delivery Time"
+                        label="Supplier Estimated Ready / Dispatch Date"
                         :value="optional($quotation?->estimated_delivery)->format('Y-m-d')"
+                        helper="Estimated date material will be ready for dispatch from your facility."
                         required
                     />
                     <x-ui.date-picker
@@ -1180,10 +1224,10 @@
             </x-slot:left>
 
             <x-slot:right>
-                <x-ui.button type="button" variant="secondary" size="sm" onclick="submitForm('draft')">
+                <x-ui.button type="button" variant="secondary" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
                     <span>{{ $quotation?->status === 'revision_requested' ? 'Save Revision Draft' : 'Save Draft' }}</span>
                 </x-ui.button>
-                <x-ui.button type="button" size="sm" onclick="confirmSubmit()">
+                <x-ui.button type="button" size="sm" id="btnSubmitQuotation" onclick="confirmSubmit()">
                     <x-ui.icon name="send" size="sm" />
                     <span>{{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Submit Final Quotation' }}</span>
                 </x-ui.button>
@@ -1421,6 +1465,13 @@
             }
 
             const fieldWouldChange = Object.entries(quotationImportFieldSelectors).some(([field, selector]) => {
+                if (field === 'offered_weight_per_unit') {
+                    const incomingWeight = row.offered_weight_per_unit;
+                    if (incomingWeight === null || incomingWeight === undefined || String(incomingWeight).trim() === '') {
+                        return false;
+                    }
+                }
+
                 const $input = $formRow.find(selector);
                 if ($input.length === 0) {
                     return false;
@@ -1463,7 +1514,12 @@
                 changedFields++;
             }
 
+            // Apply all fields except offered_weight_per_unit which is handled explicitly below
             Object.entries(quotationImportFieldSelectors).forEach(([field, selector]) => {
+                if (field === 'offered_weight_per_unit') {
+                    return;
+                }
+
                 const $input = $formRow.find(selector);
                 if ($input.length === 0) {
                     return;
@@ -1485,11 +1541,34 @@
                 changedFields++;
             });
 
+            // Explicitly handle offered_weight_per_unit without wiping out auto-calculated weight
+            const rawImportedWeight = row.offered_weight_per_unit;
+            const hasExplicitWeight = rawImportedWeight !== null && rawImportedWeight !== undefined && String(rawImportedWeight).trim() !== '';
+            const $weightInput = $formRow.find('.offered-weight-input');
+
+            if (hasExplicitWeight) {
+                const incomingWeight = String(rawImportedWeight).trim();
+                const currentWeight = String($weightInput.val() ?? '').trim();
+                if (mode === 'replace' || currentWeight === '') {
+                    $weightInput.val(incomingWeight);
+                    setFieldValidity($weightInput, true);
+                    $formRow.find('.offered-weight-manual-override').val('1');
+                    changedFields++;
+                }
+            } else if (importedAvailable) {
+                const currentWeight = String($weightInput.val() ?? '').trim();
+                if (mode === 'replace' || currentWeight === '') {
+                    autoCalculateOfferWeight($formRow);
+                }
+            }
+
             updateOfferRowState($formRow);
+            updateOfferWeightState($formRow);
             recalculateQuotationRow($formRow);
         });
 
         recalculateQuotationTotals();
+        updateCommercialTermsState();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('quotationImportModal')).hide();
         AdasiToast.show({
             type: 'success',
@@ -1662,7 +1741,9 @@
 
         if (calculatedWeight !== null && Number.isFinite(calculatedWeight) && calculatedWeight > 0) {
             const rounded = Number(calculatedWeight.toFixed(4));
-            $group.find('.offered-weight-input').val(rounded);
+            const $weightInput = $group.find('.offered-weight-input');
+            $weightInput.val(rounded);
+            setFieldValidity($weightInput, true);
             $group.find('.offered-weight-manual-override').val(isRange ? '1' : '0');
             updateOfferWeightState($group);
             recalculateQuotationRow($group);
@@ -1702,6 +1783,87 @@
         updateOfferWeightState($group);
         return parsed.valid;
     }
+
+    function isAllItemsUnavailable() {
+        const $groups = $('.quotation-item-group');
+        return $groups.length > 0 && $groups.toArray().every((group) => itemIsUnavailable($(group)));
+    }
+
+    function refreshCurrencyState() {
+        const currency = selectedCurrency();
+        $('.currency-label').text(currency || '-');
+        $('#currencyWarningLabel').text(currency || '-');
+        const allUnavailable = isAllItemsUnavailable();
+        $('#currencyRateWarning').toggleClass('d-none', allUnavailable || !currency || selectedRate() > 0);
+        calculateTotal();
+    }
+
+    function updateCommercialTermsState() {
+        const allUnavailable = isAllItemsUnavailable();
+        const $currency = $('#quotationCurrency');
+        const $deliveryInput = $('[name="estimated_delivery"]');
+        const $deliveryPicker = $deliveryInput.closest('[data-adasi-date-picker]');
+        const $deliveryTrigger = $deliveryPicker.find('[data-calendar-trigger]');
+        const $paymentTerms = $('[name="payment_terms"]');
+        const $paymentTermsGroup = $paymentTerms.closest('div');
+        const $validityPeriod = $('#validityPeriod, [name="validity_period"]');
+        const $validityPicker = $validityPeriod.closest('[data-adasi-date-picker]');
+        const $validityTrigger = $validityPicker.find('[data-calendar-trigger]');
+        const $rateWarning = $('#currencyRateWarning');
+        const $termsNotice = $('#allUnavailableTermsNotice');
+
+        if (allUnavailable) {
+            $currency.removeAttr('required').removeClass('is-invalid');
+
+            // Estimated Delivery: disable input and trigger, remove validation, hide asterisks
+            $deliveryInput.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true');
+            $deliveryTrigger.prop('disabled', true).attr('aria-disabled', 'true').attr('tabindex', '-1');
+            $deliveryPicker.attr('data-calendar-required', 'false').attr('data-calendar-disabled', 'true').addClass('is-disabled');
+            $deliveryPicker.find('.tw-text-error').addClass('d-none');
+            $deliveryPicker[0]?.dispatchEvent(new CustomEvent('adasi:calendar-close'));
+
+            // Payment Terms: disable textarea, remove validation, hide asterisks
+            $paymentTerms.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true').addClass('tw-bg-surface-container tw-opacity-50 tw-cursor-not-allowed');
+            $paymentTermsGroup.find('.tw-text-error').addClass('d-none');
+
+            // Validity Period: disable input and trigger, remove validation, hide asterisks
+            $validityPeriod.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true');
+            $validityTrigger.prop('disabled', true).attr('aria-disabled', 'true').attr('tabindex', '-1');
+            $validityPicker.attr('data-calendar-required', 'false').attr('data-calendar-disabled', 'true').addClass('is-disabled');
+            $validityPicker.find('.tw-text-error').addClass('d-none');
+            $validityPicker.find('#validityPeriod-help').addClass('tw-opacity-40');
+            $validityPicker[0]?.dispatchEvent(new CustomEvent('adasi:calendar-close'));
+
+            $rateWarning.addClass('d-none');
+            $termsNotice.removeClass('d-none');
+        } else {
+            $currency.attr('required', 'required');
+
+            // Estimated Delivery: enable input and trigger, restore validation, show asterisks
+            $deliveryInput.attr('required', 'required').prop('disabled', false).removeAttr('aria-disabled');
+            $deliveryTrigger.prop('disabled', false).removeAttr('aria-disabled').removeAttr('tabindex');
+            $deliveryPicker.attr('data-calendar-required', 'true').attr('data-calendar-disabled', 'false').removeClass('is-disabled');
+            $deliveryPicker.find('.tw-text-error').removeClass('d-none');
+
+            // Payment Terms: enable textarea, restore validation, show asterisks
+            $paymentTerms.attr('required', 'required').prop('disabled', false).removeAttr('aria-disabled').removeClass('tw-bg-surface-container tw-opacity-50 tw-cursor-not-allowed');
+            $paymentTermsGroup.find('.tw-text-error').removeClass('d-none');
+
+            // Validity Period: enable input and trigger, restore validation, show asterisks
+            $validityPeriod.prop('disabled', false).removeAttr('aria-disabled');
+            $validityTrigger.prop('disabled', false).removeAttr('aria-disabled').removeAttr('tabindex');
+            $validityPicker.attr('data-calendar-disabled', 'false').removeClass('is-disabled');
+            $validityPicker.find('.tw-text-error').removeClass('d-none');
+            $validityPicker.find('#validityPeriod-help').removeClass('tw-opacity-40');
+
+            $termsNotice.addClass('d-none');
+            refreshCurrencyState();
+        }
+    }
+
+    window.isAllItemsUnavailable = isAllItemsUnavailable;
+    window.refreshCurrencyState = refreshCurrencyState;
+    window.updateCommercialTermsState = updateCommercialTermsState;
 
     function setItemUnavailable($group, unavailable) {
         $group.find('.item-availability-input').val(unavailable ? '0' : '1');
@@ -1746,6 +1908,7 @@
 
         updateOfferWeightState($group);
         recalculateQuotationRow($group);
+        updateCommercialTermsState();
     }
 
     function updateOfferRowState($group) {
@@ -1955,7 +2118,7 @@
         $('#btnApplyQuotationImport').on('click', applyQuotationImport);
         $('#quotationImportMode').on('change', updateQuotationImportModeHelp);
         updateQuotationImportModeHelp();
-        $('.mtc-file-input').on('change', function() {
+        $(document).on('change', '.mtc-file-input', function() {
             const fileName = this.files?.[0]?.name;
             const $container = $(this).closest('[data-mtc-container]');
             const $card = $container.find('[data-mtc-card]');
@@ -1964,11 +2127,17 @@
             const defaultName = $fileName.data('default-name');
 
             if (fileName) {
+                $container.find('.mtc-copy-attachment-id').val('');
+                $container.find('.mtc-keep-existing-attachment').val('0');
                 $fileName.text(fileName).attr('title', fileName);
                 $empty.addClass('d-none');
                 $card.removeClass('d-none');
                 $container.find('[data-mtc-server-link]').addClass('d-none');
-            } else if (defaultName) {
+            } else if ($container.find('.mtc-copy-attachment-id').val()) {
+                // If a copy attachment ID was set, keep card visible
+                $empty.addClass('d-none');
+                $card.removeClass('d-none');
+            } else if (defaultName && $container.find('.mtc-keep-existing-attachment').val() === '1') {
                 $fileName.text(defaultName).attr('title', defaultName);
                 $empty.addClass('d-none');
                 $card.removeClass('d-none');
@@ -1986,12 +2155,229 @@
             const $input = $container.find('.mtc-file-input');
             const $fileName = $container.find('.mtc-file-name');
             $input.val('');
+            $container.find('.mtc-copy-attachment-id').val('');
+            $container.find('.mtc-keep-existing-attachment').val('0');
             $fileName.data('default-name', '').removeAttr('data-default-name').text('').removeAttr('title');
             $container.find('[data-mtc-card]').addClass('d-none');
             $container.find('[data-mtc-empty]').removeClass('d-none');
         });
 
-        // Notes popover handlers
+        // Quick Apply / Copy MTC to multiple items
+        $(document).on('click', '[data-mtc-apply]', function(e) {
+            e.preventDefault();
+            const mode = $(this).data('mtc-apply'); // 'same_material' or 'all_available'
+            const $sourceContainer = $(this).closest('[data-mtc-container]');
+            const $sourceGroup = $sourceContainer.closest('.quotation-item-group');
+            const sourceMaterialName = ($sourceGroup.data('material-name') || '').toString().trim();
+            const sourceInput = $sourceContainer.find('.mtc-file-input')[0];
+            const sourceFile = sourceInput?.files?.[0] || null;
+            const sourceAttachmentId = $sourceContainer.find('.mtc-copy-attachment-id').val() || $sourceContainer.attr('data-existing-attachment-id') || null;
+            const sourceFileName = $sourceContainer.find('.mtc-file-name').text().trim();
+            const sourceServerLink = $sourceContainer.find('[data-mtc-server-link]').attr('href') || null;
+
+            if (!sourceFile && !sourceAttachmentId) {
+                if (window.AdasiToast) {
+                    AdasiToast.error('Please upload or select an MTC file first before copying.');
+                }
+                return;
+            }
+
+            // Find all candidate target groups
+            const $allGroups = $('.quotation-item-group');
+            const targetList = [];
+
+            $allGroups.each(function() {
+                const $targetGroup = $(this);
+                // Exclude source group
+                if ($targetGroup[0] === $sourceGroup[0]) return;
+
+                // Check availability: must be available
+                const isAvailable = $targetGroup.find('.item-availability-input').val() === '1' && !$targetGroup.hasClass('is-unavailable');
+                if (!isAvailable) return;
+
+                // Check material match for 'same_material' mode
+                const targetMaterialName = ($targetGroup.data('material-name') || '').toString().trim();
+                if (mode === 'same_material') {
+                    if (targetMaterialName.toLowerCase() !== sourceMaterialName.toLowerCase()) {
+                        return;
+                    }
+                }
+
+                const $targetContainer = $targetGroup.find('[data-mtc-container]');
+                const targetInput = $targetContainer.find('.mtc-file-input')[0];
+                const hasExistingFile = (targetInput?.files && targetInput.files.length > 0) ||
+                    $targetContainer.find('.mtc-copy-attachment-id').val() !== '' ||
+                    (!$targetContainer.find('[data-mtc-card]').hasClass('d-none') && $targetContainer.find('.mtc-file-name').text().trim() !== '');
+
+                targetList.push({
+                    $group: $targetGroup,
+                    $container: $targetContainer,
+                    input: targetInput,
+                    hasExistingFile: hasExistingFile,
+                });
+            });
+
+            if (targetList.length === 0) {
+                if (window.AdasiToast) {
+                    const msg = mode === 'same_material'
+                        ? 'No other available items with the same material (' + sourceMaterialName + ').'
+                        : 'No other available items found.';
+                    AdasiToast.info(msg);
+                }
+                return;
+            }
+
+            const overwriteTargets = targetList.filter(t => t.hasExistingFile);
+
+            const executeApply = () => {
+                let appliedCount = 0;
+                targetList.forEach(target => {
+                    const $tCont = target.$container;
+                    const tInput = target.input;
+
+                    if (sourceFile) {
+                        try {
+                            const dt = new DataTransfer();
+                            dt.items.add(sourceFile);
+                            tInput.files = dt.files;
+                            $tCont.find('.mtc-copy-attachment-id').val('');
+                            $tCont.find('.mtc-keep-existing-attachment').val('0');
+                            $(tInput).trigger('change');
+                            appliedCount++;
+                        } catch (err) {
+                            console.error('DataTransfer copy failed:', err);
+                        }
+                    } else if (sourceAttachmentId) {
+                        if (tInput) tInput.value = '';
+                        $tCont.find('.mtc-copy-attachment-id').val(sourceAttachmentId);
+                        $tCont.find('.mtc-keep-existing-attachment').val('0');
+
+                        const $tFileName = $tCont.find('.mtc-file-name');
+                        $tFileName.text(sourceFileName).attr('title', sourceFileName);
+                        $tCont.find('[data-mtc-empty]').addClass('d-none');
+                        $tCont.find('[data-mtc-card]').removeClass('d-none');
+
+                        const $tServerLink = $tCont.find('[data-mtc-server-link]');
+                        if (sourceServerLink) {
+                            if ($tServerLink.length) {
+                                $tServerLink.attr('href', sourceServerLink).removeClass('d-none');
+                            } else {
+                                $tCont.find('.mtc-file-card__actions').prepend(
+                                    '<a href="' + sourceServerLink + '" class="mtc-file-action-link" target="_blank" rel="noopener" title="View attached file" data-mtc-server-link>' +
+                                    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>' +
+                                    ' <span>View</span></a>'
+                                );
+                            }
+                        }
+                        appliedCount++;
+                    }
+                });
+
+                if (window.AdasiToast) {
+                    AdasiToast.success('MTC file applied to ' + appliedCount + ' item(s).');
+                }
+            };
+
+            if (overwriteTargets.length > 0) {
+                if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
+                    AdasiAlert.confirm({
+                        title: 'Overwrite Existing MTC Files?',
+                        text: overwriteTargets.length + ' item(s) already have an MTC file attached. Do you want to overwrite them with "' + sourceFileName + '"?',
+                        type: 'warning',
+                        confirmText: 'Yes, Overwrite',
+                        cancelText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            executeApply();
+                        }
+                    });
+                } else {
+                    if (confirm(overwriteTargets.length + ' item(s) already have an MTC file attached. Do you want to overwrite them?')) {
+                        executeApply();
+                    }
+                }
+            } else {
+                executeApply();
+            }
+        });
+
+        // Notes popover handlers & positioning
+        function positionQuotationNotesPopover($popover, trigger) {
+            if (!$popover || !$popover.length || $popover.prop('hidden')) return;
+
+            const triggerEl = trigger || $popover.closest('td').find('[data-notes-trigger]')[0];
+            if (!triggerEl) return;
+
+            const rect = triggerEl.getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) {
+                $popover.prop('hidden', true);
+                return;
+            }
+
+            const $scrollContainer = $popover.closest('.quotation-table-scroll');
+            if ($scrollContainer.length) {
+                const containerRect = $scrollContainer[0].getBoundingClientRect();
+                if (rect.right < containerRect.left + 10 || rect.left > containerRect.right - 10) {
+                    $popover.prop('hidden', true);
+                    $(triggerEl).attr('aria-expanded', 'false');
+                    return;
+                }
+            }
+
+            if (rect.bottom < 0 || rect.top > window.innerHeight) {
+                $popover.prop('hidden', true);
+                $(triggerEl).attr('aria-expanded', 'false');
+                return;
+            }
+
+            const viewportPadding = 8;
+            const gap = 4;
+            const popoverWidth = Math.min(320, Math.max(280, window.innerWidth - (viewportPadding * 2)));
+            const popoverHeight = Math.min($popover.outerHeight() || $popover[0].scrollHeight || 230, 280);
+
+            const fitsBelow = rect.bottom + gap + popoverHeight <= window.innerHeight - viewportPadding;
+            const fitsAbove = rect.top - gap - popoverHeight >= viewportPadding;
+            const opensAbove = !fitsBelow && fitsAbove;
+
+            let top;
+            if (opensAbove) {
+                top = Math.max(viewportPadding, rect.top - gap - popoverHeight);
+            } else {
+                top = Math.min(window.innerHeight - popoverHeight - viewportPadding, rect.bottom + gap);
+            }
+
+            let left = rect.right - popoverWidth;
+            if (left < viewportPadding) {
+                left = Math.max(viewportPadding, rect.left);
+            }
+            if (left + popoverWidth > window.innerWidth - viewportPadding) {
+                left = Math.max(viewportPadding, window.innerWidth - popoverWidth - viewportPadding);
+            }
+
+            $popover.css({
+                position: 'fixed',
+                top: `${Math.round(top)}px`,
+                left: `${Math.round(left)}px`,
+                bottom: 'auto',
+                right: 'auto',
+                width: `${popoverWidth}px`,
+                zIndex: 1080,
+            });
+        }
+
+        function repositionVisibleNotesPopovers() {
+            $('[data-notes-popover]:not([hidden])').each(function() {
+                const $popover = $(this);
+                const $trigger = $popover.closest('td').find('[data-notes-trigger]');
+                if ($trigger.length) {
+                    positionQuotationNotesPopover($popover, $trigger[0]);
+                }
+            });
+        }
+
+        $(window).on('resize', repositionVisibleNotesPopovers);
+        document.addEventListener('scroll', repositionVisibleNotesPopovers, true);
+
         $(document).on('click', '[data-notes-trigger]', function(e) {
             e.stopPropagation();
             const $cell = $(this).closest('td');
@@ -2005,17 +2391,9 @@
                 const currentVal = $cell.find('.quotation-item-notes').val();
                 $cell.find('.quotation-notes-draft').val(currentVal);
 
-                // Smart placement: if close to viewport bottom, flip popover above
-                const rect = this.getBoundingClientRect();
-                const spaceBelow = window.innerHeight - rect.bottom;
-                if (spaceBelow < 240 && rect.top > 240) {
-                    $popover.css({ top: 'auto', bottom: 'calc(100% + 4px)' });
-                } else {
-                    $popover.css({ top: 'calc(100% + 4px)', bottom: 'auto' });
-                }
-
                 $popover.prop('hidden', false);
                 $(this).attr('aria-expanded', 'true');
+                positionQuotationNotesPopover($popover, this);
                 $cell.find('.quotation-notes-draft').focus();
             }
         });
@@ -2100,14 +2478,6 @@
             quotationImportRows = [];
         });
 
-        function refreshCurrencyState() {
-            const currency = selectedCurrency();
-            $('.currency-label').text(currency || '-');
-            $('#currencyWarningLabel').text(currency || '-');
-            $('#currencyRateWarning').toggleClass('d-none', !currency || selectedRate() > 0);
-            calculateTotal();
-        }
-
         $('#quotationCurrency').on('change', refreshCurrencyState);
 
         $(document).on('input change', '.price-input, [data-availability-field="qty"]', function() {
@@ -2156,11 +2526,13 @@
             $checkbox.prop('checked', newUnavailable);
             setItemUnavailable($group, newUnavailable);
             recalculateQuotationTotals();
+            updateCommercialTermsState();
         });
 
         $(document).on('change', '.item-not-available-toggle', function() {
             setItemUnavailable($(this).closest('.quotation-item-group'), this.checked);
             recalculateQuotationTotals();
+            updateCommercialTermsState();
         });
 
         refreshCurrencyState();
@@ -2171,6 +2543,7 @@
             validateOfferLength($group);
         });
         recalculateQuotationTotals();
+        updateCommercialTermsState();
 
         // Horizontal drag-to-scroll for table
         const qScroll = document.querySelector('.quotation-table-scroll');
@@ -2246,34 +2619,58 @@
     }
 
     function submitForm(action) {
-        if (!validateQuotationRows(action === 'submitted')) {
+        if (action === 'submitted') {
+            confirmSubmit();
             return;
         }
 
+        if (!validateQuotationRows(false)) {
+            return;
+        }
+
+        const form = document.getElementById('quotationForm');
+        const activeBtn = document.getElementById('btnSaveDraft');
+        if (form && activeBtn) {
+            form._lastClickedButton = activeBtn;
+        }
         $('#formAction').val(action);
-        document.getElementById('quotationForm').requestSubmit();
+        if (form && typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
     }
 
     function confirmSubmit() {
-        let isValid = true;
-        $('#quotationForm').find('input[required], select[required], [data-calendar-required="true"] [data-calendar-native-input], #validityPeriod').each(function() {
-            if (!$(this).val()) {
-                isValid = false;
-                $(this).addClass('is-invalid');
-            } else {
-                $(this).removeClass('is-invalid');
-            }
-        });
+        const allUnavailable = isAllItemsUnavailable();
 
-        if (!isValid || !validateQuotationRows(true)) {
-            const firstInvalid = document.querySelector('#quotationForm .is-invalid');
-            const calendarTrigger = firstInvalid?.closest('[data-adasi-date-picker], [data-adasi-date-range]')?.querySelector('[data-calendar-trigger], [data-calendar-boundary]');
-            (calendarTrigger || firstInvalid)?.focus();
-            firstInvalid?.reportValidity?.();
-            return;
+        if (!allUnavailable) {
+            let isValid = true;
+            $('#quotationForm').find('input[required], select[required], [data-calendar-required="true"] [data-calendar-native-input], #validityPeriod').each(function() {
+                if (!$(this).val()) {
+                    isValid = false;
+                    $(this).addClass('is-invalid');
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            if (!isValid || !validateQuotationRows(true)) {
+                const firstInvalid = document.querySelector('#quotationForm .is-invalid');
+                const calendarTrigger = firstInvalid?.closest('[data-adasi-date-picker], [data-adasi-date-range]')?.querySelector('[data-calendar-trigger], [data-calendar-boundary]');
+                (calendarTrigger || firstInvalid)?.focus();
+                firstInvalid?.reportValidity?.();
+                return;
+            }
+
+            const form = document.getElementById('quotationForm');
+            if (form && !form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
         }
 
-        const allUnavailable = $('.quotation-item-group').toArray().every((group) => itemIsUnavailable($(group)));
+        const form = document.getElementById('quotationForm');
 
         AdasiAlert.confirm({
             title: allUnavailable
@@ -2288,8 +2685,16 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 localStorage.removeItem(draftKey);
+                const submitBtn = document.getElementById('btnSubmitQuotation');
+                if (form && submitBtn) {
+                    form._lastClickedButton = submitBtn;
+                }
                 $('#formAction').val('submitted');
-                document.getElementById('quotationForm').requestSubmit();
+                if (form && typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
             }
         });
     }

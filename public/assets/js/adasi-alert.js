@@ -94,6 +94,15 @@
             reverseButtons: true,
             focusConfirm: false,
             allowOutsideClick: false,
+            didOpen: (popup) => {
+                const input = SweetAlert.getInput(popup);
+                if (input) {
+                    input.focus();
+                }
+                if (typeof options.didOpen === 'function') {
+                    options.didOpen(popup);
+                }
+            },
             inputValidator: (value) => {
                 const normalized = String(value || '').trim();
                 if (options.required && !normalized) {
@@ -167,6 +176,13 @@
         toast: toast,
         notification: (options) => toast({ ...asOptions(options), type: asText(asOptions(options).type, 'info'), duration: asOptions(options).duration || 5000 }),
     };
+
+    // Prevent Bootstrap Modal & Offcanvas focus traps from stealing focus from SweetAlert inputs
+    document.addEventListener('focusin', (event) => {
+        if (event.target && typeof event.target.closest === 'function' && event.target.closest('.swal2-container')) {
+            event.stopImmediatePropagation();
+        }
+    }, true);
 
     window.AdasiAlert = Object.freeze(AdasiAlert);
 

@@ -92,7 +92,7 @@
     @if($helper)<p id="{{ $helperId }}" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $helper }}</p>@endif
     <p id="{{ $errorId }}" data-calendar-error class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-font-medium tw-text-error {{ $message ? '' : 'tw-hidden' }}" role="alert"><x-ui.icon name="circle-alert" size="sm" class="tw-mt-0.5" /><span data-calendar-error-message>{{ $message }}</span></p>
 
-    <div id="{{ $panelId }}" class="ui-calendar-panel ui-calendar-panel--range" data-calendar-panel hidden role="dialog" aria-modal="false" aria-label="Choose date range">
+    <div id="{{ $panelId }}" class="ui-calendar-panel ui-calendar-panel--range {{ $granularity === 'month' ? 'ui-calendar-panel--month-range' : 'ui-calendar-panel--day-range' }}" data-calendar-panel hidden role="dialog" aria-modal="false" aria-label="Choose date range">
         <div class="ui-calendar-panel__topline">
             <div><span class="ui-calendar-panel__title">Select {{ $granularity === 'month' ? 'months' : 'dates' }}</span><span class="ui-calendar-panel__context" data-calendar-context>Select {{ $startLabel }}</span></div>
             <button type="button" class="ui-calendar-panel__close" data-calendar-close aria-label="Close calendar"><x-ui.icon name="x" size="sm" /></button>
@@ -122,6 +122,7 @@
 
         <div class="ui-calendar-panel__footer">
             <button type="button" class="ui-calendar-text-action" data-calendar-clear>Clear</button>
+            <span class="ui-calendar-panel__range-summary" data-calendar-range-summary aria-live="polite"></span>
             <div class="ui-calendar-panel__footer-actions"><button type="button" class="ui-calendar-text-action" data-calendar-cancel>Cancel</button><button type="button" class="ui-calendar-apply-action" data-calendar-apply>Apply</button></div>
         </div>
         <span class="tw-sr-only" data-calendar-live aria-live="polite" aria-atomic="true"></span>

@@ -9,6 +9,7 @@ use App\Exports\PurchaseRequisitionDetailExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
+use App\Exports\ShipmentsExport;
 use App\Exports\SupplierPriceHistoryExport;
 use App\Jobs\ProcessExportJob;
 use App\Models\ExportJob;
@@ -30,6 +31,7 @@ class ExportDispatcher
         PurchaseOrderDetailExport::class,
         InspectionsExport::class,
         SupplierPriceHistoryExport::class,
+        ShipmentsExport::class,
     ];
 
     public static function dispatch(string $label, string $exportClass, array $args, string $fileName): ExportJob

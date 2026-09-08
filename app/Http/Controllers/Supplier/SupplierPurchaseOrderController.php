@@ -154,6 +154,11 @@ class SupplierPurchaseOrderController extends Controller
             'quotations.exchange_rate',
             'documents',
             'materialClaims' => fn ($q) => $q->where('supplier_id', $supplierId)->latest(),
+            'awards.latestProgressUpdate.updatedByUser',
+            'awards.prItem',
+            'awards.quotation',
+            'awards.quotationItem',
+            'shipmentItems.shipment.documents.latestAttachment',
         ])->findOrFail($id);
 
         // STRICT: only allow if this PO belongs to the logged-in supplier
@@ -165,6 +170,12 @@ class SupplierPurchaseOrderController extends Controller
             return [$q->id => $q->exchange_rate];
         });
 
-        return view('supplier.po.show', compact('po', 'quotationRates'));
+        $progressService = app(\App\Services\MaterialProgressService::class);
+        $poSummary = $progressService->poSummary($po);
+        $itemProjections = collect($poSummary['items'] ?? []);
+
+        $customsSummary = $po->customsDocumentationSummary();
+
+        return view('supplier.po.show', compact('po', 'quotationRates', 'itemProjections', 'poSummary', 'customsSummary'));
     }
 }

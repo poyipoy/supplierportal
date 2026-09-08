@@ -27,7 +27,7 @@ class ClaimController extends Controller
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
-                ->addColumn('claim_id', fn ($c) => '#'.$c->id)
+                ->addColumn('claim_id', fn ($c) => $c->claim_number)
                 ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
                 ->addColumn('created_date', fn ($c) => $c->created_at->format('d M Y'))
                 ->addColumn('deadline_display', function ($c) {

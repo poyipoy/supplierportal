@@ -95,17 +95,20 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 0 => [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $quotationItem->id,
-                    'shipped_quantity' => '8.0000',
+                    'shipped_qty' => 8,
+                    'actual_weight_kg' => 8.0,
                 ],
                 1 => [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $quotationItem->id,
-                    'shipped_quantity' => '',
+                    'shipped_qty' => '',
+                    'actual_weight_kg' => '',
                 ],
                 2 => [
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $quotationItem->id,
-                    'shipped_quantity' => null,
+                    'shipped_qty' => null,
+                    'actual_weight_kg' => null,
                 ],
             ],
         ]);
@@ -115,7 +118,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertDatabaseHas('shipment_items', [
             'purchase_order_id' => $po->id,
             'quotation_item_id' => $quotationItem->id,
-            'shipped_quantity' => '8.0000',
+            'shipped_qty' => 8,
         ]);
     }
 
@@ -131,19 +134,21 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 [
                     'purchase_order_id' => $poA->id,
                     'quotation_item_id' => $qItemA->id,
-                    'shipped_quantity' => 20.0,
+                    'shipped_qty' => 20,
+                    'actual_weight_kg' => 20.0,
                 ],
             ],
         ]);
 
         $this->assertSame(Shipment::STATUS_SUBMITTED, $submitted->status);
         $this->assertCount(1, $submitted->items);
-        $this->assertEquals(20.0, $submitted->items->first()->shipped_quantity);
+        $this->assertSame(20, $submitted->items->first()->shipped_qty);
+        $this->assertEquals(20.0, $submitted->items->first()->actual_weight_kg);
 
         $deliveryStatus = $this->shipmentService->getItemDeliveryStatus($poA->id, $qItemA->id);
-        $this->assertEquals(20.0, $deliveryStatus['ordered']);
-        $this->assertEquals(20.0, $deliveryStatus['allocated']);
-        $this->assertEquals(0.0, $deliveryStatus['remaining']);
+        $this->assertEquals(20, $deliveryStatus['ordered']);
+        $this->assertEquals(20, $deliveryStatus['allocated']);
+        $this->assertEquals(0, $deliveryStatus['remaining']);
         $this->assertTrue($deliveryStatus['is_fully_allocated']);
     }
 
@@ -163,12 +168,14 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 [
                     'purchase_order_id' => $po1->id,
                     'quotation_item_id' => $qItem1->id,
-                    'shipped_quantity' => 12.0,
+                    'shipped_qty' => 12,
+                    'actual_weight_kg' => 12.0,
                 ],
                 [
                     'purchase_order_id' => $po2->id,
                     'quotation_item_id' => $qItem2->id,
-                    'shipped_quantity' => 10.0,
+                    'shipped_qty' => 10,
+                    'actual_weight_kg' => 10.0,
                 ],
             ],
         ]);
@@ -201,12 +208,14 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 [
                     'purchase_order_id' => $poA->id,
                     'quotation_item_id' => $qItemA->id,
-                    'shipped_quantity' => 10.0,
+                    'shipped_qty' => 10,
+                    'actual_weight_kg' => 10.0,
                 ],
                 [
                     'purchase_order_id' => $poB->id,
                     'quotation_item_id' => $qItemB->id,
-                    'shipped_quantity' => 5.0,
+                    'shipped_qty' => 5,
+                    'actual_weight_kg' => 5.0,
                 ],
             ],
         ]);
@@ -214,72 +223,72 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
     public function test_partial_delivery_across_multiple_shipments(): void
     {
-        // Ordered: 20 ton
+        // Ordered: 20 pcs
         $po = $this->createPoForSupplier($this->supplierA, 20.0);
         $qItem = $po->awards->first()->quotationItem;
 
-        // Shipment 1: 8 ton
+        // Shipment 1: 8 pcs
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
         $this->shipmentService->submitShipment($shp1, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 8.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],
         ]);
 
         $status1 = $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id);
-        $this->assertEquals(8.0, $status1['allocated']);
-        $this->assertEquals(12.0, $status1['remaining']);
+        $this->assertEquals(8, $status1['allocated']);
+        $this->assertEquals(12, $status1['remaining']);
         $this->assertFalse($status1['is_fully_allocated']);
 
-        // Shipment 2: 7 ton
+        // Shipment 2: 7 pcs
         $shp2 = $this->shipmentService->createDraft($this->supplierA);
         $this->shipmentService->submitShipment($shp2, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 7.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 7, 'actual_weight_kg' => 7.0],
             ],
         ]);
 
         $status2 = $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id);
-        $this->assertEquals(15.0, $status2['allocated']);
-        $this->assertEquals(5.0, $status2['remaining']);
+        $this->assertEquals(15, $status2['allocated']);
+        $this->assertEquals(5, $status2['remaining']);
 
-        // Shipment 3: 5 ton (remaining fulfilled)
+        // Shipment 3: 5 pcs (remaining fulfilled)
         $shp3 = $this->shipmentService->createDraft($this->supplierA);
         $this->shipmentService->submitShipment($shp3, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 5.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
         ]);
 
         $status3 = $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id);
-        $this->assertEquals(20.0, $status3['allocated']);
-        $this->assertEquals(0.0, $status3['remaining']);
+        $this->assertEquals(20, $status3['allocated']);
+        $this->assertEquals(0, $status3['remaining']);
         $this->assertTrue($status3['is_fully_allocated']);
     }
 
     public function test_over_allocation_strictly_rejected(): void
     {
-        // Ordered: 20 ton
+        // Ordered: 20 pcs
         $po = $this->createPoForSupplier($this->supplierA, 20.0);
         $qItem = $po->awards->first()->quotationItem;
 
-        // Shipment 1: 15 ton
+        // Shipment 1: 15 pcs
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
         $this->shipmentService->submitShipment($shp1, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 15.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 15, 'actual_weight_kg' => 15.0],
             ],
         ]);
 
-        // Shipment 2 tries to allocate 6 ton (15 + 6 = 21 > 20)
+        // Shipment 2 tries to allocate 6 pcs (15 + 6 = 21 > 20)
         $shp2 = $this->shipmentService->createDraft($this->supplierA);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('exceeds remaining ordered balance');
+        $this->expectExceptionMessage('exceeds remaining ordered');
 
         $this->shipmentService->submitShipment($shp2, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 6.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 6, 'actual_weight_kg' => 6.0],
             ],
         ]);
     }
@@ -292,44 +301,44 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
         $this->shipmentService->submitShipment($shp1, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 15.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 15, 'actual_weight_kg' => 15.0],
             ],
         ]);
 
-        $this->assertEquals(5.0, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining']);
+        $this->assertEquals(5, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining']);
 
         // Cancel Shipment 1
         $this->shipmentService->cancelShipment($shp1, $this->supplierA);
 
-        // Allocation should be released back to 20.0
-        $this->assertEquals(20.0, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining']);
+        // Allocation should be released back to 20
+        $this->assertEquals(20, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining']);
     }
 
     public function test_concurrency_race_condition_protection(): void
     {
-        // Ordered: 10 ton
+        // Ordered: 10 pcs
         $po = $this->createPoForSupplier($this->supplierA, 10.0);
         $qItem = $po->awards->first()->quotationItem;
 
-        // Draft A requests 8 ton
+        // Draft A requests 8 pcs
         $shpA = $this->shipmentService->createDraft($this->supplierA);
-        // Draft B requests 7 ton
+        // Draft B requests 7 pcs
         $shpB = $this->shipmentService->createDraft($this->supplierA);
 
-        // Submit A succeeds (allocated 8 ton, remaining 2 ton)
+        // Submit A succeeds (allocated 8 pcs, remaining 2 pcs)
         $this->shipmentService->submitShipment($shpA, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 8.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],
         ]);
 
-        // Submit B with 7 ton must fail because only 2 ton remain!
+        // Submit B with 7 pcs must fail because only 2 pcs remain!
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('exceeds remaining ordered balance');
+        $this->expectExceptionMessage('exceeds remaining ordered');
 
         $this->shipmentService->submitShipment($shpB, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 7.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 7, 'actual_weight_kg' => 7.0],
             ],
         ]);
     }
@@ -338,7 +347,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
     {
         $po = $this->createPoForSupplier($this->supplierA, 10.0);
         $qItem = $po->awards->first()->quotationItem;
-        $items = [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => '10.0000']];
+        $items = [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 10, 'actual_weight_kg' => 10.0]];
         $first = $this->shipmentService->createDraft($this->supplierA, ['items' => $items]);
         $second = $this->shipmentService->createDraft($this->supplierA, ['items' => $items]);
         $queries = [];
@@ -351,8 +360,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertSame('submitted', $first->fresh()->status);
         $this->assertSame('draft', $second->fresh()->status);
         $this->assertNull($second->fresh()->submitted_at);
-        $this->assertSame('10.0000', $second->items()->sole()->shipped_quantity);
-        $this->assertSame(100000, $po->itemFulfillmentStatus($qItem->id)['allocated_units']);
+        $this->assertSame(10, $second->items()->sole()->shipped_qty);
+        $this->assertSame(10, $po->itemFulfillmentStatus($qItem->id)['allocated_qty']);
         $poLock = collect($queries)->search(fn ($sql) => str_contains($sql, 'from `purchase_orders`') && str_contains($sql, 'for update'));
         $this->assertNotFalse($poLock);
         $earlySelects = collect(array_slice($queries, 0, $poLock))
@@ -377,7 +386,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         $this->shipmentService->submitShipment($shp, [
             'items' => [
-                ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_quantity' => 5.0],
+                ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
         ]);
     }
@@ -395,7 +404,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         $this->shipmentService->submitShipment($shp, [
             'items' => [
-                ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_quantity' => 5.0],
+                ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
         ]);
     }
@@ -413,7 +422,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectExceptionMessage('does not belong to Purchase Order');
 
         $this->shipmentService->syncDraftItems($shp, [
-            ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_quantity' => 5.0],
+            ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
         ]);
     }
 
@@ -428,14 +437,14 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectExceptionMessage('Duplicate item entries detected');
 
         $this->shipmentService->syncDraftItems($shp, [
-            ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 3.0],
-            ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 4.0],
+            ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 3, 'actual_weight_kg' => 3.0],
+            ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 4, 'actual_weight_kg' => 4.0],
         ]);
     }
 
     public function test_duplicate_shipment_line_cannot_bypass_quantity_ceiling(): void
     {
-        // 8 kg remaining
+        // 8 pcs remaining
         $po = $this->createPoForSupplier($this->supplierA, 8.0);
         $qItem = $po->awards->first()->quotationItem;
 
@@ -447,8 +456,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         // Payload with 5 + 5 for an 8 unit remaining limit
         $this->shipmentService->submitShipment($shp, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 5.0],
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 5.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
         ]);
     }
@@ -463,7 +472,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'shipment_id' => $shp->id,
             'purchase_order_id' => $po->id,
             'quotation_item_id' => $qItem->id,
-            'shipped_quantity' => 3.0,
+            'shipped_qty' => 3,
+            'actual_weight_kg' => 3.0,
         ]);
 
         $this->expectException(UniqueConstraintViolationException::class);
@@ -472,7 +482,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'shipment_id' => $shp->id,
             'purchase_order_id' => $po->id,
             'quotation_item_id' => $qItem->id,
-            'shipped_quantity' => 4.0,
+            'shipped_qty' => 4,
+            'actual_weight_kg' => 4.0,
         ]);
     }
 
@@ -482,15 +493,35 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $qItem = $po->awards->first()->quotationItem;
         $shipment = $this->shipmentService->createDraft($this->supplierA);
 
+        // Reject zero shipped_qty
         try {
             ShipmentItem::create([
                 'shipment_id' => $shipment->id,
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
                 'pr_item_award_id' => $po->awards->first()->id,
-                'shipped_quantity' => '0.0000',
+                'shipped_qty' => 0,
+                'actual_weight_kg' => 10.0,
             ]);
-            $this->fail('Expected the database quantity CHECK constraint to reject zero.');
+            $this->fail('Expected the database shipped_qty CHECK constraint to reject zero.');
+        } catch (QueryException) {
+            $this->assertDatabaseMissing('shipment_items', [
+                'shipment_id' => $shipment->id,
+                'quotation_item_id' => $qItem->id,
+            ]);
+        }
+
+        // Reject zero actual_weight_kg
+        try {
+            ShipmentItem::create([
+                'shipment_id' => $shipment->id,
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'pr_item_award_id' => $po->awards->first()->id,
+                'shipped_qty' => 1,
+                'actual_weight_kg' => 0.0,
+            ]);
+            $this->fail('Expected the database actual_weight_kg CHECK constraint to reject zero.');
         } catch (QueryException) {
             $this->assertDatabaseMissing('shipment_items', [
                 'shipment_id' => $shipment->id,
@@ -508,34 +539,33 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
     public function test_delivery_progress_attribute_for_partial_and_full_deliveries_and_legacy_po(): void
     {
-        // 1. Shipment-aware PO: Ordered 20 kg
+        // 1. Shipment-aware PO: Ordered 20 pcs
         $po = $this->createPoForSupplier($this->supplierA, 20.0);
         $qItem = $po->awards->first()->quotationItem;
 
         // 0 / 20 shipped -> not_shipped
         $this->assertSame('not_shipped', $po->fresh()->delivery_progress);
 
-        // Submit 5 kg -> partially_shipped
+        // Submit 5 pcs -> partially_shipped
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
         $this->shipmentService->submitShipment($shp1, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 5.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
         ]);
         $this->assertSame('partially_shipped', $po->fresh()->delivery_progress);
 
-        // Confirm arrival of 5 kg -> purchase_orders.actual_arrival is set!
+        // Confirm arrival of 5 pcs -> purchase_orders.actual_arrival is set!
         $this->shipmentService->confirmArrival($shp1, $this->purchasing);
         $po->refresh();
         $this->assertNotNull($po->actual_arrival);
-        // FIX 5: delivery_progress must STILL be partially_shipped, NOT received!
         $this->assertSame('partially_shipped', $po->delivery_progress);
 
-        // Submit remaining 15 kg -> fully_shipped (total active = 20 kg, but only 5 arrived)
+        // Submit remaining 15 pcs -> fully_shipped (total active = 20 pcs, but only 5 arrived)
         $shp2 = $this->shipmentService->createDraft($this->supplierA);
         $this->shipmentService->submitShipment($shp2, [
             'items' => [
-                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_quantity' => 15.0],
+                ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 15, 'actual_weight_kg' => 15.0],
             ],
         ]);
         $this->assertSame('fully_shipped', $po->fresh()->delivery_progress);
@@ -571,7 +601,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => '4.0000',
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 4.0,
             ]],
         ]);
 
@@ -591,13 +622,14 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 'items' => [[
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => '6.0000',
+                    'shipped_qty' => 6,
+                    'actual_weight_kg' => 6.0,
                 ]],
             ]);
 
         $response->assertRedirect(route('supplier.shipments.show', $shipment))->assertSessionHas('success');
         $this->assertSame('Updated draft', $shipment->fresh()->notes);
-        $this->assertSame('6.0000', $shipment->items()->firstOrFail()->shipped_quantity);
+        $this->assertSame(6, $shipment->items()->firstOrFail()->shipped_qty);
     }
 
     public function test_non_draft_shipment_cannot_be_updated_and_destroy_route_is_not_registered(): void
@@ -609,7 +641,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => '4.0000',
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 4.0,
             ]],
         ]);
 
@@ -621,7 +654,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 'items' => [[
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => '5.0000',
+                    'shipped_qty' => 5,
+                    'actual_weight_kg' => 5.0,
                 ]],
             ]);
 
@@ -630,99 +664,183 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertFalse(Route::has('supplier.shipments.destroy'));
     }
 
-    public function test_quantity_comparison_accepts_exact_four_decimal_balance_and_rejects_overage(): void
+    public function test_pr_qty_ten_with_supplier_available_qty_eight_resolves_authoritative_ordered_qty_eight(): void
     {
-        $po = $this->createPoForSupplier($this->supplierA, 1.0);
-        $qItem = $po->awards->first()->quotationItem;
-        $exact = $this->shipmentService->createDraft($this->supplierA);
-
-        $this->shipmentService->submitShipment($exact, [
-            'items' => [[
-                'purchase_order_id' => $po->id,
-                'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => '1.0000',
-            ]],
-        ]);
-
-        $overage = $this->shipmentService->createDraft($this->supplierA);
-        $this->expectException(InvalidArgumentException::class);
-        $this->shipmentService->submitShipment($overage, [
-            'items' => [[
-                'purchase_order_id' => $po->id,
-                'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => '0.0001',
-            ]],
-        ]);
-    }
-
-    public function test_quantity_with_more_than_four_decimal_places_is_rejected(): void
-    {
-        $po = $this->createPoForSupplier($this->supplierA, 1.0);
-        $qItem = $po->awards->first()->quotationItem;
-        $shipment = $this->shipmentService->createDraft($this->supplierA);
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('maximum of 4 decimal places');
-        $this->shipmentService->submitShipment($shipment, [
-            'items' => [[
-                'purchase_order_id' => $po->id,
-                'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => '1.00001',
-            ]],
-        ]);
-    }
-
-    public function test_exact_decimal_accumulation_rejects_overage_by_one_ten_thousandth(): void
-    {
-        $po = $this->createPoForSupplier($this->supplierA, 1.0);
+        // PR quantity 10, supplier available_qty 8 -> PO line authoritative ordered Qty is 8
+        $po = $this->createPoForSupplier($this->supplierA, 80.0, 10, 8);
         $qItem = $po->awards->first()->quotationItem;
 
-        foreach (['0.3333', '0.6667'] as $quantity) {
-            $shipment = $this->shipmentService->createDraft($this->supplierA);
-            $this->shipmentService->submitShipment($shipment, [
-                'items' => [[
-                    'purchase_order_id' => $po->id,
-                    'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => $quantity,
-                ]],
-            ]);
-        }
-
-        $this->assertSame(0.0, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining']);
-
-        $overage = $this->shipmentService->createDraft($this->supplierA);
-        $this->expectException(InvalidArgumentException::class);
-        $this->shipmentService->submitShipment($overage, [
-            'items' => [[
-                'purchase_order_id' => $po->id,
-                'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => '0.0001',
-            ]],
-        ]);
+        $this->assertSame(8, $qItem->fulfillment_quantity);
+        $status = $po->itemFulfillmentStatus($qItem->id);
+        $this->assertSame(8, $status['ordered_qty']);
+        $this->assertSame(8, $status['remaining_qty']);
+        $this->assertSame(0, $status['allocated_qty']);
+        $this->assertSame(8, $po->total_ordered_quantity);
     }
 
-    public function test_http_shipment_quantity_validation_rejects_zero_negative_and_excess_scale(): void
+    public function test_positive_integer_shipment_qty_accepted_and_persisted(): void
     {
         $po = $this->createPoForSupplier($this->supplierA, 10.0);
         $qItem = $po->awards->first()->quotationItem;
 
-        foreach (['0', '-0.0001', '1.00001'] as $quantity) {
-            $response = $this->actingAs($this->supplierA)
-                ->post(route('supplier.shipments.store'), [
-                    'shipment_date' => now()->toDateString(),
-                    'estimated_arrival_date' => now()->addDays(7)->toDateString(),
-                    'items' => [[
-                        'purchase_order_id' => $po->id,
-                        'quotation_item_id' => $qItem->id,
-                        'shipped_quantity' => $quantity,
-                    ]],
-                    'action' => 'draft',
-                ]);
+        $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
+            'shipment_date' => now()->toDateString(),
+            'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+            'action' => 'submit',
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_qty' => 5,
+                'actual_weight_kg' => 12.3456,
+            ]],
+        ]);
 
-            $response->assertSessionHasErrors('items.0.shipped_quantity');
+        $response->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('shipment_items', [
+            'purchase_order_id' => $po->id,
+            'quotation_item_id' => $qItem->id,
+            'shipped_qty' => 5,
+            'actual_weight_kg' => '12.3456',
+        ]);
+    }
+
+    public function test_fractional_shipment_qty_rejected_in_http_validation(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+
+        foreach (['1.5', '2.0001', '0.5'] as $fractional) {
+            $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
+                'shipment_date' => now()->toDateString(),
+                'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+                'action' => 'draft',
+                'items' => [[
+                    'purchase_order_id' => $po->id,
+                    'quotation_item_id' => $qItem->id,
+                    'shipped_qty' => $fractional,
+                    'actual_weight_kg' => 10.0,
+                ]],
+            ]);
+
+            $response->assertSessionHasErrors('items.0.shipped_qty');
         }
+    }
 
-        $this->assertDatabaseCount('shipments', 0);
+    public function test_zero_and_negative_shipment_qty_rejected_in_http_validation(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+
+        foreach ([0, -1, -5] as $invalidQty) {
+            $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
+                'shipment_date' => now()->toDateString(),
+                'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+                'action' => 'draft',
+                'items' => [[
+                    'purchase_order_id' => $po->id,
+                    'quotation_item_id' => $qItem->id,
+                    'shipped_qty' => $invalidQty,
+                    'actual_weight_kg' => 10.0,
+                ]],
+            ]);
+
+            $response->assertSessionHasErrors('items.0.shipped_qty');
+        }
+    }
+
+    public function test_actual_weight_kg_http_validation_rules(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+
+        // Rejects 0, negative, or more than 4 decimal places
+        foreach (['0', '-1', '10.12345'] as $invalidWeight) {
+            $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
+                'shipment_date' => now()->toDateString(),
+                'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+                'action' => 'draft',
+                'items' => [[
+                    'purchase_order_id' => $po->id,
+                    'quotation_item_id' => $qItem->id,
+                    'shipped_qty' => 5,
+                    'actual_weight_kg' => $invalidWeight,
+                ]],
+            ]);
+
+            $response->assertSessionHasErrors('items.0.actual_weight_kg');
+        }
+    }
+
+    public function test_partial_delivery_three_plus_five_completes_qty_eight(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 8.0, 8, 8);
+        $qItem = $po->awards->first()->quotationItem;
+
+        // Shipment 1: 3 pcs
+        $shp1 = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($shp1, [
+            'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 3, 'actual_weight_kg' => 30.0]],
+        ]);
+        $this->assertSame(3, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['allocated_qty']);
+        $this->assertSame(5, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining_qty']);
+
+        // Shipment 2: 5 pcs
+        $shp2 = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($shp2, [
+            'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 50.0]],
+        ]);
+        $status = $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id);
+        $this->assertSame(8, $status['allocated_qty']);
+        $this->assertSame(0, $status['remaining_qty']);
+        $this->assertTrue($status['is_fully_allocated']);
+    }
+
+    public function test_actual_kg_differences_do_not_change_remaining_qty_or_completion(): void
+    {
+        // PO ordered 8 pcs
+        $po = $this->createPoForSupplier($this->supplierA, 8.0, 8, 8);
+        $qItem = $po->awards->first()->quotationItem;
+
+        // Ship 4 pcs with large physical weight
+        $shp1 = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($shp1, [
+            'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 4, 'actual_weight_kg' => 500.0]],
+        ]);
+        $this->shipmentService->confirmArrival($shp1, $this->purchasing);
+
+        // Remaining must be exactly 4 pcs, unaffected by 500 kg
+        $this->assertSame(4, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining_qty']);
+        $this->assertSame(4, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['allocated_qty']);
+
+        // Ship remaining 4 pcs with tiny physical weight
+        $shp2 = $this->shipmentService->createDraft($this->supplierA);
+        $this->shipmentService->submitShipment($shp2, [
+            'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 4, 'actual_weight_kg' => 0.5]],
+        ]);
+        $this->shipmentService->confirmArrival($shp2, $this->purchasing);
+
+        // Entire 8 pcs arrived, remaining is 0 pcs
+        $this->assertSame(0, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining_qty']);
+        $this->assertSame('received', $po->fresh()->delivery_progress);
+    }
+
+    public function test_draft_shipment_does_not_consume_qty_and_submitted_shipment_consumes_qty(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+
+        $draft = $this->shipmentService->createDraft($this->supplierA, [
+            'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 6, 'actual_weight_kg' => 6.0]],
+        ]);
+
+        // Draft state does NOT allocate
+        $this->assertSame(0, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['allocated_qty']);
+        $this->assertSame(10, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining_qty']);
+
+        // Submit consumes allocation
+        $this->shipmentService->submitShipment($draft);
+        $this->assertSame(6, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['allocated_qty']);
+        $this->assertSame(4, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining_qty']);
     }
 
     public function test_award_based_po_without_shipments_cannot_use_legacy_arrival(): void
@@ -802,7 +920,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 5.0,
+                'shipped_qty' => 5,
+                'actual_weight_kg' => 5.0,
             ]],
         ]);
 
@@ -824,7 +943,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 10.0,
+                'shipped_qty' => 10,
+                'actual_weight_kg' => 10.0,
             ]],
         ]);
         $this->shipmentService->confirmArrival($shipment, $this->purchasing);
@@ -852,7 +972,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 5.0,
+                'shipped_qty' => 5,
+                'actual_weight_kg' => 5.0,
             ]],
         ]);
         $this->shipmentService->cancelShipment($shipment, $this->supplierA);
@@ -897,7 +1018,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
                 'items' => [[
                     'purchase_order_id' => $po->id,
                     'quotation_item_id' => $qItem->id,
-                    'shipped_quantity' => 4.0,
+                    'shipped_qty' => 4,
+                    'actual_weight_kg' => 4.0,
                 ]],
             ]);
         } finally {
@@ -918,7 +1040,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 4.0,
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 4.0,
             ]],
         ]);
 
@@ -944,7 +1067,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 4.0,
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 4.0,
             ]],
         ]);
         $po->update([
@@ -978,7 +1102,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 4.0,
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 4.0,
             ]],
         ]);
         $this->shipmentService->confirmArrival($first, $this->purchasing);
@@ -990,7 +1115,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 6.0,
+                'shipped_qty' => 6,
+                'actual_weight_kg' => 6.0,
             ]],
         ]);
 
@@ -999,7 +1125,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'shipment_id' => $second->id,
             'purchase_order_id' => $po->id,
             'quotation_item_id' => $qItem->id,
-            'shipped_quantity' => '6.0000',
+            'shipped_qty' => 6,
         ]);
     }
 
@@ -1011,7 +1137,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 4.0,
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 4.0,
             ]],
         ]);
         $this->shipmentService->cancelShipment($cancelled, $this->supplierA);
@@ -1029,7 +1156,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 10.0,
+                'shipped_qty' => 10,
+                'actual_weight_kg' => 10.0,
             ]],
         ]);
 
@@ -1051,7 +1179,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             $this->shipmentService->syncDraftItems($shipment, [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
-                'shipped_quantity' => 4.0,
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 4.0,
             ]]);
         } finally {
             $this->assertDatabaseMissing('shipment_items', [
@@ -1062,8 +1191,11 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         }
     }
 
-    private function createPoForSupplier(User $supplier, float $totalWeight): PurchaseOrder
+    private function createPoForSupplier(User $supplier, float $totalWeight, ?int $quantity = null, ?int $availableQty = null): PurchaseOrder
     {
+        $orderedQty = $quantity ?? (int) $totalWeight;
+        $availQty = $availableQty ?? (int) $totalWeight;
+
         $period = Period::create([
             'name' => 'Shipment Period '.rand(100, 9999),
             'month' => 9,
@@ -1089,7 +1221,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'pr_id' => $pr->id,
             'hs_code' => '7209.16.00',
             'material_name' => 'Steel Plate '.rand(1, 100),
-            'quantity' => 1,
+            'quantity' => $orderedQty,
             'shape' => PrItem::SHAPE_FLAT,
             'thickness' => 2.0,
             'width' => 100,
@@ -1114,6 +1246,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'is_available' => true,
             'price_per_kg' => 2.5,
             'amount' => 2.5 * $totalWeight,
+            'available_qty' => $availQty,
         ]);
 
         $award = $this->awardService->awardItem($prItem, $qItem, $this->purchasing);
@@ -1122,9 +1255,9 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         return $pos->first();
     }
 
-    private function createLegacyPoForShipment(User $supplier, float $totalWeight): array
+    private function createLegacyPoForShipment(User $supplier, float $totalWeight, ?int $quantity = null, ?int $availableQty = null): array
     {
-        $po = $this->createPoForSupplier($supplier, $totalWeight);
+        $po = $this->createPoForSupplier($supplier, $totalWeight, $quantity, $availableQty);
         $award = $po->awards()->with('quotationItem')->firstOrFail();
         $qItem = $award->quotationItem;
 

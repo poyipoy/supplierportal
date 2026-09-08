@@ -782,7 +782,7 @@
             </script>
         @endif
     @endauth
-    {{-- Global: Pencegahan Double Submit --}}
+    {{-- Global: Pencegahan Double Submit & Single-Button Spinner --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.addEventListener('submit', function (e) {
@@ -800,27 +800,69 @@
 
                 form.dataset.submitting = 'true';
 
-                // Disable all submit buttons inside the form.
+                // Disabled submit controls are omitted from the request payload.
+                // Preserve the clicked button's name/value before disabling all
+                // submit buttons so named actions (for example generate_pos or
+                // submit) still reach the server.
+                const submitter = e.submitter;
+                let submitterMirror = null;
+                if (submitter && submitter.name) {
+                    const previousMirror = form.querySelector('[data-submit-submitter-mirror]');
+                    if (previousMirror) previousMirror.remove();
+
+                    submitterMirror = document.createElement('input');
+                    submitterMirror.type = 'hidden';
+                    submitterMirror.name = submitter.name;
+                    submitterMirror.value = submitter.value;
+                    submitterMirror.setAttribute('data-submit-submitter-mirror', 'true');
+                    form.appendChild(submitterMirror);
+                }
+
+                // Apply loading state ONLY to the clicked submitter button.
+                const activeSubmitter = submitter || form._lastClickedButton;
+                if (activeSubmitter && !activeSubmitter.hasAttribute('data-no-auto-spinner')) {
+                    if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+                        window.AdasiButton.startLoading(activeSubmitter);
+                    } else if (activeSubmitter.tagName === 'BUTTON') {
+                        activeSubmitter.dataset.originalHtml = activeSubmitter.innerHTML;
+                        const icon = activeSubmitter.querySelector('.ui-icon');
+                        const spinner = document.createElement('span');
+                        spinner.className = 'ui-spinner';
+                        spinner.setAttribute('aria-hidden', 'true');
+                        if (icon && icon.parentNode) {
+                            icon.style.display = 'none';
+                            icon.parentNode.insertBefore(spinner, icon);
+                        } else {
+                            spinner.classList.add('tw-mr-1.5');
+                            activeSubmitter.prepend(spinner);
+                        }
+                    }
+                }
+
+                // Disable all submit buttons inside the form. Sibling buttons retain their original markup.
+                if (window.AdasiButton && typeof window.AdasiButton.disableSiblingButtons === 'function') {
+                    window.AdasiButton.disableSiblingButtons(form, activeSubmitter);
+                }
                 const buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
                 buttons.forEach(function (btn) {
                     btn.disabled = true;
-
-                    // Save the original text and replace it with a spinner.
-                    if (btn.tagName === 'BUTTON') {
-                        btn.dataset.originalHtml = btn.innerHTML;
-                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Loading...';
-                    }
                 });
 
                 // Safety reset after 10 seconds if the request fails or times out.
                 setTimeout(function () {
                     form.dataset.submitting = 'false';
-                    buttons.forEach(function (btn) {
-                        btn.disabled = false;
-                        if (btn.tagName === 'BUTTON' && btn.dataset.originalHtml) {
-                            btn.innerHTML = btn.dataset.originalHtml;
-                        }
-                    });
+                    if (window.AdasiButton && typeof window.AdasiButton.resetForm === 'function') {
+                        window.AdasiButton.resetForm(form);
+                    } else {
+                        buttons.forEach(function (btn) {
+                            btn.disabled = false;
+                            if (btn.tagName === 'BUTTON' && btn.dataset.originalHtml) {
+                                btn.innerHTML = btn.dataset.originalHtml;
+                                delete btn.dataset.originalHtml;
+                            }
+                        });
+                    }
+                    if (submitterMirror) submitterMirror.remove();
                 }, 10000);
             });
         });

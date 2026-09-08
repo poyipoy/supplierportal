@@ -73,7 +73,7 @@ class MaterialClaimController extends Controller
             ->orderBy('created_at', 'desc');
 
         return DataTables::eloquent($query)
-            ->addColumn('claim_id', fn ($c) => '#'.$c->id)
+            ->addColumn('claim_id', fn ($c) => $c->claim_number)
             ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn ($c) => $c->purchaseOrder->supplier->name ?? '-')
             ->addColumn('created_date', fn ($c) => $c->created_at->format('d M Y'))

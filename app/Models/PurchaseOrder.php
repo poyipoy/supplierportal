@@ -255,12 +255,109 @@ class PurchaseOrder extends Model
 
     /**
      * Unique shipments associated with this PO.
-     *
-     * @return Collection<int, Shipment>
      */
     public function shipments(): Collection
     {
         return $this->shipmentItems->map(fn ($item) => $item->shipment)->filter()->unique('id')->values();
+    }
+
+    /**
+     * Aggregate customs documentation status combining PO documents and linked shipment documents.
+     *
+     * @return array<string, array{
+     *     doc_type: string,
+     *     label: string,
+     *     po_doc: ?PoDocument,
+     *     status: string,
+     *     shipment_documents: array<int, array{
+     *         shipment: Shipment,
+     *         shipment_id: int,
+     *         shipment_hash: string,
+     *         shipment_number: string,
+     *         status: string,
+     *         document_number: ?string,
+     *         attachment: ?Attachment
+     *     }>
+     * }>
+     */
+    public function customsDocumentationSummary(): array
+    {
+        $this->loadMissing([
+            'documents',
+            'shipmentItems.shipment.documents.latestAttachment',
+        ]);
+
+        $docLabels = [
+            'invoice' => 'Commercial Invoice',
+            'bl' => 'Bill of Lading (B/L)',
+            'packing_list' => 'Packing List',
+            'form_e' => 'Form-E Certificate',
+        ];
+
+        $poDocsByType = $this->documents->keyBy('doc_type');
+
+        $shipments = $this->shipments();
+
+        $summary = [];
+
+        foreach (['invoice', 'bl', 'packing_list', 'form_e'] as $docType) {
+            $poDoc = $poDocsByType->get($docType);
+
+            $shipmentDocs = [];
+            $highestRank = -1;
+            $highestShipmentStatus = null;
+
+            foreach ($shipments as $shipment) {
+                $sDoc = $shipment->documents->firstWhere('doc_type', $docType);
+                if ($sDoc) {
+                    $attachment = $sDoc->relationLoaded('latestAttachment')
+                        ? $sDoc->latestAttachment
+                        : ($sDoc->attachments()->latest('id')->first() ?? $sDoc->latestAttachment);
+
+                    $docStatus = $sDoc->status;
+                    if ($attachment && $docStatus === ShipmentDocument::STATUS_PENDING) {
+                        $docStatus = ShipmentDocument::STATUS_RECEIVED;
+                    }
+
+                    $rank = PoDocument::STATUS_RANKS[$docStatus] ?? 0;
+                    if ($rank > $highestRank) {
+                        $highestRank = $rank;
+                        $highestShipmentStatus = $docStatus;
+                    }
+
+                    $shipmentDocs[] = [
+                        'shipment' => $shipment,
+                        'shipment_id' => $shipment->id,
+                        'shipment_hash' => $shipment->hash,
+                        'shipment_number' => $shipment->shipment_number,
+                        'status' => $docStatus,
+                        'document_number' => $sDoc->document_number,
+                        'attachment' => $attachment,
+                    ];
+                }
+            }
+
+            $currentPoRank = PoDocument::STATUS_RANKS[$poDoc?->status ?? 'pending'] ?? 0;
+            $effectiveStatus = $poDoc?->status ?? 'pending';
+
+            if ($highestRank > $currentPoRank && $highestShipmentStatus !== null) {
+                $effectiveStatus = $highestShipmentStatus;
+                if ($poDoc) {
+                    $poDoc->update(['status' => $highestShipmentStatus]);
+                    $poDoc->status = $highestShipmentStatus;
+                }
+            }
+
+            $summary[$docType] = [
+                'doc_type' => $docType,
+                'label' => $docLabels[$docType] ?? ucfirst(str_replace('_', ' ', $docType)),
+                'po_doc' => $poDoc,
+                'status' => $effectiveStatus,
+                'shipment_documents' => $shipmentDocs,
+            ];
+        }
+
+        return $summary;
     }
 
     /**
@@ -273,6 +370,17 @@ class PurchaseOrder extends Model
             : (float) $this->allQuotationItems()->sum(fn ($qi) => (float) ($qi->offered_total_weight ?? $qi->prItem?->total_weight ?? 0));
     }
 
+    /**
+     * Total ordered quantity in pcs for this PO across awards or quotation items.
+     * Awarded available_qty takes precedence, with fallback to PR requested quantity.
+     */
+    public function getTotalOrderedQuantityAttribute(): int
+    {
+        return $this->awards()->exists()
+            ? (int) $this->awards->sum(fn ($a) => $a->quotationItem?->fulfillment_quantity ?? $a->prItem?->quantity_value ?? 0)
+            : (int) $this->allQuotationItems()->sum(fn ($qi) => $qi->fulfillment_quantity);
+    }
+
     public function getDeliveryProgressAttribute(): string
     {
         // Legacy POs without any shipment records
@@ -280,25 +388,25 @@ class PurchaseOrder extends Model
             return $this->actual_arrival ? 'received' : 'not_shipped';
         }
 
-        $totalOrdered = $this->total_ordered_weight;
+        $totalOrdered = $this->total_ordered_quantity;
 
-        $arrivedAllocations = (float) $this->shipmentItems()
+        $arrivedAllocations = (int) $this->shipmentItems()
             ->whereHas('shipment', fn ($q) => $q->where('status', Shipment::STATUS_ARRIVED))
-            ->sum('shipped_quantity');
+            ->sum('shipped_qty');
 
-        if ($totalOrdered > 0 && round($arrivedAllocations, 4) >= round($totalOrdered, 4)) {
+        if ($totalOrdered > 0 && $arrivedAllocations >= $totalOrdered) {
             return 'received';
         }
 
-        $activeAllocations = (float) $this->shipmentItems()
+        $activeAllocations = (int) $this->shipmentItems()
             ->whereHas('shipment', fn ($q) => $q->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
-            ->sum('shipped_quantity');
+            ->sum('shipped_qty');
 
         if ($activeAllocations <= 0) {
             return 'not_shipped';
         }
 
-        if ($totalOrdered > 0 && round($activeAllocations, 4) >= round($totalOrdered, 4)) {
+        if ($totalOrdered > 0 && $activeAllocations >= $totalOrdered) {
             return 'fully_shipped';
         }
 
@@ -306,17 +414,34 @@ class PurchaseOrder extends Model
     }
 
     /**
-     * Convert a non-negative decimal quantity to exact ten-thousandths.
+     * @deprecated Obsolete ten-thousandth scaling helper retained for backward compatibility.
+     * Discrete integer quantities are native; 1 piece equals 1 unit. Do not use in new code.
      */
     public static function quantityToUnits(mixed $value): int
     {
         if (is_int($value)) {
             $normalized = (string) $value;
         } elseif (is_float($value)) {
-            $normalized = rtrim(rtrim(number_format($value, 10, '.', ''), '0'), '.');
+            $normalized = number_format($value, 4, '.', '');
         } elseif (is_string($value)) {
             $normalized = trim($value);
         } else {
+            throw new \InvalidArgumentException('Quantity must be an integer, float, or numeric string.');
+        }
+
+        if ($normalized === '') {
+            throw new \InvalidArgumentException('Quantity cannot be empty.');
+        }
+
+        if (! is_numeric($normalized)) {
+            throw new \InvalidArgumentException('Quantity must be numeric.');
+        }
+
+        if (str_contains($normalized, '-') || (float) $normalized < 0) {
+            throw new \InvalidArgumentException('Quantity must be a positive plain decimal number.');
+        }
+
+        if (stripos($normalized, 'e') !== false) {
             throw new \InvalidArgumentException('Quantity must be a plain decimal number.');
         }
 
@@ -338,6 +463,10 @@ class PurchaseOrder extends Model
         return ((int) $whole * 10000) + (int) $fraction;
     }
 
+    /**
+     * @deprecated Obsolete ten-thousandth scaling helper retained for backward compatibility.
+     * Discrete integer quantities are native; 1 piece equals 1 unit. Do not use in new code.
+     */
     public static function quantityUnitsToDecimal(int $units): string
     {
         return number_format($units / 10000, 4, '.', '');
@@ -348,15 +477,14 @@ class PurchaseOrder extends Model
      *
      * Resolved NG lines are retained as physical history but released from
      * commercial reservation so replacement delivery can be allocated.
+     * All fulfillment logic operates on integer quantity (pcs).
      *
      * @return array<string, int|float|bool>
      */
     public function itemFulfillmentStatus(int $quotationItemId, ?int $excludeShipmentId = null): array
     {
         $quotationItem = QuotationItem::with('prItem')->findOrFail($quotationItemId);
-        $orderedUnits = self::quantityToUnits(
-            $quotationItem->offered_total_weight ?? $quotationItem->prItem?->total_weight ?? 0
-        );
+        $orderedQty = $quotationItem->fulfillment_quantity;
 
         $query = $this->shipmentItems()
             ->where('quotation_item_id', $quotationItemId)
@@ -372,24 +500,24 @@ class PurchaseOrder extends Model
             $query->where('shipment_id', '!=', $excludeShipmentId);
         }
 
-        $physicalShippedUnits = 0;
-        $physicalArrivedUnits = 0;
-        $acceptedUnits = 0;
-        $ngUnits = 0;
-        $replacementEligibleUnits = 0;
-        $reservedUnits = 0;
+        $physicalShippedQty = 0;
+        $physicalArrivedQty = 0;
+        $acceptedQty = 0;
+        $ngQty = 0;
+        $replacementEligibleQty = 0;
+        $reservedQty = 0;
 
         foreach ($query->get() as $shipmentItem) {
-            $units = self::quantityToUnits($shipmentItem->shipped_quantity);
-            $physicalShippedUnits += $units;
+            $qty = (int) $shipmentItem->shipped_qty;
+            $physicalShippedQty += $qty;
 
             if ($shipmentItem->shipment?->status !== Shipment::STATUS_ARRIVED) {
-                $reservedUnits += $units;
+                $reservedQty += $qty;
 
                 continue;
             }
 
-            $physicalArrivedUnits += $units;
+            $physicalArrivedQty += $qty;
             $qcItems = $shipmentItem->qcItems->filter(function (QcItem $qcItem) use ($shipmentItem) {
                 return $qcItem->inspection
                     && (int) $qcItem->inspection->po_id === (int) $this->id
@@ -397,13 +525,13 @@ class PurchaseOrder extends Model
             });
 
             if ($qcItems->isEmpty()) {
-                $reservedUnits += $units;
+                $reservedQty += $qty;
 
                 continue;
             }
 
             if ($qcItems->contains(fn (QcItem $qcItem) => $qcItem->status === 'ng')) {
-                $ngUnits += $units;
+                $ngQty += $qty;
                 $claims = $qcItems
                     ->map(fn (QcItem $qcItem) => $qcItem->inspection?->materialClaims)
                     ->filter()
@@ -416,45 +544,57 @@ class PurchaseOrder extends Model
                 $hasResolvedClaim = $claims->contains(fn (MaterialClaim $claim) => $claim->status === 'resolved');
 
                 if ($hasResolvedClaim && ! $hasActiveClaim) {
-                    $replacementEligibleUnits += $units;
+                    $replacementEligibleQty += $qty;
                 } else {
-                    $reservedUnits += $units;
+                    $reservedQty += $qty;
                 }
 
                 continue;
             }
 
             if ($qcItems->contains(fn (QcItem $qcItem) => $qcItem->status === 'ok')) {
-                $acceptedUnits += $units;
+                $acceptedQty += $qty;
             } else {
-                $reservedUnits += $units;
+                $reservedQty += $qty;
             }
         }
 
-        $allocatedUnits = $acceptedUnits + $reservedUnits;
-        $remainingUnits = max(0, $orderedUnits - $allocatedUnits);
+        $allocatedQty = $acceptedQty + $reservedQty;
+        $remainingQty = max(0, $orderedQty - $allocatedQty);
 
         return [
-            'ordered_units' => $orderedUnits,
-            'physical_shipped_units' => $physicalShippedUnits,
-            'physical_arrived_units' => $physicalArrivedUnits,
-            'accepted_units' => $acceptedUnits,
-            'ng_units' => $ngUnits,
-            'replacement_eligible_units' => $replacementEligibleUnits,
-            'reserved_units' => $reservedUnits,
-            'allocated_units' => $allocatedUnits,
-            'remaining_units' => $remainingUnits,
-            'ordered' => (float) self::quantityUnitsToDecimal($orderedUnits),
-            'physical_shipped' => (float) self::quantityUnitsToDecimal($physicalShippedUnits),
-            'physical_arrived' => (float) self::quantityUnitsToDecimal($physicalArrivedUnits),
-            'accepted' => (float) self::quantityUnitsToDecimal($acceptedUnits),
-            'ng' => (float) self::quantityUnitsToDecimal($ngUnits),
-            'replacement_eligible' => (float) self::quantityUnitsToDecimal($replacementEligibleUnits),
-            'reserved' => (float) self::quantityUnitsToDecimal($reservedUnits),
-            'allocated' => (float) self::quantityUnitsToDecimal($allocatedUnits),
-            'remaining' => (float) self::quantityUnitsToDecimal($remainingUnits),
-            'is_fully_allocated' => $remainingUnits === 0,
-            'is_fully_accepted' => $acceptedUnits >= $orderedUnits,
+            'ordered_qty' => $orderedQty,
+            'physical_shipped_qty' => $physicalShippedQty,
+            'physical_arrived_qty' => $physicalArrivedQty,
+            'accepted_qty' => $acceptedQty,
+            'ng_qty' => $ngQty,
+            'replacement_eligible_qty' => $replacementEligibleQty,
+            'reserved_qty' => $reservedQty,
+            'allocated_qty' => $allocatedQty,
+            'remaining_qty' => $remainingQty,
+
+            // Backward compatibility keys
+            'ordered_units' => $orderedQty,
+            'physical_shipped_units' => $physicalShippedQty,
+            'physical_arrived_units' => $physicalArrivedQty,
+            'accepted_units' => $acceptedQty,
+            'ng_units' => $ngQty,
+            'replacement_eligible_units' => $replacementEligibleQty,
+            'reserved_units' => $reservedQty,
+            'allocated_units' => $allocatedQty,
+            'remaining_units' => $remainingQty,
+            'ordered' => (float) $orderedQty,
+            'physical_shipped' => (float) $physicalShippedQty,
+            'physical_arrived' => (float) $physicalArrivedQty,
+            'accepted' => (float) $acceptedQty,
+            'ng' => (float) $ngQty,
+            'replacement_eligible' => (float) $replacementEligibleQty,
+            'reserved' => (float) $reservedQty,
+            'allocated' => (float) $allocatedQty,
+            'remaining' => (float) $remainingQty,
+
+            'is_fully_allocated' => $remainingQty === 0,
+            'is_fully_accepted' => $acceptedQty >= $orderedQty,
         ];
     }
 
@@ -482,7 +622,7 @@ class PurchaseOrder extends Model
         return $quotationItems->every(function (QuotationItem $quotationItem) {
             $status = $this->itemFulfillmentStatus($quotationItem->id);
 
-            return $status['accepted_units'] >= $status['ordered_units'];
+            return $status['accepted_qty'] >= $status['ordered_qty'];
         });
     }
 

@@ -293,7 +293,82 @@ function initializeMaterialShapeRows() {
     renumberPrRows();
 }
 
-// Remark popover event handlers
+// Remark popover event handlers & positioning
+function positionRemarkPopover($popover, trigger) {
+    if (!$popover || !$popover.length || $popover.prop('hidden')) return;
+
+    const triggerEl = trigger || $popover.closest('td').find('[data-remark-trigger]')[0];
+    if (!triggerEl) return;
+
+    const rect = triggerEl.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+        $popover.prop('hidden', true);
+        return;
+    }
+
+    // Hide if trigger is scrolled outside the table scroll container horizontally
+    const $scrollContainer = $popover.closest('.pr-form-table-scroll');
+    if ($scrollContainer.length) {
+        const containerRect = $scrollContainer[0].getBoundingClientRect();
+        if (rect.right < containerRect.left + 10 || rect.left > containerRect.right - 10) {
+            $popover.prop('hidden', true);
+            $(triggerEl).attr('aria-expanded', 'false');
+            return;
+        }
+    }
+
+    // Hide if trigger is scrolled outside window viewport vertically
+    if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        $popover.prop('hidden', true);
+        $(triggerEl).attr('aria-expanded', 'false');
+        return;
+    }
+
+    const viewportPadding = 8;
+    const gap = 4;
+    const popoverWidth = Math.min(320, Math.max(280, window.innerWidth - (viewportPadding * 2)));
+    const popoverHeight = Math.min($popover.outerHeight() || $popover[0].scrollHeight || 230, 280);
+
+    const fitsBelow = rect.bottom + gap + popoverHeight <= window.innerHeight - viewportPadding;
+    const fitsAbove = rect.top - gap - popoverHeight >= viewportPadding;
+    const opensAbove = !fitsBelow && fitsAbove;
+
+    let top;
+    if (opensAbove) {
+        top = Math.max(viewportPadding, rect.top - gap - popoverHeight);
+    } else {
+        top = Math.min(window.innerHeight - popoverHeight - viewportPadding, rect.bottom + gap);
+    }
+
+    let left = rect.right - popoverWidth;
+    if (left < viewportPadding) {
+        left = Math.max(viewportPadding, rect.left);
+    }
+    if (left + popoverWidth > window.innerWidth - viewportPadding) {
+        left = Math.max(viewportPadding, window.innerWidth - popoverWidth - viewportPadding);
+    }
+
+    $popover.css({
+        position: 'fixed',
+        top: `${Math.round(top)}px`,
+        left: `${Math.round(left)}px`,
+        bottom: 'auto',
+        right: 'auto',
+        width: `${popoverWidth}px`,
+        zIndex: 1080,
+    });
+}
+
+function repositionVisibleRemarkPopovers() {
+    $('[data-remark-popover]:not([hidden])').each(function() {
+        const $popover = $(this);
+        const $trigger = $popover.closest('td').find('[data-remark-trigger]');
+        if ($trigger.length) {
+            positionRemarkPopover($popover, $trigger[0]);
+        }
+    });
+}
+
 $(document).on('click', '[data-remark-trigger]', function(e) {
     e.stopPropagation();
     const $cell = $(this).closest('td');
@@ -310,16 +385,9 @@ $(document).on('click', '[data-remark-trigger]', function(e) {
         const matName = $cell.closest('tr').find('.material-master-search').val() || 'Material';
         $cell.find('.pr-remark-material-name').text(matName);
 
-        const rect = this.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
-        if (spaceBelow < 240 && rect.top > 240) {
-            $popover.css({ top: 'auto', bottom: 'calc(100% + 4px)', right: '0', left: 'auto' });
-        } else {
-            $popover.css({ top: 'calc(100% + 4px)', bottom: 'auto', right: '0', left: 'auto' });
-        }
-
         $popover.prop('hidden', false);
         $(this).attr('aria-expanded', 'true');
+        positionRemarkPopover($popover, this);
         $cell.find('.pr-remark-draft').focus();
     }
 });
@@ -458,5 +526,16 @@ $(document).on('keydown', '.material-master-search', function(event) {
     }
 });
 
-$(window).on('resize', repositionVisibleMaterialSearchResults);
-document.addEventListener('scroll', repositionVisibleMaterialSearchResults, true);
+function handleWindowResize() {
+    repositionVisibleMaterialSearchResults();
+    repositionVisibleRemarkPopovers();
+}
+
+function handleDocumentScroll() {
+    repositionVisibleMaterialSearchResults();
+    repositionVisibleRemarkPopovers();
+}
+
+$(window).on('resize', handleWindowResize);
+document.addEventListener('scroll', handleDocumentScroll, true);
+

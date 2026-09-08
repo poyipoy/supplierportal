@@ -46,6 +46,10 @@ class CustomAdasiAlertTest extends TestCase
         $this->assertStringContainsString('window.__adasiToastQueue.push(payload)', $runtime);
         $this->assertStringNotContainsString('toast: true', $runtime);
         $this->assertStringNotContainsString('adasi-alert-toast', $runtime);
+        $this->assertStringContainsString("document.addEventListener('focusin'", $runtime);
+        $this->assertStringContainsString('.swal2-container', $runtime);
+        $this->assertStringContainsString('event.stopImmediatePropagation()', $runtime);
+        $this->assertStringContainsString('SweetAlert.getInput(popup)', $runtime);
     }
 
     public function test_blade_views_do_not_call_sweetalert_directly(): void

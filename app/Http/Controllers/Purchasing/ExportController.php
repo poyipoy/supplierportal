@@ -8,6 +8,7 @@ use App\Exports\PurchaseRequisitionDetailExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
+use App\Exports\ShipmentsExport;
 use App\Http\Controllers\Controller;
 use App\Models\ExchangeRate;
 use App\Models\ExportJob;
@@ -83,6 +84,41 @@ class ExportController extends Controller
                 $filters['search'] ?? null,
             ],
             'rekap_po_'.now()->format('Ymd_His').'.xlsx',
+        );
+
+        return $this->dispatchResponse($request, $exportJob);
+    }
+
+    public function shipments(Request $request)
+    {
+        $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
+
+        $filters = $request->validate([
+            'supplier_id' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['draft', 'submitted', 'arrived', 'cancelled'])],
+            'search' => ['nullable', 'string', 'max:255'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+        ]);
+        $filters['supplier_id'] = $supplier?->getKey();
+
+        if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
+            throw ValidationException::withMessages([
+                'end_date' => 'End date cannot be before start date.',
+            ]);
+        }
+
+        $exportJob = ExportDispatcher::dispatch(
+            'Rekap Shipments & Logistics',
+            ShipmentsExport::class,
+            [
+                $filters['supplier_id'] ?? null,
+                $filters['status'] ?? null,
+                $filters['search'] ?? null,
+                $filters['start_date'] ?? null,
+                $filters['end_date'] ?? null,
+            ],
+            'rekap_shipments_'.now()->format('Ymd_His').'.xlsx',
         );
 
         return $this->dispatchResponse($request, $exportJob);

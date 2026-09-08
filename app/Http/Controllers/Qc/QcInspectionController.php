@@ -51,6 +51,7 @@ class QcInspectionController extends Controller
         $query = $this->waitingPurchaseOrdersQuery()->with([
             'supplier',
             'quotations' => fn ($query) => $query->withCount('items'),
+            'shipmentItems.shipment',
         ])
             ->orderBy('actual_arrival', 'asc');
 
@@ -68,7 +69,7 @@ class QcInspectionController extends Controller
                     ->first(fn ($s) => $s->status === Shipment::STATUS_ARRIVED && ! in_array($s->id, $inspectedShipmentIds, true));
 
                 $url = $waitingShipment
-                    ? route('qc.inspections.create', ['id' => $po, 'shipment_id' => $waitingShipment])
+                    ? route('qc.inspections.create', ['po_id' => $po, 'shipment_id' => $waitingShipment])
                     : route('qc.inspections.create', $po);
 
                 return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">Start Inspection</a>';
@@ -105,7 +106,7 @@ class QcInspectionController extends Controller
      */
     public function create(Request $request, $po_id)
     {
-        $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem'])->findOrFail($po_id);
+        $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem', 'shipmentItems.shipment'])->findOrFail($po_id);
 
         if (! in_array($po->status, ['waiting_qc', 'claim_needed'], true)) {
             return redirect()->route('qc.inspections.index')->with('error', 'This PO is not in Waiting QC status.');

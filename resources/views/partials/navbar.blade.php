@@ -285,8 +285,12 @@
                 }
 
                 if (button) {
-                    button.disabled = true;
-                    button.textContent = 'Processing...';
+                    if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+                        window.AdasiButton.startLoading(button, { text: 'Processing...' });
+                    } else {
+                        button.disabled = true;
+                        button.textContent = 'Processing...';
+                    }
                 }
 
                 try {
@@ -316,8 +320,12 @@
                     console.error(error);
                 } finally {
                     if (button) {
-                        button.disabled = false;
-                        button.textContent = originalLabel;
+                        if (window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
+                            window.AdasiButton.stopLoading(button);
+                        } else {
+                            button.disabled = false;
+                            button.textContent = originalLabel;
+                        }
                     }
                 }
             });

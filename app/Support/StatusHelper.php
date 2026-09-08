@@ -69,8 +69,16 @@ class StatusHelper
         return self::$quotationLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
     }
 
-    public static function quotationValidityMeta(mixed $validityPeriod): array
+    public static function quotationValidityMeta(mixed $validityPeriod, ?string $status = null): array
     {
+        if ($status === \App\Models\Quotation::STATUS_ALL_UNAVAILABLE) {
+            return [
+                'label' => 'N/A',
+                'class' => 'bg-secondary',
+                'description' => 'The quotation contains no available items; validity duration is not applicable.',
+            ];
+        }
+
         $date = self::asDate($validityPeriod);
 
         if (! $date) {
@@ -349,6 +357,136 @@ class StatusHelper
     public static function qcLabel(string $status): string
     {
         return self::$qcLabels[$status] ?? strtoupper($status);
+    }
+
+    // ─── Shipment ───
+
+    private static array $shipmentBadges = [
+        'draft' => 'bg-secondary',
+        'submitted' => 'bg-primary',
+        'arrived' => 'bg-success',
+        'cancelled' => 'bg-danger',
+    ];
+
+    private static array $shipmentLabels = [
+        'draft' => 'Draft',
+        'submitted' => 'In Transit',
+        'arrived' => 'Arrived',
+        'cancelled' => 'Cancelled',
+    ];
+
+    public static function shipmentBadge(string $status): string
+    {
+        return self::$shipmentBadges[$status] ?? 'bg-secondary';
+    }
+
+    public static function shipmentLabel(string $status): string
+    {
+        return self::$shipmentLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+    }
+
+    public static function shipmentTone(string $status): string
+    {
+        return match ($status) {
+            'submitted' => 'info',
+            'arrived' => 'success',
+            'cancelled' => 'error',
+            default => 'neutral',
+        };
+    }
+
+    public static function shipmentLifecycleBadge(string $status): string
+    {
+        return self::shipmentBadge($status);
+    }
+
+    public static function shipmentLifecycleLabel(string $status): string
+    {
+        return self::shipmentLabel($status);
+    }
+
+    public static function shipmentLifecycleTone(string $status): string
+    {
+        return self::shipmentTone($status);
+    }
+
+    // ─── Material Progress ───
+
+    private static array $materialProgressBadges = [
+        'awaiting_confirmation' => 'bg-secondary',
+        'order_confirmed'       => 'bg-info',
+        'material_preparation'  => 'bg-warning text-dark',
+        'on_production'         => 'bg-primary',
+        'ready_to_ship'         => 'bg-success',
+    ];
+
+    private static array $materialProgressLabels = [
+        'awaiting_confirmation' => 'Awaiting Confirmation',
+        'order_confirmed'       => 'Order Confirmed',
+        'material_preparation'  => 'Material Preparation',
+        'on_production'         => 'On Production',
+        'ready_to_ship'         => 'Ready to Ship',
+    ];
+
+    public static function materialProgressBadge(string $status): string
+    {
+        return self::$materialProgressBadges[$status] ?? 'bg-secondary';
+    }
+
+    public static function materialProgressLabel(string $status): string
+    {
+        return self::$materialProgressLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+    }
+
+    public static function materialProgressTone(string $status): string
+    {
+        return match ($status) {
+            'ready_to_ship' => 'success',
+            'on_production' => 'info',
+            'material_preparation' => 'warning',
+            'order_confirmed' => 'info',
+            default => 'neutral',
+        };
+    }
+
+    // ─── Shipment Document ───
+
+    private static array $shipmentDocBadges = [
+        'pending' => 'bg-warning text-dark',
+        'received' => 'bg-info',
+        'processing' => 'bg-warning text-dark',
+        'issued' => 'bg-primary',
+        'verified' => 'bg-success',
+        'done' => 'bg-success',
+    ];
+
+    private static array $shipmentDocLabels = [
+        'pending' => 'Pending',
+        'received' => 'Received',
+        'processing' => 'Processing',
+        'issued' => 'Issued',
+        'verified' => 'Verified',
+        'done' => 'Done',
+    ];
+
+    public static function shipmentDocBadge(string $status): string
+    {
+        return self::$shipmentDocBadges[$status] ?? 'bg-secondary';
+    }
+
+    public static function shipmentDocLabel(string $status): string
+    {
+        return self::$shipmentDocLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+    }
+
+    public static function shipmentDocTone(string $status): string
+    {
+        return match ($status) {
+            'verified', 'done' => 'success',
+            'received', 'issued' => 'info',
+            'pending', 'processing' => 'warning',
+            default => 'neutral',
+        };
     }
 
     // ─── Generic Helper ───

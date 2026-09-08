@@ -163,6 +163,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'create'])->name('purchase-orders.consolidate-awards');
     Route::post('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'store'])->name('purchase-orders.consolidate-awards.store');
     Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [\App\Http\Controllers\Purchasing\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
     Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
     Route::resource('shipments', ShipmentController::class)->only(['index', 'show']);
     Route::post('/shipments/{id}/confirm-arrival', [ShipmentController::class, 'confirmArrival'])->name('shipments.confirm-arrival');
@@ -183,6 +184,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::post('/quotations/{id}/accept', [QuotationListController::class, 'accept'])->name('quotations.accept');
     Route::post('/quotations/{id}/reject', [QuotationListController::class, 'reject'])->name('quotations.reject');
     Route::post('/quotations/{id}/request-revision', [QuotationListController::class, 'requestRevision'])->name('quotations.request-revision');
+    Route::post('/quotations/{id}/generate-po', [QuotationListController::class, 'generatePo'])->name('quotations.generate-po');
     Route::get('/quotations/{id}', [QuotationListController::class, 'show'])->name('quotations.show');
     // Perbandingan Harga
     Route::get('/comparison/inter-supplier', [PriceComparisonController::class, 'interSupplier'])->name('comparison.inter-supplier');
@@ -205,6 +207,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/export/purchase-orders/{purchaseOrder}', [ExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
     Route::get('/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
+    Route::get('/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
 });
 
 /*
@@ -241,6 +244,8 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     Route::resource('quotations', QuotationController::class)->only(['index', 'show']);
     Route::get('/purchase-orders', [SupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('/purchase-orders/{id}', [SupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [\App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');
+    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [\App\Http\Controllers\Supplier\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
     // Shipments
     Route::resource('shipments', SupplierShipmentController::class)
         ->only(['index', 'create', 'store', 'show', 'edit', 'update']);

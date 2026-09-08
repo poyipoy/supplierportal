@@ -3,6 +3,7 @@ import { bootAdasiCalendars } from './calendar';
 import './unsaved-changes';
 import './number-input-helper';
 import './chart-theme';
+import './submit-guard';
 
 window.Alpine = Alpine;
 

@@ -295,7 +295,8 @@ class NotificationDeliveryTest extends TestCase
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $quotationItem->id,
-                'shipped_quantity' => 100.0,
+                'shipped_qty' => 1,
+                'actual_weight_kg' => 100.0,
             ]],
         ]);
 

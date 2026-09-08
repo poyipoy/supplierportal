@@ -32,6 +32,7 @@ class DecodeHashids
         'inspection_id', // Purchasing: claims/create
         'supplier_id',   // Purchasing: conversations/start-pr
         'shipment_id',   // Shipments
+        'award_id',      // PO item awards (material progress)
 
         // ── Route::resource() auto-named singular parameters ───────────────────
         'requisition',   // Route::resource('requisitions') → PurchaseRequisition

@@ -224,6 +224,23 @@ class QuotationItem extends Model
         return $this->offered_total_weight;
     }
 
+    /**
+     * Authoritative ordered fulfillment quantity in pcs for this quotation item.
+     * Uses supplier-offered available_qty for award-based lines, falling back
+     * to prItem quantity_value for legacy lines.
+     */
+    public function getFulfillmentQuantityAttribute(): int
+    {
+        return max(
+            0,
+            (int) (
+                $this->available_qty
+                ?? $this->prItem?->quantity_value
+                ?? 0
+            )
+        );
+    }
+
     public function getRequestedAmountAttribute(): ?float
     {
         if ($this->prItem === null || $this->price_per_kg === null) {

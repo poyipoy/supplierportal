@@ -145,10 +145,10 @@
             </x-slot:left>
 
             <x-slot:right>
-                <x-ui.button type="button" variant="secondary" size="sm" onclick="submitForm('draft')">
+                <x-ui.button type="button" variant="secondary" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
                     <span>Save Draft</span>
                 </x-ui.button>
-                <x-ui.button type="button" size="sm" onclick="confirmSubmit()">
+                <x-ui.button type="button" size="sm" id="btnSubmitPr" onclick="confirmSubmit()">
                     <x-ui.icon name="send" size="sm" />
                     <span>Submit Requisition</span>
                 </x-ui.button>
@@ -211,15 +211,36 @@
             document.getElementById('btnAddRow')?.focus();
             return;
         }
+
+        const form = document.getElementById('prForm');
+        if (form && !form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const activeBtn = action === 'submitted' ? document.getElementById('btnSubmitPr') : document.getElementById('btnSaveDraft');
+        if (form && activeBtn) {
+            form._lastClickedButton = activeBtn;
+        }
         window.AdasiUnsaved?.markClean?.();
         $('#formAction').val(action);
-        $('#prForm').submit();
+        if (form && typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            $('#prForm').submit();
+        }
     }
 
     function confirmSubmit() {
         if ($('#itemsBody tr').length === 0) {
             $('#noItemAlert').removeClass('d-none');
             document.getElementById('btnAddRow')?.focus();
+            return;
+        }
+
+        const form = document.getElementById('prForm');
+        if (form && !form.checkValidity()) {
+            form.reportValidity();
             return;
         }
 
@@ -230,9 +251,17 @@
             cancelText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
+                const submitBtn = document.getElementById('btnSubmitPr');
+                if (form && submitBtn) {
+                    form._lastClickedButton = submitBtn;
+                }
                 window.AdasiUnsaved?.markClean?.();
                 $('#formAction').val('submitted');
-                $('#prForm').submit();
+                if (form && typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    $('#prForm').submit();
+                }
             }
         });
     }

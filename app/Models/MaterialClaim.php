@@ -64,4 +64,12 @@ class MaterialClaim extends Model
     {
         return $this->morphMany(Attachment::class, 'attachable');
     }
+
+    /**
+     * Get an obfuscated, business-friendly claim identifier (e.g., CLM-YRZVAEWK).
+     */
+    public function getClaimNumberAttribute(): string
+    {
+        return 'CLM-'.strtoupper($this->hash);
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Supplier;
 use App\Exports\QuotationImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Imports\QuotationItemsImport;
+use App\Models\Attachment;
 use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\Period;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Maatwebsite\Excel\Facades\Excel;
@@ -293,12 +295,31 @@ class QuotationController extends Controller
             abort(403, 'You are not invited to submit a quotation for this requisition.');
         }
 
+        $rawItems = $request->input('items', []);
+        $allUnavailable = is_array($rawItems)
+            && count($rawItems) > 0
+            && collect($rawItems)->every(function ($rawItem) {
+                if (! is_array($rawItem)) {
+                    return false;
+                }
+                $availabilityInput = array_key_exists('is_available', $rawItem)
+                    ? $rawItem['is_available']
+                    : ($rawItem['availability'] ?? true);
+
+                return ! QuotationItem::normalizeAvailabilityState($availabilityInput);
+            });
+
+        $requireCommercialTerms = $request->action === 'submitted' && ! $allUnavailable;
+
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:draft,submitted',
-            'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
-            'estimated_delivery' => 'required|date',
-            'payment_terms' => 'required|string|max:100',
-            'validity_period' => $request->action === 'submitted'
+            'currency' => [
+                $requireCommercialTerms ? 'required' : 'nullable',
+                Rule::in(ExchangeRate::CURRENCIES),
+            ],
+            'estimated_delivery' => $requireCommercialTerms ? 'required|date' : 'nullable|date',
+            'payment_terms' => $requireCommercialTerms ? 'required|string|max:100' : 'nullable|string|max:100',
+            'validity_period' => $requireCommercialTerms
                 ? 'required|date|after_or_equal:today'
                 : 'nullable|date',
             'general_notes' => 'nullable|string',
@@ -329,6 +350,8 @@ class QuotationController extends Controller
             'items.*.offered_weight_per_unit' => 'nullable|numeric',
             'items.*.offered_weight_manual_override' => ['sometimes', 'boolean'],
             'items.*.mtc_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'items.*.copy_from_attachment_id' => 'nullable|integer',
+            'items.*.keep_existing_attachment' => ['sometimes', 'boolean'],
         ], [
             'currency.required' => 'Currency is required.',
             'currency.in' => 'Currency is invalid.',
@@ -492,11 +515,14 @@ class QuotationController extends Controller
         });
 
         $validated = $validator->validate();
-        $supplierCurrency = $validated['currency'];
 
         $quotation = Quotation::where('pr_id', $pr_id)
             ->where('supplier_id', auth()->id())
             ->first();
+
+        $supplierCurrency = ! empty($validated['currency'])
+            ? $validated['currency']
+            : ($quotation?->currency ?? 'USD');
 
         $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
 
@@ -504,6 +530,8 @@ class QuotationController extends Controller
             return redirect()->route('supplier.quotations.show', $quotation)
                 ->with('error', 'This quotation has already been submitted and cannot be changed.');
         }
+
+        $newlyCreatedFiles = [];
 
         try {
             DB::beginTransaction();
@@ -535,14 +563,17 @@ class QuotationController extends Controller
             if ($request->action === 'submitted') {
                 $rate = ExchangeRate::latestRate($supplierCurrency);
                 if (! $rate) {
-                    DB::rollBack();
+                    if (! $allUnavailable) {
+                        DB::rollBack();
 
-                    return back()
-                        ->withInput()
-                        ->with('error', 'Exchange rate for '.$supplierCurrency.' is not available yet. Contact Admin before submitting the final quotation.');
+                        return back()
+                            ->withInput()
+                            ->with('error', 'Exchange rate for '.$supplierCurrency.' is not available yet. Contact Admin before submitting the final quotation.');
+                    }
+                    $exchangeRateId = null;
+                } else {
+                    $exchangeRateId = $rate->id;
                 }
-
-                $exchangeRateId = $rate->id;
             }
 
             // Recheck the exact PR item set under the transaction lock.  The
@@ -564,6 +595,10 @@ class QuotationController extends Controller
                 throw new \RuntimeException('The requisition items changed while the quotation was being saved. Please reload and try again.');
             }
 
+            $paymentTerms = $allUnavailable ? null : ($validated['payment_terms'] ?? null);
+            $estimatedDelivery = $allUnavailable ? null : ($request->filled('estimated_delivery') ? $request->estimated_delivery : null);
+            $validityPeriod = $allUnavailable ? null : ($request->filled('validity_period') ? $request->validity_period : null);
+
             if (! $quotation) {
                 $quotation = Quotation::create([
                     'pr_id' => $pr_id,
@@ -572,9 +607,9 @@ class QuotationController extends Controller
                     'status' => $nextStatus,
                     'submitted_at' => $request->action === 'submitted' ? now() : null,
                     'exchange_rate_id' => $exchangeRateId,
-                    'estimated_delivery' => $request->estimated_delivery,
-                    'payment_terms' => $validated['payment_terms'],
-                    'validity_period' => $request->validity_period,
+                    'estimated_delivery' => $estimatedDelivery,
+                    'payment_terms' => $paymentTerms,
+                    'validity_period' => $validityPeriod,
                     'general_notes' => $request->general_notes,
                 ]);
             } else {
@@ -583,22 +618,32 @@ class QuotationController extends Controller
                     'status' => $nextStatus,
                     'submitted_at' => $request->action === 'submitted' ? now() : $quotation->submitted_at,
                     'exchange_rate_id' => $exchangeRateId,
-                    'estimated_delivery' => $request->estimated_delivery,
-                    'payment_terms' => $validated['payment_terms'],
-                    'validity_period' => $request->validity_period,
+                    'estimated_delivery' => $estimatedDelivery,
+                    'payment_terms' => $paymentTerms,
+                    'validity_period' => $validityPeriod,
                     'general_notes' => $request->general_notes,
                 ]);
             }
 
-            $existingItemAttachments = $quotation->items()
+            $existingItemAttachments = $quotation ? $quotation->items()
                 ->with('attachments')
                 ->get()
                 ->keyBy('pr_item_id')
-                ->map(fn ($item) => $item->attachments);
+                ->map(fn ($item) => $item->attachments) : collect();
 
-            $quotation->items()->delete();
+            $currentQuotationAttachmentMap = [];
+            foreach ($existingItemAttachments as $prAttachments) {
+                foreach ($prAttachments as $att) {
+                    $currentQuotationAttachmentMap[$att->id] = $att;
+                }
+            }
+
+            if ($quotation) {
+                $quotation->items()->delete();
+            }
 
             $oldFilesToDelete = [];
+            $newlyCreatedFiles = [];
 
             // Save the validated, exact PR item set without trusting request indexes or IDs.
             // Re-query each item so a long-lived/cached PR relation can never
@@ -680,19 +725,38 @@ class QuotationController extends Controller
                 ]);
 
                 $mtcFile = $request->file("items.{$index}.mtc_file");
+                $copyAttachmentId = filter_var($rawItem['copy_from_attachment_id'] ?? null, FILTER_VALIDATE_INT);
+                $copyAttachmentId = $copyAttachmentId === false ? null : $copyAttachmentId;
+                $keepExisting = filter_var($rawItem['keep_existing_attachment'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
                 if ($mtcFile && $mtcFile->isValid()) {
-                    $this->storeMtcAttachment($quotationItem, $mtcFile);
+                    $this->storeMtcAttachment($quotationItem, $mtcFile, $newlyCreatedFiles);
                     if ($existingItemAttachments->has($prItem->id)) {
                         foreach ($existingItemAttachments->get($prItem->id) as $oldAttachment) {
                             $oldFilesToDelete[] = $oldAttachment->file_path;
                             $oldAttachment->delete();
                         }
                     }
-                } elseif ($existingItemAttachments->has($prItem->id)) {
+                } elseif ($copyAttachmentId) {
+                    $newAttachment = $this->cloneMtcAttachment($quotationItem, $copyAttachmentId, $currentQuotationAttachmentMap, $newlyCreatedFiles);
+                    if ($existingItemAttachments->has($prItem->id)) {
+                        foreach ($existingItemAttachments->get($prItem->id) as $oldAttachment) {
+                            if (! $newAttachment || $oldAttachment->file_path !== $newAttachment->file_path) {
+                                $oldFilesToDelete[] = $oldAttachment->file_path;
+                            }
+                            $oldAttachment->delete();
+                        }
+                    }
+                } elseif ($keepExisting && $existingItemAttachments->has($prItem->id)) {
                     foreach ($existingItemAttachments->get($prItem->id) as $attachment) {
                         $attachment->update([
                             'attachable_id' => $quotationItem->id,
                         ]);
+                    }
+                } elseif ($existingItemAttachments->has($prItem->id)) {
+                    foreach ($existingItemAttachments->get($prItem->id) as $oldAttachment) {
+                        $oldFilesToDelete[] = $oldAttachment->file_path;
+                        $oldAttachment->delete();
                     }
                 }
             }
@@ -753,6 +817,12 @@ class QuotationController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            foreach ($newlyCreatedFiles as $newFile) {
+                if ($newFile && Storage::disk('private')->exists($newFile)) {
+                    Storage::disk('private')->delete($newFile);
+                }
+            }
 
             return back()->withInput()->with('error', 'Failed to save quotation: '.$e->getMessage());
         }
@@ -900,7 +970,7 @@ class QuotationController extends Controller
         return filter_var($value, FILTER_VALIDATE_BOOLEAN) ?? false;
     }
 
-    private function storeMtcAttachment(QuotationItem $quotationItem, UploadedFile $file): void
+    private function storeMtcAttachment(QuotationItem $quotationItem, UploadedFile $file, array &$newlyCreatedFiles = []): void
     {
         // Use getPathname() to avoid getRealPath() returning false on Windows.
         $fileName = $file->hashName();
@@ -917,10 +987,76 @@ class QuotationController extends Controller
             fclose($stream);
         }
 
+        $newlyCreatedFiles[] = $path;
+
         $quotationItem->attachments()->create([
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
             'file_type' => $file->getMimeType(),
+            'uploaded_by' => auth()->id(),
+        ]);
+    }
+
+    /**
+     * Safely clone an MTC attachment to guarantee file isolation and prevent IDOR.
+     */
+    private function cloneMtcAttachment(
+        QuotationItem $targetItem,
+        int $sourceAttachmentId,
+        array $currentQuotationAttachmentMap,
+        array &$newlyCreatedFiles = []
+    ): ?Attachment {
+        // 1. Resolve source attachment with strict ownership & scope checks
+        $sourceAttachment = $currentQuotationAttachmentMap[$sourceAttachmentId] ?? null;
+
+        if (! $sourceAttachment) {
+            $sourceAttachment = Attachment::query()
+                ->whereKey($sourceAttachmentId)
+                ->where('uploaded_by', auth()->id())
+                ->where('attachable_type', QuotationItem::class)
+                ->whereHasMorph('attachable', [QuotationItem::class], function ($q) {
+                    $q->whereHas('quotation', function ($q2) {
+                        $q2->where('supplier_id', auth()->id());
+                    });
+                })
+                ->first();
+        }
+
+        if (! $sourceAttachment) {
+            return null;
+        }
+
+        // 2. Validate file path against path traversal
+        $sourcePath = $sourceAttachment->file_path;
+        if (! $sourcePath || str_contains($sourcePath, '..') || ! str_starts_with($sourcePath, 'attachments/')) {
+            return null;
+        }
+
+        // 3. Verify physical file exists on private storage
+        if (! Storage::disk('private')->exists($sourcePath)) {
+            return null;
+        }
+
+        // 4. Validate allowed file extension
+        $ext = strtolower(pathinfo($sourceAttachment->file_name, PATHINFO_EXTENSION));
+        if (! in_array($ext, ['pdf', 'jpg', 'jpeg', 'png'], true)) {
+            return null;
+        }
+
+        // 5. Generate fresh unique file path on disk (Absolute file isolation)
+        $targetDirectory = 'attachments/'.now()->format('Y/m');
+        $targetFileName = Str::random(40).'.'.$ext;
+        $targetPath = $targetDirectory.'/'.$targetFileName;
+
+        // 6. Physically duplicate the file
+        Storage::disk('private')->copy($sourcePath, $targetPath);
+        $newlyCreatedFiles[] = $targetPath;
+
+        // 7. Create distinct Attachment record for target quotation item
+        return $targetItem->attachments()->create([
+            'file_path' => $targetPath,
+            'file_name' => $sourceAttachment->file_name,
+            'file_type' => $sourceAttachment->file_type,
             'uploaded_by' => auth()->id(),
         ]);
     }

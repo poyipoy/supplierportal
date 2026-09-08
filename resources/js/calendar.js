@@ -63,6 +63,7 @@ class CalendarController {
         this.errorMessage = wrapper.querySelector('[data-calendar-error-message]');
         this.liveRegion = wrapper.querySelector('[data-calendar-live]');
         this.context = wrapper.querySelector('[data-calendar-context]');
+        this.rangeSummary = wrapper.querySelector('[data-calendar-range-summary]') || this.panel.querySelector('[data-calendar-range-summary]');
         this.monthLabel = wrapper.querySelector('[data-calendar-month-label]');
         this.yearLabel = wrapper.querySelector('[data-calendar-year-label]');
         this.prevBtn = wrapper.querySelector('[data-calendar-prev]');
@@ -103,9 +104,21 @@ class CalendarController {
     }
 
     installListeners() {
-        this.trigger?.addEventListener('click', () => this.open());
+        this.trigger?.addEventListener('click', (event) => {
+            if (this.isDisabled()) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+            this.open();
+        });
         this.boundaryTriggers.forEach((button) => {
-            button.addEventListener('click', () => {
+            button.addEventListener('click', (event) => {
+                if (this.isDisabled() || button.disabled) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
                 this.activeBoundary = button.dataset.calendarBoundary || 'start';
                 this.open();
             });
@@ -116,6 +129,7 @@ class CalendarController {
         this.panel.querySelector('[data-calendar-today]')?.addEventListener('click', () => this.onTodayClick());
         this.panel.querySelector('[data-calendar-apply]')?.addEventListener('click', () => this.commitRange());
         this.wrapper.addEventListener('adasi:calendar-reset', () => this.syncFromNative());
+        this.wrapper.addEventListener('adasi:calendar-close', () => this.close({ restoreFocus: false }));
 
         if (this.type === 'single') {
             this.installSingleCalendar();
@@ -138,13 +152,14 @@ class CalendarController {
         if (!form) return;
 
         form.addEventListener('submit', (event) => {
-            if (!this.isRequired() || this.hasRequiredValue()) return;
+            if (this.isDisabled() || !this.isRequired() || this.hasRequiredValue()) return;
             event.preventDefault();
             this.setError('Complete the required date field before continuing.');
             this.focusTrigger();
         });
 
         form.addEventListener('submit', (event) => {
+            if (this.isDisabled()) return;
             const error = this.validationError();
             if (!error) return;
             event.preventDefault();
@@ -400,8 +415,11 @@ class CalendarController {
     }
 
     open() {
-        if (this.isOpen) {
-            this.reposition();
+        if (this.isOpen || this.isDisabled()) {
+            if (this.isOpen) {
+                this.updateTriggerBoundaries();
+                this.reposition();
+            }
             return;
         }
 
@@ -416,6 +434,7 @@ class CalendarController {
         this.wrapper.dataset.calendarOpen = 'true';
         this.panel.hidden = false;
         this.syncPanel();
+        this.updateTriggerBoundaries();
         this.reposition();
         this.announce(this.type === 'range' ? `Select ${this.activeBoundary === 'start' ? 'a start' : 'an end'} ${this.granularity === 'month' ? 'month' : 'date'}.` : 'Select a date.');
 
@@ -432,7 +451,10 @@ class CalendarController {
         this.wrapper.dataset.calendarOpen = 'false';
         this.panel.classList.remove('is-open');
         this.trigger?.setAttribute('aria-expanded', 'false');
-        this.boundaryTriggers.forEach((button) => button.setAttribute('aria-expanded', 'false'));
+        this.boundaryTriggers.forEach((button) => {
+            button.setAttribute('aria-expanded', 'false');
+            button.classList.remove('is-active');
+        });
         if (this.type === 'single') {
             this.toggleYearPanel(false);
         }
@@ -475,7 +497,7 @@ class CalendarController {
 
         const anchor = this.type === 'single'
             ? this.trigger
-            : this.boundaryTriggers.find((button) => button.dataset.calendarBoundary === this.activeBoundary) || this.boundaryTriggers[0];
+            : (this.wrapper.querySelector('.ui-date-range-trigger') || this.boundaryTriggers[0]);
         if (!anchor) return;
 
         const rect = anchor.getBoundingClientRect();
@@ -512,6 +534,12 @@ class CalendarController {
 
     cloneValue(value) {
         return this.type === 'single' ? value : { ...value };
+    }
+
+    isDisabled() {
+        return this.wrapper.classList.contains('is-disabled')
+            || this.wrapper.dataset.calendarDisabled === 'true'
+            || Boolean(this.trigger?.disabled);
     }
 
     isRequired() {
@@ -597,6 +625,7 @@ class CalendarController {
             return;
         }
         this.draft = { start: '', end: '' };
+        this.activeBoundary = 'start';
         this.syncPanel();
         this.announce('Date range cleared. Select Apply to use the cleared range.');
     }
@@ -654,6 +683,9 @@ class CalendarController {
         }
         this.renderMonthGrid();
         this.updatePanelContext();
+        this.updateRangeSummary();
+        this.updateActivePreset();
+        this.updateTriggerBoundaries();
     }
 
     syncPanel() {
@@ -670,6 +702,9 @@ class CalendarController {
         }
 
         this.updatePanelContext();
+        this.updateRangeSummary();
+        this.updateActivePreset();
+        this.updateTriggerBoundaries();
         this.renderPresets();
         if (this.granularity === 'month') {
             const focused = this.activeBoundary === 'end' ? this.draft.end : this.draft.start;
@@ -691,15 +726,64 @@ class CalendarController {
         this.context.textContent = `Select ${label} ${this.granularity === 'month' ? 'month' : 'date'}`;
     }
 
+    updateRangeSummary() {
+        if (!this.rangeSummary || this.type !== 'range') return;
+        if (!this.draft.start && !this.draft.end) {
+            this.rangeSummary.textContent = '';
+            this.rangeSummary.style.display = 'none';
+            return;
+        }
+        this.rangeSummary.style.display = '';
+        if (this.draft.start && this.draft.end) {
+            if (this.granularity === 'month') {
+                const [y1, m1] = this.draft.start.split('-').map(Number);
+                const [y2, m2] = this.draft.end.split('-').map(Number);
+                const monthsCount = (y2 - y1) * 12 + (m2 - m1) + 1;
+                this.rangeSummary.textContent = `${formatMonthDisplay(this.draft.start)} – ${formatMonthDisplay(this.draft.end)} (${monthsCount} ${monthsCount === 1 ? 'month' : 'months'})`;
+            } else {
+                const d1 = new Date(this.draft.start);
+                const d2 = new Date(this.draft.end);
+                const daysCount = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+                this.rangeSummary.textContent = `${formatDateDisplay(this.draft.start)} – ${formatDateDisplay(this.draft.end)} (${daysCount} ${daysCount === 1 ? 'day' : 'days'})`;
+            }
+        } else if (this.draft.start) {
+            const startLabel = this.granularity === 'month' ? formatMonthDisplay(this.draft.start) : formatDateDisplay(this.draft.start);
+            this.rangeSummary.textContent = `From ${startLabel} – Select end date`;
+        } else if (this.draft.end) {
+            const endLabel = this.granularity === 'month' ? formatMonthDisplay(this.draft.end) : formatDateDisplay(this.draft.end);
+            this.rangeSummary.textContent = `Until ${endLabel}`;
+        }
+    }
+
+    updateActivePreset() {
+        const presets = this.panel.querySelectorAll('.ui-calendar-preset');
+        presets.forEach((btn) => {
+            const isMatch = btn.dataset.presetStart === this.draft.start && btn.dataset.presetEnd === this.draft.end;
+            btn.classList.toggle('is-active', Boolean(isMatch && this.draft.start && this.draft.end));
+        });
+    }
+
+    updateTriggerBoundaries() {
+        this.boundaryTriggers.forEach((btn) => {
+            const isActive = this.isOpen && btn.dataset.calendarBoundary === this.activeBoundary;
+            btn.classList.toggle('is-active', isActive);
+        });
+    }
+
     renderPresets() {
         const container = this.panel.querySelector('[data-calendar-presets]');
-        if (!container || container.dataset.calendarBound === 'true') return;
+        if (!container || container.dataset.calendarBound === 'true') {
+            this.updateActivePreset();
+            return;
+        }
         container.dataset.calendarBound = 'true';
         rangePresets(this.granularity).forEach((preset) => {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'ui-calendar-preset';
             button.textContent = preset.label;
+            button.dataset.presetStart = preset.start;
+            button.dataset.presetEnd = preset.end;
             button.addEventListener('click', () => {
                 this.draft = { start: preset.start, end: preset.end };
                 this.activeBoundary = 'start';
@@ -708,6 +792,7 @@ class CalendarController {
             });
             container.append(button);
         });
+        this.updateActivePreset();
     }
 
     renderMonthGrid() {
@@ -725,7 +810,7 @@ class CalendarController {
             return option;
         }));
 
-        const formatter = new Intl.DateTimeFormat('en-GB', { month: 'short' });
+        const formatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
         this.monthGrid.replaceChildren(...Array.from({ length: 12 }, (_, index) => {
             const value = `${this.displayYear}-${String(index + 1).padStart(2, '0')}`;
             const button = document.createElement('button');

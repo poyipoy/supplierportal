@@ -404,6 +404,7 @@ Akses file lewat `AttachmentController` yang sudah mengecek `AttachmentPolicy` �
 | Utility CSS | Tailwind **berprefix `tw-`** dengan `preflight` dimatikan — class Tailwind tanpa prefix tidak akan berefek |
 | Komponen | Pakai ulang `resources/views/components/ui/` (`x-ui.button`, `x-ui.data-table`, `x-ui.page-header`, `x-ui.status-chip`, dll.) sebelum membuat markup baru |
 | Ikon | Lucide melalui `<x-ui.icon>`; jangan gunakan `bi-*` atau `<x-lucide-*>` langsung |
+| Date Picker / Kalender | **WAJIB** gunakan custom component `<x-ui.date-picker>` untuk single date dan `<x-ui.date-range-picker>` untuk rentang tanggal. **DILARANG KERAS** menggunakan native browser `<input type="date">` di form/modal/filter mana pun (karena tampilan inkonsisten lintas browser/OS dan merusak visual design system). Jika diletakkan di dalam perulangan atau modal, pastikan atribut `id` diberi suffix unik (mis. `id="estimated_ready_date_{{ $item->id }}"`) agar DOM ID dan controller kalender tidak bentrok |
 | Tabel | DataTables server-side — wajib untuk tabel dengan banyak baris |
 | Badge status | Ambil label/kelas dari `App\Support\StatusHelper`, jangan tulis `match()` baru di view/controller |
 | Notifikasi | AdasiToast untuk feedback transient; AdasiAlert/SweetAlert hanya untuk konfirmasi, prompt, atau keputusan blocking |

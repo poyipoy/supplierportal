@@ -1,10 +1,10 @@
 @extends('layouts.app')
-@section('title', 'Consolidate Item Awards - ADASI Portal')
-@section('page-title', 'Consolidate Item Awards')
+@section('title', 'Consolidate Selected Items - ADASI Portal')
+@section('page-title', 'Consolidate Selected Items')
 @section('content')
 <div class="tw-grid tw-gap-4">
-    <x-ui.page-header title="Consolidate Item Awards" eyebrow="Purchasing"
-        description="Select saved item awards from one supplier and currency. Awards may come from multiple requisitions.">
+    <x-ui.page-header title="Consolidate Selected Items" eyebrow="Purchasing"
+        description="Select previously chosen item offers from one supplier and currency to combine into a Purchase Order. Selections may come from multiple requisitions.">
         <x-slot:actions>
             <x-ui.button :href="route('purchasing.purchase-orders.index')" variant="outline">Purchase Orders</x-ui.button>
         </x-slot:actions>
@@ -44,12 +44,12 @@
                             <td class="text-end">{{ \App\Support\NumberFormat::maxDecimals($award->quotationItem->resolved_amount) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center">No eligible saved awards match these filters.</td></tr>
+                        <tr><td colspan="8" class="text-center">No eligible selected offers match these filters.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <p class="text-muted">Only checked awards on this page will be included.</p>
+        <p class="text-muted">Only checked items on this page will be included.</p>
         <div class="mb-3">
             <label for="consolidationArrival" class="form-label">Estimated arrival</label>
             <input id="consolidationArrival" type="date" name="estimated_arrival" class="form-control" style="max-width: 240px" value="{{ old('estimated_arrival', now()->addDays(14)->toDateString()) }}" required>
@@ -59,7 +59,7 @@
             <label for="consolidationNotes" class="form-label">Notes</label>
             <textarea id="consolidationNotes" name="notes" class="form-control" maxlength="5000">{{ old('notes') }}</textarea>
         </div>
-        <x-ui.button id="createConsolidatedPo" type="submit"><span id="consolidationSpinner" class="ui-spinner" hidden aria-hidden="true"></span>Create consolidated PO</x-ui.button>
+        <x-ui.button id="createConsolidatedPo" type="submit" data-no-auto-spinner><span id="consolidationSpinner" class="ui-spinner" hidden aria-hidden="true"></span>Create consolidated PO</x-ui.button>
     </form>
     {{ $awards->links() }}
 </div>

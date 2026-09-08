@@ -50,10 +50,89 @@ class PriceComparisonItemAwardTest extends TestCase
             ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]));
 
         $response->assertOk();
-        $response->assertSee('Item-Level Award Status');
+        $response->assertSee('Offer Selection &amp; PO Grouping Preview', false);
         $response->assertSee('award-radio');
-        $response->assertSee('Save Award Selections');
-        $response->assertSee('Confirm Awards &amp; Generate PO(s)', false);
+        $response->assertSee('Save Selected Offers');
+        $response->assertSee('Confirm Selection &amp; Generate PO(s)', false);
+        $response->assertSee('name="action"', false);
+        $response->assertSee('value="generate_pos"', false);
+    }
+
+    public function test_comparison_view_shows_existing_po_links_and_hides_generation_actions_when_all_items_are_assigned(): void
+    {
+        $pr = $this->createRequisition(2);
+        $qA = $this->createSubmittedQuotation($pr, $this->supplierA, 2.0);
+        $this->createSubmittedQuotation($pr, $this->supplierB, 1.8);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.comparison.save-awards'), [
+                'pr_id' => $pr->getRouteKey(),
+                'awards' => [
+                    $pr->items[0]->id => $qA->items->firstWhere('pr_item_id', $pr->items[0]->id)->id,
+                    $pr->items[1]->id => $qA->items->firstWhere('pr_item_id', $pr->items[1]->id)->id,
+                ],
+                'action' => 'generate_pos',
+            ])
+            ->assertRedirect();
+
+        $po = PurchaseOrder::where('supplier_id', $this->supplierA->id)->firstOrFail();
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]));
+
+        $response->assertOk();
+        $response->assertSee('Purchase Order(s) Already Generated');
+        $response->assertSee($po->po_number);
+        $response->assertSee(route('purchasing.purchase-orders.show', $po), false);
+        $response->assertDontSee('value="generate_pos"', false);
+        $response->assertDontSee('id="awardPreviewItems"', false);
+        $response->assertDontSee('id="supplierGroupPreview"', false);
+    }
+
+    public function test_comparison_view_keeps_unassigned_items_actionable_when_awards_are_partial(): void
+    {
+        $pr = $this->createRequisition(2);
+        $qA = $this->createSubmittedQuotation($pr, $this->supplierA, 2.0);
+        $qB = $this->createSubmittedQuotation($pr, $this->supplierB, 1.8);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.comparison.save-awards'), [
+                'pr_id' => $pr->getRouteKey(),
+                'awards' => [
+                    $pr->items[0]->id => $qA->items->firstWhere('pr_item_id', $pr->items[0]->id)->id,
+                ],
+                'action' => 'generate_pos',
+            ])
+            ->assertRedirect();
+
+        $po = PurchaseOrder::where('supplier_id', $this->supplierA->id)->firstOrFail();
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]));
+
+        $response->assertOk();
+        $response->assertSee('Existing Purchase Order(s)');
+        $response->assertSee($po->po_number);
+        $response->assertSee('value="generate_pos"', false);
+        $response->assertSee('name="awards['.$pr->items[1]->id.']"', false);
+        $response->assertDontSee('name="awards['.$pr->items[0]->id.']"', false);
+        $response->assertSee($qB->items->firstWhere('pr_item_id', $pr->items[1]->id)->id);
+    }
+
+    public function test_global_submit_guard_preserves_named_submitter_action_before_disabling_buttons(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertIsString($layout);
+        $submitterCapture = strpos($layout, 'const submitter = e.submitter;');
+        $submitterMirror = strpos($layout, 'submitterMirror.value = submitter.value');
+        $buttonDisable = strpos($layout, 'btn.disabled = true;');
+
+        $this->assertNotFalse($submitterCapture);
+        $this->assertNotFalse($submitterMirror);
+        $this->assertNotFalse($buttonDisable);
+        $this->assertLessThan($buttonDisable, $submitterCapture);
+        $this->assertLessThan($buttonDisable, $submitterMirror);
+        $this->assertStringContainsString('data-submit-submitter-mirror', $layout);
+        $this->assertStringContainsString('submitterMirror.remove()', $layout);
     }
 
     public function test_supplier_html_name_is_literal_text_in_both_award_previews(): void
@@ -158,6 +237,17 @@ class PriceComparisonItemAwardTest extends TestCase
         ]);
 
         $this->assertSame('completed', $pr->fresh()->status);
+
+        $comparisonResponse = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]));
+
+        $comparisonResponse->assertOk();
+        $comparisonResponse->assertSee('Purchase Order(s) Already Generated');
+        $comparisonResponse->assertSee($poA->po_number);
+        $comparisonResponse->assertSee($poB->po_number);
+        $comparisonResponse->assertSee(route('purchasing.purchase-orders.show', $poA), false);
+        $comparisonResponse->assertSee(route('purchasing.purchase-orders.show', $poB), false);
+        $comparisonResponse->assertDontSee('value="generate_pos"', false);
     }
 
     public function test_supplier_cannot_submit_awards(): void
@@ -227,6 +317,20 @@ class PriceComparisonItemAwardTest extends TestCase
         $response->assertRedirect()->assertSessionHas('error');
         $this->assertDatabaseMissing('pr_item_awards', ['pr_item_id' => $item->id]);
         $this->assertDatabaseCount('purchase_orders', 0);
+    }
+
+    public function test_comparison_view_displays_fractional_unit_price_with_precision(): void
+    {
+        $pr = $this->createRequisition(1);
+        $qA = $this->createSubmittedQuotation($pr, $this->supplierA, 2.996);
+        $qB = $this->createSubmittedQuotation($pr, $this->supplierB, 3.0);
+
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]));
+
+        $response->assertOk();
+        $response->assertSee('2.996');
+        $response->assertSee('3');
     }
 
     private function createRequisition(int $itemCount = 2): PurchaseRequisition

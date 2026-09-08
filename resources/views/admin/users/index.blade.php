@@ -102,7 +102,8 @@
         // ADASI Alert delete confirmation (delegated for dynamic rows)
         $(document).on('click', '.btn-delete', function(e) {
             e.preventDefault();
-            const form = $(this).closest('form');
+            const $btn = $(this);
+            const form = $btn.closest('form');
             AdasiAlert.confirmDanger({
                 title: @json('Delete this user?'),
                 text: @json('The account and its directly managed supplier profile will be permanently removed.'),
@@ -110,6 +111,7 @@
                 cancelText: @json('Cancel')
             }).then((result) => {
                 if (result.isConfirmed) {
+                    window.AdasiButton?.startLoading($btn[0]);
                     form.submit();
                 }
             });

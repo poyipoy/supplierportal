@@ -116,7 +116,7 @@ class PurchaseOrderCreationConcurrencyAndInvariantTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('error');
-        $this->assertStringContainsString('item-level award', session('error'));
+        $this->assertStringContainsString('item offer selection', session('error'));
         $this->assertDatabaseCount('purchase_orders', 0);
         $this->assertDatabaseMissing('po_quotations', ['quotation_id' => $quotation->id]);
         $this->assertSame('submitted', $quotation->fresh()->status);
@@ -165,7 +165,7 @@ class PurchaseOrderCreationConcurrencyAndInvariantTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('error');
-        $this->assertStringContainsString('item-level awards', session('error'));
+        $this->assertStringContainsString('item offer selection', session('error'));
 
         // Database unique invariant holds: only 1 po_quotations record for this quotation
         $this->assertSame(1, DB::table('po_quotations')->where('quotation_id', $quotation->id)->count());
@@ -209,7 +209,7 @@ class PurchaseOrderCreationConcurrencyAndInvariantTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('error');
-        $this->assertStringContainsString('item-level awards', session('error'));
+        $this->assertStringContainsString('item offer selection', session('error'));
         $this->assertSame(0, PurchaseOrder::count());
     }
 

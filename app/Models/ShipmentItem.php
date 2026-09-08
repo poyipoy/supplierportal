@@ -16,14 +16,16 @@ class ShipmentItem extends Model
         'purchase_order_id',
         'quotation_item_id',
         'pr_item_award_id',
-        'shipped_quantity',
+        'shipped_qty',
+        'actual_weight_kg',
         'notes',
     ];
 
     protected function casts(): array
     {
         return [
-            'shipped_quantity' => 'decimal:4',
+            'shipped_qty' => 'integer',
+            'actual_weight_kg' => 'decimal:4',
         ];
     }
 

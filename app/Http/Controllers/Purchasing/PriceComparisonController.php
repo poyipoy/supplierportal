@@ -66,6 +66,10 @@ class PriceComparisonController extends Controller
         $existingAwards = collect();
         $awardCoverage = null;
         $supplierGrouping = collect();
+        $assignedPurchaseOrders = collect();
+        $assignedPurchaseOrderCount = 0;
+        $hasActionableAwardSelections = false;
+        $allItemsAssignedToPurchaseOrder = false;
 
         $eligiblePrOptions = $eligiblePrs->map(function ($pr) {
             $quotationCount = (int) $pr->eligible_quotation_count;
@@ -95,7 +99,13 @@ class PriceComparisonController extends Controller
 
         if ($request->filled('pr_id')) {
             $selectedPr = $this->resolveHashedQueryModel(PurchaseRequisition::class, $request->query('pr_id'));
-            $selectedPr->loadMissing(['items', 'period', 'awards.supplier', 'awards.quotationItem']);
+            $selectedPr->loadMissing([
+                'items',
+                'period',
+                'awards.supplier',
+                'awards.quotationItem',
+                'awards.purchaseOrder',
+            ]);
 
             if ($selectedPr) {
                 $selectedPrOption = $eligiblePrOptions->firstWhere('id', $selectedPr->getRouteKey());
@@ -121,6 +131,8 @@ class PriceComparisonController extends Controller
                     'currency' => $q->currency,
                     'status' => $q->status,
                     'quotation_id' => $q->id,
+                    'estimated_delivery' => $q->estimated_delivery ? $q->estimated_delivery->format('Y-m-d') : null,
+                    'estimated_delivery_formatted' => $q->estimated_delivery ? $q->estimated_delivery->format('d M Y') : '-',
                 ]);
 
                 $matrix = [];
@@ -170,6 +182,10 @@ class PriceComparisonController extends Controller
                             'is_available' => $isAvailable,
                             'is_awarded' => $isAwarded,
                             'is_selectable' => $isSelectable,
+                            'purchase_order_url' => $isAwarded && $award?->purchaseOrder
+                                ? PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $award->purchaseOrder)
+                                : null,
+                            'purchase_order_number' => $isAwarded ? $award?->purchaseOrder?->po_number : null,
                             'available_qty' => $quotationItem?->available_qty,
                             'available_dimension_label' => $quotationItem?->available_dimension_label,
                             'offered_weight_per_unit' => $quotationItem?->offered_weight_per_unit,
@@ -185,6 +201,29 @@ class PriceComparisonController extends Controller
 
                     $matrix[] = $row;
                 }
+
+                $assignedPurchaseOrderIds = $existingAwards
+                    ->whereNotNull('purchase_order_id')
+                    ->pluck('purchase_order_id')
+                    ->unique()
+                    ->values();
+                $assignedPurchaseOrderCount = $assignedPurchaseOrderIds->count();
+                $assignedPurchaseOrders = $existingAwards
+                    ->whereNotNull('purchase_order_id')
+                    ->map(fn (PrItemAward $award) => $award->purchaseOrder)
+                    ->filter()
+                    ->unique('id')
+                    ->sortBy('id')
+                    ->values();
+                $hasActionableAwardSelections = collect($matrix)->contains(
+                    fn (array $row) => collect($row['prices'])->contains(
+                        fn (array $price) => ! empty($price['is_selectable'])
+                    )
+                );
+                $allItemsAssignedToPurchaseOrder = $comparisonItems->isNotEmpty()
+                    && $comparisonItems->every(
+                        fn (PrItem $item) => $existingAwards->get($item->id)?->purchase_order_id !== null
+                    );
 
                 $comparison = [
                     'suppliers' => $suppliers,
@@ -231,7 +270,11 @@ class PriceComparisonController extends Controller
             'selectedPrOption',
             'existingAwards',
             'awardCoverage',
-            'supplierGrouping'
+            'supplierGrouping',
+            'assignedPurchaseOrders',
+            'assignedPurchaseOrderCount',
+            'hasActionableAwardSelections',
+            'allItemsAssignedToPurchaseOrder',
         ));
     }
 
@@ -433,13 +476,13 @@ class PriceComparisonController extends Controller
             })
             ->addColumn('current_price_display', function ($row) {
                 return '<div class="fw-bold text-primary">'.$this->formatRupiah($row->current_price_idr).'</div>'
-                    .'<div class="text-muted small">'.$this->formatNumber($row->current_price).' '.e($row->current_currency).'/kg</div>'
+                    .'<div class="text-muted small">'.$this->formatNumber($row->current_price, 4).' '.e($row->current_currency).'/kg</div>'
                     .'<div class="text-muted small">'.e($row->current_supplier ?: '-').'</div>'
                     .'<div class="text-muted small">'.e($this->formatDate($row->current_submitted_at) ?? 'Draft').'</div>';
             })
             ->addColumn('best_price_display', function ($row) use ($returnUrl) {
                 $html = '<div class="fw-bold text-success">'.$this->formatRupiah($row->best_price_idr).'</div>'
-                    .'<div class="text-muted small">'.$this->formatNumber($row->best_price).' '.e($row->best_currency).'/kg</div>'
+                    .'<div class="text-muted small">'.$this->formatNumber($row->best_price, 4).' '.e($row->best_currency).'/kg</div>'
                     .'<div class="text-muted small">'.e($row->best_supplier ?: '-').'</div>';
 
                 if ($row->best_pr_id) {
@@ -1284,7 +1327,7 @@ class PriceComparisonController extends Controller
         }
 
         if (empty($selections)) {
-            return back()->with('error', 'Please select at least one winning item offer.');
+            return back()->with('error', 'Please select at least one item offer.');
         }
 
         try {
@@ -1361,18 +1404,18 @@ class PriceComparisonController extends Controller
 
                 if ($pos->count() === 1) {
                     return redirect()->route('purchasing.purchase-orders.show', $pos->first())
-                        ->with('success', "Item awards finalized and Purchase Order {$pos->first()->po_number} successfully created!");
+                        ->with('success', "Item selections finalized and Purchase Order {$pos->first()->po_number} successfully created!");
                 }
 
                 $poNumbers = $pos->pluck('po_number')->implode(', ');
 
                 return redirect()->route('purchasing.purchase-orders.index')
-                    ->with('success', "Item awards finalized and {$pos->count()} Purchase Orders created ({$poNumbers})!");
+                    ->with('success', "Item selections finalized and {$pos->count()} Purchase Orders created ({$poNumbers})!");
             }
 
             $awardService->awardBatch($pr, $selections, auth()->user());
 
-            return back()->with('success', 'Item-level awards saved successfully.');
+            return back()->with('success', 'Selected item offers saved successfully.');
         } catch (\InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         } catch (UniqueConstraintViolationException $e) {
@@ -1380,12 +1423,12 @@ class PriceComparisonController extends Controller
 
             return back()->withInput()->with(
                 'error',
-                'The award or Purchase Order state changed while it was being finalized. Please refresh and try again.'
+                'The item selection or Purchase Order state changed while it was being finalized. Please refresh and try again.'
             );
         } catch (\Throwable $e) {
             report($e);
 
-            return back()->withInput()->with('error', 'Failed to finalize item awards and Purchase Orders.');
+            return back()->withInput()->with('error', 'Failed to finalize item selections and Purchase Orders.');
         }
     }
 }

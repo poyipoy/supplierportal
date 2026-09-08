@@ -84,7 +84,7 @@
         <x-ui.toolbar :sticky="true">
             <x-slot:filters>
                 <form method="GET" action="{{ route('purchasing.quotations.index') }}"
-                    class="quotation-filter d-flex flex-wrap align-items-center gap-2 w-100" id="quotationFilterForm">
+                    class="quotation-filter d-flex flex-wrap align-items-center gap-2 w-100" id="quotationFilterForm" data-managed-submit>
 
                     <div style="min-width: 170px; max-width: 210px;" class="flex-grow-1">
                         <input
@@ -201,7 +201,7 @@
                                 <td class="tw-text-on-surface-variant">{{ $q->submitted_at ? $q->submitted_at->format('d M Y, H:i') : '-' }}</td>
                                 <td>
                                     @php
-                                        $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($q->validity_period);
+                                        $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($q->validity_period, $q->status);
                                     @endphp
                                     @if($q->validity_period)
                                         <div class="fw-semibold tw-text-on-surface">{{ $q->validity_period->format('d M Y') }}</div>

@@ -139,7 +139,8 @@
                         <span class="ui-status-chip {{ $item->status === 'ng' ? 'ui-status-chip--error' : 'ui-status-chip--info' }}">Item #{{ $index + 1 }}</span>
                         <span>{{ $prItem->material_name }}</span>
                         @if($item->shipmentItem)
-                            <span class="ui-status-chip ui-status-chip--neutral">Consignment: {{ number_format($item->shipmentItem->shipped_quantity, 2) }} Kg</span>
+                            <span class="ui-status-chip ui-status-chip--neutral">Consignment: {{ number_format($item->shipmentItem->shipped_qty) }} pcs</span>
+                            <span class="ui-status-chip ui-status-chip--neutral">Actual Weight: {{ \App\Support\NumberFormat::maxDecimals($item->shipmentItem->actual_weight_kg) }} Kg</span>
                         @endif
                     </div>
                     @if($item->status === 'ok')

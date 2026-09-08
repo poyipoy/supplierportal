@@ -254,18 +254,16 @@
         border: 1px solid var(--md-outline-variant);
         border-radius: 12px;
         box-shadow: 0 4px 24px -2px rgba(20, 24, 43, 0.16), 0 12px 32px -4px rgba(20, 24, 43, 0.12);
-        left: 0;
         min-width: 280px;
         max-width: 320px;
         padding: .75rem;
-        position: absolute;
-        top: calc(100% + 4px);
-        width: max-content;
-        z-index: 1050;
+        position: fixed;
+        width: 320px;
+        z-index: 1080;
     }
 
     .pr-remark-popover[hidden] {
-        display: none;
+        display: none !important;
     }
 
     .pr-remark-popover__header {
@@ -314,6 +312,7 @@
         line-height: 1.35;
         resize: vertical;
         min-height: 70px;
+        max-height: 140px;
     }
 
     .pr-remark-popover__hint {

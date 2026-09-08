@@ -863,7 +863,7 @@ class QuotationAvailabilityTest extends TestCase
         ]);
         $line = ShipmentItem::create([
             'shipment_id' => $shipment->id, 'purchase_order_id' => $po->id,
-            'quotation_item_id' => $item->id, 'pr_item_award_id' => $award->id, 'shipped_quantity' => '1.0000',
+            'quotation_item_id' => $item->id, 'pr_item_award_id' => $award->id, 'shipped_qty' => 1, 'actual_weight_kg' => '1.0000',
         ]);
         $conversation = $this->quotationConversation($quotation);
         $this->actingAs($this->purchasing)->postJson(route('conversations.quick-action', $conversation), [
@@ -935,6 +935,191 @@ class QuotationAvailabilityTest extends TestCase
         $this->assertSame('accepted', $quotation->fresh()->status);
         $this->assertDatabaseCount('messages', 0);
     }
+
+    public function test_single_item_all_unavailable_can_be_submitted_without_commercial_terms(): void
+    {
+        $pr = $this->createRequisition([['quantity' => 2]]);
+        $prItem = $pr->items->firstOrFail();
+
+        $payload = [
+            'action' => 'submitted',
+            'items' => [
+                [
+                    'pr_item_id' => $prItem->id,
+                    'is_available' => false,
+                    'notes' => 'Out of stock at mill',
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
+        $this->assertSame(Quotation::STATUS_ALL_UNAVAILABLE, $quotation->status);
+        $this->assertNull($quotation->estimated_delivery);
+        $this->assertNull($quotation->payment_terms);
+        $this->assertNull($quotation->validity_period);
+        $this->assertSame('USD', $quotation->currency);
+        $this->assertNull($quotation->exchange_rate_id);
+
+        $item = $quotation->items()->firstOrFail();
+        $this->assertFalse($item->is_available);
+        $this->assertNull($item->price_per_kg);
+        $this->assertSame('0.0000', $item->amount);
+    }
+
+    public function test_all_unavailable_submission_succeeds_even_when_currency_has_no_exchange_rate(): void
+    {
+        ExchangeRate::query()->delete();
+        $pr = $this->createRequisition([['quantity' => 1]]);
+        $prItem = $pr->items->firstOrFail();
+
+        $payload = [
+            'action' => 'submitted',
+            'currency' => 'CNY',
+            'items' => [
+                [
+                    'pr_item_id' => $prItem->id,
+                    'is_available' => false,
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionDoesntHaveErrors()
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
+        $this->assertSame(Quotation::STATUS_ALL_UNAVAILABLE, $quotation->status);
+        $this->assertSame('CNY', $quotation->currency);
+        $this->assertNull($quotation->exchange_rate_id);
+    }
+
+    public function test_multi_item_pr_all_unavailable_can_be_submitted_without_commercial_terms(): void
+    {
+        $pr = $this->createRequisition([
+            ['quantity' => 1],
+            ['quantity' => 2],
+            ['quantity' => 3],
+        ]);
+
+        $payload = [
+            'action' => 'submitted',
+            'items' => $pr->items->map(fn (PrItem $item) => [
+                'pr_item_id' => $item->id,
+                'is_available' => false,
+            ])->values()->all(),
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionDoesntHaveErrors()
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
+        $this->assertSame(Quotation::STATUS_ALL_UNAVAILABLE, $quotation->status);
+        $this->assertCount(3, $quotation->items);
+        $this->assertFalse($quotation->hasAvailableItems());
+    }
+
+    public function test_available_items_still_strictly_require_commercial_terms_and_valid_rate(): void
+    {
+        $pr = $this->createRequisition([
+            ['quantity' => 1],
+            ['quantity' => 2],
+        ]);
+
+        $payload = [
+            'action' => 'submitted',
+            'currency' => 'USD',
+            // Missing estimated_delivery, payment_terms, validity_period
+            'items' => [
+                [
+                    'pr_item_id' => $pr->items[0]->id,
+                    'is_available' => true,
+                    'price_per_kg' => 10,
+                    'offered_weight_per_unit' => 5,
+                    'available_qty' => 1,
+                ],
+                [
+                    'pr_item_id' => $pr->items[1]->id,
+                    'is_available' => false,
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionHasErrors(['estimated_delivery', 'payment_terms', 'validity_period']);
+    }
+
+    public function test_quotation_draft_can_be_saved_with_partial_or_empty_commercial_terms(): void
+    {
+        $pr = $this->createRequisition([['quantity' => 1]]);
+        $prItem = $pr->items->firstOrFail();
+
+        $payload = [
+            'action' => 'draft',
+            // No currency, estimated_delivery, payment_terms, validity_period
+            'items' => [
+                [
+                    'pr_item_id' => $prItem->id,
+                    'is_available' => true,
+                    'price_per_kg' => 12.5,
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionDoesntHaveErrors()
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
+        $this->assertSame(Quotation::STATUS_DRAFT, $quotation->status);
+        $this->assertSame('USD', $quotation->currency);
+    }
+
+    public function test_all_unavailable_preserves_general_notes_while_commercial_terms_are_null_and_view_renders_disabled_notice(): void
+    {
+        $pr = $this->createRequisition([['quantity' => 1]]);
+        $prItem = $pr->items->firstOrFail();
+
+        $response = $this->actingAs($this->supplier)->get(route('supplier.quotations.create', $pr));
+        $response->assertOk();
+        $response->assertSee('allUnavailableTermsNotice', false);
+        $response->assertSee('Delivery timeline, validity period, and payment terms are disabled', false);
+        $response->assertSee('name="general_notes"', false);
+        $response->assertSee('window.updateCommercialTermsState = updateCommercialTermsState', false);
+        $response->assertSee('window.isAllItemsUnavailable = isAllItemsUnavailable', false);
+
+        $payload = [
+            'action' => 'submitted',
+            'general_notes' => 'Currently experiencing supply chain delay from overseas mill',
+            'items' => [
+                [
+                    'pr_item_id' => $prItem->id,
+                    'is_available' => false,
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionDoesntHaveErrors()
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $this->supplier->id)->firstOrFail();
+        $this->assertSame(Quotation::STATUS_ALL_UNAVAILABLE, $quotation->status);
+        $this->assertNull($quotation->estimated_delivery);
+        $this->assertNull($quotation->payment_terms);
+        $this->assertNull($quotation->validity_period);
+        $this->assertSame('Currently experiencing supply chain delay from overseas mill', $quotation->general_notes);
+    }
+
 
     private function quotationConversation(Quotation $quotation): Conversation
     {

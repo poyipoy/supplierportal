@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attachment;
+use App\Models\PoDocument;
 use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\QuotationItem;
@@ -147,11 +148,21 @@ class ShipmentService
 
         $validatedItems = [];
         foreach ($items as $item) {
-            $shippedUnits = PurchaseOrder::quantityToUnits($item['shipped_quantity']);
-            if ($shippedUnits <= 0) {
+            $rawQty = $item['shipped_qty'] ?? $item['shipped_quantity'] ?? null;
+            if ($rawQty === null || $rawQty === '') {
                 throw new InvalidArgumentException('Shipped quantity must be greater than zero.');
             }
-            $shippedQty = PurchaseOrder::quantityUnitsToDecimal($shippedUnits);
+
+            if (! is_numeric($rawQty) || (float) $rawQty != (int) $rawQty || (int) $rawQty <= 0) {
+                throw new InvalidArgumentException('Shipped quantity must be a positive integer.');
+            }
+            $shippedQty = (int) $rawQty;
+
+            $rawWeight = $item['actual_weight_kg'] ?? $item['shipped_quantity'] ?? null;
+            if ($rawWeight === null || $rawWeight === '' || ! is_numeric($rawWeight) || (float) $rawWeight <= 0) {
+                throw new InvalidArgumentException('Actual weight must be greater than zero.');
+            }
+            $actualWeightKg = round((float) $rawWeight, 4);
 
             $poId = (int) $item['purchase_order_id'];
             $qItemId = (int) $item['quotation_item_id'];
@@ -191,7 +202,8 @@ class ShipmentService
                 'item' => $item,
                 'po_id' => $poId,
                 'award_id' => $award?->id,
-                'shipped_quantity' => $shippedQty,
+                'shipped_qty' => $shippedQty,
+                'actual_weight_kg' => $actualWeightKg,
             ];
         }
 
@@ -205,7 +217,8 @@ class ShipmentService
                 'purchase_order_id' => $validatedItem['po_id'],
                 'quotation_item_id' => (int) $item['quotation_item_id'],
                 'pr_item_award_id' => $validatedItem['award_id'],
-                'shipped_quantity' => $validatedItem['shipped_quantity'],
+                'shipped_qty' => $validatedItem['shipped_qty'],
+                'actual_weight_kg' => $validatedItem['actual_weight_kg'],
                 'notes' => $item['notes'] ?? null,
             ]);
         }
@@ -273,7 +286,8 @@ class ShipmentService
                 ->orderBy('id')->lockForUpdate()->get()->map(fn ($item) => [
                     'purchase_order_id' => $item->purchase_order_id,
                     'quotation_item_id' => $item->quotation_item_id,
-                    'shipped_quantity' => $item->shipped_quantity,
+                    'shipped_qty' => $item->shipped_qty,
+                    'actual_weight_kg' => $item->actual_weight_kg,
                     'notes' => $item->notes,
                 ])->all();
 
@@ -339,12 +353,21 @@ class ShipmentService
             foreach ($itemsData as $itemAlloc) {
                 $poId = (int) $itemAlloc['purchase_order_id'];
                 $qItemId = (int) $itemAlloc['quotation_item_id'];
-                $shippedUnits = PurchaseOrder::quantityToUnits($itemAlloc['shipped_quantity']);
 
-                if ($shippedUnits <= 0) {
+                $rawQty = $itemAlloc['shipped_qty'] ?? $itemAlloc['shipped_quantity'] ?? null;
+                if ($rawQty === null || $rawQty === '') {
                     throw new InvalidArgumentException('Shipped quantity must be greater than zero.');
                 }
-                $shippedQty = PurchaseOrder::quantityUnitsToDecimal($shippedUnits);
+                if (! is_numeric($rawQty) || (float) $rawQty != (int) $rawQty || (int) $rawQty <= 0) {
+                    throw new InvalidArgumentException('Shipped quantity must be a positive integer.');
+                }
+                $shippedQty = (int) $rawQty;
+
+                $rawWeight = $itemAlloc['actual_weight_kg'] ?? $itemAlloc['shipped_quantity'] ?? null;
+                if ($rawWeight === null || $rawWeight === '' || ! is_numeric($rawWeight) || (float) $rawWeight <= 0) {
+                    throw new InvalidArgumentException('Actual weight must be greater than zero.');
+                }
+                $actualWeightKg = round((float) $rawWeight, 4);
 
                 $po = $lockedPos->get($poId);
                 if (! $po) {
@@ -386,12 +409,11 @@ class ShipmentService
                 // fulfillment, including QC and claims. Do not lock another
                 // draft's lines here: its submitter may already be waiting on PO.
                 $fulfillment = $po->itemFulfillmentStatus($qItemId, $lockedShipment->id);
-                $remainingUnits = $fulfillment['remaining_units'];
-                $remainingQty = PurchaseOrder::quantityUnitsToDecimal($remainingUnits);
+                $remainingQty = (int) $fulfillment['remaining_qty'];
 
-                if ($shippedUnits > $remainingUnits) {
+                if ($shippedQty > $remainingQty) {
                     throw new InvalidArgumentException(
-                        "Shipped quantity ({$shippedQty} kg) exceeds remaining ordered balance ({$remainingQty} kg) for item '{$qItem->prItem?->material_name}'."
+                        "Shipped quantity ({$shippedQty} pcs) exceeds remaining ordered quantity ({$remainingQty} pcs) for item '{$qItem->prItem?->material_name}'."
                     );
                 }
             }
@@ -405,14 +427,16 @@ class ShipmentService
                     ->where('quotation_item_id', $qItemId)
                     ->first();
 
+                $shippedQty = (int) ($itemAlloc['shipped_qty'] ?? $itemAlloc['shipped_quantity']);
+                $actualWeightKg = round((float) ($itemAlloc['actual_weight_kg'] ?? $itemAlloc['shipped_quantity'] ?? 1.0), 4);
+
                 ShipmentItem::create([
                     'shipment_id' => $lockedShipment->id,
                     'purchase_order_id' => $poId,
                     'quotation_item_id' => $qItemId,
                     'pr_item_award_id' => $award?->id,
-                    'shipped_quantity' => PurchaseOrder::quantityUnitsToDecimal(
-                        PurchaseOrder::quantityToUnits($itemAlloc['shipped_quantity'])
-                    ),
+                    'shipped_qty' => $shippedQty,
+                    'actual_weight_kg' => $actualWeightKg,
                     'notes' => $itemAlloc['notes'] ?? null,
                 ]);
             }
@@ -611,6 +635,8 @@ class ShipmentService
                     'document_number' => $documentNumber ?? $lockedDocument->document_number,
                     'status' => ShipmentDocument::STATUS_RECEIVED,
                 ]);
+
+                PoDocument::syncFromShipmentDocument($lockedDocument);
 
                 return $attachment;
             });

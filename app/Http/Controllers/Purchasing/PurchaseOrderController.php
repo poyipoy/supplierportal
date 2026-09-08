@@ -204,7 +204,7 @@ class PurchaseOrderController extends Controller
         $quotation = Quotation::with('purchaseRequisition')->findOrFail($quotation_id);
 
         return redirect()->route('purchasing.comparison.show', $quotation->purchaseRequisition)
-            ->with('error', 'New Purchase Orders must be finalized through item-level award selection.');
+            ->with('error', 'New Purchase Orders must be finalized through item offer selection.');
     }
 
     /**
@@ -221,7 +221,7 @@ class PurchaseOrderController extends Controller
 
         return back()->withInput()->with(
             'error',
-            'New Purchase Orders must be created from valid item-level awards.'
+            'New Purchase Orders must be created from valid item offer selections.'
         );
     }
 
@@ -242,6 +242,11 @@ class PurchaseOrderController extends Controller
             'qcInspections.items.prItem',
             'qcInspections.attachments',
             'materialClaims',
+            'awards.latestProgressUpdate.updatedByUser',
+            'awards.prItem',
+            'awards.quotation',
+            'awards.quotationItem',
+            'shipmentItems.shipment.documents.latestAttachment',
         ])->findOrFail($id);
 
         // Collect rates per quotation for display
@@ -249,16 +254,24 @@ class PurchaseOrderController extends Controller
             return [$q->id => $q->exchange_rate];
         });
 
-        // Compute document completion
+        // Material progress projections and summary
+        $progressService = app(\App\Services\MaterialProgressService::class);
+        $poProgressSummary = $progressService->poSummary($po);
+        $itemProjections = collect($poProgressSummary['items'] ?? []);
+
+        // Customs summary & synchronized documents
+        $customsSummary = $po->customsDocumentationSummary();
+
+        // Compute document completion based on synchronized effective status
         $completedStatuses = ['received', 'verified', 'done'];
-        $completedDocs = $po->documents->filter(function ($doc) use ($completedStatuses) {
-            return in_array($doc->status, $completedStatuses);
+        $completedDocs = collect($customsSummary)->filter(function ($item) use ($completedStatuses) {
+            return in_array($item['status'], $completedStatuses, true);
         })->count();
-        $totalDocs = max($po->documents->count(), 4);
+        $totalDocs = max(count($customsSummary), 4);
         $allDocsComplete = ($completedDocs >= 4);
         $docProgress = StatusHelper::documentProgressMeta($completedDocs, $totalDocs);
 
-        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete', 'docProgress'));
+        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete', 'docProgress', 'itemProjections', 'poProgressSummary', 'customsSummary'));
     }
 
     /**

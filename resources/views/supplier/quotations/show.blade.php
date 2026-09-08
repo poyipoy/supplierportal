@@ -127,7 +127,7 @@
                                         <div class="fw-bold text-primary"><span class="tw-opacity-70">Off:</span> {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight) : '—' }}</div>
                                     </td>
                                     <td class="text-end fw-bold ui-tabular-nums">
-                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg) }}
+                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) }}
                                     </td>
                                     <td class="text-end tw-text-on-surface-variant ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($requestedAmount) : '—' }}</td>
                                     <td class="text-end fw-semibold text-primary ui-tabular-nums" data-offer-amount="{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '' }}">
@@ -191,7 +191,7 @@
                         </div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Estimated Delivery</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier Estimated Ready / Dispatch Date</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
                             {{ $quotation->estimated_delivery ? \Carbon\Carbon::parse($quotation->estimated_delivery)->format('d F Y') : '-' }}
                         </div>

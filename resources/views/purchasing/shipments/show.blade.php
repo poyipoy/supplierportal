@@ -3,9 +3,42 @@
 @section('title', 'Shipment: ' . $shipment->shipment_number . ' - ADASI Portal')
 @section('page-title', 'Shipment Details')
 
+@push('styles')
+<style>
+    .shipment-tracking-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .shipment-tracking-step {
+        padding: 0.75rem 1rem;
+        background: var(--md-surface);
+        border: 1px solid var(--md-outline-variant);
+        border-radius: var(--md-shape-sm);
+        position: relative;
+    }
+
+    .shipment-tracking-step.is-completed {
+        border-color: var(--md-success);
+        background: var(--md-surface-container-low);
+    }
+
+    .shipment-tracking-step.is-active {
+        border-color: var(--md-primary);
+        background: var(--md-primary-container);
+    }
+
+    .shipment-tracking-step.is-cancelled {
+        border-color: var(--md-error);
+        background: var(--md-error-container);
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="tw-grid tw-gap-4">
-    {{-- Breadcrumb & Page Header --}}
+    {{-- 1. Breadcrumb & Page Header --}}
     <x-ui.breadcrumb :items="[
         'Dashboard' => route('purchasing.dashboard'),
         'Shipments' => route('purchasing.shipments.index'),
@@ -13,29 +46,28 @@
     ]" />
 
     @php
-        $statusMeta = match($shipment->status) {
-            'draft' => ['tone' => 'neutral', 'label' => 'Draft (Unreserved)'],
-            'submitted' => ['tone' => 'info', 'label' => 'In Transit / Active Allocation'],
-            'arrived' => ['tone' => 'success', 'label' => 'Arrived at Plant'],
-            'cancelled' => ['tone' => 'error', 'label' => 'Cancelled'],
-            default => ['tone' => 'neutral', 'label' => ucfirst($shipment->status)],
-        };
         $pos = $shipment->purchaseOrders();
-        $totalShipped = $shipment->items->sum('shipped_quantity');
+        $totalQty = (int) $shipment->items->sum('shipped_qty');
+        $totalWeight = (float) $shipment->items->sum('actual_weight_kg');
+        $hasQc = $shipment->qcInspections->isNotEmpty();
+        $isCancelled = $shipment->status === 'cancelled';
+        $isArrived = $shipment->status === 'arrived';
+        $isSubmitted = $shipment->status === 'submitted';
+        $isDraft = $shipment->status === 'draft';
     @endphp
 
     <x-ui.page-header
         :title="'Shipment ' . $shipment->shipment_number"
-        eyebrow="Consignment Logistics &amp; Receiving"
+        eyebrow="Consignment Logistics & Receiving"
         description="Physical delivery verification, consolidated shipping documents, and receiving status."
     >
         <x-slot:actions>
             <div class="tw-flex tw-flex-wrap tw-gap-2 align-items-center">
-                <x-ui.status-chip :tone="$statusMeta['tone']" size="md">
-                    {{ $statusMeta['label'] }}
+                <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentTone($shipment->status)" size="md">
+                    {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
                 </x-ui.status-chip>
 
-                @if($shipment->status === 'submitted')
+                @if($isSubmitted)
                     <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#confirmArrivalModal">
                         <x-ui.icon name="check-circle" size="sm" />
                         <span>Confirm Physical Arrival</span>
@@ -45,33 +77,133 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- Overview Details Card --}}
+    {{-- 2. Visual Lifecycle Tracking Stepper --}}
+    <div class="shipment-tracking-strip" aria-label="Shipment fulfillment progress">
+        @if($isCancelled)
+            <div class="shipment-tracking-step is-cancelled">
+                <div class="tw-text-ui-xs fw-semibold text-danger">STATUS</div>
+                <div class="fw-bold fs-6 text-danger">Cancelled</div>
+                <div class="tw-text-ui-xs text-danger mt-1">Delivery batch was revoked</div>
+            </div>
+        @else
+            {{-- Step 1: Draft --}}
+            <div class="shipment-tracking-step {{ $isDraft ? 'is-active' : 'is-completed' }}">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 1</span>
+                    <x-ui.icon :name="$isDraft ? 'circle-dot' : 'check'" size="xs" :class="$isDraft ? 'text-primary' : 'text-success'" />
+                </div>
+                <div class="fw-bold fs-6 tw-text-on-surface">Draft Allocation</div>
+                <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
+                    {{ $shipment->created_at->format('d M Y') }}
+                </div>
+            </div>
+
+            {{-- Step 2: Dispatched / In Transit --}}
+            <div class="shipment-tracking-step {{ $isSubmitted ? 'is-active' : ($isArrived ? 'is-completed' : '') }}">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 2</span>
+                    @if($isArrived)
+                        <x-ui.icon name="check" size="xs" class="text-success" />
+                    @elseif($isSubmitted)
+                        <x-ui.icon name="truck" size="xs" class="text-primary" />
+                    @else
+                        <x-ui.icon name="circle" size="xs" class="tw-text-outline" />
+                    @endif
+                </div>
+                <div class="fw-bold fs-6 tw-text-on-surface">In Transit</div>
+                <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
+                    @if($shipment->shipment_date)
+                        Dispatched: {{ $shipment->shipment_date->format('d M Y') }}
+                    @else
+                        Awaiting dispatch
+                    @endif
+                </div>
+            </div>
+
+            {{-- Step 3: Arrived at Plant --}}
+            <div class="shipment-tracking-step {{ $isArrived && !$hasQc ? 'is-active' : ($isArrived && $hasQc ? 'is-completed' : '') }}">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 3</span>
+                    @if($isArrived && $hasQc)
+                        <x-ui.icon name="check" size="xs" class="text-success" />
+                    @elseif($isArrived)
+                        <x-ui.icon name="package-check" size="xs" class="text-primary" />
+                    @else
+                        <x-ui.icon name="circle" size="xs" class="tw-text-outline" />
+                    @endif
+                </div>
+                <div class="fw-bold fs-6 tw-text-on-surface">Arrived at Plant</div>
+                <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
+                    @if($shipment->actual_arrival_date)
+                        Arrived: {{ $shipment->actual_arrival_date->format('d M Y') }}
+                    @elseif($shipment->estimated_arrival_date)
+                        ETA: {{ $shipment->estimated_arrival_date->format('d M Y') }}
+                    @else
+                        ETA pending
+                    @endif
+                </div>
+            </div>
+
+            {{-- Step 4: Quality Control --}}
+            <div class="shipment-tracking-step {{ $hasQc ? 'is-completed' : '' }}">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 4</span>
+                    @if($hasQc)
+                        @php $allOk = $shipment->qcInspections->every(fn($i) => $i->status === 'ok'); @endphp
+                        <x-ui.icon :name="$allOk ? 'check-circle' : 'alert-circle'" size="xs" :class="$allOk ? 'text-success' : 'text-danger'" />
+                    @else
+                        <x-ui.icon name="circle" size="xs" class="tw-text-outline" />
+                    @endif
+                </div>
+                <div class="fw-bold fs-6 tw-text-on-surface">QC Inspection</div>
+                <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
+                    @if($hasQc)
+                        {{ $shipment->qcInspections->count() }} inspection report(s)
+                    @elseif($isArrived)
+                        Pending QC inspection
+                    @else
+                        Awaiting delivery
+                    @endif
+                </div>
+            </div>
+        @endif
+    </div>
+
+    {{-- 3. Delivery Package Overview Card --}}
     <x-ui.card title="Delivery Package Overview">
-        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
-            <div class="p-3 tw-bg-surface-low border rounded">
+        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-5">
+            <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
                 <div class="fw-bold tw-text-on-surface fs-6 mt-1">
                     {{ $shipment->supplier->company_name ?? $shipment->supplier->name }}
                 </div>
             </div>
-            <div class="p-3 tw-bg-surface-low border rounded">
+            <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Consolidated POs</div>
-                <div class="fw-bold tw-text-on-surface fs-6 mt-1">
-                    @foreach($pos as $po)
-                        <a href="{{ route('purchasing.purchase-orders.show', $po) }}" class="text-primary text-decoration-none me-1">
-                            {{ $po->po_number }}
+                <div class="fw-bold tw-text-on-surface fs-6 mt-1 d-flex flex-wrap gap-1">
+                    @forelse($pos as $po)
+                        <a href="{{ route('purchasing.purchase-orders.show', $po) }}" class="text-primary text-decoration-none">
+                            <span class="ui-status-chip ui-status-chip--neutral">{{ $po->po_number }}</span>
                         </a>
-                    @endforeach
+                    @empty
+                        <span class="tw-text-outline">-</span>
+                    @endforelse
                 </div>
             </div>
-            <div class="p-3 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Total Quantity Shipped</div>
-                <div class="fw-bold text-primary fs-6 mt-1">
-                    {{ \App\Support\NumberFormat::maxDecimals($totalShipped) }} Kg
+            <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Total Consignment Qty</div>
+                <div class="fw-bold text-primary fs-6 mt-1 ui-tabular-nums">
+                    {{ number_format($totalQty) }} pcs
                 </div>
             </div>
-            <div class="p-3 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Dispatch / Arrival Dates</div>
+            <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Actual Weight</div>
+                <div class="fw-semibold tw-text-on-surface fs-6 mt-1 ui-tabular-nums">
+                    {{ \App\Support\NumberFormat::maxDecimals($totalWeight) }} Kg
+                </div>
+            </div>
+            <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Logistics Timeline</div>
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1">
                     @if($shipment->actual_arrival_date)
                         <span class="text-success fw-bold">Arrived: {{ $shipment->actual_arrival_date->format('d M Y') }}</span>
@@ -85,16 +217,84 @@
         </div>
 
         @if($shipment->notes)
-            <div class="mt-3 p-3 bg-light rounded border text-muted tw-text-ui-xs">
-                <strong>Dispatch Notes:</strong> {{ $shipment->notes }}
+            <div class="mt-3 p-3 tw-bg-surface-container tw-border tw-border-outline-variant rounded tw-text-ui-xs">
+                <strong>Logistics Notes:</strong> {{ $shipment->notes }}
             </div>
         @endif
     </x-ui.card>
 
-    {{-- Line Items Card --}}
+    {{-- 4. Shared Shipping Documents Hub --}}
+    <x-ui.card
+        title="Shipping & Import Documents"
+        description="Verify and update shipping documentation (Commercial Invoice, Packing List, Bill of Lading, Form E) for this shipment."
+    >
+        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
+            @foreach($shipment->documents as $doc)
+                @php
+                    $attachment = $doc->latestAttachment;
+                    $docLabel = match($doc->doc_type) {
+                        'invoice' => 'Commercial Invoice',
+                        'packing_list' => 'Packing List',
+                        'bl' => 'Bill of Lading (BL)',
+                        'form_e' => 'Form E / COO',
+                        default => strtoupper($doc->doc_type),
+                    };
+                @endphp
+                <div class="p-3 border tw-border-outline-variant rounded tw-bg-surface-low d-flex flex-column justify-content-between gap-2">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between gap-1">
+                            <span class="fw-bold tw-text-ui-xs tw-text-on-surface">{{ $docLabel }}</span>
+                            <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentDocTone($doc->status)" size="xs">
+                                {{ \App\Support\StatusHelper::shipmentDocLabel($doc->status) }}
+                            </x-ui.status-chip>
+                        </div>
+
+                        <div class="mt-2 tw-text-ui-xs">
+                            @if($doc->document_number)
+                                <div class="tw-text-on-surface-variant mb-1">
+                                    <span class="fw-semibold">Ref:</span> {{ $doc->document_number }}
+                                </div>
+                            @endif
+
+                            @if($attachment)
+                                <a href="{{ route('attachments.show', $attachment->id) }}" target="_blank" class="text-primary text-decoration-none d-inline-flex align-items-center gap-1 fw-medium">
+                                    <x-ui.icon name="paperclip" size="xs" />
+                                    <span class="text-truncate" style="max-width: 170px;" title="{{ $attachment->file_name }}">
+                                        {{ $attachment->file_name }}
+                                    </span>
+                                </a>
+                            @else
+                                <span class="tw-text-outline fst-italic">No file uploaded yet</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Status Update Form --}}
+                    <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="pt-2 border-top tw-border-outline-variant">
+                        @csrf
+                        @method('PUT')
+                        <div class="input-group input-group-sm">
+                            <select name="status" class="form-select form-select-sm" aria-label="Change {{ $docLabel }} status">
+                                @foreach(\App\Models\ShipmentDocument::STATUSES as $st)
+                                    <option value="{{ $st }}" @selected($doc->status === $st)>
+                                        {{ \App\Support\StatusHelper::shipmentDocLabel($st) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Save status">
+                                Update
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endforeach
+        </div>
+    </x-ui.card>
+
+    {{-- 5. Consignment Line Items Table --}}
     <x-ui.card
         title="Consignment Line Items"
-        description="Material batches allocated to this physical shipment."
+        description="Material batches delivered in this physical consignment."
     >
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 tw-text-ui-xs">
@@ -103,8 +303,9 @@
                         <th scope="col">PO Number</th>
                         <th scope="col">PR Reference</th>
                         <th scope="col">Material Name</th>
-                        <th scope="col">Shape &amp; Specs</th>
-                        <th scope="col" class="text-end">Shipped Weight (Kg)</th>
+                        <th scope="col">Shape & Specs</th>
+                        <th scope="col" class="text-end">Shipped Qty</th>
+                        <th scope="col" class="text-end">Actual Weight</th>
                         <th scope="col">Item Notes</th>
                     </tr>
                 </thead>
@@ -139,7 +340,10 @@
                                 @if($prItem?->d_outer) | OD: {{ $prItem->d_outer }}mm @endif
                             </td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">
-                                {{ \App\Support\NumberFormat::maxDecimals($item->shipped_quantity) }}
+                                {{ number_format($item->shipped_qty) }} pcs
+                            </td>
+                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
+                                {{ \App\Support\NumberFormat::maxDecimals($item->actual_weight_kg) }} Kg
                             </td>
                             <td class="tw-text-on-surface-variant">
                                 {{ $item->notes ?? '-' }}
@@ -151,92 +355,17 @@
         </div>
     </x-ui.card>
 
-    {{-- Consolidated Shipping Documents Card --}}
-    <x-ui.card
-        title="Shared Shipping Documents"
-        description="Review and verify shipping documents (Invoice, Packing List, BL, Form E) for this shipment."
-    >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 tw-text-ui-xs">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">Document Type</th>
-                        <th scope="col">Document No. / Reference</th>
-                        <th scope="col">Uploaded File</th>
-                        <th scope="col" class="text-center">Current Status</th>
-                        <th scope="col" class="text-end" style="width: 250px;">Update Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($shipment->documents as $doc)
-                        @php
-                            $attachment = $doc->latestAttachment;
-                            $docStatusMeta = match($doc->status) {
-                                'verified' => ['tone' => 'success', 'label' => 'Verified'],
-                                'received' => ['tone' => 'info', 'label' => 'Received'],
-                                'pending' => ['tone' => 'neutral', 'label' => 'Pending'],
-                                'processing' => ['tone' => 'warning', 'label' => 'Processing'],
-                                'issued' => ['tone' => 'info', 'label' => 'Issued'],
-                                'done' => ['tone' => 'success', 'label' => 'Done'],
-                                default => ['tone' => 'neutral', 'label' => ucfirst($doc->status)],
-                            };
-                        @endphp
-                        <tr>
-                            <td class="fw-bold tw-text-on-surface">
-                                {{ $doc->label }}
-                            </td>
-                            <td class="tw-text-on-surface-variant ui-tabular-nums">
-                                {{ $doc->document_number ?? '-' }}
-                            </td>
-                            <td>
-                                @if($attachment)
-                                    <a href="{{ route('attachments.show', $attachment->id) }}" target="_blank" class="text-primary text-decoration-none d-inline-flex align-items-center gap-1">
-                                        <x-ui.icon name="paperclip" size="xs" />
-                                        <span>{{ $attachment->file_name }}</span>
-                                    </a>
-                                @else
-                                    <span class="tw-text-outline italic">No file uploaded</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                <x-ui.status-chip :tone="$docStatusMeta['tone']">
-                                    {{ $docStatusMeta['label'] }}
-                                </x-ui.status-chip>
-                            </td>
-                            <td class="text-end">
-                                <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="d-flex align-items-center gap-1.5 justify-content-end">
-                                    @csrf
-                                    @method('PUT')
-                                    <select name="status" class="form-select form-select-sm" style="width: 140px;">
-                                        @foreach(\App\Models\ShipmentDocument::STATUSES as $st)
-                                            <option value="{{ $st }}" {{ $doc->status === $st ? 'selected' : '' }}>
-                                                {{ ucfirst($st) }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <x-ui.button type="submit" variant="ghost" size="xs">
-                                        Update
-                                    </x-ui.button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </x-ui.card>
-
-    {{-- QC Inspections for this Shipment --}}
-    @if($shipment->status === 'arrived')
+    {{-- 6. Quality Control (QC) Status --}}
+    @if($isArrived)
         <x-ui.card
-            title="Quality Control (QC) Status"
-            description="Inspection events associated with this physical delivery."
+            title="Quality Control (QC) Inspections"
+            description="Incoming quality inspection events recorded for this shipment consignment."
         >
             @if($shipment->qcInspections->isEmpty())
-                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0">
-                    <x-ui.icon name="alert-triangle" size="sm" />
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 tw-text-ui-xs">
+                    <x-ui.icon name="triangle-alert" size="sm" />
                     <div>
-                        Material arrival has been confirmed. Inspection is currently pending with the Quality Control team.
+                        Material arrival has been confirmed. Inspection is currently queued and awaiting action from the Quality Control team.
                     </div>
                 </div>
             @else
@@ -246,7 +375,7 @@
                             <tr>
                                 <th scope="col">Inspection Date</th>
                                 <th scope="col">Inspector</th>
-                                <th scope="col" class="text-center">Result</th>
+                                <th scope="col" class="text-center">QC Result</th>
                                 <th scope="col" class="text-end">Action</th>
                             </tr>
                         </thead>
@@ -280,29 +409,35 @@
 </div>
 
 {{-- Confirm Arrival Modal --}}
-@if($shipment->status === 'submitted')
+@if($isSubmitted)
 <div class="modal fade" id="confirmArrivalModal" tabindex="-1" aria-labelledby="confirmArrivalModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ route('purchasing.shipments.confirm-arrival', $shipment) }}">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title" id="confirmArrivalModalLabel">Confirm Physical Material Arrival</h5>
+                    <h5 class="modal-title tw-text-ui-base fw-bold" id="confirmArrivalModalLabel">Confirm Physical Material Arrival</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="tw-text-ui-sm tw-text-on-surface-variant mb-3">
-                        Confirming physical arrival records that shipment <strong>{{ $shipment->shipment_number }}</strong> has reached the factory/warehouse.
-                        This will notify the QC team to perform incoming inspection on the delivered material.
+                        Recording physical arrival confirms that consignment <strong>{{ $shipment->shipment_number }}</strong> has physically reached the plant/warehouse.
+                        This will notify the QC department to conduct incoming material inspection.
                     </p>
                     <div class="mb-3">
-                        <label for="actual_arrival_date" class="form-label tw-text-ui-xs fw-semibold">Arrival Date</label>
-                        <input type="date" name="actual_arrival_date" id="actual_arrival_date" class="form-control" value="{{ now()->toDateString() }}" required>
+                        <x-ui.date-picker
+                            name="actual_arrival_date"
+                            id="actual_arrival_date"
+                            label="Arrival Date"
+                            value="{{ now()->toDateString() }}"
+                            max="{{ now()->toDateString() }}"
+                            required
+                        />
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Confirm Arrival &amp; Notify QC</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Confirm Arrival & Notify QC</button>
                 </div>
             </form>
         </div>
