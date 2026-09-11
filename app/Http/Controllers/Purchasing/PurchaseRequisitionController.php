@@ -175,8 +175,7 @@ class PurchaseRequisitionController extends Controller
     public function create()
     {
         $periods = Period::where('status', 'open')->orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
-        $suppliers = User::where('role', 'supplier')
-            ->where('is_active', true)
+        $suppliers = User::importEligible()
             ->with('supplier')
             ->orderBy('name')
             ->get();
@@ -390,8 +389,9 @@ class PurchaseRequisitionController extends Controller
             ->orWhere('id', $pr->period_id) // Allow keeping current period even if closed
             ->orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
 
-        $suppliers = User::where('role', 'supplier')
-            ->where('is_active', true)
+        $existingInvitedIds = $pr->invitedSuppliers->pluck('id')->all();
+        $suppliers = User::importEligible()
+            ->orWhereIn('id', $existingInvitedIds)
             ->with('supplier')
             ->orderBy('name')
             ->get();

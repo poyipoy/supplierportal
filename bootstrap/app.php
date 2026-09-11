@@ -3,11 +3,14 @@
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\DecodeHashids;
 use App\Http\Middleware\EnforceAuthSessionSecurity;
+use App\Http\Middleware\EnforceSupplierDomain;
 use App\Http\Middleware\EnsurePasswordConfirmation;
 use App\Http\Middleware\EnsurePendingTwoFactorChallenge;
 use App\Http\Middleware\NoStoreResponse;
 use App\Http\Middleware\RememberPurchasingListUrl;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\SupplierScopeMiddleware;
+use App\Support\PortalContext;
 use App\Support\RateLimitResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -53,10 +56,12 @@ return Application::configure(basePath: dirname(__DIR__))
             DecodeHashids::class,
             EnforceAuthSessionSecurity::class,
             AddSecurityHeaders::class,
+            EnforceSupplierDomain::class,
         ]);
 
         $middleware->alias([
             'role' => RoleMiddleware::class,
+            'supplier.scope' => SupplierScopeMiddleware::class,
             'password.confirm' => EnsurePasswordConfirmation::class,
             'purchasing.navigation' => RememberPurchasingListUrl::class,
             'mfa.pending' => EnsurePendingTwoFactorChallenge::class,
@@ -68,7 +73,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return match (auth()->user()->role) {
                     'admin' => route('admin.dashboard', absolute: false),
                     'purchasing' => route('purchasing.dashboard', absolute: false),
-                    'supplier' => route('supplier.dashboard', absolute: false),
+                    'supplier', 'accounting', 'finance' => PortalContext::dashboard(auth()->user()),
                     'qc' => route('qc.dashboard', absolute: false),
                     default => '/',
                 };

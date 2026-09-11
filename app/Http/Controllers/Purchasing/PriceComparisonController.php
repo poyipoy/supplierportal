@@ -289,7 +289,10 @@ class PriceComparisonController extends Controller
             ? collect()
             : User::query()
                 ->select(['id', 'name', 'role'])
-                ->where('role', 'supplier')
+                ->where(function ($query) {
+                    $query->importEligible()
+                        ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('quotations')->distinct()->pluck('supplier_id'));
+                })
                 ->orderBy('name')
                 ->get();
         $selectedSupplierValue = $request->query('supplier_id', $request->query('supplier'));

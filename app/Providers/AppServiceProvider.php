@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
@@ -10,6 +11,7 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +29,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer(['accounting.invoices.index', 'accounting.reports.index'], function ($view) {
+            $view->with('suppliers', User::where('role', 'supplier')
+                ->where(function ($query) {
+                    $query->whereHas('supplierScopes', fn ($q) => $q->where('scope', 'local'))
+                        ->orWhereExists(function ($sub) {
+                            $sub->selectRaw(1)
+                                ->from('local_invoices')
+                                ->whereColumn('local_invoices.supplier_id', 'users.id');
+                        });
+                })
+                ->with('supplier')
+                ->orderBy('name')
+                ->get());
+        });
         Event::listen(NotificationFailed::class, function (NotificationFailed $event): void {
             $notification = $event->notification;
 

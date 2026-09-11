@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        $supplier1->supplierScopes()->firstOrCreate(['scope' => 'import']);
         Supplier::create([
             'user_id'      => $supplier1->id,
             'company_name' => 'PT. Supplier Satu',
@@ -69,6 +70,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        $supplier2->supplierScopes()->firstOrCreate(['scope' => 'import']);
         Supplier::create([
             'user_id'      => $supplier2->id,
             'company_name' => 'PT. Supplier Dua',

@@ -508,9 +508,7 @@
             $roleDashboardRoute = auth()->user()->role
                 ? auth()->user()->role . '.dashboard'
                 : 'dashboard';
-            $dashboardUrl = \Illuminate\Support\Facades\Route::has($roleDashboardRoute)
-                ? route($roleDashboardRoute)
-                : route('dashboard');
+            $dashboardUrl = \App\Support\PortalContext::dashboard(auth()->user());
         }
     @endphp
     {{-- Sidebar --}}
@@ -697,7 +695,7 @@
                     });
 
                 // Chat badge
-                @if(in_array(auth()->user()->role, ['purchasing', 'supplier']))
+                @if((auth()->user()->isPurchasing() || (auth()->user()->hasSupplierScope('import') && ! \App\Support\PortalContext::isLocal(auth()->user()))))
                     fetch("{{ route('conversations.unread-count') }}")
                         .then(r => r.json())
                         .then(data => {

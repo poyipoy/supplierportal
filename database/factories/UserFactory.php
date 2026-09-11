@@ -39,6 +39,15 @@ class UserFactory extends Factory
     /**
      * Indicate that the model's email address should be unverified.
      */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            if ($user->isSupplier()) {
+                $user->supplierScopes()->firstOrCreate(['scope' => 'import']);
+            }
+        });
+    }
+
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [

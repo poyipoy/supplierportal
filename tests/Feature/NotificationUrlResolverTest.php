@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Announcement;
 use App\Models\Conversation;
 use App\Models\ExportJob;
+use App\Models\LocalInvoice;
 use App\Models\MaterialClaim;
 use App\Models\Period;
 use App\Models\PurchaseOrder;
@@ -224,6 +226,123 @@ class NotificationUrlResolverTest extends TestCase
             ->assertSeeText('Admin-only audit note')
             ->assertDontSee('Submit Requisition')
             ->assertDontSee('Edit Draft');
+    }
+
+    public function test_finance_user_resolves_accounting_routes_without_login_redirect(): void
+    {
+        $financeUser = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $supplier->supplierScopes()->delete();
+        $supplier->supplierScopes()->create(['scope' => 'local']);
+
+        $invoice = LocalInvoice::create([
+            'supplier_id' => $supplier->id,
+            'submission_number' => 'SUB/09/2026/001',
+            'invoice_number' => 'INV-FIN-001',
+            'invoice_date' => now()->subDay()->toDateString(),
+            'po_number' => 'PO-LOCAL-100',
+            'invoice_amount' => 1000000,
+            'tax_amount' => 110000,
+            'payment_term_days_snapshot' => 30,
+            'status' => 'WAITING_PHYSICAL_DOCUMENT',
+            'submitted_at' => now(),
+            'revision_number' => 1,
+        ]);
+
+        $resolver = app(NotificationUrlResolver::class);
+
+        $notification = $this->notification($financeUser, [
+            'url' => route('accounting.invoices.show', $invoice, absolute: false),
+            'domain' => 'local',
+        ]);
+
+        $resolved = $resolver->resolve($notification, $financeUser);
+        $this->assertSame(route('accounting.invoices.show', $invoice, absolute: false), $resolved);
+        $this->assertNotSame('/', $resolved);
+
+        $fallbackNotif = $this->notification($financeUser, [
+            'url' => '#',
+            'domain' => 'local',
+        ]);
+        $this->assertSame(route('accounting.dashboard', absolute: false), $resolver->resolve($fallbackNotif, $financeUser));
+    }
+
+    public function test_dual_scope_supplier_resolves_local_supplier_routes_when_owning_invoice(): void
+    {
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $supplier->supplierScopes()->delete();
+        $supplier->supplierScopes()->createMany([['scope' => 'import'], ['scope' => 'local']]);
+
+        $otherSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $otherSupplier->supplierScopes()->delete();
+        $otherSupplier->supplierScopes()->createMany([['scope' => 'import'], ['scope' => 'local']]);
+
+        $invoice = LocalInvoice::create([
+            'supplier_id' => $supplier->id,
+            'submission_number' => 'SUB/09/2026/002',
+            'invoice_number' => 'INV-OWN-001',
+            'invoice_date' => now()->subDay()->toDateString(),
+            'po_number' => 'PO-LOCAL-101',
+            'invoice_amount' => 500000,
+            'tax_amount' => 55000,
+            'payment_term_days_snapshot' => 30,
+            'status' => 'WAITING_PHYSICAL_DOCUMENT',
+            'submitted_at' => now(),
+            'revision_number' => 1,
+        ]);
+
+        $resolver = app(NotificationUrlResolver::class);
+
+        $notif = $this->notification($supplier, [
+            'url' => route('local-supplier.invoices.show', $invoice, absolute: false),
+            'domain' => 'local',
+        ]);
+
+        session(['supplier_context' => 'local']);
+        $this->assertSame(route('local-supplier.invoices.show', $invoice, absolute: false), $resolver->resolve($notif, $supplier));
+
+        $crossNotif = $this->notification($otherSupplier, [
+            'url' => route('local-supplier.invoices.show', $invoice, absolute: false),
+            'domain' => 'local',
+        ]);
+        $this->assertSame(route('local-supplier.dashboard', absolute: false), $resolver->resolve($crossNotif, $otherSupplier));
+    }
+
+    public function test_local_only_supplier_can_resolve_global_profile_and_local_routes(): void
+    {
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $supplier->supplierScopes()->delete();
+        $supplier->supplierScopes()->create(['scope' => 'local']);
+
+        $resolver = app(NotificationUrlResolver::class);
+
+        $notifProfile = $this->notification($supplier, [
+            'url' => route('profile.edit', absolute: false),
+            'domain' => 'global',
+        ]);
+        $this->assertSame(route('profile.edit', absolute: false), $resolver->resolve($notifProfile, $supplier));
+
+        $notifInfo = $this->notification($supplier, [
+            'url' => route('local-supplier.information', absolute: false),
+            'domain' => 'local',
+        ]);
+        $this->assertSame(route('local-supplier.information', absolute: false), $resolver->resolve($notifInfo, $supplier));
+    }
+
+    public function test_local_only_supplier_cannot_resolve_import_quotation_route(): void
+    {
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $supplier->supplierScopes()->delete();
+        $supplier->supplierScopes()->create(['scope' => 'local']);
+
+        $resolver = app(NotificationUrlResolver::class);
+
+        $notif = $this->notification($supplier, [
+            'url' => '/supplier/quotations/dummy-hash',
+            'domain' => 'import',
+        ]);
+
+        $this->assertSame(route('local-supplier.dashboard', absolute: false), $resolver->resolve($notif, $supplier));
     }
 
     private function procurementData(): array

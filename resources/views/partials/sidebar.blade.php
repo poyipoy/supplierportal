@@ -47,7 +47,26 @@
     <nav class="sidebar-menu" aria-label="{{ ucfirst(auth()->user()->role) }} navigation">
         @php $role = auth()->user()->role; @endphp
 
-        @if($role === 'purchasing')
+        @if(auth()->user()->hasSupplierScope('import') && auth()->user()->hasSupplierScope('local'))
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 15;">Supplier Portal</span></div>
+            <x-ui.sidebar-item :href="route('supplier-context.index')" icon="arrow-left-right" label="Switch Portal">Switch Portal</x-ui.sidebar-item>
+        @endif
+
+        @if($role === 'supplier' && \App\Support\PortalContext::isLocal(auth()->user()))
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Local Invoices</span></div>
+            <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Submit Invoice">Submit Invoice</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Track Invoice">Track Invoice</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" label="ADASI Information">ADASI Information</x-ui.sidebar-item>
+        @elseif(auth()->user()->isLocalOperator())
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 21;">Local Invoice Control</span></div>
+            <x-ui.sidebar-item :href="route('accounting.dashboard')" icon="gauge" :active="request()->routeIs('accounting.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.invoices.index')" icon="receipt" :active="request()->routeIs('accounting.invoices.*')" label="Invoice Register">Invoice Register</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.physical-verification')" icon="clipboard-check" :active="request()->routeIs('accounting.physical-verification')" label="Physical Verification">Physical Verification</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.payment-schedule')" icon="calendar-days" :active="request()->routeIs('accounting.payment-schedule')" label="Payment Schedule">Payment Schedule</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.reports')" icon="file-chart-column" :active="request()->routeIs('accounting.reports*')" label="Reports">Reports</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
+        @elseif($role === 'purchasing')
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.dashboard')" icon="gauge" :active="request()->routeIs('purchasing.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
 
@@ -72,7 +91,7 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.reports.index')" icon="file-chart-column" :active="request()->routeIs('purchasing.reports.*')" label="Report">Report</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
 
-        @elseif($role === 'supplier')
+        @elseif($role === 'supplier' && auth()->user()->hasSupplierScope('import'))
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
             <x-ui.sidebar-item :href="route('supplier.dashboard')" icon="gauge" :active="request()->routeIs('supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
 

@@ -13,6 +13,20 @@ use Illuminate\Support\Carbon;
  */
 class StatusHelper
 {
+    public static function localInvoiceLabel(string $status): string
+    {
+        return ucwords(strtolower(str_replace('_', ' ', $status)));
+    }
+
+    public static function localInvoiceTone(string $status): string
+    {
+        return [
+            'WAITING_PHYSICAL_DOCUMENT' => 'warning', 'UNDER_REVIEW' => 'info',
+            'NEED_REVISION' => 'error', 'REJECTED' => 'error', 'APPROVED' => 'success',
+            'PAYMENT_SCHEDULED' => 'info', 'COMPLETED' => 'success',
+        ][$status] ?? 'neutral';
+    }
+
     // ─── Purchase Requisition ───
 
     private static array $prBadges = [

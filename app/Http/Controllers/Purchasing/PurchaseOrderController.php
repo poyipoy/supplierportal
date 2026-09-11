@@ -177,7 +177,9 @@ class PurchaseOrderController extends Controller
                 ->make(true);
         }
 
-        $suppliers = User::where('role', 'supplier')->get();
+        $suppliers = User::importEligible()
+            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
+            ->get();
 
         return view('purchasing.po.index', compact('suppliers'));
     }

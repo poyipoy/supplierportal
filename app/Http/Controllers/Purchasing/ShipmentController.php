@@ -115,7 +115,9 @@ class ShipmentController extends Controller
         }
 
         $shipments = $query->paginate(15)->withQueryString();
-        $suppliers = User::where('role', 'supplier')->orderBy('name')->get();
+        $suppliers = User::importEligible()
+            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
+            ->orderBy('name')->get();
 
         return view('purchasing.shipments.index', compact('shipments', 'suppliers'));
     }

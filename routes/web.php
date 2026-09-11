@@ -24,6 +24,7 @@ use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
 use App\Http\Controllers\Purchasing\PdfController;
 use App\Http\Controllers\Purchasing\PeriodController;
 use App\Http\Controllers\Purchasing\PoDocumentController;
+use App\Http\Controllers\Purchasing\PoItemProgressController;
 use App\Http\Controllers\Purchasing\PriceComparisonController;
 use App\Http\Controllers\Purchasing\PrItemController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
@@ -42,7 +43,11 @@ use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
 use App\Http\Controllers\Supplier\SupplierShipmentController;
 use App\Models\PurchaseRequisition;
+use App\Support\PortalContext;
 use Illuminate\Support\Facades\Route;
+
+require __DIR__.'/supplier-local.php';
+require __DIR__.'/accounting.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -63,7 +68,7 @@ Route::middleware('auth')->group(function () {
         return match (auth()->user()->role) {
             'admin' => redirect()->route('admin.dashboard'),
             'purchasing' => redirect()->route('purchasing.dashboard'),
-            'supplier' => redirect()->route('supplier.dashboard'),
+            'supplier', 'accounting', 'finance' => redirect(PortalContext::dashboard(auth()->user())),
             'qc' => redirect()->route('qc.dashboard'),
             default => redirect()->route('login'),
         };
@@ -75,7 +80,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:auth.credentials')->name('profile.destroy');
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
 
-    Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance')->group(function () {
         Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
         Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
         Route::post('/exports/{exportJob}/cancel', [ExportDownloadController::class, 'cancel'])->name('exports.cancel');
@@ -83,7 +88,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Notifications
-    Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
         Route::get('/notifications/summary', [NotificationController::class, 'summary'])->name('notifications.summary');
@@ -163,7 +168,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'create'])->name('purchase-orders.consolidate-awards');
     Route::post('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'store'])->name('purchase-orders.consolidate-awards.store');
     Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
-    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [\App\Http\Controllers\Purchasing\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
+    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
     Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
     Route::resource('shipments', ShipmentController::class)->only(['index', 'show']);
     Route::post('/shipments/{id}/confirm-arrival', [ShipmentController::class, 'confirmArrival'])->name('shipments.confirm-arrival');
@@ -230,7 +235,7 @@ Route::middleware(['auth'])->prefix('shared')->name('shared.')->group(function (
 | Supplier Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('supplier')->name('supplier.')->group(function () {
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
     Route::get('/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
@@ -244,8 +249,8 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     Route::resource('quotations', QuotationController::class)->only(['index', 'show']);
     Route::get('/purchase-orders', [SupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('/purchase-orders/{id}', [SupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
-    Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [\App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');
-    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [\App\Http\Controllers\Supplier\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
+    Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');
+    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
     // Shipments
     Route::resource('shipments', SupplierShipmentController::class)
         ->only(['index', 'create', 'store', 'show', 'edit', 'update']);

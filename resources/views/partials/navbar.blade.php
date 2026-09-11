@@ -30,7 +30,7 @@
     {{-- Right: User info + Notifications + Chat --}}
     <div class="d-flex align-items-center gap-2">
         {{-- Chat Icon (Only for Purchasing and Supplier) --}}
-        @if(in_array(auth()->user()->role, ['purchasing', 'supplier']))
+        @if((auth()->user()->isPurchasing() || (auth()->user()->hasSupplierScope('import') && ! \App\Support\PortalContext::isLocal(auth()->user()))))
             <x-ui.icon-button
                 :href="route(auth()->user()->role . '.conversations.index')"
                 icon="message-circle-more"

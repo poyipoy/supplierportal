@@ -1,5 +1,5 @@
 @auth
-    @if(in_array(auth()->user()->role, ['purchasing', 'supplier']))
+    @if((auth()->user()->isPurchasing() || (auth()->user()->hasSupplierScope('import') && ! \App\Support\PortalContext::isLocal(auth()->user()))))
         <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
             <div class="offcanvas-header tw-border-b tw-border-outline-variant tw-bg-surface tw-py-3">
                 <div class="d-flex align-items-center gap-2 tw-min-w-0">

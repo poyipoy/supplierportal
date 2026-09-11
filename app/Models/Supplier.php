@@ -14,6 +14,7 @@ class Supplier extends Model
         'phone',
         'npwp',
         'category',
+        'payment_term_days',
     ];
 
     // ─── Relationships ───

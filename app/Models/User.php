@@ -6,11 +6,14 @@ namespace App\Models;
 use App\Notifications\AdasiResetPasswordNotification;
 use App\Traits\HasHashids;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -68,6 +71,21 @@ class User extends Authenticatable
         return $this->hasOne(Supplier::class);
     }
 
+    public function supplierScopes(): HasMany
+    {
+        return $this->hasMany(SupplierScope::class, 'supplier_id');
+    }
+
+    public function hasSupplierScope(string $scope): bool
+    {
+        return $this->isSupplier() && $this->supplierScopes()->where('scope', $scope)->exists();
+    }
+
+    public function isLocalOperator(): bool
+    {
+        return in_array($this->role, ['accounting', 'finance'], true);
+    }
+
     public function quotations(): HasMany
     {
         return $this->hasMany(Quotation::class, 'supplier_id');
@@ -93,6 +111,34 @@ class User extends Authenticatable
         return $this->hasMany(Announcement::class, 'created_by');
     }
 
+    public function invitedPurchaseRequisitions(): BelongsToMany
+    {
+        return $this->belongsToMany(PurchaseRequisition::class, 'purchase_requisition_suppliers', 'supplier_id', 'pr_id')
+            ->withPivot('invited_at');
+    }
+
+    // ─── Query Scopes ───
+
+    /**
+     * Active suppliers with the 'import' scope.
+     */
+    public function scopeImportEligible(Builder $query): Builder
+    {
+        return $query->where('role', 'supplier')
+            ->where('is_active', true)
+            ->whereHas('supplierScopes', fn (Builder $q) => $q->where('scope', 'import'));
+    }
+
+    /**
+     * Active suppliers with the 'local' scope.
+     */
+    public function scopeLocalEligible(Builder $query): Builder
+    {
+        return $query->where('role', 'supplier')
+            ->where('is_active', true)
+            ->whereHas('supplierScopes', fn (Builder $q) => $q->where('scope', 'local'));
+    }
+
     // ─── Helpers ───
 
     public function isAdmin(): bool
@@ -113,6 +159,16 @@ class User extends Authenticatable
     public function isQc(): bool
     {
         return $this->role === 'qc';
+    }
+
+    public function isImportEligible(): bool
+    {
+        return $this->isSupplier() && $this->is_active && $this->hasSupplierScope('import');
+    }
+
+    public function isLocalEligible(): bool
+    {
+        return $this->isSupplier() && $this->is_active && $this->hasSupplierScope('local');
     }
 
     public function hasTwoFactorAuthentication(): bool
@@ -144,15 +200,18 @@ class User extends Authenticatable
      */
     public function hasBlockingProcurementHistory(): bool
     {
-        return \Illuminate\Support\Facades\DB::table('quotations')->where('supplier_id', $this->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('purchase_orders')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('created_by', $this->id))->exists()
-            || \Illuminate\Support\Facades\DB::table('purchase_requisitions')->where('created_by', $this->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('material_claims')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('submitted_by', $this->id))->exists()
-            || \Illuminate\Support\Facades\DB::table('qc_inspections')->where('inspected_by', $this->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('announcements')->where('created_by', $this->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('attachments')->where('uploaded_by', $this->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('claim_attachments')->where('uploaded_by', $this->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('periods')->where('created_by', $this->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('exchange_rates')->where('created_by', $this->id)->exists();
+        return DB::table('local_invoices')->where('supplier_id', $this->id)->exists()
+            || DB::table('local_invoice_status_histories')->where('actor_id', $this->id)->exists()
+            || DB::table('quotations')->where('supplier_id', $this->id)->exists()
+            || DB::table('purchase_orders')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('created_by', $this->id))->exists()
+            || DB::table('purchase_requisitions')->where('created_by', $this->id)->exists()
+            || DB::table('purchase_requisition_suppliers')->where('supplier_id', $this->id)->exists()
+            || DB::table('material_claims')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('submitted_by', $this->id))->exists()
+            || DB::table('qc_inspections')->where('inspected_by', $this->id)->exists()
+            || DB::table('announcements')->where('created_by', $this->id)->exists()
+            || DB::table('attachments')->where('uploaded_by', $this->id)->exists()
+            || DB::table('claim_attachments')->where('uploaded_by', $this->id)->exists()
+            || DB::table('periods')->where('created_by', $this->id)->exists()
+            || DB::table('exchange_rates')->where('created_by', $this->id)->exists();
     }
 }

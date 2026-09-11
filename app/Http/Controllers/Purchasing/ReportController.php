@@ -16,7 +16,9 @@ class ReportController extends Controller
     {
         // Master data for export filter controls.
         $periods = Period::orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
-        $suppliers = User::where('role', 'supplier')->orderBy('name')->get();
+        $suppliers = User::importEligible()
+            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('purchase_requisition_suppliers')->distinct()->pluck('supplier_id'))
+            ->orderBy('name')->get();
 
         return view('purchasing.reports.index', compact('periods', 'suppliers'));
     }

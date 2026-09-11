@@ -4,32 +4,41 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Support\NotificationCategory;
+use App\Support\NotificationDomain;
 use Illuminate\Support\Collection;
 
 class NotificationSummaryService
 {
     public function forUser(User $user, int $limit = 30): array
     {
-        $categories = NotificationCategory::options();
-        $notifications = $user->notifications()
-            ->latest()
-            ->take($limit)
-            ->get(['id', 'data', 'read_at', 'created_at']);
-        $unreadNotifications = $user->unreadNotifications()
-            ->get(['id', 'data', 'read_at', 'created_at']);
+        $categories = NotificationCategory::optionsForUser($user);
+        $allowedDomains = NotificationDomain::allowedDomainsForUser($user);
+
+        $notifications = $this->filterByDomains(
+            $user->notifications()->latest()->take($limit)->get(['id', 'data', 'read_at', 'created_at']),
+            $allowedDomains,
+        );
+        $unreadNotifications = $this->filterByDomains(
+            $user->unreadNotifications()->get(['id', 'data', 'read_at', 'created_at']),
+            $allowedDomains,
+        );
 
         return $this->summary($categories, $notifications, $unreadNotifications);
     }
 
     public function countsForUser(User $user, int $limit = 30): array
     {
-        $categories = NotificationCategory::options();
-        $notifications = $user->notifications()
-            ->latest()
-            ->take($limit)
-            ->get(['id', 'data', 'read_at']);
-        $unreadNotifications = $user->unreadNotifications()
-            ->get(['id', 'data', 'read_at']);
+        $categories = NotificationCategory::optionsForUser($user);
+        $allowedDomains = NotificationDomain::allowedDomainsForUser($user);
+
+        $notifications = $this->filterByDomains(
+            $user->notifications()->latest()->take($limit)->get(['id', 'data', 'read_at']),
+            $allowedDomains,
+        );
+        $unreadNotifications = $this->filterByDomains(
+            $user->unreadNotifications()->get(['id', 'data', 'read_at']),
+            $allowedDomains,
+        );
 
         $summary = $this->summary($categories, $notifications, $unreadNotifications);
 
@@ -37,6 +46,13 @@ class NotificationSummaryService
             'count' => $summary['count'],
             'category_counts' => $summary['category_counts'],
         ];
+    }
+
+    private function filterByDomains(Collection $notifications, array $allowedDomains): Collection
+    {
+        return $notifications->filter(
+            fn ($notification) => in_array(NotificationDomain::forNotification($notification), $allowedDomains, true),
+        )->values();
     }
 
     private function summary(array $categories, Collection $notifications, Collection $unreadNotifications): array

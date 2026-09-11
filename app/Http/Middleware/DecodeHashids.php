@@ -24,6 +24,8 @@ class DecodeHashids
      * are intentionally excluded — their URLs stay as plain integers.
      */
     protected const HASHED_PARAM_KEYS = [
+        'invoice',
+        'document',
         // ── Manual {id} routes ─────────────────────────────────────────────────
         'id',            // PurchaseOrder, Claim (supplier), QcInspection, Conversation show routes
         'pr_id',         // Supplier: quotations/create, quotations/store
@@ -82,7 +84,7 @@ class DecodeHashids
 
             foreach ($parameters as $key => $value) {
                 // Only decode parameters for known hashed models
-                if (!in_array($key, self::HASHED_PARAM_KEYS, true)) {
+                if (! in_array($key, self::HASHED_PARAM_KEYS, true)) {
                     continue;
                 }
 
