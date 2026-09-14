@@ -253,7 +253,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
 
     public function test_accounting_sees_only_local_and_global_notifications(): void
     {
-        $operator = User::factory()->create(['role' => 'accounting']);
+        $operator = User::factory()->create(['role' => 'finance']);
         $this->injectNotification($operator, NotificationDomain::LOCAL, NotificationCategory::INVOICE, 'Local invoice');
         $this->injectNotification($operator, NotificationDomain::IMPORT, NotificationCategory::QUOTATION, 'Import quotation');
         $this->injectNotification($operator, NotificationDomain::GLOBAL, NotificationCategory::OTHER, 'Global');
@@ -280,31 +280,31 @@ class LocalInvoiceScopeIsolationTest extends TestCase
     public function test_admin_users_filter_includes_accounting_and_finance(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        User::factory()->create(['role' => 'accounting']);
+        User::factory()->create(['role' => 'ga']);
         User::factory()->create(['role' => 'finance']);
 
         $response = $this->actingAs($admin)->get(route('admin.users.index'));
         $response->assertOk();
-        $response->assertSee('Accounting');
+        $response->assertSee('General Affairs');
         $response->assertSee('Finance');
     }
 
     public function test_admin_datatables_returns_accounting_role_badge(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        User::factory()->create(['role' => 'accounting', 'name' => 'Acc User']);
+        User::factory()->create(['role' => 'finance', 'name' => 'Fin User']);
 
         $response = $this->actingAs($admin)
-            ->getJson(route('admin.users.index').'?draw=1&start=0&length=25&search%5Bvalue%5D=Acc+User');
+            ->getJson(route('admin.users.index').'?draw=1&start=0&length=25&search%5Bvalue%5D=Fin+User');
         $response->assertOk();
-        $response->assertSee('Accounting');
+        $response->assertSee('Finance');
     }
 
     // ─── LSI-006: Category classification ───
 
     public function test_local_invoice_notification_classified_as_invoice_category(): void
     {
-        $user = User::factory()->create(['role' => 'accounting']);
+        $user = User::factory()->create(['role' => 'finance']);
         $notification = $this->injectNotification($user, NotificationDomain::LOCAL, NotificationCategory::INVOICE);
 
         $this->assertSame(NotificationCategory::INVOICE, NotificationCategory::key($notification));
@@ -312,7 +312,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
 
     public function test_category_options_for_local_user_excludes_import_categories(): void
     {
-        $operator = User::factory()->create(['role' => 'accounting']);
+        $operator = User::factory()->create(['role' => 'finance']);
         $options = NotificationCategory::optionsForUser($operator);
 
         $this->assertArrayHasKey(NotificationCategory::ALL, $options);
@@ -395,7 +395,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
         $supplier->supplierScopes()->create(['scope' => 'import']);
         $this->assertFalse($supplier->fresh()->hasSupplierScope('local'));
 
-        $accounting = User::factory()->create(['role' => 'accounting', 'is_active' => true]);
+        $accounting = User::factory()->create(['role' => 'finance', 'is_active' => true]);
 
         // Accounting should be able to filter by this supplier's hash without 422 error
         $response = $this->actingAs($accounting)->get(route('accounting.invoices.index', ['supplier' => $supplier->hash]));

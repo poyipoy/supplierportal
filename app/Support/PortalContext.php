@@ -8,6 +8,12 @@ class PortalContext
 {
     public static function dashboard(User $user): string
     {
+        if ($user->isFinance()) {
+            return route('finance.dashboard', absolute: false);
+        }
+        if ($user->isGa()) {
+            return route('ga.dashboard', absolute: false);
+        }
         if ($user->isLocalOperator()) {
             return route('accounting.dashboard', absolute: false);
         }

@@ -36,7 +36,7 @@ class LocalInvoiceTest extends TestCase
         Storage::fake('private');
         Notification::fake();
         $this->supplier = $this->supplier(['local']);
-        $this->operator = User::factory()->create(['role' => 'accounting']);
+        $this->operator = User::factory()->create(['role' => 'finance']);
     }
 
     private function supplier(array $scopes): User

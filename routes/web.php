@@ -48,6 +48,8 @@ use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/supplier-local.php';
 require __DIR__.'/accounting.php';
+require __DIR__.'/finance.php';
+require __DIR__.'/ga.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +71,7 @@ Route::middleware('auth')->group(function () {
             'admin' => redirect()->route('admin.dashboard'),
             'purchasing' => redirect()->route('purchasing.dashboard'),
             'supplier', 'accounting', 'finance' => redirect(PortalContext::dashboard(auth()->user())),
+            'ga' => redirect()->route('ga.dashboard'),
             'qc' => redirect()->route('qc.dashboard'),
             default => redirect()->route('login'),
         };
@@ -80,7 +83,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:auth.credentials')->name('profile.destroy');
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
 
-    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance')->group(function () {
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
         Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
         Route::post('/exports/{exportJob}/cancel', [ExportDownloadController::class, 'cancel'])->name('exports.cancel');
@@ -88,7 +91,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Notifications
-    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance')->group(function () {
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
         Route::get('/notifications/summary', [NotificationController::class, 'summary'])->name('notifications.summary');
@@ -213,6 +216,12 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
     Route::get('/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
+    // Local Vendors & Read-Only Invoices
+    Route::get('/local-vendors', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'index'])->name('local-vendors.index');
+    Route::get('/local-vendors/{vendor}', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'show'])->name('local-vendors.show');
+    Route::post('/local-vendors/change-requests/{request}/approve', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'approveChange'])->name('local-vendors.change-requests.approve');
+    Route::post('/local-vendors/change-requests/{request}/reject', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'rejectChange'])->name('local-vendors.change-requests.reject');
+    Route::get('/local-invoices/{invoice}', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
 });
 
 /*

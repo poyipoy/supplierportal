@@ -9,7 +9,7 @@ class LocalInvoicePolicy
 {
     public function view(User $user, LocalInvoice $invoice): bool
     {
-        return $user->is_active && ($user->isLocalOperator() || $user->isAdmin()
+        return $user->is_active && ($user->isLocalOperator() || $user->isAdmin() || $user->isPurchasing()
             || ($user->hasSupplierScope('local') && (int) $invoice->supplier_id === (int) $user->id));
     }
 

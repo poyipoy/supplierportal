@@ -57,7 +57,7 @@ class NotificationDomain
 
         // Fallback: check URL patterns in data
         $url = Str::lower((string) ($data['url'] ?? ''));
-        if (Str::contains($url, ['/local-supplier/', '/accounting/'])) {
+        if (Str::contains($url, ['/local-supplier/', '/accounting/', '/finance/', '/ga/'])) {
             return self::LOCAL;
         }
 

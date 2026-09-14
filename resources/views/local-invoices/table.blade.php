@@ -10,7 +10,9 @@
                 <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Submitted</th>
                 <th scope="col" class="text-end tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Amount / PPN (IDR)</th>
                 <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Status</th>
-                <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Due Date</th>
+                @if(!auth()->user()?->isSupplier())
+                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Due Date</th>
+                @endif
                 @if($payments ?? false)
                     <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Term (Days)</th>
                     <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Scheduled Pay</th>
@@ -63,6 +65,7 @@
                             {{ \App\Support\StatusHelper::localInvoiceLabel($row->status) }}
                         </x-ui.status-chip>
                     </td>
+                    @if(!auth()->user()?->isSupplier())
                     <td>
                         @if($row->due_date)
                             <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
@@ -88,6 +91,7 @@
                             <span class="tw-text-ui-xs tw-text-on-surface-variant">—</span>
                         @endif
                     </td>
+                    @endif
                     @if($payments ?? false)
                         <td>
                             <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
@@ -114,7 +118,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ (($portal ?? '') === 'accounting' ? 1 : 0) + (($payments ?? false) ? 9 : 7) }}" class="text-center tw-py-12">
+                    <td colspan="{{ (in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) ? 1 : 0) + (($payments ?? false) ? 2 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + 6 }}" class="text-center tw-py-12">
                         <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
                             <div class="tw-w-12 tw-h-12 tw-rounded-full tw-bg-surface-container tw-flex tw-items-center tw-justify-center tw-text-on-surface-variant">
                                 <x-ui.icon name="inbox" size="lg" />

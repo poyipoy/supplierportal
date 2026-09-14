@@ -31,6 +31,7 @@ class LocalInvoiceMigrationTest extends TestCase
         $supplier = User::create(['name' => 'Legacy supplier', 'email' => 'legacy@example.test', 'password' => 'password', 'role' => 'supplier', 'is_active' => true]);
         $admin = User::create(['name' => 'Legacy admin', 'email' => 'admin@example.test', 'password' => 'password', 'role' => 'admin', 'is_active' => true]);
         $migration->up();
+        (require database_path('migrations/2026_09_11_000001_update_user_roles_accounting_to_finance_and_add_ga.php'))->up();
         $this->assertDatabaseHas('supplier_scopes', ['supplier_id' => $supplier->id, 'scope' => 'import']);
         $this->assertDatabaseMissing('supplier_scopes', ['supplier_id' => $admin->id]);
         $this->assertSame(0, DB::table('local_invoices')->count());

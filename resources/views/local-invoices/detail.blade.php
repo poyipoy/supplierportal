@@ -224,7 +224,8 @@
 
         {{-- Right Column: Sticky Workflow Actions, Status Stepper & Information (Offset accounts for 56px navbar) --}}
         <div class="lg:tw-col-span-4 tw-space-y-6 tw-sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
-            {{-- Payment & Due Date Card --}}
+            {{-- Payment & Due Date Card (Internal only, hidden from Supplier) --}}
+            @if(!auth()->user()?->isSupplier())
             <x-ui.card title="Jadwal Pembayaran">
                 <div class="tw-space-y-3">
                     <div class="tw-flex tw-justify-between tw-text-ui-xs">
@@ -266,6 +267,7 @@
                     @endif
                 </div>
             </x-ui.card>
+            @endif
 
             {{-- Operator Workflow Actions Box (Only for Accounting/Finance) --}}
             @if(auth()->user()->isLocalOperator())

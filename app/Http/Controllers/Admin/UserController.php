@@ -43,6 +43,7 @@ class UserController extends Controller
                         'qc' => '<span class="ui-status-chip ui-status-chip--neutral">QC</span>',
                         'accounting' => '<span class="ui-status-chip ui-status-chip--info">Accounting</span>',
                         'finance' => '<span class="ui-status-chip ui-status-chip--info">Finance</span>',
+                        'ga' => '<span class="ui-status-chip ui-status-chip--info">General Affairs</span>',
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e($user->role).'</span>',
                     };
                 })
@@ -102,7 +103,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'string', Password::defaults(), 'confirmed'],
-            'role' => 'required|in:admin,purchasing,supplier,qc,accounting,finance',
+            'role' => 'required|in:admin,purchasing,supplier,qc,accounting,finance,ga',
             'is_active' => 'boolean',
 
             // Supplier specific fields
@@ -188,7 +189,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
-            'role' => 'required|in:admin,purchasing,supplier,qc,accounting,finance',
+            'role' => 'required|in:admin,purchasing,supplier,qc,accounting,finance,ga',
             'is_active' => 'boolean',
 
             // Supplier specific fields

@@ -24,7 +24,7 @@
         </x-slot:search>
         <x-slot:filters>
             <label class="tw-grid tw-gap-1 tw-text-ui-xs tw-font-medium" for="userRoleFilter">Role
-                <select id="userRoleFilter" class="form-select form-select-sm tw-min-w-36"><option value="">All roles</option><option value="admin">Admin</option><option value="purchasing">Purchasing</option><option value="supplier">Supplier</option><option value="qc">QC</option><option value="accounting">Accounting</option><option value="finance">Finance</option></select>
+                <select id="userRoleFilter" class="form-select form-select-sm tw-min-w-36"><option value="">All roles</option><option value="admin">Admin</option><option value="purchasing">Purchasing</option><option value="supplier">Supplier</option><option value="qc">QC</option><option value="finance">Finance</option><option value="ga">General Affairs</option></select>
             </label>
             <x-ui.button variant="outline" size="sm" class="tw-self-end" type="button" data-bs-toggle="collapse" data-bs-target="#userMoreFilters" aria-expanded="false" aria-controls="userMoreFilters"><x-ui.icon name="sliders-horizontal" /> More Filters</x-ui.button>
         </x-slot:filters>

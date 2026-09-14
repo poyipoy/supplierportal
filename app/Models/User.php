@@ -83,7 +83,38 @@ class User extends Authenticatable
 
     public function isLocalOperator(): bool
     {
-        return in_array($this->role, ['accounting', 'finance'], true);
+        return in_array($this->role, ['finance', 'accounting'], true);
+    }
+
+    public function isFinance(): bool
+    {
+        return $this->role === 'finance';
+    }
+
+    public function isGa(): bool
+    {
+        return $this->role === 'ga';
+    }
+
+    public function supplierBankAccounts(): HasMany
+    {
+        return $this->hasMany(SupplierBankAccount::class, 'supplier_id');
+    }
+
+    public function activeSupplierBankAccount(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(SupplierBankAccount::class, 'supplier_id')
+            ->where('status', SupplierBankAccount::STATUS_VERIFIED);
+    }
+
+    public function supplierChangeRequests(): HasMany
+    {
+        return $this->hasMany(SupplierChangeRequest::class, 'supplier_id');
+    }
+
+    public function supplierMasterDocuments(): HasMany
+    {
+        return $this->hasMany(SupplierMasterDocument::class, 'supplier_id');
     }
 
     public function quotations(): HasMany
@@ -202,6 +233,8 @@ class User extends Authenticatable
     {
         return DB::table('local_invoices')->where('supplier_id', $this->id)->exists()
             || DB::table('local_invoice_status_histories')->where('actor_id', $this->id)->exists()
+            || DB::table('supplier_bank_accounts')->where('supplier_id', $this->id)->exists()
+            || DB::table('supplier_change_requests')->where('supplier_id', $this->id)->exists()
             || DB::table('quotations')->where('supplier_id', $this->id)->exists()
             || DB::table('purchase_orders')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('created_by', $this->id))->exists()
             || DB::table('purchase_requisitions')->where('created_by', $this->id)->exists()

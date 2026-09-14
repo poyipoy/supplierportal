@@ -9,13 +9,55 @@ class LocalInvoice extends Model
 {
     use HasHashids;
 
-    public const STATUSES = ['WAITING_PHYSICAL_DOCUMENT', 'UNDER_REVIEW', 'NEED_REVISION', 'REJECTED', 'APPROVED', 'PAYMENT_SCHEDULED', 'COMPLETED'];
+    public const STATUS_WAITING_PHYSICAL_DOCUMENT = 'WAITING_PHYSICAL_DOCUMENT';
+    public const STATUS_UNDER_VERIFICATION = 'UNDER_VERIFICATION';
+    public const STATUS_NEED_REVISION = 'NEED_REVISION';
+    public const STATUS_READY_TO_PAY = 'READY_TO_PAY';
+    public const STATUS_PAID = 'PAID';
+    public const STATUS_EXPIRED = 'EXPIRED';
+    public const STATUS_REJECTED = 'REJECTED';
+
+    public const STATUSES = [
+        self::STATUS_WAITING_PHYSICAL_DOCUMENT,
+        self::STATUS_UNDER_VERIFICATION,
+        self::STATUS_NEED_REVISION,
+        self::STATUS_READY_TO_PAY,
+        self::STATUS_PAID,
+        self::STATUS_EXPIRED,
+        self::STATUS_REJECTED,
+    ];
 
     protected $guarded = ['id'];
 
     protected function casts(): array
     {
-        return ['invoice_date' => 'date', 'invoice_amount' => 'decimal:2', 'tax_amount' => 'decimal:2', 'payment_term_days_snapshot' => 'integer', 'revision_number' => 'integer', 'submitted_at' => 'datetime', 'physical_verified_at' => 'datetime', 'review_started_at' => 'datetime', 'approved_at' => 'datetime', 'due_date' => 'date', 'payment_scheduled_at' => 'datetime', 'scheduled_payment_date' => 'date', 'completed_at' => 'datetime'];
+        return [
+            'invoice_date' => 'date',
+            'invoice_amount' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'po_value_snapshot' => 'decimal:2',
+            'po_invoiced_snapshot' => 'decimal:2',
+            'po_remaining_snapshot' => 'decimal:2',
+            'has_po_discrepancy' => 'boolean',
+            'submitted_ppn_amount' => 'decimal:2',
+            'scheduled_physical_delivery_date' => 'date',
+            'missed_delivery_count' => 'integer',
+            'rescheduled_at' => 'datetime',
+            'cashier_received_at' => 'datetime',
+            'payment_term_days_snapshot' => 'integer',
+            'revision_number' => 'integer',
+            'submitted_at' => 'datetime',
+            'physical_verified_at' => 'datetime',
+            'review_started_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'ready_to_pay_at' => 'datetime',
+            'due_date' => 'date',
+            'payment_scheduled_at' => 'datetime',
+            'scheduled_payment_date' => 'date',
+            'paid_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'expired_at' => 'datetime',
+        ];
     }
 
     public function supplier()
@@ -48,23 +90,84 @@ class LocalInvoice extends Model
         return $this->hasMany(LocalInvoicePhysicalVerification::class);
     }
 
+    public function verifications()
+    {
+        return $this->hasMany(LocalInvoiceVerification::class);
+    }
+
+    public function currentVerification(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(LocalInvoiceVerification::class)->ofMany([
+            'revision_number' => 'max',
+        ]);
+    }
+
+    public function paymentItem()
+    {
+        return $this->morphOne(PaymentItem::class, 'payable');
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->status === self::STATUS_PAID || $this->status === 'COMPLETED';
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->status === self::STATUS_EXPIRED;
+    }
+
+    public function isReadyToPay(): bool
+    {
+        return $this->status === self::STATUS_READY_TO_PAY || $this->status === 'APPROVED';
+    }
+
+    public function isOverdue(): bool
+    {
+        return ! $this->isPaid()
+            && ! $this->isExpired()
+            && $this->due_date !== null
+            && $this->due_date->lt(today());
+    }
+
+    public function getIsOverdueAttribute(): bool
+    {
+        return $this->isOverdue();
+    }
+
     public function paymentCategory(): string
     {
-        if ($this->status === 'COMPLETED') {
+        if ($this->isPaid()) {
             return 'Completed';
         }
-        if ($this->due_date && $this->due_date->lt(today())) {
+        if ($this->isOverdue()) {
             return 'Overdue';
         }
         if ($this->due_date && $this->due_date->lt(today()->addDays(7))) {
             return 'Due < 7 Days';
         }
 
-        return $this->status === 'PAYMENT_SCHEDULED' ? 'Scheduled' : 'Unscheduled';
+        if ($this->status === 'PAYMENT_SCHEDULED' || $this->scheduled_payment_date) {
+            return 'Scheduled';
+        }
+
+        return $this->isReadyToPay() ? 'Ready to Pay' : 'Unscheduled';
     }
 
     public function remainingDays(): ?int
     {
         return $this->due_date ? (int) today()->diffInDays($this->due_date, false) : null;
+    }
+
+    public function scopeOverdue(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNotIn('status', [self::STATUS_PAID, 'COMPLETED', self::STATUS_EXPIRED])
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<', today());
+    }
+
+    public function scopeIsOverdue(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->scopeOverdue($query);
     }
 }

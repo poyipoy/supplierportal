@@ -10,11 +10,26 @@ use RuntimeException;
 
 class InvoiceDocumentService
 {
-    public function store(LocalInvoiceRevision $revision, User $actor, array $files, array &$written): void
-    {
-        $rules = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'];
-        Validator::make($files, ['invoice' => $rules, 'tax_invoice' => $rules, 'supporting' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240']])->validate();
-        foreach (['invoice', 'tax_invoice', 'supporting'] as $type) {
+    public function store(
+        LocalInvoiceRevision $revision,
+        User $actor,
+        array $files,
+        array &$written,
+        bool $requiresTaxInvoice = true,
+        bool $requiresDeliveryNote = false
+    ): void {
+        $baseRules = ['file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'];
+
+        $validationRules = [
+            'invoice' => array_merge(['required'], $baseRules),
+            'tax_invoice' => $requiresTaxInvoice ? array_merge(['required'], $baseRules) : array_merge(['nullable'], $baseRules),
+            'delivery_note' => $requiresDeliveryNote ? array_merge(['required'], $baseRules) : array_merge(['nullable'], $baseRules),
+            'supporting' => array_merge(['nullable'], $baseRules),
+        ];
+
+        Validator::make($files, $validationRules)->validate();
+
+        foreach (['invoice', 'tax_invoice', 'delivery_note', 'supporting'] as $type) {
             $file = $files[$type] ?? null;
             if (! $file) {
                 continue;
@@ -33,9 +48,13 @@ class InvoiceDocumentService
                 fclose($stream);
             }
             $revision->documents()->create([
-                'local_invoice_id' => $revision->local_invoice_id, 'document_type' => $type,
-                'file_path' => $path, 'original_filename' => mb_substr(basename(str_replace('\\', '/', $file->getClientOriginalName())), 0, 255),
-                'mime_type' => $file->getMimeType(), 'file_size' => $file->getSize(), 'uploaded_by' => $actor->id,
+                'local_invoice_id' => $revision->local_invoice_id,
+                'document_type' => $type,
+                'file_path' => $path,
+                'original_filename' => mb_substr(basename(str_replace('\\', '/', $file->getClientOriginalName())), 0, 255),
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'uploaded_by' => $actor->id,
             ]);
         }
     }

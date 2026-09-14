@@ -131,7 +131,8 @@ class NotificationUrlResolver
         }
 
         $allowedPrefixes = match ($user->role) {
-            'finance', 'accounting' => ['accounting.'],
+            'finance', 'accounting' => ['finance.', 'accounting.'],
+            'ga' => ['ga.'],
             'supplier' => array_values(array_filter([
                 $user->hasSupplierScope('import') ? 'supplier.' : null,
                 $user->hasSupplierScope('local') ? 'local-supplier.' : null,
@@ -279,9 +280,13 @@ class NotificationUrlResolver
 
             'accounting.invoices.show',
             'accounting.invoices.receipt',
+            'finance.invoices.show',
+            'finance.invoices.receipt',
             'local-supplier.invoices.show',
             'local-supplier.invoices.revision',
             'local-supplier.invoices.receipt' => ['invoice', LocalInvoice::class],
+            'ga.claims.show',
+            'ga.claims.receipt' => ['claim', \App\Models\GaClaim::class],
             default => null,
         };
     }

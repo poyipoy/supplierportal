@@ -15,14 +15,20 @@ class InvoiceQuery
             $query->where('supplier_id', $owner);
         }
         if ($payments) {
-            $query->whereIn('status', ! empty($filters['history']) ? ['APPROVED', 'PAYMENT_SCHEDULED', 'COMPLETED'] : ['APPROVED', 'PAYMENT_SCHEDULED']);
+            $query->whereIn('status', ! empty($filters['history'])
+                ? [LocalInvoice::STATUS_READY_TO_PAY, LocalInvoice::STATUS_PAID, 'APPROVED', 'PAYMENT_SCHEDULED', 'COMPLETED']
+                : [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);
         }
         if ($status = $filters['status'] ?? null) {
             $query->where('status', $status);
         }
         if ($search = $filters['q'] ?? null) {
             $query->where(function ($q) use ($search) {
-                $q->where('invoice_number', 'like', '%'.$search.'%')->orWhere('submission_number', 'like', '%'.$search.'%')->orWhere('po_number', 'like', '%'.$search.'%')->orWhereHas('receipt', fn ($r) => $r->where('receipt_number', 'like', '%'.$search.'%'));
+                $q->where('invoice_number', 'like', '%'.$search.'%')
+                    ->orWhere('submission_number', 'like', '%'.$search.'%')
+                    ->orWhere('po_number', 'like', '%'.$search.'%')
+                    ->orWhere('manual_po_number', 'like', '%'.$search.'%')
+                    ->orWhereHas('receipt', fn ($r) => $r->where('receipt_number', 'like', '%'.$search.'%'));
             });
         }
         if ($supplier = $filters['supplier'] ?? null) {
@@ -36,7 +42,7 @@ class InvoiceQuery
             }
         }
         if (! empty($filters['overdue'])) {
-            $query->whereDate('due_date', '<', today())->whereIn('status', ['APPROVED', 'PAYMENT_SCHEDULED']);
+            $query->whereDate('due_date', '<', today())->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);
         }
 
         return $query;
@@ -48,7 +54,7 @@ class InvoiceQuery
 
         return [
             'counts' => (clone $query)->select('status')->selectRaw('COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
-            'overdue' => (clone $query)->whereIn('status', ['APPROVED', 'PAYMENT_SCHEDULED'])->whereDate('due_date', '<', today())->count(),
+            'overdue' => (clone $query)->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED'])->whereDate('due_date', '<', today())->count(),
             'invoices' => $query->latest('id')->limit(5)->get(),
         ];
     }
