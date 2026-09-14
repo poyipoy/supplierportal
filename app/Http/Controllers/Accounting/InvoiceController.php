@@ -32,13 +32,7 @@ class InvoiceController extends Controller
     {
         Gate::authorize('view', $invoice);
         $invoice->load(['supplier.supplier', 'receipt', 'revisions.documents', 'statusHistories.actor', 'physicalVerifications.actor']);
-        $workflowActions = match ($invoice->status) {
-            'WAITING_PHYSICAL_DOCUMENT' => ['physical-verification' => 'Verify Physical Documents'],
-            'UNDER_REVIEW' => array_merge($invoice->review_started_at ? [] : ['start-review' => 'Start Review'], ['request-revision' => 'Request Revision', 'reject' => 'Reject Invoice', 'approve' => 'Approve Invoice']),
-            'APPROVED' => ['schedule-payment' => 'Schedule Payment'],
-            'PAYMENT_SCHEDULED' => ['complete-payment' => 'Complete Payment'],
-            default => [],
-        };
+        $workflowActions = [];
 
         return view('accounting.invoices.show', compact('invoice', 'workflowActions'));
     }

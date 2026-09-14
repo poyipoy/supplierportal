@@ -232,4 +232,73 @@ class FinanceVerificationV2Test extends TestCase
         // Read-only detail view in Purchasing renders OK
         $this->actingAs($purchasing)->get(route('purchasing.local-invoices.show', $invoice))->assertOk();
     }
+
+    public function test_pkp_supplier_cannot_use_not_applicable_for_tax_invoice(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Tax Invoice (Faktur Pajak) cannot be NOT APPLICABLE for PKP suppliers.');
+
+        $this->verificationService->verifySectionA($invoice, [
+            'invoice_check' => LocalInvoiceVerification::CHECK_OK,
+            'tax_invoice_check' => LocalInvoiceVerification::CHECK_NOT_APPLICABLE,
+            'po_check' => LocalInvoiceVerification::CHECK_OK,
+            'delivery_note_check' => LocalInvoiceVerification::CHECK_OK,
+            'gr_check' => LocalInvoiceVerification::CHECK_OK,
+        ], $finance);
+    }
+
+    public function test_barang_vendor_cannot_use_not_applicable_for_surat_jalan(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Delivery Note (Surat Jalan) cannot be NOT APPLICABLE for goods (Barang) suppliers.');
+
+        $this->verificationService->verifySectionA($invoice, [
+            'invoice_check' => LocalInvoiceVerification::CHECK_OK,
+            'tax_invoice_check' => LocalInvoiceVerification::CHECK_OK,
+            'po_check' => LocalInvoiceVerification::CHECK_OK,
+            'delivery_note_check' => LocalInvoiceVerification::CHECK_NOT_APPLICABLE,
+            'gr_check' => LocalInvoiceVerification::CHECK_OK,
+        ], $finance);
+    }
+
+    public function test_tidak_sesuai_ppn_requires_corrected_amount_and_notes(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+
+        $this->verificationService->verifySectionA($invoice, [
+            'invoice_check' => LocalInvoiceVerification::CHECK_OK,
+            'tax_invoice_check' => LocalInvoiceVerification::CHECK_OK,
+            'po_check' => LocalInvoiceVerification::CHECK_OK,
+            'delivery_note_check' => LocalInvoiceVerification::CHECK_OK,
+            'gr_check' => LocalInvoiceVerification::CHECK_OK,
+        ], $finance);
+
+        // Missing notes must throw
+        try {
+            $this->verificationService->verifySectionB($invoice, [
+                'ppn_status' => LocalInvoiceVerification::PPN_TIDAK_SESUAI,
+                'verified_ppn' => 990000,
+                'tax_notes' => '',
+            ], $finance);
+            $this->fail('Expected InvalidArgumentException for empty notes');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('Verification notes are mandatory', $e->getMessage());
+        }
+
+        // Missing verified_ppn must throw
+        try {
+            $this->verificationService->verifySectionB($invoice, [
+                'ppn_status' => LocalInvoiceVerification::PPN_TIDAK_SESUAI,
+                'verified_ppn' => null,
+                'tax_notes' => 'Corrected note',
+            ], $finance);
+            $this->fail('Expected InvalidArgumentException for missing verified_ppn');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('Corrected PPN amount is mandatory', $e->getMessage());
+        }
+    }
 }

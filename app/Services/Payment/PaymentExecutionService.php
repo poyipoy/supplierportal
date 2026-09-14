@@ -71,6 +71,12 @@ class PaymentExecutionService
                     /** @var LocalInvoice $inv */
                     $inv = LocalInvoice::where('id', $item->payable_id)->lockForUpdate()->first();
                     if ($inv && $inv->status !== LocalInvoice::STATUS_PAID) {
+                        if ($inv->status !== LocalInvoice::STATUS_READY_TO_PAY) {
+                            throw new RuntimeException("Invoice [{$inv->invoice_number}] is not in READY_TO_PAY status (current: {$inv->status}).");
+                        }
+
+                        $originalStatus = $inv->status;
+
                         $inv->update([
                             'status' => LocalInvoice::STATUS_PAID,
                             'paid_at' => $now,
@@ -78,7 +84,7 @@ class PaymentExecutionService
                         ]);
 
                         $history = $inv->statusHistories()->create([
-                            'from_status' => LocalInvoice::STATUS_READY_TO_PAY,
+                            'from_status' => $originalStatus,
                             'to_status' => LocalInvoice::STATUS_PAID,
                             'actor_id' => $actor->id,
                             'event' => 'paid',
@@ -92,13 +98,19 @@ class PaymentExecutionService
                     /** @var GaClaim $clm */
                     $clm = GaClaim::where('id', $item->payable_id)->lockForUpdate()->first();
                     if ($clm && $clm->status !== GaClaim::STATUS_PAID) {
+                        if ($clm->status !== GaClaim::STATUS_READY_TO_PAY) {
+                            throw new RuntimeException("Claim [{$clm->claim_number}] is not in READY_TO_PAY status (current: {$clm->status}).");
+                        }
+
+                        $originalStatus = $clm->status;
+
                         $clm->update([
                             'status' => GaClaim::STATUS_PAID,
                             'paid_at' => $now,
                         ]);
 
                         $clm->statusHistories()->create([
-                            'from_status' => GaClaim::STATUS_READY_TO_PAY,
+                            'from_status' => $originalStatus,
                             'to_status' => GaClaim::STATUS_PAID,
                             'actor_id' => $actor->id,
                             'event' => 'paid',

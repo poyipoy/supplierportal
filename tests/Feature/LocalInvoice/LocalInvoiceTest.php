@@ -46,14 +46,23 @@ class LocalInvoiceTest extends TestCase
         foreach ($scopes as $scope) {
             $user->supplierScopes()->create(['scope' => $scope]);
         }
-        Supplier::create(['user_id' => $user->id, 'company_name' => 'Local Vendor '.$user->id, 'address' => 'Jakarta', 'phone' => '123', 'npwp' => '123', 'category' => 'Parts', 'payment_term_days' => 30]);
+        Supplier::create(['user_id' => $user->id, 'company_name' => 'Local Vendor '.$user->id, 'address' => 'Jakarta', 'phone' => '123', 'npwp' => '123', 'category' => 'Parts', 'payment_term_days' => 30, 'is_pkp' => true]);
 
         return $user;
     }
 
     private function data(array $overrides = []): array
     {
-        return array_merge(['invoice_number' => 'INV-001', 'invoice_date' => '2026-09-08', 'po_number' => 'PO-MANUAL-01', 'invoice_amount' => '100000.25', 'tax_amount' => '11000.03'], $overrides);
+        return array_merge([
+            'invoice_number' => 'INV-001',
+            'invoice_date' => '2026-09-08',
+            'po_source' => 'MANUAL',
+            'po_number' => 'PO-MANUAL-01',
+            'manual_po_number' => 'PO-MANUAL-01',
+            'manual_gr_reference' => 'GR-MANUAL-01',
+            'invoice_amount' => '100000.25',
+            'tax_amount' => '11000.03',
+        ], $overrides);
     }
 
     private function files(): array
@@ -66,11 +75,6 @@ class LocalInvoiceTest extends TestCase
         $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge($this->data(), $this->files()))->assertSessionHasNoErrors()->assertRedirect();
 
         return LocalInvoice::sole();
-    }
-
-    private function act(LocalInvoice $invoice, string $action, array $data = [])
-    {
-        return $this->actingAs($this->operator)->post(route('accounting.invoices.'.$action, $invoice), $data);
     }
 
     public static function scopes(): array
@@ -109,116 +113,38 @@ class LocalInvoiceTest extends TestCase
         $this->get(route('local-supplier.invoices.show', $invoice))->assertOk()->assertSee('Waiting Physical Document');
     }
 
-    public function test_full_workflow_and_payment_snapshot(): void
+    public static function legacyMutationActions(): array
     {
-        $this->travelTo(now()->setDate(2026, 9, 8)->startOfDay());
-        $invoice = $this->submit();
-        $this->act($invoice, 'physical-verification')->assertSessionHasNoErrors();
-        $this->act($invoice, 'start-review')->assertSessionHasNoErrors();
-        $this->act($invoice, 'start-review')->assertSessionHasErrors('workflow');
-        $this->supplier->supplier->update(['payment_term_days' => 60]);
-        $this->act($invoice, 'approve')->assertSessionHasNoErrors();
-        $this->assertSame('2026-10-08', $invoice->fresh()->due_date->format('Y-m-d'));
-        $this->act($invoice, 'approve')->assertSessionHasErrors('workflow');
-        $this->act($invoice, 'schedule-payment', ['scheduled_payment_date' => '2026-10-07'])->assertSessionHasNoErrors();
-        $this->act($invoice, 'complete-payment', ['notes' => 'Paid manually'])->assertSessionHasNoErrors();
-        $this->assertSame('COMPLETED', $invoice->fresh()->status);
-        $this->assertNotNull($invoice->fresh()->completed_at);
-        $this->act($invoice, 'complete-payment')->assertSessionHasErrors('workflow');
-        $this->act($invoice, 'request-revision', ['notes' => 'Late'])->assertSessionHasErrors('workflow');
-        $this->assertCount(6, $invoice->statusHistories);
+        return [
+            ['physical-verification'],
+            ['start-review'],
+            ['request-revision'],
+            ['reject'],
+            ['approve'],
+            ['schedule-payment'],
+            ['complete-payment'],
+        ];
     }
 
-    public function test_revision_preserves_identity_documents_and_requires_new_physical_verification(): void
+    #[DataProvider('legacyMutationActions')]
+    public function test_legacy_accounting_mutation_routes_are_disabled(string $action): void
     {
         $invoice = $this->submit();
-        $identity = [$invoice->id, $invoice->submission_number, $invoice->receipt->receipt_number];
-        $oldPaths = $invoice->documents->pluck('file_path');
-        $this->act($invoice, 'physical-verification')->assertSessionHasNoErrors();
-        $this->act($invoice, 'request-revision', ['notes' => 'Correct amount and tax'])->assertSessionHasNoErrors();
-        $this->actingAs($this->supplier)->get(route('local-supplier.invoices.revision', $invoice))->assertOk()->assertSee('Correct amount and tax');
-        $this->post(route('local-supplier.invoices.resubmit', $invoice), array_merge($this->data(['invoice_amount' => '200000.00']), $this->files()))->assertSessionHasNoErrors();
-        $invoice->refresh();
-        $this->assertSame($identity, [$invoice->id, $invoice->submission_number, $invoice->receipt->receipt_number]);
-        $this->assertSame('WAITING_PHYSICAL_DOCUMENT', $invoice->status);
-        $this->assertNull($invoice->physical_verified_at);
-        $this->assertSame(2, $invoice->revision_number);
-        $this->assertSame('100000.25', $invoice->revisions()->oldest('id')->first()->invoice_amount);
-        $this->assertSame('200000.00', $invoice->invoice_amount);
-        foreach ($oldPaths as $path) {
-            Storage::disk('private')->assertExists($path);
-        }
-        $this->assertCount(4, $invoice->documents);
-        $this->assertCount(2, $invoice->physicalVerifications);
-        $this->act($invoice, 'approve')->assertSessionHasErrors('workflow');
-        $this->act($invoice, 'physical-verification')->assertSessionHasNoErrors();
-        $this->act($invoice, 'approve')->assertSessionHasNoErrors();
+        $this->actingAs($this->operator)
+            ->post("/accounting/invoices/{$invoice->id}/{$action}")
+            ->assertNotFound();
     }
 
-    public function test_reject_is_terminal_and_reason_is_required(): void
+    public function test_legacy_accounting_invoice_show_is_strictly_read_only(): void
     {
         $invoice = $this->submit();
-        $this->act($invoice, 'physical-verification')->assertSessionHasNoErrors();
-        $this->act($invoice, 'reject')->assertSessionHasErrors('notes');
-        $this->act($invoice, 'request-revision', ['notes' => '  '])->assertSessionHasErrors('notes');
-        $this->act($invoice, 'reject', ['notes' => 'Invalid invoice'])->assertSessionHasNoErrors();
-        $this->act($invoice, 'approve')->assertSessionHasErrors('workflow');
-        $this->assertSame('REJECTED', $invoice->fresh()->status);
-    }
-
-    public static function illegalActions(): array
-    {
-        return array_map(fn ($action) => [$action], ['start-review', 'request-revision', 'reject', 'approve', 'schedule-payment', 'complete-payment']);
-    }
-
-    #[DataProvider('illegalActions')]
-    public function test_cannot_skip_physical_verification(string $action): void
-    {
-        $invoice = $this->submit();
-        $this->act($invoice, $action, ['notes' => 'Reason', 'scheduled_payment_date' => today()->addDays(1)->format('Y-m-d')])->assertSessionHasErrors('workflow');
-        $this->assertSame('WAITING_PHYSICAL_DOCUMENT', $invoice->fresh()->status);
-    }
-
-    public function test_cross_supplier_isolation_on_all_invoice_surfaces(): void
-    {
-        $invoice = $this->submit();
-        $other = $this->supplier(['local']);
-        $this->actingAs($other);
-        foreach (['show', 'receipt', 'revision'] as $action) {
-            $this->get(route('local-supplier.invoices.'.$action, $invoice))->assertForbidden();
-        }
-        $this->post(route('local-supplier.invoices.resubmit', $invoice), array_merge($this->data(), $this->files()))->assertForbidden();
-        $this->get(route('local-invoice-documents.show', $invoice->documents()->first()))->assertForbidden();
-        $this->get(route('local-supplier.invoices.index'))->assertOk()->assertDontSee($invoice->submission_number);
-        $this->get(route('local-supplier.dashboard'))->assertOk()->assertDontSee($invoice->submission_number);
-    }
-
-    public static function deniedRoles(): array
-    {
-        return [['supplier'], ['purchasing'], ['qc'], ['admin']];
-    }
-
-    #[DataProvider('deniedRoles')]
-    public function test_only_accounting_finance_can_operate(string $role): void
-    {
-        $invoice = $this->submit();
-        $actor = $role === 'supplier' ? $this->supplier : User::factory()->create(['role' => $role]);
-        $this->actingAs($actor)->post(route('accounting.invoices.physical-verification', $invoice))->assertForbidden();
-        $this->post(route('accounting.invoices.approve', $invoice))->assertForbidden();
-        if (in_array($role, ['purchasing', 'qc'])) {
-            $this->get(route('accounting.invoices.show', $invoice))->assertForbidden();
-            $this->get(route('local-invoice-documents.show', $invoice->documents()->first()))->assertForbidden();
-        }
-    }
-
-    public function test_finance_can_view_verify_and_approve(): void
-    {
-        $invoice = $this->submit();
-        $this->operator = User::factory()->create(['role' => 'finance']);
-        $this->actingAs($this->operator)->get(route('accounting.dashboard'))->assertOk();
-        $this->get(route('accounting.invoices.show', $invoice))->assertOk()->assertSee('Verify Physical Documents');
-        $this->act($invoice, 'physical-verification')->assertSessionHasNoErrors();
-        $this->act($invoice, 'approve')->assertSessionHasNoErrors();
+        $this->actingAs($this->operator)
+            ->get(route('accounting.invoices.show', $invoice))
+            ->assertOk()
+            ->assertDontSee('Verify Physical Documents')
+            ->assertDontSee('Approve Invoice')
+            ->assertDontSee('Schedule Payment')
+            ->assertDontSee('Complete Payment');
     }
 
     public function test_required_files_mime_size_and_missing_files(): void
@@ -239,15 +165,14 @@ class LocalInvoiceTest extends TestCase
         $this->get(route('local-invoice-documents.show', $document))->assertOk();
         Storage::disk('private')->delete($document->file_path);
         $this->get(route('local-invoice-documents.show', $document))->assertNotFound();
-        $this->act($invoice, 'physical-verification')->assertSessionHasErrors('documents');
     }
 
     public function test_database_failure_compensates_only_new_files(): void
     {
         $invoice = $this->submit();
         $paths = Storage::disk('private')->allFiles();
-        $this->act($invoice, 'physical-verification');
-        $this->act($invoice, 'request-revision', ['notes' => 'Revise']);
+        app(\App\Services\LocalInvoice\InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(\App\Services\LocalInvoice\InvoiceVerificationService::class)->requestRevision($invoice, 'Revise', $this->operator);
         $listener = function () {
             throw new \RuntimeException('Injected database write failure');
         };
@@ -294,7 +219,7 @@ class LocalInvoiceTest extends TestCase
         $notification = new DatabaseNotification(['data' => ['local_invoice_id' => $invoice->id, 'url' => '/supplier/dashboard']]);
         $resolver = app(NotificationUrlResolver::class);
         $this->assertSame(route('local-supplier.invoices.show', $invoice, absolute: false), $resolver->resolve($notification, $this->supplier));
-        $this->assertSame(route('accounting.invoices.show', $invoice, absolute: false), $resolver->resolve($notification, $this->operator));
+        $this->assertSame(route('finance.invoices.show', $invoice, absolute: false), $resolver->resolve($notification, $this->operator));
         $other = $this->supplier(['local']);
         $this->assertStringNotContainsString('/invoices/', $resolver->resolve($notification, $other));
     }
@@ -333,9 +258,9 @@ class LocalInvoiceTest extends TestCase
     {
         $invoice = $this->submit();
         Notification::assertSentTo($this->operator, SystemNotification::class);
-        $this->act($invoice, 'physical-verification');
+        app(\App\Services\LocalInvoice\InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
         Notification::assertSentTo($this->supplier, SystemNotification::class);
-        $this->act($invoice, 'request-revision', ['notes' => 'Please replace Faktur Pajak']);
+        app(\App\Services\LocalInvoice\InvoiceVerificationService::class)->requestRevision($invoice, 'Please replace Faktur Pajak', $this->operator);
         Notification::assertSentTo($this->supplier, RevisionRequiredNotification::class, fn ($notification) => $notification->reason === 'Please replace Faktur Pajak' && $notification->url === route('local-supplier.invoices.show', $invoice));
     }
 

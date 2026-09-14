@@ -38,7 +38,7 @@ class NotificationUrlResolver
             $invoice = LocalInvoice::find($notification->data['local_invoice_id']);
 
             return $invoice && $user->can('view', $invoice)
-                ? route(($user->isSupplier() ? 'local-supplier' : 'accounting').'.invoices.show', $invoice, absolute: false)
+                ? route(($user->isSupplier() ? 'local-supplier' : 'finance').'.invoices.show', $invoice, absolute: false)
                 : PortalContext::dashboard($user);
         }
 

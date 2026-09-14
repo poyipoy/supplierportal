@@ -52,7 +52,7 @@
                             <td>
                                 <strong class="tw-text-on-surface">{{ $c->employee?->name }}</strong>
                                 <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">
-                                    {{ $c->employee?->department }} — {{ $c->bank_name }} ({{ $c->bank_account_number }})
+                                    {{ $c->employee?->department }} — {{ $c->employee?->bank_name }} ({{ $c->employee?->account_number }})
                                 </span>
                             </td>
                             <td>

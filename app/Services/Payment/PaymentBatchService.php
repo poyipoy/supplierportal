@@ -55,7 +55,9 @@ class PaymentBatchService
             $alreadyBatched = PaymentItem::where('payable_type', LocalInvoice::class)
                 ->whereIn('payable_id', $invoiceIds)
                 ->where('status', PaymentItem::STATUS_ACTIVE)
-                ->whereHas('group.batch', fn ($q) => $q->whereIn('status', [PaymentBatch::STATUS_DRAFT, PaymentBatch::STATUS_FINALIZED]))
+                ->whereHas('group', fn ($g) => $g->where('status', PaymentGroup::STATUS_UNPAID)
+                    ->whereHas('batch', fn ($q) => $q->whereIn('status', PaymentBatch::ACTIVE_STATUSES))
+                )
                 ->exists();
 
             if ($alreadyBatched) {
@@ -65,7 +67,7 @@ class PaymentBatchService
             // Group by Supplier + Active Bank Account
             $grouped = [];
             foreach ($invoices as $invoice) {
-                if ($invoice->status !== LocalInvoice::STATUS_READY_TO_PAY && $invoice->status !== 'APPROVED') {
+                if ($invoice->status !== LocalInvoice::STATUS_READY_TO_PAY) {
                     throw new RuntimeException("Invoice [{$invoice->invoice_number}] is not Ready to Pay (status: {$invoice->status}).");
                 }
 
@@ -188,7 +190,9 @@ class PaymentBatchService
             $alreadyBatched = PaymentItem::where('payable_type', GaClaim::class)
                 ->whereIn('payable_id', $claimIds)
                 ->where('status', PaymentItem::STATUS_ACTIVE)
-                ->whereHas('group.batch', fn ($q) => $q->whereIn('status', [PaymentBatch::STATUS_DRAFT, PaymentBatch::STATUS_FINALIZED]))
+                ->whereHas('group', fn ($g) => $g->where('status', PaymentGroup::STATUS_UNPAID)
+                    ->whereHas('batch', fn ($q) => $q->whereIn('status', PaymentBatch::ACTIVE_STATUSES))
+                )
                 ->exists();
 
             if ($alreadyBatched) {
@@ -311,10 +315,11 @@ class PaymentBatchService
                 'subtotal_amount' => $newSubtotal,
                 'bank_fee' => $newFee,
                 'net_payment_amount' => $newNet,
+                'status' => $activeItems->isEmpty() ? 'CANCELLED' : $group->status,
             ]);
 
             // Recalculate batch
-            $allActiveGroups = $batch->groups;
+            $allActiveGroups = $batch->groups()->where('status', '!=', 'CANCELLED')->get();
             $batch->update([
                 'total_subtotal' => $allActiveGroups->sum('subtotal_amount'),
                 'total_bank_fee' => $allActiveGroups->sum('bank_fee'),
@@ -350,7 +355,7 @@ class PaymentBatchService
                 'fee_override_reason' => trim($reason).' (by '.$actor->name.')',
             ]);
 
-            $allActiveGroups = $batch->groups;
+            $allActiveGroups = $batch->groups()->where('status', '!=', 'CANCELLED')->get();
             $batch->update([
                 'total_bank_fee' => $allActiveGroups->sum('bank_fee'),
                 'total_net_amount' => $allActiveGroups->sum('net_payment_amount'),
@@ -375,6 +380,31 @@ class PaymentBatchService
 
             if ($b->status !== PaymentBatch::STATUS_DRAFT) {
                 throw new RuntimeException("Cannot finalize: DRP batch is in [{$b->status}] status, expected DRAFT.");
+            }
+
+            // P5-07 revalidation:
+            // 1. Must have active items
+            $activeItems = PaymentItem::whereHas('group', fn ($g) => $g->where('payment_batch_id', $b->id)->where('status', '!=', 'CANCELLED'))
+                ->where('status', PaymentItem::STATUS_ACTIVE)
+                ->get();
+
+            if ($activeItems->isEmpty()) {
+                throw new RuntimeException("Cannot finalize DRP: batch contains no active items.");
+            }
+
+            // 2. Each payable must still be in READY_TO_PAY status
+            foreach ($activeItems as $item) {
+                if ($item->payable_type === LocalInvoice::class) {
+                    $inv = LocalInvoice::find($item->payable_id);
+                    if (! $inv || $inv->status !== LocalInvoice::STATUS_READY_TO_PAY) {
+                        throw new RuntimeException("Cannot finalize DRP: invoice [".($inv?->invoice_number ?? $item->payable_id)."] is no longer Ready to Pay.");
+                    }
+                } elseif ($item->payable_type === GaClaim::class) {
+                    $clm = GaClaim::find($item->payable_id);
+                    if (! $clm || $clm->status !== GaClaim::STATUS_READY_TO_PAY) {
+                        throw new RuntimeException("Cannot finalize DRP: claim [".($clm?->claim_number ?? $item->payable_id)."] is no longer Ready to Pay.");
+                    }
+                }
             }
 
             $b->update([

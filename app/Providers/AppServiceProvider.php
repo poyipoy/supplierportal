@@ -21,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \App\Services\LocalInvoice\Contracts\LocalPoProviderInterface::class,
+            \App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider::class
+        );
     }
 
     /**

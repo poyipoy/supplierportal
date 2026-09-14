@@ -86,14 +86,14 @@
                                 <tr>
                                     <td><strong class="tw-text-on-surface">{{ $b->bank_name }}</strong></td>
                                     <td><span class="tw-font-mono">{{ $b->account_number }}</span></td>
-                                    <td>{{ $b->account_holder }}</td>
+                                    <td>{{ $b->account_holder_name }}</td>
                                     <td>
                                         <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] {{ $b->status === 'VERIFIED' ? 'tw-bg-success/10 tw-text-success' : 'tw-bg-warning/10 tw-text-warning' }}">
                                             {{ $b->status }}
                                         </span>
                                     </td>
                                     <td>
-                                        @if($b->is_active)
+                                        @if($b->status === 'VERIFIED')
                                             <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-primary/10 tw-text-primary tw-font-bold">Aktif</span>
                                         @else
                                             <span class="tw-text-on-surface-variant">Non-aktif</span>
@@ -118,9 +118,9 @@
                         <div class="tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-flex tw-items-center tw-justify-between">
                             <div>
                                 <strong class="tw-text-ui-xs tw-text-on-surface tw-block">{{ ucwords(str_replace('_', ' ', $md->document_type)) }}</strong>
-                                <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">{{ $md->file_name }}</span>
+                                <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">{{ $md->original_filename }}</span>
                             </div>
-                            <a href="{{ Storage::disk('private')->url($md->file_path) }}" target="_blank" class="btn btn-xs btn-outline-primary">Unduh</a>
+                            <a href="{{ route('supplier-master-documents.show', $md) }}" target="_blank" class="btn btn-xs btn-outline-primary">Unduh</a>
                         </div>
                     @empty
                         <div class="tw-text-center tw-py-6 tw-text-ui-xs tw-text-on-surface-variant">

@@ -20,6 +20,11 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('lo
     Route::get('/invoices/{invoice}/revision', [InvoiceController::class, 'revision'])->name('invoices.revision');
     Route::post('/invoices/{invoice}/resubmit', [InvoiceController::class, 'resubmit'])->middleware('throttle:30,1')->name('invoices.resubmit');
     Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+    Route::get('/vendor-profile', [\App\Http\Controllers\LocalSupplier\VendorProfileController::class, 'show'])->name('vendor-profile.show');
+    Route::post('/vendor-profile/change-requests', [\App\Http\Controllers\LocalSupplier\VendorProfileController::class, 'storeChangeRequest'])->name('vendor-profile.change-requests.store');
+    Route::post('/vendor-profile/documents', [\App\Http\Controllers\LocalSupplier\VendorProfileController::class, 'uploadDocument'])->name('vendor-profile.documents.upload');
     Route::get('/information', [InformationController::class, 'index'])->name('information');
 });
-Route::get('/local-invoice-documents/{document}', [LocalInvoiceDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,accounting,finance,admin'])->name('local-invoice-documents.show');
+Route::get('/local-invoice-documents/{document}', [LocalInvoiceDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,accounting,finance,admin,purchasing'])->name('local-invoice-documents.show');
+Route::get('/supplier-master-documents/{document}', [\App\Http\Controllers\SupplierMasterDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,finance,purchasing,admin'])->name('supplier-master-documents.show');
+Route::get('/ga-claim-documents/{document}', [\App\Http\Controllers\GaClaimDocumentController::class, 'show'])->middleware(['auth', 'role:ga,finance,admin'])->name('ga-claim-documents.show');

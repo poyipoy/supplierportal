@@ -4,7 +4,7 @@
             <tr>
                 <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Submission / Receipt</th>
                 <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Invoice / PO</th>
-                @if(($portal ?? '') === 'accounting')
+                @if(($portal ?? '') === 'accounting' || ($portal ?? '') === 'finance' || !auth()->user()?->isSupplier())
                     <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Supplier</th>
                 @endif
                 <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Submitted</th>
@@ -37,7 +37,7 @@
                             PO: {{ $row->po_number }}
                         </span>
                     </td>
-                    @if(($portal ?? '') === 'accounting')
+                    @if(($portal ?? '') === 'accounting' || ($portal ?? '') === 'finance' || !auth()->user()?->isSupplier())
                         <td>
                             <span class="tw-font-medium tw-text-on-surface">
                                 {{ $row->supplier->supplier?->company_name ?: $row->supplier->name }}

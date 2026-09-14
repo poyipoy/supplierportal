@@ -69,8 +69,15 @@ class GaController extends Controller
     public function receipt(GaClaim $claim)
     {
         $claim->load(['employee', 'receipt']);
+        abort_unless($claim->receipt, 404);
 
-        return view('ga.claims.receipt', compact('claim'));
+        $signedUrl = \Illuminate\Support\Facades\URL::signedRoute('receipts.verify-ga', ['receipt' => $claim->receipt->receipt_number]);
+        $qrCode = (new \chillerlan\QRCode\QRCode([
+            'outputBase64' => true,
+            'scale' => 4,
+        ]))->render($signedUrl);
+
+        return view('ga.claims.receipt', compact('claim', 'qrCode', 'signedUrl'));
     }
 
     public function basicVerify(GaClaim $claim, Request $request, GaClaimService $service)
@@ -85,7 +92,9 @@ class GaController extends Controller
         $eligibleClaims = GaClaim::where('status', GaClaim::STATUS_READY_TO_PAY)
             ->whereDoesntHave('paymentItem', function ($q) {
                 $q->where('status', PaymentItem::STATUS_ACTIVE)
-                    ->whereHas('group.batch', fn ($b) => $b->whereIn('status', [PaymentBatch::STATUS_DRAFT, PaymentBatch::STATUS_FINALIZED]));
+                    ->whereHas('group', fn ($g) => $g->where('status', PaymentGroup::STATUS_UNPAID)
+                        ->whereHas('batch', fn ($b) => $b->whereIn('status', PaymentBatch::ACTIVE_STATUSES))
+                    );
             })
             ->with('employee')
             ->latest('id')
@@ -105,5 +114,29 @@ class GaController extends Controller
         $batch = $service->createGaBatch($request->user(), $request->input('claim_ids'), $request->input('notes'));
 
         return redirect()->route('ga.claims.index')->with('success', "DRP GA Draft [{$batch->batch_number}] prepared for Finance review.");
+    }
+
+    public function revision(GaClaim $claim)
+    {
+        abort_unless($claim->status === GaClaim::STATUS_NEED_REVISION, 403);
+        $employees = Employee::active()->orderBy('name')->get();
+        $claimTypes = GaClaim::CLAIM_TYPES;
+
+        return view('ga.claims.revision', compact('claim', 'employees', 'claimTypes'));
+    }
+
+    public function resubmit(GaClaim $claim, Request $request, GaClaimService $service)
+    {
+        $data = $request->validate([
+            'claim_type' => 'required|in:'.implode(',', GaClaim::CLAIM_TYPES),
+            'claim_date' => 'required|date',
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        $files = $request->allFiles();
+        $service->resubmitClaim($request->user(), $claim, $data, $files);
+
+        return redirect()->route('ga.claims.show', $claim)->with('success', "GA Claim [{$claim->claim_number}] telah direvisi dan diajukan ulang.");
     }
 }

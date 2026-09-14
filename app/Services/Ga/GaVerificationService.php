@@ -19,12 +19,16 @@ class GaVerificationService
             throw new InvalidArgumentException('Only Finance or Admin can perform finance verification on GA claims.');
         }
 
+        if (! $approve && empty(trim((string) $reason))) {
+            throw new InvalidArgumentException('Reason is mandatory when requesting claim revision.');
+        }
+
         return DB::transaction(function () use ($claim, $financeActor, $approve, $reason) {
             /** @var GaClaim $clm */
             $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
-            if (! in_array($clm->status, [GaClaim::STATUS_BASIC_VERIFIED, GaClaim::STATUS_SUBMITTED, GaClaim::STATUS_UNDER_VERIFICATION], true)) {
-                throw new RuntimeException("Cannot verify claim in status [{$clm->status}].");
+            if ($clm->status !== GaClaim::STATUS_BASIC_VERIFIED) {
+                throw new RuntimeException("Cannot verify claim: claim must be in BASIC_VERIFIED status before Finance verification.");
             }
 
             if ($approve) {

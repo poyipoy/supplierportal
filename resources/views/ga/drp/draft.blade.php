@@ -56,8 +56,8 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="tw-font-medium">{{ $claim->bank_name }}</span>
-                                        <span class="tw-block tw-font-mono tw-text-ui-xs">{{ $claim->bank_account_number }} a.n {{ $claim->bank_account_holder }}</span>
+                                        <span class="tw-font-medium">{{ $claim->employee?->bank_name }}</span>
+                                        <span class="tw-block tw-font-mono tw-text-ui-xs">{{ $claim->employee?->account_number }} a.n {{ $claim->employee?->account_holder_name }}</span>
                                     </td>
                                     <td class="text-end tw-font-mono tw-font-bold tw-text-primary">
                                         Rp {{ number_format($claim->amount, 0, ',', '.') }}

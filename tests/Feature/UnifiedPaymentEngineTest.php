@@ -247,4 +247,41 @@ class UnifiedPaymentEngineTest extends TestCase
         $this->assertSame(PaymentBatch::STATUS_PAID, $finalizedBatch->status);
         $this->assertNotNull($finalizedBatch->paid_at);
     }
+
+    public function test_partially_paid_batch_still_reserves_unpaid_group_invoices_preventing_double_payment(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        // Group A (Supplier 1)
+        $supplier1 = $this->createSupplierWithBank('BCA', '777111');
+        $inv1 = $this->createReadyToPayInvoice($supplier1, 1500000, 'INV-PARTIAL-RES-1');
+
+        // Group B (Supplier 2)
+        $supplier2 = $this->createSupplierWithBank('Mandiri', '777222');
+        $inv2 = $this->createReadyToPayInvoice($supplier2, 2500000, 'INV-PARTIAL-RES-2');
+
+        // Create DRP-001 and finalize
+        $batch1 = $this->batchService->createSupplierBatch($finance, [$inv1->id, $inv2->id]);
+        $this->batchService->finalizeBatch($batch1, $finance);
+
+        $groupA = $batch1->groups->where('account_number', '777111')->first();
+        $groupB = $batch1->groups->where('account_number', '777222')->first();
+
+        // Mark Group A PAID
+        $this->executionService->markGroupPaid($groupA, [
+            'transfer_reference' => 'TRF-GRP-A',
+            'transfer_date' => '2026-09-12',
+        ], $finance);
+
+        $batch1->refresh();
+        $groupA->refresh();
+        $groupB->refresh();
+        $this->assertSame(PaymentBatch::STATUS_PARTIALLY_PAID, $batch1->status);
+        $this->assertSame(PaymentGroup::STATUS_PAID, $groupA->status);
+        $this->assertSame(PaymentGroup::STATUS_UNPAID, $groupB->status);
+
+        // Attempting to add $inv2 (from unpaid Group B) to DRP-002 MUST be rejected
+        $this->expectException(RuntimeException::class);
+        $this->batchService->createSupplierBatch($finance, [$inv2->id]);
+    }
 }

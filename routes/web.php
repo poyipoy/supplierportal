@@ -59,6 +59,8 @@ require __DIR__.'/ga.php';
 Route::get('/', function () {
     return redirect()->route('login');
 });
+Route::get('/verify-receipt/supplier/{receipt}', [\App\Http\Controllers\ReceiptVerificationController::class, 'verifySupplier'])->name('receipts.verify-supplier');
+Route::get('/verify-receipt/ga/{receipt}', [\App\Http\Controllers\ReceiptVerificationController::class, 'verifyGa'])->name('receipts.verify-ga');
 
 /*
 |--------------------------------------------------------------------------

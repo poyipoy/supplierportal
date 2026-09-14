@@ -17,7 +17,7 @@ class GaClaimService
     /**
      * Submit a new claim by GA.
      */
-    public function submitClaim(User $actor, array $data, array $files): GaClaim
+    public function submitClaim(User $actor, array $data, array $files = []): GaClaim
     {
         if (! $actor->isGa() && ! $actor->isAdmin()) {
             throw new InvalidArgumentException('Only GA or Admin can submit GA claims.');
@@ -28,17 +28,16 @@ class GaClaimService
             throw new InvalidArgumentException('A valid active employee must be selected from Employee Master.');
         }
 
-        if (empty($files['supporting'])) {
-            throw new InvalidArgumentException('At least one supporting document is mandatory.');
+        $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
+        if ($supportingFile !== null) {
+            $rules = ['file', 'mimes:pdf,jpg,jpeg,png,xlsx,xls,doc,docx', 'max:10240'];
+            Validator::make(['file' => $supportingFile], ['file' => $rules])->validate();
         }
-
-        $rules = ['file', 'mimes:pdf,jpg,jpeg,png,xlsx,xls,doc,docx', 'max:10240'];
-        Validator::make($files, ['supporting' => array_merge(['required'], $rules)])->validate();
 
         $written = [];
 
         try {
-            return DB::transaction(function () use ($actor, $employee, $data, $files, &$written) {
+            return DB::transaction(function () use ($actor, $employee, $data, $supportingFile, &$written) {
                 $year = now()->year;
                 DB::table('local_invoice_sequences')->insertOrIgnore(['year' => $year, 'last_number' => 0]);
                 $seq = DB::table('local_invoice_sequences')->where('year', $year)->lockForUpdate()->first();
@@ -62,32 +61,33 @@ class GaClaimService
                     'submitted_at' => now(),
                 ]);
 
-                // Store supporting document(s)
-                $file = $files['supporting'];
-                $path = 'ga-claims/'.$claim->id.'/revisions/1/'.$file->hashName();
-                $written[] = $path;
+                // Store supporting document if provided
+                if ($supportingFile !== null) {
+                    $path = 'ga-claims/'.$claim->id.'/revisions/1/'.$supportingFile->hashName();
+                    $written[] = $path;
 
-                $stream = fopen($file->getPathname(), 'r');
-                if ($stream === false) {
-                    throw new RuntimeException('Unable to read uploaded file.');
-                }
-                try {
-                    if (! Storage::disk('private')->put($path, $stream)) {
-                        throw new RuntimeException('Unable to store GA document.');
+                    $stream = fopen($supportingFile->getPathname(), 'r');
+                    if ($stream === false) {
+                        throw new RuntimeException('Unable to read uploaded file.');
                     }
-                } finally {
-                    fclose($stream);
-                }
+                    try {
+                        if (! Storage::disk('private')->put($path, $stream)) {
+                            throw new RuntimeException('Unable to store GA document.');
+                        }
+                    } finally {
+                        fclose($stream);
+                    }
 
-                $claim->documents()->create([
-                    'revision_number' => 1,
-                    'document_type' => 'supporting',
-                    'file_path' => $path,
-                    'original_filename' => mb_substr(basename(str_replace('\\', '/', $file->getClientOriginalName())), 0, 255),
-                    'mime_type' => $file->getMimeType(),
-                    'file_size' => $file->getSize(),
-                    'uploaded_by' => $actor->id,
-                ]);
+                    $claim->documents()->create([
+                        'revision_number' => 1,
+                        'document_type' => 'supporting',
+                        'file_path' => $path,
+                        'original_filename' => mb_substr(basename(str_replace('\\', '/', $supportingFile->getClientOriginalName())), 0, 255),
+                        'mime_type' => $supportingFile->getMimeType(),
+                        'file_size' => $supportingFile->getSize(),
+                        'uploaded_by' => $actor->id,
+                    ]);
+                }
 
                 // Generate TT-GA Receipt
                 $claim->receipt()->create([
@@ -106,6 +106,94 @@ class GaClaimService
                 ]);
 
                 return $claim->fresh();
+            });
+        } catch (Throwable $e) {
+            foreach ($written as $path) {
+                Storage::disk('private')->delete($path);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Resubmit a claim that requested revision.
+     */
+    public function resubmitClaim(User $actor, GaClaim $claim, array $data, array $files = []): GaClaim
+    {
+        if (! $actor->isGa() && ! $actor->isAdmin()) {
+            throw new InvalidArgumentException('Only GA or Admin can resubmit GA claims.');
+        }
+
+        $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
+        if ($supportingFile !== null) {
+            $rules = ['file', 'mimes:pdf,jpg,jpeg,png,xlsx,xls,doc,docx', 'max:10240'];
+            Validator::make(['file' => $supportingFile], ['file' => $rules])->validate();
+        }
+
+        $written = [];
+
+        try {
+            return DB::transaction(function () use ($actor, $claim, $data, $supportingFile, &$written) {
+                /** @var GaClaim $clm */
+                $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
+
+                if ($clm->status !== GaClaim::STATUS_NEED_REVISION) {
+                    throw new RuntimeException("Cannot resubmit claim: claim is in [{$clm->status}] status, expected NEED_REVISION.");
+                }
+
+                $newRev = $clm->revision_number + 1;
+
+                $clm->update([
+                    'claim_type' => $data['claim_type'],
+                    'claim_date' => $data['claim_date'],
+                    'amount' => (float) $data['amount'],
+                    'description' => $data['description'] ?? null,
+                    'status' => GaClaim::STATUS_SUBMITTED,
+                    'revision_number' => $newRev,
+                    'submitted_at' => now(),
+                    'basic_verified_by' => null,
+                    'basic_verified_at' => null,
+                    'finance_verified_by' => null,
+                    'finance_verified_at' => null,
+                ]);
+
+                if ($supportingFile !== null) {
+                    $path = 'ga-claims/'.$clm->id.'/revisions/'.$newRev.'/'.$supportingFile->hashName();
+                    $written[] = $path;
+
+                    $stream = fopen($supportingFile->getPathname(), 'r');
+                    if ($stream === false) {
+                        throw new RuntimeException('Unable to read uploaded file.');
+                    }
+                    try {
+                        if (! Storage::disk('private')->put($path, $stream)) {
+                            throw new RuntimeException('Unable to store GA document.');
+                        }
+                    } finally {
+                        fclose($stream);
+                    }
+
+                    $clm->documents()->create([
+                        'revision_number' => $newRev,
+                        'document_type' => 'supporting',
+                        'file_path' => $path,
+                        'original_filename' => mb_substr(basename(str_replace('\\', '/', $supportingFile->getClientOriginalName())), 0, 255),
+                        'mime_type' => $supportingFile->getMimeType(),
+                        'file_size' => $supportingFile->getSize(),
+                        'uploaded_by' => $actor->id,
+                    ]);
+                }
+
+                $clm->statusHistories()->create([
+                    'from_status' => GaClaim::STATUS_NEED_REVISION,
+                    'to_status' => GaClaim::STATUS_SUBMITTED,
+                    'actor_id' => $actor->id,
+                    'event' => 'resubmitted',
+                    'notes' => 'GA Claim revised and resubmitted (Rev '.$newRev.').',
+                    'created_at' => now(),
+                ]);
+
+                return $clm->fresh();
             });
         } catch (Throwable $e) {
             foreach ($written as $path) {

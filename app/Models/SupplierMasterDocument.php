@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SupplierMasterDocument extends Model
 {
+    use HasHashids;
     public const TYPE_NIB = 'NIB';
     public const TYPE_NPWP = 'NPWP';
     public const TYPE_SPPKP = 'SPPKP';

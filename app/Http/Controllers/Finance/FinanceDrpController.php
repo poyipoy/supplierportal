@@ -23,10 +23,12 @@ class FinanceDrpController extends Controller
             ->paginate(15);
 
         // Candidate Ready to Pay invoices not yet in active DRP
-        $eligibleInvoices = LocalInvoice::whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED'])
+        $eligibleInvoices = LocalInvoice::where('status', LocalInvoice::STATUS_READY_TO_PAY)
             ->whereDoesntHave('paymentItem', function ($q) {
                 $q->where('status', PaymentItem::STATUS_ACTIVE)
-                    ->whereHas('group.batch', fn ($b) => $b->whereIn('status', [PaymentBatch::STATUS_DRAFT, PaymentBatch::STATUS_FINALIZED]));
+                    ->whereHas('group', fn ($g) => $g->where('status', PaymentGroup::STATUS_UNPAID)
+                        ->whereHas('batch', fn ($b) => $b->whereIn('status', PaymentBatch::ACTIVE_STATUSES))
+                    );
             })
             ->with(['supplier.supplier', 'receipt'])
             ->latest('id')

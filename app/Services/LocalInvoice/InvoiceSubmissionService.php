@@ -57,7 +57,7 @@ class InvoiceSubmissionService
                         $poSource = 'MANUAL';
                         $manualPoNum = $poNum;
                         $internalPoRef = null;
-                        $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? ($poNum ? 'GR-'.$poNum : null));
+                        $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? null);
                     }
                 } else {
                     $internalPoRef = $data['internal_po_reference'] ?? ($poSource === 'INTERNAL' ? $poNum : null);
@@ -176,21 +176,53 @@ class InvoiceSubmissionService
                 }
 
                 $request = $invoice->statusHistories()->where('event', 'revision_requested')->latest('id')->firstOrFail();
+
+                // 2. Re-resolve PO / GR Boundary for this revision
+                $poNum = $data['po_number'] ?? ($data['manual_po_number'] ?? ($data['internal_po_reference'] ?? $invoice->po_number));
+                $poSource = $data['po_source'] ?? $invoice->po_source;
+                $internalPoRef = $data['internal_po_reference'] ?? ($poSource === 'INTERNAL' ? $poNum : null);
+                $manualPoNum = $data['manual_po_number'] ?? ($poSource === 'MANUAL' ? $poNum : null);
+                $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? $invoice->manual_gr_reference);
+
+                try {
+                    $poResolved = $this->poReferenceService->validateAndResolve(
+                        $actor,
+                        $poSource,
+                        $internalPoRef,
+                        $manualPoNum,
+                        (float) $data['invoice_amount'],
+                        $manualGrRef
+                    );
+                } catch (\InvalidArgumentException $e) {
+                    throw ValidationException::withMessages(['po_number' => $e->getMessage()]);
+                }
+
+                // 3. Recalculate PPN and tax amount
+                $ppnScheme = $data['ppn_scheme'] ?? ($invoice->ppn_scheme ?? '11%');
+                $invoiceDpp = (float) $data['invoice_amount'];
+                $calcPpn = match ($ppnScheme) {
+                    '11%' => round($invoiceDpp * 0.11, 2),
+                    '1.1%' => round($invoiceDpp * 0.011, 2),
+                    default => 0.0,
+                };
+                $taxAmount = isset($data['tax_amount']) ? (float) $data['tax_amount'] : $calcPpn;
+
                 $revision = $invoice->revisions()->create(array_merge($this->values($data), [
                     'revision_number' => $invoice->revision_number + 1,
                     'reason' => $request->notes,
                     'requested_by' => $request->actor_id,
                     'requested_at' => $request->created_at,
                     'resubmitted_at' => now(),
-                    'po_source' => $invoice->po_source,
-                    'po_number' => $invoice->po_number,
-                    'internal_po_reference' => $invoice->internal_po_reference,
-                    'manual_po_number' => $invoice->manual_po_number,
-                    'internal_gr_reference' => $invoice->internal_gr_reference,
-                    'manual_gr_reference' => $invoice->manual_gr_reference,
-                    'ppn_scheme' => $invoice->ppn_scheme,
-                    'submitted_ppn_amount' => $invoice->submitted_ppn_amount,
-                    'has_po_discrepancy' => $invoice->has_po_discrepancy,
+                    'tax_amount' => $taxAmount,
+                    'po_source' => $poResolved['po_source'],
+                    'po_number' => $poResolved['po_number'],
+                    'internal_po_reference' => $poResolved['internal_po_reference'],
+                    'manual_po_number' => $poResolved['manual_po_number'],
+                    'internal_gr_reference' => $poResolved['internal_gr_reference'],
+                    'manual_gr_reference' => $poResolved['manual_gr_reference'],
+                    'ppn_scheme' => $ppnScheme,
+                    'submitted_ppn_amount' => $taxAmount,
+                    'has_po_discrepancy' => $poResolved['has_po_discrepancy'],
                 ]));
 
                 $requiresTaxInvoice = $this->vendorMasterService->requiresFakturPajak($supplier);
@@ -209,11 +241,28 @@ class InvoiceSubmissionService
 
                 $invoice->fill(array_merge($this->values($data), [
                     'revision_number' => $revision->revision_number,
+                    'tax_amount' => $taxAmount,
                     'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
                     'physical_verified_at' => null,
                     'cashier_received_at' => null,
                     'review_started_at' => null,
+                    'due_date' => null,
+                    'payment_term_days_snapshot' => null,
+                    'scheduled_payment_date' => null,
+                    'missed_delivery_count' => 0,
                     'scheduled_physical_delivery_date' => $data['scheduled_physical_delivery_date'] ?? $invoice->scheduled_physical_delivery_date,
+                    'po_source' => $poResolved['po_source'],
+                    'po_number' => $poResolved['po_number'],
+                    'internal_po_reference' => $poResolved['internal_po_reference'],
+                    'manual_po_number' => $poResolved['manual_po_number'],
+                    'internal_gr_reference' => $poResolved['internal_gr_reference'],
+                    'manual_gr_reference' => $poResolved['manual_gr_reference'],
+                    'po_value_snapshot' => $poResolved['po_value_snapshot'],
+                    'po_invoiced_snapshot' => $poResolved['po_invoiced_snapshot'],
+                    'po_remaining_snapshot' => $poResolved['po_remaining_snapshot'],
+                    'has_po_discrepancy' => $poResolved['has_po_discrepancy'],
+                    'ppn_scheme' => $ppnScheme,
+                    'submitted_ppn_amount' => $taxAmount,
                 ]))->save();
 
                 $history = $invoice->statusHistories()->create([

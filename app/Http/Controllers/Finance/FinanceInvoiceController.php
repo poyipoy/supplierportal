@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Exports\LocalInvoicesExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\InvoiceFilterRequest;
 use App\Models\LocalInvoice;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceVerificationService;
+use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -108,14 +110,27 @@ class FinanceInvoiceController extends Controller
         return back()->with('success', 'Revision requested from Supplier.');
     }
 
-    public function masterInvoice(Request $request, InvoiceQuery $query)
+    public function masterInvoice(InvoiceFilterRequest $request, InvoiceQuery $query)
     {
-        $filters = $request->all();
+        $filters = $request->validated();
         $invoices = $query->filtered($filters)->latest('id')->paginate(25)->withQueryString();
 
         return view('finance.master-invoices.index', [
             'invoices' => $invoices,
             'filters' => $filters,
         ]);
+    }
+
+    public function exportMasterInvoice(InvoiceFilterRequest $request)
+    {
+        $filters = $request->validated();
+        ExportDispatcher::dispatch(
+            'Master Invoices Report',
+            LocalInvoicesExport::class,
+            [$request->user()->id, $filters, false],
+            'master-invoices-'.now()->format('Ymd-His').'.xlsx'
+        );
+
+        return redirect()->route('exports.index')->with('success', 'Master invoices export queued.');
     }
 }

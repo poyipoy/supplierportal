@@ -264,7 +264,7 @@ class NotificationUrlResolverTest extends TestCase
             'url' => '#',
             'domain' => 'local',
         ]);
-        $this->assertSame(route('accounting.dashboard', absolute: false), $resolver->resolve($fallbackNotif, $financeUser));
+        $this->assertSame(route('finance.dashboard', absolute: false), $resolver->resolve($fallbackNotif, $financeUser));
     }
 
     public function test_dual_scope_supplier_resolves_local_supplier_routes_when_owning_invoice(): void

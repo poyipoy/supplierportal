@@ -79,11 +79,11 @@
                             <div class="tw-flex tw-items-center tw-gap-2.5">
                                 <x-ui.icon name="file-text" size="md" class="tw-text-primary" />
                                 <div>
-                                    <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface tw-block">{{ $doc->file_name }}</span>
-                                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ ucwords(str_replace('_', ' ', $doc->document_type)) }}</span>
+                                    <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface tw-block">{{ $doc->original_filename }}</span>
+                                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ ucwords(str_replace('_', ' ', $doc->document_type)) }} · Rev {{ $doc->revision_number }}</span>
                                 </div>
                             </div>
-                            <a href="{{ Storage::disk('private')->url($doc->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary tw-text-xs">
+                            <a href="{{ route('ga-claim-documents.show', $doc) }}" target="_blank" class="btn btn-sm btn-outline-primary tw-text-xs">
                                 Unduh
                             </a>
                         </div>
@@ -103,18 +103,34 @@
                 <div class="tw-space-y-2 tw-text-ui-xs">
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">Bank:</span>
-                        <strong class="tw-text-on-surface">{{ $claim->bank_name }}</strong>
+                        <strong class="tw-text-on-surface">{{ $claim->employee?->bank_name }}</strong>
                     </div>
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">Nomor Rekening:</span>
-                        <strong class="tw-font-mono tw-text-on-surface">{{ $claim->bank_account_number }}</strong>
+                        <strong class="tw-font-mono tw-text-on-surface">{{ $claim->employee?->account_number }}</strong>
                     </div>
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">Atas Nama:</span>
-                        <strong class="tw-text-on-surface">{{ $claim->bank_account_holder }}</strong>
+                        <strong class="tw-text-on-surface">{{ $claim->employee?->account_holder_name }}</strong>
                     </div>
                 </div>
             </x-ui.card>
+
+            {{-- Action for GA: Need Revision Resubmit --}}
+            @if($claim->status === \App\Models\GaClaim::STATUS_NEED_REVISION)
+                <x-ui.card title="Permintaan Revisi dari Finance">
+                    <div class="tw-space-y-3">
+                        <div class="tw-p-3 tw-rounded tw-bg-error/10 tw-border tw-border-error/20 tw-text-error tw-text-ui-xs">
+                            <strong>Alasan Revisi:</strong>
+                            <p class="tw-m-0 tw-mt-1">{{ $claim->revision_reason ?: 'Harap perbaiki rincian klaim atau lampirkan dokumen pendukung.' }}</p>
+                        </div>
+                        <x-ui.button :href="route('ga.claims.revision', $claim)" variant="primary" size="sm" class="w-100">
+                            <x-ui.icon name="edit" size="xs" />
+                            <span>Perbaiki &amp; Ajukan Ulang Klaim</span>
+                        </x-ui.button>
+                    </div>
+                </x-ui.card>
+            @endif
 
             {{-- Basic Verification Action for GA --}}
             @if($claim->status === \App\Models\GaClaim::STATUS_SUBMITTED)

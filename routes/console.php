@@ -15,3 +15,7 @@ Schedule::command('model:prune --model="App\\Models\\AuthAuditLog"')
 Schedule::command('exports:cleanup')
     ->dailyAt('02:20')
     ->withoutOverlapping();
+
+Schedule::command('local-invoices:send-delivery-reminders')
+    ->dailyAt('08:00')
+    ->withoutOverlapping();

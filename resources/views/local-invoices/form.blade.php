@@ -1,6 +1,12 @@
 @php
-    $termDays = isset($invoice) ? (int) $invoice->payment_term_days_snapshot : (int) (auth()->user()->supplier?->payment_term_days ?? 30);
-    $companyName = auth()->user()->supplier?->company_name ?: auth()->user()->name;
+    $supplier = auth()->user()->supplier;
+    $termDays = isset($invoice) ? (int) $invoice->payment_term_days_snapshot : (int) ($supplier?->payment_term_days ?? 30);
+    $companyName = $supplier?->company_name ?: auth()->user()->name;
+    $isPkp = (bool) ($supplier?->is_pkp ?? false);
+    $vendorCategory = $supplier?->vendor_category ?: ($supplier?->category ?? 'Barang');
+    $isBarang = strcasecmp(trim((string) $vendorCategory), 'Barang') === 0;
+    $poSource = old('po_source', $invoice->po_source ?? 'INTERNAL');
+    $ppnScheme = old('ppn_scheme', $invoice->ppn_scheme ?? '11%');
 @endphp
 
 @if($errors->any())
@@ -41,7 +47,7 @@
                         </div>
                         <div>
                             <span class="tw-font-semibold tw-text-ui-sm tw-text-on-surface">{{ $companyName }}</span>
-                            <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ auth()->user()->email }}</span>
+                            <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ auth()->user()->email }} &bull; {{ $vendorCategory }} &bull; {{ $isPkp ? 'PKP' : 'Non-PKP' }}</span>
                         </div>
                     </div>
                     <div class="tw-text-start sm:tw-text-end">
@@ -54,7 +60,7 @@
             {{-- Invoice & Reference Numbers --}}
             <x-ui.form-section
                 title="Invoice & Purchase Order Reference"
-                description="Specify your official invoice details and the associated ADASI PO number."
+                description="Specify your official invoice details, PO source, and Goods Receipt reference."
             >
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <div>
@@ -92,25 +98,105 @@
                         @enderror
                     </div>
 
+                    {{-- PO Source Selection --}}
                     <div class="sm:tw-col-span-2">
-                        <label for="po-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
-                            Purchase Order (PO) Number <span class="text-danger">*</span>
+                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
+                            Purchase Order Source <span class="text-danger">*</span>
+                        </label>
+                        <div class="tw-grid tw-grid-cols-2 tw-gap-3">
+                            <label class="tw-border tw-rounded-ui-sm tw-p-3 tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer hover:tw-bg-surface-container-low {{ $poSource === 'INTERNAL' ? 'tw-border-primary tw-bg-primary/5' : 'tw-border-outline-variant' }}">
+                                <input type="radio" name="po_source" value="INTERNAL" {{ $poSource === 'INTERNAL' ? 'checked' : '' }} onchange="togglePoSource(this.value)">
+                                <div>
+                                    <span class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-block">Internal ADASI PO</span>
+                                    <span class="tw-text-[11px] tw-text-on-surface-variant">PO terdaftar di sistem ADASI (GR diverifikasi otomatis)</span>
+                                </div>
+                            </label>
+                            <label class="tw-border tw-rounded-ui-sm tw-p-3 tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer hover:tw-bg-surface-container-low {{ $poSource === 'MANUAL' ? 'tw-border-primary tw-bg-primary/5' : 'tw-border-outline-variant' }}">
+                                <input type="radio" name="po_source" value="MANUAL" {{ $poSource === 'MANUAL' ? 'checked' : '' }} onchange="togglePoSource(this.value)">
+                                <div>
+                                    <span class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-block">Manual PO</span>
+                                    <span class="tw-text-[11px] tw-text-on-surface-variant">PO manual/legacy (wajib sertakan referensi Surat Jalan / GR)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Internal PO Fields --}}
+                    <div id="section-internal-po" class="sm:tw-col-span-2 {{ $poSource === 'INTERNAL' ? '' : 'tw-hidden' }}">
+                        <label for="internal-po-reference" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
+                            Internal PO Number / Reference <span class="text-danger">*</span>
                         </label>
                         <input
                             type="text"
-                            class="form-control @error('po_number') is-invalid @enderror"
-                            id="po-number"
-                            name="po_number"
-                            value="{{ old('po_number', $invoice->po_number ?? '') }}"
+                            class="form-control @error('internal_po_reference') is-invalid @enderror"
+                            id="internal-po-reference"
+                            name="internal_po_reference"
+                            value="{{ old('internal_po_reference', $invoice->internal_po_reference ?? ($invoice->po_number ?? '')) }}"
                             maxlength="100"
                             placeholder="e.g. PO-LOCAL-2026-001"
-                            required
                         >
                         <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1.5 tw-block">
-                            Enter the reference number from the Purchase Order issued by PT Astra Daido Steel Indonesia.
+                            Sistem akan memverifikasi keberadaan PO dan nomor Goods Receipt (GR) secara otomatis dari database ADASI.
                         </small>
-                        @error('po_number')
+                        @error('internal_po_reference')
                             <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Manual PO Fields --}}
+                    <div id="section-manual-po" class="sm:tw-col-span-2 tw-grid tw-gap-4 sm:tw-grid-cols-2 {{ $poSource === 'MANUAL' ? '' : 'tw-hidden' }}">
+                        <div>
+                            <label for="manual-po-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
+                                Manual PO Number <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control @error('manual_po_number') is-invalid @enderror"
+                                id="manual-po-number"
+                                name="manual_po_number"
+                                value="{{ old('manual_po_number', $invoice->manual_po_number ?? ($invoice->po_number ?? '')) }}"
+                                maxlength="100"
+                                placeholder="e.g. PO-MAN-001"
+                            >
+                            @error('manual_po_number')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="manual-gr-reference" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
+                                Manual GR / Surat Jalan Ref <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control @error('manual_gr_reference') is-invalid @enderror"
+                                id="manual-gr-reference"
+                                name="manual_gr_reference"
+                                value="{{ old('manual_gr_reference', $invoice->manual_gr_reference ?? '') }}"
+                                maxlength="100"
+                                placeholder="e.g. SJ-ADASI-001 / GR-001"
+                            >
+                            @error('manual_gr_reference')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    {{-- Wednesday Delivery Schedule --}}
+                    <div class="sm:tw-col-span-2">
+                        <label for="scheduled-delivery-date" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
+                            Jadwal Penyerahan Berkas Fisik (Hari Rabu)
+                        </label>
+                        <x-ui.date-picker
+                            name="scheduled_physical_delivery_date"
+                            id="scheduled-delivery-date"
+                            :value="old('scheduled_physical_delivery_date', isset($invoice) && $invoice->scheduled_physical_delivery_date ? $invoice->scheduled_physical_delivery_date->format('Y-m-d') : '')"
+                        />
+                        <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1.5 tw-block">
+                            Penyerahan berkas fisik asli hanya dilayani setiap hari Rabu di loket Accounting / Finance ADASI.
+                        </small>
+                        @error('scheduled_physical_delivery_date')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
@@ -119,7 +205,7 @@
             {{-- Financial Values --}}
             <x-ui.form-section
                 title="Financial Amounts (IDR)"
-                description="Enter the DPP (Dasar Pengenaan Pajak) and PPN separately. Values will be automatically totaled."
+                description="Enter the DPP (Dasar Pengenaan Pajak) and select the applicable PPN scheme."
             >
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <div>
@@ -151,18 +237,21 @@
 
                     <div>
                         <div class="tw-flex tw-items-center tw-justify-between tw-mb-2" style="min-height: 22px;">
-                            <label for="tax-amount" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-m-0">
-                                PPN 11% (IDR) <span class="text-danger">*</span>
+                            <label for="ppn-scheme" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-m-0">
+                                Skema PPN <span class="text-danger">*</span>
                             </label>
-                            <button
-                                type="button"
-                                id="btn-calc-ppn"
-                                class="btn btn-link tw-p-0 tw-text-ui-xs tw-text-primary tw-no-underline hover:tw-underline tw-inline-flex tw-items-center tw-gap-1"
-                            >
-                                <x-ui.icon name="calculator" size="xs" /> Auto-calc 11%
-                            </button>
                         </div>
-                        <div class="input-group">
+                        <select
+                            class="form-select @error('ppn_scheme') is-invalid @enderror"
+                            id="ppn-scheme"
+                            name="ppn_scheme"
+                            onchange="updatePpnCalculation()"
+                        >
+                            <option value="11%" {{ $ppnScheme === '11%' ? 'selected' : '' }}>PPN 11% (Standar)</option>
+                            <option value="1.1%" {{ $ppnScheme === '1.1%' ? 'selected' : '' }}>PPN 1.1% (Besaran Tertentu)</option>
+                            <option value="0%" {{ $ppnScheme === '0%' ? 'selected' : '' }}>PPN 0% / Non-PPN / Dibebaskan</option>
+                        </select>
+                        <div class="input-group tw-mt-2">
                             <span class="input-group-text tw-font-mono tw-text-ui-xs">Rp</span>
                             <input
                                 type="number"
@@ -173,7 +262,6 @@
                                 name="tax_amount"
                                 value="{{ old('tax_amount', $invoice->tax_amount ?? '') }}"
                                 placeholder="0.00"
-                                required
                             >
                         </div>
                         <span id="tax-amount-preview" class="tw-text-ui-xs tw-text-primary tw-font-mono tw-mt-1.5 tw-block"></span>
@@ -245,11 +333,19 @@
                         <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-mb-2">
                             <div>
                                 <label for="file-tax_invoice" class="tw-font-semibold tw-text-ui-sm tw-text-on-surface tw-block">
-                                    Faktur Pajak Elektronik <span class="text-danger">*</span>
+                                    Faktur Pajak Elektronik @if($isPkp)<span class="text-danger">*</span>@endif
                                 </label>
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant">Faktur Pajak resmi dari DJP dengan QR Code valid.</span>
+                                <span class="tw-text-ui-xs tw-text-on-surface-variant">
+                                    @if($isPkp)
+                                        Faktur Pajak resmi dari DJP dengan QR Code valid (Wajib untuk PKP).
+                                    @else
+                                        Khusus vendor Non-PKP, Faktur Pajak tidak wajib diunggah.
+                                    @endif
+                                </span>
                             </div>
-                            <span class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary tw-shrink-0">Required</span>
+                            <span class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold {{ $isPkp ? 'tw-bg-primary/10 tw-text-primary' : 'tw-bg-surface-container tw-text-on-surface-variant' }} tw-shrink-0">
+                                {{ $isPkp ? 'Required (PKP)' : 'Optional (Non-PKP)' }}
+                            </span>
                         </div>
 
                         <label for="file-tax_invoice" class="tw-relative tw-block tw-border-2 tw-border-dashed tw-border-outline-variant hover:tw-border-primary/60 tw-rounded-ui-sm tw-p-4 tw-text-center tw-bg-surface hover:tw-bg-primary/[0.02] tw-transition-all tw-cursor-pointer tw-m-0">
@@ -259,7 +355,7 @@
                                 id="file-tax_invoice"
                                 name="tax_invoice"
                                 accept=".pdf,.jpg,.jpeg,.png"
-                                required
+                                @if($isPkp) required @endif
                                 onchange="handleLocalFileChange(this, 'file-tax-info', 'file-tax-empty')"
                             >
                             <div id="file-tax-empty" class="tw-space-y-1.5">
@@ -290,6 +386,64 @@
                         @enderror
                     </div>
 
+                    {{-- Surat Jalan (Delivery Note) File --}}
+                    <div class="tw-border tw-border-outline-variant tw-rounded-ui-sm tw-p-3.5 tw-bg-surface-container-low hover:tw-border-primary/40 tw-transition-colors">
+                        <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-mb-2">
+                            <div>
+                                <label for="file-delivery_note" class="tw-font-semibold tw-text-ui-sm tw-text-on-surface tw-block">
+                                    Surat Jalan / Bukti Penerimaan Barang @if($isBarang)<span class="text-danger">*</span>@endif
+                                </label>
+                                <span class="tw-text-ui-xs tw-text-on-surface-variant">
+                                    @if($isBarang)
+                                        Surat Jalan resmi bertanda tangan &amp; stempel penerima ADASI (Wajib untuk Vendor Barang).
+                                    @else
+                                        Khusus vendor Jasa / Non-Barang, Surat Jalan bersifat opsional.
+                                    @endif
+                                </span>
+                            </div>
+                            <span class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold {{ $isBarang ? 'tw-bg-primary/10 tw-text-primary' : 'tw-bg-surface-container tw-text-on-surface-variant' }} tw-shrink-0">
+                                {{ $isBarang ? 'Required (Barang)' : 'Optional (Jasa)' }}
+                            </span>
+                        </div>
+
+                        <label for="file-delivery_note" class="tw-relative tw-block tw-border-2 tw-border-dashed tw-border-outline-variant hover:tw-border-primary/60 tw-rounded-ui-sm tw-p-4 tw-text-center tw-bg-surface hover:tw-bg-primary/[0.02] tw-transition-all tw-cursor-pointer tw-m-0">
+                            <input
+                                type="file"
+                                class="tw-sr-only @error('delivery_note') is-invalid @enderror"
+                                id="file-delivery_note"
+                                name="delivery_note"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                @if($isBarang) required @endif
+                                onchange="handleLocalFileChange(this, 'file-sj-info', 'file-sj-empty')"
+                            >
+                            <div id="file-sj-empty" class="tw-space-y-1.5">
+                                <div class="tw-w-9 tw-h-9 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-mx-auto tw-flex tw-items-center tw-justify-center">
+                                    <x-ui.icon name="upload-cloud" size="sm" />
+                                </div>
+                                <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface">
+                                    Klik untuk pilih file <span class="tw-font-normal tw-text-on-surface-variant">atau seret berkas ke sini</span>
+                                </div>
+                                <div class="tw-text-[11px] tw-text-on-surface-variant">
+                                    Format: <span class="tw-font-mono tw-font-medium">.PDF, .JPG, .PNG</span> (Maksimal 10 MB)
+                                </div>
+                            </div>
+
+                            <div id="file-sj-info" class="tw-hidden tw-flex tw-items-center tw-justify-between tw-gap-2 tw-p-2 tw-rounded tw-bg-success/10 tw-border tw-border-success/30">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-min-w-0">
+                                    <x-ui.icon name="file-check-2" size="sm" class="tw-text-success tw-shrink-0" />
+                                    <span class="file-name tw-font-semibold tw-text-ui-xs tw-text-on-surface tw-truncate"></span>
+                                    <span class="file-size tw-text-[11px] tw-text-on-surface-variant tw-shrink-0"></span>
+                                </div>
+                                <span class="tw-text-ui-xs tw-text-primary tw-font-medium tw-underline hover:tw-text-primary/80 tw-shrink-0">
+                                    Ganti File
+                                </span>
+                            </div>
+                        </label>
+                        @error('delivery_note')
+                            <div class="invalid-feedback d-block tw-mt-1.5">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     {{-- Supporting Document File --}}
                     <div class="tw-border tw-border-outline-variant tw-rounded-ui-sm tw-p-3.5 tw-bg-surface-container-low hover:tw-border-primary/40 tw-transition-colors">
                         <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-mb-2">
@@ -297,7 +451,7 @@
                                 <label for="file-supporting" class="tw-font-semibold tw-text-ui-sm tw-text-on-surface tw-block">
                                     Dokumen Pendukung
                                 </label>
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant">Surat Jalan, Berita Acara Serah Terima (BAST), atau PO Copy (Opsional).</span>
+                                <span class="tw-text-ui-xs tw-text-on-surface-variant">Berita Acara Serah Terima (BAST), PO Copy, atau lampiran tambahan (Opsional).</span>
                             </div>
                             <span class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-surface-container tw-text-on-surface-variant tw-shrink-0">Optional</span>
                         </div>
@@ -368,9 +522,8 @@
                             <span class="tw-text-on-surface-variant">Payment Term:</span>
                             <span class="tw-font-semibold tw-text-on-surface">Net {{ $termDays }} Hari</span>
                         </div>
-                        <div class="tw-flex tw-justify-between tw-text-ui-xs">
-                            <span class="tw-text-on-surface-variant">Estimasi Jatuh Tempo:</span>
-                            <span id="summary-due-date" class="tw-font-semibold tw-text-on-surface">—</span>
+                        <div class="tw-text-[11px] tw-text-on-surface-variant tw-leading-relaxed">
+                            * Periode jatuh tempo resmi dihitung mulai dari tanggal penerimaan fisik berkas asli di loket Kasir ADASI.
                         </div>
                     </div>
 
@@ -390,7 +543,7 @@
                         <div class="tw-flex tw-gap-2">
                             <x-ui.icon name="info" size="xs" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-leading-relaxed">
-                                Setelah kirim dokumen digital, kirimkan berkas fisik asli (Invoice &amp; Faktur Pajak bermaterai) ke loket Accounting ADASI untuk verifikasi fisik.
+                                Setelah kirim dokumen digital, serahkan berkas fisik asli (Invoice, Faktur Pajak bermaterai &amp; Surat Jalan) ke loket Finance ADASI pada hari Rabu untuk verifikasi fisik.
                             </span>
                         </div>
                     </div>
@@ -403,66 +556,84 @@
 @include('local-invoices.scripts')
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    function togglePoSource(source) {
+        const secInternal = document.getElementById('section-internal-po');
+        const secManual = document.getElementById('section-manual-po');
+        const inputInternal = document.getElementById('internal-po-reference');
+        const inputManualPo = document.getElementById('manual-po-number');
+        const inputManualGr = document.getElementById('manual-gr-reference');
+
+        if (source === 'INTERNAL') {
+            secInternal?.classList.remove('tw-hidden');
+            secManual?.classList.add('tw-hidden');
+            if (inputInternal) inputInternal.required = true;
+            if (inputManualPo) inputManualPo.required = false;
+            if (inputManualGr) inputManualGr.required = false;
+        } else {
+            secInternal?.classList.add('tw-hidden');
+            secManual?.classList.remove('tw-hidden');
+            if (inputInternal) inputInternal.required = false;
+            if (inputManualPo) inputManualPo.required = true;
+            if (inputManualGr) inputManualGr.required = true;
+        }
+    }
+
+    function updatePpnCalculation() {
         const dppInput = document.getElementById('invoice-amount');
         const taxInput = document.getElementById('tax-amount');
-        const btnCalcPpn = document.getElementById('btn-calc-ppn');
-        const dateInput = document.getElementById('invoice-date');
+        const schemeSelect = document.getElementById('ppn-scheme');
+        if (!dppInput || !taxInput || !schemeSelect) return;
 
+        const dppVal = parseFloat(dppInput.value) || 0;
+        const scheme = schemeSelect.value;
+        let rate = 0;
+        if (scheme === '11%') rate = 0.11;
+        else if (scheme === '1.1%') rate = 0.011;
+        else rate = 0;
+
+        const calculatedPpn = Math.round(dppVal * rate * 100) / 100;
+        taxInput.value = calculatedPpn > 0 ? calculatedPpn : (scheme === '0%' ? '0' : '');
+        updateCalculations();
+    }
+
+    function formatRupiah(number) {
+        if (isNaN(number) || number === null || number === '') return 'Rp 0';
+        return 'Rp ' + Number(number).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function updateCalculations() {
+        const dppInput = document.getElementById('invoice-amount');
+        const taxInput = document.getElementById('tax-amount');
         const dppPreview = document.getElementById('invoice-amount-preview');
         const taxPreview = document.getElementById('tax-amount-preview');
-
         const summaryDpp = document.getElementById('summary-dpp');
         const summaryTax = document.getElementById('summary-tax');
         const summaryTotal = document.getElementById('summary-total');
-        const summaryDueDate = document.getElementById('summary-due-date');
 
-        const termDays = {{ (int) $termDays }};
+        const dppVal = parseFloat(dppInput?.value) || 0;
+        const taxVal = parseFloat(taxInput?.value) || 0;
+        const total = dppVal + taxVal;
 
-        function formatRupiah(number) {
-            if (isNaN(number) || number === null || number === '') return 'Rp 0';
-            return 'Rp ' + Number(number).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-        }
+        if (dppPreview) dppPreview.textContent = dppVal > 0 ? formatRupiah(dppVal) : '';
+        if (taxPreview) taxPreview.textContent = taxVal > 0 ? formatRupiah(taxVal) : '';
 
-        function updateCalculations() {
-            const dppVal = parseFloat(dppInput.value) || 0;
-            const taxVal = parseFloat(taxInput.value) || 0;
-            const total = dppVal + taxVal;
+        if (summaryDpp) summaryDpp.textContent = formatRupiah(dppVal);
+        if (summaryTax) summaryTax.textContent = formatRupiah(taxVal);
+        if (summaryTotal) summaryTotal.textContent = formatRupiah(total);
+    }
 
-            if (dppPreview) dppPreview.textContent = dppVal > 0 ? formatRupiah(dppVal) : '';
-            if (taxPreview) taxPreview.textContent = taxVal > 0 ? formatRupiah(taxVal) : '';
+    document.addEventListener('DOMContentLoaded', function() {
+        const dppInput = document.getElementById('invoice-amount');
+        const taxInput = document.getElementById('tax-amount');
 
-            if (summaryDpp) summaryDpp.textContent = formatRupiah(dppVal);
-            if (summaryTax) summaryTax.textContent = formatRupiah(taxVal);
-            if (summaryTotal) summaryTotal.textContent = formatRupiah(total);
-
-            // Calculate estimated due date
-            if (dateInput && dateInput.value && summaryDueDate) {
-                const invoiceDate = new Date(dateInput.value);
-                if (!isNaN(invoiceDate.getTime())) {
-                    invoiceDate.setDate(invoiceDate.getDate() + termDays);
-                    summaryDueDate.textContent = invoiceDate.toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                    });
-                } else {
-                    summaryDueDate.textContent = '—';
-                }
-            }
-        }
-
-        if (btnCalcPpn && dppInput && taxInput) {
-            btnCalcPpn.addEventListener('click', function() {
-                const dppVal = parseFloat(dppInput.value) || 0;
-                const calculatedPpn = Math.round(dppVal * 0.11 * 100) / 100;
-                taxInput.value = calculatedPpn > 0 ? calculatedPpn : '';
-                updateCalculations();
+        if (dppInput) {
+            dppInput.addEventListener('input', function() {
+                updatePpnCalculation();
             });
         }
-
-        if (dppInput) dppInput.addEventListener('input', updateCalculations);
-        if (taxInput) taxInput.addEventListener('input', updateCalculations);
+        if (taxInput) {
+            taxInput.addEventListener('input', updateCalculations);
+        }
         updateCalculations();
     });
 

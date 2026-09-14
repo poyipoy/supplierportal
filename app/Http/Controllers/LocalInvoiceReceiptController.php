@@ -14,6 +14,12 @@ class LocalInvoiceReceiptController extends Controller
         abort_unless($invoice->receipt, 404);
         Gate::authorize('view', $invoice->receipt);
 
-        return response()->view('local-supplier.invoices.receipt', compact('invoice'))->header('Cache-Control', 'private, no-store');
+        $signedUrl = \Illuminate\Support\Facades\URL::signedRoute('receipts.verify-supplier', ['receipt' => $invoice->receipt->receipt_number]);
+        $qrCode = (new \chillerlan\QRCode\QRCode([
+            'outputBase64' => true,
+            'scale' => 4,
+        ]))->render($signedUrl);
+
+        return response()->view('local-supplier.invoices.receipt', compact('invoice', 'qrCode', 'signedUrl'))->header('Cache-Control', 'private, no-store');
     }
 }

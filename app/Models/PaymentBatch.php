@@ -21,6 +21,12 @@ class PaymentBatch extends Model
     public const STATUS_PAID = 'PAID';
     public const STATUS_CANCELLED = 'CANCELLED';
 
+    public const ACTIVE_STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_FINALIZED,
+        self::STATUS_PARTIALLY_PAID,
+    ];
+
     protected $guarded = ['id'];
 
     protected function casts(): array

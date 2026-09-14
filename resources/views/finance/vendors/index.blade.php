@@ -33,7 +33,7 @@
                                         {{ $req->supplier->supplier?->company_name ?: $req->supplier->name }}
                                     </strong>
                                     <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-warning tw-text-warning-foreground">
-                                        Tipe: {{ ucwords(str_replace('_', ' ', $req->request_type)) }}
+                                        Tipe: {{ ucwords(str_replace('_', ' ', $req->change_type)) }}
                                     </span>
                                 </div>
                                 <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block tw-mt-1">
@@ -66,7 +66,7 @@
                         {{-- Proposed changes json summary --}}
                         <div class="tw-mt-3 tw-p-2.5 tw-rounded tw-bg-surface tw-border tw-border-outline-variant tw-text-ui-xs">
                             <span class="tw-font-semibold tw-text-on-surface tw-block tw-mb-1">Rincian Perubahan yang Diajukan:</span>
-                            <pre class="tw-m-0 tw-font-mono tw-text-xs tw-text-on-surface-variant">{{ json_encode($req->proposed_changes, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                            <pre class="tw-m-0 tw-font-mono tw-text-xs tw-text-on-surface-variant">{{ json_encode($req->proposed_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                         </div>
                     </div>
 
@@ -141,7 +141,7 @@
                                 @if($activeBank)
                                     <strong class="tw-text-on-surface tw-text-ui-xs">{{ $activeBank->bank_name }}</strong>
                                     <span class="tw-block tw-font-mono tw-text-ui-xs">{{ $activeBank->account_number }}</span>
-                                    <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">a.n {{ $activeBank->account_holder }}</span>
+                                    <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">a.n {{ $activeBank->account_holder_name }}</span>
                                 @else
                                     <span class="tw-text-ui-xs tw-text-error">Belum terverifikasi</span>
                                 @endif

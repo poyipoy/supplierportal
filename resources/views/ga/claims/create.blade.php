@@ -31,7 +31,7 @@
                             <option value="">-- Pilih Karyawan (Master Data) --</option>
                             @foreach($employees as $emp)
                                 <option value="{{ $emp->id }}" @selected(old('employee_id') == $emp->id)>
-                                    {{ $emp->name }} — {{ $emp->department }} (Bank: {{ $emp->bank_name }} - {{ $emp->bank_account_number }} a.n {{ $emp->bank_account_holder }})
+                                    {{ $emp->name }} — {{ $emp->department }} (Bank: {{ $emp->bank_name }} - {{ $emp->account_number }} a.n {{ $emp->account_holder_name }})
                                 </option>
                             @endforeach
                         </select>
@@ -59,7 +59,12 @@
                             <label for="claim_date" class="form-label tw-text-ui-xs tw-font-semibold">
                                 Tanggal Pengajuan / Kejadian <span class="text-danger">*</span>
                             </label>
-                            <input type="date" name="claim_date" id="claim_date" class="form-control form-control-sm" value="{{ old('claim_date', now()->format('Y-m-d')) }}" required>
+                            <x-ui.date-picker
+                                name="claim_date"
+                                id="claim_date"
+                                :value="old('claim_date', now()->format('Y-m-d'))"
+                                required
+                            />
                         </div>
                     </div>
 
@@ -81,12 +86,12 @@
 
                     {{-- Dokumen Pendukung --}}
                     <div class="tw-border-t tw-border-outline-variant tw-pt-3">
-                        <label for="attachment" class="form-label tw-text-ui-xs tw-font-semibold">
-                            Unggah Dokumen Pendukung (Struk, Bukti Nota, Form UPD) <span class="text-danger">*</span>
+                        <label for="supporting" class="form-label tw-text-ui-xs tw-font-semibold">
+                            Unggah Dokumen Pendukung (Struk, Bukti Nota, Form UPD) <span class="tw-text-on-surface-variant font-normal">(Opsional)</span>
                         </label>
-                        <input type="file" name="attachment" id="attachment" class="form-control form-control-sm" required accept=".pdf,.jpg,.jpeg,.png">
+                        <input type="file" name="supporting" id="supporting" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx">
                         <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-mt-1">
-                            Format diizinkan: PDF, JPG, PNG (Maks 10 MB). File disimpan pada storage privat terenkripsi.
+                            Format diizinkan: PDF, JPG, PNG, Excel, Word (Maks 10 MB). File disimpan pada storage privat terenkripsi.
                         </span>
                     </div>
 

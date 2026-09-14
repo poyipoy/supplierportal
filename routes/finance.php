@@ -33,6 +33,11 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
     // DRP GA
     Route::get('/drp-ga', [FinanceDrpController::class, 'indexGa'])->name('drp.ga');
 
+    // GA Claims Register & Verification
+    Route::get('/ga-claims', [\App\Http\Controllers\Finance\FinanceGaClaimController::class, 'index'])->name('ga-claims.index');
+    Route::get('/ga-claims/{claim}', [\App\Http\Controllers\Finance\FinanceGaClaimController::class, 'show'])->name('ga-claims.show');
+    Route::post('/ga-claims/{claim}/verify', [\App\Http\Controllers\Finance\FinanceGaClaimController::class, 'verify'])->name('ga-claims.verify');
+
     // DRP Batch Detail, Finalize, Item Removal, Fee Override, Voucher, Pay
     Route::get('/drp/{batch}', [FinanceDrpController::class, 'show'])->name('drp.show');
     Route::post('/drp/{batch}/finalize', [FinanceDrpController::class, 'finalize'])->name('drp.finalize');
@@ -43,6 +48,7 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
 
     // Master Invoice (Reporting / Query Repository)
     Route::get('/master-invoices', [FinanceInvoiceController::class, 'masterInvoice'])->name('master-invoices');
+    Route::get('/master-invoices/export', [FinanceInvoiceController::class, 'exportMasterInvoice'])->name('master-invoices.export');
 
     // Vendor Master & Change Approvals
     Route::get('/vendor-master', [FinanceVendorController::class, 'index'])->name('vendor-master.index');

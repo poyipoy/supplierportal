@@ -33,7 +33,7 @@
                                         {{ $req->supplier->supplier?->company_name ?: $req->supplier->name }}
                                     </strong>
                                     <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-warning tw-text-warning-foreground">
-                                        Tipe: {{ ucwords(str_replace('_', ' ', $req->request_type)) }}
+                                        Tipe: {{ ucwords(str_replace('_', ' ', $req->change_type)) }}
                                     </span>
                                 </div>
                                 <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block tw-mt-1">

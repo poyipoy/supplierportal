@@ -66,7 +66,7 @@ class LocalInvoiceConcurrencyTest extends TestCase
         Supplier::create(['user_id' => $supplier->id, 'company_name' => 'Concurrency', 'address' => 'Test', 'phone' => '1', 'npwp' => '1', 'category' => 'Test', 'payment_term_days' => 30]);
         $operator = User::factory()->create(['role' => 'finance']);
         foreach ([['approve', 'approve'], ['approve', 'requestRevision']] as $iteration => $actions) {
-            $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'RACE-'.$iteration, 'invoice_date' => today()->format('Y-m-d'), 'po_number' => 'Manual', 'invoice_amount' => '1.00', 'tax_amount' => '0.00'], ['invoice' => UploadedFile::fake()->image('invoice.png'), 'tax_invoice' => UploadedFile::fake()->image('tax.png')]);
+            $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'RACE-'.$iteration, 'invoice_date' => today()->format('Y-m-d'), 'po_source' => 'MANUAL', 'manual_po_number' => 'Manual', 'manual_gr_reference' => 'GR-RACE-001', 'po_number' => 'Manual', 'invoice_amount' => '1.00', 'tax_amount' => '0.00'], ['invoice' => UploadedFile::fake()->image('invoice.png'), 'tax_invoice' => UploadedFile::fake()->image('tax.png')]);
             app(InvoiceWorkflowService::class)->act($operator, $invoice, 'verifyPhysical');
             $start = microtime(true) + 3;
             $processes = array_map(fn ($action) => new Process([PHP_BINARY, base_path('tests/Support/local-invoice-concurrency-worker.php'), (string) $operator->id, (string) $invoice->id, $action, Storage::disk('private')->path(''), (string) $start], base_path(), ['APP_ENV' => 'testing']), $actions);

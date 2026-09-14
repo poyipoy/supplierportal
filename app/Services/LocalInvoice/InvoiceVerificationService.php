@@ -43,9 +43,21 @@ class InvoiceVerificationService
             $checks = ['invoice', 'tax_invoice', 'po', 'delivery_note', 'gr'];
             $allPassed = true;
 
+            $supplier = $inv->supplier?->supplier;
+            $isPkp = $supplier ? (bool) $supplier->is_pkp : false;
+            $requiresSuratJalan = $supplier ? strcasecmp(trim((string) ($supplier->vendor_category ?: $supplier->category)), 'Barang') === 0 : false;
+
             foreach ($checks as $check) {
                 $status = $data["{$check}_check"] ?? LocalInvoiceVerification::CHECK_OK;
                 $notes = $data["{$check}_notes"] ?? null;
+
+                if ($check === 'tax_invoice' && $status === LocalInvoiceVerification::CHECK_NOT_APPLICABLE && $isPkp) {
+                    throw new InvalidArgumentException('Tax Invoice (Faktur Pajak) cannot be NOT APPLICABLE for PKP suppliers.');
+                }
+
+                if ($check === 'delivery_note' && $status === LocalInvoiceVerification::CHECK_NOT_APPLICABLE && $requiresSuratJalan) {
+                    throw new InvalidArgumentException('Delivery Note (Surat Jalan) cannot be NOT APPLICABLE for goods (Barang) suppliers.');
+                }
 
                 if ($status === LocalInvoiceVerification::CHECK_NOT_OK) {
                     $allPassed = false;
@@ -93,9 +105,21 @@ class InvoiceVerificationService
                 throw new RuntimeException('Section A must be complete and passed before Section B can be finalized.');
             }
 
-            $verification->ppn_status = $data['ppn_status'] ?? LocalInvoiceVerification::PPN_SESUAI;
+            $ppnStatus = $data['ppn_status'] ?? LocalInvoiceVerification::PPN_SESUAI;
+            if ($ppnStatus === LocalInvoiceVerification::PPN_TIDAK_SESUAI) {
+                if (! isset($data['verified_ppn']) || $data['verified_ppn'] === null || $data['verified_ppn'] === '') {
+                    throw new InvalidArgumentException('Corrected PPN amount is mandatory when PPN status is TIDAK SESUAI.');
+                }
+                if (empty(trim((string) ($data['tax_notes'] ?? '')))) {
+                    throw new InvalidArgumentException('Verification notes are mandatory when PPN status is TIDAK SESUAI.');
+                }
+            }
+
+            $verification->ppn_status = $ppnStatus;
             $verification->submitted_ppn = $inv->tax_amount;
-            $verification->verified_ppn = isset($data['verified_ppn']) ? (float) $data['verified_ppn'] : $inv->tax_amount;
+            $verification->verified_ppn = ($ppnStatus === LocalInvoiceVerification::PPN_SESUAI)
+                ? $inv->tax_amount
+                : (float) $data['verified_ppn'];
 
             $verification->pph_23_applicable = (bool) ($data['pph_23_applicable'] ?? false);
             $verification->pph_23_base = isset($data['pph_23_base']) ? (float) $data['pph_23_base'] : null;
@@ -129,6 +153,10 @@ class InvoiceVerificationService
 
             if ($inv->status !== LocalInvoice::STATUS_UNDER_VERIFICATION) {
                 throw new RuntimeException("Cannot approve: invoice status is [{$inv->status}], expected UNDER_VERIFICATION.");
+            }
+
+            if (! $inv->cashier_received_at) {
+                throw new RuntimeException('Cannot approve: cashier physical receipt must exist before Ready to Pay.');
             }
 
             /** @var LocalInvoiceVerification $verification */

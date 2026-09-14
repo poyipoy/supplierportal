@@ -14,7 +14,7 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>Dashboard</span>
             </x-ui.button>
-            <x-ui.button :href="route('accounting.reports')" variant="outline" size="sm">
+            <x-ui.button :href="route('finance.master-invoices.export', request()->all())" variant="outline" size="sm">
                 <x-ui.icon name="file-spreadsheet" size="sm" />
                 <span>Export Excel</span>
             </x-ui.button>

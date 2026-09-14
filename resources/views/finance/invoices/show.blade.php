@@ -25,7 +25,7 @@
 
     @if($invoice->has_po_discrepancy)
         <x-ui.alert tone="warning" title="Peringatan Discrepancy PO!">
-            Nilai tagihan DPP invoice ini (Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}) melebihi sisa nilai PO (Rp {{ number_format($invoice->po_remaining_amount_snapshot ?? 0, 0, ',', '.') }}). Harap verifikasi lebih teliti sebelum menyetujui.
+            Nilai tagihan DPP invoice ini (Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}) melebihi sisa nilai PO (Rp {{ number_format($invoice->po_remaining_snapshot ?? 0, 0, ',', '.') }}). Harap verifikasi lebih teliti sebelum menyetujui.
         </x-ui.alert>
     @endif
 
@@ -60,9 +60,9 @@
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">Jadwal Kirim Fisik:</span>
                         <strong class="tw-text-ui-sm tw-text-on-surface">
-                            {{ $invoice->physical_delivery_date?->format('d M Y (l)') ?? '—' }}
-                            @if($invoice->missed_deliveries_count > 0)
-                                <span class="tw-text-error">({{ $invoice->missed_deliveries_count }}x missed)</span>
+                            {{ $invoice->scheduled_physical_delivery_date?->format('d M Y (l)') ?? '—' }}
+                            @if($invoice->missed_delivery_count > 0)
+                                <span class="tw-text-error">({{ $invoice->missed_delivery_count }}x missed)</span>
                             @endif
                         </strong>
                     </div>
@@ -104,11 +104,11 @@
                                                 {{ ucwords(str_replace('_', ' ', $doc->document_type)) }}
                                             </span>
                                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-truncate">
-                                                {{ $doc->file_name }}
+                                                {{ $doc->original_filename }}
                                             </span>
                                         </div>
                                     </div>
-                                    <a href="{{ Storage::disk('private')->url($doc->file_path) }}" target="_blank" class="tw-shrink-0 btn btn-sm btn-outline-primary tw-text-xs">
+                                    <a href="{{ route('local-invoice-documents.show', $doc) }}" target="_blank" class="tw-shrink-0 btn btn-sm btn-outline-primary tw-text-xs">
                                         Unduh
                                     </a>
                                 </div>

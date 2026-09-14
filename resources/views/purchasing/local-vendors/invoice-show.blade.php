@@ -25,7 +25,7 @@
 
     @if($invoice->has_po_discrepancy)
         <x-ui.alert tone="warning" title="Peringatan Discrepancy PO!">
-            Nilai tagihan DPP invoice ini (Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}) melebihi sisa nilai PO (Rp {{ number_format($invoice->po_remaining_amount_snapshot ?? 0, 0, ',', '.') }}).
+            Nilai tagihan DPP invoice ini (Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}) melebihi sisa nilai PO (Rp {{ number_format($invoice->po_remaining_snapshot ?? 0, 0, ',', '.') }}).
         </x-ui.alert>
     @endif
 
@@ -100,11 +100,11 @@
                                                 {{ ucwords(str_replace('_', ' ', $doc->document_type)) }}
                                             </span>
                                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-truncate">
-                                                {{ $doc->file_name }}
+                                                {{ $doc->original_filename }}
                                             </span>
                                         </div>
                                     </div>
-                                    <a href="{{ Storage::disk('private')->url($doc->file_path) }}" target="_blank" class="tw-shrink-0 btn btn-sm btn-outline-primary tw-text-xs">
+                                    <a href="{{ route('local-invoice-documents.show', $doc) }}" target="_blank" class="tw-shrink-0 btn btn-sm btn-outline-primary tw-text-xs">
                                         Unduh
                                     </a>
                                 </div>

@@ -71,7 +71,7 @@
                             </x-ui.status-chip>
                         </div>
                         <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block tw-mt-1">
-                            Rekening: <strong>{{ $group->bank_name }}</strong> — <strong class="tw-font-mono">{{ $group->bank_account_number }}</strong> a.n <strong>{{ $group->bank_account_holder }}</strong>
+                            Rekening: <strong>{{ $group->bank_name }}</strong> — <strong class="tw-font-mono">{{ $group->account_number }}</strong> a.n <strong>{{ $group->account_holder_name }}</strong>
                         </span>
                         @if($group->voucher_number)
                             <span class="tw-text-[11px] tw-text-primary tw-block tw-mt-0.5">
@@ -256,7 +256,12 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label tw-text-ui-xs tw-font-semibold">Tanggal Voucher <span class="text-danger">*</span></label>
-                                        <input type="date" name="voucher_date" class="form-control form-control-sm" value="{{ $group->voucher_date?->format('Y-m-d') ?? now()->format('Y-m-d') }}" required>
+                                        <x-ui.date-picker
+                                            id="voucher_date_{{ $group->id }}"
+                                            name="voucher_date"
+                                            :value="$group->voucher_date?->format('Y-m-d') ?? now()->format('Y-m-d')"
+                                            required
+                                        />
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -281,8 +286,8 @@
                                 <div class="modal-body">
                                     <div class="tw-p-2 tw-rounded tw-bg-surface-container tw-mb-3 tw-text-ui-xs">
                                         Penerima: <strong>{{ $group->payee_name }}</strong><br>
-                                        Nominal Net: <strong class="tw-font-mono tw-text-primary">Rp {{ number_format($group->net_amount, 0, ',', '.') }}</strong><br>
-                                        Rekening: {{ $group->bank_name }} - {{ $group->bank_account_number }}
+                                        Nominal Net: <strong class="tw-font-mono tw-text-primary">Rp {{ number_format($group->net_payment_amount, 0, ',', '.') }}</strong><br>
+                                        Rekening: {{ $group->bank_name }} - {{ $group->account_number }} a.n {{ $group->account_holder_name }}
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label tw-text-ui-xs tw-font-semibold">Nomor Referensi Bank / Transfer <span class="text-danger">*</span></label>
@@ -290,7 +295,12 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label tw-text-ui-xs tw-font-semibold">Tanggal Transfer <span class="text-danger">*</span></label>
-                                        <input type="date" name="transfer_date" class="form-control form-control-sm" value="{{ now()->format('Y-m-d') }}" required>
+                                        <x-ui.date-picker
+                                            id="transfer_date_{{ $group->id }}"
+                                            name="transfer_date"
+                                            :value="now()->format('Y-m-d')"
+                                            required
+                                        />
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label tw-text-ui-xs tw-font-semibold">Catatan Pembayaran (Opsional)</label>

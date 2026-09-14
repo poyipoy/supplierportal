@@ -31,9 +31,13 @@ class InvoicePhysicalReceiptService
                 throw new RuntimeException("Cannot record physical receipt: invoice is in [{$inv->status}] status, expected WAITING_PHYSICAL_DOCUMENT.");
             }
 
-            // 1. Capture currently approved payment term from Vendor Master
+            // 1. Capture currently approved payment term from Vendor Master (P1-02)
             $supplierProfile = $inv->supplier?->supplier;
-            $paymentTermDays = (int) ($supplierProfile?->payment_term_days ?: 30);
+            $termRaw = $supplierProfile?->payment_term_days;
+            if ($termRaw === null || ! is_numeric($termRaw) || (int) $termRaw < 1 || (int) $termRaw > 365) {
+                throw new InvalidArgumentException("Vendor Master payment term is missing or invalid for supplier [{$inv->supplier?->name}]. Physical receipt cannot be recorded until a valid term (1-365 days) is configured.");
+            }
+            $paymentTermDays = (int) $termRaw;
 
             // 2. Authoritative receipt timestamp & calculate due_date
             $receivedAt = now();
@@ -81,8 +85,8 @@ class InvoicePhysicalReceiptService
                 ]
             );
 
-            // 5. Record status history
-            $inv->statusHistories()->create([
+            // 5. Record status history & send notification
+            $history = $inv->statusHistories()->create([
                 'from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
                 'to_status' => LocalInvoice::STATUS_UNDER_VERIFICATION,
                 'actor_id' => $cashier->id,
@@ -90,6 +94,8 @@ class InvoicePhysicalReceiptService
                 'notes' => $notes ?: "Physical document received. Payment term: {$paymentTermDays} days, Due date: {$dueDate}",
                 'created_at' => $receivedAt,
             ]);
+
+            app(InvoiceNotificationService::class)->send($inv, $history);
 
             return $inv->fresh();
         });

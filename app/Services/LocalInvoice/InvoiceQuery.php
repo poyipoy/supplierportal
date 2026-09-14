@@ -36,10 +36,24 @@ class InvoiceQuery
             abort_unless($user && ($user->hasSupplierScope('local') || LocalInvoice::where('supplier_id', $user->id)->exists()), 422);
             $query->where('supplier_id', $user->id);
         }
+        if (! empty($filters['payment_status'])) {
+            $ps = strtoupper((string) $filters['payment_status']);
+            if ($ps === 'PAID') {
+                $query->whereIn('status', [LocalInvoice::STATUS_PAID, 'COMPLETED']);
+            } elseif ($ps === 'UNPAID') {
+                $query->whereNotIn('status', [LocalInvoice::STATUS_PAID, 'COMPLETED']);
+            }
+        }
         foreach (['from' => ['submitted_at', '>='], 'to' => ['submitted_at', '<='], 'due_from' => ['due_date', '>='], 'due_to' => ['due_date', '<=']] as $key => [$column, $operator]) {
             if (! empty($filters[$key])) {
                 $query->whereDate($column, $operator, $filters[$key]);
             }
+        }
+        if (! empty($filters['year'])) {
+            $query->whereYear('invoice_date', $filters['year']);
+        }
+        if (! empty($filters['month'])) {
+            $query->whereMonth('invoice_date', $filters['month']);
         }
         if (! empty($filters['overdue'])) {
             $query->whereDate('due_date', '<', today())->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);

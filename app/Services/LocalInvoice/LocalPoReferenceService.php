@@ -4,6 +4,7 @@ namespace App\Services\LocalInvoice;
 
 use App\Models\LocalInvoice;
 use App\Models\User;
+use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -14,6 +15,12 @@ class LocalPoReferenceService
      * Format: [supplier_id => [po_number => ['value' => float, 'gr' => string, 'description' => string]]]
      */
     protected static array $mockInternalPos = [];
+
+    public function __construct(
+        protected ?LocalPoProviderInterface $provider = null
+    ) {
+        $this->provider = $provider ?? app(LocalPoProviderInterface::class);
+    }
 
     public static function registerInternalPo(int $supplierId, string $poNumber, float $value, ?string $grReference = null, string $description = ''): void
     {
@@ -34,14 +41,17 @@ class LocalPoReferenceService
      */
     public function getInternalPoDetails(User $supplierUser, string $poNumber): ?array
     {
-        // 1. Check registered/mocked internal POs
+        // 1. Check registered/mocked internal POs (for test overrides)
         if (isset(self::$mockInternalPos[$supplierUser->id][$poNumber])) {
             $data = self::$mockInternalPos[$supplierUser->id][$poNumber];
             $poValue = (float) $data['value'];
             $gr = $data['gr'];
             $description = $data['description'];
+        } elseif ($providerData = $this->provider?->getPoData($supplierUser, $poNumber)) {
+            $poValue = (float) $providerData['po_value'];
+            $gr = $providerData['gr_reference'];
+            $description = $providerData['description'];
         } else {
-            // If not found in mock store, return null
             return null;
         }
 
