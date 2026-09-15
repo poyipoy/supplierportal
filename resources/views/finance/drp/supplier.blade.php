@@ -55,7 +55,7 @@
                                     <td>
                                         <strong class="tw-text-on-surface">{{ $inv->supplier->supplier?->company_name ?: $inv->supplier->name }}</strong>
                                         <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">
-                                            {{ $bank ? "{$bank->bank_name} - {$bank->account_number} a.n {$bank->account_holder}" : 'Belum ada rekening aktif' }}
+                                            {{ $bank ? "{$bank->bank_name} - {$bank->account_number} a.n {$bank->account_holder_name}" : 'Belum ada rekening aktif' }}
                                         </span>
                                     </td>
                                     <td>
@@ -123,10 +123,10 @@
                             <td>
                                 <strong class="tw-font-mono tw-text-on-surface">{{ $batch->batch_number }}</strong>
                             </td>
-                            <td>{{ $batch->batch_date?->format('d M Y') }}</td>
+                            <td>{{ $batch->created_at?->format('d M Y') }}</td>
                             <td>{{ $batch->groups_count }} rekening tujuan</td>
                             <td class="text-end tw-font-mono tw-font-semibold">
-                                Rp {{ number_format($batch->total_amount, 0, ',', '.') }}
+                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
                             </td>
                             <td class="text-end tw-font-mono tw-text-on-surface-variant">
                                 Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}

@@ -7,15 +7,16 @@ use App\Models\GaClaim;
 use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
+use App\Models\PaymentItem;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Services\Payment\PaymentBatchService;
 use App\Services\Payment\PaymentExecutionService;
 use App\Services\Payment\PaymentVoucherService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use InvalidArgumentException;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -24,7 +25,9 @@ class UnifiedPaymentEngineTest extends TestCase
     use RefreshDatabase;
 
     protected PaymentBatchService $batchService;
+
     protected PaymentExecutionService $executionService;
+
     protected PaymentVoucherService $voucherService;
 
     protected function setUp(): void
@@ -155,8 +158,22 @@ class UnifiedPaymentEngineTest extends TestCase
         $this->assertEquals(2000000.0, $group->subtotal_amount);
         $this->assertEquals(2000000.0, $batch->total_subtotal);
 
-        // Invoice 1 can now be added to another new DRP!
-        $newBatch = $this->batchService->createSupplierBatch($finance, [$inv1->id]);
+        // Remove item 2 (group becomes empty and cancelled)
+        $item2 = $group->items->where('payable_id', $inv2->id)->first();
+        $this->batchService->removeItem($item2, $finance, 'Remove last item.');
+
+        $group->refresh();
+        $batch->refresh();
+
+        $this->assertEquals(0.0, $group->subtotal_amount);
+        $this->assertEquals(0.0, $group->bank_fee);
+        $this->assertEquals(0.0, $group->net_payment_amount);
+        $this->assertSame(PaymentGroup::STATUS_CANCELLED, $group->status);
+        $this->assertTrue($group->isCancelled());
+        $this->assertEquals(0.0, $batch->total_subtotal);
+
+        // Invoices can now be added to another new DRP!
+        $newBatch = $this->batchService->createSupplierBatch($finance, [$inv1->id, $inv2->id]);
         $this->assertNotNull($newBatch);
     }
 
@@ -283,5 +300,130 @@ class UnifiedPaymentEngineTest extends TestCase
         // Attempting to add $inv2 (from unpaid Group B) to DRP-002 MUST be rejected
         $this->expectException(RuntimeException::class);
         $this->batchService->createSupplierBatch($finance, [$inv2->id]);
+    }
+
+    public function test_payment_voucher_service_terbilang_handles_null_zero_and_large_numbers(): void
+    {
+        $this->assertSame('Nol', $this->voucherService->terbilang(null));
+        $this->assertSame('Nol', $this->voucherService->terbilang(0));
+        $this->assertSame('Nol', $this->voucherService->terbilang(-1500));
+        $this->assertSame('Satu Juta', $this->voucherService->terbilang(1000000));
+        $this->assertSame('Lima Juta Lima Ratus Ribu', $this->voucherService->terbilang(5500000));
+        $this->assertSame('Sebelas Juta Sembilan Ratus Sembilan Puluh Tujuh Ribu Lima Ratus', $this->voucherService->terbilang(11997500));
+    }
+
+    public function test_finance_drp_show_view_renders_group_with_terbilang_and_net_amount(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $supplier = $this->createSupplierWithBank('BCA', '123456');
+        $inv = $this->createReadyToPayInvoice($supplier, 5000000, 'INV-SHOW-TEST-01');
+
+        $batch = $this->batchService->createSupplierBatch($finance, [$inv->id]);
+
+        $response = $this->actingAs($finance)->get(route('finance.drp.show', $batch));
+        $response->assertOk();
+        $response->assertSee('Terbilang: "Lima Juta Rupiah"', false);
+        $response->assertSee('5.000.000');
+    }
+
+    public function test_payment_batch_and_item_accessors_resolve_expected_values(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $supplier = $this->createSupplierWithBank('BCA', '999888');
+        $inv = $this->createReadyToPayInvoice($supplier, 2500000, 'INV-ACCESSOR-01');
+        $inv->update(['tax_amount' => 275000]);
+
+        $batch = $this->batchService->createSupplierBatch($finance, [$inv->id]);
+
+        // Batch accessors
+        $this->assertEquals((float) $batch->total_subtotal, (float) $batch->total_amount);
+        $this->assertNotNull($batch->batch_date);
+        $this->assertEquals($batch->created_at->toDateTimeString(), $batch->batch_date->toDateTimeString());
+
+        // Item accessors
+        $group = $batch->groups->first();
+        $item = $group->items->first();
+
+        $this->assertSame('INV-ACCESSOR-01', $item->item_reference);
+        $this->assertEquals(2500000.0, (float) $item->subtotal_amount);
+        $this->assertEquals(275000.0, (float) $item->tax_amount);
+        $this->assertEquals((float) $item->amount, (float) $item->total_amount);
+    }
+
+    public function test_bank_account_and_payment_group_attributes_and_bca_helpers(): void
+    {
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $bank = SupplierBankAccount::create([
+            'supplier_id' => $user->id,
+            'bank_name' => 'BCA',
+            'account_number' => '1234567890',
+            'account_holder_name' => 'PT Test Supplier',
+            'status' => SupplierBankAccount::STATUS_VERIFIED,
+        ]);
+
+        // Accessor alias
+        $this->assertSame('PT Test Supplier', $bank->account_holder);
+        $this->assertTrue($bank->isBca());
+
+        // Safe isBca() with null bank_name
+        $bankNull = new SupplierBankAccount(['bank_name' => null]);
+        $this->assertFalse($bankNull->isBca());
+
+        $group = new PaymentGroup(['bank_name' => null]);
+        $this->assertFalse($group->isBca());
+    }
+
+    public function test_invoice_verification_service_request_revision_records_correct_from_status(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $supplier = $this->createSupplierWithBank('BCA', '444555');
+        $inv = $this->createReadyToPayInvoice($supplier, 1000000, 'INV-REV-01');
+        $inv->update(['status' => LocalInvoice::STATUS_UNDER_VERIFICATION]);
+
+        $verificationService = app(InvoiceVerificationService::class);
+        $revised = $verificationService->requestRevision($inv, 'Dokumen pendukung kurang jelas', $finance);
+
+        $this->assertSame(LocalInvoice::STATUS_NEED_REVISION, $revised->status);
+
+        $history = $revised->statusHistories()->latest('id')->first();
+        $this->assertNotNull($history);
+        $this->assertSame(LocalInvoice::STATUS_UNDER_VERIFICATION, $history->from_status, 'from_status should be UNDER_VERIFICATION, not NEED_REVISION');
+        $this->assertSame(LocalInvoice::STATUS_NEED_REVISION, $history->to_status);
+        $this->assertSame('Dokumen pendukung kurang jelas', $history->notes);
+    }
+
+    public function test_batch_completes_to_paid_status_even_if_a_group_is_cancelled(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $supplier1 = $this->createSupplierWithBank('BCA', '555111');
+        $inv1 = $this->createReadyToPayInvoice($supplier1, 2000000, 'INV-CANCEL-1');
+
+        $supplier2 = $this->createSupplierWithBank('Mandiri', '555222');
+        $inv2 = $this->createReadyToPayInvoice($supplier2, 3000000, 'INV-CANCEL-2');
+
+        $batch = $this->batchService->createSupplierBatch($finance, [$inv1->id, $inv2->id]);
+
+        // Remove item from Group 2 while in draft -> Group 2 becomes CANCELLED
+        $group2 = $batch->groups->where('account_number', '555222')->first();
+        $item2 = $group2->items->first();
+        $this->batchService->removeItem($item2, $finance, 'Batal bayar');
+
+        $group2->refresh();
+        $this->assertSame(PaymentGroup::STATUS_CANCELLED, $group2->status);
+
+        // Finalize batch
+        $this->batchService->finalizeBatch($batch, $finance);
+
+        // Pay Group 1
+        $group1 = $batch->groups->where('account_number', '555111')->first();
+        $this->executionService->markGroupPaid($group1, [
+            'transfer_reference' => 'TRF-OK',
+            'transfer_date' => '2026-09-15',
+        ], $finance);
+
+        $batch->refresh();
+        // Since Group 1 is PAID and Group 2 is CANCELLED (not unpaid), the batch must transition to PAID!
+        $this->assertSame(PaymentBatch::STATUS_PAID, $batch->status);
     }
 }

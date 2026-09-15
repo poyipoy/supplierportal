@@ -12,7 +12,16 @@ class PaymentGroup extends Model
     use HasHashids;
 
     public const STATUS_UNPAID = 'UNPAID';
+
     public const STATUS_PAID = 'PAID';
+
+    public const STATUS_CANCELLED = 'CANCELLED';
+
+    public const STATUSES = [
+        self::STATUS_UNPAID,
+        self::STATUS_PAID,
+        self::STATUS_CANCELLED,
+    ];
 
     protected $guarded = ['id'];
 
@@ -53,8 +62,18 @@ class PaymentGroup extends Model
         return $this->status === self::STATUS_PAID;
     }
 
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
+    }
+
     public function isBca(): bool
     {
-        return strtoupper(trim($this->bank_name)) === 'BCA';
+        return strtoupper(trim((string) $this->bank_name)) === 'BCA';
+    }
+
+    public function getNetAmountAttribute(): float
+    {
+        return (float) ($this->net_payment_amount ?? 0);
     }
 }

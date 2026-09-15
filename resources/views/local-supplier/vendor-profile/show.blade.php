@@ -256,7 +256,13 @@
                                     <td>
                                         <div class="tw-text-[11px] tw-space-y-0.5 tw-max-w-xs">
                                             @foreach($cr->proposed_data ?? [] as $key => $val)
-                                                <div><span class="tw-text-on-surface-variant">{{ ucwords(str_replace('_', ' ', $key)) }}:</span> <strong>{{ is_bool($val) ? ($val ? 'Ya' : 'Tidak') : $val }}</strong></div>
+                                                @php
+                                                    $displayVal = is_bool($val) ? ($val ? 'Ya' : 'Tidak') : $val;
+                                                    if ($key === 'is_pkp') {
+                                                        $displayVal = ((string) $val === '1' || $val === true || $val === 'true') ? 'PKP' : 'Non-PKP';
+                                                    }
+                                                @endphp
+                                                <div><span class="tw-text-on-surface-variant">{{ ucwords(str_replace('_', ' ', $key)) }}:</span> <strong>{{ $displayVal }}</strong></div>
                                             @endforeach
                                         </div>
                                     </td>

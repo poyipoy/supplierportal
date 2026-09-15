@@ -79,4 +79,14 @@ class PaymentBatch extends Model
     {
         return $this->status === self::STATUS_PARTIALLY_PAID;
     }
+
+    public function getTotalAmountAttribute(): float
+    {
+        return (float) ($this->total_subtotal ?? 0);
+    }
+
+    public function getBatchDateAttribute(): ?\Illuminate\Support\Carbon
+    {
+        return $this->created_at;
+    }
 }

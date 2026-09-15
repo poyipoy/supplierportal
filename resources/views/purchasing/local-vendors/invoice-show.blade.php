@@ -62,6 +62,12 @@
                             {{ $invoice->physical_delivery_date?->format('d M Y') ?? '—' }}
                         </strong>
                     </div>
+                    @if($invoice->tax_invoice_number)
+                        <div>
+                            <span class="tw-text-on-surface-variant tw-block">Nomor Faktur Pajak (NSFP):</span>
+                            <strong class="tw-text-ui-sm tw-font-mono tw-text-primary">{{ $invoice->tax_invoice_number }}</strong>
+                        </div>
+                    @endif
                     <div class="tw-col-span-full tw-border-t tw-border-outline-variant tw-pt-3 tw-grid tw-grid-cols-3 tw-gap-4">
                         <div>
                             <span class="tw-text-on-surface-variant tw-block">DPP (Nilai Tagihan):</span>

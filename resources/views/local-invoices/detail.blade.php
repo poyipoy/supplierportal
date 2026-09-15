@@ -112,6 +112,12 @@
                         <span class="tw-font-medium tw-text-ui-sm tw-text-on-surface">{{ $companyName }}</span>
                         <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $invoice->supplier->email }}</span>
                     </div>
+                    @if($invoice->tax_invoice_number)
+                        <div>
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Nomor Faktur Pajak (NSFP)</span>
+                            <span class="tw-font-semibold tw-font-mono tw-text-ui-sm tw-text-primary">{{ $invoice->tax_invoice_number }}</span>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="tw-border-t tw-border-outline-variant tw-mt-4 tw-pt-4">

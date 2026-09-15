@@ -9,6 +9,9 @@ use App\Http\Requests\LocalInvoice\StoreLocalInvoiceRequest;
 use App\Models\LocalInvoice;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
+use App\Services\LocalInvoice\LocalPoReferenceService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class InvoiceController extends Controller
@@ -23,6 +26,18 @@ class InvoiceController extends Controller
         return view('local-supplier.invoices.index', ['invoices' => $query->filtered($request->validated(), $request->user()->id)->latest('id')->paginate(25)->withQueryString()]);
     }
 
+    public function searchPurchaseOrders(Request $request, LocalPoReferenceService $poReferenceService): JsonResponse
+    {
+        Gate::authorize('create', LocalInvoice::class);
+
+        $query = (string) $request->input('q', '');
+        $results = $poReferenceService->searchInternalPos($request->user(), $query, 10);
+
+        return response()->json([
+            'data' => $results,
+        ]);
+    }
+
     public function create()
     {
         Gate::authorize('create', LocalInvoice::class);
@@ -34,7 +49,7 @@ class InvoiceController extends Controller
     {
         $invoice = $service->submit($request->user(), $request->validated(), $request->allFiles());
 
-        return redirect()->route('local-supplier.invoices.show', $invoice)->with('success', 'Invoice submitted. Print the receipt and deliver the physical documents.');
+        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', 'Invoice submitted. Print the receipt and deliver the physical documents.');
     }
 
     public function show(LocalInvoice $invoice)
@@ -58,6 +73,6 @@ class InvoiceController extends Controller
     {
         $service->resubmit($request->user(), $invoice, $request->validated(), $request->allFiles());
 
-        return redirect()->route('local-supplier.invoices.show', $invoice)->with('success', 'Revision submitted. Updated physical documents must be verified.');
+        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', 'Revision submitted. Updated physical documents must be verified.');
     }
 }

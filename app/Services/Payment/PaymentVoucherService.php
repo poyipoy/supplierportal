@@ -34,7 +34,16 @@ class PaymentVoucherService
     /**
      * Convert a number to Indonesian terbilang.
      */
-    public function terbilang(float $number): string
+    public function terbilang(?float $number): string
+    {
+        if ($number === null || $number <= 0) {
+            return 'Nol';
+        }
+
+        return trim(preg_replace('/\s+/', ' ', $this->rawTerbilang($number)));
+    }
+
+    protected function rawTerbilang(float $number): string
     {
         $number = abs((int) floor($number));
         $huruf = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'];
@@ -43,30 +52,30 @@ class PaymentVoucherService
             return $huruf[$number];
         }
         if ($number < 20) {
-            return $this->terbilang($number - 10).' Belas';
+            return $this->rawTerbilang($number - 10).' Belas';
         }
         if ($number < 100) {
-            return $this->terbilang((int) floor($number / 10)).' Puluh '.$huruf[$number % 10];
+            return $this->rawTerbilang((int) floor($number / 10)).' Puluh '.$huruf[$number % 10];
         }
         if ($number < 200) {
-            return 'Seratus '.$this->terbilang($number - 100);
+            return 'Seratus '.$this->rawTerbilang($number - 100);
         }
         if ($number < 1000) {
-            return $this->terbilang((int) floor($number / 100)).' Ratus '.$this->terbilang($number % 100);
+            return $this->rawTerbilang((int) floor($number / 100)).' Ratus '.$this->rawTerbilang($number % 100);
         }
         if ($number < 2000) {
-            return 'Seribu '.$this->terbilang($number - 1000);
+            return 'Seribu '.$this->rawTerbilang($number - 1000);
         }
         if ($number < 1000000) {
-            return $this->terbilang((int) floor($number / 1000)).' Ribu '.$this->terbilang($number % 1000);
+            return $this->rawTerbilang((int) floor($number / 1000)).' Ribu '.$this->rawTerbilang($number % 1000);
         }
         if ($number < 1000000000) {
-            return $this->terbilang((int) floor($number / 1000000)).' Juta '.$this->terbilang($number % 1000000);
+            return $this->rawTerbilang((int) floor($number / 1000000)).' Juta '.$this->rawTerbilang($number % 1000000);
         }
         if ($number < 1000000000000) {
-            return $this->terbilang((int) floor($number / 1000000000)).' Miliar '.$this->terbilang(fmod($number, 1000000000));
+            return $this->rawTerbilang((int) floor($number / 1000000000)).' Miliar '.$this->rawTerbilang(fmod($number, 1000000000));
         }
 
-        return $this->terbilang((int) floor($number / 1000000000000)).' Triliun '.$this->terbilang(fmod($number, 1000000000000));
+        return $this->rawTerbilang((int) floor($number / 1000000000000)).' Triliun '.$this->rawTerbilang(fmod($number, 1000000000000));
     }
 }

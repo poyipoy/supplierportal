@@ -66,6 +66,12 @@
                             @endif
                         </strong>
                     </div>
+                    @if($invoice->tax_invoice_number)
+                        <div>
+                            <span class="tw-text-on-surface-variant tw-block">Nomor Faktur Pajak (NSFP):</span>
+                            <strong class="tw-text-ui-sm tw-font-mono tw-text-primary">{{ $invoice->tax_invoice_number }}</strong>
+                        </div>
+                    @endif
                     <div class="tw-col-span-full tw-border-t tw-border-outline-variant tw-pt-3 tw-grid tw-grid-cols-3 tw-gap-4">
                         <div>
                             <span class="tw-text-on-surface-variant tw-block">DPP (Nilai Tagihan):</span>
@@ -172,7 +178,14 @@
                             {{-- 2. Faktur Pajak Check --}}
                             <div class="tw-p-3 tw-rounded tw-bg-surface-container tw-border tw-border-outline-variant">
                                 <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
-                                    <span class="tw-font-semibold tw-text-ui-xs">2. Faktur Pajak (Wajib jika PKP)</span>
+                                    <div>
+                                        <span class="tw-font-semibold tw-text-ui-xs tw-block">2. Faktur Pajak (Wajib jika PKP)</span>
+                                        @if($invoice->tax_invoice_number)
+                                            <span class="tw-text-[11px] tw-font-mono tw-text-primary tw-block tw-mt-0.5">
+                                                NSFP: {{ $invoice->tax_invoice_number }}
+                                            </span>
+                                        @endif
+                                    </div>
                                     <div class="tw-flex tw-gap-3">
                                         <label class="tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs">
                                             <input type="radio" name="tax_invoice_check" value="OK" @checked(($verification->tax_invoice_check ?? '') === 'OK') required> OK
@@ -258,6 +271,12 @@
                     <form method="POST" action="{{ route('finance.invoices.verify-section-b', $invoice) }}">
                         @csrf
                         <div class="tw-space-y-4">
+                            @if($invoice->tax_invoice_number)
+                                <div class="tw-p-2.5 tw-rounded tw-bg-surface-container tw-border tw-border-outline-variant tw-flex tw-items-center tw-justify-between">
+                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">Nomor Faktur Pajak (NSFP) Supplier:</span>
+                                    <span class="tw-font-mono tw-font-bold tw-text-ui-xs tw-text-primary">{{ $invoice->tax_invoice_number }}</span>
+                                </div>
+                            @endif
                             <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
                                 <div>
                                     <label class="form-label tw-text-ui-xs tw-font-semibold">Kesesuaian PPN</label>
@@ -370,7 +389,7 @@
                         </div>
                         <div class="tw-flex tw-justify-between">
                             <span class="tw-text-on-surface-variant">Atas Nama:</span>
-                            <strong class="tw-text-on-surface">{{ $bank->account_holder }}</strong>
+                            <strong class="tw-text-on-surface">{{ $bank->account_holder_name }}</strong>
                         </div>
                     @else
                         <div class="tw-text-error">Supplier belum memiliki rekening bank terverifikasi!</div>

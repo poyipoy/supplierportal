@@ -6,14 +6,33 @@
     <x-ui.page-header
         title="Tanda Terima Pengajuan Invoice Lokal"
         :description="$invoice->receipt->receipt_number"
+        :breadcrumbs="[
+            ['label' => 'Daftar Invoice', 'url' => route('local-supplier.invoices.index')],
+            ['label' => $invoice->invoice_number, 'url' => route('local-supplier.invoices.show', $invoice)],
+            ['label' => 'Tanda Terima'],
+        ]"
     >
         <x-slot:actions>
+            <x-ui.button :href="route('local-supplier.invoices.show', $invoice)" variant="outline" size="sm" class="d-print-none">
+                <x-ui.icon name="arrow-left" size="xs" />
+                <span>Lihat Detail Invoice</span>
+            </x-ui.button>
             <x-ui.button type="button" data-print-receipt variant="primary" size="sm" class="d-print-none">
                 <x-ui.icon name="printer" size="xs" />
                 <span>Cetak Tanda Terima</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
+
+    @if(session('success'))
+        <div class="alert alert-success d-flex align-items-center mb-4 d-print-none" role="alert">
+            <x-ui.icon name="circle-check" size="sm" class="me-2 tw-text-success tw-shrink-0" />
+            <div>
+                <strong>Pengajuan Berhasil Tercatat!</strong>
+                <div class="tw-text-ui-xs tw-mt-0.5">{{ session('success') }}</div>
+            </div>
+        </div>
+    @endif
 
     <x-ui.card title="PT Astra Daido Steel Indonesia — Supplier Portal">
         <div class="tw-flex tw-flex-col sm:tw-flex-row tw-gap-6 tw-items-start">
@@ -55,6 +74,17 @@
             <p class="tw-m-0">
                 <strong>Catatan Penting:</strong> Lampirkan lembar tanda terima ini bersama dengan berkas fisik Invoice asli dan Faktur Pajak untuk diserahkan ke Finance ADASI pada hari Rabu jadwal penyerahan. Tanda terima ini mengonfirmasi pengajuan digital tercatat dalam sistem dan bukan merupakan bukti persetujuan atau pelunasan tagihan.
             </p>
+        </div>
+
+        <div class="tw-mt-5 tw-pt-4 tw-border-t tw-border-outline-variant tw-flex tw-items-center tw-justify-between d-print-none">
+            <x-ui.button :href="route('local-supplier.invoices.show', $invoice)" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" size="xs" />
+                <span>Lihat Detail Invoice</span>
+            </x-ui.button>
+            <x-ui.button type="button" data-print-receipt variant="primary" size="sm">
+                <x-ui.icon name="printer" size="xs" />
+                <span>Cetak Tanda Terima</span>
+            </x-ui.button>
         </div>
     </x-ui.card>
 </div>

@@ -29,13 +29,13 @@ class LocalInvoicesExport implements FromQuery, TracksExportProgress, WithCustom
 
     public function headings(): array
     {
-        return ['Submission', 'Receipt', 'Invoice', 'PO Reference', 'Supplier', 'Currency', 'Invoice Amount', 'PPN', 'Status', 'Submitted', 'Approved', 'Payment Term Days', 'Due Date', 'Scheduled Payment', 'Completed'];
+        return ['Submission', 'Receipt', 'Invoice', 'Nomor Faktur Pajak', 'PO Reference', 'Supplier', 'Currency', 'Invoice Amount', 'PPN', 'Status', 'Submitted', 'Approved', 'Payment Term Days', 'Due Date', 'Scheduled Payment', 'Completed'];
     }
 
     public function map($invoice): array
     {
         return array_map(fn ($value) => SpreadsheetCellSanitizer::text((string) $value), [
-            $invoice->submission_number, $invoice->receipt?->receipt_number, $invoice->invoice_number, $invoice->po_number,
+            $invoice->submission_number, $invoice->receipt?->receipt_number, $invoice->invoice_number, $invoice->tax_invoice_number, $invoice->po_number,
             $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name, $invoice->currency,
             $invoice->invoice_amount, $invoice->tax_amount, $invoice->status, $invoice->submitted_at?->format('Y-m-d'),
             $invoice->approved_at?->format('Y-m-d'), $invoice->payment_term_days_snapshot, $invoice->due_date?->format('Y-m-d'),

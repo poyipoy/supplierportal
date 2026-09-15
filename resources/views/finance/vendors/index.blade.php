@@ -63,11 +63,8 @@
                             </div>
                         </div>
 
-                        {{-- Proposed changes json summary --}}
-                        <div class="tw-mt-3 tw-p-2.5 tw-rounded tw-bg-surface tw-border tw-border-outline-variant tw-text-ui-xs">
-                            <span class="tw-font-semibold tw-text-on-surface tw-block tw-mb-1">Rincian Perubahan yang Diajukan:</span>
-                            <pre class="tw-m-0 tw-font-mono tw-text-xs tw-text-on-surface-variant">{{ json_encode($req->proposed_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
-                        </div>
+                        {{-- Proposed changes comparison summary --}}
+                        @include('partials.vendor-change-request-details', ['changeRequest' => $req])
                     </div>
 
                     {{-- Reject Modal --}}

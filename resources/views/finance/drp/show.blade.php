@@ -39,7 +39,7 @@
         <x-ui.card>
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Total Bruto</span>
             <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-on-surface tw-block tw-mt-1">
-                Rp {{ number_format($batch->total_amount, 0, ',', '.') }}
+                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
             </span>
         </x-ui.card>
         <x-ui.card>
@@ -51,7 +51,7 @@
         <x-ui.card>
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Total Net Transfer</span>
             <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-success tw-block tw-mt-1">
-                Rp {{ number_format($batch->total_amount - $batch->total_bank_fee, 0, ',', '.') }}
+                Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
             </span>
         </x-ui.card>
     </div>
@@ -66,7 +66,7 @@
                             <h3 class="tw-text-ui-base tw-font-bold tw-text-on-surface tw-m-0">
                                 {{ $group->payee_name }}
                             </h3>
-                            <x-ui.status-chip :tone="$group->status === 'PAID' ? 'success' : 'warning'">
+                            <x-ui.status-chip :tone="$group->status === 'PAID' ? 'success' : ($group->status === 'CANCELLED' ? 'neutral' : 'warning')">
                                 {{ $group->status }}
                             </x-ui.status-chip>
                         </div>
@@ -84,56 +84,58 @@
                         <div>
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">Net Transfer</span>
                             <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-primary">
-                                Rp {{ number_format($group->net_amount, 0, ',', '.') }}
+                                Rp {{ number_format($group->net_payment_amount, 0, ',', '.') }}
                             </span>
                             <span class="tw-text-[10px] tw-text-on-surface-variant tw-block">Fee: Rp {{ number_format($group->bank_fee, 0, ',', '.') }}</span>
                         </div>
 
                         {{-- Action Buttons per Group --}}
-                        <div class="tw-flex tw-items-center tw-gap-2">
-                            {{-- Assign Voucher Button --}}
-                            <button
-                                type="button"
-                                class="btn btn-outline-secondary btn-sm"
-                                data-bs-toggle="modal"
-                                data-bs-target="#voucherModal-{{ $group->id }}"
-                            >
-                                <x-ui.icon name="receipt" size="xs" />
-                                <span>Voucher</span>
-                            </button>
-
-                            {{-- Mark Paid Button --}}
-                            @if(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]) && $group->status === \App\Models\PaymentGroup::STATUS_PENDING)
+                        @if($group->status !== \App\Models\PaymentGroup::STATUS_CANCELLED)
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                {{-- Assign Voucher Button --}}
                                 <button
                                     type="button"
-                                    class="btn btn-success btn-sm"
+                                    class="btn btn-outline-secondary btn-sm"
                                     data-bs-toggle="modal"
-                                    data-bs-target="#payModal-{{ $group->id }}"
+                                    data-bs-target="#voucherModal-{{ $group->id }}"
                                 >
-                                    <x-ui.icon name="check-circle" size="xs" />
-                                    <span>Konfirmasi Bayar</span>
+                                    <x-ui.icon name="receipt" size="xs" />
+                                    <span>Voucher</span>
                                 </button>
-                            @endif
 
-                            {{-- Fee Override (Draft only) --}}
-                            @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT && $batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-warning btn-sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#feeModal-{{ $group->id }}"
-                                >
-                                    <x-ui.icon name="edit-3" size="xs" />
-                                    <span>Ubah Fee</span>
-                                </button>
-                            @endif
-                        </div>
+                                {{-- Mark Paid Button --}}
+                                @if(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]) && $group->status === \App\Models\PaymentGroup::STATUS_UNPAID)
+                                    <button
+                                        type="button"
+                                        class="btn btn-success btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#payModal-{{ $group->id }}"
+                                    >
+                                        <x-ui.icon name="check-circle" size="xs" />
+                                        <span>Konfirmasi Bayar</span>
+                                    </button>
+                                @endif
+
+                                {{-- Fee Override (Draft only) --}}
+                                @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT && $batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-warning btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#feeModal-{{ $group->id }}"
+                                    >
+                                        <x-ui.icon name="edit-3" size="xs" />
+                                        <span>Ubah Fee</span>
+                                    </button>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
 
                 {{-- Terbilang info --}}
                 <div class="tw-bg-surface-container tw-p-2.5 tw-rounded tw-text-ui-xs tw-text-on-surface tw-mb-4 tw-italic">
-                    Terbilang: "{{ $voucherService->terbilang($group->net_amount) }}"
+                    Terbilang: "{{ $voucherService->terbilang($group->net_payment_amount) }} Rupiah"
                 </div>
 
                 @if($group->status === 'PAID')
@@ -178,7 +180,7 @@
                                             {{ $item->item_reference }}
                                         @endif
                                     </td>
-                                    <td class="text-end tw-font-mono">Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
+                                    <td class="text-end tw-font-mono">Rp {{ number_format($item->subtotal_amount, 0, ',', '.') }}</td>
                                     <td class="text-end tw-font-mono">Rp {{ number_format($item->tax_amount, 0, ',', '.') }}</td>
                                     <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
                                         Rp {{ number_format($item->total_amount, 0, ',', '.') }}

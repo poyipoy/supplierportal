@@ -217,12 +217,14 @@ class InvoiceVerificationService
             }
 
             $now = now();
+            $fromStatus = $inv->status;
+
             $inv->update([
                 'status' => LocalInvoice::STATUS_NEED_REVISION,
             ]);
 
             $history = $inv->statusHistories()->create([
-                'from_status' => $inv->getOriginal('status'),
+                'from_status' => $fromStatus,
                 'to_status' => LocalInvoice::STATUS_NEED_REVISION,
                 'actor_id' => $reviewer->id,
                 'event' => 'revision_requested',

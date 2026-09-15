@@ -11,7 +11,9 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Notifications\LocalInvoice\RevisionRequiredNotification;
 use App\Notifications\SystemNotification;
+use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
+use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Services\NotificationUrlResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -62,6 +64,7 @@ class LocalInvoiceTest extends TestCase
             'manual_gr_reference' => 'GR-MANUAL-01',
             'invoice_amount' => '100000.25',
             'tax_amount' => '11000.03',
+            'tax_invoice_number' => '010.000-26.12345678',
         ], $overrides);
     }
 
@@ -171,8 +174,8 @@ class LocalInvoiceTest extends TestCase
     {
         $invoice = $this->submit();
         $paths = Storage::disk('private')->allFiles();
-        app(\App\Services\LocalInvoice\InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
-        app(\App\Services\LocalInvoice\InvoiceVerificationService::class)->requestRevision($invoice, 'Revise', $this->operator);
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(InvoiceVerificationService::class)->requestRevision($invoice, 'Revise', $this->operator);
         $listener = function () {
             throw new \RuntimeException('Injected database write failure');
         };
@@ -194,7 +197,7 @@ class LocalInvoiceTest extends TestCase
     {
         $invoice = $this->submit();
         $this->post(route('local-supplier.invoices.store'), array_merge($this->data(), $this->files()))->assertSessionHasErrors('invoice_number');
-        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-002']), $this->files()))->assertSessionHasNoErrors();
+        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-002', 'tax_invoice_number' => '010.000-26.12345679']), $this->files()))->assertSessionHasNoErrors();
         $other = $this->supplier(['local']);
         $this->actingAs($other)->post(route('local-supplier.invoices.store'), array_merge($this->data(), $this->files()))->assertSessionHasNoErrors();
         $this->assertDatabaseCount('local_invoices', 3);
@@ -258,9 +261,9 @@ class LocalInvoiceTest extends TestCase
     {
         $invoice = $this->submit();
         Notification::assertSentTo($this->operator, SystemNotification::class);
-        app(\App\Services\LocalInvoice\InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
         Notification::assertSentTo($this->supplier, SystemNotification::class);
-        app(\App\Services\LocalInvoice\InvoiceVerificationService::class)->requestRevision($invoice, 'Please replace Faktur Pajak', $this->operator);
+        app(InvoiceVerificationService::class)->requestRevision($invoice, 'Please replace Faktur Pajak', $this->operator);
         Notification::assertSentTo($this->supplier, RevisionRequiredNotification::class, fn ($notification) => $notification->reason === 'Please replace Faktur Pajak' && $notification->url === route('local-supplier.invoices.show', $invoice));
     }
 
@@ -343,5 +346,33 @@ class LocalInvoiceTest extends TestCase
         $this->get(route('attachments.show', 1))->assertForbidden();
         $this->get(route('conversations.drawer.index'))->assertForbidden();
         $this->get(route('shared.pdf.purchase-order', $invoice))->assertForbidden();
+    }
+
+    public function test_submit_and_resubmit_redirect_directly_to_receipt(): void
+    {
+        $response = $this->actingAs($this->supplier)->post(
+            route('local-supplier.invoices.store'),
+            array_merge($this->data(), $this->files())
+        );
+        $response->assertSessionHasNoErrors();
+        $invoice = LocalInvoice::sole();
+        $response->assertRedirect(route('local-supplier.invoices.receipt', $invoice));
+
+        $this->get(route('local-supplier.invoices.receipt', $invoice))
+            ->assertOk()
+            ->assertSee($invoice->receipt->receipt_number)
+            ->assertSee('Cetak Tanda Terima')
+            ->assertSee('Lihat Detail Invoice');
+
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(InvoiceVerificationService::class)->requestRevision($invoice, 'Please revise tax document', $this->operator);
+        $this->assertSame('NEED_REVISION', $invoice->fresh()->status);
+
+        $resubmitResponse = $this->actingAs($this->supplier)->post(
+            route('local-supplier.invoices.resubmit', $invoice),
+            array_merge($this->data(), $this->files())
+        );
+        $resubmitResponse->assertSessionHasNoErrors();
+        $resubmitResponse->assertRedirect(route('local-supplier.invoices.receipt', $invoice));
     }
 }

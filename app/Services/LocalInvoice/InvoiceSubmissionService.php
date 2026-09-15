@@ -5,6 +5,8 @@ namespace App\Services\LocalInvoice;
 use App\Models\LocalInvoice;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\VendorMaster\VendorMasterService;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -17,7 +19,7 @@ class InvoiceSubmissionService
         private InvoiceDocumentService $documents,
         private InvoiceNotificationService $notifications,
         private LocalPoReferenceService $poReferenceService,
-        private \App\Services\VendorMaster\VendorMasterService $vendorMasterService
+        private VendorMasterService $vendorMasterService
     ) {}
 
     public function submit(User $actor, array $data, array $files): LocalInvoice
@@ -38,8 +40,8 @@ class InvoiceSubmissionService
 
                 // 1. Validate Wednesday delivery schedule if provided
                 if (! empty($data['scheduled_physical_delivery_date'])) {
-                    $sched = \Carbon\Carbon::parse($data['scheduled_physical_delivery_date']);
-                    if ($sched->dayOfWeek !== \Carbon\Carbon::WEDNESDAY) {
+                    $sched = Carbon::parse($data['scheduled_physical_delivery_date']);
+                    if ($sched->dayOfWeek !== Carbon::WEDNESDAY) {
                         throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule must be on a Wednesday.']);
                     }
                 }
@@ -169,8 +171,8 @@ class InvoiceSubmissionService
 
                 // 1. Validate Wednesday delivery schedule if provided
                 if (! empty($data['scheduled_physical_delivery_date'])) {
-                    $sched = \Carbon\Carbon::parse($data['scheduled_physical_delivery_date']);
-                    if ($sched->dayOfWeek !== \Carbon\Carbon::WEDNESDAY) {
+                    $sched = Carbon::parse($data['scheduled_physical_delivery_date']);
+                    if ($sched->dayOfWeek !== Carbon::WEDNESDAY) {
                         throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule must be on a Wednesday.']);
                     }
                 }
@@ -284,6 +286,6 @@ class InvoiceSubmissionService
 
     private function values(array $data): array
     {
-        return Arr::only($data, ['invoice_number', 'invoice_date', 'po_number', 'invoice_amount', 'tax_amount']);
+        return Arr::only($data, ['invoice_number', 'invoice_date', 'po_number', 'invoice_amount', 'tax_amount', 'tax_invoice_number']);
     }
 }

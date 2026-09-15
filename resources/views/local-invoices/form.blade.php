@@ -98,88 +98,121 @@
                         @enderror
                     </div>
 
-                    {{-- PO Source Selection --}}
-                    <div class="sm:tw-col-span-2">
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
-                            Purchase Order Source <span class="text-danger">*</span>
+                    {{-- Unified Purchase Order & Search --}}
+                    <div class="sm:tw-col-span-2 tw-relative">
+                        <label for="po-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
+                            Nomor Purchase Order (PO) <span class="text-danger">*</span>
                         </label>
-                        <div class="tw-grid tw-grid-cols-2 tw-gap-3">
-                            <label class="tw-border tw-rounded-ui-sm tw-p-3 tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer hover:tw-bg-surface-container-low {{ $poSource === 'INTERNAL' ? 'tw-border-primary tw-bg-primary/5' : 'tw-border-outline-variant' }}">
-                                <input type="radio" name="po_source" value="INTERNAL" {{ $poSource === 'INTERNAL' ? 'checked' : '' }} onchange="togglePoSource(this.value)">
-                                <div>
-                                    <span class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-block">Internal ADASI PO</span>
-                                    <span class="tw-text-[11px] tw-text-on-surface-variant">PO terdaftar di sistem ADASI (GR diverifikasi otomatis)</span>
-                                </div>
-                            </label>
-                            <label class="tw-border tw-rounded-ui-sm tw-p-3 tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer hover:tw-bg-surface-container-low {{ $poSource === 'MANUAL' ? 'tw-border-primary tw-bg-primary/5' : 'tw-border-outline-variant' }}">
-                                <input type="radio" name="po_source" value="MANUAL" {{ $poSource === 'MANUAL' ? 'checked' : '' }} onchange="togglePoSource(this.value)">
-                                <div>
-                                    <span class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-block">Manual PO</span>
-                                    <span class="tw-text-[11px] tw-text-on-surface-variant">PO manual/legacy (wajib sertakan referensi Surat Jalan / GR)</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
+                        <input type="hidden" name="po_source" id="po-source" value="{{ old('po_source', $poSource) }}">
 
-                    {{-- Internal PO Fields --}}
-                    <div id="section-internal-po" class="sm:tw-col-span-2 {{ $poSource === 'INTERNAL' ? '' : 'tw-hidden' }}">
-                        <label for="internal-po-reference" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
-                            Internal PO Number / Reference <span class="text-danger">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            class="form-control @error('internal_po_reference') is-invalid @enderror"
-                            id="internal-po-reference"
-                            name="internal_po_reference"
-                            value="{{ old('internal_po_reference', $invoice->internal_po_reference ?? ($invoice->po_number ?? '')) }}"
-                            maxlength="100"
-                            placeholder="e.g. PO-LOCAL-2026-001"
-                        >
-                        <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1.5 tw-block">
-                            Sistem akan memverifikasi keberadaan PO dan nomor Goods Receipt (GR) secara otomatis dari database ADASI.
-                        </small>
+                        <div class="tw-relative" id="po-input-container">
+                            <div class="input-group">
+                                <span class="input-group-text tw-bg-surface-container-low tw-text-on-surface-variant">
+                                    <x-ui.icon name="search" size="xs" id="po-search-icon" />
+                                    <span class="spinner-border spinner-border-sm tw-hidden" id="po-search-spinner" role="status" aria-hidden="true" style="width: 14px; height: 14px;"></span>
+                                </span>
+                                <input
+                                    type="text"
+                                    class="form-control @error('po_number') is-invalid @enderror @error('internal_po_reference') is-invalid @enderror @error('manual_po_number') is-invalid @enderror"
+                                    id="po-number"
+                                    name="po_number"
+                                    value="{{ old('po_number', $invoice->po_number ?? ($invoice->internal_po_reference ?? ($invoice->manual_po_number ?? '')) ) }}"
+                                    maxlength="100"
+                                    placeholder="Ketik atau cari nomor PO (e.g. PO-LOCAL-2026-001)..."
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            {{-- Autocomplete Dropdown List --}}
+                            <div
+                                id="po-dropdown"
+                                class="tw-hidden tw-absolute tw-left-0 tw-right-0 tw-top-full tw-mt-1.5 tw-bg-surface tw-border tw-border-outline-variant tw-rounded-ui tw-shadow-lg tw-z-50 tw-max-h-72 tw-overflow-y-auto"
+                            >
+                                <div class="tw-p-2 tw-border-b tw-border-outline-variant/60 tw-bg-surface-container-low tw-flex tw-items-center tw-justify-between">
+                                    <span class="tw-text-[11px] tw-font-medium tw-text-on-surface-variant">
+                                        <x-ui.icon name="database" size="xs" class="tw-inline tw-mr-1" />
+                                        Pilih dari Database ADASI atau ketik manual
+                                    </span>
+                                    <span class="tw-text-[10px] tw-text-on-surface-variant/80">ESC untuk tutup</span>
+                                </div>
+                                <div id="po-dropdown-items" class="tw-divide-y tw-divide-outline-variant/40">
+                                    {{-- Dynamic Items Injected Here --}}
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Selected Internal PO Summary Card (Shown when selected from DB) --}}
+                        <div id="selected-po-badge" class="tw-mt-2.5 tw-p-3 tw-rounded-ui tw-bg-primary/5 tw-border tw-border-primary/20 {{ $poSource === 'INTERNAL' && !empty(old('po_number', $invoice->po_number ?? ($invoice->internal_po_reference ?? ''))) ? '' : 'tw-hidden' }}">
+                            <div class="tw-flex tw-items-start tw-justify-between tw-gap-3">
+                                <div class="tw-flex tw-items-start tw-gap-2.5">
+                                    <div class="tw-w-7 tw-h-7 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0 tw-mt-0.5">
+                                        <x-ui.icon name="check-circle-2" size="xs" />
+                                    </div>
+                                    <div>
+                                        <div class="tw-flex tw-items-center tw-gap-2 tw-flex-wrap">
+                                            <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface" id="selected-po-number-text">
+                                                {{ old('po_number', $invoice->po_number ?? ($invoice->internal_po_reference ?? '')) }}
+                                            </span>
+                                            <span class="badge bg-success-subtle text-success tw-text-[10px] tw-px-2 tw-py-0.5" id="selected-po-gr-badge">
+                                                GR Terverifikasi Otomatis
+                                            </span>
+                                        </div>
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5" id="selected-po-detail-text">
+                                            PO terdaftar di database ADASI. Referensi GR dan plafon diverifikasi otomatis.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-shrink-0">
+                                    <button
+                                        type="button"
+                                        id="btn-copy-po-amount"
+                                        class="btn btn-sm btn-outline-primary tw-text-[11px] tw-py-1 tw-px-2 tw-hidden"
+                                        title="Salin nilai PO ke input DPP"
+                                    >
+                                        Gunakan Nilai PO
+                                    </button>
+                                    <button
+                                        type="button"
+                                        id="btn-reset-po"
+                                        class="btn btn-sm btn-outline-secondary tw-text-[11px] tw-py-1 tw-px-2"
+                                    >
+                                        <x-ui.icon name="x" size="xs" class="tw-inline" /> Ubah / Manual
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        @error('po_number')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                         @error('internal_po_reference')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                        @error('manual_po_number')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    {{-- Manual PO Fields --}}
-                    <div id="section-manual-po" class="sm:tw-col-span-2 tw-grid tw-gap-4 sm:tw-grid-cols-2 {{ $poSource === 'MANUAL' ? '' : 'tw-hidden' }}">
-                        <div>
-                            <label for="manual-po-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
-                                Manual PO Number <span class="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                class="form-control @error('manual_po_number') is-invalid @enderror"
-                                id="manual-po-number"
-                                name="manual_po_number"
-                                value="{{ old('manual_po_number', $invoice->manual_po_number ?? ($invoice->po_number ?? '')) }}"
-                                maxlength="100"
-                                placeholder="e.g. PO-MAN-001"
-                            >
-                            @error('manual_po_number')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="manual-gr-reference" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
-                                Manual GR / Surat Jalan Ref <span class="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                class="form-control @error('manual_gr_reference') is-invalid @enderror"
-                                id="manual-gr-reference"
-                                name="manual_gr_reference"
-                                value="{{ old('manual_gr_reference', $invoice->manual_gr_reference ?? '') }}"
-                                maxlength="100"
-                                placeholder="e.g. SJ-ADASI-001 / GR-001"
-                            >
-                            @error('manual_gr_reference')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                    {{-- Manual GR / Surat Jalan Reference (Only revealed when Manual PO) --}}
+                    <div id="section-manual-gr" class="sm:tw-col-span-2 {{ $poSource === 'MANUAL' ? '' : 'tw-hidden' }}">
+                        <label for="manual-gr-reference" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-2">
+                            Referensi Surat Jalan / Manual GR <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            class="form-control @error('manual_gr_reference') is-invalid @enderror"
+                            id="manual-gr-reference"
+                            name="manual_gr_reference"
+                            value="{{ old('manual_gr_reference', $invoice->manual_gr_reference ?? '') }}"
+                            maxlength="100"
+                            placeholder="e.g. SJ-ADASI-2026-001 / GR-001"
+                        >
+                        <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1.5 tw-block">
+                            Wajib diisi untuk PO manual/legacy sebagai bukti penerimaan barang atau surat jalan di ADASI.
+                        </small>
+                        @error('manual_gr_reference')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     {{-- Wednesday Delivery Schedule --}}
@@ -266,6 +299,39 @@
                         </div>
                         <span id="tax-amount-preview" class="tw-text-ui-xs tw-text-primary tw-font-mono tw-mt-1.5 tw-block"></span>
                         @error('tax_amount')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Nomor Faktur Pajak (NSFP) --}}
+                    <div class="sm:tw-col-span-2" id="section-tax-invoice-number">
+                        <div class="tw-flex tw-items-center tw-justify-between tw-mb-2" style="min-height: 22px;">
+                            <label for="tax-invoice-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-m-0">
+                                Nomor Faktur Pajak (NSFP) @if($isPkp)<span class="text-danger">*</span>@endif
+                            </label>
+                            <span class="tw-text-[11px] tw-text-on-surface-variant">
+                                {{ $isPkp ? 'Wajib untuk PKP (16 Digit)' : 'Opsional untuk Non-PKP' }}
+                            </span>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text tw-font-mono tw-text-ui-xs"><x-ui.icon name="file-text" size="xs" /></span>
+                            <input
+                                type="text"
+                                class="form-control tw-font-mono @error('tax_invoice_number') is-invalid @enderror"
+                                id="tax-invoice-number"
+                                name="tax_invoice_number"
+                                value="{{ old('tax_invoice_number', $invoice->tax_invoice_number ?? '') }}"
+                                placeholder="010.000-26.12345678"
+                                maxlength="19"
+                                autocomplete="off"
+                                {{ $isPkp ? 'required' : '' }}
+                                oninput="maskTaxInvoiceNumber(this)"
+                            >
+                        </div>
+                        <small class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-block">
+                            Format standar e-Faktur DJP 16 digit: <span class="tw-font-mono">010.000-26.12345678</span> (titik dan strip otomatis diformat).
+                        </small>
+                        @error('tax_invoice_number')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
@@ -556,27 +622,269 @@
 @include('local-invoices.scripts')
 
 <script>
-    function togglePoSource(source) {
-        const secInternal = document.getElementById('section-internal-po');
-        const secManual = document.getElementById('section-manual-po');
-        const inputInternal = document.getElementById('internal-po-reference');
-        const inputManualPo = document.getElementById('manual-po-number');
-        const inputManualGr = document.getElementById('manual-gr-reference');
+    // --- PO Auto-Search & Dynamic GR Handling ---
+    const poSearchUrl = '{{ route('local-supplier.purchase-orders.search') }}';
+    const poInput = document.getElementById('po-number');
+    const poSourceInput = document.getElementById('po-source');
+    const poDropdown = document.getElementById('po-dropdown');
+    const poDropdownItems = document.getElementById('po-dropdown-items');
+    const poSearchSpinner = document.getElementById('po-search-spinner');
+    const poSearchIcon = document.getElementById('po-search-icon');
+    const selectedPoBadge = document.getElementById('selected-po-badge');
+    const selectedPoNumberText = document.getElementById('selected-po-number-text');
+    const selectedPoDetailText = document.getElementById('selected-po-detail-text');
+    const selectedPoGrBadge = document.getElementById('selected-po-gr-badge');
+    const btnCopyPoAmount = document.getElementById('btn-copy-po-amount');
+    const btnResetPo = document.getElementById('btn-reset-po');
+    const sectionManualGr = document.getElementById('section-manual-gr');
+    const manualGrInput = document.getElementById('manual-gr-reference');
 
-        if (source === 'INTERNAL') {
-            secInternal?.classList.remove('tw-hidden');
-            secManual?.classList.add('tw-hidden');
-            if (inputInternal) inputInternal.required = true;
-            if (inputManualPo) inputManualPo.required = false;
-            if (inputManualGr) inputManualGr.required = false;
+    let poSearchTimeout = null;
+    let selectedPoData = null;
+
+    function showPoDropdown() {
+        if (poDropdown) poDropdown.classList.remove('tw-hidden');
+    }
+
+    function hidePoDropdown() {
+        if (poDropdown) poDropdown.classList.add('tw-hidden');
+    }
+
+    function setPoSearching(isSearching) {
+        if (isSearching) {
+            poSearchSpinner?.classList.remove('tw-hidden');
+            poSearchIcon?.classList.add('tw-hidden');
         } else {
-            secInternal?.classList.add('tw-hidden');
-            secManual?.classList.remove('tw-hidden');
-            if (inputInternal) inputInternal.required = false;
-            if (inputManualPo) inputManualPo.required = true;
-            if (inputManualGr) inputManualGr.required = true;
+            poSearchSpinner?.classList.add('tw-hidden');
+            poSearchIcon?.classList.remove('tw-hidden');
         }
     }
+
+    async function fetchPoResults(query = '') {
+        setPoSearching(true);
+        try {
+            const url = new URL(poSearchUrl, window.location.origin);
+            if (query) url.searchParams.set('q', query);
+            const res = await fetch(url.toString(), {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (!res.ok) throw new Error('Network response was not ok');
+            const data = await res.json();
+            renderPoDropdown(data.data || [], query);
+        } catch (err) {
+            console.error('PO search error:', err);
+            if (poDropdownItems) {
+                poDropdownItems.innerHTML = '<div class="tw-p-3 tw-text-center tw-text-xs tw-text-on-surface-variant">Gagal memuat data PO. Silakan ketik manual.</div>';
+            }
+            showPoDropdown();
+        } finally {
+            setPoSearching(false);
+        }
+    }
+
+    function renderPoDropdown(items, query) {
+        if (!poDropdownItems) return;
+
+        if (items.length === 0) {
+            poDropdownItems.innerHTML = `
+                <div class="tw-p-3 tw-text-center">
+                    <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-1">
+                        ${query ? 'Tidak ada PO di database yang cocok dengan "' + escapeHtml(query) + '".' : 'Tidak ada data PO aktif di database.'}
+                    </div>
+                    <div class="tw-text-[11px] tw-text-primary tw-font-medium">
+                        Anda dapat melanjutkan dengan mengisi nomor PO manual dan surat jalan.
+                    </div>
+                </div>
+            `;
+            showPoDropdown();
+            return;
+        }
+
+        let html = '';
+        items.forEach((item, index) => {
+            const grBadgeClass = item.has_gr
+                ? 'tw-bg-emerald-50 tw-text-emerald-700 tw-border tw-border-emerald-200'
+                : 'tw-bg-amber-50 tw-text-amber-700 tw-border tw-border-amber-200';
+            const grBadgeText = item.has_gr
+                ? (item.gr_reference ? 'GR: ' + escapeHtml(item.gr_reference) : 'GR Siap')
+                : 'Belum Ada GR';
+
+            const grWarningText = !item.has_gr
+                ? '<div class="tw-text-[10px] tw-text-amber-600 tw-mt-0.5 tw-flex tw-items-center tw-gap-1"><span>⚠️ Belum bisa ditagihkan sampai GR diterbitkan oleh ADASI.</span></div>'
+                : '';
+
+            html += `
+                <div
+                    class="po-dropdown-item tw-p-3 hover:tw-bg-surface-container-low tw-cursor-pointer tw-transition-colors ${!item.has_gr ? 'tw-opacity-80' : ''}"
+                    data-index="${index}"
+                >
+                    <div class="tw-flex tw-items-start tw-justify-between tw-gap-2">
+                        <div>
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <span class="tw-font-mono tw-font-semibold tw-text-ui-xs tw-text-primary">
+                                    ${escapeHtml(item.po_number)}
+                                </span>
+                                <span class="tw-text-[10px] tw-font-medium tw-px-1.5 tw-py-0.5 tw-rounded ${grBadgeClass}">
+                                    ${grBadgeText}
+                                </span>
+                            </div>
+                            ${item.description ? `<div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5 tw-line-clamp-1">${escapeHtml(item.description)}</div>` : ''}
+                            ${grWarningText}
+                        </div>
+                        <div class="tw-text-end tw-shrink-0">
+                            <div class="tw-text-[11px] tw-font-semibold tw-text-on-surface">
+                                ${item.formatted_total_amount}
+                            </div>
+                            <div class="tw-text-[10px] tw-text-on-surface-variant">
+                                Sisa: ${item.formatted_remaining_amount}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        poDropdownItems.innerHTML = html;
+
+        // Bind clicks
+        poDropdownItems.querySelectorAll('.po-dropdown-item').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                const idx = parseInt(this.getAttribute('data-index'), 10);
+                const item = items[idx];
+                selectInternalPo(item);
+            });
+        });
+
+        showPoDropdown();
+    }
+
+    function selectInternalPo(item) {
+        if (!item.has_gr) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'GR Belum Terbit',
+                    text: 'PO ' + item.po_number + ' belum memiliki referensi Goods Receipt (GR) di sistem ADASI. Pengajuan invoice untuk PO Internal hanya dapat diproses setelah material/barang diterima (GR terbit).',
+                    confirmButtonText: 'Mengerti'
+                });
+            } else {
+                alert('PO ' + item.po_number + ' belum memiliki Goods Receipt (GR) di sistem ADASI.');
+            }
+            return;
+        }
+
+        selectedPoData = item;
+        if (poInput) poInput.value = item.po_number;
+        if (poSourceInput) poSourceInput.value = 'INTERNAL';
+
+        // Update selected badge
+        if (selectedPoNumberText) selectedPoNumberText.textContent = item.po_number;
+        if (selectedPoGrBadge) {
+            selectedPoGrBadge.textContent = item.gr_reference ? 'GR: ' + item.gr_reference : 'GR Terverifikasi Otomatis';
+        }
+        if (selectedPoDetailText) {
+            selectedPoDetailText.textContent = 'PO terdaftar di database ADASI • Total: ' + item.formatted_total_amount + ' • Sisa Plafon: ' + item.formatted_remaining_amount;
+        }
+
+        // Show copy amount button if remaining amount exists
+        if (btnCopyPoAmount) {
+            btnCopyPoAmount.classList.remove('tw-hidden');
+            btnCopyPoAmount.onclick = function() {
+                const dppInput = document.getElementById('invoice-amount');
+                if (dppInput) {
+                    dppInput.value = item.remaining_amount > 0 ? item.remaining_amount : item.total_amount;
+                    updatePpnCalculation();
+                }
+            };
+        }
+
+        selectedPoBadge?.classList.remove('tw-hidden');
+        hidePoDropdown();
+
+        // Internal PO automatically resolves GR from DB, so hide manual GR section
+        sectionManualGr?.classList.add('tw-hidden');
+        if (manualGrInput) manualGrInput.required = false;
+    }
+
+    function switchToManual() {
+        selectedPoData = null;
+        if (poSourceInput) poSourceInput.value = 'MANUAL';
+        selectedPoBadge?.classList.add('tw-hidden');
+        btnCopyPoAmount?.classList.add('tw-hidden');
+        sectionManualGr?.classList.remove('tw-hidden');
+        if (manualGrInput) manualGrInput.required = true;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Event Listeners for PO Input
+    if (poInput) {
+        poInput.addEventListener('focus', function() {
+            // Show recent POs when focused if not already locked
+            if (poSourceInput?.value !== 'INTERNAL' || !selectedPoData) {
+                fetchPoResults(this.value.trim());
+            }
+        });
+
+        poInput.addEventListener('input', function() {
+            const query = this.value.trim();
+
+            // If user modifies text away from selected internal PO, switch to manual mode
+            if (selectedPoData && query !== selectedPoData.po_number) {
+                switchToManual();
+            } else if (!selectedPoData) {
+                switchToManual();
+            }
+
+            clearTimeout(poSearchTimeout);
+            poSearchTimeout = setTimeout(() => {
+                fetchPoResults(query);
+            }, 250);
+        });
+
+        poInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hidePoDropdown();
+            }
+        });
+    }
+
+    if (btnResetPo) {
+        btnResetPo.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchToManual();
+            if (poInput) {
+                poInput.focus();
+                poInput.select();
+            }
+        });
+    }
+
+    // Close dropdown on click outside
+    document.addEventListener('click', function(e) {
+        const container = document.getElementById('po-input-container');
+        if (container && !container.contains(e.target)) {
+            hidePoDropdown();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (poSourceInput?.value === 'MANUAL') {
+            sectionManualGr?.classList.remove('tw-hidden');
+            if (manualGrInput) manualGrInput.required = true;
+        } else {
+            sectionManualGr?.classList.add('tw-hidden');
+            if (manualGrInput) manualGrInput.required = false;
+        }
+    });
 
     function updatePpnCalculation() {
         const dppInput = document.getElementById('invoice-amount');
@@ -663,5 +971,23 @@
             emptyEl.classList.remove('tw-hidden');
             infoEl.classList.add('tw-hidden');
         }
+    }
+
+    function maskTaxInvoiceNumber(input) {
+        let value = input.value.replace(/\D/g, '').substring(0, 16);
+        let formatted = '';
+        if (value.length > 0) {
+            formatted = value.substring(0, 3);
+            if (value.length > 3) {
+                formatted += '.' + value.substring(3, 6);
+            }
+            if (value.length > 6) {
+                formatted += '-' + value.substring(6, 8);
+            }
+            if (value.length > 8) {
+                formatted += '.' + value.substring(8, 16);
+            }
+        }
+        input.value = formatted;
     }
 </script>

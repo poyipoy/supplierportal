@@ -173,7 +173,7 @@
                                 </x-ui.status-chip>
                             </td>
                             <td class="text-end tw-font-mono tw-font-semibold tw-text-on-surface">
-                                Rp {{ number_format($batch->total_amount, 0, ',', '.') }}
+                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
                             </td>
                             <td class="text-end tw-font-mono tw-text-on-surface-variant">
                                 Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}

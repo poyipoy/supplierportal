@@ -123,7 +123,7 @@ class PaymentExecutionService
 
             // Recalculate batch status
             $unpaidCount = $batch->groups()
-                ->where('status', '!=', PaymentGroup::STATUS_PAID)
+                ->whereNotIn('status', [PaymentGroup::STATUS_PAID, PaymentGroup::STATUS_CANCELLED])
                 ->where('subtotal_amount', '>', 0)
                 ->count();
 

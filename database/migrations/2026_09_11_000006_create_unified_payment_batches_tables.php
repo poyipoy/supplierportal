@@ -47,7 +47,7 @@ return new class extends Migration
             $table->text('fee_override_reason')->nullable();
 
             // Payment Confirmation
-            $table->enum('status', ['UNPAID', 'PAID'])->default('UNPAID');
+            $table->enum('status', ['UNPAID', 'PAID', 'CANCELLED'])->default('UNPAID');
             $table->string('transfer_reference', 100)->nullable();
             $table->date('transfer_date')->nullable();
             $table->text('payment_notes')->nullable();

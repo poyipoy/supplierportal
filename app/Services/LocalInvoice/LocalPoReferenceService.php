@@ -3,9 +3,9 @@
 namespace App\Services\LocalInvoice;
 
 use App\Models\LocalInvoice;
+use App\Models\LocalPurchaseOrder;
 use App\Models\User;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class LocalPoReferenceService
@@ -34,6 +34,69 @@ class LocalPoReferenceService
     public static function clearMockPos(): void
     {
         self::$mockInternalPos = [];
+    }
+
+    /**
+     * Search available internal POs for a supplier.
+     */
+    public function searchInternalPos(User $supplierUser, string $query = '', int $limit = 10): array
+    {
+        $queryUpper = strtoupper(trim($query));
+        $results = [];
+
+        // 1. If mock internal POs exist for this supplier (e.g. during tests), include them
+        if (isset(self::$mockInternalPos[$supplierUser->id])) {
+            foreach (self::$mockInternalPos[$supplierUser->id] as $poNum => $data) {
+                if ($queryUpper === '' || str_contains(strtoupper((string) $poNum), $queryUpper)) {
+                    $details = $this->getInternalPoDetails($supplierUser, (string) $poNum);
+                    if ($details) {
+                        $results[$poNum] = [
+                            'po_number' => $poNum,
+                            'description' => $details['description'] ?? '',
+                            'total_amount' => (float) $details['po_value'],
+                            'formatted_total_amount' => 'Rp '.number_format($details['po_value'], 0, ',', '.'),
+                            'remaining_amount' => (float) $details['remaining_value'],
+                            'formatted_remaining_amount' => 'Rp '.number_format($details['remaining_value'], 0, ',', '.'),
+                            'has_gr' => (bool) $details['has_gr'],
+                            'gr_reference' => $details['gr_reference'],
+                        ];
+                    }
+                }
+            }
+        }
+
+        // 2. Query database LocalPurchaseOrder
+        $dbPos = LocalPurchaseOrder::where('supplier_id', $supplierUser->id)
+            ->when($query !== '', function ($q) use ($query) {
+                $q->where('po_number', 'like', "%{$query}%");
+            })
+            ->with('goodsReceipts')
+            ->latest('id')
+            ->limit($limit)
+            ->get();
+
+        foreach ($dbPos as $po) {
+            if (! isset($results[$po->po_number])) {
+                $details = $this->getInternalPoDetails($supplierUser, $po->po_number);
+                $gr = $po->goodsReceipts->first();
+                $hasGr = $gr !== null;
+                $poValue = (float) $po->total_amount;
+                $remainingValue = $details ? (float) $details['remaining_value'] : $poValue;
+
+                $results[$po->po_number] = [
+                    'po_number' => $po->po_number,
+                    'description' => $po->description ?? '',
+                    'total_amount' => $poValue,
+                    'formatted_total_amount' => 'Rp '.number_format($poValue, 0, ',', '.'),
+                    'remaining_amount' => $remainingValue,
+                    'formatted_remaining_amount' => 'Rp '.number_format($remainingValue, 0, ',', '.'),
+                    'has_gr' => $hasGr,
+                    'gr_reference' => $gr?->gr_number,
+                ];
+            }
+        }
+
+        return array_values(array_slice($results, 0, $limit));
     }
 
     /**

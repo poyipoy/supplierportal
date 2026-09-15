@@ -67,6 +67,11 @@ class SupplierBankAccount extends Model
 
     public function isBca(): bool
     {
-        return strtoupper(trim($this->bank_name)) === 'BCA';
+        return strtoupper(trim((string) $this->bank_name)) === 'BCA';
+    }
+
+    public function getAccountHolderAttribute(): ?string
+    {
+        return $this->account_holder_name;
     }
 }

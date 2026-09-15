@@ -315,11 +315,11 @@ class PaymentBatchService
                 'subtotal_amount' => $newSubtotal,
                 'bank_fee' => $newFee,
                 'net_payment_amount' => $newNet,
-                'status' => $activeItems->isEmpty() ? 'CANCELLED' : $group->status,
+                'status' => $activeItems->isEmpty() ? PaymentGroup::STATUS_CANCELLED : $group->status,
             ]);
 
             // Recalculate batch
-            $allActiveGroups = $batch->groups()->where('status', '!=', 'CANCELLED')->get();
+            $allActiveGroups = $batch->groups()->where('status', '!=', PaymentGroup::STATUS_CANCELLED)->get();
             $batch->update([
                 'total_subtotal' => $allActiveGroups->sum('subtotal_amount'),
                 'total_bank_fee' => $allActiveGroups->sum('bank_fee'),
@@ -355,7 +355,7 @@ class PaymentBatchService
                 'fee_override_reason' => trim($reason).' (by '.$actor->name.')',
             ]);
 
-            $allActiveGroups = $batch->groups()->where('status', '!=', 'CANCELLED')->get();
+            $allActiveGroups = $batch->groups()->where('status', '!=', PaymentGroup::STATUS_CANCELLED)->get();
             $batch->update([
                 'total_bank_fee' => $allActiveGroups->sum('bank_fee'),
                 'total_net_amount' => $allActiveGroups->sum('net_payment_amount'),
@@ -384,7 +384,7 @@ class PaymentBatchService
 
             // P5-07 revalidation:
             // 1. Must have active items
-            $activeItems = PaymentItem::whereHas('group', fn ($g) => $g->where('payment_batch_id', $b->id)->where('status', '!=', 'CANCELLED'))
+            $activeItems = PaymentItem::whereHas('group', fn ($g) => $g->where('payment_batch_id', $b->id)->where('status', '!=', PaymentGroup::STATUS_CANCELLED))
                 ->where('status', PaymentItem::STATUS_ACTIVE)
                 ->get();
 

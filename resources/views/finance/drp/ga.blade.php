@@ -47,10 +47,10 @@
                             <td>
                                 <strong class="tw-font-mono tw-text-on-surface">{{ $batch->batch_number }}</strong>
                             </td>
-                            <td>{{ $batch->batch_date?->format('d M Y') }}</td>
+                            <td>{{ $batch->created_at?->format('d M Y') }}</td>
                             <td>{{ $batch->groups_count }} karyawan</td>
                             <td class="text-end tw-font-mono tw-font-semibold tw-text-primary">
-                                Rp {{ number_format($batch->total_amount, 0, ',', '.') }}
+                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="match($batch->status) { 'PAID' => 'success', 'PARTIALLY_PAID' => 'info', 'FINALIZED' => 'primary', default => 'warning' }">
