@@ -23,6 +23,7 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('lo
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{invoice}/revision', [InvoiceController::class, 'revision'])->name('invoices.revision');
     Route::post('/invoices/{invoice}/resubmit', [InvoiceController::class, 'resubmit'])->middleware('throttle:30,1')->name('invoices.resubmit');
+    Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->middleware('throttle:30,1')->name('invoices.cancel');
     Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
     Route::get('/vendor-profile', [VendorProfileController::class, 'show'])->name('vendor-profile.show');
     Route::post('/vendor-profile/change-requests', [VendorProfileController::class, 'storeChangeRequest'])->name('vendor-profile.change-requests.store');

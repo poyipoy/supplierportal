@@ -320,11 +320,64 @@ class PaymentBatchService
 
             // Recalculate batch
             $allActiveGroups = $batch->groups()->where('status', '!=', PaymentGroup::STATUS_CANCELLED)->get();
+            $batchStatus = $allActiveGroups->isEmpty() ? PaymentBatch::STATUS_CANCELLED : $batch->status;
+
             $batch->update([
                 'total_subtotal' => $allActiveGroups->sum('subtotal_amount'),
                 'total_bank_fee' => $allActiveGroups->sum('bank_fee'),
                 'total_net_amount' => $allActiveGroups->sum('net_payment_amount'),
+                'status' => $batchStatus,
             ]);
+        });
+    }
+
+    /**
+     * Cancel an entire DRP batch while in DRAFT status.
+     * All items return to the Ready to Pay candidate pool.
+     */
+    public function cancelBatch(PaymentBatch $batch, User $actor, string $reason): PaymentBatch
+    {
+        if (! $actor->isFinance() && ! $actor->isAdmin()) {
+            throw new InvalidArgumentException('Only Finance or Admin can cancel a DRP batch.');
+        }
+
+        if (trim($reason) === '') {
+            throw new InvalidArgumentException('Cancellation reason is mandatory.');
+        }
+
+        return DB::transaction(function () use ($batch, $actor, $reason) {
+            /** @var PaymentBatch $b */
+            $b = PaymentBatch::where('id', $batch->id)->lockForUpdate()->firstOrFail();
+
+            if ($b->status !== PaymentBatch::STATUS_DRAFT) {
+                throw new RuntimeException("DRP batch can only be cancelled while in DRAFT status (current: {$b->status}).");
+            }
+
+            // Lock and cancel all active items in all groups
+            foreach ($b->groups as $group) {
+                $group->items()->where('status', PaymentItem::STATUS_ACTIVE)->update([
+                    'status' => PaymentItem::STATUS_REMOVED,
+                    'removed_by' => $actor->id,
+                    'removed_at' => now(),
+                    'removal_reason' => trim($reason),
+                ]);
+
+                $group->update([
+                    'subtotal_amount' => 0.0,
+                    'bank_fee' => 0.0,
+                    'net_payment_amount' => 0.0,
+                    'status' => PaymentGroup::STATUS_CANCELLED,
+                ]);
+            }
+
+            $b->update([
+                'status' => PaymentBatch::STATUS_CANCELLED,
+                'total_subtotal' => 0.0,
+                'total_bank_fee' => 0.0,
+                'total_net_amount' => 0.0,
+            ]);
+
+            return $b->fresh(['groups.items']);
         });
     }
 

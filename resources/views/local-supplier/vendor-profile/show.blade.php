@@ -204,8 +204,15 @@
 
                     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-4">
                         <div>
-                            <label for="bank_name" class="form-label tw-text-ui-xs tw-font-medium">Nama Bank</label>
-                            <input type="text" id="bank_name" name="bank_name" class="form-control form-control-sm" placeholder="Contoh: BCA / Mandiri / BRI" value="{{ old('bank_name') }}">
+                            <x-ui.searchable-select
+                                name="bank_name"
+                                id="bank_name"
+                                label="Nama Bank"
+                                placeholder="Pilih atau cari bank..."
+                                search-placeholder="Ketik nama bank..."
+                                :options="\App\Support\BankList::options(old('bank_name'))"
+                                :value="old('bank_name')"
+                            />
                         </div>
                         <div>
                             <label for="account_number" class="form-label tw-text-ui-xs tw-font-medium">Nomor Rekening</label>

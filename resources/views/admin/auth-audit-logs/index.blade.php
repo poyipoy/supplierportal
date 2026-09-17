@@ -53,7 +53,7 @@
             <table id="authAuditTable" class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">Date &amp; Time</th>
+                        <th scope="col">Date & Time</th>
                         <th scope="col">Event</th>
                         <th scope="col">Actor</th>
                         <th scope="col">Attempted Email</th>

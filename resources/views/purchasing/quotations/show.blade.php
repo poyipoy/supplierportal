@@ -84,7 +84,7 @@
                         </div>
                     </div>
                     <div class="sm:tw-col-span-2 lg:tw-col-span-3 tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Payment Terms &amp; Conditions</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Payment Terms & Conditions</div>
                         <div class="tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $quotation->payment_terms ?? '-' }}</div>
                     </div>
                 </div>
@@ -526,7 +526,7 @@
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
                         <x-ui.button type="submit" size="sm" id="generatePoSubmit" data-no-auto-spinner>
                             <span id="generatePoSpinner" class="ui-spinner" hidden aria-hidden="true"></span>
-                            <span id="generatePoSubmitLabel">Confirm &amp; Generate PO</span>
+                            <span id="generatePoSubmitLabel">Confirm & Generate PO</span>
                         </x-ui.button>
                     </div>
                 </form>

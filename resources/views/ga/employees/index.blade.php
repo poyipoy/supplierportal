@@ -143,8 +143,16 @@
                                                 <input type="text" name="department" class="form-control form-control-sm" value="{{ $emp->department }}" required>
                                             </div>
                                             <div>
-                                                <label class="form-label tw-font-semibold">Nama Bank</label>
-                                                <input type="text" name="bank_name" class="form-control form-control-sm" value="{{ $emp->bank_name }}" required placeholder="BCA / Mandiri / BRI">
+                                                <x-ui.searchable-select
+                                                    name="bank_name"
+                                                    id="bank_name_edit_{{ $emp->id }}"
+                                                    label="Nama Bank"
+                                                    placeholder="Pilih atau cari bank..."
+                                                    search-placeholder="Ketik nama bank..."
+                                                    :options="\App\Support\BankList::options(old('bank_name', $emp->bank_name))"
+                                                    :value="old('bank_name', $emp->bank_name)"
+                                                    required
+                                                />
                                             </div>
                                             <div>
                                                 <label class="form-label tw-font-semibold">Nomor Rekening</label>
@@ -209,8 +217,16 @@
                         <input type="text" name="department" class="form-control form-control-sm" required placeholder="Contoh: Sales / GA / IT">
                     </div>
                     <div>
-                        <label class="form-label tw-font-semibold">Nama Bank <span class="text-danger">*</span></label>
-                        <input type="text" name="bank_name" class="form-control form-control-sm" required placeholder="Contoh: BCA / Mandiri / BRI">
+                        <x-ui.searchable-select
+                            name="bank_name"
+                            id="bank_name_add"
+                            label="Nama Bank"
+                            placeholder="Pilih atau cari bank..."
+                            search-placeholder="Ketik nama bank..."
+                            :options="\App\Support\BankList::options(old('bank_name'))"
+                            :value="old('bank_name')"
+                            required
+                        />
                     </div>
                     <div>
                         <label class="form-label tw-font-semibold">Nomor Rekening <span class="text-danger">*</span></label>

@@ -20,4 +20,15 @@ class LocalInvoiceDocument extends Model
     {
         return $this->belongsTo(LocalInvoiceRevision::class, 'local_invoice_revision_id');
     }
+
+    public function getFormattedFileSizeAttribute(): string
+    {
+        if (!$this->file_size) {
+            return '';
+        }
+        if ($this->file_size >= 1048576) {
+            return number_format($this->file_size / 1048576, 1) . ' MB';
+        }
+        return number_format($this->file_size / 1024, 1) . ' KB';
+    }
 }

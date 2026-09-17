@@ -92,40 +92,18 @@
             </x-ui.card>
 
             {{-- Dokumen Upload Supplier --}}
-            <x-ui.card title="Berkas Dokumen Pendukung">
-                <div class="tw-space-y-3">
-                    @php $latestRev = $invoice->revisions->last(); @endphp
-                    @if($latestRev && $latestRev->documents->isNotEmpty())
-                        <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-3">
-                            @foreach($latestRev->documents as $doc)
-                                <div class="tw-flex tw-items-center tw-justify-between tw-p-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container">
-                                    <div class="tw-flex tw-items-center tw-gap-2.5 tw-min-w-0">
-                                        <x-ui.icon name="file-text" size="md" class="tw-text-primary tw-shrink-0" />
-                                        <div class="tw-min-w-0">
-                                            <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface tw-block tw-truncate">
-                                                {{ ucwords(str_replace('_', ' ', $doc->document_type)) }}
-                                            </span>
-                                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-truncate">
-                                                {{ $doc->original_filename }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <a href="{{ route('local-invoice-documents.show', $doc) }}" target="_blank" class="tw-shrink-0 btn btn-sm btn-outline-primary tw-text-xs">
-                                        Unduh
-                                    </a>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="tw-text-center tw-py-4 tw-text-ui-xs tw-text-on-surface-variant">
-                            Belum ada dokumen yang diunggah.
-                        </div>
-                    @endif
-                </div>
+            <x-ui.card
+                title="Berkas Dokumen Lampiran (Upload Supplier)"
+                description="Dokumen digital resmi yang diunggah oleh rekanan supplier untuk invoice ini."
+            >
+                @php $latestRev = $invoice->revisions->last(); @endphp
+                @include('local-invoices.partials._documents_grid', [
+                    'documents' => $latestRev ? $latestRev->documents : collect()
+                ])
             </x-ui.card>
 
             {{-- Section A Checklist Results (Read-Only) --}}
-            <x-ui.card title="Hasil Verifikasi Section A (Dokumen &amp; Referensi)">
+            <x-ui.card title="Hasil Verifikasi Section A (Dokumen & Referensi)">
                 @if($verification)
                     <div class="tw-space-y-3 tw-text-ui-xs">
                         <div class="tw-flex tw-justify-between tw-p-2 tw-rounded tw-bg-surface-container">
@@ -201,7 +179,7 @@
 
         <div class="lg:tw-col-span-4 tw-space-y-6">
             {{-- Jadwal Pembayaran --}}
-            <x-ui.card title="Jadwal Pembayaran &amp; Jatuh Tempo">
+            <x-ui.card title="Jadwal Pembayaran & Jatuh Tempo">
                 <div class="tw-space-y-3 tw-text-ui-xs">
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">Tgl Terima Kasir:</span>

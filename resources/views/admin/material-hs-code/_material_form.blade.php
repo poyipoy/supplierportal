@@ -86,7 +86,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="is_active" value="1" id="materialActive" checked>
                             <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="materialActive">
-                                Active &amp; Selectable in Requisition Items
+                                Active & Selectable in Requisition Items
                             </label>
                         </div>
                     </div>

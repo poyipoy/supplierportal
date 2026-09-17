@@ -11,6 +11,7 @@ use RuntimeException;
 
 class InvoiceExpiryService
 {
+    public function __construct(private LocalGrReservationService $reservations) {}
     /**
      * Record a missed delivery schedule.
      * First missed Wednesday allows rescheduling.
@@ -44,6 +45,7 @@ class InvoiceExpiryService
                     'notes' => 'Invoice expired after missing scheduled physical document delivery twice.',
                     'created_at' => now(),
                 ]);
+                $this->reservations->release($inv, $actor);
             } else {
                 // First missed delivery
                 $inv->update([

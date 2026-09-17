@@ -313,4 +313,32 @@ class GaClaimWorkflowTest extends TestCase
         $this->actingAs($ga)->get(route('ga.claims.index'))->assertOk();
         $this->actingAs($ga)->get(route('ga.claims.create'))->assertOk();
     }
+
+    public function test_ga_drp_draft_renders_and_creates_batch_draft(): void
+    {
+        $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
+        $employee = $this->createEmployee();
+
+        $claim = GaClaim::create([
+            'claim_number' => 'GA-CLAIM-READY-01',
+            'employee_id' => $employee->id,
+            'claim_type' => GaClaim::TYPE_UPD_GA,
+            'claim_date' => '2026-09-10',
+            'amount' => 500000,
+            'status' => GaClaim::STATUS_READY_TO_PAY,
+            'submitted_by' => $ga->id,
+            'submitted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($ga)->get(route('ga.drp-draft'));
+        $response->assertOk();
+        $response->assertSee('GA-CLAIM-READY-01');
+
+        $storeResponse = $this->actingAs($ga)->post(route('ga.drp-draft.store'), [
+            'claim_ids' => [$claim->id],
+            'notes' => 'Batch draft for test',
+        ]);
+        $storeResponse->assertRedirect(route('ga.claims.index'));
+        $storeResponse->assertSessionHas('success');
+    }
 }

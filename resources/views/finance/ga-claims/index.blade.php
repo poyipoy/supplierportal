@@ -121,7 +121,7 @@
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.ga-claims.show', $claim)" size="sm" variant="outline">
                                     <x-ui.icon name="eye" size="xs" />
-                                    <span>Detail &amp; Verifikasi</span>
+                                    <span>Detail & Verifikasi</span>
                                 </x-ui.button>
                             </td>
                         </tr>

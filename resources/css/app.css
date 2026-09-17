@@ -463,6 +463,24 @@ html[data-sidebar-motion-ready="true"] {
         border-radius: var(--md-shape-full);
     }
 
+    .ui-scrollable-list {
+        scrollbar-color: var(--md-outline-variant) transparent;
+        scrollbar-width: thin;
+    }
+
+    .ui-scrollable-list::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .ui-scrollable-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .ui-scrollable-list::-webkit-scrollbar-thumb {
+        background: var(--md-outline-variant);
+        border-radius: var(--md-shape-full);
+    }
+
     .sidebar-heading {
         align-items: flex-end;
         display: flex;
@@ -1941,6 +1959,13 @@ html[data-sidebar-motion-ready="true"] {
 
     .ui-calendar-footer-btn--primary:hover {
         background: var(--md-primary-container);
+    }
+
+    .ui-calendar-footer-btn:disabled,
+    .ui-calendar-footer-btn.is-disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 
     .ui-calendar-nav-btn:focus-visible,

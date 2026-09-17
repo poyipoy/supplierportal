@@ -26,6 +26,10 @@
         title="Buat Batch DRP Supplier Baru"
         description="Pilih tagihan invoice berstatus Ready to Pay yang belum masuk dalam batch aktif (Draft/Finalized)."
     >
+        <form method="GET" action="{{ route('finance.drp.supplier') }}" class="tw-mb-4 tw-flex tw-flex-wrap tw-items-end tw-gap-3">
+            <div><label class="form-label tw-text-ui-xs">Supplier filter</label><select name="supplier_id" class="form-select form-select-sm"><option value="">All Local Suppliers</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
+            <x-ui.button type="submit" size="sm" variant="outline">Filter</x-ui.button>
+        </form>
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
             <div class="tw-space-y-4">
@@ -46,7 +50,7 @@
                             @forelse($eligibleInvoices as $inv)
                                 @php
                                     $bank = $inv->supplier->supplier?->activeBankAccount;
-                                    $totalNominal = $inv->invoice_amount + $inv->tax_amount;
+                                    $totalNominal = $inv->currentVerification?->calculateNetPayable((float) $inv->invoice_amount) ?? ((float) $inv->invoice_amount + (float) $inv->tax_amount);
                                 @endphp
                                 <tr>
                                     <td>
@@ -132,7 +136,7 @@
                                 Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="match($batch->status) { 'PAID' => 'success', 'PARTIALLY_PAID' => 'info', 'FINALIZED' => 'primary', default => 'warning' }">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
                                     {{ $batch->status }}
                                 </x-ui.status-chip>
                             </td>

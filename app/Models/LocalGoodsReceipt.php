@@ -2,24 +2,36 @@
 
 namespace App\Models;
 
+use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LocalGoodsReceipt extends Model
 {
-    use HasFactory;
+    use HasFactory, HasHashids;
+
+    public const STATUS_AVAILABLE = 'AVAILABLE';
+    public const STATUS_RESERVED = 'RESERVED';
+    public const STATUS_INVOICED = 'INVOICED';
+    public const STATUS_CANCELLED = 'CANCELLED';
 
     protected $fillable = [
         'gr_number',
         'local_purchase_order_id',
-        'supplier_id',
-        'received_date',
+        'gr_date',
+        'received_amount',
         'notes',
+        'status',
+        'current_invoice_id',
+        'source',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
-        'received_date' => 'date',
+        'gr_date' => 'date',
+        'received_amount' => 'decimal:2',
     ];
 
     public function purchaseOrder(): BelongsTo
@@ -27,8 +39,13 @@ class LocalGoodsReceipt extends Model
         return $this->belongsTo(LocalPurchaseOrder::class, 'local_purchase_order_id');
     }
 
-    public function supplier(): BelongsTo
+    public function currentInvoice(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'supplier_id');
+        return $this->belongsTo(LocalInvoice::class, 'current_invoice_id');
+    }
+
+    public function getReceivedDateAttribute()
+    {
+        return $this->gr_date;
     }
 }

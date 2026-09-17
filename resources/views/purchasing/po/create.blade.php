@@ -43,7 +43,7 @@
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name }}</div>
             </div>
             <div class="p-3 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Locked Currency &amp; Exchange Rate</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Locked Currency & Exchange Rate</div>
                 <div class="fw-bold tw-text-on-surface fs-6 mt-1">
                     <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $quotation->currency }}</span>
                     @if($rate)

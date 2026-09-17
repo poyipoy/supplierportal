@@ -113,7 +113,7 @@ class LocalInvoiceTest extends TestCase
             $this->assertStringStartsWith('local-invoices/', $document->file_path);
         }
         $this->get(route('local-supplier.invoices.receipt', $invoice))->assertOk()->assertSee($invoice->receipt->receipt_number);
-        $this->get(route('local-supplier.invoices.show', $invoice))->assertOk()->assertSee('Waiting Physical Document');
+        $this->get(route('local-supplier.invoices.show', $invoice))->assertOk()->assertSee('Menunggu Dokumen Fisik');
     }
 
     public static function legacyMutationActions(): array
@@ -161,7 +161,7 @@ class LocalInvoiceTest extends TestCase
         } finally {
             fclose($temporary);
         }
-        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(), $this->files(), ['invoice' => UploadedFile::fake()->create('large.pdf', 10241, 'application/pdf')]))->assertSessionHasErrors('invoice');
+        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(), $this->files(), ['invoice' => UploadedFile::fake()->create('large.pdf', 5121, 'application/pdf')]))->assertSessionHasErrors('invoice');
         $this->assertDatabaseCount('local_invoices', 0);
         $invoice = $this->submit();
         $document = $invoice->documents()->first();
@@ -374,5 +374,112 @@ class LocalInvoiceTest extends TestCase
         );
         $resubmitResponse->assertSessionHasNoErrors();
         $resubmitResponse->assertRedirect(route('local-supplier.invoices.receipt', $invoice));
+    }
+
+    public function test_multi_file_upload_stores_multiple_documents_per_category(): void
+    {
+        $multiFiles = [
+            'invoice' => [
+                UploadedFile::fake()->createWithContent('inv-page1.pdf', "%PDF-1.4\n1"),
+                UploadedFile::fake()->createWithContent('inv-page2.pdf', "%PDF-1.4\n2"),
+            ],
+            'tax_invoice' => [
+                UploadedFile::fake()->image('tax-scan.png'),
+            ],
+            'delivery_note' => [
+                UploadedFile::fake()->createWithContent('sj-sheet1.pdf', "%PDF-1.4\n3"),
+                UploadedFile::fake()->createWithContent('sj-sheet2.pdf', "%PDF-1.4\n4"),
+            ],
+            'supporting' => [
+                UploadedFile::fake()->createWithContent('bap.pdf', "%PDF-1.4\n5"),
+                UploadedFile::fake()->createWithContent('po-copy.pdf', "%PDF-1.4\n6"),
+                UploadedFile::fake()->image('photo.jpg'),
+            ],
+        ];
+
+        $payload = array_merge($this->data(['invoice_number' => 'INV-MULTI-01']), $multiFiles);
+        $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), $payload)->assertSessionHasNoErrors();
+
+        $invoice = LocalInvoice::where('invoice_number', 'INV-MULTI-01')->firstOrFail();
+        $this->assertCount(8, $invoice->documents);
+        $this->assertSame(2, $invoice->documents->where('document_type', 'invoice')->count());
+        $this->assertSame(1, $invoice->documents->where('document_type', 'tax_invoice')->count());
+        $this->assertSame(2, $invoice->documents->where('document_type', 'delivery_note')->count());
+        $this->assertSame(3, $invoice->documents->where('document_type', 'supporting')->count());
+
+        foreach ($invoice->documents as $doc) {
+            Storage::disk('private')->assertExists($doc->file_path);
+        }
+    }
+
+    public function test_multi_file_upload_rejects_exceeding_max_file_count(): void
+    {
+        $tooManyFiles = [
+            'invoice' => [
+                UploadedFile::fake()->create('1.pdf', 100),
+                UploadedFile::fake()->create('2.pdf', 100),
+                UploadedFile::fake()->create('3.pdf', 100),
+                UploadedFile::fake()->create('4.pdf', 100),
+                UploadedFile::fake()->create('5.pdf', 100),
+                UploadedFile::fake()->create('6.pdf', 100), // 6 files exceeds max 5
+            ],
+            'tax_invoice' => [UploadedFile::fake()->create('tax.pdf', 100)],
+        ];
+
+        $payload = array_merge($this->data(['invoice_number' => 'INV-FAIL-01']), $tooManyFiles);
+        $this->actingAs($this->supplier)
+            ->post(route('local-supplier.invoices.store'), $payload)
+            ->assertSessionHasErrors('invoice');
+    }
+
+    public function test_resubmit_retains_existing_files_and_appends_new_files(): void
+    {
+        $initialFiles = [
+            'invoice' => [UploadedFile::fake()->createWithContent('orig-inv.pdf', "%PDF-1.4\norig")],
+            'tax_invoice' => [UploadedFile::fake()->image('orig-tax.png')],
+        ];
+        $this->actingAs($this->supplier)->post(
+            route('local-supplier.invoices.store'),
+            array_merge($this->data(['invoice_number' => 'INV-REVISE-01']), $initialFiles)
+        )->assertSessionHasNoErrors();
+
+        $invoice = LocalInvoice::where('invoice_number', 'INV-REVISE-01')->firstOrFail();
+        $initialInvDoc = $invoice->documents->where('document_type', 'invoice')->first();
+        $this->assertNotNull($initialInvDoc);
+
+        // Put to revision
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(InvoiceVerificationService::class)->requestRevision($invoice, 'Please add supporting documents', $this->operator);
+
+        // Resubmit: keep existing invoice, add new tax invoice and 1 supporting document
+        $newFiles = [
+            'tax_invoice' => [UploadedFile::fake()->image('revised-tax.png')],
+            'supporting' => [UploadedFile::fake()->createWithContent('additional-bap.pdf', "%PDF-1.4\nbap")],
+        ];
+
+        $resubmitPayload = array_merge(
+            $this->data(['invoice_number' => 'INV-REVISE-01']),
+            $newFiles,
+            ['kept_document_ids' => [$initialInvDoc->id]]
+        );
+
+        $this->actingAs($this->supplier)
+            ->post(route('local-supplier.invoices.resubmit', $invoice), $resubmitPayload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('local-supplier.invoices.receipt', $invoice));
+
+        $fresh = $invoice->fresh();
+        $this->assertSame(2, $fresh->revision_number);
+        $latestRev = $fresh->latestRevision;
+        $revDocs = $latestRev->documents;
+
+        // Invoice document was retained from revision 1
+        $retainedInv = $revDocs->where('document_type', 'invoice')->first();
+        $this->assertNotNull($retainedInv);
+        $this->assertSame('orig-inv.pdf', $retainedInv->original_filename);
+
+        // New tax invoice and supporting are present in revision 2
+        $this->assertSame('revised-tax.png', $revDocs->where('document_type', 'tax_invoice')->first()?->original_filename);
+        $this->assertSame('additional-bap.pdf', $revDocs->where('document_type', 'supporting')->first()?->original_filename);
     }
 }

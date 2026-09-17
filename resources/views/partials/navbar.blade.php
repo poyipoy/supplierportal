@@ -96,7 +96,7 @@
                 </li>
                 <li>
                     <a href="{{ route('profile.edit') }}" class="dropdown-item tw-py-1.5 small">
-                        <x-ui.icon name="user-cog" class="me-2" />Profile &amp; Security
+                        <x-ui.icon name="user-cog" class="me-2" />Profile & Security
                     </a>
                 </li>
                 <li>

@@ -26,6 +26,15 @@ class DecodeHashids
     protected const HASHED_PARAM_KEYS = [
         'invoice',
         'document',
+        // Local Supplier settlement/master routes use implicit model binding
+        // with hashed route keys. Keep these names in the decode allow-list so
+        // a raw integer can never reach the controller through a crafted URL.
+        'purchaseOrder',
+        'goodsReceipt',
+        'voucher',
+        'payment',
+        'refund',
+        'batch',
         // ── Manual {id} routes ─────────────────────────────────────────────────
         'id',            // PurchaseOrder, Claim (supplier), QcInspection, Conversation show routes
         'pr_id',         // Supplier: quotations/create, quotations/store

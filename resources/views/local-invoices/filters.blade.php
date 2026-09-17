@@ -3,7 +3,7 @@
 @endphp
 
 <form method="GET" action="{{ url()->current() }}" class="tw-mb-4" id="invoiceFilterForm">
-    <x-ui.toolbar aria-label="Invoice filter controls">
+    <x-ui.toolbar aria-label="Kontrol filter invoice">
         <x-slot:search>
             <div class="tw-relative tw-w-full">
                 <input
@@ -11,7 +11,7 @@
                     name="q"
                     id="invoice-search"
                     class="form-control form-control-sm"
-                    placeholder="Search invoice, submission, PO, or receipt..."
+                    placeholder="Cari invoice, nomor pengajuan, PO, atau tanda terima..."
                     value="{{ request('q') }}"
                     maxlength="100"
                     autocomplete="off"
@@ -23,7 +23,7 @@
             <div class="tw-flex tw-items-center tw-gap-2">
                 <label for="invoice-status" class="visually-hidden">Status</label>
                 <select id="invoice-status" class="form-select form-select-sm tw-min-w-[160px]" name="status">
-                    <option value="">All Statuses</option>
+                    <option value="">Semua Status</option>
                     @foreach(\App\Models\LocalInvoice::STATUSES as $status)
                         <option value="{{ $status }}" @selected(request('status') === $status)>
                             {{ \App\Support\StatusHelper::localInvoiceLabel($status) }}
@@ -42,7 +42,7 @@
                     class="tw-relative"
                 >
                     <x-ui.icon name="sliders-horizontal" size="sm" />
-                    <span>More Filters</span>
+                    <span>Filter Lanjutan</span>
                     @if($hasAdvancedFilters)
                         <span class="tw-inline-flex tw-items-center tw-justify-center tw-w-2 tw-h-2 tw-rounded-full tw-bg-primary"></span>
                     @endif
@@ -53,7 +53,7 @@
         <x-slot:actions>
             <x-ui.button type="submit" size="sm">
                 <x-ui.icon name="filter" size="sm" />
-                <span>Apply</span>
+                <span>Terapkan</span>
             </x-ui.button>
             @if(request()->hasAny(['q', 'status', 'from', 'to', 'due_from', 'due_to', 'supplier', 'overdue', 'history']))
                 <x-ui.button :href="url()->current()" variant="ghost" size="sm">
@@ -69,26 +69,26 @@
         <div class="tw-mb-4 tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4">
             <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">Submission Date Range</label>
+                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">Rentang Tanggal Pengajuan</label>
                     <x-ui.date-range-picker
                         id="invoice-submitted-range"
                         start-name="from"
                         end-name="to"
-                        start-label="Submitted From"
-                        end-label="Submitted To"
+                        start-label="Diajukan Dari"
+                        end-label="Diajukan Sampai"
                         :start-value="request('from')"
                         :end-value="request('to')"
                     />
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">Due Date Range</label>
+                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">Rentang Tanggal Jatuh Tempo</label>
                     <x-ui.date-range-picker
                         id="invoice-due-range"
                         start-name="due_from"
                         end-name="due_to"
-                        start-label="Due From"
-                        end-label="Due To"
+                        start-label="Jatuh Tempo Dari"
+                        end-label="Jatuh Tempo Sampai"
                         :start-value="request('due_from')"
                         :end-value="request('due_to')"
                     />
@@ -96,9 +96,9 @@
 
                 @if(! auth()->user()->isSupplier())
                     <div>
-                        <label for="invoice-supplier" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">Supplier Organization</label>
+                        <label for="invoice-supplier" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">Organisasi Supplier</label>
                         <select name="supplier" id="invoice-supplier" class="form-select form-select-sm">
-                            <option value="">All Suppliers</option>
+                            <option value="">Semua Supplier</option>
                             @foreach($suppliers ?? [] as $supplier)
                                 <option value="{{ $supplier->hash }}" @selected(request('supplier') === $supplier->hash)>
                                     {{ $supplier->supplier?->company_name ?: $supplier->name }}
@@ -111,14 +111,14 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="overdue" name="overdue" value="1" @checked(request('overdue'))>
                             <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-error" for="overdue">
-                                <x-ui.icon name="alert-triangle" size="xs" class="tw-inline" /> Show Overdue Only
+                                <x-ui.icon name="alert-triangle" size="xs" class="tw-inline" /> Hanya Jatuh Tempo
                             </label>
                         </div>
                         @if($payments ?? false)
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="history" name="history" value="1" @checked(request('history'))>
                                 <label class="form-check-label tw-text-ui-sm tw-text-on-surface" for="history">
-                                    Include Completed Payments
+                                    Sertakan Pembayaran Selesai
                                 </label>
                             </div>
                         @endif

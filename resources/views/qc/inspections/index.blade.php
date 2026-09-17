@@ -108,7 +108,7 @@
                                     Inspection Outcome Status
                                 </label>
                                 <select id="historyStatusFilter" class="form-select form-select-sm">
-                                    <option value="">All Statuses (OK &amp; NG)</option>
+                                    <option value="">All Statuses (OK & NG)</option>
                                     <option value="ok" @selected(request('status') === 'ok')>OK (Pass)</option>
                                     <option value="ng" @selected(request('status') === 'ng')>NG (Defective / Claim)</option>
                                 </select>

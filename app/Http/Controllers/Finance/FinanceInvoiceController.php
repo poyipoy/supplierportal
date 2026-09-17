@@ -39,6 +39,9 @@ class FinanceInvoiceController extends Controller
             'statusHistories.actor',
             'physicalVerifications.actor',
             'currentVerification.verifier',
+            'localPurchaseOrder',
+            'goodsReceiptHistories.goodsReceipt',
+            'voucher.payment.transfers',
         ]);
 
         return view('finance.invoices.show', [
@@ -69,9 +72,34 @@ class FinanceInvoiceController extends Controller
             'gr_notes' => 'nullable|string|max:1000',
         ]);
 
-        $service->verifySectionA($invoice, $data, $request->user());
+        try {
+            $verification = $service->verifySectionA($invoice, $data, $request->user());
+        } catch (\InvalidArgumentException | \RuntimeException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
 
-        return back()->with('success', 'Section A (Document & Reference Verification) updated.');
+            return redirect()->to(route('finance.invoices.show', $invoice).'#section-a')
+                ->withInput()
+                ->withErrors(['general' => $e->getMessage()]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Section A (Pemeriksaan Dokumen & Referensi) berhasil disimpan.',
+                'section' => 'A',
+                'is_section_a_passed' => (bool) $verification->is_section_a_passed,
+                'is_section_b_passed' => (bool) $verification->is_section_b_passed,
+                'can_approve' => (bool) ($verification->is_section_a_passed && $verification->is_section_b_passed),
+            ]);
+        }
+
+        return redirect()->to(route('finance.invoices.show', $invoice).'#section-a')
+            ->with('success', 'Section A (Pemeriksaan Dokumen & Referensi) berhasil disimpan.');
     }
 
     public function verifySectionB(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
@@ -90,9 +118,34 @@ class FinanceInvoiceController extends Controller
             'tax_notes' => 'nullable|string|max:2000',
         ]);
 
-        $service->verifySectionB($invoice, $data, $request->user());
+        try {
+            $verification = $service->verifySectionB($invoice, $data, $request->user());
+        } catch (\InvalidArgumentException | \RuntimeException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
 
-        return back()->with('success', 'Section B (Tax Verification) updated.');
+            return redirect()->to(route('finance.invoices.show', $invoice).'#section-b')
+                ->withInput()
+                ->withErrors(['general' => $e->getMessage()]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Section B (Verifikasi Perpajakan) berhasil disimpan.',
+                'section' => 'B',
+                'is_section_a_passed' => (bool) $verification->is_section_a_passed,
+                'is_section_b_passed' => (bool) $verification->is_section_b_passed,
+                'can_approve' => (bool) ($verification->is_section_a_passed && $verification->is_section_b_passed),
+            ]);
+        }
+
+        return redirect()->to(route('finance.invoices.show', $invoice).'#section-b')
+            ->with('success', 'Section B (Verifikasi Perpajakan) berhasil disimpan.');
     }
 
     public function approveReadyToPay(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
@@ -108,6 +161,13 @@ class FinanceInvoiceController extends Controller
         $service->requestRevision($invoice, $request->input('notes'), $request->user());
 
         return back()->with('success', 'Revision requested from Supplier.');
+    }
+
+    public function reject(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
+    {
+        $data = $request->validate(['notes' => 'required|string|max:2000']);
+        $service->reject($invoice, $data['notes'], $request->user());
+        return back()->with('success', 'Invoice rejected and its GR reservations released.');
     }
 
     public function masterInvoice(InvoiceFilterRequest $request, InvoiceQuery $query)

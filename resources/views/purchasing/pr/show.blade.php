@@ -324,7 +324,7 @@
                         <x-ui.alert tone="error" title="Requisition rejected">Review the recorded notes and revise the requisition before resubmitting.</x-ui.alert>
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr)" variant="danger" size="sm">
                             <x-ui.icon name="rotate-ccw" size="sm" />
-                            <span>Revise &amp; Resubmit</span>
+                            <span>Revise & Resubmit</span>
                         </x-ui.button>
                     @else
                         <x-ui.alert tone="success" title="Requisition active">This requisition has been submitted and is active in procurement.</x-ui.alert>

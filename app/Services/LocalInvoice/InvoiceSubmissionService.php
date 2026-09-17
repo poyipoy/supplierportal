@@ -3,6 +3,7 @@
 namespace App\Services\LocalInvoice;
 
 use App\Models\LocalInvoice;
+use App\Models\LocalPurchaseOrder;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\VendorMaster\VendorMasterService;
@@ -19,6 +20,7 @@ class InvoiceSubmissionService
         private InvoiceDocumentService $documents,
         private InvoiceNotificationService $notifications,
         private LocalPoReferenceService $poReferenceService,
+        private LocalGrReservationService $reservations,
         private VendorMasterService $vendorMasterService
     ) {}
 
@@ -46,38 +48,40 @@ class InvoiceSubmissionService
                     }
                 }
 
-                // 2. Validate & Resolve PO / GR Boundary
-                $poNum = $data['po_number'] ?? ($data['manual_po_number'] ?? ($data['internal_po_reference'] ?? null));
-                $poSource = $data['po_source'] ?? null;
-                if (! $poSource) {
-                    if ($poNum && $this->poReferenceService->getInternalPoDetails($actor, $poNum)) {
-                        $poSource = 'INTERNAL';
-                        $internalPoRef = $poNum;
-                        $manualPoNum = null;
-                        $manualGrRef = null;
-                    } else {
-                        $poSource = 'MANUAL';
-                        $manualPoNum = $poNum;
-                        $internalPoRef = null;
-                        $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? null);
+                // The new browser flow submits the authoritative Local PO / whole-GR
+                // chain. The legacy branch remains available for grandfathered
+                // service callers and historical provider-backed records; when an
+                // authoritative PO exists, it is rejected unless its ID and GR IDs
+                // are supplied explicitly.
+                if (array_key_exists('local_purchase_order_id', $data)) {
+                    $po = LocalPurchaseOrder::whereKey($data['local_purchase_order_id'])->lockForUpdate()->first();
+                    if (! $po || (int) $po->supplier_id !== (int) $actor->id) {
+                        throw ValidationException::withMessages(['local_purchase_order_id' => 'The selected PO does not belong to this supplier.']);
                     }
+                    $poResolved = [
+                        'po_source' => 'INTERNAL', 'po_number' => $po->po_number,
+                        'internal_po_reference' => $po->po_number, 'manual_po_number' => null,
+                        'internal_gr_reference' => null, 'manual_gr_reference' => null,
+                        'po_value_snapshot' => $po->total_amount, 'po_invoiced_snapshot' => null,
+                        'po_remaining_snapshot' => null, 'has_po_discrepancy' => false,
+                    ];
                 } else {
-                    $internalPoRef = $data['internal_po_reference'] ?? ($poSource === 'INTERNAL' ? $poNum : null);
-                    $manualPoNum = $data['manual_po_number'] ?? ($poSource === 'MANUAL' ? $poNum : null);
+                    $poNum = $data['po_number'] ?? ($data['manual_po_number'] ?? ($data['internal_po_reference'] ?? null));
+                    $poSource = $data['po_source'] ?? null;
+                    $internalPoRef = $data['internal_po_reference'] ?? (($poSource === 'INTERNAL' || blank($poSource)) ? $poNum : null);
+                    $manualPoNum = $data['manual_po_number'] ?? (($poSource === 'MANUAL' || blank($poSource)) ? $poNum : null);
                     $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? null);
-                }
-
-                try {
-                    $poResolved = $this->poReferenceService->validateAndResolve(
-                        $actor,
-                        $poSource,
-                        $internalPoRef,
-                        $manualPoNum,
-                        (float) $data['invoice_amount'],
-                        $manualGrRef
-                    );
-                } catch (\InvalidArgumentException $e) {
-                    throw ValidationException::withMessages(['po_number' => $e->getMessage()]);
+                    try {
+                        $poResolved = $this->poReferenceService->validateAndResolve($actor, $poSource, $internalPoRef, $manualPoNum, (float) $data['invoice_amount'], $manualGrRef);
+                    } catch (\InvalidArgumentException $e) {
+                        $field = str_contains(strtolower($e->getMessage()), 'manual goods receipt')
+                            ? 'manual_gr_reference'
+                            : 'po_number';
+                        throw ValidationException::withMessages([$field => $e->getMessage()]);
+                    }
+                    if (($poResolved['authoritative'] ?? false) === true) {
+                        throw ValidationException::withMessages(['local_purchase_order_id' => 'Select the authoritative Local Purchase Order and its whole Goods Receipts.']);
+                    }
                 }
 
                 // 3. Tax / PPN scheme calculation
@@ -124,6 +128,10 @@ class InvoiceSubmissionService
                 ]);
 
                 $invoice = LocalInvoice::create($invoiceData);
+                if (array_key_exists('local_purchase_order_id', $data)) {
+                    $this->reservations->reserve($actor, $invoice, (int) $data['local_purchase_order_id'], $data['goods_receipt_ids']);
+                    $invoice->refresh();
+                }
 
                 $revision = $invoice->revisions()->create(array_merge($this->values($data), [
                     'revision_number' => 1,
@@ -179,24 +187,41 @@ class InvoiceSubmissionService
 
                 $request = $invoice->statusHistories()->where('event', 'revision_requested')->latest('id')->firstOrFail();
 
-                // 2. Re-resolve PO / GR Boundary for this revision
-                $poNum = $data['po_number'] ?? ($data['manual_po_number'] ?? ($data['internal_po_reference'] ?? $invoice->po_number));
-                $poSource = $data['po_source'] ?? $invoice->po_source;
-                $internalPoRef = $data['internal_po_reference'] ?? ($poSource === 'INTERNAL' ? $poNum : null);
-                $manualPoNum = $data['manual_po_number'] ?? ($poSource === 'MANUAL' ? $poNum : null);
-                $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? $invoice->manual_gr_reference);
+                if ($invoice->local_purchase_order_id && ! array_key_exists('local_purchase_order_id', $data)) {
+                    throw ValidationException::withMessages([
+                        'local_purchase_order_id' => 'Authoritative Local Supplier invoices must be resubmitted with their PO and whole GR selection.',
+                    ]);
+                }
 
-                try {
-                    $poResolved = $this->poReferenceService->validateAndResolve(
-                        $actor,
-                        $poSource,
-                        $internalPoRef,
-                        $manualPoNum,
-                        (float) $data['invoice_amount'],
-                        $manualGrRef
-                    );
-                } catch (\InvalidArgumentException $e) {
-                    throw ValidationException::withMessages(['po_number' => $e->getMessage()]);
+                if (array_key_exists('local_purchase_order_id', $data)) {
+                    $po = LocalPurchaseOrder::whereKey($data['local_purchase_order_id'])->lockForUpdate()->first();
+                    if (! $po || (int) $po->supplier_id !== (int) $actor->id) {
+                        throw ValidationException::withMessages(['local_purchase_order_id' => 'The selected PO does not belong to this supplier.']);
+                    }
+                    $poResolved = [
+                        'po_source' => 'INTERNAL', 'po_number' => $po->po_number,
+                        'internal_po_reference' => $po->po_number, 'manual_po_number' => null,
+                        'internal_gr_reference' => null, 'manual_gr_reference' => null,
+                        'po_value_snapshot' => $po->total_amount, 'po_invoiced_snapshot' => null,
+                        'po_remaining_snapshot' => null, 'has_po_discrepancy' => false,
+                    ];
+                } else {
+                    $poNum = $data['po_number'] ?? ($data['manual_po_number'] ?? ($data['internal_po_reference'] ?? $invoice->po_number));
+                    $poSource = $data['po_source'] ?? $invoice->po_source;
+                    $internalPoRef = $data['internal_po_reference'] ?? (($poSource === 'INTERNAL' || blank($poSource)) ? $poNum : null);
+                    $manualPoNum = $data['manual_po_number'] ?? (($poSource === 'MANUAL' || blank($poSource)) ? $poNum : null);
+                    $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? $invoice->manual_gr_reference);
+                    try {
+                        $poResolved = $this->poReferenceService->validateAndResolve($actor, $poSource, $internalPoRef, $manualPoNum, (float) $data['invoice_amount'], $manualGrRef);
+                    } catch (\InvalidArgumentException $e) {
+                        $field = str_contains(strtolower($e->getMessage()), 'manual goods receipt')
+                            ? 'manual_gr_reference'
+                            : 'po_number';
+                        throw ValidationException::withMessages([$field => $e->getMessage()]);
+                    }
+                    if (($poResolved['authoritative'] ?? false) === true) {
+                        throw ValidationException::withMessages(['local_purchase_order_id' => 'Select the authoritative Local Purchase Order and its whole Goods Receipts.']);
+                    }
                 }
 
                 // 3. Recalculate PPN and tax amount
@@ -229,8 +254,9 @@ class InvoiceSubmissionService
 
                 $requiresTaxInvoice = $this->vendorMasterService->requiresFakturPajak($supplier);
                 $requiresDeliveryNote = $this->vendorMasterService->requiresSuratJalan($supplier);
+                $retainedDocIds = array_filter((array) ($data['kept_document_ids'] ?? []));
 
-                $this->documents->store($revision, $actor, $files, $written, $requiresTaxInvoice, $requiresDeliveryNote);
+                $this->documents->store($revision, $actor, $files, $written, $requiresTaxInvoice, $requiresDeliveryNote, $retainedDocIds);
 
                 $invoice->physicalVerifications()->create([
                     'revision_number' => $invoice->revision_number,
@@ -267,6 +293,12 @@ class InvoiceSubmissionService
                     'submitted_ppn_amount' => $taxAmount,
                 ]))->save();
 
+                if (array_key_exists('local_purchase_order_id', $data)) {
+                    $this->reservations->reserve($actor, $invoice, (int) $data['local_purchase_order_id'], $data['goods_receipt_ids']);
+                    $invoice->refresh();
+                    $revision->update(['internal_gr_reference' => $invoice->internal_gr_reference]);
+                }
+
                 $history = $invoice->statusHistories()->create([
                     'from_status' => LocalInvoice::STATUS_NEED_REVISION,
                     'to_status' => $invoice->status,
@@ -282,6 +314,21 @@ class InvoiceSubmissionService
             $this->documents->compensate($written);
             throw $exception;
         }
+    }
+
+    public function cancel(User $actor, LocalInvoice $invoice): LocalInvoice
+    {
+        Gate::forUser($actor)->authorize('cancel', $invoice);
+        return DB::transaction(function () use ($actor, $invoice) {
+            $locked = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($actor->fresh())->authorize('cancel', $locked);
+            $from = $locked->status;
+            $this->reservations->release($locked, $actor);
+            $locked->update(['status' => LocalInvoice::STATUS_CANCELLED]);
+            $history = $locked->statusHistories()->create(['from_status' => $from, 'to_status' => LocalInvoice::STATUS_CANCELLED, 'actor_id' => $actor->id, 'event' => 'cancelled', 'created_at' => now()]);
+            $this->notifications->send($locked, $history);
+            return $locked->fresh();
+        });
     }
 
     private function values(array $data): array

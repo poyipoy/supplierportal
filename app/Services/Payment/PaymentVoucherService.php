@@ -9,6 +9,17 @@ use InvalidArgumentException;
 
 class PaymentVoucherService
 {
+    public function nextVoucherNumber(): string
+    {
+        $period = now()->format('ym');
+        DB::table('payment_voucher_sequences')->insertOrIgnore(['period' => $period, 'last_number' => 0]);
+        $sequence = DB::table('payment_voucher_sequences')->where('period', $period)->lockForUpdate()->first();
+        $number = (int) $sequence->last_number + 1;
+        DB::table('payment_voucher_sequences')->where('period', $period)->update(['last_number' => $number]);
+
+        return 'VC/'.$period.'/'.str_pad((string) $number, 4, '0', STR_PAD_LEFT);
+    }
+
     /**
      * Assign voucher number and date to a payment group.
      */

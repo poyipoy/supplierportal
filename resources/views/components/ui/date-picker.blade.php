@@ -10,6 +10,8 @@
     'required' => false,
     'disabled' => false,
     'readonly' => false,
+    'allowedDaysOfWeek' => null,
+    'allowedDaysMessage' => null,
 ])
 
 @php
@@ -27,12 +29,18 @@
         [$year, $month, $day] = explode('-', (string) $resolvedValue);
         $dateDisplay = date('d M Y', mktime(0, 0, 0, (int) $month, (int) $day, (int) $year));
     }
+    $allowedDaysAttr = null;
+    if ($allowedDaysOfWeek !== null) {
+        $allowedDaysAttr = is_array($allowedDaysOfWeek) ? implode(',', $allowedDaysOfWeek) : (string) $allowedDaysOfWeek;
+    }
 @endphp
 
 <div
     {{ $attributes->only('class')->class(['ui-calendar ui-date-picker tw-grid tw-gap-1.5']) }}
     data-adasi-date-picker
     data-calendar-required="{{ $required ? 'true' : 'false' }}"
+    @if($allowedDaysAttr !== null) data-calendar-allowed-days="{{ $allowedDaysAttr }}" @endif
+    @if($allowedDaysMessage) data-calendar-allowed-days-message="{{ $allowedDaysMessage }}" @endif
 >
     <div data-calendar-native>
         @if($label)

@@ -413,7 +413,7 @@ thead th.col-sticky-material {
                         </x-ui.button>
                         <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos">
                             <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
-                            Confirm Selection &amp; Generate PO(s)
+                            Confirm Selection & Generate PO(s)
                         </x-ui.button>
                     </div>
                 </x-slot:actions>

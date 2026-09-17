@@ -1,22 +1,22 @@
 @extends('layouts.app')
-@section('title', 'Supplier Local Dashboard - ADASI Portal')
-@section('page-title', 'Local Invoice Dashboard')
+@section('title', 'Dashboard Supplier Lokal - Portal ADASI')
+@section('page-title', 'Dashboard Invoice Lokal')
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Local Supplier Dashboard"
-        description="Submit digital invoices, track physical document verification, and monitor payment schedules."
-        eyebrow="Local Billing & Invoicing"
+        title="Dashboard Supplier Lokal"
+        description="Submit invoice digital, pantau verifikasi dokumen fisik, dan monitor jadwal pembayaran."
+        eyebrow="Penagihan & Invoice Lokal"
     >
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary">
                 <x-ui.icon name="plus" size="sm" />
-                <span>Submit New Invoice</span>
+                <span>Submit Invoice</span>
             </x-ui.button>
             <x-ui.button :href="route('local-supplier.invoices.index')" variant="outline">
                 <x-ui.icon name="list" size="sm" />
-                <span>Track All Invoices</span>
+                <span>Lihat Semua Invoice</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -30,35 +30,35 @@
 
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-5 tw-gap-4">
         <x-ui.metric-card
-            label="Total Submitted"
+            label="Total Diajukan"
             :value="$totalInvoices"
             icon="receipt"
             tone="primary"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
-            label="In Process"
+            label="Dalam Proses"
             :value="$inProgress"
             icon="clock"
             tone="warning"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
-            label="Need Revision"
+            label="Perlu Revisi"
             :value="$counts['NEED_REVISION'] ?? 0"
             icon="alert-circle"
             tone="error"
             :href="route('local-supplier.invoices.index', ['status' => 'NEED_REVISION'])"
         />
         <x-ui.metric-card
-            label="Ready to Pay"
+            label="Siap Dibayar"
             :value="$readyToPay"
             icon="check-circle"
             tone="success"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
-            label="Completed / Paid"
+            label="Selesai / Lunas"
             :value="$counts['COMPLETED'] ?? 0"
             icon="check"
             tone="primary"
@@ -78,7 +78,7 @@
                         {{ auth()->user()->supplier?->company_name ?: auth()->user()->name }}
                     </h3>
                     <span class="tw-text-ui-xs tw-text-on-surface-variant">
-                        Agreed Terms: <strong>Net {{ auth()->user()->supplier?->payment_term_days ?? 30 }} Days</strong>
+                        Ketentuan Termin: <strong>Net {{ auth()->user()->supplier?->payment_term_days ?? 30 }} Hari</strong>
                         @if(auth()->user()->supplier?->npwp) · NPWP: {{ auth()->user()->supplier->npwp }} @endif
                     </span>
                 </div>
@@ -86,7 +86,7 @@
             <div>
                 <x-ui.button :href="route('local-supplier.invoices.create')" variant="outline" size="sm">
                     <x-ui.icon name="upload-cloud" size="sm" />
-                    <span>Upload New Tagihan</span>
+                    <span>Upload Invoice Baru</span>
                 </x-ui.button>
             </div>
         </div>
@@ -94,12 +94,12 @@
 
     {{-- Recent Invoices --}}
     <x-ui.data-table
-        title="Recent Invoices"
-        description="Your 5 most recent invoice submissions."
+        title="Invoice Terbaru"
+        description="5 pengajuan invoice terakhir Anda."
     >
         <x-slot:toolbar>
             <x-ui.button :href="route('local-supplier.invoices.index')" variant="ghost" size="sm">
-                <span>View All Invoices</span>
+                <span>Lihat Semua Invoice</span>
                 <x-ui.icon name="arrow-right" size="sm" />
             </x-ui.button>
         </x-slot:toolbar>

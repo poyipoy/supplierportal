@@ -53,14 +53,14 @@
                                 Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="match($batch->status) { 'PAID' => 'success', 'PARTIALLY_PAID' => 'info', 'FINALIZED' => 'primary', default => 'warning' }">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
                                     {{ $batch->status }}
                                 </x-ui.status-chip>
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
                                     <x-ui.icon name="eye" size="xs" />
-                                    <span>Review &amp; Bayar</span>
+                                    <span>Review & Bayar</span>
                                 </x-ui.button>
                             </td>
                         </tr>

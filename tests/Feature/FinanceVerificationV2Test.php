@@ -301,4 +301,52 @@ class FinanceVerificationV2Test extends TestCase
             $this->assertStringContainsString('Corrected PPN amount is mandatory', $e->getMessage());
         }
     }
+
+    public function test_verify_section_a_and_b_ajax_and_redirect_behavior(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+
+        // 1. AJAX Section A
+        $responseA = $this->actingAs($finance)->postJson(route('finance.invoices.verify-section-a', $invoice), [
+            'invoice_check' => 'OK',
+            'tax_invoice_check' => 'OK',
+            'po_check' => 'OK',
+            'delivery_note_check' => 'OK',
+            'gr_check' => 'OK',
+        ]);
+
+        $responseA->assertOk()
+            ->assertJson([
+                'success' => true,
+                'section' => 'A',
+                'is_section_a_passed' => true,
+                'can_approve' => false,
+            ]);
+
+        // 2. AJAX Section B
+        $responseB = $this->actingAs($finance)->postJson(route('finance.invoices.verify-section-b', $invoice), [
+            'ppn_status' => 'SESUAI',
+            'verified_ppn' => 1100000,
+            'pph_23_applicable' => false,
+        ]);
+
+        $responseB->assertOk()
+            ->assertJson([
+                'success' => true,
+                'section' => 'B',
+                'is_section_b_passed' => true,
+                'can_approve' => true,
+            ]);
+
+        // 3. Non-AJAX redirect includes anchor
+        $responseRedirectA = $this->actingAs($finance)->post(route('finance.invoices.verify-section-a', $invoice), [
+            'invoice_check' => 'OK',
+            'tax_invoice_check' => 'OK',
+            'po_check' => 'OK',
+            'delivery_note_check' => 'OK',
+            'gr_check' => 'OK',
+        ]);
+
+        $responseRedirectA->assertRedirect(route('finance.invoices.show', $invoice).'#section-a');
+    }
 }

@@ -42,9 +42,9 @@
                         <thead class="table-light align-middle text-center">
                             <tr class="border-bottom">
                                 <th scope="col" rowspan="2" style="width: 40px;" class="text-center">#</th>
-                                <th scope="col" rowspan="2" class="text-start" style="min-width: 200px;">Material &amp; Requested Specs</th>
-                                <th scope="col" rowspan="2" class="text-start" style="min-width: 180px;">Availability &amp; Offer Specs</th>
-                                <th scope="col" colspan="3" class="border-bottom text-center tw-bg-surface-low">Quantity &amp; Weight</th>
+                                <th scope="col" rowspan="2" class="text-start" style="min-width: 200px;">Material & Requested Specs</th>
+                                <th scope="col" rowspan="2" class="text-start" style="min-width: 180px;">Availability & Offer Specs</th>
+                                <th scope="col" colspan="3" class="border-bottom text-center tw-bg-surface-low">Quantity & Weight</th>
                                 <th scope="col" colspan="3" class="border-bottom text-center tw-bg-surface-low">Commercials ({{ $quotation->currency }})</th>
                                 <th scope="col" rowspan="2" class="text-end" style="min-width: 130px;">Offer Est. IDR</th>
                                 <th scope="col" rowspan="2" class="text-start" style="min-width: 130px;">Notes</th>

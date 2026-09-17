@@ -224,6 +224,23 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::post('/local-vendors/change-requests/{request}/approve', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'approveChange'])->name('local-vendors.change-requests.approve');
     Route::post('/local-vendors/change-requests/{request}/reject', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'rejectChange'])->name('local-vendors.change-requests.reject');
     Route::get('/local-invoices/{invoice}', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
+
+    Route::prefix('local-procurement')->name('local-procurement.')->controller(\App\Http\Controllers\Finance\LocalProcurementController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/import/template', 'template')->name('import.template');
+        Route::post('/import/preview', 'preview')->name('import.preview');
+        Route::post('/import/confirm', 'confirm')->name('import.confirm');
+        Route::get('/{purchaseOrder}', 'show')->name('show');
+        Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
+        Route::put('/{purchaseOrder}', 'update')->name('update');
+        Route::post('/{purchaseOrder}/close', 'close')->name('close');
+        Route::post('/{purchaseOrder}/cancel', 'cancel')->name('cancel');
+        Route::post('/{purchaseOrder}/goods-receipts', 'storeGoodsReceipt')->name('goods-receipts.store');
+        Route::put('/goods-receipts/{goodsReceipt}', 'updateGoodsReceipt')->name('goods-receipts.update');
+        Route::post('/goods-receipts/{goodsReceipt}/cancel', 'cancelGoodsReceipt')->name('goods-receipts.cancel');
+    });
 });
 
 /*

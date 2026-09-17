@@ -36,6 +36,16 @@ class PaymentItem extends Model
         return $this->belongsTo(User::class, 'removed_by');
     }
 
+    public function localInvoiceVoucher()
+    {
+        return $this->hasOne(LocalInvoiceVoucher::class);
+    }
+
+    public function localInvoicePayment()
+    {
+        return $this->hasOne(LocalInvoicePayment::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;

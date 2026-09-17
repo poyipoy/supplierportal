@@ -1,18 +1,18 @@
 @extends('layouts.app')
-@section('title', 'Track Invoices - Local Supplier')
-@section('page-title', 'Track Invoices')
+@section('title', 'Daftar Invoice - Supplier Lokal')
+@section('page-title', 'Daftar Invoice')
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Track All Invoices"
-        description="Monitor status, review verification notes, and check scheduled payment dates."
-        eyebrow="Local Supplier Invoicing"
+        title="Daftar Seluruh Invoice"
+        description="Pantau status verifikasi, catatan revisi, dan jadwal pembayaran invoice Anda."
+        eyebrow="Invoice Supplier Lokal"
     >
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary" size="sm">
                 <x-ui.icon name="plus" size="sm" />
-                <span>Submit New Invoice</span>
+                <span>Submit Invoice</span>
             </x-ui.button>
             <x-ui.button :href="route('local-supplier.dashboard')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
@@ -24,8 +24,8 @@
     @include('local-invoices.filters')
 
     <x-ui.data-table
-        title="My Invoices"
-        :description="'Displaying '.$invoices->total().' invoice record(s).'"
+        title="Invoice Saya"
+        :description="'Menampilkan '.$invoices->total().' data invoice.'"
     >
         @include('local-invoices.table', ['portal'=>'local-supplier'])
 

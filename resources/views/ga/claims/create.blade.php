@@ -102,7 +102,7 @@
                         </x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="check" size="xs" />
-                            <span>Kirim Pengajuan Klaim &amp; Terbitkan Tanda Terima</span>
+                            <span>Kirim Pengajuan Klaim & Terbitkan Tanda Terima</span>
                         </x-ui.button>
                     </div>
                 </div>

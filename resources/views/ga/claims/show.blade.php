@@ -126,7 +126,7 @@
                         </div>
                         <x-ui.button :href="route('ga.claims.revision', $claim)" variant="primary" size="sm" class="w-100">
                             <x-ui.icon name="edit" size="xs" />
-                            <span>Perbaiki &amp; Ajukan Ulang Klaim</span>
+                            <span>Perbaiki & Ajukan Ulang Klaim</span>
                         </x-ui.button>
                     </div>
                 </x-ui.card>

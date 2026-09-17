@@ -4,8 +4,10 @@ import './unsaved-changes';
 import './number-input-helper';
 import './chart-theme';
 import './submit-guard';
+import { adasiFileUploadComponent } from './file-upload';
 
 window.Alpine = Alpine;
+Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
 
 const toastState = Alpine.reactive({
     visible: [],

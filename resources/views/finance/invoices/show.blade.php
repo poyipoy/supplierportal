@@ -95,37 +95,42 @@
                 </div>
             </x-ui.card>
 
+            @if($invoice->local_purchase_order_id)
+                <x-ui.card title="Referensi PO & Whole Goods Receipt" description="Referensi ini berasal dari master PO/GR dan tidak dapat diganti dari halaman verifikasi.">
+                    <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-4 tw-text-ui-xs tw-mb-4">
+                        <div><span class="tw-text-on-surface-variant tw-block">PO Number</span><strong class="tw-font-mono tw-text-on-surface">{{ $invoice->localPurchaseOrder?->po_number ?? $invoice->po_number }}</strong></div>
+                        <div><span class="tw-text-on-surface-variant tw-block">PO Date</span><strong class="tw-text-on-surface">{{ $invoice->localPurchaseOrder?->po_date?->format('d M Y') ?? '—' }}</strong></div>
+                        <div><span class="tw-text-on-surface-variant tw-block">PO Amount</span><strong class="tw-font-mono tw-text-on-surface">Rp {{ number_format($invoice->localPurchaseOrder?->total_amount ?? $invoice->po_value_snapshot ?? 0, 2, ',', '.') }}</strong></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle tw-m-0 tw-text-ui-xs">
+                            <thead><tr><th>GR Number</th><th>Date</th><th class="text-end">Whole Amount</th><th>Status</th></tr></thead>
+                            <tbody>
+                            @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
+                                <tr>
+                                    <td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td>
+                                    <td>{{ $history->goodsReceipt?->gr_date?->format('d M Y') ?? '—' }}</td>
+                                    <td class="text-end tw-font-mono">Rp {{ number_format($history->gr_amount_snapshot, 2, ',', '.') }}</td>
+                                    <td><x-ui.status-chip :tone="$history->state === 'CONSUMED' ? 'success' : ($history->state === 'RELEASED' ? 'neutral' : 'warning')">{{ $history->state }}</x-ui.status-chip></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="tw-text-center tw-text-on-surface-variant">Belum ada riwayat GR authoritative.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </x-ui.card>
+            @endif
+
             {{-- Dokumen Upload Supplier --}}
-            <x-ui.card title="Berkas Dokumen Pendukung (Upload Supplier)">
-                <div class="tw-space-y-3">
-                    @php $latestRev = $invoice->revisions->last(); @endphp
-                    @if($latestRev && $latestRev->documents->isNotEmpty())
-                        <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-3">
-                            @foreach($latestRev->documents as $doc)
-                                <div class="tw-flex tw-items-center tw-justify-between tw-p-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container">
-                                    <div class="tw-flex tw-items-center tw-gap-2.5 tw-min-w-0">
-                                        <x-ui.icon name="file-text" size="md" class="tw-text-primary tw-shrink-0" />
-                                        <div class="tw-min-w-0">
-                                            <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface tw-block tw-truncate">
-                                                {{ ucwords(str_replace('_', ' ', $doc->document_type)) }}
-                                            </span>
-                                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-truncate">
-                                                {{ $doc->original_filename }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <a href="{{ route('local-invoice-documents.show', $doc) }}" target="_blank" class="tw-shrink-0 btn btn-sm btn-outline-primary tw-text-xs">
-                                        Unduh
-                                    </a>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="tw-text-center tw-py-4 tw-text-ui-xs tw-text-on-surface-variant">
-                            Belum ada dokumen yang diunggah pada revisi aktif ini.
-                        </div>
-                    @endif
-                </div>
+            <x-ui.card
+                title="Berkas Dokumen Lampiran (Upload Supplier)"
+                description="Dokumen digital resmi yang diunggah oleh rekanan supplier untuk invoice ini."
+            >
+                @php $latestRev = $invoice->revisions->last(); @endphp
+                @include('local-invoices.partials._documents_grid', [
+                    'documents' => $latestRev ? $latestRev->documents : collect()
+                ])
             </x-ui.card>
 
             {{-- Step 1: Cashier Receipt Section --}}
@@ -153,16 +158,18 @@
             {{-- Step 2: SECTION A — Document & Reference Checklist --}}
             @if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_READY_TO_PAY, \App\Models\LocalInvoice::STATUS_PAID]))
                 <x-ui.card
-                    title="Section A: Pemeriksaan Dokumen &amp; Referensi"
+                    id="section-a"
+                    class="tw-scroll-mt-20"
+                    title="Section A: Pemeriksaan Dokumen & Referensi"
                     description="Periksa kelengkapan berkas fisik Invoice, Faktur Pajak, PO, Surat Jalan, dan GR."
                 >
-                    <form method="POST" action="{{ route('finance.invoices.verify-section-a', $invoice) }}">
+                    <form id="form-verify-section-a" method="POST" action="{{ route('finance.invoices.verify-section-a', $invoice) }}">
                         @csrf
                         <div class="tw-space-y-4">
                             {{-- 1. Invoice Check --}}
                             <div class="tw-p-3 tw-rounded tw-bg-surface-container tw-border tw-border-outline-variant">
                                 <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
-                                    <span class="tw-font-semibold tw-text-ui-xs">1. Berkas Fisik Invoice &amp; Materai</span>
+                                    <span class="tw-font-semibold tw-text-ui-xs">1. Berkas Fisik Invoice & Materai</span>
                                     <div class="tw-flex tw-gap-3">
                                         <label class="tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs">
                                             <input type="radio" name="invoice_check" value="OK" @checked(($verification->invoice_check ?? '') === 'OK') required> OK
@@ -254,7 +261,8 @@
 
                             @if(!$verification?->is_locked)
                                 <div class="tw-flex tw-justify-end">
-                                    <x-ui.button type="submit" variant="primary" size="sm">
+                                    <x-ui.button id="btn-submit-section-a" type="submit" variant="primary" size="sm">
+                                        <x-ui.icon name="save" size="xs" />
                                         <span>Simpan Section A</span>
                                     </x-ui.button>
                                 </div>
@@ -265,10 +273,12 @@
 
                 {{-- Step 3: SECTION B — Tax Verification --}}
                 <x-ui.card
+                    id="section-b"
+                    class="tw-scroll-mt-20"
                     title="Section B: Verifikasi Perpajakan"
                     description="Validasi PPN dan tentukan tarif PPh 23 / PPh 4(2) / PPh 21."
                 >
-                    <form method="POST" action="{{ route('finance.invoices.verify-section-b', $invoice) }}">
+                    <form id="form-verify-section-b" method="POST" action="{{ route('finance.invoices.verify-section-b', $invoice) }}">
                         @csrf
                         <div class="tw-space-y-4">
                             @if($invoice->tax_invoice_number)
@@ -299,16 +309,17 @@
                                         <label for="pph23-app" class="tw-text-ui-xs">Potong PPh 23</label>
                                     </div>
                                     <div>
-                                        <label class="form-label tw-text-[11px]">DPP PPh 23</label>
-                                        <input type="number" step="0.01" name="pph_23_base" class="form-control form-control-sm" value="{{ $verification->pph_23_base ?? $invoice->invoice_amount }}">
+                                        <label for="pph23-base" class="form-label tw-text-[11px]">DPP PPh 23</label>
+                                        <input type="number" step="0.01" id="pph23-base" name="pph_23_base" class="form-control form-control-sm" value="{{ $verification->pph_23_base ?? $invoice->invoice_amount }}">
                                     </div>
                                     <div>
-                                        <label class="form-label tw-text-[11px]">Tarif PPh 23 (%)</label>
-                                        <input type="number" step="0.01" name="pph_23_rate" class="form-control form-control-sm" value="{{ $verification->pph_23_rate ?? 2 }}">
+                                        <label for="pph23-rate" class="form-label tw-text-[11px]">Tarif PPh 23 (%)</label>
+                                        <input type="number" step="0.01" id="pph23-rate" name="pph_23_rate" class="form-control form-control-sm" value="{{ $verification->pph_23_rate ?? 2 }}">
                                     </div>
                                     <div>
-                                        <label class="form-label tw-text-[11px]">Nominal PPh 23 (Rp)</label>
-                                        <input type="number" step="0.01" name="pph_23_amount" class="form-control form-control-sm" value="{{ $verification->pph_23_amount ?? 0 }}">
+                                        <label for="pph23-amount" class="form-label tw-text-[11px]">Nominal PPh 23 (Rp)</label>
+                                        <input type="number" step="0.01" id="pph23-amount" name="pph_23_amount" class="form-control form-control-sm" value="{{ $verification->pph_23_amount ?? 0 }}">
+                                        <span id="pph23-calc-hint" class="tw-text-[11px] tw-text-primary tw-font-mono tw-mt-1 tw-block"></span>
                                     </div>
                                 </div>
                             </div>
@@ -336,7 +347,8 @@
 
                             @if(!$verification?->is_locked)
                                 <div class="tw-flex tw-justify-end">
-                                    <x-ui.button type="submit" variant="primary" size="sm">
+                                    <x-ui.button id="btn-submit-section-b" type="submit" variant="primary" size="sm">
+                                        <x-ui.icon name="save" size="xs" />
                                         <span>Simpan Section B</span>
                                     </x-ui.button>
                                 </div>
@@ -397,6 +409,21 @@
                 </div>
             </x-ui.card>
 
+            @if($invoice->voucher)
+                <x-ui.card title="Voucher Bayar & Settlement" description="Voucher memakai snapshot final; transfer koreksi tetap tercatat pada settlement yang sama.">
+                    <div class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-text-ui-xs">
+                        <div><span class="tw-text-on-surface-variant tw-block">Voucher</span><strong class="tw-font-mono tw-text-primary">{{ $invoice->voucher->voucher_number }}</strong></div>
+                        <x-ui.button :href="route('finance.vouchers.show', $invoice->voucher)" variant="outline" size="sm">Buka Voucher</x-ui.button>
+                    </div>
+                    @if($invoice->voucher->payment)
+                        <div class="tw-mt-3 tw-border-t tw-border-outline-variant tw-pt-3 tw-text-ui-xs">
+                            <div class="tw-flex tw-justify-between"><span class="tw-text-on-surface-variant">Settlement</span><x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($invoice->voucher->payment->status)">{{ $invoice->voucher->payment->status }}</x-ui.status-chip></div>
+                            <div class="tw-mt-1 tw-flex tw-justify-between"><span class="tw-text-on-surface-variant">Expected / Actual</span><span class="tw-font-mono">Rp {{ number_format($invoice->voucher->payment->expected_amount, 2, ',', '.') }} / Rp {{ number_format($invoice->voucher->payment->actual_paid_total, 2, ',', '.') }}</span></div>
+                        </div>
+                    @endif
+                </x-ui.card>
+            @endif
+
             {{-- Final Approval Actions --}}
             @if($invoice->status === \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION && !$verification?->is_locked)
                 <x-ui.card title="Aksi Persetujuan Final">
@@ -404,6 +431,7 @@
                         <form method="POST" action="{{ route('finance.invoices.approve-ready-to-pay', $invoice) }}">
                             @csrf
                             <x-ui.button
+                                id="btn-approve-ready-to-pay"
                                 type="submit"
                                 variant="primary"
                                 size="sm"
@@ -411,7 +439,7 @@
                                 :disabled="!$verification || !$verification->is_section_a_passed || !$verification->is_section_b_passed"
                             >
                                 <x-ui.icon name="check-circle" size="xs" />
-                                <span>Kunci &amp; Setujui Ready to Pay</span>
+                                <span>Kunci & Setujui Ready to Pay</span>
                             </x-ui.button>
                         </form>
 
@@ -425,6 +453,14 @@
                             <span>Minta Revisi Dokumen</span>
                         </button>
                     </div>
+                </x-ui.card>
+            @endif
+
+            @if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_NEED_REVISION], true))
+                <x-ui.card title="Tolak Invoice" description="Penolakan melepaskan reservasi GR authoritative dan menyimpan alasan pada riwayat.">
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <x-ui.icon name="x-circle" size="xs" /> Tolak Invoice
+                    </button>
                 </x-ui.card>
             @endif
 
@@ -478,4 +514,244 @@
         </form>
     </div>
 </div>
+
+@if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_NEED_REVISION], true))
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ route('finance.invoices.reject', $invoice) }}">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title tw-text-ui-sm tw-font-bold" id="rejectModalLabel">Tolak Invoice</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body"><label for="reject-notes" class="form-label tw-text-ui-xs tw-font-semibold">Alasan Penolakan <span class="text-danger">*</span></label><textarea name="notes" id="reject-notes" class="form-control form-control-sm" rows="3" maxlength="2000" required></textarea></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-danger btn-sm">Tolak & Lepaskan GR</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Restore scroll position if previously stored before full page reload/redirect
+    const savedScroll = sessionStorage.getItem('finance_invoice_verify_scroll');
+    if (savedScroll !== null) {
+        sessionStorage.removeItem('finance_invoice_verify_scroll');
+        window.scrollTo({
+            top: parseInt(savedScroll, 10),
+            behavior: 'instant'
+        });
+    } else if (window.location.hash) {
+        const target = document.querySelector(window.location.hash);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Helper to toggle button loading state
+    function setBtnLoading(btn, isLoading, loadingText) {
+        if (!btn) return;
+        if (isLoading) {
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('disabled', 'tw-opacity-75');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span><span>' + loadingText + '</span>';
+        } else {
+            if (btn.dataset.originalHtml) {
+                btn.innerHTML = btn.dataset.originalHtml;
+            }
+            btn.disabled = false;
+            btn.classList.remove('disabled', 'tw-opacity-75');
+        }
+    }
+
+    // Helper to update approval button state
+    function updateApprovalButton(canApprove) {
+        const approveBtn = document.getElementById('btn-approve-ready-to-pay');
+        if (!approveBtn) return;
+        if (canApprove) {
+            approveBtn.removeAttribute('disabled');
+            approveBtn.disabled = false;
+            approveBtn.classList.remove('disabled', 'tw-cursor-not-allowed', 'tw-opacity-50');
+        } else {
+            approveBtn.setAttribute('disabled', 'disabled');
+            approveBtn.disabled = true;
+            approveBtn.classList.add('disabled', 'tw-cursor-not-allowed', 'tw-opacity-50');
+        }
+    }
+
+    // 2. AJAX Submission for Section A
+    const formSectionA = document.getElementById('form-verify-section-a');
+    if (formSectionA) {
+        formSectionA.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('btn-submit-section-a') || formSectionA.querySelector('button[type="submit"]');
+            setBtnLoading(submitBtn, true, 'Menyimpan Section A...');
+
+            try {
+                const response = await fetch(formSectionA.action, {
+                    method: 'POST',
+                    body: new FormData(formSectionA),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    if (window.AdasiToast) {
+                        window.AdasiToast.success(data.message || 'Section A berhasil disimpan.');
+                    } else if (window.Swal) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message || 'Section A berhasil disimpan.', showConfirmButton: false, timer: 3000 });
+                    }
+                    updateApprovalButton(data.can_approve);
+
+                    // Smoothly guide user to Section B if section A passed
+                    if (data.is_section_a_passed) {
+                        const secB = document.getElementById('section-b');
+                        if (secB) {
+                            secB.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }
+                } else {
+                    let errMsg = data.message || 'Terjadi kesalahan validasi saat menyimpan Section A.';
+                    if (data.errors) {
+                        const firstKey = Object.keys(data.errors)[0];
+                        if (firstKey && data.errors[firstKey][0]) {
+                            errMsg = data.errors[firstKey][0];
+                        }
+                    }
+                    if (window.AdasiToast) {
+                        window.AdasiToast.error(errMsg);
+                    } else if (window.Swal) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: errMsg, showConfirmButton: false, timer: 5000 });
+                    } else {
+                        alert(errMsg);
+                    }
+                }
+            } catch (err) {
+                console.error('Section A save error:', err);
+                sessionStorage.setItem('finance_invoice_verify_scroll', window.scrollY.toString());
+                formSectionA.submit();
+                return;
+            } finally {
+                setBtnLoading(submitBtn, false);
+            }
+        });
+    }
+
+    // 3. AJAX Submission for Section B
+    const formSectionB = document.getElementById('form-verify-section-b');
+    if (formSectionB) {
+        formSectionB.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('btn-submit-section-b') || formSectionB.querySelector('button[type="submit"]');
+            setBtnLoading(submitBtn, true, 'Menyimpan Section B...');
+
+            try {
+                const response = await fetch(formSectionB.action, {
+                    method: 'POST',
+                    body: new FormData(formSectionB),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    if (window.AdasiToast) {
+                        window.AdasiToast.success(data.message || 'Section B berhasil disimpan.');
+                    } else if (window.Swal) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message || 'Section B berhasil disimpan.', showConfirmButton: false, timer: 3000 });
+                    }
+                    updateApprovalButton(data.can_approve);
+                } else {
+                    let errMsg = data.message || 'Terjadi kesalahan validasi saat menyimpan Section B.';
+                    if (data.errors) {
+                        const firstKey = Object.keys(data.errors)[0];
+                        if (firstKey && data.errors[firstKey][0]) {
+                            errMsg = data.errors[firstKey][0];
+                        }
+                    }
+                    if (window.AdasiToast) {
+                        window.AdasiToast.error(errMsg);
+                    } else if (window.Swal) {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: errMsg, showConfirmButton: false, timer: 5000 });
+                    } else {
+                        alert(errMsg);
+                    }
+                }
+            } catch (err) {
+                console.error('Section B save error:', err);
+                sessionStorage.setItem('finance_invoice_verify_scroll', window.scrollY.toString());
+                formSectionB.submit();
+                return;
+            } finally {
+                setBtnLoading(submitBtn, false);
+            }
+        });
+    }
+
+    // 4. Auto-calculation for PPh 23
+    const pph23App = document.getElementById('pph23-app');
+    const pph23Base = document.getElementById('pph23-base');
+    const pph23Rate = document.getElementById('pph23-rate');
+    const pph23Amount = document.getElementById('pph23-amount');
+    const pph23Hint = document.getElementById('pph23-calc-hint');
+
+    if (pph23App && pph23Base && pph23Rate && pph23Amount) {
+        function formatRupiah(num) {
+            return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        }
+
+        function calculatePph23() {
+            if (!pph23App.checked) {
+                pph23Amount.value = '0.00';
+                if (pph23Hint) pph23Hint.textContent = '';
+                return;
+            }
+
+            const base = parseFloat(pph23Base.value) || 0;
+            const rate = parseFloat(pph23Rate.value) || 0;
+            const calculated = Math.round(base * (rate / 100) * 100) / 100;
+
+            pph23Amount.value = calculated.toFixed(2);
+        }
+
+        pph23App.addEventListener('change', function () {
+            if (pph23App.checked) {
+                if (!parseFloat(pph23Base.value)) {
+                    pph23Base.value = '{{ (float) $invoice->invoice_amount }}';
+                }
+                if (!parseFloat(pph23Rate.value)) {
+                    pph23Rate.value = '2';
+                }
+            }
+            calculatePph23();
+        });
+
+        pph23Base.addEventListener('input', calculatePph23);
+        pph23Rate.addEventListener('input', calculatePph23);
+
+        // Initial setup on load if checked
+        if (pph23App.checked) {
+            const currentAmt = parseFloat(pph23Amount.value) || 0;
+            if (currentAmt === 0) {
+                calculatePph23();
+            } else {
+                const base = parseFloat(pph23Base.value) || 0;
+                const rate = parseFloat(pph23Rate.value) || 0;
+                if (pph23Hint && base > 0 && rate > 0) {
+                    pph23Hint.textContent = `Otomatis: ${rate}% × Rp ${formatRupiah(base)} = Rp ${formatRupiah(currentAmt)}`;
+                }
+            }
+        }
+    }
+});
+</script>
+@endpush

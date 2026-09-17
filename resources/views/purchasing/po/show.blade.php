@@ -221,7 +221,7 @@
     <nav class="po-sticky-nav-bar" aria-label="Purchase order sections">
         <ul class="nav po-nav-pills" id="po-section-nav">
             <li class="nav-item"><a class="nav-link active" href="#sec-info">Order Info</a></li>
-            <li class="nav-item"><a class="nav-link" href="#sec-material">Materials &amp; Commercials</a></li>
+            <li class="nav-item"><a class="nav-link" href="#sec-material">Materials & Commercials</a></li>
             @if(isset($itemProjections) && $itemProjections->isNotEmpty())
                 <li class="nav-item"><a class="nav-link" href="#sec-material-progress">Material Progress</a></li>
             @endif
@@ -278,7 +278,7 @@
                         </div>
                     </div>
                     <div class="tw-bg-surface-container tw-p-2.5 sm:tw-col-span-2">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Notes &amp; Remark</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Notes & Remark</div>
                         <div class="tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->notes ?: '-' }}</div>
                     </div>
                 </div>

@@ -64,7 +64,7 @@
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParsePrImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="prImportSpinner"></span>
-                    Parse &amp; Validate
+                    Parse & Validate
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnApplyPrImport" disabled>
                     <x-ui.icon name="circle-check" size="sm" class="me-1" /> Apply to Form

@@ -304,6 +304,37 @@ class LocalInvoiceSubmissionV2Test extends TestCase
         $this->assertSame('010.000-26.12345678', $revision->tax_invoice_number);
     }
 
+    public function test_tax_invoice_number_supports_coretax_17_digit_format(): void
+    {
+        $supplier = $this->createLocalSupplier(['is_pkp' => true]);
+        $wednesday = $this->nextWednesday();
+
+        LocalPoReferenceService::registerInternalPo(
+            $supplier->id,
+            'PO-TAX-001-CORETAX',
+            value: 5000000.0,
+            grReference: 'GR-TAX-001-CORETAX'
+        );
+
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+            'invoice_number' => 'INV-TAX-CORETAX',
+            'invoice_date' => '2026-09-10',
+            'po_source' => 'INTERNAL',
+            'internal_po_reference' => 'PO-TAX-001-CORETAX',
+            'invoice_amount' => 5000000,
+            'ppn_scheme' => '11%',
+            'tax_invoice_number' => '01002600000000001', // Raw 17 digits Coretax
+            'scheduled_physical_delivery_date' => $wednesday,
+            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
+            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
+            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $invoice = LocalInvoice::where('invoice_number', 'INV-TAX-CORETAX')->firstOrFail();
+        $this->assertSame('01.00.26.00000000001', $invoice->tax_invoice_number);
+    }
+
     public function test_tax_invoice_number_is_required_for_pkp_supplier(): void
     {
         $supplier = $this->createLocalSupplier(['is_pkp' => true]);

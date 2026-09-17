@@ -155,7 +155,7 @@
 
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="ruleNotes">
-                        Tariff Notes &amp; Legal Reference <span class="tw-text-on-surface-variant tw-font-normal">(Optional)</span>
+                        Tariff Notes & Legal Reference <span class="tw-text-on-surface-variant tw-font-normal">(Optional)</span>
                     </label>
                     <textarea
                         name="notes"

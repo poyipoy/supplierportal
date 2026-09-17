@@ -12,7 +12,8 @@ use RuntimeException;
 class InvoiceVerificationService
 {
     public function __construct(
-        private InvoiceNotificationService $notifications
+        private InvoiceNotificationService $notifications,
+        private LocalGrReservationService $reservations
     ) {}
 
     /**
@@ -124,7 +125,16 @@ class InvoiceVerificationService
             $verification->pph_23_applicable = (bool) ($data['pph_23_applicable'] ?? false);
             $verification->pph_23_base = isset($data['pph_23_base']) ? (float) $data['pph_23_base'] : null;
             $verification->pph_23_rate = isset($data['pph_23_rate']) ? (float) $data['pph_23_rate'] : null;
-            $verification->pph_23_amount = $verification->pph_23_applicable && isset($data['pph_23_amount']) ? (float) $data['pph_23_amount'] : 0.0;
+
+            $calculatedPph23 = round((float) ($verification->pph_23_base ?? 0) * (((float) ($verification->pph_23_rate ?? 0)) / 100), 2);
+            if ($verification->pph_23_applicable) {
+                $submittedAmount = isset($data['pph_23_amount']) ? (float) $data['pph_23_amount'] : null;
+                $verification->pph_23_amount = ($submittedAmount !== null && $submittedAmount > 0)
+                    ? $submittedAmount
+                    : $calculatedPph23;
+            } else {
+                $verification->pph_23_amount = 0.0;
+            }
 
             $verification->pph_4_2_applicable = (bool) ($data['pph_4_2_applicable'] ?? false);
             $verification->pph_4_2_amount = $verification->pph_4_2_applicable && isset($data['pph_4_2_amount']) ? (float) $data['pph_4_2_amount'] : 0.0;
@@ -169,6 +179,7 @@ class InvoiceVerificationService
                 throw new RuntimeException('Both Section A and Section B must be complete and valid before transitioning to Ready to Pay.');
             }
 
+            $this->reservations->consume($inv, $reviewer);
             $now = now();
             $verification->update([
                 'is_locked' => true,
@@ -234,6 +245,24 @@ class InvoiceVerificationService
 
             $this->notifications->send($inv, $history);
 
+            return $inv->fresh();
+        });
+    }
+
+    public function reject(LocalInvoice $invoice, string $reason, User $reviewer): LocalInvoice
+    {
+        $this->assertFinanceOrAdmin($reviewer);
+        if (trim($reason) === '') throw new InvalidArgumentException('Rejection reason is mandatory.');
+        return DB::transaction(function () use ($invoice, $reason, $reviewer) {
+            $inv = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($inv->status, [LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, LocalInvoice::STATUS_UNDER_VERIFICATION, LocalInvoice::STATUS_NEED_REVISION], true)) {
+                throw new RuntimeException("Cannot reject invoice in status [{$inv->status}].");
+            }
+            $from = $inv->status;
+            $this->reservations->release($inv, $reviewer);
+            $inv->update(['status' => LocalInvoice::STATUS_REJECTED]);
+            $history = $inv->statusHistories()->create(['from_status' => $from, 'to_status' => LocalInvoice::STATUS_REJECTED, 'actor_id' => $reviewer->id, 'event' => 'rejected', 'notes' => trim($reason), 'created_at' => now()]);
+            $this->notifications->send($inv, $history);
             return $inv->fresh();
         });
     }

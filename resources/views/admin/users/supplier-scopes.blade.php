@@ -30,7 +30,7 @@
             >
                 <option value="import" @selected($initialPreset === 'import')>Import Procurement Only</option>
                 <option value="local" @selected($initialPreset === 'local')>Local Invoices Only</option>
-                <option value="both" @selected($initialPreset === 'both')>Dual Access (Import Procurement &amp; Local Invoices)</option>
+                <option value="both" @selected($initialPreset === 'both')>Dual Access (Import Procurement & Local Invoices)</option>
             </select>
 
             {{-- Dynamic Scope Access Summary --}}

@@ -15,9 +15,19 @@
                 <span>Kembali ke Daftar</span>
             </x-ui.button>
             @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                <form method="POST" action="{{ route('finance.drp.finalize', $batch) }}" class="tw-inline" onsubmit="return confirm('Apakah Anda yakin ingin memfinalisasi batch DRP ini? Setelah difinalisasi, keanggotaan invoice dan biaya transfer akan dikunci!');">
+                <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#cancelBatchModal"
+                >
+                    <x-ui.icon name="x-circle" size="xs" />
+                    <span>Batalkan Batch</span>
+                </button>
+
+                <form id="finalizeBatchForm" method="POST" action="{{ route('finance.drp.finalize', $batch) }}" class="tw-inline">
                     @csrf
-                    <x-ui.button type="submit" variant="primary" size="sm">
+                    <x-ui.button type="button" id="btnFinalizeBatch" variant="primary" size="sm">
                         <x-ui.icon name="lock" size="xs" />
                         <span>Finalisasi Batch (Lock DRP)</span>
                     </x-ui.button>
@@ -27,11 +37,11 @@
     </x-ui.page-header>
 
     {{-- Batch Summary Cards --}}
-    <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-4 tw-gap-4">
+    <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 {{ $batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID ? 'lg:tw-grid-cols-6' : 'md:tw-grid-cols-4' }} tw-gap-4">
         <x-ui.card>
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Status Batch</span>
             <div class="tw-mt-1">
-                <x-ui.status-chip :tone="match($batch->status) { 'PAID' => 'success', 'PARTIALLY_PAID' => 'info', 'FINALIZED' => 'primary', default => 'warning' }">
+                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
                     {{ $batch->status }}
                 </x-ui.status-chip>
             </div>
@@ -49,12 +59,57 @@
             </span>
         </x-ui.card>
         <x-ui.card>
-            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Total Net Transfer</span>
-            <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-success tw-block tw-mt-1">
+            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Total Net DRP</span>
+            <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-on-surface tw-block tw-mt-1">
                 Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
             </span>
         </x-ui.card>
+        @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
+            <x-ui.card class="tw-border-success/30 tw-bg-success/5">
+                <span class="tw-text-ui-xs tw-text-success tw-font-semibold tw-block">Sudah Terbayar</span>
+                <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-success tw-block tw-mt-1">
+                    Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}
+                </span>
+            </x-ui.card>
+            <x-ui.card class="tw-border-warning/30 tw-bg-warning/5">
+                <span class="tw-text-ui-xs tw-text-warning-container-foreground tw-font-semibold tw-block">Sisa Belum Lunas</span>
+                <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-warning-container-foreground tw-block tw-mt-1">
+                    Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
+                </span>
+            </x-ui.card>
+        @endif
     </div>
+
+    {{-- Centralized Payment Callout --}}
+    @if(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]))
+        @php
+            $unvoucheredCount = $batch->unvoucheredSupplierItemsCount();
+        @endphp
+        @if($unvoucheredCount > 0)
+            <div class="tw-rounded-xl tw-border tw-border-warning/30 tw-bg-warning/10 tw-p-4">
+                <div class="tw-flex tw-flex-col sm:tw-flex-row tw-items-start sm:tw-items-center tw-gap-3">
+                    <div class="tw-flex tw-items-center tw-gap-2 tw-flex-1">
+                        <x-ui.icon name="alert-triangle" size="sm" class="tw-text-warning-container-foreground tw-flex-shrink-0" />
+                        <span class="tw-text-ui-xs tw-text-on-surface">
+                            Terdapat <strong>{{ $unvoucheredCount }} tagihan</strong> yang belum memiliki Voucher Bayar. Harap klik tombol <strong>"Generate Voucher"</strong> pada setiap tagihan di bawah sebelum melakukan pelunasan pada menu DRP Paid.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="tw-rounded-xl tw-border tw-border-primary/20 tw-bg-primary/5 tw-p-4">
+                <div class="tw-flex tw-flex-col sm:tw-flex-row tw-items-start sm:tw-items-center tw-gap-3">
+                    <div class="tw-flex tw-items-center tw-gap-2 tw-flex-1">
+                        <x-ui.icon name="info" size="sm" class="tw-text-primary tw-flex-shrink-0" />
+                        <span class="tw-text-ui-xs tw-text-on-surface">Seluruh voucher telah diterbitkan. Pelunasan DRP diproses terpusat pada menu <strong>DRP Paid</strong>.</span>
+                    </div>
+                    <x-ui.button :href="route('finance.drp.paid.index', ['q' => $batch->batch_number])" size="sm" variant="primary">
+                        <x-ui.icon name="external-link" size="xs" /> Buka DRP Paid
+                    </x-ui.button>
+                </div>
+            </div>
+        @endif
+    @endif
 
     {{-- Groups & Items --}}
     <div class="tw-space-y-6">
@@ -92,28 +147,19 @@
                         {{-- Action Buttons per Group --}}
                         @if($group->status !== \App\Models\PaymentGroup::STATUS_CANCELLED)
                             <div class="tw-flex tw-items-center tw-gap-2">
-                                {{-- Assign Voucher Button --}}
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-secondary btn-sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#voucherModal-{{ $group->id }}"
-                                >
-                                    <x-ui.icon name="receipt" size="xs" />
-                                    <span>Voucher</span>
-                                </button>
-
-                                {{-- Mark Paid Button --}}
-                                @if(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]) && $group->status === \App\Models\PaymentGroup::STATUS_UNPAID)
+                                @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_GA)
+                                    {{-- Assign Voucher Button --}}
                                     <button
                                         type="button"
-                                        class="btn btn-success btn-sm"
+                                        class="btn btn-outline-secondary btn-sm"
                                         data-bs-toggle="modal"
-                                        data-bs-target="#payModal-{{ $group->id }}"
+                                        data-bs-target="#voucherModal-{{ $group->id }}"
                                     >
-                                        <x-ui.icon name="check-circle" size="xs" />
-                                        <span>Konfirmasi Bayar</span>
+                                        <x-ui.icon name="receipt" size="xs" />
+                                        <span>Voucher</span>
                                     </button>
+
+                                    {{-- Mark Paid Button (disabled — settlement centralized via DRP Paid) --}}
                                 @endif
 
                                 {{-- Fee Override (Draft only) --}}
@@ -160,9 +206,7 @@
                                 <th scope="col" class="text-end">PPN (Rp)</th>
                                 <th scope="col" class="text-end">Total Tagihan (Rp)</th>
                                 <th scope="col">Status Item</th>
-                                @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                    <th scope="col" class="text-end">Aksi</th>
-                                @endif
+                                <th scope="col" class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -186,24 +230,68 @@
                                         Rp {{ number_format($item->total_amount, 0, ',', '.') }}
                                     </td>
                                     <td>
-                                        <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] {{ $item->status === 'ACTIVE' ? 'tw-bg-success/10 tw-text-success' : 'tw-bg-error/10 tw-text-error' }}">
-                                            {{ $item->status }}
-                                        </span>
-                                    </td>
-                                    @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                        <td class="text-end">
-                                            @if($item->status === 'ACTIVE')
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-outline-danger btn-xs"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#removeItemModal-{{ $item->id }}"
-                                                >
-                                                    Hapus
-                                                </button>
+                                        @if($item->status === 'ACTIVE')
+                                            @if($item->localInvoicePayment)
+                                                @if($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_FINALIZED)
+                                                    <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-success/10 tw-text-success">
+                                                        Lunas (Rp {{ number_format($item->localInvoicePayment->actual_paid_total, 0, ',', '.') }})
+                                                    </span>
+                                                @elseif($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_CORRECTION_REQUIRED)
+                                                    <div class="tw-flex tw-flex-col tw-gap-0.5">
+                                                        <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-warning/10 tw-text-warning-container-foreground tw-w-fit">
+                                                            Kurang Bayar
+                                                        </span>
+                                                        <span class="tw-text-[10px] tw-font-mono tw-text-on-surface-variant">
+                                                            Terbayar: Rp {{ number_format($item->localInvoicePayment->actual_paid_total, 0, ',', '.') }}
+                                                        </span>
+                                                        <span class="tw-text-[10px] tw-font-mono tw-text-warning-container-foreground tw-font-semibold">
+                                                            Sisa: Rp {{ number_format(max(0, (float)$item->localInvoicePayment->expected_amount - (float)$item->localInvoicePayment->actual_paid_total), 0, ',', '.') }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-primary/10 tw-text-primary">
+                                                        {{ $item->localInvoicePayment->status }}
+                                                    </span>
+                                                @endif
+                                            @else
+                                                <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-success/10 tw-text-success">
+                                                    ACTIVE
+                                                </span>
                                             @endif
-                                        </td>
-                                    @endif
+                                        @else
+                                            <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-error/10 tw-text-error">
+                                                {{ $item->status }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">
+                                        @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER && $item->status === \App\Models\PaymentItem::STATUS_ACTIVE)
+                                            @if($item->localInvoiceVoucher)
+                                                <div class="tw-inline-flex tw-items-center tw-gap-1.5">
+                                                    <x-ui.button :href="route('finance.vouchers.print', $item->localInvoiceVoucher)" variant="outline" size="sm" target="_blank" title="Cetak / Download PDF Voucher">
+                                                        <x-ui.icon name="printer" size="xs" />
+                                                        <span>Cetak PDF</span>
+                                                    </x-ui.button>
+                                                    <x-ui.button :href="route('finance.vouchers.show', $item->localInvoiceVoucher)" variant="ghost" size="sm" title="Lihat Detail Voucher & Settlement">
+                                                        <x-ui.icon name="receipt" size="xs" />
+                                                        <span>Settlement</span>
+                                                    </x-ui.button>
+                                                </div>
+                                            @elseif(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]))
+                                                <form method="POST" action="{{ route('finance.vouchers.generate', $item) }}" class="tw-inline-flex tw-items-center tw-gap-2">
+                                                    @csrf
+                                                    <input type="hidden" name="voucher_date" value="{{ now()->format('Y-m-d') }}">
+                                                    <input type="hidden" name="payment_method" value="BANK">
+                                                    <x-ui.button type="submit" size="sm" variant="primary">
+                                                        <x-ui.icon name="file-text" size="xs" />
+                                                        <span>Generate Voucher</span>
+                                                    </x-ui.button>
+                                                </form>
+                                            @endif
+                                        @elseif($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
+                                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#removeItemModal-{{ $item->id }}">Remove</button>
+                                        @endif
+                                    </td>
                                 </tr>
 
                                 {{-- Remove Item Modal --}}
@@ -242,6 +330,7 @@
 
                 {{-- Modals for this Group: Assign Voucher, Mark Paid, Override Fee --}}
                 {{-- 1. Voucher Modal --}}
+                @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_GA)
                 <div class="modal fade" id="voucherModal-{{ $group->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog">
                         <form method="POST" action="{{ route('finance.drp.assign-voucher', $group) }}">
@@ -275,48 +364,8 @@
                     </div>
                 </div>
 
-                {{-- 2. Mark Paid Modal --}}
-                <div class="modal fade" id="payModal-{{ $group->id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <form method="POST" action="{{ route('finance.drp.mark-paid', $group) }}">
-                            @csrf
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title tw-text-ui-sm tw-font-bold">Konfirmasi Eksekusi Transfer Bank</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="tw-p-2 tw-rounded tw-bg-surface-container tw-mb-3 tw-text-ui-xs">
-                                        Penerima: <strong>{{ $group->payee_name }}</strong><br>
-                                        Nominal Net: <strong class="tw-font-mono tw-text-primary">Rp {{ number_format($group->net_payment_amount, 0, ',', '.') }}</strong><br>
-                                        Rekening: {{ $group->bank_name }} - {{ $group->account_number }} a.n {{ $group->account_holder_name }}
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label tw-text-ui-xs tw-font-semibold">Nomor Referensi Bank / Transfer <span class="text-danger">*</span></label>
-                                        <input type="text" name="transfer_reference" class="form-control form-control-sm" placeholder="Contoh: TRF-BCA-9812739" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label tw-text-ui-xs tw-font-semibold">Tanggal Transfer <span class="text-danger">*</span></label>
-                                        <x-ui.date-picker
-                                            id="transfer_date_{{ $group->id }}"
-                                            name="transfer_date"
-                                            :value="now()->format('Y-m-d')"
-                                            required
-                                        />
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label tw-text-ui-xs tw-font-semibold">Catatan Pembayaran (Opsional)</label>
-                                        <input type="text" name="payment_notes" class="form-control form-control-sm" placeholder="Catatan selisih / administrasi...">
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                                    <button type="submit" class="btn btn-success btn-sm">Konfirmasi Telah Dibayar (PAID)</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                {{-- Mark Paid Modal removed — settlement centralized via DRP Paid --}}
+                @endif
 
                 {{-- 3. Override Fee Modal --}}
                 @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT && $batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
@@ -351,5 +400,101 @@
             </x-ui.card>
         @endforeach
     </div>
+
+    {{-- Cancel Batch Modal --}}
+    @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
+        <div class="modal fade" id="cancelBatchModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="POST" action="{{ route('finance.drp.cancel', $batch) }}">
+                    @csrf
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title tw-text-ui-sm tw-font-bold text-danger">Batalkan Batch DRP</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="tw-text-ui-xs tw-text-on-surface-variant">
+                                Apakah Anda yakin ingin membatalkan batch DRP <strong>#{{ $batch->batch_number }}</strong>?
+                                Seluruh tagihan di dalam batch ini akan dikeluarkan dan dikembalikan ke antrean Ready to Pay.
+                            </p>
+                            <div class="mb-3">
+                                <label class="form-label tw-text-ui-xs tw-font-semibold">Alasan Pembatalan Batch (Wajib) <span class="text-danger">*</span></label>
+                                <textarea name="reason" class="form-control form-control-sm" rows="3" required placeholder="Contoh: Kesalahan pemilihan tagihan atau perubahan jadwal pembayaran..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-danger btn-sm">Ya, Batalkan Batch</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const btnFinalize = document.getElementById('btnFinalizeBatch');
+    const formFinalize = document.getElementById('finalizeBatchForm');
+
+    if (btnFinalize && formFinalize) {
+        btnFinalize.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const title = 'Finalisasi Batch DRP?';
+            const text = 'Apakah Anda yakin ingin memfinalisasi batch DRP ini? Setelah difinalisasi, keanggotaan invoice dan biaya transfer akan dikunci!';
+            const confirmText = 'Ya, Finalisasi Batch';
+            const cancelText = 'Batal';
+
+            const proceedSubmit = () => {
+                if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+                    window.AdasiButton.startLoading(btnFinalize, { text: 'Memfinalisasi...' });
+                } else {
+                    btnFinalize.disabled = true;
+                    btnFinalize.classList.add('disabled', 'tw-opacity-75');
+                    btnFinalize.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span><span>Memfinalisasi...</span>';
+                }
+                formFinalize.submit();
+            };
+
+            if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
+                window.AdasiAlert.confirm({
+                    title: title,
+                    text: text,
+                    confirmTone: 'primary',
+                    confirmText: confirmText,
+                    cancelText: cancelText,
+                    type: 'warning',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        proceedSubmit();
+                    }
+                });
+            } else if (window.Swal) {
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: confirmText,
+                    cancelButtonText: cancelText,
+                    confirmButtonColor: '#1F5FA6',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: true,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        proceedSubmit();
+                    }
+                });
+            } else if (confirm(`${title}\n\n${text}`)) {
+                proceedSubmit();
+            }
+        });
+    }
+});
+</script>
+@endpush
+

@@ -79,8 +79,36 @@ class CalendarController {
         this.displayYear = new Date().getFullYear();
         this.committed = this.readNative();
         this.draft = this.cloneValue(this.committed);
+        this.allowedDays = this.parseAllowedDays(wrapper.dataset.calendarAllowedDays);
+        this.allowedDaysMessage = wrapper.dataset.calendarAllowedDaysMessage || '';
 
         this.panel.before(this.placeholder);
+    }
+
+    parseAllowedDays(raw) {
+        if (!raw) return null;
+        const nameMap = {
+            sunday: 0, sun: 0, minggu: 0,
+            monday: 1, mon: 1, senin: 1,
+            tuesday: 2, tue: 2, selasa: 2,
+            wednesday: 3, wed: 3, rabu: 3,
+            thursday: 4, thu: 4, kamis: 4,
+            friday: 5, fri: 5, jumat: 5,
+            saturday: 6, sat: 6, sabtu: 6,
+        };
+        const parts = String(raw).toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
+        const result = [];
+        for (const part of parts) {
+            if (part in nameMap) {
+                result.push(nameMap[part]);
+            } else {
+                const num = parseInt(part, 10);
+                if (!isNaN(num) && num >= 0 && num <= 6) {
+                    result.push(num);
+                }
+            }
+        }
+        return result.length ? result : null;
     }
 
     initialize() {
@@ -99,6 +127,10 @@ class CalendarController {
             button.hidden = true;
         });
         this.updateDisplay();
+        const initialError = this.validationError();
+        if (initialError) {
+            this.setError(initialError);
+        }
         this.installListeners();
         this.installFormValidation();
     }
@@ -304,12 +336,18 @@ class CalendarController {
         }
 
         this.daysGrid.innerHTML = html;
+
+        if (this.todayBtn) {
+            const todayDisallowed = this.isDayDisallowed(localToday());
+            this.todayBtn.disabled = todayDisallowed;
+            this.todayBtn.classList.toggle('is-disabled', todayDisallowed);
+        }
     }
 
     onTodayClick() {
         const todayIso = localToday();
         if (this.isDayDisallowed(todayIso)) {
-            this.setError('Today is outside the allowed date range.');
+            this.setError(this.allowedDaysMessage || 'Today is outside the allowed date range.');
             return;
         }
         this.draft = todayIso;
@@ -562,6 +600,13 @@ class CalendarController {
             const input = this.native[index];
             if (input?.min && compareIso(value, input.min) < 0) return 'Choose a date within the allowed range.';
             if (input?.max && compareIso(value, input.max) > 0) return 'Choose a date within the allowed range.';
+            if (this.allowedDays && this.allowedDays.length) {
+                const [y, m, d] = value.split('-').map(Number);
+                const dayOfWeek = new Date(y, m - 1, d).getDay();
+                if (!this.allowedDays.includes(dayOfWeek)) {
+                    return this.allowedDaysMessage || 'Tanggal harus jatuh pada hari yang ditentukan.';
+                }
+            }
         }
         if (this.type === 'range' && values[0] && values[1] && compareIso(values[1], values[0]) < 0) {
             return 'The end date cannot be before the start date.';
@@ -576,6 +621,11 @@ class CalendarController {
             : this.native[this.activeBoundary === 'end' ? 1 : 0];
         if (input?.min && compareIso(value, input.min) < 0) return true;
         if (input?.max && compareIso(value, input.max) > 0) return true;
+        if (this.allowedDays && this.allowedDays.length) {
+            const [y, m, d] = value.split('-').map(Number);
+            const dayOfWeek = new Date(y, m - 1, d).getDay();
+            if (!this.allowedDays.includes(dayOfWeek)) return true;
+        }
         return this.type === 'range'
             && this.activeBoundary === 'end'
             && Boolean(this.draft.start)
@@ -597,7 +647,12 @@ class CalendarController {
         this.committed = this.draft;
         this.updateDisplay();
         this.emitNativeCommit(this.native[0]);
-        this.clearError();
+        const error = this.validationError();
+        if (error) {
+            this.setError(error);
+        } else {
+            this.clearError();
+        }
         this.close({ restoreFocus: true });
     }
 
@@ -856,7 +911,12 @@ class CalendarController {
         this.draft = this.cloneValue(this.committed);
         this.updateDisplay();
         if (this.isOpen) this.syncPanel();
-        this.clearError();
+        const error = this.validationError();
+        if (error) {
+            this.setError(error);
+        } else {
+            this.clearError();
+        }
     }
 
     setError(message) {

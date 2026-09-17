@@ -2,22 +2,22 @@
     <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
         <thead class="table-light">
             <tr>
-                <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Submission / Receipt</th>
+                <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Pengajuan / Tanda Terima</th>
                 <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Invoice / PO</th>
                 @if(($portal ?? '') === 'accounting' || ($portal ?? '') === 'finance' || !auth()->user()?->isSupplier())
                     <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Supplier</th>
                 @endif
-                <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Submitted</th>
-                <th scope="col" class="text-end tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Amount / PPN (IDR)</th>
+                <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Tanggal Pengajuan</th>
+                <th scope="col" class="text-end tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Nominal / PPN (IDR)</th>
                 <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Status</th>
                 @if(!auth()->user()?->isSupplier())
-                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Due Date</th>
+                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Jatuh Tempo</th>
                 @endif
                 @if($payments ?? false)
-                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Term (Days)</th>
-                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Scheduled Pay</th>
+                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Termin (Hari)</th>
+                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Jadwal Bayar</th>
                 @endif
-                <th scope="col" class="text-end tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant" style="min-width: 130px;">Action</th>
+                <th scope="col" class="text-end tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant" style="min-width: 130px;">Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -75,15 +75,15 @@
                             @if($rem !== null)
                                 @if($rem < 0)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-error/10 tw-text-error tw-mt-0.5">
-                                        <x-ui.icon name="alert-triangle" size="xs" /> Overdue {{ abs($rem) }}d
+                                        <x-ui.icon name="alert-triangle" size="xs" /> Terlewat {{ abs($rem) }} hari
                                     </span>
                                 @elseif($rem <= 3)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-warning-container tw-text-warning-container-foreground tw-mt-0.5">
-                                        <x-ui.icon name="clock" size="xs" /> {{ $rem }}d left
+                                        <x-ui.icon name="clock" size="xs" /> Sisa {{ $rem }} hari
                                     </span>
                                 @else
                                     <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">
-                                        {{ $rem }} days left
+                                        Sisa {{ $rem }} hari
                                     </span>
                                 @endif
                             @endif
@@ -95,7 +95,7 @@
                     @if($payments ?? false)
                         <td>
                             <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                Net {{ $row->payment_term_days_snapshot }}d
+                                Net {{ $row->payment_term_days_snapshot }} hari
                             </span>
                         </td>
                         <td>
@@ -123,8 +123,8 @@
                             <div class="tw-w-12 tw-h-12 tw-rounded-full tw-bg-surface-container tw-flex tw-items-center tw-justify-center tw-text-on-surface-variant">
                                 <x-ui.icon name="inbox" size="lg" />
                             </div>
-                            <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">No invoices found</span>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant">Try adjusting your filters or search keywords.</span>
+                            <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Tidak ada invoice ditemukan</span>
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant">Coba sesuaikan filter atau kata kunci pencarian Anda.</span>
                         </div>
                     </td>
                 </tr>

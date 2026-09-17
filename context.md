@@ -181,8 +181,9 @@ sequenceDiagram
     Note over Verifier,DRP: Status: READY_TO_PAY
 
     DRP->>System: Batch invoice into DRP (PaymentBatch)
-    DRP->>System: Confirm Bank Transfer (markGroupPaid)
-    Note over Verifier,DRP: Status: PAID
+    DRP->>System: Finance finalizes one Voucher Bayar per invoice
+    DRP->>System: Record one primary transfer; corrections stay on that settlement
+    Note over Verifier,DRP: Status: PAID after the invoice settlement reaches its expected net payable
 ```
 
 ### Detailed Lifecycle Stages & Rules:
@@ -222,6 +223,13 @@ sequenceDiagram
 - When Finance requests revision, status transitions to `NEED_REVISION`.
 - Resubmission by supplier resets cashier receipt, review dates, and due date to `NULL`, requiring fresh physical receipt.
 - Status history records exact source state (`from_status: UNDER_VERIFICATION`) and notes.
+
+#### 7. Authoritative Local PO/GR and Invoice Settlement (whole-GR)
+- `local_purchase_orders` and `local_goods_receipts` are the authoritative Local Supplier master records. Purchasing and Finance maintain them; imports are create/add-only and never overwrite an existing master.
+- A new invoice references exactly one PO and one or more complete GR records. The server locks the PO and selected GR rows, requires that every GR belongs to the supplier/PO, and requires the exact sum of whole GR amounts to equal invoice DPP. There is no partial GR allocation or remaining GR amount.
+- Submission reserves eligible GRs (`AVAILABLE -> RESERVED`). Revision keeps or atomically reconciles the reservation. Rejection, cancellation, or expiry releases it; Ready to Pay consumes it (`RESERVED -> INVOICED`). Closed POs may continue only with their existing reservation set.
+- The DRP container remains `payment_batches -> payment_groups -> payment_items`. Each Local Supplier invoice receives one final Voucher Bayar and one Payment Settlement. A supplier group is marked paid only after all of its Local Supplier invoice settlements are finalized; an accidental short bank transfer is recorded as a correction event on the same settlement.
+- An overpayment remains a separate supplier receivable and can be settled once with an exact full refund and private proof attachment. Voucher output uses authoritative snapshots and the ADASI document identity.
 
 ---
 

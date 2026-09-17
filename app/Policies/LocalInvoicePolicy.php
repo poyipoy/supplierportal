@@ -23,6 +23,12 @@ class LocalInvoicePolicy
         return $this->create($user) && (int) $invoice->supplier_id === (int) $user->id;
     }
 
+    public function cancel(User $user, LocalInvoice $invoice): bool
+    {
+        return $this->create($user) && (int) $invoice->supplier_id === (int) $user->id
+            && in_array($invoice->status, [LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, LocalInvoice::STATUS_NEED_REVISION], true);
+    }
+
     public function verifyPhysical(User $user, LocalInvoice $invoice): bool
     {
         return $this->operate($user);

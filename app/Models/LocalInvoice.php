@@ -16,6 +16,7 @@ class LocalInvoice extends Model
     public const STATUS_PAID = 'PAID';
     public const STATUS_EXPIRED = 'EXPIRED';
     public const STATUS_REJECTED = 'REJECTED';
+    public const STATUS_CANCELLED = 'CANCELLED';
 
     public const STATUSES = [
         self::STATUS_WAITING_PHYSICAL_DOCUMENT,
@@ -25,6 +26,7 @@ class LocalInvoice extends Model
         self::STATUS_PAID,
         self::STATUS_EXPIRED,
         self::STATUS_REJECTED,
+        self::STATUS_CANCELLED,
     ];
 
     protected $guarded = ['id'];
@@ -70,6 +72,13 @@ class LocalInvoice extends Model
         return $this->hasMany(LocalInvoiceRevision::class);
     }
 
+    public function latestRevision(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(LocalInvoiceRevision::class)->ofMany([
+            'revision_number' => 'max',
+        ]);
+    }
+
     public function documents()
     {
         return $this->hasMany(LocalInvoiceDocument::class);
@@ -105,6 +114,31 @@ class LocalInvoice extends Model
     public function paymentItem()
     {
         return $this->morphOne(PaymentItem::class, 'payable');
+    }
+
+    public function localPurchaseOrder()
+    {
+        return $this->belongsTo(LocalPurchaseOrder::class, 'local_purchase_order_id');
+    }
+
+    public function goodsReceiptHistories()
+    {
+        return $this->hasMany(LocalInvoiceGoodsReceipt::class);
+    }
+
+    public function activeGoodsReceiptHistories()
+    {
+        return $this->hasMany(LocalInvoiceGoodsReceipt::class)->whereIn('state', [LocalInvoiceGoodsReceipt::STATE_RESERVED, LocalInvoiceGoodsReceipt::STATE_CONSUMED]);
+    }
+
+    public function voucher()
+    {
+        return $this->hasOne(LocalInvoiceVoucher::class);
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(LocalInvoicePayment::class);
     }
 
     public function isPaid(): bool

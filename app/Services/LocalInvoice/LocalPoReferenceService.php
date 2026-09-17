@@ -3,10 +3,12 @@
 namespace App\Services\LocalInvoice;
 
 use App\Models\LocalInvoice;
+use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use InvalidArgumentException;
+use Illuminate\Support\Facades\Schema;
 
 class LocalPoReferenceService
 {
@@ -65,23 +67,28 @@ class LocalPoReferenceService
             }
         }
 
-        // 2. Query database LocalPurchaseOrder
-        $dbPos = LocalPurchaseOrder::where('supplier_id', $supplierUser->id)
+        // 2. Query the authoritative database master. Only OPEN POs with at
+        // least one AVAILABLE whole GR are eligible for a new invoice.
+        $authoritativeSchema = Schema::hasColumn('local_invoices', 'local_purchase_order_id')
+            && Schema::hasColumn('local_goods_receipts', 'status');
+        $dbQuery = LocalPurchaseOrder::where('supplier_id', $supplierUser->id)
+            ->when($authoritativeSchema, fn ($q) => $q->where('status', LocalPurchaseOrder::STATUS_OPEN), fn ($q) => $q->whereIn('status', [LocalPurchaseOrder::STATUS_OPEN, 'APPROVED']))
+            ->when($authoritativeSchema, fn ($q) => $q->whereHas('goodsReceipts', fn ($gr) => $gr->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)))
             ->when($query !== '', function ($q) use ($query) {
                 $q->where('po_number', 'like', "%{$query}%");
-            })
-            ->with('goodsReceipts')
-            ->latest('id')
-            ->limit($limit)
-            ->get();
+            });
+        $dbPos = $authoritativeSchema
+            ? $dbQuery->with(['goodsReceipts' => fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)->orderBy('gr_date')])
+                ->latest('id')->limit($limit)->get()
+            : $dbQuery->with('goodsReceipts')->latest('id')->limit($limit)->get();
 
         foreach ($dbPos as $po) {
             if (! isset($results[$po->po_number])) {
-                $details = $this->getInternalPoDetails($supplierUser, $po->po_number);
-                $gr = $po->goodsReceipts->first();
-                $hasGr = $gr !== null;
                 $poValue = (float) $po->total_amount;
-                $remainingValue = $details ? (float) $details['remaining_value'] : $poValue;
+                $remainingValue = $authoritativeSchema
+                    ? (float) $po->goodsReceipts->sum('received_amount')
+                    : (float) $po->total_amount;
+                $hasGr = $po->goodsReceipts->isNotEmpty();
 
                 $results[$po->po_number] = [
                     'po_number' => $po->po_number,
@@ -91,7 +98,14 @@ class LocalPoReferenceService
                     'remaining_amount' => $remainingValue,
                     'formatted_remaining_amount' => 'Rp '.number_format($remainingValue, 0, ',', '.'),
                     'has_gr' => $hasGr,
-                    'gr_reference' => $gr?->gr_number,
+                    'gr_reference' => $po->goodsReceipts->pluck('gr_number')->implode(', ') ?: null,
+                    'status' => $po->status,
+                    'goods_receipts' => $po->goodsReceipts->map(fn (LocalGoodsReceipt $gr) => [
+                        'id' => $gr->id,
+                        'gr_number' => $gr->gr_number,
+                        'gr_date' => $gr->gr_date?->format('Y-m-d'),
+                        'received_amount' => (float) $gr->received_amount,
+                    ])->values()->all(),
                 ];
             }
         }
@@ -104,8 +118,25 @@ class LocalPoReferenceService
      */
     public function getInternalPoDetails(User $supplierUser, string $poNumber): ?array
     {
-        // 1. Check registered/mocked internal POs (for test overrides)
-        if (isset(self::$mockInternalPos[$supplierUser->id][$poNumber])) {
+        // Once the cutover schema is present, the database master is the
+        // source of truth. Compatibility mocks/providers are fallback paths
+        // only when there is no authoritative PO row for this supplier.
+        $authoritative = false;
+        $authoritativeSchema = Schema::hasTable('local_purchase_orders')
+            && Schema::hasTable('local_goods_receipts')
+            && Schema::hasColumn('local_invoices', 'local_purchase_order_id')
+            && Schema::hasColumn('local_goods_receipts', 'status');
+
+        $po = null;
+        if ($authoritativeSchema && ($po = LocalPurchaseOrder::where('supplier_id', $supplierUser->id)
+            ->whereRaw('LOWER(po_number) = ?', [mb_strtolower(trim($poNumber))])
+            ->with(['goodsReceipts' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->orderBy('gr_date')])
+            ->first())) {
+            $poValue = (float) $po->total_amount;
+            $gr = $po->goodsReceipts->pluck('gr_number')->implode(', ');
+            $description = (string) ($po->description ?? '');
+            $authoritative = true;
+        } elseif (isset(self::$mockInternalPos[$supplierUser->id][$poNumber])) {
             $data = self::$mockInternalPos[$supplierUser->id][$poNumber];
             $poValue = (float) $data['value'];
             $gr = $data['gr'];
@@ -115,8 +146,23 @@ class LocalPoReferenceService
             $gr = $providerData['gr_reference'];
             $description = $providerData['description'];
         } else {
-            return null;
+            $po = LocalPurchaseOrder::where('supplier_id', $supplierUser->id)
+                ->whereRaw('LOWER(po_number) = ?', [mb_strtolower(trim($poNumber))])
+                ->with(Schema::hasColumn('local_goods_receipts', 'status')
+                    ? ['goodsReceipts' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->orderBy('gr_date')]
+                    : ['goodsReceipts'])
+                ->first();
+            if (! $po) {
+                return null;
+            }
+            $poValue = (float) $po->total_amount;
+            $gr = $po->goodsReceipts->pluck('gr_number')->implode(', ');
+            $description = (string) ($po->description ?? '');
         }
+
+        $hasGr = $authoritative
+            ? $po->goodsReceipts->contains(fn (LocalGoodsReceipt $receipt) => $receipt->status === LocalGoodsReceipt::STATUS_AVAILABLE)
+            : ! empty($gr);
 
         // Calculate previously invoiced value from active/paid local invoices
         $previouslyInvoiced = (float) LocalInvoice::where('supplier_id', $supplierUser->id)
@@ -135,8 +181,10 @@ class LocalPoReferenceService
             'po_value' => $poValue,
             'previously_invoiced' => $previouslyInvoiced,
             'remaining_value' => $remaining,
-            'has_gr' => ! empty($gr),
+            'has_gr' => $hasGr,
             'gr_reference' => $gr,
+            'status' => $authoritative ? $po->status : LocalPurchaseOrder::STATUS_OPEN,
+            'authoritative' => $authoritative,
         ];
     }
 
@@ -145,13 +193,30 @@ class LocalPoReferenceService
      */
     public function validateAndResolve(
         User $supplierUser,
-        string $poSource,
+        ?string $poSource,
         ?string $internalPoRef,
         ?string $manualPoNumber,
         float $invoiceDpp,
         ?string $manualGrRef = null
     ): array {
-        $poSource = strtoupper(trim($poSource));
+        $poSource = strtoupper(trim((string) $poSource));
+
+        // Legacy callers sometimes provide only a unified PO number. Resolve
+        // an existing internal reference first; otherwise the request follows
+        // the manual-reference path and must provide a manual GR.
+        if ($poSource === '') {
+            $candidate = $internalPoRef ?: $manualPoNumber;
+            if ($candidate && $this->getInternalPoDetails($supplierUser, $candidate)) {
+                $poSource = 'INTERNAL';
+                $internalPoRef ??= $candidate;
+            } elseif ($manualPoNumber || $manualGrRef) {
+                $poSource = 'MANUAL';
+                $manualPoNumber ??= $candidate;
+            } else {
+                $poSource = 'MANUAL';
+                $manualPoNumber ??= $candidate;
+            }
+        }
 
         if ($poSource === 'INTERNAL') {
             if (empty($internalPoRef)) {
@@ -161,6 +226,10 @@ class LocalPoReferenceService
             $details = $this->getInternalPoDetails($supplierUser, $internalPoRef);
             if (! $details) {
                 throw new InvalidArgumentException("Internal PO [{$internalPoRef}] does not exist or does not belong to this supplier.");
+            }
+
+            if (($details['authoritative'] ?? false) && ($details['status'] ?? null) !== LocalPurchaseOrder::STATUS_OPEN) {
+                throw new InvalidArgumentException("PO [{$internalPoRef}] is not OPEN and cannot accept a new invoice reservation.");
             }
 
             if (! $details['has_gr']) {
@@ -181,6 +250,7 @@ class LocalPoReferenceService
                 'po_invoiced_snapshot' => $details['previously_invoiced'],
                 'po_remaining_snapshot' => $remaining,
                 'has_po_discrepancy' => $hasDiscrepancy,
+                'authoritative' => (bool) ($details['authoritative'] ?? false),
             ];
         }
 

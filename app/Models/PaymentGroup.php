@@ -69,7 +69,9 @@ class PaymentGroup extends Model
 
     public function isBca(): bool
     {
-        return strtoupper(trim((string) $this->bank_name)) === 'BCA';
+        $name = strtoupper(trim((string) $this->bank_name));
+
+        return $name === 'BCA' || str_starts_with($name, 'BCA (') || str_starts_with($name, 'BANK BCA');
     }
 
     public function getNetAmountAttribute(): float

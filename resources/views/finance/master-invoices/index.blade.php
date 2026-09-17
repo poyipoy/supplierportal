@@ -5,7 +5,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Master Invoices (Reporting &amp; Repository)"
+        title="Master Invoices (Reporting & Repository)"
         description="Pusat query dan pelaporan seluruh invoice supplier lokal lintas periode, status pelunasan, dan rekapitulasi nilai pembayaran."
         eyebrow="Finance & Accounts Payable"
     >

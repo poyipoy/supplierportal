@@ -9,7 +9,7 @@
             <div class="tw-w-12 tw-h-12 tw-mx-auto tw-mb-3 tw-rounded-full tw-bg-white/20 tw-flex tw-items-center tw-justify-center">
                 <x-ui.icon name="check-circle" size="lg" class="tw-text-white" />
             </div>
-            <h1 class="tw-text-ui-base tw-font-bold tw-m-0">Tanda Terima Sah &amp; Terverifikasi</h1>
+            <h1 class="tw-text-ui-base tw-font-bold tw-m-0">Tanda Terima Sah & Terverifikasi</h1>
             <p class="tw-text-xs tw-text-white/80 tw-m-0 tw-mt-1">PT Astra Daido Steel Indonesia — Portal Supplier</p>
         </div>
 

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', $invoice->receipt->receipt_number)
-@section('page-title', 'Invoice Receipt')
+@section('page-title', 'Tanda Terima Invoice')
 @section('content')
 <div class="local-invoice-receipt tw-max-w-2xl tw-mx-auto tw-my-6">
     <x-ui.page-header

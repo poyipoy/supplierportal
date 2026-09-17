@@ -85,11 +85,11 @@
                     <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
                         <option value="">-- Select Access Role --</option>
                         <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin (Full System Control)</option>
-                        <option value="purchasing" {{ old('role', $user->role) == 'purchasing' ? 'selected' : '' }}>Purchasing (Requisitions &amp; POs)</option>
-                        <option value="supplier" {{ old('role', $user->role) == 'supplier' ? 'selected' : '' }}>Supplier (Material &amp; Invoicing)</option>
-                        <option value="qc" {{ old('role', $user->role) == 'qc' ? 'selected' : '' }}>Quality Control (Inspections &amp; Claims)</option>
-                        <option value="finance" {{ old('role', $user->role) == 'finance' ? 'selected' : '' }}>Finance (Accounts Payable &amp; DRP)</option>
-                        <option value="ga" {{ old('role', $user->role) == 'ga' ? 'selected' : '' }}>General Affairs (Claims &amp; Employees)</option>
+                        <option value="purchasing" {{ old('role', $user->role) == 'purchasing' ? 'selected' : '' }}>Purchasing (Requisitions & POs)</option>
+                        <option value="supplier" {{ old('role', $user->role) == 'supplier' ? 'selected' : '' }}>Supplier (Material & Invoicing)</option>
+                        <option value="qc" {{ old('role', $user->role) == 'qc' ? 'selected' : '' }}>Quality Control (Inspections & Claims)</option>
+                        <option value="finance" {{ old('role', $user->role) == 'finance' ? 'selected' : '' }}>Finance (Accounts Payable & DRP)</option>
+                        <option value="ga" {{ old('role', $user->role) == 'ga' ? 'selected' : '' }}>General Affairs (Claims & Employees)</option>
                     </select>
                     @error('role')
                         <div class="invalid-feedback">{{ $message }}</div>
