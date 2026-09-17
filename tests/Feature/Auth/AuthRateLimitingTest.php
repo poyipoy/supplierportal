@@ -271,7 +271,7 @@ class AuthRateLimitingTest extends TestCase
 
         $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '198.51.100.212']);
         $this->assertSame(
-            ['combination', 'email', 'ip'],
+            ['combination', 'email', 'ip', 'subnet'],
             array_keys(app(LoginRateLimiter::class)->attempts($request, 'fresh@example.test')),
         );
     }
