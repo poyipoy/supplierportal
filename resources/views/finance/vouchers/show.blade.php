@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $voucher->voucher_number)
+@section('title', 'Voucher: ' . $voucher->voucher_number . ' - ADASI Portal')
 @section('page-title', 'Voucher Bayar')
 @section('content')
 <div class="tw-grid tw-max-w-6xl tw-gap-6 tw-pb-16"><x-ui.page-header :title="$voucher->voucher_number" :description="$voucher->supplier_name_snapshot.' · '.$voucher->invoice_number_snapshot" eyebrow="Final Voucher Bayar"><x-slot:actions><x-ui.button :href="route('finance.vouchers.print',$voucher)" variant="outline" size="sm" target="_blank"><x-ui.icon name="printer" size="xs" /> Print PDF</x-ui.button><x-ui.button :href="route('finance.drp.show',$voucher->batch)" variant="ghost" size="sm">Back to DRP</x-ui.button></x-slot:actions></x-ui.page-header>

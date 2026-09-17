@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $invoice->submission_number)
+@section('title', 'Invoice: ' . $invoice->submission_number . ' - ADASI Portal')
 @section('page-title', 'Invoice Details')
 @section('content')
 @include('local-invoices.detail', ['portal'=>'accounting'])

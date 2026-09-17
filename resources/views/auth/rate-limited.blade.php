@@ -13,7 +13,7 @@
 
 <div aria-labelledby="rate-limit-title">
     <header class="tw-mb-5">
-        <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-error">429 / Request limited</p>
+        <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-error">Request limited</p>
         <h1 id="rate-limit-title" class="tw-m-0 tw-mt-1.5 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">Please wait a moment</h1>
         <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">To protect your account, this action is temporarily limited due to too many requests.</p>
     </header>
@@ -30,7 +30,7 @@
             <span class="tw-whitespace-nowrap">{{ $returnLabel }}</span>
         </a>
     </div>
-    <p class="tw-m-0 tw-mt-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">If the issue continues, please contact your system administrator.</p>
+    <p class="tw-m-0 tw-mt-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">If the issue continues, please contact Astra Daido Support.</p>
 </div>
 @endsection
 

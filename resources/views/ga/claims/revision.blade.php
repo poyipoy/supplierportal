@@ -5,7 +5,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        :title="'Revisi Klaim #'.$claim->claim_number"
+        :title="'Revisi Klaim '.$claim->claim_number"
         :description="'Karyawan: '.$claim->employee?->name.' ('.$claim->employee?->department.') — Revisi ke-'.($claim->revision_number + 1)"
         eyebrow="General Affairs Operations"
     >

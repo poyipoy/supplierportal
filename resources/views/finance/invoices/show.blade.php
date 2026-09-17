@@ -5,7 +5,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        :title="'Invoice #'.$invoice->invoice_number"
+        :title="'Invoice '.$invoice->invoice_number"
         :description="'Pengajuan: '.$invoice->submission_number.' — Supplier: '.($invoice->supplier->supplier?->company_name ?: $invoice->supplier->name)"
         eyebrow="Finance Verification Workflow"
     >

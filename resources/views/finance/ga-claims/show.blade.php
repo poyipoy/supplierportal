@@ -5,7 +5,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        :title="'Klaim #'.$claim->claim_number"
+        :title="'Klaim '.$claim->claim_number"
         :description="'Karyawan: '.$claim->employee?->name.' ('.$claim->employee?->department.') — Tipe: '.$claim->claim_type"
         eyebrow="Finance Verification — GA Claim"
     >

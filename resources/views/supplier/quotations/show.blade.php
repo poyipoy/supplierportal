@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Quotation Details - ADASI Portal')
-@section('page-title', 'Quotation Details')
+@section('title', 'Penawaran: ' . ($quotation->purchaseRequisition->pr_number ?? '-') . ' - ADASI Portal')
+@section('page-title', 'Detail Penawaran Harga')
 
 @section('content')
 <div class="tw-grid tw-gap-4">

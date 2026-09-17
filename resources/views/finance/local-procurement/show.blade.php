@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'PO ' . $purchaseOrder->po_number)
+@section('title', 'PO ' . $purchaseOrder->po_number . ' - ADASI Portal')
 @section('page-title', 'Detail Local Purchase Order')
 
 @php

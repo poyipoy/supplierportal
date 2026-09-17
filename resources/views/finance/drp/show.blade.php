@@ -5,7 +5,7 @@
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        :title="'Batch DRP #'.$batch->batch_number"
+        :title="'Batch DRP '.$batch->batch_number"
         :description="'Tipe: '.$batch->batch_type.' — Dibuat: '.$batch->created_at->format('d M Y H:i').' oleh '.($batch->creator?->name ?? 'System')"
         eyebrow="Unified Payment Engine"
     >

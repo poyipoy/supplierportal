@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Quotation Details - ADASI Portal')
-@section('page-title', 'Quotation Details')
+@section('title', 'Penawaran: ' . ($quotation->purchaseRequisition->pr_number ?? '-') . ' - ADASI Portal')
+@section('page-title', 'Detail Penawaran Harga')
 
 @section('content')
 @php
@@ -29,7 +29,7 @@
     ]" />
 
     <x-ui.page-header
-        title="Quotation Details"
+        :title="'Penawaran: ' . ($quotation->purchaseRequisition->pr_number ?? '-')"
         eyebrow="Commercial Evaluation"
         :description="'Review ' . ($quotation->purchaseRequisition->pr_number ?? 'quotation') . ' from ' . $supplierDisplayName . ' before taking the next workflow action.'"
     >

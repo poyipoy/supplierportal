@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Material Requisition Details - ADASI Portal')
-@section('page-title', 'Purchase Requisition Details')
+@section('title', 'Detail PR: ' . ($pr->pr_number ?? 'Draft') . ' - ADASI Portal')
+@section('page-title', 'Detail Purchase Requisition: ' . ($pr->pr_number ?? 'Draft'))
 
 @push('styles')
 <style>

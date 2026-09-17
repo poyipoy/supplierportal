@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Purchase Requisition Details - ADASI Portal')
-@section('page-title', 'Purchase Requisition Details')
+@section('title', 'Detail PR: ' . ($pr->pr_number ?? 'Draft') . ' - ADASI Portal')
+@section('page-title', 'Detail Purchase Requisition: ' . ($pr->pr_number ?? 'Draft'))
 
 @section('content')
 @php($totalRequestedWeight = $pr->items->sum(fn ($item) => (float) $item->total_weight))

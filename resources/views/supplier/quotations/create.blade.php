@@ -2700,7 +2700,7 @@
     }
 
     // Auto-save logic
-    const prId = '{{ $pr->id }}';
+    const prId = '{{ $pr->hash }}';
     const draftKey = 'quotation_draft_' + prId;
 
     function saveDraft() {
