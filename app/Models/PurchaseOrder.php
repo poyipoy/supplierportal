@@ -341,11 +341,9 @@ class PurchaseOrder extends Model
             $effectiveStatus = $poDoc?->status ?? 'pending';
 
             if ($highestRank > $currentPoRank && $highestShipmentStatus !== null) {
+                // Reporting only. Persisting the healed status is the job of
+                // reconcileCustomsDocumentationStatus(); a read must not write.
                 $effectiveStatus = $highestShipmentStatus;
-                if ($poDoc) {
-                    $poDoc->update(['status' => $highestShipmentStatus]);
-                    $poDoc->status = $highestShipmentStatus;
-                }
             }
 
             $summary[$docType] = [
@@ -358,6 +356,42 @@ class PurchaseOrder extends Model
         }
 
         return $summary;
+    }
+
+    /**
+     * Persist any PO document status that its linked shipment documents have
+     * already advanced past.
+     *
+     * This is the write half of customsDocumentationSummary(), split out so the
+     * summary itself is a pure read. Call it explicitly from a state-changing
+     * path; it is idempotent and returns the number of rows updated.
+     */
+    public function reconcileCustomsDocumentationStatus(): int
+    {
+        $summary = $this->customsDocumentationSummary();
+        $poDocsByType = $this->documents->keyBy('doc_type');
+        $updated = 0;
+
+        foreach ($summary as $docType => $entry) {
+            $poDoc = $poDocsByType->get($docType);
+            if (! $poDoc || $poDoc->status === $entry['status']) {
+                continue;
+            }
+
+            $currentRank = PoDocument::STATUS_RANKS[$poDoc->status] ?? 0;
+            $effectiveRank = PoDocument::STATUS_RANKS[$entry['status']] ?? 0;
+
+            // Only ever move forward. Reconciliation must not demote a status
+            // that purchasing advanced on the PO itself.
+            if ($effectiveRank <= $currentRank) {
+                continue;
+            }
+
+            $poDoc->update(['status' => $entry['status']]);
+            $updated++;
+        }
+
+        return $updated;
     }
 
     /**
