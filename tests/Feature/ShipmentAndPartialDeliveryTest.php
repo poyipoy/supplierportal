@@ -771,6 +771,105 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         }
     }
 
+    public function test_missing_actual_weight_is_rejected_at_http_boundary(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+
+        foreach (['draft', 'submit'] as $action) {
+            $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
+                'shipment_date' => now()->toDateString(),
+                'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+                'action' => $action,
+                'items' => [[
+                    'purchase_order_id' => $po->id,
+                    'quotation_item_id' => $qItem->id,
+                    'shipped_qty' => 5,
+                ]],
+            ]);
+
+            $response->assertSessionHasErrors('items.0.actual_weight_kg');
+        }
+
+        $this->assertDatabaseCount('shipment_items', 0);
+    }
+
+    public function test_legacy_shipped_quantity_alias_cannot_satisfy_qty_or_weight_over_http(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+
+        $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
+            'shipment_date' => now()->toDateString(),
+            'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+            'action' => 'submit',
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_quantity' => 5,
+            ]],
+        ]);
+
+        $response->assertSessionHasErrors(['items.0.shipped_qty', 'items.0.actual_weight_kg']);
+        $this->assertDatabaseCount('shipment_items', 0);
+    }
+
+    public function test_draft_sync_rejects_item_without_explicit_actual_weight(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Actual weight (kg) must be supplied explicitly');
+
+        $this->shipmentService->syncDraftItems($shipment, [[
+            'purchase_order_id' => $po->id,
+            'quotation_item_id' => $qItem->id,
+            'shipped_quantity' => 5,
+        ]]);
+    }
+
+    public function test_submit_rejects_item_without_explicit_actual_weight(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Actual weight (kg) must be supplied explicitly');
+
+        $this->shipmentService->submitShipment($shipment, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_qty' => 5,
+            ]],
+        ]);
+    }
+
+    public function test_piece_count_is_never_persisted_as_actual_weight(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 100.0, 100, 100);
+        $qItem = $po->awards->first()->quotationItem;
+        $shipment = $this->shipmentService->createDraft($this->supplierA);
+
+        $this->shipmentService->submitShipment($shipment, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_qty' => 100,
+                'actual_weight_kg' => '12.3456',
+            ]],
+        ]);
+
+        $item = ShipmentItem::where('shipment_id', $shipment->id)->firstOrFail();
+
+        $this->assertSame(100, (int) $item->shipped_qty);
+        $this->assertSame('12.3456', (string) $item->actual_weight_kg);
+        $this->assertNotEquals(100.0, (float) $item->actual_weight_kg);
+    }
+
     public function test_partial_delivery_three_plus_five_completes_qty_eight(): void
     {
         $po = $this->createPoForSupplier($this->supplierA, 8.0, 8, 8);

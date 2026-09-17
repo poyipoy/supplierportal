@@ -48,7 +48,7 @@ class ShipmentService
      *     shipment_date?: string|null,
      *     estimated_arrival_date?: string|null,
      *     notes?: string|null,
-     *     items?: array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_quantity: float, notes?: string|null}>
+     *     items?: array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_qty: int, actual_weight_kg: numeric-string|float, notes?: string|null}>
      * } $data
      */
     public function createDraft(User $supplier, array $data = []): Shipment
@@ -84,7 +84,7 @@ class ShipmentService
     /**
      * Sync items on a draft shipment.
      *
-     * @param  array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_quantity: float, notes?: string|null}>  $items
+     * @param  array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_qty: int, actual_weight_kg: numeric-string|float, notes?: string|null}>  $items
      */
     public function syncDraftItems(Shipment $shipment, array $items): void
     {
@@ -98,7 +98,7 @@ class ShipmentService
      * Apply draft item changes while the caller's transaction owns the
      * shipment row and every affected PurchaseOrder row.
      *
-     * @param  array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_quantity: float, notes?: string|null}>  $items
+     * @param  array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_qty: int, actual_weight_kg: numeric-string|float, notes?: string|null}>  $items
      */
     private function syncDraftItemsWithinTransaction(Shipment $shipment, array $items): void
     {
@@ -158,9 +158,11 @@ class ShipmentService
             }
             $shippedQty = (int) $rawQty;
 
-            $rawWeight = $item['actual_weight_kg'] ?? $item['shipped_quantity'] ?? null;
+            // Weight is a distinct physical measurement, never derived from the
+            // piece count. `shipped_quantity` is a legacy *quantity* alias only.
+            $rawWeight = $item['actual_weight_kg'] ?? null;
             if ($rawWeight === null || $rawWeight === '' || ! is_numeric($rawWeight) || (float) $rawWeight <= 0) {
-                throw new InvalidArgumentException('Actual weight must be greater than zero.');
+                throw new InvalidArgumentException('Actual weight (kg) must be supplied explicitly and be greater than zero.');
             }
             $actualWeightKg = round((float) $rawWeight, 4);
 
@@ -260,7 +262,7 @@ class ShipmentService
      *     shipment_date?: string|null,
      *     estimated_arrival_date?: string|null,
      *     notes?: string|null,
-     *     items?: array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_quantity: float, notes?: string|null}>
+     *     items?: array<int, array{purchase_order_id: int, quotation_item_id: int, shipped_qty: int, actual_weight_kg: numeric-string|float, notes?: string|null}>
      * } $data
      *
      * @throws InvalidArgumentException
@@ -349,8 +351,13 @@ class ShipmentService
                 ->get()
                 ->keyBy('id');
 
+            // Values proven by the validation pass below, consumed verbatim by the
+            // persistence pass. Re-deriving them a second time is how the
+            // pcs -> kg fallback survived the first remediation.
+            $verifiedItems = [];
+
             // Cross-validate source consistency and Invariant 7: SUM(active shipment quantities) <= ordered quantity
-            foreach ($itemsData as $itemAlloc) {
+            foreach ($itemsData as $itemIndex => $itemAlloc) {
                 $poId = (int) $itemAlloc['purchase_order_id'];
                 $qItemId = (int) $itemAlloc['quotation_item_id'];
 
@@ -363,9 +370,11 @@ class ShipmentService
                 }
                 $shippedQty = (int) $rawQty;
 
-                $rawWeight = $itemAlloc['actual_weight_kg'] ?? $itemAlloc['shipped_quantity'] ?? null;
+                // Weight is a distinct physical measurement, never derived from the
+                // piece count. `shipped_quantity` is a legacy *quantity* alias only.
+                $rawWeight = $itemAlloc['actual_weight_kg'] ?? null;
                 if ($rawWeight === null || $rawWeight === '' || ! is_numeric($rawWeight) || (float) $rawWeight <= 0) {
-                    throw new InvalidArgumentException('Actual weight must be greater than zero.');
+                    throw new InvalidArgumentException('Actual weight (kg) must be supplied explicitly and be greater than zero.');
                 }
                 $actualWeightKg = round((float) $rawWeight, 4);
 
@@ -416,28 +425,28 @@ class ShipmentService
                         "Shipped quantity ({$shippedQty} pcs) exceeds remaining ordered quantity ({$remainingQty} pcs) for item '{$qItem->prItem?->material_name}'."
                     );
                 }
-            }
 
-            // Persist the verified items
-            $lockedShipment->items()->delete();
-            foreach ($itemsData as $itemAlloc) {
-                $poId = (int) $itemAlloc['purchase_order_id'];
-                $qItemId = (int) $itemAlloc['quotation_item_id'];
-                $award = PrItemAward::where('purchase_order_id', $poId)
-                    ->where('quotation_item_id', $qItemId)
-                    ->first();
-
-                $shippedQty = (int) ($itemAlloc['shipped_qty'] ?? $itemAlloc['shipped_quantity']);
-                $actualWeightKg = round((float) ($itemAlloc['actual_weight_kg'] ?? $itemAlloc['shipped_quantity'] ?? 1.0), 4);
-
-                ShipmentItem::create([
-                    'shipment_id' => $lockedShipment->id,
+                $verifiedItems[$itemIndex] = [
                     'purchase_order_id' => $poId,
                     'quotation_item_id' => $qItemId,
                     'pr_item_award_id' => $award?->id,
                     'shipped_qty' => $shippedQty,
                     'actual_weight_kg' => $actualWeightKg,
                     'notes' => $itemAlloc['notes'] ?? null,
+                ];
+            }
+
+            // Persist the verified items
+            $lockedShipment->items()->delete();
+            foreach ($verifiedItems as $verified) {
+                ShipmentItem::create([
+                    'shipment_id' => $lockedShipment->id,
+                    'purchase_order_id' => $verified['purchase_order_id'],
+                    'quotation_item_id' => $verified['quotation_item_id'],
+                    'pr_item_award_id' => $verified['pr_item_award_id'],
+                    'shipped_qty' => $verified['shipped_qty'],
+                    'actual_weight_kg' => $verified['actual_weight_kg'],
+                    'notes' => $verified['notes'],
                 ]);
             }
 
