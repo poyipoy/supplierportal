@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -47,20 +48,46 @@ class LocalInvoiceVerification extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
-    public function totalWithholding(): float
+    /**
+     * Authoritative total withholding as an exact decimal string.
+     */
+    public function totalWithholdingExact(): string
     {
-        $pph23 = $this->pph_23_applicable ? (float) $this->pph_23_amount : 0.0;
-        $pph42 = $this->pph_4_2_applicable ? (float) $this->pph_4_2_amount : 0.0;
-        $pph21 = $this->pph_21_applicable ? (float) $this->pph_21_amount : 0.0;
-
-        return round($pph23 + $pph42 + $pph21, 2);
+        return Money::sum([
+            $this->pph_23_applicable ? $this->pph_23_amount : Money::ZERO,
+            $this->pph_4_2_applicable ? $this->pph_4_2_amount : Money::ZERO,
+            $this->pph_21_applicable ? $this->pph_21_amount : Money::ZERO,
+        ]);
     }
 
+    /**
+     * Authoritative net payable as an exact decimal string.
+     *
+     * Every financial write path (DRP items, vouchers, batch totals) must use
+     * this method. The float wrapper below exists only for display callers.
+     */
+    public function netPayableExact(string|int|float $dpp): string
+    {
+        return Money::subtract(
+            Money::add($dpp, $this->verified_ppn),
+            $this->totalWithholdingExact()
+        );
+    }
+
+    /**
+     * @deprecated Use totalWithholdingExact() in any path that persists money.
+     */
+    public function totalWithholding(): float
+    {
+        return (float) $this->totalWithholdingExact();
+    }
+
+    /**
+     * @deprecated Use netPayableExact() in any path that persists money.
+     */
     public function calculateNetPayable(float $dpp): float
     {
-        $ppn = (float) $this->verified_ppn;
-
-        return round($dpp + $ppn - $this->totalWithholding(), 2);
+        return (float) $this->netPayableExact($dpp);
     }
 
     public function isSectionAComplete(): bool

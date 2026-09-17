@@ -9,6 +9,7 @@ use App\Models\PaymentBatch;
 use App\Models\PaymentItem;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -63,9 +64,9 @@ class LocalInvoiceVoucherService
 
             $supplier = $invoice->supplier()->with('supplier')->firstOrFail();
             $profile = $supplier->supplier;
-            $pph = $verification->totalWithholding();
-            $net = $verification->calculateNetPayable((float) $invoice->invoice_amount);
-            if (bccomp((string) $net, (string) $lockedItem->amount, 2) !== 0) {
+            $pph = $verification->totalWithholdingExact();
+            $net = $verification->netPayableExact($invoice->invoice_amount);
+            if (Money::compare($net, $lockedItem->amount) !== 0) {
                 throw ValidationException::withMessages(['payment_item' => 'DRP item amount no longer matches the verified invoice payable.']);
             }
             $grReferences = $invoice->goodsReceiptHistories()->where('state', LocalInvoiceGoodsReceipt::STATE_CONSUMED)
@@ -96,7 +97,8 @@ class LocalInvoiceVoucherService
                 'pph_snapshot' => $pph,
                 'net_payable_snapshot' => $net,
                 'amount' => $net,
-                'terbilang_snapshot' => $this->numbers->terbilang($net).' Rupiah',
+                // Display-only conversion; the persisted amount above stays exact.
+                'terbilang_snapshot' => $this->numbers->terbilang((float) $net).' Rupiah',
                 'remarks_snapshot' => $data['remarks'] ?? null,
                 'finalized_by' => $actor->id,
                 'finalized_at' => now(),

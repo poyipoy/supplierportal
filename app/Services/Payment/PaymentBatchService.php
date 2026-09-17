@@ -9,6 +9,7 @@ use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\SupplierBankAccount;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -95,22 +96,26 @@ class PaymentBatchService
                 $grouped[$groupKey]['invoices'][] = $invoice;
             }
 
-            $totalSubtotal = 0.0;
-            $totalFee = 0.0;
-            $totalNet = 0.0;
+            $totalSubtotal = Money::ZERO;
+            $totalFee = Money::ZERO;
+            $totalNet = Money::ZERO;
 
             foreach ($grouped as $groupData) {
-                $subtotal = 0.0;
+                $subtotal = Money::ZERO;
+                $itemAmounts = [];
                 foreach ($groupData['invoices'] as $inv) {
                     // Net payable calculated from verification if available, else invoice_amount + tax_amount
                     $verification = $inv->currentVerification;
-                    $amount = $verification ? $verification->calculateNetPayable((float) $inv->invoice_amount) : ((float) $inv->invoice_amount + (float) $inv->tax_amount);
-                    $subtotal += $amount;
+                    $amount = $verification
+                        ? $verification->netPayableExact($inv->invoice_amount)
+                        : Money::add($inv->invoice_amount, $inv->tax_amount);
+                    $itemAmounts[$inv->id] = $amount;
+                    $subtotal = Money::add($subtotal, $amount);
                 }
 
                 // Default bank fee: BCA = 0, Non-BCA = 2.500
-                $fee = $groupData['is_bca'] ? 0.0 : 2500.0;
-                $net = max(0.0, round($subtotal - $fee, 2));
+                $fee = $groupData['is_bca'] ? Money::ZERO : Money::normalize(2500);
+                $net = Money::atLeastZero(Money::subtract($subtotal, $fee));
 
                 $group = $batch->groups()->create([
                     'payee_type' => 'supplier',
@@ -126,20 +131,19 @@ class PaymentBatchService
                 ]);
 
                 foreach ($groupData['invoices'] as $inv) {
-                    $verification = $inv->currentVerification;
-                    $amount = $verification ? $verification->calculateNetPayable((float) $inv->invoice_amount) : ((float) $inv->invoice_amount + (float) $inv->tax_amount);
-
+                    // Reuse the amount the subtotal was built from. Recomputing
+                    // it here is how a group total could drift from its items.
                     $group->items()->create([
                         'payable_type' => LocalInvoice::class,
                         'payable_id' => $inv->id,
-                        'amount' => $amount,
+                        'amount' => $itemAmounts[$inv->id],
                         'status' => PaymentItem::STATUS_ACTIVE,
                     ]);
                 }
 
-                $totalSubtotal += $subtotal;
-                $totalFee += $fee;
-                $totalNet += $net;
+                $totalSubtotal = Money::add($totalSubtotal, $subtotal);
+                $totalFee = Money::add($totalFee, $fee);
+                $totalNet = Money::add($totalNet, $net);
             }
 
             $batch->update([
@@ -223,18 +227,15 @@ class PaymentBatchService
                 $grouped[$groupKey]['claims'][] = $claim;
             }
 
-            $totalSubtotal = 0.0;
-            $totalFee = 0.0;
-            $totalNet = 0.0;
+            $totalSubtotal = Money::ZERO;
+            $totalFee = Money::ZERO;
+            $totalNet = Money::ZERO;
 
             foreach ($grouped as $groupData) {
-                $subtotal = 0.0;
-                foreach ($groupData['claims'] as $clm) {
-                    $subtotal += (float) $clm->amount;
-                }
+                $subtotal = Money::sum(collect($groupData['claims'])->pluck('amount'));
 
                 // Rule: GA bank fee is ALWAYS Rp 0 for all banks
-                $fee = 0.0;
+                $fee = Money::ZERO;
                 $net = $subtotal;
 
                 $group = $batch->groups()->create([
@@ -254,14 +255,14 @@ class PaymentBatchService
                     $group->items()->create([
                         'payable_type' => GaClaim::class,
                         'payable_id' => $clm->id,
-                        'amount' => (float) $clm->amount,
+                        'amount' => Money::normalize($clm->amount),
                         'status' => PaymentItem::STATUS_ACTIVE,
                     ]);
                 }
 
-                $totalSubtotal += $subtotal;
-                $totalFee += $fee;
-                $totalNet += $net;
+                $totalSubtotal = Money::add($totalSubtotal, $subtotal);
+                $totalFee = Money::add($totalFee, $fee);
+                $totalNet = Money::add($totalNet, $net);
             }
 
             $batch->update([
@@ -307,9 +308,9 @@ class PaymentBatchService
 
             // Recalculate group
             $activeItems = $group->activeItems;
-            $newSubtotal = $activeItems->sum('amount');
-            $newFee = $activeItems->isEmpty() ? 0.0 : (float) $group->bank_fee;
-            $newNet = max(0.0, round($newSubtotal - $newFee, 2));
+            $newSubtotal = Money::sum($activeItems->pluck('amount'));
+            $newFee = $activeItems->isEmpty() ? Money::ZERO : Money::normalize($group->bank_fee);
+            $newNet = Money::atLeastZero(Money::subtract($newSubtotal, $newFee));
 
             $group->update([
                 'subtotal_amount' => $newSubtotal,
@@ -323,9 +324,9 @@ class PaymentBatchService
             $batchStatus = $allActiveGroups->isEmpty() ? PaymentBatch::STATUS_CANCELLED : $batch->status;
 
             $batch->update([
-                'total_subtotal' => $allActiveGroups->sum('subtotal_amount'),
-                'total_bank_fee' => $allActiveGroups->sum('bank_fee'),
-                'total_net_amount' => $allActiveGroups->sum('net_payment_amount'),
+                'total_subtotal' => Money::sum($allActiveGroups->pluck('subtotal_amount')),
+                'total_bank_fee' => Money::sum($allActiveGroups->pluck('bank_fee')),
+                'total_net_amount' => Money::sum($allActiveGroups->pluck('net_payment_amount')),
                 'status' => $batchStatus,
             ]);
         });
@@ -363,18 +364,18 @@ class PaymentBatchService
                 ]);
 
                 $group->update([
-                    'subtotal_amount' => 0.0,
-                    'bank_fee' => 0.0,
-                    'net_payment_amount' => 0.0,
+                    'subtotal_amount' => Money::ZERO,
+                    'bank_fee' => Money::ZERO,
+                    'net_payment_amount' => Money::ZERO,
                     'status' => PaymentGroup::STATUS_CANCELLED,
                 ]);
             }
 
             $b->update([
                 'status' => PaymentBatch::STATUS_CANCELLED,
-                'total_subtotal' => 0.0,
-                'total_bank_fee' => 0.0,
-                'total_net_amount' => 0.0,
+                'total_subtotal' => Money::ZERO,
+                'total_bank_fee' => Money::ZERO,
+                'total_net_amount' => Money::ZERO,
             ]);
 
             return $b->fresh(['groups.items']);
@@ -399,19 +400,19 @@ class PaymentBatchService
                 throw new RuntimeException("Fee override is only permitted while DRP is in DRAFT status.");
             }
 
-            $subtotal = (float) $grp->subtotal_amount;
-            $net = max(0.0, round($subtotal - $newFee, 2));
+            $fee = Money::normalize($newFee);
+            $net = Money::atLeastZero(Money::subtract($grp->subtotal_amount, $fee));
 
             $grp->update([
-                'bank_fee' => $newFee,
+                'bank_fee' => $fee,
                 'net_payment_amount' => $net,
                 'fee_override_reason' => trim($reason).' (by '.$actor->name.')',
             ]);
 
             $allActiveGroups = $batch->groups()->where('status', '!=', PaymentGroup::STATUS_CANCELLED)->get();
             $batch->update([
-                'total_bank_fee' => $allActiveGroups->sum('bank_fee'),
-                'total_net_amount' => $allActiveGroups->sum('net_payment_amount'),
+                'total_bank_fee' => Money::sum($allActiveGroups->pluck('bank_fee')),
+                'total_net_amount' => Money::sum($allActiveGroups->pluck('net_payment_amount')),
             ]);
 
             return $grp->fresh();

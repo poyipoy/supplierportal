@@ -5,6 +5,7 @@ namespace App\Services\LocalInvoice;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceVerification;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -120,27 +121,31 @@ class InvoiceVerificationService
             $verification->submitted_ppn = $inv->tax_amount;
             $verification->verified_ppn = ($ppnStatus === LocalInvoiceVerification::PPN_SESUAI)
                 ? $inv->tax_amount
-                : (float) $data['verified_ppn'];
+                : Money::normalize($data['verified_ppn']);
 
             $verification->pph_23_applicable = (bool) ($data['pph_23_applicable'] ?? false);
-            $verification->pph_23_base = isset($data['pph_23_base']) ? (float) $data['pph_23_base'] : null;
-            $verification->pph_23_rate = isset($data['pph_23_rate']) ? (float) $data['pph_23_rate'] : null;
+            $verification->pph_23_base = isset($data['pph_23_base']) ? Money::normalize($data['pph_23_base']) : null;
+            $verification->pph_23_rate = isset($data['pph_23_rate']) ? Money::normalize($data['pph_23_rate']) : null;
 
-            $calculatedPph23 = round((float) ($verification->pph_23_base ?? 0) * (((float) ($verification->pph_23_rate ?? 0)) / 100), 2);
+            // base * rate% computed at working precision, rounded once at the end.
+            $calculatedPph23 = Money::multiply(
+                Money::multiply($verification->pph_23_base ?? Money::ZERO, $verification->pph_23_rate ?? Money::ZERO, 8),
+                '0.01'
+            );
             if ($verification->pph_23_applicable) {
-                $submittedAmount = isset($data['pph_23_amount']) ? (float) $data['pph_23_amount'] : null;
-                $verification->pph_23_amount = ($submittedAmount !== null && $submittedAmount > 0)
+                $submittedAmount = isset($data['pph_23_amount']) ? Money::normalize($data['pph_23_amount']) : null;
+                $verification->pph_23_amount = ($submittedAmount !== null && Money::compare($submittedAmount, Money::ZERO) > 0)
                     ? $submittedAmount
                     : $calculatedPph23;
             } else {
-                $verification->pph_23_amount = 0.0;
+                $verification->pph_23_amount = Money::ZERO;
             }
 
             $verification->pph_4_2_applicable = (bool) ($data['pph_4_2_applicable'] ?? false);
-            $verification->pph_4_2_amount = $verification->pph_4_2_applicable && isset($data['pph_4_2_amount']) ? (float) $data['pph_4_2_amount'] : 0.0;
+            $verification->pph_4_2_amount = $verification->pph_4_2_applicable && isset($data['pph_4_2_amount']) ? Money::normalize($data['pph_4_2_amount']) : Money::ZERO;
 
             $verification->pph_21_applicable = (bool) ($data['pph_21_applicable'] ?? false);
-            $verification->pph_21_amount = $verification->pph_21_applicable && isset($data['pph_21_amount']) ? (float) $data['pph_21_amount'] : 0.0;
+            $verification->pph_21_amount = $verification->pph_21_applicable && isset($data['pph_21_amount']) ? Money::normalize($data['pph_21_amount']) : Money::ZERO;
 
             $verification->tax_notes = $data['tax_notes'] ?? null;
             $verification->is_section_b_passed = true;
