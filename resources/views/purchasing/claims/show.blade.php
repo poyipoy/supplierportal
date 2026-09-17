@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Klaim: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number) . ' - ADASI Portal')
-@section('page-title', 'Klaim Material: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number))
+@section('title', 'Claim Details: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number) . ' - ADASI Portal')
+@section('page-title', 'Material Claim: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number))
 
 @section('content')
 <div class="tw-grid tw-gap-4">
@@ -9,11 +9,11 @@
     <x-ui.breadcrumb :items="[
         'Dashboard' => route('purchasing.dashboard'),
         'Material Claims' => route('purchasing.claims.index'),
-        'Klaim: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number) => null,
+        'Claim: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number) => null,
     ]" />
 
     <x-ui.page-header
-        :title="'Klaim Material: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number)"
+        :title="'Material Claim: ' . ($claim->purchaseOrder?->po_number ?? $claim->claim_number)"
         eyebrow="Material Claim Details"
         :description="'Material claim for ' . ($claim->purchaseOrder?->po_number ?? '-') . ' from ' . ($claim->purchaseOrder?->supplier?->name ?? 'Supplier') . '.'"
     >
