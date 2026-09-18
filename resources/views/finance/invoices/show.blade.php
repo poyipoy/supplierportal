@@ -604,8 +604,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok && data.success) {
                     if (window.AdasiToast) {
                         window.AdasiToast.success(data.message || 'Section A berhasil disimpan.');
-                    } else if (window.Swal) {
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message || 'Section A berhasil disimpan.', showConfirmButton: false, timer: 3000 });
                     }
                     updateApprovalButton(data.can_approve);
 
@@ -626,8 +624,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     if (window.AdasiToast) {
                         window.AdasiToast.error(errMsg);
-                    } else if (window.Swal) {
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: errMsg, showConfirmButton: false, timer: 5000 });
                     } else {
                         alert(errMsg);
                     }
@@ -666,8 +662,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok && data.success) {
                     if (window.AdasiToast) {
                         window.AdasiToast.success(data.message || 'Section B berhasil disimpan.');
-                    } else if (window.Swal) {
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message || 'Section B berhasil disimpan.', showConfirmButton: false, timer: 3000 });
                     }
                     updateApprovalButton(data.can_approve);
                 } else {
@@ -680,8 +674,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     if (window.AdasiToast) {
                         window.AdasiToast.error(errMsg);
-                    } else if (window.Swal) {
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: errMsg, showConfirmButton: false, timer: 5000 });
                     } else {
                         alert(errMsg);
                     }

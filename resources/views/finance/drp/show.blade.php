@@ -473,22 +473,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         proceedSubmit();
                     }
                 });
-            } else if (window.Swal) {
-                Swal.fire({
-                    title: title,
-                    text: text,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: confirmText,
-                    cancelButtonText: cancelText,
-                    confirmButtonColor: '#1F5FA6',
-                    cancelButtonColor: '#6c757d',
-                    reverseButtons: true,
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        proceedSubmit();
-                    }
-                });
             } else if (confirm(`${title}\n\n${text}`)) {
                 proceedSubmit();
             }

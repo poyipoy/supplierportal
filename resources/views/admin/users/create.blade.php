@@ -69,7 +69,7 @@
                         <option value="">-- Select Access Role --</option>
                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin (Full System Control)</option>
                         <option value="purchasing" {{ old('role') == 'purchasing' ? 'selected' : '' }}>Purchasing (Requisitions & POs)</option>
-                        <option value="supplier" {{ old('role') == 'supplier' ? 'selected' : '' }}>Supplier (Material & Invoicing)</option>
+                        <option value="supplier" {{ old('role') == 'supplier' ? 'selected' : '' }}>Supplier (Material &amp; Invoicing)</option>
                         <option value="qc" {{ old('role') == 'qc' ? 'selected' : '' }}>Quality Control (Inspections & Claims)</option>
                         <option value="finance" {{ old('role') == 'finance' ? 'selected' : '' }}>Finance (Accounts Payable & DRP)</option>
                         <option value="ga" {{ old('role') == 'ga' ? 'selected' : '' }}>General Affairs (Claims & Employees)</option>
