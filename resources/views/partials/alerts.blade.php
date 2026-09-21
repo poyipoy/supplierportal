@@ -30,7 +30,7 @@
 @endif
 
 {{-- Validation errors --}}
-@if($errors->any())
+@if(isset($errors) && $errors->any())
     <x-ui.alert tone="error" title="Review the highlighted fields" class="tw-mb-4">
         <ul class="tw-mb-0 tw-ps-4">
             @foreach($errors->all() as $error)

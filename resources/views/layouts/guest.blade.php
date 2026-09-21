@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="robots" content="noindex, nofollow">
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
@@ -31,7 +32,8 @@
 
             <div class="tw-mt-6 tw-w-full tw-overflow-hidden tw-bg-surface tw-px-6 tw-py-4 tw-shadow-ui-1 sm:tw-max-w-md sm:tw-rounded-ui-md">
                 @include('partials.alerts')
-                {{ $slot }}
+                {{ $slot ?? '' }}
+                @yield('content')
             </div>
         </div>
         <x-ui.toast-container />

@@ -18,10 +18,22 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
         $this->assertStringContainsString("default-src 'self'", $response->headers->get('Content-Security-Policy-Report-Only'));
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
         $response->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_csp_can_be_actively_enforced(): void
+    {
+        config()->set('auth_security.headers.csp_enforce', true);
+
+        $response = $this->get('/login');
+
+        $response->assertOk()
+            ->assertHeaderMissing('Content-Security-Policy-Report-Only');
+        $this->assertStringContainsString("default-src 'self'", $response->headers->get('Content-Security-Policy'));
     }
 
     public function test_hsts_is_only_added_for_production_https(): void
@@ -51,7 +63,9 @@ class SecurityHeadersTest extends TestCase
 
         $this->actingAs($user)->getJson(route('notifications.unread-count'))
             ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeaderMissing('X-Frame-Options')
-            ->assertHeaderMissing('Content-Security-Policy-Report-Only');
+            ->assertHeaderMissing('Content-Security-Policy-Report-Only')
+            ->assertHeaderMissing('Content-Security-Policy');
     }
 }

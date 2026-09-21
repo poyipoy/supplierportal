@@ -139,5 +139,6 @@ return [
 
     'headers' => [
         'csp_report_uri' => env('CSP_REPORT_URI'),
+        'csp_enforce' => (bool) env('CSP_ENFORCE', false),
     ],
 ];
