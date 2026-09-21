@@ -68,9 +68,11 @@
                     <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
                         <option value="">-- Select Access Role --</option>
                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin (Full System Control)</option>
-                        <option value="purchasing" {{ old('role') == 'purchasing' ? 'selected' : '' }}>Purchasing (Requisitions &amp; POs)</option>
-                        <option value="supplier" {{ old('role') == 'supplier' ? 'selected' : '' }}>Supplier (Bidding &amp; Quotations)</option>
-                        <option value="qc" {{ old('role') == 'qc' ? 'selected' : '' }}>Quality Control (Inspections &amp; Claims)</option>
+                        <option value="purchasing" {{ old('role') == 'purchasing' ? 'selected' : '' }}>Purchasing (Requisitions & POs)</option>
+                        <option value="supplier" {{ old('role') == 'supplier' ? 'selected' : '' }}>Supplier (Material &amp; Invoicing)</option>
+                        <option value="qc" {{ old('role') == 'qc' ? 'selected' : '' }}>Quality Control (Inspections & Claims)</option>
+                        <option value="finance" {{ old('role') == 'finance' ? 'selected' : '' }}>Finance (Accounts Payable & DRP)</option>
+                        <option value="ga" {{ old('role') == 'ga' ? 'selected' : '' }}>General Affairs (Claims & Employees)</option>
                     </select>
                     @error('role')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -126,8 +128,10 @@
             </div>
         </x-ui.form-section>
 
-        {{-- Section 2: Supplier Company Profile (Conditional) --}}
+        {{-- Section 2: Supplier Company Profile & Business Access (Conditional) --}}
         <div id="supplier-section" class="{{ old('role') === 'supplier' ? '' : 'd-none' }}">
+            @include('admin.users.supplier-scopes')
+
             <x-ui.form-section
                 title="Supplier Organization"
                 description="Company identity, contact details, and material category."
@@ -241,27 +245,98 @@
     document.addEventListener('DOMContentLoaded', function() {
         const roleSelect = document.getElementById('role-select');
         const supplierSection = document.getElementById('supplier-section');
-        const supplierInputs = supplierSection ? supplierSection.querySelectorAll('input, textarea') : [];
+        const scopePresetSelect = document.getElementById('supplier-scope-preset');
+        const paymentTermContainer = document.getElementById('payment-term-container');
+        const paymentTermInput = document.getElementById('payment-term-days');
+        const scopeDescription = document.getElementById('scope-description');
+        const hiddenScopesContainer = document.getElementById('hidden-scopes-container');
+
+        const scopeDescriptions = {
+            import: 'Access: Material Requisitions (PR), Quotations, Purchase Orders (PO), and QC Inspections.',
+            local: 'Access: Local Invoice Submissions, Physical Document Verification, and Payment Processing.',
+            both: 'Full Access: Both Import Material Procurement and Local Invoice Processing.'
+        };
+
+        const requiredSupplierFields = [
+            'company_name',
+            'category',
+            'phone',
+            'npwp',
+            'address'
+        ];
+
+        function syncHiddenScopes(preset) {
+            if (!hiddenScopesContainer) return;
+            hiddenScopesContainer.innerHTML = '';
+            if (preset === 'both') {
+                hiddenScopesContainer.innerHTML = '<input type="hidden" name="supplier_scopes[]" value="import">' +
+                    '<input type="hidden" name="supplier_scopes[]" value="local">';
+            } else if (preset === 'local') {
+                hiddenScopesContainer.innerHTML = '<input type="hidden" name="supplier_scopes[]" value="local">';
+            } else {
+                hiddenScopesContainer.innerHTML = '<input type="hidden" name="supplier_scopes[]" value="import">';
+            }
+        }
+
+        function togglePaymentTerm() {
+            if (!scopePresetSelect || !paymentTermContainer) return;
+            const isSupplier = roleSelect ? roleSelect.value === 'supplier' : true;
+            const preset = scopePresetSelect.value;
+            const requiresPaymentTerm = preset === 'local' || preset === 'both';
+
+            if (scopeDescription && scopeDescriptions[preset]) {
+                scopeDescription.textContent = scopeDescriptions[preset];
+            }
+
+            syncHiddenScopes(preset);
+
+            if (requiresPaymentTerm && isSupplier) {
+                paymentTermContainer.classList.remove('d-none');
+                if (paymentTermInput) {
+                    paymentTermInput.removeAttribute('disabled');
+                    paymentTermInput.setAttribute('required', 'required');
+                }
+            } else {
+                paymentTermContainer.classList.add('d-none');
+                if (paymentTermInput) {
+                    paymentTermInput.removeAttribute('required');
+                    if (!isSupplier) {
+                        paymentTermInput.setAttribute('disabled', 'disabled');
+                    }
+                }
+            }
+        }
 
         function toggleSupplierFields() {
             if (!roleSelect || !supplierSection) return;
             const isSupplier = roleSelect.value === 'supplier';
+            const allSupplierElements = supplierSection.querySelectorAll('input, select, textarea');
+
             if (isSupplier) {
                 supplierSection.classList.remove('d-none');
-                supplierInputs.forEach(input => {
-                    input.removeAttribute('disabled');
-                    input.setAttribute('required', 'required');
+                allSupplierElements.forEach(el => {
+                    el.removeAttribute('disabled');
+                    if (requiredSupplierFields.includes(el.name)) {
+                        el.setAttribute('required', 'required');
+                    }
                 });
+                togglePaymentTerm();
             } else {
                 supplierSection.classList.add('d-none');
-                supplierInputs.forEach(input => {
-                    input.setAttribute('disabled', 'disabled');
-                    input.removeAttribute('required');
+                allSupplierElements.forEach(el => {
+                    el.setAttribute('disabled', 'disabled');
+                    el.removeAttribute('required');
                 });
             }
         }
 
-        roleSelect.addEventListener('change', toggleSupplierFields);
+        if (roleSelect) {
+            roleSelect.addEventListener('change', toggleSupplierFields);
+        }
+        if (scopePresetSelect) {
+            scopePresetSelect.addEventListener('change', togglePaymentTerm);
+        }
+
         toggleSupplierFields();
     });
 </script>

@@ -87,7 +87,7 @@ class LoginSecurityTest extends TestCase
     {
         $user = User::factory()->create();
 
-        for ($attempt = 1; $attempt <= 12; $attempt++) {
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
             $this->withServerVariables(['REMOTE_ADDR' => '10.10.0.'.$attempt])
                 ->post('/login', ['email' => $user->email, 'password' => 'incorrect']);
         }
@@ -295,7 +295,7 @@ class LoginSecurityTest extends TestCase
         $request = Request::create('/login', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.100']);
 
         $this->assertSame(
-            ['combination' => 0, 'email' => 0, 'ip' => 0],
+            ['combination' => 0, 'email' => 0, 'ip' => 0, 'subnet' => 0],
             $limiter->attempts($request, 'next@example.test'),
         );
         $this->assertTrue($limiter->requiresTurnstile($request, 'next@example.test'));
@@ -344,5 +344,132 @@ class LoginSecurityTest extends TestCase
         $this->assertDatabaseCount('auth_audit_logs', 1);
         $audit = AuthAuditLog::query()->where('event', 'global_login_anomaly_detected')->sole();
         $this->assertSame(['count' => 3], $audit->metadata);
+    }
+
+    public function test_constant_time_dummy_hash_is_computed_for_nonexistent_and_inactive_users(): void
+    {
+        // Pinned to the production-cost (12) dummy rather than the cost-4 one
+        // phpunit.xml injects: the elapsed floor below is what proves bcrypt
+        // actually ran on the miss path instead of the request returning
+        // early, which is the whole timing-enumeration defence.
+        config()->set('auth_security.dummy_hash', '$2y$12$e8p2xPjG.oQZkGgJ7K7Ie.4gPZ9Z7V1X2Y3Z4A5B6C7D8E9F0G1H2');
+        $inactive = User::factory()->create(['is_active' => false]);
+
+        $startedAt = microtime(true);
+        $unknown = $this->post('/login', [
+            'email' => 'nonexistent_account@adasi.co.id',
+            'password' => 'arbitrary_password',
+        ]);
+        $unknownElapsedMs = (microtime(true) - $startedAt) * 1000;
+
+        $startedAt = microtime(true);
+        $inactiveResponse = $this->post('/login', [
+            'email' => $inactive->email,
+            'password' => 'password',
+        ]);
+        $inactiveElapsedMs = (microtime(true) - $startedAt) * 1000;
+
+        $unknown->assertSessionHasErrors('email');
+        $inactiveResponse->assertSessionHasErrors('email');
+        $this->assertGuest();
+        $this->assertGreaterThan(100, $unknownElapsedMs, 'Unknown account short-circuited without a dummy hash comparison.');
+        $this->assertGreaterThan(100, $inactiveElapsedMs, 'Inactive account short-circuited without a dummy hash comparison.');
+    }
+
+    public function test_zero_width_email_variants_share_a_single_rate_limit_bucket(): void
+    {
+        $user = User::factory()->create(['email' => 'homograph@example.test']);
+
+        // Each variant renders as the same address but would hash to its own
+        // limiter key without the zero-width strip and NFC pass, handing the
+        // attacker a fresh attempt budget per variant.
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->post('/login', [
+                'email' => 'homograph'.str_repeat("\u{200B}", $attempt).'@example.test',
+                'password' => 'incorrect',
+            ])->assertSessionHasErrors('email');
+        }
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'incorrect'])
+            ->assertTooManyRequests();
+    }
+
+    public function test_subnet_limiter_blocks_excessive_failures_within_same_network(): void
+    {
+        // Each attempt uses a distinct IP and a distinct email, so neither the
+        // per-IP nor the per-account limiter can account for the block — only
+        // the /24 aggregate can.
+        config()->set('auth_security.login.subnet.attempts', 5);
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.'.$attempt])
+                ->post('/login', [
+                    'email' => "user{$attempt}@adasi.co.id",
+                    'password' => 'wrong',
+                ])->assertSessionHasErrors('email');
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.99'])
+            ->post('/login', [
+                'email' => 'fresh@adasi.co.id',
+                'password' => 'wrong',
+            ])
+            ->assertTooManyRequests();
+    }
+
+    public function test_subnet_limiter_does_not_block_a_different_network(): void
+    {
+        config()->set('auth_security.login.subnet.attempts', 5);
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.'.$attempt])
+                ->post('/login', [
+                    'email' => "user{$attempt}@adasi.co.id",
+                    'password' => 'wrong',
+                ])->assertSessionHasErrors('email');
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.7'])
+            ->post('/login', ['email' => 'other@adasi.co.id', 'password' => 'wrong'])
+            ->assertSessionHasErrors('email');
+    }
+
+    public function test_tarpit_delay_is_applied_on_repeated_failures(): void
+    {
+        // Enabled explicitly: phpunit.xml turns the tarpit off so the rest of
+        // the suite does not pay real seconds of sleep.
+        config()->set('auth_security.login.tarpit.enabled', true);
+        config()->set('auth_security.login.tarpit.threshold', 3);
+        config()->set('auth_security.login.tarpit.delay_step_ms', 50);
+        config()->set('auth_security.login.tarpit.max_delay_ms', 100);
+
+        $user = User::factory()->create();
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $this->post('/login', ['email' => $user->email, 'password' => 'wrong']);
+        }
+
+        $startedAt = microtime(true);
+        $this->post('/login', ['email' => $user->email, 'password' => 'wrong']);
+        $elapsedMs = (microtime(true) - $startedAt) * 1000;
+
+        $this->assertGreaterThanOrEqual(40, $elapsedMs);
+    }
+
+    public function test_tarpit_delay_is_not_applied_below_the_threshold(): void
+    {
+        config()->set('auth_security.login.tarpit.enabled', true);
+        config()->set('auth_security.login.tarpit.threshold', 3);
+        config()->set('auth_security.login.tarpit.delay_step_ms', 2000);
+        config()->set('auth_security.login.tarpit.max_delay_ms', 2000);
+
+        $user = User::factory()->create();
+
+        $startedAt = microtime(true);
+        $this->post('/login', ['email' => $user->email, 'password' => 'wrong'])
+            ->assertSessionHasErrors('email');
+        $elapsedMs = (microtime(true) - $startedAt) * 1000;
+
+        $this->assertLessThan(2000, $elapsedMs, 'First failure must not be tarpitted.');
     }
 }

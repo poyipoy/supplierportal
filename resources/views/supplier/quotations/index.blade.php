@@ -94,9 +94,9 @@
                             @endif
                         </td>
                         <td class="text-end pe-3">
-                            <x-ui.button :href="route('supplier.quotations.period', $period->id)" size="sm" variant="secondary">
+                            <x-ui.button :href="route('supplier.quotations.period', $period->id)" size="sm" variant="outline">
                                 <span>View Requisitions</span>
-                                        <x-ui.icon name="arrow-right" size="sm" />
+                                <x-ui.icon name="arrow-right" size="sm" />
                             </x-ui.button>
                         </td>
                     </tr>

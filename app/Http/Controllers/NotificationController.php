@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Services\NotificationSummaryService;
 use App\Services\NotificationUrlResolver;
 use App\Support\NotificationCategory;
+use App\Support\NotificationDomain;
+use App\Support\PortalContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
 class NotificationController extends Controller
@@ -43,6 +44,11 @@ class NotificationController extends Controller
     public function markRead(Request $request, string $id)
     {
         $notification = $request->user()->notifications()->findOrFail($id);
+
+        if (! NotificationDomain::isNotificationAllowed($notification, $request->user())) {
+            abort(403, 'You do not have access to this notification.');
+        }
+
         $targetUrl = $this->urlResolver->resolve($notification, $request->user());
         $notification->markAsRead();
 
@@ -65,14 +71,17 @@ class NotificationController extends Controller
 
         $request->merge(['category' => $category]);
         $validated = $request->validate([
-            'category' => ['required', 'string', Rule::in(array_keys(NotificationCategory::options()))],
+            'category' => ['required', 'string', Rule::in(array_keys(NotificationCategory::optionsForUser($request->user())))],
         ]);
         $category = $validated['category'];
+
+        $allowedDomains = NotificationDomain::allowedDomainsForUser($request->user());
 
         $unreadNotifications = $request->user()
             ->unreadNotifications()
             ->select(['id', 'type', 'notifiable_type', 'notifiable_id', 'data', 'read_at', 'created_at'])
-            ->get();
+            ->get()
+            ->filter(fn ($notification) => in_array(NotificationDomain::forNotification($notification), $allowedDomains, true));
 
         $ids = $category === NotificationCategory::ALL
             ? $unreadNotifications->pluck('id')
@@ -88,7 +97,7 @@ class NotificationController extends Controller
                 ->update(['read_at' => now()]);
         }
 
-        $categoryLabel = NotificationCategory::options()[$category]['label'] ?? 'Notification';
+        $categoryLabel = NotificationCategory::optionsForUser($request->user())[$category]['label'] ?? 'Notification';
         $message = $category === NotificationCategory::ALL
             ? 'All notifications have been marked as read.'
             : "{$categoryLabel} notifications have been marked as read.";
@@ -112,10 +121,6 @@ class NotificationController extends Controller
 
     private function dashboardUrl(Request $request): string
     {
-        $dashboardRoute = $request->user()->role.'.dashboard';
-
-        return Route::has($dashboardRoute)
-            ? route($dashboardRoute, absolute: false)
-            : '/';
+        return PortalContext::dashboard($request->user());
     }
 }

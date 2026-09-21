@@ -486,3 +486,22 @@ Class yang dirender dari sisi server (mis. tombol aksi DataTables) tidak terbaca
 14  Dashboard per role + Pencarian & Filter
 15  Notifikasi + Export Excel
 ```
+
+## UI Language Policy
+
+The portal has two functional cores with different language conventions:
+
+- Import Core: English-first / full English UI.
+- Local Core: Indonesian-first UI.
+- Local Core may retain English terminology only when it is an established business,
+  domain, technical, product, or system term, or when an existing project convention
+  explicitly requires it.
+
+Do not treat mixed Indonesian/English text as a defect by itself.
+
+Before changing UI terminology:
+1. Identify which core the view belongs to.
+2. Search for the same terminology in equivalent views.
+3. Determine whether the term is an established canonical term.
+4. Change only unintended or inconsistent usage.
+5. Do not translate domain terminology merely for stylistic consistency.

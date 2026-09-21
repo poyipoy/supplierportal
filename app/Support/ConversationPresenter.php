@@ -41,7 +41,7 @@ class ConversationPresenter
 
             return [
                 'type' => 'PR',
-                'title' => $conversable->pr_number ?? 'PR #' . $conversable->id,
+                'title' => $conversable->pr_number ?? 'Draft Requisition',
                 'subtitle' => $conversable->period?->name ?? '-',
                 'status' => strtoupper((string) $conversable->status),
                 'url' => self::contextUrl($viewer, $conversation, $quotation),
@@ -77,7 +77,7 @@ class ConversationPresenter
 
             return [
                 'type' => 'PO',
-                'title' => $conversable->po_number ?? 'PO #' . $conversable->id,
+                'title' => $conversable->po_number ?? 'Purchase Order',
                 'subtitle' => $prNumbers ?: 'Purchase Order',
                 'status' => strtoupper((string) $conversable->status),
                 'url' => self::contextUrl($viewer, $conversation, null),

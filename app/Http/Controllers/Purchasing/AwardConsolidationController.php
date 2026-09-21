@@ -44,7 +44,9 @@ class AwardConsolidationController extends Controller
             }))
             ->orderBy('supplier_id')->orderBy('pr_id')->orderBy('pr_item_id')
             ->paginate(50)->withQueryString();
-        $suppliers = User::where('role', 'supplier')->orderBy('name')->get(['id', 'name']);
+        $suppliers = User::importEligible()
+            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('pr_item_awards')->distinct()->pluck('supplier_id'))
+            ->orderBy('name')->get(['id', 'name']);
 
         return view('purchasing.po.consolidate-awards', compact('awards', 'suppliers'));
     }

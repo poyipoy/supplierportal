@@ -221,7 +221,7 @@
     <nav class="po-sticky-nav-bar" aria-label="Purchase order sections">
         <ul class="nav po-nav-pills" id="po-section-nav">
             <li class="nav-item"><a class="nav-link active" href="#sec-info">Order Info</a></li>
-            <li class="nav-item"><a class="nav-link" href="#sec-material">Materials &amp; Commercials</a></li>
+            <li class="nav-item"><a class="nav-link" href="#sec-material">Materials & Commercials</a></li>
             @if(isset($itemProjections) && $itemProjections->isNotEmpty())
                 <li class="nav-item"><a class="nav-link" href="#sec-material-progress">Material Progress</a></li>
             @endif
@@ -278,7 +278,7 @@
                         </div>
                     </div>
                     <div class="tw-bg-surface-container tw-p-2.5 sm:tw-col-span-2">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Notes &amp; Remark</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Notes & Remark</div>
                         <div class="tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->notes ?: '-' }}</div>
                     </div>
                 </div>
@@ -651,7 +651,7 @@
                                         @foreach($uploadedDocs as $sDoc)
                                             <div class="tw-rounded-lg tw-bg-surface-container-low tw-border tw-border-outline-variant/70 tw-p-2 tw-transition-colors">
                                                 <div class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-mb-1.5 tw-min-w-0">
-                                                    <x-ui.icon name="truck" size="xs" class="text-primary flex-shrink-0" />
+                                                    <x-ui.icon name="truck" size="sm" class="text-primary flex-shrink-0" />
                                                     <a href="{{ route('purchasing.shipments.show', $sDoc['shipment']) }}" 
                                                        class="tw-text-ui-xs tw-font-semibold text-primary text-decoration-none hover:tw-underline tw-truncate" 
                                                        title="Open shipment {{ $sDoc['shipment_number'] }}">

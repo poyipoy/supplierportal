@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
+use App\Models\LocalInvoice;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -40,6 +41,9 @@ class UserController extends Controller
                         'purchasing' => '<span class="ui-status-chip ui-status-chip--neutral">Purchasing</span>',
                         'supplier' => '<span class="ui-status-chip ui-status-chip--neutral">Supplier</span>',
                         'qc' => '<span class="ui-status-chip ui-status-chip--neutral">QC</span>',
+                        'accounting' => '<span class="ui-status-chip ui-status-chip--info">Accounting</span>',
+                        'finance' => '<span class="ui-status-chip ui-status-chip--info">Finance</span>',
+                        'ga' => '<span class="ui-status-chip ui-status-chip--info">General Affairs</span>',
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e($user->role).'</span>',
                     };
                 })
@@ -83,11 +87,23 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->role === 'supplier') {
+            if ($request->filled('supplier_scope_preset') && ! $request->has('supplier_scopes')) {
+                $scopes = match ($request->input('supplier_scope_preset')) {
+                    'both' => ['import', 'local'],
+                    'local' => ['local'],
+                    default => ['import'],
+                };
+                $request->merge(['supplier_scopes' => $scopes]);
+            } elseif (! $request->has('supplier_scopes_present') && ! $request->has('supplier_scopes')) {
+                $request->merge(['supplier_scopes' => ['import']]);
+            }
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'string', Password::defaults(), 'confirmed'],
-            'role' => 'required|in:admin,purchasing,supplier,qc',
+            'role' => 'required|in:admin,purchasing,supplier,qc,accounting,finance,ga',
             'is_active' => 'boolean',
 
             // Supplier specific fields
@@ -96,6 +112,10 @@ class UserController extends Controller
             'phone' => 'required_if:role,supplier|nullable|string|max:50',
             'npwp' => 'required_if:role,supplier|nullable|string|max:50',
             'category' => 'required_if:role,supplier|nullable|string|max:100',
+            'supplier_scope_preset' => ['nullable', 'string', 'in:import,local,both'],
+            'supplier_scopes' => ['required_if:role,supplier', 'array', 'min:1'],
+            'supplier_scopes.*' => ['required', 'in:import,local', 'distinct'],
+            'payment_term_days' => [Rule::requiredIf($request->role === 'supplier' && in_array('local', (array) $request->input('supplier_scopes', []), true)), 'nullable', 'integer', 'between:1,365'],
         ]);
 
         try {
@@ -117,9 +137,16 @@ class UserController extends Controller
                     'phone' => $request->phone,
                     'npwp' => $request->npwp,
                     'category' => $request->category,
+                    'payment_term_days' => $request->payment_term_days,
                 ]);
             }
 
+            if ($request->role === 'supplier') {
+                $user->supplierScopes()->whereNotIn('scope', $request->input('supplier_scopes'))->delete();
+                foreach ($request->input('supplier_scopes') as $scope) {
+                    $user->supplierScopes()->firstOrCreate(['scope' => $scope]);
+                }
+            }
             DB::commit();
 
             return redirect()->route('admin.users.index')->with('success', 'User successfully added.');
@@ -146,11 +173,23 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        if ($request->role === 'supplier') {
+            if ($request->filled('supplier_scope_preset') && ! $request->has('supplier_scopes')) {
+                $scopes = match ($request->input('supplier_scope_preset')) {
+                    'both' => ['import', 'local'],
+                    'local' => ['local'],
+                    default => ['import'],
+                };
+                $request->merge(['supplier_scopes' => $scopes]);
+            } elseif (! $request->has('supplier_scopes_present') && ! $request->has('supplier_scopes')) {
+                $request->merge(['supplier_scopes' => $user->supplierScopes()->pluck('scope')->all() ?: ['import'], 'payment_term_days' => $request->input('payment_term_days', $user->supplier?->payment_term_days)]);
+            }
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
-            'role' => 'required|in:admin,purchasing,supplier,qc',
+            'role' => 'required|in:admin,purchasing,supplier,qc,accounting,finance,ga',
             'is_active' => 'boolean',
 
             // Supplier specific fields
@@ -159,12 +198,18 @@ class UserController extends Controller
             'phone' => 'required_if:role,supplier|nullable|string|max:50',
             'npwp' => 'required_if:role,supplier|nullable|string|max:50',
             'category' => 'required_if:role,supplier|nullable|string|max:100',
+            'supplier_scope_preset' => ['nullable', 'string', 'in:import,local,both'],
+            'supplier_scopes' => ['required_if:role,supplier', 'array', 'min:1'],
+            'supplier_scopes.*' => ['required', 'in:import,local', 'distinct'],
+            'payment_term_days' => [Rule::requiredIf($request->role === 'supplier' && in_array('local', (array) $request->input('supplier_scopes', []), true)), 'nullable', 'integer', 'between:1,365'],
         ]);
 
         try {
             DB::beginTransaction();
 
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
             $oldRole = $user->role;
+            $oldScopes = $user->supplierScopes()->orderBy('scope')->pluck('scope')->all();
             $oldActive = (bool) $user->is_active;
             $passwordChanged = $request->filled('password');
             $data = [
@@ -198,18 +243,32 @@ class UserController extends Controller
                         'phone' => $request->phone,
                         'npwp' => $request->npwp,
                         'category' => $request->category,
+                        'payment_term_days' => $request->payment_term_days,
                     ]
                 );
             } else {
                 // If role changed from supplier to something else, we might want to delete the supplier record,
                 // but for safety, we can just leave it or soft delete if applicable.
                 // We will delete it to keep data clean.
-                if ($user->supplier) {
+                if ($user->supplier && ! LocalInvoice::where('supplier_id', $user->id)->exists()) {
                     $user->supplier()->delete();
                 }
             }
 
+            if ($request->role === 'supplier') {
+                $user->supplierScopes()->whereNotIn('scope', $request->input('supplier_scopes'))->delete();
+                foreach ($request->input('supplier_scopes') as $scope) {
+                    $user->supplierScopes()->firstOrCreate(['scope' => $scope]);
+                }
+            }
             DB::commit();
+
+            if ($request->role === 'supplier' && $oldScopes !== $user->supplierScopes()->orderBy('scope')->pluck('scope')->all()) {
+                event(new AuthSecurityEvent('supplier_scopes_changed', $user, metadata: [
+                    'actor_user_id' => auth()->id(),
+                    'reason' => implode(',', $oldScopes).' -> '.$user->supplierScopes()->orderBy('scope')->pluck('scope')->implode(','),
+                ]));
+            }
 
             if ($oldActive && ! $user->is_active) {
                 event(new AuthSecurityEvent('account_deactivated', $user, metadata: [

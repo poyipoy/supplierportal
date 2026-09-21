@@ -183,6 +183,33 @@ Monitor at minimum:
 
 Log rotation is provider-specific. Do not allow `queue-worker.log` to grow without a cPanel-supported rotation/retention policy.
 
+### 5.1 Alternative: Long-Lived Worker Supervision (Supervisor / Systemd)
+
+If deploying to a dedicated VPS or Linux server where permanent daemons are supported instead of short-lived cPanel Cron tasks:
+
+**Supervisor configuration template (`/etc/supervisor/conf.d/adasi-worker.conf`):**
+
+```ini
+[program:adasi-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/application/artisan queue:work database --queue=exports,default --sleep=1 --tries=3 --timeout=600
+autostart=true
+autorestart=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/path/to/application/storage/logs/supervisor-worker.log
+stopwaitsecs=660
+```
+
+**Worker Lifecycle & Deployment Rules:**
+- `stopwaitsecs` must be at least 660s (greater than the worker's `--timeout=600`) so Supervisor does not SIGKILL a running export during deployment restarts.
+- On every application code deployment, execute `php artisan queue:restart` to instruct all running queue workers to finish their current job and exit, allowing Supervisor to restart them with the new application code.
+- Ensure the crontab scheduler remains active:
+  ```cron
+  * * * * * cd /path/to/application && php artisan schedule:run >> /dev/null 2>&1
+  ```
+
 ## 6. OPcache and PHP limits
 
 Confirm these values in the domain's **web SAPI**, not only CLI:

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\LocalInvoicesExport;
 use App\Models\ExportJob;
 use App\Services\ExportProgressService;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ class ExportDownloadController extends Controller
     {
         $query = ExportJob::query()
             ->where('user_id', $request->user()->getKey())
+            ->when($request->user()->isLocalOperator(), fn ($query) => $query->where('export_class', LocalInvoicesExport::class))
+            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->where('export_class', '!=', LocalInvoicesExport::class))
             ->latest()
             ->orderByDesc('id');
         $jobs = $query->paginate(20)->withQueryString();
@@ -21,6 +24,8 @@ class ExportDownloadController extends Controller
             ->values();
         $hasPending = ExportJob::query()
             ->where('user_id', $request->user()->getKey())
+            ->when($request->user()->isLocalOperator(), fn ($query) => $query->where('export_class', LocalInvoicesExport::class))
+            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->where('export_class', '!=', LocalInvoicesExport::class))
             ->whereIn('status', [ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING])
             ->exists();
 
@@ -36,6 +41,7 @@ class ExportDownloadController extends Controller
 
     public function download(Request $request, ExportJob $exportJob)
     {
+        $this->authorizeDomain($request, $exportJob);
         abort_unless((int) $exportJob->user_id === (int) $request->user()->getKey(), 403);
 
         if (! $exportJob->isDownloadable()) {
@@ -53,6 +59,7 @@ class ExportDownloadController extends Controller
 
     public function status(Request $request, ExportJob $exportJob)
     {
+        $this->authorizeDomain($request, $exportJob);
         abort_unless((int) $exportJob->user_id === (int) $request->user()->getKey(), 403);
 
         $downloadUrl = $exportJob->isDownloadable()
@@ -88,6 +95,7 @@ class ExportDownloadController extends Controller
 
     public function cancel(Request $request, ExportJob $exportJob, ExportProgressService $progress)
     {
+        $this->authorizeDomain($request, $exportJob);
         abort_unless((int) $exportJob->user_id === (int) $request->user()->getKey(), 403);
 
         $cancelled = $progress->cancel((int) $exportJob->getKey());
@@ -111,6 +119,13 @@ class ExportDownloadController extends Controller
             'download_url' => null,
             'cancel_url' => null,
         ]);
+    }
+
+    private function authorizeDomain(Request $request, ExportJob $exportJob): void
+    {
+        $local = $exportJob->export_class === LocalInvoicesExport::class;
+        abort_if($request->user()->isLocalOperator() && ! $local, 403);
+        abort_if($local && ! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), 403);
     }
 
     private function serialize(ExportJob $exportJob): array

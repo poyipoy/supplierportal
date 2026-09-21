@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\PrItem;
+use App\Models\PurchaseRequisition;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SavePurchaseRequisitionRequest extends FormRequest
@@ -15,7 +17,33 @@ class SavePurchaseRequisitionRequest extends FormRequest
 
     public function rules(): array
     {
-        $activeSupplier = Rule::exists('users', 'id')->where('role', 'supplier')->where('is_active', true);
+        $prId = $this->route('requisition') ?? $this->route('id');
+        if ($prId instanceof PurchaseRequisition) {
+            $prId = $prId->id;
+        }
+
+        $activeSupplier = Rule::exists('users', 'id')
+            ->where(function ($query) use ($prId) {
+                $query->where('role', 'supplier')
+                    ->where('is_active', true)
+                    ->where(function ($subQuery) use ($prId) {
+                        $subQuery->whereExists(function ($q) {
+                            $q->select(DB::raw(1))
+                                ->from('supplier_scopes')
+                                ->whereColumn('supplier_scopes.supplier_id', 'users.id')
+                                ->where('supplier_scopes.scope', 'import');
+                        });
+
+                        if ($prId) {
+                            $subQuery->orWhereExists(function ($q) use ($prId) {
+                                $q->select(DB::raw(1))
+                                    ->from('purchase_requisition_suppliers')
+                                    ->whereColumn('purchase_requisition_suppliers.supplier_id', 'users.id')
+                                    ->where('purchase_requisition_suppliers.pr_id', $prId);
+                            });
+                        }
+                    });
+            });
         $activeMaterial = Rule::exists('material_masters', 'id')->where('is_active', true);
 
         return [

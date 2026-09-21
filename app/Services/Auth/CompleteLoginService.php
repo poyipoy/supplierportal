@@ -55,19 +55,23 @@ class CompleteLoginService
                 'monitor',
             );
 
-            try {
-                $user->notify(new NewDeviceLoginNotification(
-                    (string) ($request->ip() ?? ''),
-                    Str::limit((string) $request->userAgent(), 512, ''),
-                    now(),
-                ));
-            } catch (Throwable $exception) {
-                Log::warning('New-device email notification dispatch failed.', [
-                    'user_id' => $user->getKey(),
-                    'channel' => 'mail',
-                    'queue' => config('queue.default'),
-                    'exception_class' => $exception::class,
-                ]);
+            // Outbound mail is disabled by office network policy; the in-app
+            // notification above plus the audit entry are the delivery path.
+            if (config('auth_security.notifications.mail_enabled', false)) {
+                try {
+                    $user->notify(new NewDeviceLoginNotification(
+                        (string) ($request->ip() ?? ''),
+                        Str::limit((string) $request->userAgent(), 512, ''),
+                        now(),
+                    ));
+                } catch (Throwable $exception) {
+                    Log::warning('New-device email notification dispatch failed.', [
+                        'user_id' => $user->getKey(),
+                        'channel' => 'mail',
+                        'queue' => config('queue.default'),
+                        'exception_class' => $exception::class,
+                    ]);
+                }
             }
         }
     }

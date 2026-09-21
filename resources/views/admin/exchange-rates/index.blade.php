@@ -24,7 +24,7 @@
                 <label class="tw-grid tw-gap-1 tw-text-ui-xs tw-font-medium" for="currencyFilter">Currency
                     <select name="currency" id="currencyFilter" class="form-select form-select-sm tw-min-w-40"><option value="">All currencies</option>@foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)<option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ $currency }}</option>@endforeach</select>
                 </label>
-                <x-ui.button type="submit" variant="secondary" size="sm">Apply Filter</x-ui.button>
+                <x-ui.button type="submit" variant="primary" size="sm">Apply Filter</x-ui.button>
                 @if(request('currency'))<x-ui.button :href="route('admin.exchange-rates.index')" variant="ghost" size="sm">Clear</x-ui.button>@endif
             </form>
         </x-slot:filters>
@@ -45,10 +45,10 @@
         </div>
         @if($rates->hasPages())
             <x-slot:pagination>
-                <x-ui.pagination>
+                <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-text-ui-sm">
                     <span>Page {{ $rates->currentPage() }} of {{ $rates->lastPage() }}</span>
                     <span>{{ $rates->onEachSide(1)->links('pagination::bootstrap-5') }}</span>
-                </x-ui.pagination>
+                </div>
             </x-slot:pagination>
         @endif
     </x-ui.data-table>

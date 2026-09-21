@@ -50,7 +50,7 @@
                     <th scope="col">Material Name</th>
                     <th scope="col" class="text-center">Currency</th>
                     <th scope="col" class="text-center">Total Offers</th>
-                    <th scope="col">Latest Price/Kg &amp; Range</th>
+                    <th scope="col">Latest Price/Kg & Range</th>
                     <th scope="col">Last Quoted Date</th>
                     <th scope="col" class="text-center">Latest Status</th>
                     <th scope="col" class="text-center" style="width: 120px;">Action</th>

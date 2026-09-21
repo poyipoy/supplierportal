@@ -68,7 +68,7 @@
                     <x-ui.button type="button" size="sm" class="tw-flex-1" id="applyFilter">
                         <x-ui.icon name="search" size="sm" class="me-1" />Filter
                     </x-ui.button>
-                    <x-ui.icon-button icon="rotate-ccw" label="Reset filters" size="sm" id="resetFilter" />
+                    <x-ui.icon-button icon="rotate-ccw" label="Reset filters" variant="outline" size="sm" id="resetFilter" />
                 </div>
             </div>
         </x-slot:filters>

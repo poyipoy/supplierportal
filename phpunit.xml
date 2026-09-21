@@ -21,6 +21,13 @@
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
+        <!-- Dummy verification hash for the constant-time login path. Cost must
+             track BCRYPT_ROUNDS above, or the miss branch costs ~200ms per
+             failed login while the hit branch costs ~1ms. -->
+        <env name="AUTH_DUMMY_HASH" value="$2y$04$PIaDjQhlFb2EYQPyu9.sa.7DTQ4tAZxYbPlaT8tEoER/f686zf4D."/>
+        <!-- The tarpit sleeps real seconds; LoginSecurityTest enables it
+             explicitly for the one test that asserts the delay. -->
+        <env name="AUTH_TARPIT_ENABLED" value="false"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>

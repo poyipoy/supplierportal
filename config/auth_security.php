@@ -2,15 +2,39 @@
 
 return [
     'password' => [
-        'min' => 12,
+        'min' => (int) env('AUTH_PASSWORD_MIN_LENGTH', 12),
         'max' => 255,
         'uncompromised_in_production' => true,
+
+        // Allowed number of appearances in the HaveIBeenPwned corpus before a
+        // password is rejected outright.
+        'uncompromised_threshold' => 3,
     ],
 
     'login' => [
         'combination' => ['attempts' => 5, 'decay_seconds' => 60],
-        'email' => ['attempts' => 12, 'decay_seconds' => 900],
+
+        // Aggregated across every IP, so a distributed credential-stuffing
+        // pool cannot buy extra guesses by rotating source addresses. Five is
+        // the hard per-account ceiling for a 15 minute window.
+        'email' => ['attempts' => 5, 'decay_seconds' => 900],
         'ip' => ['attempts' => 30, 'decay_seconds' => 300],
+
+        // Rotating-proxy backstop: collapses the client IP to its /24 (IPv4)
+        // or /64 (IPv6) network before counting. Deliberately looser than the
+        // single-IP limit above (30) so it never shadows it — a legitimate
+        // office NAT should trip the IP limiter first, not this one.
+        'subnet' => ['attempts' => 50, 'decay_seconds' => 300],
+
+        // Synthetic response delay applied only on the failure branch, to
+        // destroy scanner throughput. Bounded so a flood of failures cannot
+        // starve PHP-FPM workers by pinning them all in usleep().
+        'tarpit' => [
+            'enabled' => (bool) env('AUTH_TARPIT_ENABLED', true),
+            'threshold' => 3,
+            'delay_step_ms' => 1000,
+            'max_delay_ms' => 2000,
+        ],
 
         // Flags a credential-stuffing pattern: many distinct emails attempted
         // from the same IP in a short window (independent of per-identity
@@ -35,6 +59,23 @@ return [
             'threshold' => (int) env('AUTH_REPEATED_LOCKOUT_ALERT_THRESHOLD', 3),
             'window_seconds' => 3600,
         ],
+    ],
+
+    // Precomputed bcrypt hash of a random 32-character string, used as the
+    // verification target when the submitted email has no account or the
+    // account is inactive. Hash::check() then burns the same CPU cycles as a
+    // real wrong-password attempt, so response time no longer discloses
+    // whether an address is registered. The cost MUST match hashing.bcrypt
+    // rounds (12 in production, overridden per-environment in phpunit.xml),
+    // otherwise the two branches diverge again.
+    'dummy_hash' => env('AUTH_DUMMY_HASH', '$2y$12$e8p2xPjG.oQZkGgJ7K7Ie.4gPZ9Z7V1X2Y3Z4A5B6C7D8E9F0G1H2'),
+
+    // Office network policy forbids outbound mail triggered by auth events.
+    // Security alerts are delivered in-app and to auth_audit_logs instead;
+    // the mail channel stays opt-in per environment.
+    'notifications' => [
+        'mail_enabled' => (bool) env('AUTH_SECURITY_EMAIL_NOTIFICATIONS', false),
+        'in_app_enabled' => true,
     ],
 
     'rate_limits' => [
@@ -98,5 +139,6 @@ return [
 
     'headers' => [
         'csp_report_uri' => env('CSP_REPORT_URI'),
+        'csp_enforce' => (bool) env('CSP_ENFORCE', false),
     ],
 ];

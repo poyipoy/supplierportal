@@ -50,7 +50,7 @@
                 <tr>
                     <th scope="col">Operational Checklist Item</th>
                     <th scope="col" class="tw-w-40 text-center">Count / Severity</th>
-                    <th scope="col">Description &amp; Workflow Impact</th>
+                    <th scope="col">Description & Workflow Impact</th>
                     <th scope="col" class="tw-w-32 text-end">Action</th>
                 </tr>
             </thead>

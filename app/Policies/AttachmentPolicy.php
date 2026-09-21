@@ -10,6 +10,7 @@ use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\ShipmentDocument;
+use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
 
 class AttachmentPolicy
@@ -22,9 +23,10 @@ class AttachmentPolicy
     public function view(User $user, Attachment $attachment): bool
     {
         // Admin & Purchasing: akses penuh
-        if (in_array($user->role, ['admin', 'purchasing'])) {
+        if ($user->role === 'admin') {
             return true;
         }
+        if ($user->role === 'purchasing' && $attachment->attachable_type !== SupplierOverpaymentRefund::class) return true;
 
         $attachable = $attachment->attachable;
 
@@ -33,6 +35,10 @@ class AttachmentPolicy
         }
 
         $type = $attachment->attachable_type;
+
+        if ($user->role === 'finance') {
+            return $type === SupplierOverpaymentRefund::class;
+        }
 
         // ── QC ──
         if ($user->role === 'qc') {

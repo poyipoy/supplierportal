@@ -6,6 +6,7 @@ use App\Events\AuthSecurityEvent;
 use App\Models\User;
 use App\Notifications\RepeatedLockoutAlertNotification;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\NotificationService;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
@@ -17,7 +18,10 @@ use Illuminate\Support\Str;
 
 class LogAuthenticationEvent
 {
-    public function __construct(private readonly AuthAuditLogger $logger) {}
+    public function __construct(
+        private readonly AuthAuditLogger $logger,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function handleLogin(Login $event): void
     {
@@ -94,7 +98,24 @@ class LogAuthenticationEvent
 
         $admins = User::query()->where('role', 'admin')->where('is_active', true)->get();
 
-        if ($admins->isNotEmpty()) {
+        if ($admins->isEmpty()) {
+            return;
+        }
+
+        // In-app is the primary (and, under office network policy, only)
+        // channel. Keyed per account per hour so a sustained attack does not
+        // stack a new notification row on every subsequent lockout.
+        $this->notifications->send(
+            $admins,
+            'repeated_lockouts_detected',
+            'auth:repeated-lockout:'.hash('sha256', $normalized).':'.now()->format('YmdH'),
+            'Repeated sign-in lockouts detected',
+            'The account "'.$normalized.'" was rate-limited '.$count.' times in the last hour.',
+            route('admin.auth-audit-logs.index', absolute: false),
+            'alert-triangle',
+        );
+
+        if (config('auth_security.notifications.mail_enabled', false)) {
             Notification::send($admins, new RepeatedLockoutAlertNotification($normalized, $count));
         }
     }

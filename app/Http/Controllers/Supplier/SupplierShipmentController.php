@@ -404,9 +404,11 @@ class SupplierShipmentController extends Controller
             'items.*' => 'required|array',
             'items.*.purchase_order_id' => 'required|integer|exists:purchase_orders,id',
             'items.*.quotation_item_id' => 'required|integer|exists:quotation_items,id',
-            'items.*.shipped_qty' => ['required_without:items.*.shipped_quantity', 'nullable', 'integer', 'min:1'],
-            'items.*.actual_weight_kg' => ['required_without:items.*.shipped_quantity', 'nullable', 'numeric', 'gt:0', 'decimal:0,4'],
-            'items.*.shipped_quantity' => ['sometimes', 'nullable'],
+            // pcs and kg are independent measurements. Neither may be omitted and
+            // neither may be satisfied by the legacy `shipped_quantity` alias,
+            // which previously let a request supply pcs and inherit it as kg.
+            'items.*.shipped_qty' => ['required', 'integer', 'min:1'],
+            'items.*.actual_weight_kg' => ['required', 'numeric', 'gt:0', 'decimal:0,4'],
         ];
         if ($allowAction) {
             $rules['action'] = 'nullable|string|in:draft,submit';

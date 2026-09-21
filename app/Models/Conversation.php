@@ -175,11 +175,11 @@ class Conversation extends Model
     public function getContextLabelAttribute(): string
     {
         if ($this->conversable_type === PurchaseRequisition::class) {
-            return 'PR: ' . ($this->conversable->pr_number ?? '#' . $this->conversable_id);
+            return 'PR: ' . ($this->conversable?->pr_number ?? 'Draft Requisition');
         }
         if ($this->conversable_type === PurchaseOrder::class) {
-            return 'PO: ' . ($this->conversable->po_number ?? '#' . $this->conversable_id);
+            return 'PO: ' . ($this->conversable?->po_number ?? 'Purchase Order');
         }
-        return '#' . $this->conversable_id;
+        return 'Diskusi Pengadaan';
     }
 }

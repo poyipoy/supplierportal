@@ -325,7 +325,7 @@ thead th.col-sticky-material {
                                             @elseif(!empty($p['is_awarded']))
                                                 <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
                                                     <span class="ui-status-chip ui-status-chip--success">
-                                                        <x-ui.icon name="check" size="xs" /> PO Created
+                                                        <x-ui.icon name="check" size="sm" /> PO Created
                                                     </span>
                                                     @if(!empty($p['purchase_order_url']))
                                                         <a href="{{ $p['purchase_order_url'] }}" class="d-block tw-mt-1 tw-text-ui-xs text-primary fw-semibold text-decoration-underline">
@@ -354,7 +354,7 @@ thead th.col-sticky-material {
                     <div class="tw-flex tw-flex-wrap tw-gap-2">
                         @forelse($assignedPurchaseOrders as $assignedPurchaseOrder)
                             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $assignedPurchaseOrder) }}" class="ui-status-chip ui-status-chip--success text-decoration-none">
-                                <x-ui.icon name="receipt" size="xs" /> {{ $assignedPurchaseOrder->po_number }}
+                                <x-ui.icon name="receipt" size="sm" /> {{ $assignedPurchaseOrder->po_number }}
                             </a>
                         @empty
                             <span class="tw-text-ui-xs tw-text-on-surface-variant">Purchase Order assignment is recorded, but its detail is unavailable.</span>
@@ -388,8 +388,12 @@ thead th.col-sticky-material {
 
                 <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-grid tw-gap-3 sm:tw-grid-cols-2">
                     <div>
-                        <label for="poEstimatedArrival" class="form-label small fw-semibold">PO Target Arrival Date</label>
-                        <input type="date" name="estimated_arrival" id="poEstimatedArrival" class="form-control form-control-sm" value="{{ now()->addDays(14)->format('Y-m-d') }}">
+                        <x-ui.date-picker
+                            id="poEstimatedArrival"
+                            name="estimated_arrival"
+                            label="PO Target Arrival Date"
+                            :value="now()->addDays(14)->format('Y-m-d')"
+                        />
                         <div class="form-text tw-text-ui-xs tw-text-on-surface-variant tw-mt-1">
                             <span class="fw-semibold">Supplier Ready / Dispatch Date:</span> when Supplier expects material ready to send.<br>
                             <span class="fw-semibold">PO Target Arrival Date:</span> when Purchasing expects material at ADSI.
@@ -427,7 +431,7 @@ thead th.col-sticky-material {
                     <div class="tw-flex tw-flex-wrap tw-gap-2">
                         @forelse($assignedPurchaseOrders as $assignedPurchaseOrder)
                             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $assignedPurchaseOrder) }}" class="ui-status-chip ui-status-chip--success text-decoration-none">
-                                <x-ui.icon name="receipt" size="xs" /> {{ $assignedPurchaseOrder->po_number }}
+                                <x-ui.icon name="receipt" size="sm" /> {{ $assignedPurchaseOrder->po_number }}
                             </a>
                         @empty
                             <span class="tw-text-ui-xs tw-text-on-surface-variant">Purchase Order assignment is recorded, but its detail is unavailable.</span>

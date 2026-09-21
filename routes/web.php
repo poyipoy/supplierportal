@@ -24,6 +24,7 @@ use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
 use App\Http\Controllers\Purchasing\PdfController;
 use App\Http\Controllers\Purchasing\PeriodController;
 use App\Http\Controllers\Purchasing\PoDocumentController;
+use App\Http\Controllers\Purchasing\PoItemProgressController;
 use App\Http\Controllers\Purchasing\PriceComparisonController;
 use App\Http\Controllers\Purchasing\PrItemController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
@@ -42,7 +43,13 @@ use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
 use App\Http\Controllers\Supplier\SupplierShipmentController;
 use App\Models\PurchaseRequisition;
+use App\Support\PortalContext;
 use Illuminate\Support\Facades\Route;
+
+require __DIR__.'/supplier-local.php';
+require __DIR__.'/accounting.php';
+require __DIR__.'/finance.php';
+require __DIR__.'/ga.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -52,6 +59,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+Route::get('/verify-receipt/supplier/{receipt}', [\App\Http\Controllers\ReceiptVerificationController::class, 'verifySupplier'])
+    ->middleware('throttle:60,1')
+    ->name('receipts.verify-supplier');
+Route::get('/verify-receipt/ga/{receipt}', [\App\Http\Controllers\ReceiptVerificationController::class, 'verifyGa'])
+    ->middleware('throttle:60,1')
+    ->name('receipts.verify-ga');
 
 /*
 |--------------------------------------------------------------------------
@@ -63,7 +76,8 @@ Route::middleware('auth')->group(function () {
         return match (auth()->user()->role) {
             'admin' => redirect()->route('admin.dashboard'),
             'purchasing' => redirect()->route('purchasing.dashboard'),
-            'supplier' => redirect()->route('supplier.dashboard'),
+            'supplier', 'accounting', 'finance' => redirect(PortalContext::dashboard(auth()->user())),
+            'ga' => redirect()->route('ga.dashboard'),
             'qc' => redirect()->route('qc.dashboard'),
             default => redirect()->route('login'),
         };
@@ -75,7 +89,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:auth.credentials')->name('profile.destroy');
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
 
-    Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
         Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
         Route::post('/exports/{exportJob}/cancel', [ExportDownloadController::class, 'cancel'])->name('exports.cancel');
@@ -83,7 +97,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Notifications
-    Route::middleware('role:admin,purchasing,supplier,qc')->group(function () {
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
         Route::get('/notifications/summary', [NotificationController::class, 'summary'])->name('notifications.summary');
@@ -163,7 +177,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'create'])->name('purchase-orders.consolidate-awards');
     Route::post('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'store'])->name('purchase-orders.consolidate-awards.store');
     Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
-    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [\App\Http\Controllers\Purchasing\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
+    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
     Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
     Route::resource('shipments', ShipmentController::class)->only(['index', 'show']);
     Route::post('/shipments/{id}/confirm-arrival', [ShipmentController::class, 'confirmArrival'])->name('shipments.confirm-arrival');
@@ -208,6 +222,29 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
     Route::get('/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
+    // Local Vendors & Read-Only Invoices
+    Route::get('/local-vendors', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'index'])->name('local-vendors.index');
+    Route::get('/local-vendors/{vendor}', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'show'])->name('local-vendors.show');
+    Route::post('/local-vendors/change-requests/{request}/approve', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'approveChange'])->name('local-vendors.change-requests.approve');
+    Route::post('/local-vendors/change-requests/{request}/reject', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'rejectChange'])->name('local-vendors.change-requests.reject');
+    Route::get('/local-invoices/{invoice}', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
+
+    Route::prefix('local-procurement')->name('local-procurement.')->controller(\App\Http\Controllers\Finance\LocalProcurementController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/import/template', 'template')->name('import.template');
+        Route::post('/import/preview', 'preview')->name('import.preview');
+        Route::post('/import/confirm', 'confirm')->name('import.confirm');
+        Route::get('/{purchaseOrder}', 'show')->name('show');
+        Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
+        Route::put('/{purchaseOrder}', 'update')->name('update');
+        Route::post('/{purchaseOrder}/close', 'close')->name('close');
+        Route::post('/{purchaseOrder}/cancel', 'cancel')->name('cancel');
+        Route::post('/{purchaseOrder}/goods-receipts', 'storeGoodsReceipt')->name('goods-receipts.store');
+        Route::put('/goods-receipts/{goodsReceipt}', 'updateGoodsReceipt')->name('goods-receipts.update');
+        Route::post('/goods-receipts/{goodsReceipt}/cancel', 'cancelGoodsReceipt')->name('goods-receipts.cancel');
+    });
 });
 
 /*
@@ -230,7 +267,7 @@ Route::middleware(['auth'])->prefix('shared')->name('shared.')->group(function (
 | Supplier Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('supplier')->name('supplier.')->group(function () {
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
     Route::get('/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
@@ -244,8 +281,8 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     Route::resource('quotations', QuotationController::class)->only(['index', 'show']);
     Route::get('/purchase-orders', [SupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('/purchase-orders/{id}', [SupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
-    Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [\App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');
-    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [\App\Http\Controllers\Supplier\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
+    Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');
+    Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
     // Shipments
     Route::resource('shipments', SupplierShipmentController::class)
         ->only(['index', 'create', 'store', 'show', 'edit', 'update']);

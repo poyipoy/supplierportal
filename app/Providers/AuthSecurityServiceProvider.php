@@ -31,7 +31,7 @@ class AuthSecurityServiceProvider extends ServiceProvider
                 ->symbols();
 
             if (app()->environment('production') && config('auth_security.password.uncompromised_in_production', true)) {
-                $rule->uncompromised();
+                $rule->uncompromised((int) config('auth_security.password.uncompromised_threshold', 3));
             }
 
             return $rule;

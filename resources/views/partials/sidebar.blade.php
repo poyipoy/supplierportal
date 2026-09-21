@@ -43,11 +43,50 @@
             </x-slot:visual>
         </x-ui.icon-button>
     </div>
-
     <nav class="sidebar-menu" aria-label="{{ ucfirst(auth()->user()->role) }} navigation">
         @php $role = auth()->user()->role; @endphp
 
-        @if($role === 'purchasing')
+        @if(auth()->user()->hasSupplierScope('import') && auth()->user()->hasSupplierScope('local'))
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 15;">Supplier Portal</span></div>
+            <x-ui.sidebar-item :href="route('supplier-context.index')" icon="arrow-left-right" label="Switch Portal">Switch Portal</x-ui.sidebar-item>
+        @endif
+
+        @if($role === 'supplier' && \App\Support\PortalContext::isLocal(auth()->user()))
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
+            <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Ajukan Invoice">Ajukan Invoice</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Daftar Invoice">Daftar Invoice</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" label="Profil Vendor">Profil Vendor</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" label="Informasi ADASI">Informasi ADASI</x-ui.sidebar-item>
+        @elseif($role === 'finance')
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Finance AP</span></div>
+            <x-ui.sidebar-item :href="route('finance.dashboard')" icon="gauge" :active="request()->routeIs('finance.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.invoices.index')" icon="receipt" :active="request()->routeIs('finance.invoices.*')" label="Invoice Register">Invoice Register</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.ga-claims.index')" icon="file-text" :active="request()->routeIs('finance.ga-claims.*')" label="Klaim GA">Klaim GA</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.drp.supplier')" icon="wallet" :active="request()->routeIs('finance.drp.supplier', 'finance.drp.show')" label="DRP Supplier">DRP Supplier</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.drp.ga')" icon="credit-card" :active="request()->routeIs('finance.drp.ga')" label="DRP GA">DRP GA</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.drp.paid.index')" icon="badge-check" :active="request()->routeIs('finance.drp.paid.*')" label="DRP Paid">DRP Paid</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.local-procurement.index')" icon="package-check" :active="request()->routeIs('finance.local-procurement.*')" label="Local PO & GR">Master PO & GR</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.overpayments.index')" icon="circle-dollar-sign" :active="request()->routeIs('finance.overpayments.*')" label="Supplier Overpayment">Supplier Overpayment</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.master-invoices')" icon="database" :active="request()->routeIs('finance.master-invoices')" label="Master Invoices">Master Invoices</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.vendor-master.index')" icon="building-2" :active="request()->routeIs('finance.vendor-master.*')" label="Vendor Master">Vendor Master</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
+        @elseif($role === 'ga')
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 16;">General Affairs</span></div>
+            <x-ui.sidebar-item :href="route('ga.dashboard')" icon="gauge" :active="request()->routeIs('ga.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('ga.claims.index')" icon="receipt" :active="request()->routeIs('ga.claims.index', 'ga.claims.show', 'ga.claims.receipt')" label="GA Claims">GA Claims</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('ga.claims.create')" icon="file-plus" :active="request()->routeIs('ga.claims.create')" label="Submit Claim">Submit Claim</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('ga.employees.index')" icon="users" :active="request()->routeIs('ga.employees.*')" label="Employee Master">Employee Master</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('ga.drp-draft')" icon="wallet" :active="request()->routeIs('ga.drp-draft*')" label="DRP GA Draft">DRP GA Draft</x-ui.sidebar-item>
+        @elseif(auth()->user()->isLocalOperator())
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 21;">Local Invoice Control</span></div>
+            <x-ui.sidebar-item :href="route('accounting.dashboard')" icon="gauge" :active="request()->routeIs('accounting.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.invoices.index')" icon="receipt" :active="request()->routeIs('accounting.invoices.*')" label="Invoice Register">Invoice Register</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.physical-verification')" icon="clipboard-check" :active="request()->routeIs('accounting.physical-verification')" label="Physical Verification">Physical Verification</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.payment-schedule')" icon="calendar-days" :active="request()->routeIs('accounting.payment-schedule')" label="Payment Schedule">Payment Schedule</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('accounting.reports')" icon="file-chart-column" :active="request()->routeIs('accounting.reports*')" label="Reports">Reports</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
+        @elseif($role === 'purchasing')
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.dashboard')" icon="gauge" :active="request()->routeIs('purchasing.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
 
@@ -58,6 +97,8 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier')" icon="chart-no-axes-combined" :active="request()->routeIs('purchasing.comparison.*')" label="Price Comparison">Price Comparison</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.purchase-orders.index')" icon="receipt" :active="request()->routeIs('purchasing.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.shipments.index')" icon="truck" :active="request()->routeIs('purchasing.shipments.*')" label="Shipments and Logistics">Shipments & Logistics</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('purchasing.local-vendors.index')" icon="building-2" :active="request()->routeIs('purchasing.local-vendors.*')" label="Local Vendors">Local Vendors</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('purchasing.local-procurement.index')" icon="package-check" :active="request()->routeIs('purchasing.local-procurement.*')" label="Local PO & GR">Local PO & GR</x-ui.sidebar-item>
 
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Collaboration</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index')" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" label="Negotiation and Chat">
@@ -72,7 +113,7 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.reports.index')" icon="file-chart-column" :active="request()->routeIs('purchasing.reports.*')" label="Report">Report</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
 
-        @elseif($role === 'supplier')
+        @elseif($role === 'supplier' && auth()->user()->hasSupplierScope('import'))
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
             <x-ui.sidebar-item :href="route('supplier.dashboard')" icon="gauge" :active="request()->routeIs('supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
 

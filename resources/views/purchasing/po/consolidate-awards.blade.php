@@ -50,10 +50,14 @@
             </table>
         </div>
         <p class="text-muted">Only checked items on this page will be included.</p>
-        <div class="mb-3">
-            <label for="consolidationArrival" class="form-label">Estimated arrival</label>
-            <input id="consolidationArrival" type="date" name="estimated_arrival" class="form-control" style="max-width: 240px" value="{{ old('estimated_arrival', now()->addDays(14)->toDateString()) }}" required>
-            @error('estimated_arrival')<div class="text-danger">{{ $message }}</div>@enderror
+        <div class="mb-3" style="max-width: 320px">
+            <x-ui.date-picker
+                id="consolidationArrival"
+                name="estimated_arrival"
+                label="Estimated arrival"
+                :value="old('estimated_arrival', now()->addDays(14)->toDateString())"
+                required
+            />
         </div>
         <div class="mb-3">
             <label for="consolidationNotes" class="form-label">Notes</label>

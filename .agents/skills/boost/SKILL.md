@@ -1,7 +1,7 @@
 ---
 name: boost
 
-description: High-effort adaptive engineering protocol for difficult software tasks. Uses evidence-first investigation, adaptive reasoning depth, explicit scope control, causal diagnosis, minimal necessary change, research when required, and risk-proportional verification.
+description: Max-effort adaptive engineering protocol for difficult software tasks. Uses evidence-first investigation, adaptive reasoning depth, explicit scope control, causal diagnosis, minimal necessary change, research when required, and risk-proportional verification.
 
 category: engineering
 
@@ -14,13 +14,12 @@ tags: "[deep-think, adaptive-engineering, evidence-first, codebase-first, root-c
 
 # Boost: Adaptive High-Effort Engineering
 
-Boost is an engineering protocol for solving software tasks with the amount
-of investigation and reasoning justified by their complexity and risk.
+Boost is an engineering protocol for solving software tasks with the maximum
+amount of investigation and reasoning justified by their complexity and risk.
 
 It is designed around one principle:
 
 > **Understand the intended outcome and actual system before changing it.**
->
 > **Gather evidence → build the correct model → make the smallest sufficient
 > change → verify the outcome honestly.**
 

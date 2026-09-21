@@ -130,7 +130,7 @@
                 <div class="d-flex align-items-center gap-2" style="min-width: 260px;">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text tw-bg-surface border-end-0 tw-text-outline">
-                            <x-ui.icon name="search" size="xs" />
+                            <x-ui.icon name="search" size="sm" />
                         </span>
                         <input
                             type="text"
@@ -167,7 +167,7 @@
 
                             <div class="d-flex align-items-center gap-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 tw-text-ui-xs po-select-all-btn">
-                                    <x-ui.icon name="check-check" size="xs" />
+                                    <x-ui.icon name="check-check" size="sm" />
                                     <span>Select All in PO</span>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 tw-text-ui-xs po-clear-btn">

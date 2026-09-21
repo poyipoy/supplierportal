@@ -4,13 +4,16 @@ namespace App\Services;
 
 use App\Models\Conversation;
 use App\Models\ExportJob;
+use App\Models\LocalInvoice;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
-use App\Models\Quotation;
 use App\Models\QcInspection;
+use App\Models\Quotation;
 use App\Models\Shipment;
 use App\Models\User;
+use App\Support\NotificationDomain;
+use App\Support\PortalContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -25,6 +28,20 @@ class NotificationUrlResolver
 {
     public function resolve(DatabaseNotification $notification, User $user): string
     {
+        // Domain authorization: if the notification's domain is not allowed for this user,
+        // fall back to their dashboard immediately.
+        if (! NotificationDomain::isNotificationAllowed($notification, $user)) {
+            return PortalContext::dashboard($user);
+        }
+
+        if (isset($notification->data['local_invoice_id'])) {
+            $invoice = LocalInvoice::find($notification->data['local_invoice_id']);
+
+            return $invoice && $user->can('view', $invoice)
+                ? route(($user->isSupplier() ? 'local-supplier' : 'finance').'.invoices.show', $invoice, absolute: false)
+                : PortalContext::dashboard($user);
+        }
+
         $storedUrl = $this->normalize((string) ($notification->data['url'] ?? ''));
 
         if ($storedUrl !== null) {
@@ -103,12 +120,38 @@ class NotificationUrlResolver
             return $exportJob !== null && (int) $exportJob->user_id === (int) $user->id;
         }
 
-        if ($name === '' || ! Str::startsWith($name, $user->role.'.')) {
+        if (in_array($name, ['notifications.index', 'profile.edit'], true)) {
+            return true;
+        }
+
+        if ($name === 'local-invoice-documents.show') {
+            $document = $this->resolveModel(\App\Models\LocalInvoiceDocument::class, $parameters['document'] ?? null);
+
+            return $document !== null && $user->can('view', $document);
+        }
+
+        $allowedPrefixes = match ($user->role) {
+            'finance', 'accounting' => ['finance.', 'accounting.'],
+            'ga' => ['ga.'],
+            'supplier' => array_values(array_filter([
+                $user->hasSupplierScope('import') ? 'supplier.' : null,
+                $user->hasSupplierScope('local') ? 'local-supplier.' : null,
+            ])),
+            default => [$user->role.'.'],
+        };
+
+        if ($name === '' || ! Str::startsWith($name, $allowedPrefixes)) {
             return false;
         }
 
         if ($user->role !== 'supplier') {
             return true;
+        }
+
+        if (Str::startsWith($name, 'local-supplier.invoices.')) {
+            $invoice = $this->resolveModel(LocalInvoice::class, $parameters['invoice'] ?? $parameters['id'] ?? null);
+
+            return $invoice !== null && (int) $invoice->supplier_id === (int) $user->id;
         }
 
         if (Str::startsWith($name, 'supplier.quotations.')) {
@@ -234,6 +277,16 @@ class NotificationUrlResolver
 
             'admin.users.show',
             'admin.users.edit' => ['user', User::class],
+
+            'accounting.invoices.show',
+            'accounting.invoices.receipt',
+            'finance.invoices.show',
+            'finance.invoices.receipt',
+            'local-supplier.invoices.show',
+            'local-supplier.invoices.revision',
+            'local-supplier.invoices.receipt' => ['invoice', LocalInvoice::class],
+            'ga.claims.show',
+            'ga.claims.receipt' => ['claim', \App\Models\GaClaim::class],
             default => null,
         };
     }
@@ -464,8 +517,6 @@ class NotificationUrlResolver
 
     private function dashboard(User $user): string
     {
-        $name = $user->role.'.dashboard';
-
-        return Route::has($name) ? route($name, absolute: false) : '/';
+        return PortalContext::dashboard($user);
     }
 }

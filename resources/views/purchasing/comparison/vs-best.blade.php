@@ -36,7 +36,7 @@
                         compact
                     />
                 </div>
-                <x-ui.button type="submit" variant="secondary" size="sm" data-calendar-native-submit>
+                <x-ui.button type="submit" variant="primary" size="sm" data-calendar-native-submit>
                     <x-ui.icon name="filter" />
                     <span>Apply</span>
                 </x-ui.button>

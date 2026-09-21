@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\ShipmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -249,7 +250,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_auto_heals_po_document_status_if_shipment_document_has_higher_status(): void
+    public function test_customs_documentation_summary_reports_effective_status_without_writing(): void
     {
         [$po, $shipment] = $this->createPoAndShipment($this->supplier);
 
@@ -259,13 +260,68 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
         $shipmentDoc->update(['status' => ShipmentDocument::STATUS_RECEIVED]);
 
-        // When customsDocumentationSummary() is called on PO, it auto-heals poDoc to received
-        $summary = $po->customsDocumentationSummary();
+        $writes = [];
+        DB::listen(function ($query) use (&$writes) {
+            if (preg_match('/^\s*(insert|update|delete)\s/i', $query->sql)) {
+                $writes[] = $query->sql;
+            }
+        });
 
+        $summary = $po->fresh()->customsDocumentationSummary();
+
+        // The summary still reports the healed status to the view ...
         $this->assertEquals('received', $summary['packing_list']['status']);
 
-        $poDoc->refresh();
-        $this->assertEquals('received', $poDoc->status);
+        // ... but a read performs no writes (plan H2: 0 writes).
+        $this->assertSame([], $writes, 'customsDocumentationSummary() must not write to the database.');
+        $this->assertEquals('pending', $poDoc->fresh()->status);
+    }
+
+    public function test_explicit_reconciliation_persists_po_document_status_and_is_idempotent(): void
+    {
+        [$po, $shipment] = $this->createPoAndShipment($this->supplier);
+
+        $poDoc = $po->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $this->assertEquals('pending', $poDoc->status);
+
+        $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $shipmentDoc->update(['status' => ShipmentDocument::STATUS_RECEIVED]);
+
+        $this->assertSame(1, $po->fresh()->reconcileCustomsDocumentationStatus());
+        $this->assertEquals('received', $poDoc->fresh()->status);
+
+        // Running it again changes nothing.
+        $this->assertSame(0, $po->fresh()->reconcileCustomsDocumentationStatus());
+        $this->assertEquals('received', $poDoc->fresh()->status);
+    }
+
+    public function test_reconciliation_never_demotes_a_more_advanced_po_document_status(): void
+    {
+        [$po, $shipment] = $this->createPoAndShipment($this->supplier);
+
+        $poDoc = $po->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $poDoc->update(['status' => 'verified']);
+
+        $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $shipmentDoc->update(['status' => ShipmentDocument::STATUS_RECEIVED]);
+
+        $this->assertSame(0, $po->fresh()->reconcileCustomsDocumentationStatus());
+        $this->assertEquals('verified', $poDoc->fresh()->status);
+    }
+
+    public function test_po_detail_request_still_persists_the_healed_document_status(): void
+    {
+        [$po, $shipment] = $this->createPoAndShipment($this->supplier);
+
+        $poDoc = $po->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $shipmentDoc->update(['status' => ShipmentDocument::STATUS_RECEIVED]);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.purchase-orders.show', $po))
+            ->assertOk();
+
+        $this->assertEquals('received', $poDoc->fresh()->status);
     }
 
     public function test_purchasing_po_detail_calculates_document_completion_accurately(): void

@@ -29,7 +29,7 @@
                     <th scope="col">Purchasing Officer</th>
                     <th scope="col">Latest Message</th>
                     <th scope="col">Last Active</th>
-                    <th scope="col">Status &amp; SLA</th>
+                    <th scope="col">Status & SLA</th>
                     <th scope="col" class="tw-w-36 text-end">Action</th>
                 </tr>
             </thead>

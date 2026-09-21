@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Normalizer;
 
 class LoginRateLimiter
 {
@@ -61,8 +62,25 @@ class LoginRateLimiter
     {
         $definitions = $this->definitions($request, $email);
 
+        // Only the credential-specific counters are forgiven. The IP and
+        // subnet counters keep running so one correct guess inside a spray
+        // does not reset the network-level defences.
         RateLimiter::clear($definitions['combination']['key']);
         RateLimiter::clear($definitions['email']['key']);
+    }
+
+    /**
+     * Number of failures recorded so far for this exact email + IP pair.
+     *
+     * Drives the progressive tarpit delay, which escalates per attempt from
+     * one client rather than per account (an account-wide counter would let a
+     * distributed pool inflict the delay on the legitimate owner).
+     */
+    public function currentFailureCount(Request $request, string $email): int
+    {
+        $definitions = $this->definitions($request, $email);
+
+        return (int) RateLimiter::attempts($definitions['combination']['key']);
     }
 
     public function requiresTurnstile(Request $request, string $email): bool
@@ -72,6 +90,7 @@ class LoginRateLimiter
 
         return RateLimiter::attempts($definitions['email']['key']) >= $threshold
             || RateLimiter::attempts($definitions['ip']['key']) >= $threshold
+            || RateLimiter::attempts($definitions['subnet']['key']) >= $threshold
             || $this->distinctEmailThresholdExceeded($request)
             || $this->globalThresholdExceeded();
     }
@@ -131,9 +150,54 @@ class LoginRateLimiter
             ->all();
     }
 
+    /**
+     * Canonicalize an email before it is hashed into a limiter key.
+     *
+     * Zero-width and invisible codepoints, or a decomposed Unicode form, all
+     * render as the same address but hash differently — which would hand an
+     * attacker a fresh attempt budget per variant. Stripping the invisibles
+     * and forcing NFC collapses every variant onto one key.
+     */
     public function normalizedEmail(string $email): string
     {
-        return Str::lower(trim($email));
+        $cleaned = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $email) ?? $email;
+
+        if (class_exists(Normalizer::class) && Normalizer::isNormalized($cleaned, Normalizer::FORM_C) === false) {
+            $cleaned = Normalizer::normalize($cleaned, Normalizer::FORM_C) ?: $cleaned;
+        }
+
+        return Str::lower(trim($cleaned));
+    }
+
+    /**
+     * Collapse a client IP onto its network block: /24 for IPv4, /64 for IPv6.
+     *
+     * Loopback is left intact so local and test traffic is not bucketed with
+     * anything else.
+     */
+    public function extractSubnet(string $ip): string
+    {
+        if ($ip === '' || $ip === 'unknown' || $ip === '127.0.0.1' || $ip === '::1') {
+            return $ip;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return preg_replace('/\.\d+$/', '.0/24', $ip) ?? $ip;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $packed = inet_pton($ip);
+
+            if ($packed !== false) {
+                $masked = inet_ntop($packed & inet_pton('ffff:ffff:ffff:ffff::'));
+
+                if ($masked !== false) {
+                    return $masked.'/64';
+                }
+            }
+        }
+
+        return $ip;
     }
 
     private function definitions(Request $request, string $email): array
@@ -145,6 +209,7 @@ class LoginRateLimiter
             'combination' => $this->definition('combination', $normalizedEmail.'|'.$ip),
             'email' => $this->definition('email', $normalizedEmail),
             'ip' => $this->definition('ip', $ip),
+            'subnet' => $this->definition('subnet', $this->extractSubnet($ip)),
         ];
     }
 

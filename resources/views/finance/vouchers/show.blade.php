@@ -1,0 +1,23 @@
+@extends('layouts.app')
+@section('title', 'Voucher: ' . $voucher->voucher_number . ' - ADASI Portal')
+@section('page-title', 'Voucher Bayar')
+@section('content')
+<div class="tw-grid tw-max-w-6xl tw-gap-6 tw-pb-16"><x-ui.page-header :title="$voucher->voucher_number" :description="$voucher->supplier_name_snapshot.' · '.$voucher->invoice_number_snapshot" eyebrow="Final Voucher Bayar"><x-slot:actions><x-ui.button :href="route('finance.vouchers.print',$voucher)" variant="outline" size="sm" target="_blank"><x-ui.icon name="printer" size="sm" /> Cetak PDF</x-ui.button><x-ui.button :href="route('finance.drp.show',$voucher->batch)" variant="ghost" size="sm">Kembali ke DRP</x-ui.button></x-slot:actions></x-ui.page-header>
+<div class="tw-grid tw-gap-6 lg:tw-grid-cols-2"><x-ui.card title="Snapshot Otoritatif Voucher"><dl class="tw-grid tw-grid-cols-2 tw-gap-3 tw-text-ui-sm"><dt>Tanggal Voucher</dt><dd>{{ $voucher->voucher_date->format('d M Y') }}</dd><dt>Invoice</dt><dd>{{ $voucher->invoice_number_snapshot }}</dd><dt>PO</dt><dd>{{ $voucher->po_number_snapshot }}</dd><dt>GR</dt><dd>{{ $voucher->gr_references_snapshot }}</dd><dt>Metode Pembayaran</dt><dd>{{ $voucher->payment_method }}</dd><dt>Bank</dt><dd>{{ $voucher->bank_name_snapshot }} · {{ $voucher->bank_account_snapshot }}</dd><dt>DPP</dt><dd class="tw-font-mono">Rp {{ number_format($voucher->dpp_snapshot,2,',','.') }}</dd><dt>PPN</dt><dd class="tw-font-mono">Rp {{ number_format($voucher->ppn_snapshot,2,',','.') }}</dd><dt>PPh / Withholding</dt><dd class="tw-font-mono">Rp {{ number_format($voucher->pph_snapshot,2,',','.') }}</dd><dt>Total Voucher</dt><dd class="tw-font-mono tw-font-bold">Rp {{ number_format($voucher->amount,2,',','.') }}</dd></dl></x-ui.card>
+<x-ui.card title="Pelunasan Pembayaran" description="Pelunasan primer diproses secara terpusat melalui menu DRP Paid.">@if(!$voucher->payment)
+<div class="tw-rounded-xl tw-border tw-border-primary/20 tw-bg-primary/5 tw-p-5">
+    <div class="tw-flex tw-items-start tw-gap-3">
+        <div class="tw-flex-shrink-0 tw-mt-0.5"><x-ui.icon name="info" size="sm" class="tw-text-primary" /></div>
+        <div class="tw-flex-1">
+            <h4 class="tw-text-ui-sm tw-font-bold tw-text-on-surface tw-m-0 tw-mb-1">Menunggu Pembayaran DRP</h4>
+            <p class="tw-text-ui-xs tw-text-on-surface-variant tw-m-0 tw-mb-3">Voucher ini telah diterbitkan dan menunggu proses transfer bank. Pelunasan primer dilakukan secara terpusat melalui menu <strong>DRP Paid</strong>.</p>
+            <x-ui.button :href="route('finance.drp.paid.index', ['q' => $voucher->batch?->batch_number])" size="sm" variant="primary">
+                <x-ui.icon name="external-link" size="sm" /> Buka Menu DRP Paid
+            </x-ui.button>
+        </div>
+    </div>
+</div>
+@else
+<div class="tw-mb-4"><x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($voucher->payment->status)">{{ $voucher->payment->status }}</x-ui.status-chip><div class="tw-mt-2 tw-text-ui-sm">Target: Rp {{ number_format($voucher->payment->expected_amount,2,',','.') }} · Realisasi: Rp {{ number_format($voucher->payment->actual_paid_total,2,',','.') }}</div>@if($voucher->payment->transfers->isNotEmpty())<div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Ref Transfer: <strong class="tw-font-mono">{{ $voucher->payment->transfers->first()->transfer_reference }}</strong> · Tgl: <strong>{{ $voucher->payment->transfers->first()->transfer_date->format('d M Y') }}</strong></div>@endif</div><ol class="tw-space-y-2">@foreach($voucher->payment->transfers as $transfer)<li class="tw-rounded-lg tw-bg-surface-container tw-p-3 tw-text-ui-sm"><strong>{{ $transfer->transfer_type }} #{{ $transfer->sequence_no }}</strong> · {{ $transfer->transfer_reference }} · {{ $transfer->transfer_date->format('d M Y') }} · Rp {{ number_format($transfer->amount,2,',','.')}}@if($transfer->correction_reason)<div>{{ $transfer->correction_reason }}</div>@endif</li>@endforeach</ol>
+@if($voucher->payment->status==='CORRECTION_REQUIRED')<form method="POST" action="{{ route('finance.settlements.correction',$voucher->payment) }}" class="tw-mt-4 tw-grid tw-gap-3">@csrf<input name="amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="Nominal koreksi transfer" required><input name="transfer_reference" class="form-control" placeholder="Referensi transfer" required><x-ui.date-picker id="voucher_correction_transfer_date" name="transfer_date" :value="now()->format('Y-m-d')" required /><textarea name="correction_reason" class="form-control" placeholder="Alasan koreksi transfer" required></textarea><x-ui.button type="submit">Simpan Koreksi Transfer</x-ui.button></form>@endif @endif</x-ui.card></div></div>
+@endsection

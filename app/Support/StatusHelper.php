@@ -13,6 +13,56 @@ use Illuminate\Support\Carbon;
  */
 class StatusHelper
 {
+    public static function localFinanceTone(string $status): string
+    {
+        return match ($status) {
+            'OPEN', 'AVAILABLE', 'FINAL', 'FINALIZED', 'SETTLED', 'PAID' => 'success',
+            'RESERVED', 'CORRECTION_REQUIRED' => 'warning',
+            'INVOICED', 'CLOSED', 'DRAFT' => 'info',
+            'CANCELLED', 'REJECTED', 'EXPIRED' => 'error',
+            default => 'neutral',
+        };
+    }
+
+    public static function paymentBatchTone(string $status): string
+    {
+        return match (strtoupper($status)) {
+            'PAID' => 'success',
+            'FINALIZED' => 'info',
+            'PARTIALLY_PAID' => 'warning',
+            'DRAFT' => 'neutral',
+            'CANCELLED' => 'error',
+            default => 'neutral',
+        };
+    }
+
+    public static function localInvoiceLabel(string $status): string
+    {
+        return match ($status) {
+            'WAITING_PHYSICAL_DOCUMENT' => 'Menunggu Dokumen Fisik',
+            'UNDER_VERIFICATION', 'UNDER_REVIEW' => 'Dalam Verifikasi',
+            'NEED_REVISION' => 'Perlu Revisi',
+            'READY_TO_PAY' => 'Siap Dibayar',
+            'PAID' => 'Lunas',
+            'EXPIRED' => 'Kadaluarsa',
+            'REJECTED' => 'Ditolak',
+            'CANCELLED' => 'Dibatalkan',
+            'SUBMITTED' => 'Diajukan',
+            'APPROVED' => 'Disetujui',
+            'COMPLETED' => 'Selesai',
+            'PAYMENT_SCHEDULED' => 'Jadwal Bayar Ditentukan',
+            default => ucwords(strtolower(str_replace('_', ' ', $status))),
+        };
+    }
+
+    public static function localInvoiceTone(string $status): string
+    {
+        return [
+            'WAITING_PHYSICAL_DOCUMENT' => 'warning', 'UNDER_REVIEW', 'UNDER_VERIFICATION' => 'info',
+            'NEED_REVISION' => 'error', 'REJECTED', 'CANCELLED', 'EXPIRED' => 'error', 'APPROVED', 'READY_TO_PAY', 'PAID', 'COMPLETED' => 'success',
+        ][$status] ?? 'neutral';
+    }
+
     // ─── Purchase Requisition ───
 
     private static array $prBadges = [

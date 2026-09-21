@@ -132,9 +132,9 @@
                                         <td class="text-center ui-tabular-nums text-success fw-semibold">{{ $p['accepted_qty'] }} pcs</td>
                                         <td class="text-center ui-tabular-nums text-primary fw-semibold">{{ $p['in_transit_qty'] }} pcs</td>
                                         <td class="text-center ui-tabular-nums fw-bold">
-                                            <span class="badge {{ $p['supplier_controlled_qty'] > 0 ? 'bg-primary' : 'bg-secondary' }}">
+                                            <x-ui.status-chip :tone="$p['supplier_controlled_qty'] > 0 ? 'info' : 'neutral'" size="sm">
                                                 {{ $p['supplier_controlled_qty'] }} pcs
-                                            </span>
+                                            </x-ui.status-chip>
                                         </td>
                                         <td class="text-center">
                                             <span class="ui-status-chip ui-status-chip--{{ $p['manual_progress_tone'] }}">
@@ -171,7 +171,7 @@
                                                 @endif
                                                 <button type="button"
                                                         class="btn btn-outline-secondary btn-sm px-2 py-1 tw-text-ui-xs btn-view-progress-history"
-                                                        data-award-id="{{ $p['award_id'] }}"
+                                                        data-award-id="{{ $p['award_hashid'] }}"
                                                         data-material-name="{{ $p['material_name'] }}"
                                                         data-history-url="{{ route('supplier.purchase-orders.item-progress.history', ['po_id' => $po, 'award_id' => $p['award']]) }}">
                                                     History

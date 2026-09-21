@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Support\NotificationCategory;
+use App\Support\NotificationDomain;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -31,11 +32,15 @@ class NotificationService
             ? collect([$recipients])
             : collect($recipients ?? []);
 
-        $deliver = function () use ($recipientList, $event, $eventKey, $title, $message, $url, $icon, $data, $replace): void {
+        // Resolve notification domain
+        $domain = $data['domain'] ?? NotificationDomain::resolveDomain($event, $data);
+
+        $deliver = function () use ($recipientList, $event, $eventKey, $title, $message, $url, $icon, $data, $replace, $domain): void {
             $recipientList
                 ->filter(fn ($recipient) => $recipient instanceof User && (bool) $recipient->is_active)
+                ->filter(fn (User $recipient) => NotificationDomain::isUserEligibleForDomain($recipient, $domain))
                 ->unique('id')
-                ->each(function (User $recipient) use ($event, $eventKey, $title, $message, $url, $icon, $data, $replace): void {
+                ->each(function (User $recipient) use ($event, $eventKey, $title, $message, $url, $icon, $data, $replace, $domain): void {
                     $notificationId = Uuid::uuid5(
                         Uuid::NAMESPACE_URL,
                         User::class.':'.$recipient->getKey().':'.$eventKey,
@@ -55,6 +60,7 @@ class NotificationService
                             'event' => $event,
                             'event_key' => $eventKey,
                             'category' => $category,
+                            'domain' => $domain,
                         ]),
                         $replace,
                     );

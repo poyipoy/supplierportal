@@ -177,7 +177,9 @@ class PurchaseOrderController extends Controller
                 ->make(true);
         }
 
-        $suppliers = User::where('role', 'supplier')->get();
+        $suppliers = User::importEligible()
+            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
+            ->get();
 
         return view('purchasing.po.index', compact('suppliers'));
     }
@@ -259,7 +261,9 @@ class PurchaseOrderController extends Controller
         $poProgressSummary = $progressService->poSummary($po);
         $itemProjections = collect($poProgressSummary['items'] ?? []);
 
-        // Customs summary & synchronized documents
+        // Customs summary & synchronized documents. Reconciliation is explicit
+        // now that customsDocumentationSummary() is a pure read.
+        $po->reconcileCustomsDocumentationStatus();
         $customsSummary = $po->customsDocumentationSummary();
 
         // Compute document completion based on synchronized effective status

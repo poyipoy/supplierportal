@@ -83,9 +83,7 @@
             <aside class="tw-grid tw-gap-4">
                 <x-ui.card title="QC Inspection Reference">
                     <x-slot:actions>
-                        <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $inspection)" variant="ghost" size="sm" title="View Full QC Inspection Report">
-                            <x-ui.icon name="external-link" size="sm" />
-                        </x-ui.button>
+                        <x-ui.icon-button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $inspection)" icon="external-link" label="View Full QC Inspection Report" variant="outline" size="sm" />
                     </x-slot:actions>
 
                     <div class="tw-grid tw-gap-2.5 mb-3">
