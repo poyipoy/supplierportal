@@ -9,6 +9,7 @@ use App\Models\LocalInvoice;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceVerificationService;
+use App\Models\User;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -23,6 +24,7 @@ class FinanceInvoiceController extends Controller
         return view('finance.invoices.index', [
             'invoices' => $invoices,
             'filters' => $filters,
+            'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get(),
             'title' => 'Invoice Register',
         ]);
     }
@@ -178,6 +180,7 @@ class FinanceInvoiceController extends Controller
         return view('finance.master-invoices.index', [
             'invoices' => $invoices,
             'filters' => $filters,
+            'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get(),
         ]);
     }
 

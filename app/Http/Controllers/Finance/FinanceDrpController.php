@@ -25,7 +25,7 @@ class FinanceDrpController extends Controller
 
         // Candidate Ready to Pay invoices not yet in active DRP
         $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
-        $eligibleInvoices = LocalInvoice::where('status', LocalInvoice::STATUS_READY_TO_PAY)
+        $eligibleInvoices = LocalInvoice::eligibleForPaymentBatch()
             ->when($supplier, fn ($q) => $q->where('supplier_id', $supplier->id))
             ->whereDoesntHave('paymentItem', function ($q) {
                 $q->where('status', PaymentItem::STATUS_ACTIVE)

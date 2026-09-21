@@ -68,7 +68,7 @@ class PaymentBatchService
             // Group by Supplier + Active Bank Account
             $grouped = [];
             foreach ($invoices as $invoice) {
-                if ($invoice->status !== LocalInvoice::STATUS_READY_TO_PAY) {
+                if (! $invoice->isReadyToPay()) {
                     throw new RuntimeException("Invoice [{$invoice->invoice_number}] is not Ready to Pay (status: {$invoice->status}).");
                 }
 
@@ -450,7 +450,7 @@ class PaymentBatchService
             foreach ($activeItems as $item) {
                 if ($item->payable_type === LocalInvoice::class) {
                     $inv = LocalInvoice::find($item->payable_id);
-                    if (! $inv || $inv->status !== LocalInvoice::STATUS_READY_TO_PAY) {
+                    if (! $inv || ! $inv->isReadyToPay()) {
                         throw new RuntimeException("Cannot finalize DRP: invoice [".($inv?->invoice_number ?? $item->payable_id)."] is no longer Ready to Pay.");
                     }
                 } elseif ($item->payable_type === GaClaim::class) {

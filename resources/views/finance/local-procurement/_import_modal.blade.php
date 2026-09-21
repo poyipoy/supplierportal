@@ -30,7 +30,7 @@
                         <div class="tw-flex tw-items-center tw-justify-between">
                             <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface">Template Resmi</span>
                             <x-ui.button :href="route($routePrefix.'.import.template')" variant="outline" size="sm">
-                                <x-ui.icon name="download" size="xs" />
+                                <x-ui.icon name="download" size="sm" />
                                 <span>Unduh Template</span>
                             </x-ui.button>
                         </div>

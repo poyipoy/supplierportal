@@ -3,7 +3,7 @@
 @section('page-title', 'Daftar Invoice')
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw-grid tw-gap-6">
     <x-ui.page-header
         title="Daftar Seluruh Invoice"
         description="Pantau status verifikasi, catatan revisi, dan jadwal pembayaran invoice Anda."
@@ -12,7 +12,7 @@
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary" size="sm">
                 <x-ui.icon name="plus" size="sm" />
-                <span>Submit Invoice</span>
+                <span>Ajukan Invoice</span>
             </x-ui.button>
             <x-ui.button :href="route('local-supplier.dashboard')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />

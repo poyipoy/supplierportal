@@ -27,7 +27,7 @@
                         <span class="tw-font-semibold tw-text-on-surface">{{ $row->submission_number }}</span>
                         @if($row->receipt?->receipt_number)
                             <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant tw-mt-0.5">
-                                <x-ui.icon name="receipt" size="xs" class="tw-inline" /> {{ $row->receipt->receipt_number }}
+                                <x-ui.icon name="receipt" size="sm" class="tw-inline" /> {{ $row->receipt->receipt_number }}
                             </span>
                         @endif
                     </td>
@@ -75,11 +75,11 @@
                             @if($rem !== null)
                                 @if($rem < 0)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-error/10 tw-text-error tw-mt-0.5">
-                                        <x-ui.icon name="alert-triangle" size="xs" /> Terlewat {{ abs($rem) }} hari
+                                        <x-ui.icon name="alert-triangle" size="sm" /> Terlewat {{ abs($rem) }} hari
                                     </span>
                                 @elseif($rem <= 3)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-warning-container tw-text-warning-container-foreground tw-mt-0.5">
-                                        <x-ui.icon name="clock" size="xs" /> Sisa {{ $rem }} hari
+                                        <x-ui.icon name="clock" size="sm" /> Sisa {{ $rem }} hari
                                     </span>
                                 @else
                                     <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">
@@ -118,14 +118,12 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ (in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) ? 1 : 0) + (($payments ?? false) ? 2 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + 6 }}" class="text-center tw-py-12">
-                        <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-2">
-                            <div class="tw-w-12 tw-h-12 tw-rounded-full tw-bg-surface-container tw-flex tw-items-center tw-justify-center tw-text-on-surface-variant">
-                                <x-ui.icon name="inbox" size="lg" />
-                            </div>
-                            <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Tidak ada invoice ditemukan</span>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant">Coba sesuaikan filter atau kata kunci pencarian Anda.</span>
-                        </div>
+                    <td colspan="{{ (in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) ? 1 : 0) + (($payments ?? false) ? 2 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + 6 }}">
+                        <x-ui.empty-state
+                            icon="inbox"
+                            title="Tidak ada invoice ditemukan"
+                            description="Coba sesuaikan filter atau kata kunci pencarian Anda."
+                        />
                     </td>
                 </tr>
             @endforelse

@@ -125,7 +125,7 @@
                             <p class="tw-m-0 tw-mt-1">{{ $claim->revision_reason ?: 'Harap perbaiki rincian klaim atau lampirkan dokumen pendukung.' }}</p>
                         </div>
                         <x-ui.button :href="route('ga.claims.revision', $claim)" variant="primary" size="sm" class="w-100">
-                            <x-ui.icon name="edit" size="xs" />
+                            <x-ui.icon name="edit" size="sm" />
                             <span>Perbaiki & Ajukan Ulang Klaim</span>
                         </x-ui.button>
                     </div>
@@ -145,7 +145,7 @@
                                 <input type="text" name="notes" class="form-control form-control-sm" placeholder="Catatan verifikasi (opsional)...">
                             </div>
                             <x-ui.button type="submit" variant="primary" size="sm" class="w-100">
-                                <x-ui.icon name="check" size="xs" />
+                                <x-ui.icon name="check" size="sm" />
                                 <span>Konfirmasi Verifikasi Dasar GA</span>
                             </x-ui.button>
                         </div>

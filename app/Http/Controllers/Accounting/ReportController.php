@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Accounting;
 use App\Exports\LocalInvoicesExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\InvoiceFilterRequest;
+use App\Models\User;
 use App\Support\ExportDispatcher;
 
 class ReportController extends Controller
 {
     public function index(InvoiceFilterRequest $request)
     {
-        return view('accounting.reports.index', ['payments' => true]);
+        return view('accounting.reports.index', [
+            'payments' => true,
+            'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get(),
+        ]);
     }
 
     public function export(InvoiceFilterRequest $request)

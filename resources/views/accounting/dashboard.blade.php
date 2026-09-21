@@ -18,7 +18,7 @@
                 <x-ui.icon name="calendar-clock" size="sm" />
                 <span>Payment Schedule</span>
             </x-ui.button>
-            <x-ui.button :href="route('accounting.physical-verification')" variant="ghost">
+            <x-ui.button :href="route('accounting.physical-verification')" variant="outline">
                 <x-ui.icon name="file-check" size="sm" />
                 <span>Physical Verification</span>
             </x-ui.button>

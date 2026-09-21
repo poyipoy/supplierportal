@@ -19,7 +19,7 @@
     >
         <x-slot:actions>
             <x-ui.button :href="route($routePrefix.'.index')" variant="outline" size="sm">
-                <x-ui.icon name="arrow-left" size="xs" />
+                <x-ui.icon name="arrow-left" size="sm" />
                 <span>Kembali ke Master PO</span>
             </x-ui.button>
         </x-slot:actions>
@@ -58,7 +58,7 @@
                                 </label>
                                 @if($isLocked)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-warning-container tw-text-warning-container-foreground">
-                                        <x-ui.icon name="lock" size="xs" />
+                                        <x-ui.icon name="lock" size="sm" />
                                         <span>Terkunci Audit</span>
                                     </span>
                                 @endif
@@ -91,7 +91,7 @@
                                 </label>
                                 @if($isLocked)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-warning-container tw-text-warning-container-foreground">
-                                        <x-ui.icon name="lock" size="xs" />
+                                        <x-ui.icon name="lock" size="sm" />
                                         <span>Terkunci</span>
                                     </span>
                                 @endif
@@ -259,7 +259,7 @@
                         {{-- Panel Kepatuhan & Audit --}}
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-low tw-p-3 tw-space-y-1.5">
                             <div class="tw-flex tw-items-center tw-gap-1.5 tw-text-ui-xs tw-font-semibold tw-text-on-surface">
-                                <x-ui.icon name="shield-alert" size="xs" class="tw-text-primary" />
+                                <x-ui.icon name="shield-alert" size="sm" class="tw-text-primary" />
                                 <span>Integritas Audit Data</span>
                             </div>
                             <p class="tw-text-[11px] tw-text-on-surface-variant tw-leading-relaxed tw-mb-0">
@@ -274,8 +274,8 @@
                                 <span>{{ $isEdit ? 'Perbarui Dokumen PO' : 'Simpan Dokumen PO' }}</span>
                             </x-ui.button>
 
-                            <x-ui.button :href="route($routePrefix.'.index')" variant="secondary" class="tw-w-full tw-justify-center">
-                                <x-ui.icon name="x" size="xs" class="me-1" />
+                            <x-ui.button :href="route($routePrefix.'.index')" variant="outline" class="tw-w-full tw-justify-center">
+                                <x-ui.icon name="x" size="sm" class="me-1" />
                                 <span>Batalkan</span>
                             </x-ui.button>
                         </div>

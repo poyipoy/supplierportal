@@ -18,7 +18,7 @@
                 <x-ui.icon name="wallet" size="sm" />
                 <span>DRP Supplier</span>
             </x-ui.button>
-            <x-ui.button :href="route('finance.drp.ga')" variant="ghost">
+            <x-ui.button :href="route('finance.drp.ga')" variant="outline">
                 <x-ui.icon name="credit-card" size="sm" />
                 <span>DRP GA</span>
             </x-ui.button>
@@ -168,7 +168,7 @@
                                 </span>
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="match($batch->status) { 'PAID' => 'success', 'PARTIALLY_PAID' => 'info', 'FINALIZED' => 'primary', default => 'warning' }">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">
                                     {{ $batch->status }}
                                 </x-ui.status-chip>
                             </td>
@@ -183,7 +183,7 @@
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Detail DRP</span>
                                 </x-ui.button>
                             </td>

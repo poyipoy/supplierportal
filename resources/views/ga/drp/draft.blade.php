@@ -80,7 +80,7 @@
                             <input type="text" name="notes" class="form-control form-control-sm" placeholder="Catatan pengajuan batch DRP GA (opsional)...">
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
-                            <x-ui.icon name="check" size="xs" />
+                            <x-ui.icon name="check" size="sm" />
                             <span>Kirim Draft DRP ke Finance</span>
                         </x-ui.button>
                     </div>

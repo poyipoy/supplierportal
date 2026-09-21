@@ -202,6 +202,7 @@ class QcInspectionController extends Controller
         }
         $shipmentId = $shipment?->id;
         $shipment = null;
+        $stagedAttachments = [];
 
         try {
             DB::beginTransaction();
@@ -336,7 +337,7 @@ class QcInspectionController extends Controller
                             continue;
                         }
 
-                        $this->saveAttachment($file, $inspection);
+                        $stagedAttachments[] = $this->saveAttachment($file, $inspection);
                     }
                 }
             }
@@ -376,10 +377,12 @@ class QcInspectionController extends Controller
 
         } catch (\RuntimeException $e) {
             DB::rollBack();
+            $this->cleanupStagedAttachments($stagedAttachments);
 
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             DB::rollBack();
+            $this->cleanupStagedAttachments($stagedAttachments);
             Log::error('QC Inspection store failed', [
                 'po_id' => $po_id,
                 'user_id' => auth()->id(),
@@ -478,18 +481,35 @@ class QcInspectionController extends Controller
             'attachments.*.max' => 'Each NG evidence photo must not exceed 10MB.',
         ]);
 
-        foreach ($request->file('attachments', []) as $file) {
-            if (! $file instanceof UploadedFile || ! $file->isValid()) {
-                continue;
+        $stagedAttachments = [];
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($request->file('attachments', []) as $file) {
+                if (! $file instanceof UploadedFile || ! $file->isValid()) {
+                    continue;
+                }
+
+                $stagedAttachments[] = $this->saveAttachment($file, $inspection);
             }
 
-            $this->saveAttachment($file, $inspection);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->cleanupStagedAttachments($stagedAttachments);
+            Log::error('QC Inspection storeAttachments failed', [
+                'inspection_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to save evidence photos. Please try again.');
         }
 
         return back()->with('success', 'QC evidence photos successfully added.');
     }
 
-    private function saveAttachment(UploadedFile $file, Model $attachable): void
+    private function saveAttachment(UploadedFile $file, Model $attachable): string
     {
         $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName();
         $stream = fopen($file->getPathname(), 'r');
@@ -504,12 +524,33 @@ class QcInspectionController extends Controller
             fclose($stream);
         }
 
-        $attachable->attachments()->create([
-            'file_path' => $path,
-            'file_name' => $file->getClientOriginalName(),
-            'file_type' => $file->getMimeType(),
-            'uploaded_by' => auth()->id(),
-        ]);
+        try {
+            $attachable->attachments()->create([
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $file->getMimeType(),
+                'uploaded_by' => auth()->id(),
+            ]);
+        } catch (\Throwable $e) {
+            Storage::disk('private')->delete($path);
+            throw $e;
+        }
+
+        return $path;
+    }
+
+    /**
+     * Delete files staged to disk during an aborted transaction.
+     *
+     * @param array<int, string> $stagedPaths
+     */
+    private function cleanupStagedAttachments(array $stagedPaths): void
+    {
+        foreach ($stagedPaths as $path) {
+            if ($path) {
+                Storage::disk('private')->delete($path);
+            }
+        }
     }
 
     private function waitingPurchaseOrdersQuery()

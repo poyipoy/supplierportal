@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Master Invoices Report - Finance AP')
+@section('title', 'Laporan Master Invoice - Finance AP')
 @section('page-title', 'Master Invoices (Repository & Reporting)')
 
 @section('content')
@@ -37,7 +37,7 @@
     @include('local-invoices.filters')
 
     <x-ui.data-table
-        title="Master Invoice Data"
+        title="Data Master Invoice"
         :description="'Ditemukan '.$invoices->total().' data tagihan invoice sesuai kriteria filter.'"
     >
         @include('local-invoices.table', ['invoices' => $invoices, 'portal' => 'finance', 'payments' => true])

@@ -3,10 +3,10 @@
 @section('page-title', $title)
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw-grid tw-gap-6">
     <x-ui.page-header
         :title="$title"
-        description="Filter, track physical verification, and manage supplier payment schedules."
+        description="Filter, pantau verifikasi dokumen fisik, dan kelola jadwal pembayaran invoice supplier."
         eyebrow="Accounting & Finance"
     >
         <x-slot:actions>
@@ -21,7 +21,7 @@
 
     <x-ui.data-table
         :title="$title"
-        :description="'Displaying '.$invoices->total().' invoice record(s).'"
+        :description="'Menampilkan '.$invoices->total().' data tagihan invoice.'"
     >
         @include('local-invoices.table', ['portal'=>'accounting'])
 

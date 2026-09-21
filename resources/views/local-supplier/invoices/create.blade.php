@@ -1,11 +1,11 @@
 @extends('layouts.app')
-@section('title', 'Submit Invoice')
-@section('page-title', 'Submit Invoice')
+@section('title', 'Ajukan Invoice')
+@section('page-title', 'Ajukan Invoice')
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Submit Invoice Lokal"
+        title="Ajukan Invoice Lokal"
         description="Isi rincian tagihan invoice dan alokasikan Penerimaan Barang (GR) utuh yang sesuai."
         eyebrow="Portal Supplier Lokal"
     >

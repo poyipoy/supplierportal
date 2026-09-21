@@ -111,7 +111,7 @@
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('ga.claims.show', $c)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Detail</span>
                                 </x-ui.button>
                             </td>

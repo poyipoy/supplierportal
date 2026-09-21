@@ -76,12 +76,12 @@
                     <template x-if="hasFiles">
                         @if($multiple)
                             <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
-                                <x-ui.icon name="files" size="xs" />
+                                <x-ui.icon name="files" size="sm" />
                                 <span><span x-text="totalFilesCount"></span>/{{ $maxFiles }} Berkas</span>
                             </span>
                         @else
                             <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-success/15 tw-text-success">
-                                <x-ui.icon name="check" size="xs" />
+                                <x-ui.icon name="check" size="sm" />
                                 <span x-text="isExisting ? 'Tersimpan' : 'Siap Diunggah'"></span>
                             </span>
                         @endif
@@ -154,7 +154,7 @@
                             <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-rounded-ui-sm tw-border tw-border-success/30 tw-bg-surface tw-px-2.5 tw-py-2 tw-transition-all hover:tw-border-success/50">
                                 <div class="tw-flex tw-items-center tw-gap-2 tw-min-w-0 tw-flex-1">
                                     <div class="tw-w-7 tw-h-7 tw-rounded-full tw-bg-success/10 tw-text-success tw-flex tw-items-center tw-justify-center tw-shrink-0">
-                                        <x-ui.icon name="file-check" size="xs" />
+                                        <x-ui.icon name="file-check" size="sm" />
                                     </div>
                                     <div class="tw-min-w-0 tw-flex-1">
                                         <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-truncate" x-text="file.name" :title="file.name"></div>
@@ -166,7 +166,7 @@
                                                 <span>·</span>
                                             </template>
                                             <span class="tw-text-success tw-font-medium tw-inline-flex tw-items-center tw-gap-0.5">
-                                                <x-ui.icon name="check" size="xs" />
+                                                <x-ui.icon name="check" size="sm" />
                                                 <span>Tersimpan</span>
                                             </span>
                                             <template x-if="file.url">
@@ -184,7 +184,7 @@
                                     title="Hapus berkas tersimpan"
                                     aria-label="Hapus berkas tersimpan"
                                 >
-                                    <x-ui.icon name="trash-2" size="xs" />
+                                    <x-ui.icon name="trash-2" size="sm" />
                                 </button>
                             </div>
                         </template>
@@ -194,7 +194,7 @@
                             <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-rounded-ui-sm tw-border tw-border-primary/30 tw-bg-surface tw-px-2.5 tw-py-2 tw-transition-all hover:tw-border-primary/50">
                                 <div class="tw-flex tw-items-center tw-gap-2 tw-min-w-0 tw-flex-1">
                                     <div class="tw-w-7 tw-h-7 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
-                                        <x-ui.icon name="file-up" size="xs" />
+                                        <x-ui.icon name="file-up" size="sm" />
                                     </div>
                                     <div class="tw-min-w-0 tw-flex-1">
                                         <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-truncate" x-text="file.name" :title="file.name"></div>
@@ -202,7 +202,7 @@
                                             <span class="tw-font-mono" x-text="formatBytes(file.size)"></span>
                                             <span>·</span>
                                             <span class="tw-text-primary tw-font-medium tw-inline-flex tw-items-center tw-gap-0.5">
-                                                <x-ui.icon name="upload-cloud" size="xs" />
+                                                <x-ui.icon name="upload-cloud" size="sm" />
                                                 <span>Siap diunggah</span>
                                             </span>
                                         </div>
@@ -215,7 +215,7 @@
                                     title="Batalkan berkas"
                                     aria-label="Batalkan berkas"
                                 >
-                                    <x-ui.icon name="trash-2" size="xs" />
+                                    <x-ui.icon name="trash-2" size="sm" />
                                 </button>
                             </div>
                         </template>
@@ -235,7 +235,7 @@
                             class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
                             :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
                         >
-                            <x-ui.icon name="plus" size="xs" />
+                            <x-ui.icon name="plus" size="sm" />
                             <span>Tambah Berkas (<span x-text="totalFilesCount"></span>/{{ $maxFiles }})</span>
                         </div>
 
@@ -244,7 +244,7 @@
                             x-show="!canAddMore"
                             class="tw-text-center tw-py-1.5 tw-px-2.5 tw-rounded-ui-sm tw-bg-surface-container-high/60 tw-border tw-border-outline-variant/60 tw-text-[11px] tw-font-medium tw-text-on-surface-variant"
                         >
-                            <x-ui.icon name="check-circle" size="xs" class="tw-inline tw-text-success tw-me-1" />
+                            <x-ui.icon name="check-circle" size="sm" class="tw-inline tw-text-success tw-me-1" />
                             <span>Batas maksimal {{ $maxFiles }} berkas tercapai</span>
                         </div>
                     </div>

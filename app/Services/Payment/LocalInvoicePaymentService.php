@@ -34,7 +34,7 @@ class LocalInvoicePaymentService
                 throw ValidationException::withMessages(['payment' => 'This invoice already has a Payment Settlement.']);
             }
             $invoice = LocalInvoice::whereKey($lockedVoucher->local_invoice_id)->lockForUpdate()->firstOrFail();
-            if ($invoice->status !== LocalInvoice::STATUS_READY_TO_PAY) {
+            if (! $invoice->isReadyToPay()) {
                 throw new RuntimeException('The invoice is no longer Ready to Pay.');
             }
             $amount = (string) $data['amount'];

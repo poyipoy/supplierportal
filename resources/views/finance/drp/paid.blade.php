@@ -61,7 +61,7 @@
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'unpaid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
             >
-                <x-ui.icon name="clock" size="xs" />
+                <x-ui.icon name="clock" size="sm" />
                 <span>Belum Paid</span>
                 <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
                     {{ $metrics['unpaid_count'] }}
@@ -71,7 +71,7 @@
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'paid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
             >
-                <x-ui.icon name="badge-check" size="xs" />
+                <x-ui.icon name="badge-check" size="sm" />
                 <span>Sudah Paid</span>
                 <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
                     {{ $metrics['paid_count'] }}
@@ -81,7 +81,7 @@
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'all'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'all' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
             >
-                <x-ui.icon name="layers" size="xs" />
+                <x-ui.icon name="layers" size="sm" />
                 <span>Semua Batch</span>
                 <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
                     {{ $metrics['total_batches'] }}
@@ -138,12 +138,12 @@
 
             <x-slot:actions>
                 <x-ui.button type="submit" size="sm" variant="primary">
-                    <x-ui.icon name="filter" size="xs" />
+                    <x-ui.icon name="filter" size="sm" />
                     <span>Filter</span>
                 </x-ui.button>
                 @if($q || $type || $dateFrom || $dateTo || $tab !== 'unpaid')
                     <x-ui.button :href="route('finance.drp.paid.index', ['tab' => $tab])" size="sm" variant="ghost">
-                        <x-ui.icon name="rotate-ccw" size="xs" />
+                        <x-ui.icon name="rotate-ccw" size="sm" />
                         <span>Reset</span>
                     </x-ui.button>
                 @endif
@@ -217,7 +217,7 @@
                                         $sampleGroup = $batch->groups->firstWhere('status', 'PAID');
                                     @endphp
                                     <div class="tw-text-ui-xs tw-text-success tw-font-semibold tw-flex tw-items-center tw-gap-1">
-                                        <x-ui.icon name="check-circle" size="xs" />
+                                        <x-ui.icon name="check-circle" size="sm" />
                                         <span>Lunas: {{ $batch->paid_at?->format('d M Y') ?? '-' }}</span>
                                     </div>
                                     @if($sampleGroup?->transfer_reference)
@@ -235,7 +235,7 @@
                                         </div>
                                         @if($batch->hasUnvoucheredSupplierItems())
                                             <span class="tw-text-[11px] tw-text-warning-container-foreground tw-font-semibold tw-flex tw-items-center tw-gap-1 tw-mt-0.5">
-                                                <x-ui.icon name="alert-triangle" size="xs" />
+                                                <x-ui.icon name="alert-triangle" size="sm" />
                                                 <span>Ada voucher belum dibuat</span>
                                             </span>
                                         @endif
@@ -244,7 +244,7 @@
                                     @if($batch->hasUnvoucheredSupplierItems())
                                         <div class="tw-flex tw-flex-col tw-gap-0.5">
                                             <span class="tw-text-ui-xs tw-text-warning-container-foreground tw-font-semibold tw-flex tw-items-center tw-gap-1">
-                                                <x-ui.icon name="alert-triangle" size="xs" />
+                                                <x-ui.icon name="alert-triangle" size="sm" />
                                                 <span>Voucher Belum Lengkap</span>
                                             </span>
                                             <span class="tw-text-[11px] tw-text-on-surface-variant">Generate di Detail DRP</span>
@@ -263,7 +263,7 @@
                             <td class="text-end">
                                 <div class="tw-inline-flex tw-items-center tw-gap-1.5">
                                     <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
-                                        <x-ui.icon name="eye" size="xs" />
+                                        <x-ui.icon name="eye" size="sm" />
                                         <span>Detail</span>
                                     </x-ui.button>
 
@@ -281,7 +281,7 @@
                                                     disabled
                                                     class="tw-opacity-50 tw-cursor-not-allowed"
                                                 >
-                                                    <x-ui.icon name="badge-check" size="xs" />
+                                                    <x-ui.icon name="badge-check" size="sm" />
                                                     <span>Tandai Paid</span>
                                                 </x-ui.button>
                                             </span>
@@ -293,7 +293,7 @@
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#markPaidModal-{{ $batch->id }}"
                                             >
-                                                <x-ui.icon name="badge-check" size="xs" />
+                                                <x-ui.icon name="badge-check" size="sm" />
                                                 <span>Tandai Paid</span>
                                             </x-ui.button>
                                         @endif
@@ -457,7 +457,7 @@
                                                                             </div>
                                                                             <div class="tw-text-end">
                                                                                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-success/10 tw-text-success">
-                                                                                    <x-ui.icon name="check-circle" size="xs" /> Sudah Lunas (Rp {{ number_format($alreadyPaid, 0, ',', '.') }})
+                                                                                    <x-ui.icon name="check-circle" size="sm" /> Sudah Lunas (Rp {{ number_format($alreadyPaid, 0, ',', '.') }})
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -529,13 +529,13 @@
                                                                             <div class="col-12 col-md-6">
                                                                                 <template x-if="diff > 0.009">
                                                                                     <div class="tw-text-[11px] tw-font-semibold tw-text-primary tw-py-1">
-                                                                                        <x-ui.icon name="arrow-up-right" size="xs" /> Overpayment: +Rp <span x-text="Math.abs(diff).toLocaleString('id-ID')"></span>
+                                                                                        <x-ui.icon name="arrow-up-right" size="sm" /> Overpayment: +Rp <span x-text="Math.abs(diff).toLocaleString('id-ID')"></span>
                                                                                     </div>
                                                                                 </template>
                                                                                 <template x-if="diff < -0.009">
                                                                                     <div>
                                                                                         <div class="tw-text-[11px] tw-font-semibold tw-text-warning tw-py-1">
-                                                                                            <x-ui.icon name="arrow-down-right" size="xs" /> Kurang Bayar: -Rp <span x-text="Math.abs(diff).toLocaleString('id-ID')"></span>
+                                                                                            <x-ui.icon name="arrow-down-right" size="sm" /> Kurang Bayar: -Rp <span x-text="Math.abs(diff).toLocaleString('id-ID')"></span>
                                                                                         </div>
                                                                                         <input
                                                                                             type="text"
@@ -548,7 +548,7 @@
                                                                                 </template>
                                                                                 <template x-if="Math.abs(diff) <= 0.009">
                                                                                     <div class="tw-text-[11px] tw-text-success tw-py-1">
-                                                                                        <x-ui.icon name="check" size="xs" /> {{ $isCorrectionRequired ? 'Sesuai sisa pelunasan' : 'Sesuai nilai voucher' }}
+                                                                                        <x-ui.icon name="check" size="sm" /> {{ $isCorrectionRequired ? 'Sesuai sisa pelunasan' : 'Sesuai nilai voucher' }}
                                                                                     </div>
                                                                                 </template>
                                                                             </div>
@@ -573,7 +573,7 @@
                             <div class="modal-footer">
                                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
                                 <x-ui.button type="submit" variant="primary" size="sm">
-                                    <x-ui.icon name="badge-check" size="xs" />
+                                    <x-ui.icon name="badge-check" size="sm" />
                                     <span>Konfirmasi</span>
                                 </x-ui.button>
                             </div>

@@ -39,9 +39,28 @@ class GaController extends Controller
     public function create()
     {
         $employees = Employee::active()->orderBy('name')->get();
+        $employeeOptions = $employees->map(function (Employee $emp) {
+            $accountDetail = $emp->bank_name . ' (' . $emp->account_number . ($emp->account_holder_name ? ' a.n ' . $emp->account_holder_name : '') . ')';
+
+            return [
+                'value' => (string) $emp->id,
+                'label' => $emp->name,
+                'sublabel' => $emp->department . ' · ' . $accountDetail,
+                'badge' => $emp->bank_name,
+                'badgeTone' => $emp->isBca() ? 'neutral' : 'warning',
+                'searchKeywords' => strtolower(implode(' ', array_filter([
+                    $emp->name,
+                    $emp->department,
+                    $emp->bank_name,
+                    $emp->account_number,
+                    $emp->account_holder_name,
+                ]))),
+            ];
+        })->values()->all();
+
         $claimTypes = GaClaim::CLAIM_TYPES;
 
-        return view('ga.claims.create', compact('employees', 'claimTypes'));
+        return view('ga.claims.create', compact('employees', 'employeeOptions', 'claimTypes'));
     }
 
     public function store(Request $request, GaClaimService $service)

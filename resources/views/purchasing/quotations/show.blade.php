@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Penawaran: ' . ($quotation->purchaseRequisition->pr_number ?? '-') . ' - ADASI Portal')
-@section('page-title', 'Detail Penawaran Harga')
+@section('title', 'Quotation: ' . ($quotation->purchaseRequisition->pr_number ?? '-') . ' - ADASI Portal')
+@section('page-title', 'Quotation Details')
 
 @section('content')
 @php
@@ -29,7 +29,7 @@
     ]" />
 
     <x-ui.page-header
-        :title="'Penawaran: ' . ($quotation->purchaseRequisition->pr_number ?? '-')"
+        :title="'Quotation: ' . ($quotation->purchaseRequisition->pr_number ?? '-')"
         eyebrow="Commercial Evaluation"
         :description="'Review ' . ($quotation->purchaseRequisition->pr_number ?? 'quotation') . ' from ' . $supplierDisplayName . ' before taking the next workflow action.'"
     >
@@ -378,7 +378,7 @@
                     <x-ui.alert tone="success" title="PO created" class="tw-mb-2.5"><a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $quotation->first_purchase_order) }}" class="tw-font-semibold tw-underline">{{ $quotation->first_purchase_order->po_number }}</a></x-ui.alert>
                 @endif
 
-                <x-ui.button :href="$relatedPrUrl" variant="ghost" size="sm" class="tw-w-full">
+                <x-ui.button :href="$relatedPrUrl" variant="outline" size="sm" class="tw-w-full">
                     <x-ui.icon name="clipboard-list" size="sm" />
                     <span>View Related PR</span>
                 </x-ui.button>
@@ -499,14 +499,13 @@
 
                         <div class="tw-grid tw-gap-3 md:tw-grid-cols-2">
                             <div>
-                                <label for="directPoEstimatedArrival" class="form-label small fw-semibold tw-text-on-surface">Target Estimated Arrival Date</label>
-                                <input
-                                    type="date"
-                                    class="form-control form-control-sm"
+                                <x-ui.date-picker
                                     id="directPoEstimatedArrival"
                                     name="estimated_arrival"
-                                    value="{{ old('estimated_arrival', now()->addDays(14)->format('Y-m-d')) }}"
-                                >
+                                    label="Target Estimated Arrival Date"
+                                    :value="old('estimated_arrival', now()->addDays(14)->format('Y-m-d'))"
+                                    required
+                                />
                             </div>
                             <div>
                                 <label for="directPoNotes" class="form-label small fw-semibold tw-text-on-surface">PO Notes / Remarks</label>

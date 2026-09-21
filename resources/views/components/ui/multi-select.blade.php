@@ -404,7 +404,7 @@
                             }"
                         >
                             <template x-if="isSelected(opt.value)">
-                                <x-ui.icon name="check" size="xs" class="tw-w-3 tw-h-3 tw-stroke-[3]" />
+                                <x-ui.icon name="check" size="sm" class="tw-w-3 tw-h-3 tw-stroke-[3]" />
                             </template>
                         </div>
 
@@ -444,7 +444,7 @@
                 @click="close()"
                 class="btn btn-sm btn-primary tw-py-1 tw-px-3 tw-text-ui-xs tw-font-medium"
             >
-                <x-ui.icon name="check" size="xs" class="tw-me-1" /> Selesai
+                <x-ui.icon name="check" size="sm" class="tw-me-1" /> Selesai
             </button>
         </div>
     </div>

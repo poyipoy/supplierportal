@@ -95,7 +95,7 @@
                         @if($pr->status === 'draft')
                             @include('purchasing.pr._import_controls')
                         @endif
-                        <x-ui.button type="button" variant="secondary" size="sm" id="btnAddRow">
+                        <x-ui.button type="button" variant="outline" size="sm" id="btnAddRow">
                             <x-ui.icon name="plus" size="sm" />
                             <span>Add Material</span>
                         </x-ui.button>
@@ -164,7 +164,7 @@
             </x-slot:left>
 
             <x-slot:right>
-                <x-ui.button type="button" variant="secondary" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
+                <x-ui.button type="button" variant="outline" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
                     <span>Save Draft</span>
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSubmitPr" onclick="confirmSubmit()">

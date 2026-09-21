@@ -42,11 +42,11 @@
                                 {{ $isPkp ? 'PKP' : 'Non-PKP' }}
                             </x-ui.status-chip>
                             <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-font-medium tw-bg-surface-high tw-text-on-surface">
-                                <x-ui.icon name="tag" size="xs" class="tw-text-on-surface-variant" />
+                                <x-ui.icon name="tag" size="sm" class="tw-text-on-surface-variant" />
                                 <span>{{ $vendorCategory }}</span>
                             </span>
                             <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-font-medium tw-bg-surface-high tw-text-on-surface">
-                                <x-ui.icon name="clock" size="xs" class="tw-text-on-surface-variant" />
+                                <x-ui.icon name="clock" size="sm" class="tw-text-on-surface-variant" />
                                 <span>Net {{ $termDays }} Hari</span>
                             </span>
                         </div>
@@ -294,13 +294,13 @@
                                 >
                                     <template x-if="rawDigits.length === 17">
                                         <span class="tw-inline-flex tw-items-center tw-gap-1">
-                                            <x-ui.icon name="check" size="xs" class="tw-w-3 tw-h-3 tw-stroke-[3]" />
+                                            <x-ui.icon name="check" size="sm" class="tw-w-3 tw-h-3 tw-stroke-[3]" />
                                             <span>17/17 Digit Coretax</span>
                                         </span>
                                     </template>
                                     <template x-if="rawDigits.length === 16">
                                         <span class="tw-inline-flex tw-items-center tw-gap-1">
-                                            <x-ui.icon name="check" size="xs" class="tw-w-3 tw-h-3 tw-stroke-[3]" />
+                                            <x-ui.icon name="check" size="sm" class="tw-w-3 tw-h-3 tw-stroke-[3]" />
                                             <span>16/16 Digit e-Faktur</span>
                                         </span>
                                     </template>
@@ -495,7 +495,7 @@
                     <div class="tw-pt-2">
                         <x-ui.button type="submit" variant="primary" class="tw-w-full tw-justify-center" id="btnSubmitInvoice">
                             <x-ui.icon name="send" size="sm" />
-                            <span>{{ isset($invoice) ? 'Kirim Revisi Invoice' : 'Submit Invoice' }}</span>
+                            <span>{{ isset($invoice) ? 'Kirim Revisi Invoice' : 'Ajukan Invoice' }}</span>
                         </x-ui.button>
                     </div>
                 </div>

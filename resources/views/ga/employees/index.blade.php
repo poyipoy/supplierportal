@@ -15,7 +15,7 @@
                 <span>Register Klaim</span>
             </x-ui.button>
             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-                <x-ui.icon name="plus" size="xs" />
+                <x-ui.icon name="plus" size="sm" />
                 <span>Tambah Karyawan</span>
             </button>
         </x-slot:actions>
@@ -49,7 +49,7 @@
             </div>
             <div class="tw-flex tw-gap-2">
                 <x-ui.button type="submit" variant="primary" size="sm">
-                    <x-ui.icon name="search" size="xs" />
+                    <x-ui.icon name="search" size="sm" />
                     <span>Cari</span>
                 </x-ui.button>
                 @if(request()->hasAny(['search', 'status']))
@@ -108,12 +108,11 @@
                                     >
                                         Edit
                                     </button>
-                                    <form method="POST" action="{{ route('ga.employees.toggle-status', $emp) }}" class="tw-inline">
+                                    <form method="POST" action="{{ route('ga.employees.toggle-status', $emp) }}" class="tw-inline" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: 'Ubah Status Karyawan?', text: 'Ubah status aktif karyawan ini?', confirmText: 'Ya, Ubah', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
                                         @csrf
                                         <button
                                             type="submit"
                                             class="btn btn-xs {{ $emp->is_active ? 'btn-outline-danger' : 'btn-outline-success' }}"
-                                            onclick="return confirm('Ubah status aktif karyawan ini?')"
                                         >
                                             {{ $emp->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                                         </button>
@@ -191,7 +190,7 @@
 
         @if($employees->hasPages())
             <x-slot:pagination>
-                {{ $employees->links() }}
+                {{ $employees->onEachSide(1)->links() }}
             </x-slot:pagination>
         @endif
     </x-ui.data-table>

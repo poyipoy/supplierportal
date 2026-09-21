@@ -102,7 +102,7 @@ class PaymentExecutionService
                     /** @var LocalInvoice $inv */
                     $inv = LocalInvoice::where('id', $item->payable_id)->lockForUpdate()->first();
                     if ($inv && $inv->status !== LocalInvoice::STATUS_PAID) {
-                        if ($inv->status !== LocalInvoice::STATUS_READY_TO_PAY) {
+                        if (! $inv->isReadyToPay()) {
                             throw new RuntimeException("Invoice [{$inv->invoice_number}] is not in READY_TO_PAY status (current: {$inv->status}).");
                         }
 

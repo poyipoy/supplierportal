@@ -25,22 +25,22 @@
 
             @if($purchaseOrder->status === 'OPEN')
                 <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#addGrModal">
-                    <x-ui.icon name="plus" size="xs" />
+                    <x-ui.icon name="plus" size="sm" />
                     <span>Tambah GR</span>
                 </x-ui.button>
 
                 <x-ui.button :href="route($routePrefix.'.edit', $purchaseOrder)" variant="outline" size="sm">
-                    <x-ui.icon name="file-pen" size="xs" />
+                    <x-ui.icon name="file-pen" size="sm" />
                     <span>Edit PO</span>
                 </x-ui.button>
 
                 <button type="button" class="btn btn-sm btn-outline-secondary tw-inline-flex tw-items-center tw-gap-1.5" data-bs-toggle="modal" data-bs-target="#closePoModal">
-                    <x-ui.icon name="lock" size="xs" />
+                    <x-ui.icon name="lock" size="sm" />
                     <span>Tutup PO</span>
                 </button>
 
                 <button type="button" class="btn btn-sm btn-outline-danger tw-inline-flex tw-items-center tw-gap-1.5" data-bs-toggle="modal" data-bs-target="#cancelPoModal">
-                    <x-ui.icon name="x-circle" size="xs" />
+                    <x-ui.icon name="x-circle" size="sm" />
                     <span>Batalkan PO</span>
                 </button>
             @endif
@@ -187,7 +187,7 @@
                                             data-bs-toggle="modal"
                                             data-bs-target="#editGrModal-{{ $gr->id }}"
                                         >
-                                            <x-ui.icon name="file-pen" size="xs" />
+                                            <x-ui.icon name="file-pen" size="sm" />
                                             <span>Edit</span>
                                         </button>
 
@@ -197,7 +197,7 @@
                                             data-bs-toggle="modal"
                                             data-bs-target="#cancelGrModal-{{ $gr->id }}"
                                         >
-                                            <x-ui.icon name="x" size="xs" />
+                                            <x-ui.icon name="x" size="sm" />
                                             <span>Batal</span>
                                         </button>
                                     </div>
@@ -259,7 +259,7 @@
                                             <div class="modal-footer">
                                                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
                                                 <x-ui.button type="submit" variant="primary" size="sm">
-                                                    <x-ui.icon name="check" size="xs" />
+                                                    <x-ui.icon name="check" size="sm" />
                                                     <span>Simpan Perubahan</span>
                                                 </x-ui.button>
                                             </div>
@@ -292,7 +292,7 @@
                                             <div class="modal-footer">
                                                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
                                                 <button type="submit" class="btn btn-sm btn-danger tw-inline-flex tw-items-center tw-gap-1">
-                                                    <x-ui.icon name="x" size="xs" />
+                                                    <x-ui.icon name="x" size="sm" />
                                                     <span>Ya, Batalkan GR</span>
                                                 </button>
                                             </div>
@@ -379,7 +379,7 @@
                     <div class="modal-footer">
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
-                            <x-ui.icon name="plus" size="xs" />
+                            <x-ui.icon name="plus" size="sm" />
                             <span>Simpan Goods Receipt</span>
                         </x-ui.button>
                     </div>
@@ -412,7 +412,7 @@
                     <div class="modal-footer">
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
-                            <x-ui.icon name="lock" size="xs" />
+                            <x-ui.icon name="lock" size="sm" />
                             <span>Ya, Tutup PO</span>
                         </x-ui.button>
                     </div>
@@ -445,7 +445,7 @@
                     <div class="modal-footer">
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
                         <button type="submit" class="btn btn-sm btn-danger tw-inline-flex tw-items-center tw-gap-1">
-                            <x-ui.icon name="trash-2" size="xs" />
+                            <x-ui.icon name="trash-2" size="sm" />
                             <span>Ya, Batalkan PO</span>
                         </button>
                     </div>

@@ -10,7 +10,8 @@
 @php
     $variants = [
         'ghost' => 'tw-border-transparent tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface',
-        'secondary' => 'tw-border-transparent tw-bg-secondary-container tw-text-secondary-container-foreground hover:tw-brightness-95',
+        'outline' => 'tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container hover:tw-text-on-surface',
+        'secondary' => 'tw-border-outline-variant tw-bg-secondary-container tw-text-secondary-container-foreground hover:tw-brightness-95',
         'primary' => 'tw-border-transparent tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95',
         'danger' => 'tw-border-transparent tw-bg-error-container tw-text-error-container-foreground hover:tw-brightness-95',
     ];

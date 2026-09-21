@@ -1,5 +1,5 @@
 <div class="dropdown">
-    <x-ui.button type="button" variant="ghost" size="sm" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
         <x-slot:leading><x-ui.icon name="upload" /></x-slot:leading>
         Import Data
     </x-ui.button>

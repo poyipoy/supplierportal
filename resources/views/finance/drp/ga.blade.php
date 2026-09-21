@@ -59,7 +59,7 @@
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Review & Bayar</span>
                                 </x-ui.button>
                             </td>

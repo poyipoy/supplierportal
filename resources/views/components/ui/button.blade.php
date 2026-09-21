@@ -12,7 +12,7 @@
 @php
     $variants = [
         'primary' => 'tw-border-transparent tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90',
-        'secondary' => 'tw-border-transparent tw-bg-secondary-container tw-text-secondary-container-foreground hover:tw-brightness-95 active:tw-brightness-90',
+        'secondary' => 'tw-border-outline-variant tw-bg-secondary-container tw-text-secondary-container-foreground hover:tw-brightness-95 active:tw-brightness-90',
         'outline' => 'tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high',
         'ghost' => 'tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high',
         'danger' => 'tw-border-transparent tw-bg-error tw-text-error-foreground hover:tw-brightness-95 active:tw-brightness-90',

@@ -228,12 +228,24 @@ class PurchaseOrderGenerationService
                     ->update(['purchase_order_id' => $po->id]);
 
                 // 5. Update quotation status to accepted for participating quotations
-                Quotation::whereIn('id', $quotationIds)
-                    ->update([
+                $participatingQuotations = Quotation::with('items')->whereIn('id', $quotationIds)->get();
+                foreach ($participatingQuotations as $quotation) {
+                    $totalItemsCount = $quotation->items->count();
+                    $awardedItemsInThisPo = $supplierAwards->where('quotation_id', $quotation->id)->count();
+
+                    $notes = $quotation->reviewer_notes;
+                    if ($totalItemsCount > $awardedItemsInThisPo) {
+                        $partialNote = "Partial award: {$awardedItemsInThisPo} of {$totalItemsCount} items awarded to PO {$po->po_number}.";
+                        $notes = $notes ? "{$notes} | {$partialNote}" : $partialNote;
+                    }
+
+                    $quotation->update([
                         'status' => Quotation::STATUS_ACCEPTED,
                         'reviewed_at' => now(),
                         'reviewed_by' => $creator->id,
+                        'reviewer_notes' => $notes,
                     ]);
+                }
 
                 // 6. Notify supplier user
                 $supplierUser = $supplierAwards->first()?->supplier;

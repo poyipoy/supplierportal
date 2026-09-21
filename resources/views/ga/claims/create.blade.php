@@ -22,23 +22,43 @@
             <form method="POST" action="{{ route('ga.claims.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="tw-space-y-4">
-                    {{-- Karyawan Dropdown --}}
+                    {{-- Karyawan Dropdown (Searchable Select) --}}
+                    @php
+                        $resolvedEmployeeOptions = $employeeOptions ?? ($employees ?? collect())->map(function ($emp) {
+                            $accountDetail = $emp->bank_name . ' (' . $emp->account_number . ($emp->account_holder_name ? ' a.n ' . $emp->account_holder_name : '') . ')';
+
+                            return [
+                                'value' => (string) $emp->id,
+                                'label' => $emp->name,
+                                'sublabel' => $emp->department . ' · ' . $accountDetail,
+                                'badge' => $emp->bank_name,
+                                'badgeTone' => method_exists($emp, 'isBca') && $emp->isBca() ? 'neutral' : 'warning',
+                                'searchKeywords' => strtolower(implode(' ', array_filter([
+                                    $emp->name,
+                                    $emp->department,
+                                    $emp->bank_name,
+                                    $emp->account_number,
+                                    $emp->account_holder_name,
+                                ]))),
+                            ];
+                        })->values()->all();
+                    @endphp
+
                     <div>
-                        <label for="employee_id" class="form-label tw-text-ui-xs tw-font-semibold">
-                            Karyawan Penerima Reimbursement / Klaim <span class="text-danger">*</span>
-                        </label>
-                        <select name="employee_id" id="employee_id" class="form-select form-select-sm" required>
-                            <option value="">-- Pilih Karyawan (Master Data) --</option>
-                            @foreach($employees as $emp)
-                                <option value="{{ $emp->id }}" @selected(old('employee_id') == $emp->id)>
-                                    {{ $emp->name }} — {{ $emp->department }} (Bank: {{ $emp->bank_name }} - {{ $emp->account_number }} a.n {{ $emp->account_holder_name }})
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-mt-1">
-                            *Rekening tujuan transfer diambil otomatis secara otoritatif dari Employee Master demi keamanan dan audit.
-                        </span>
+                        <x-ui.searchable-select
+                            name="employee_id"
+                            id="employee_id"
+                            label="Karyawan Penerima Reimbursement / Klaim"
+                            placeholder="-- Pilih Karyawan (Master Data) --"
+                            search-placeholder="Ketik nama karyawan, departemen, bank, atau no. rekening..."
+                            :options="$resolvedEmployeeOptions"
+                            :value="old('employee_id')"
+                            required
+                            helper="*Rekening tujuan transfer diambil otomatis secara otoritatif dari Employee Master demi keamanan dan audit."
+                            empty-message="Tidak ditemukan karyawan yang sesuai dengan pencarian"
+                        />
                     </div>
+
 
                     {{-- Tipe Klaim & Tanggal --}}
                     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
@@ -101,7 +121,7 @@
                             <span>Batal</span>
                         </x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
-                            <x-ui.icon name="check" size="xs" />
+                            <x-ui.icon name="check" size="sm" />
                             <span>Kirim Pengajuan Klaim & Terbitkan Tanda Terima</span>
                         </x-ui.button>
                     </div>

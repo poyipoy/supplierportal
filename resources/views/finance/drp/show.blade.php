@@ -21,14 +21,14 @@
                     data-bs-toggle="modal"
                     data-bs-target="#cancelBatchModal"
                 >
-                    <x-ui.icon name="x-circle" size="xs" />
+                    <x-ui.icon name="x-circle" size="sm" />
                     <span>Batalkan Batch</span>
                 </button>
 
                 <form id="finalizeBatchForm" method="POST" action="{{ route('finance.drp.finalize', $batch) }}" class="tw-inline">
                     @csrf
                     <x-ui.button type="button" id="btnFinalizeBatch" variant="primary" size="sm">
-                        <x-ui.icon name="lock" size="xs" />
+                        <x-ui.icon name="lock" size="sm" />
                         <span>Finalisasi Batch (Lock DRP)</span>
                     </x-ui.button>
                 </form>
@@ -104,7 +104,7 @@
                         <span class="tw-text-ui-xs tw-text-on-surface">Seluruh voucher telah diterbitkan. Pelunasan DRP diproses terpusat pada menu <strong>DRP Paid</strong>.</span>
                     </div>
                     <x-ui.button :href="route('finance.drp.paid.index', ['q' => $batch->batch_number])" size="sm" variant="primary">
-                        <x-ui.icon name="external-link" size="xs" /> Buka DRP Paid
+                        <x-ui.icon name="external-link" size="sm" /> Buka DRP Paid
                     </x-ui.button>
                 </div>
             </div>
@@ -155,7 +155,7 @@
                                         data-bs-toggle="modal"
                                         data-bs-target="#voucherModal-{{ $group->id }}"
                                     >
-                                        <x-ui.icon name="receipt" size="xs" />
+                                        <x-ui.icon name="receipt" size="sm" />
                                         <span>Voucher</span>
                                     </button>
 
@@ -170,7 +170,7 @@
                                         data-bs-toggle="modal"
                                         data-bs-target="#feeModal-{{ $group->id }}"
                                     >
-                                        <x-ui.icon name="edit-3" size="xs" />
+                                        <x-ui.icon name="edit-3" size="sm" />
                                         <span>Ubah Fee</span>
                                     </button>
                                 @endif
@@ -269,11 +269,11 @@
                                             @if($item->localInvoiceVoucher)
                                                 <div class="tw-inline-flex tw-items-center tw-gap-1.5">
                                                     <x-ui.button :href="route('finance.vouchers.print', $item->localInvoiceVoucher)" variant="outline" size="sm" target="_blank" title="Cetak / Download PDF Voucher">
-                                                        <x-ui.icon name="printer" size="xs" />
+                                                        <x-ui.icon name="printer" size="sm" />
                                                         <span>Cetak PDF</span>
                                                     </x-ui.button>
-                                                    <x-ui.button :href="route('finance.vouchers.show', $item->localInvoiceVoucher)" variant="ghost" size="sm" title="Lihat Detail Voucher & Settlement">
-                                                        <x-ui.icon name="receipt" size="xs" />
+                                                    <x-ui.button :href="route('finance.vouchers.show', $item->localInvoiceVoucher)" variant="outline" size="sm" title="Lihat Detail Voucher & Settlement">
+                                                        <x-ui.icon name="receipt" size="sm" />
                                                         <span>Settlement</span>
                                                     </x-ui.button>
                                                 </div>
@@ -283,7 +283,7 @@
                                                     <input type="hidden" name="voucher_date" value="{{ now()->format('Y-m-d') }}">
                                                     <input type="hidden" name="payment_method" value="BANK">
                                                     <x-ui.button type="submit" size="sm" variant="primary">
-                                                        <x-ui.icon name="file-text" size="xs" />
+                                                        <x-ui.icon name="file-text" size="sm" />
                                                         <span>Generate Voucher</span>
                                                     </x-ui.button>
                                                 </form>

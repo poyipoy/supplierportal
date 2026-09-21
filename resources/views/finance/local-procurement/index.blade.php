@@ -11,11 +11,11 @@
     >
         <x-slot:actions>
             <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localPoGrImportModal">
-                <x-ui.icon name="file-up" size="xs" />
+                <x-ui.icon name="file-up" size="sm" />
                 <span>Import XLSX</span>
             </x-ui.button>
             <x-ui.button :href="route($routePrefix.'.create')" size="sm" variant="primary">
-                <x-ui.icon name="plus" size="xs" />
+                <x-ui.icon name="plus" size="sm" />
                 <span>Buat PO Baru</span>
             </x-ui.button>
         </x-slot:actions>
@@ -116,12 +116,12 @@
 
             <x-slot:actions>
                 <x-ui.button type="submit" size="sm" variant="primary">
-                    <x-ui.icon name="filter" size="xs" />
+                    <x-ui.icon name="filter" size="sm" />
                     <span>Filter</span>
                 </x-ui.button>
                 @if(request()->hasAny(['q', 'supplier_id', 'status', 'date_from', 'date_to']))
                     <x-ui.button :href="route($routePrefix.'.index')" size="sm" variant="ghost">
-                        <x-ui.icon name="rotate-ccw" size="xs" />
+                        <x-ui.icon name="rotate-ccw" size="sm" />
                         <span>Reset</span>
                     </x-ui.button>
                 @endif
@@ -192,7 +192,7 @@
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route($routePrefix.'.show', $po)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Detail</span>
                                 </x-ui.button>
                             </td>

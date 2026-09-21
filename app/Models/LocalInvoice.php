@@ -156,6 +156,11 @@ class LocalInvoice extends Model
         return $this->status === self::STATUS_READY_TO_PAY || $this->status === 'APPROVED';
     }
 
+    public function scopeEligibleForPaymentBatch($query)
+    {
+        return $query->whereIn('status', [self::STATUS_READY_TO_PAY, 'APPROVED']);
+    }
+
     public function isOverdue(): bool
     {
         return ! $this->isPaid()

@@ -149,11 +149,11 @@
                         </p>
 
                         {{-- Approve Button Form --}}
-                        <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}">
+                        <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: 'Setujui Klaim GA?', text: 'Setujui klaim GA ini dan jadikan Ready to Pay?', confirmText: 'Ya, Setujui', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
                             @csrf
                             <input type="hidden" name="approve" value="1">
-                            <x-ui.button type="submit" variant="primary" size="sm" class="w-100" onclick="return confirm('Setujui klaim GA ini dan jadikan Ready to Pay?')">
-                                <x-ui.icon name="check-circle" size="xs" />
+                            <x-ui.button type="submit" variant="primary" size="sm" class="w-100">
+                                <x-ui.icon name="check-circle" size="sm" />
                                 <span>Setujui (Ready to Pay)</span>
                             </x-ui.button>
                         </form>
@@ -168,7 +168,7 @@
                                 data-bs-toggle="collapse"
                                 data-bs-target="#revisionCollapse"
                             >
-                                <x-ui.icon name="alert-circle" size="xs" />
+                                <x-ui.icon name="alert-circle" size="sm" />
                                 <span>Minta Revisi ke GA</span>
                             </button>
 

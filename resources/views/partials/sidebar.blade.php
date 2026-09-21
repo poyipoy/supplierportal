@@ -54,8 +54,8 @@
         @if($role === 'supplier' && \App\Support\PortalContext::isLocal(auth()->user()))
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
             <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Submit Invoice">Submit Invoice</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Track Invoice">Track Invoice</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Ajukan Invoice">Ajukan Invoice</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Daftar Invoice">Daftar Invoice</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" label="Profil Vendor">Profil Vendor</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" label="Informasi ADASI">Informasi ADASI</x-ui.sidebar-item>
         @elseif($role === 'finance')

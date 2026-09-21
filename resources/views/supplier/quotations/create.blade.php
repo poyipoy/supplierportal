@@ -1224,7 +1224,7 @@
             </x-slot:left>
 
             <x-slot:right>
-                <x-ui.button type="button" variant="secondary" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
+                <x-ui.button type="button" variant="outline" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
                     <span>{{ $quotation?->status === 'revision_requested' ? 'Save Revision Draft' : 'Save Draft' }}</span>
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSubmitQuotation" onclick="confirmSubmit()">

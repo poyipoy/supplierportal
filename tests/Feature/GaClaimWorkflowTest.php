@@ -28,16 +28,16 @@ class GaClaimWorkflowTest extends TestCase
         $this->verificationService = app(GaVerificationService::class);
     }
 
-    private function createEmployee(): Employee
+    private function createEmployee(array $attributes = []): Employee
     {
-        return Employee::create([
+        return Employee::create(array_merge([
             'name' => 'Budi Santoso',
             'department' => 'Sales',
             'bank_name' => 'BCA',
             'account_number' => '1112223334',
             'account_holder_name' => 'Budi Santoso',
             'is_active' => true,
-        ]);
+        ], $attributes));
     }
 
     public function test_ga_submits_claim_and_tt_ga_is_generated(): void
@@ -221,8 +221,21 @@ class GaClaimWorkflowTest extends TestCase
     {
         $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
 
+        // Create 25 employees to trigger pagination (20 per page)
+        for ($i = 1; $i <= 25; $i++) {
+            $this->createEmployee(['name' => sprintf('Employee %02d', $i)]);
+        }
+
         // Index
-        $this->actingAs($ga)->get(route('ga.employees.index'))->assertOk();
+        $response = $this->actingAs($ga)->get(route('ga.employees.index'));
+        $response->assertOk();
+        $response->assertSee('Showing');
+        $response->assertSee('20');
+        $response->assertSee('25');
+        $response->assertSee('pagination');
+        $response->assertSee('page-link');
+        $response->assertSee('page-item');
+
 
         // Store
         $responseStore = $this->actingAs($ga)->post(route('ga.employees.store'), [
@@ -309,9 +322,52 @@ class GaClaimWorkflowTest extends TestCase
     public function test_ga_dashboard_and_claims_render_successfully(): void
     {
         $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
+        $employee = $this->createEmployee([
+            'name' => 'John Doe Searchable',
+            'department' => 'HRGA',
+            'bank_name' => 'BCA',
+            'account_number' => '5220804200',
+            'account_holder_name' => 'JOHN DOE SEARCHABLE',
+        ]);
+
         $this->actingAs($ga)->get(route('ga.dashboard'))->assertOk();
         $this->actingAs($ga)->get(route('ga.claims.index'))->assertOk();
-        $this->actingAs($ga)->get(route('ga.claims.create'))->assertOk();
+        $response = $this->actingAs($ga)->get(route('ga.claims.create'));
+        $response->assertOk();
+        $response->assertSee('John Doe Searchable');
+        $response->assertSee('HRGA');
+        $response->assertSee('5220804200');
+        $response->assertSee('employee_id');
+        $response->assertSee('Karyawan Penerima Reimbursement / Klaim');
+    }
+
+    public function test_ga_submits_claim_via_http_form_with_selected_employee(): void
+    {
+        $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
+        $employee = $this->createEmployee([
+            'name' => 'Sarah Connor',
+            'department' => 'Finance',
+            'bank_name' => 'MANDIRI',
+            'account_number' => '1370012345678',
+            'account_holder_name' => 'SARAH CONNOR',
+        ]);
+
+        $response = $this->actingAs($ga)->post(route('ga.claims.store'), [
+            'employee_id' => $employee->id,
+            'claim_type' => GaClaim::TYPE_UPD_GA,
+            'claim_date' => '2026-09-18',
+            'amount' => 750000,
+            'description' => 'Operasional ATK dan logistik GA',
+        ]);
+
+        $claim = GaClaim::where('employee_id', $employee->id)->latest('id')->first();
+        $this->assertNotNull($claim);
+        $this->assertEquals(750000, $claim->amount);
+        $this->assertEquals(GaClaim::TYPE_UPD_GA, $claim->claim_type);
+        $this->assertNotNull($claim->receipt);
+
+        $response->assertRedirect(route('ga.claims.show', $claim));
+        $response->assertSessionHas('success');
     }
 
     public function test_ga_drp_draft_renders_and_creates_batch_draft(): void

@@ -1,25 +1,25 @@
 @extends('layouts.app')
-@section('title', 'Supplier Overpayment')
-@section('page-title', 'Supplier Overpayment Register')
+@section('title', 'Kelebihan Bayar Supplier - Finance AP')
+@section('page-title', 'Daftar Kelebihan Bayar Supplier')
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Supplier Overpayment Register"
-        description="Overpayments remain separate receivables and require one exact full refund with proof."
-        eyebrow="Finance AP"
+        title="Daftar Kelebihan Bayar Supplier"
+        description="Kelebihan bayar dicatat sebagai piutang terpisah dan memerlukan pengembalian dana penuh disertai bukti transfer."
+        eyebrow="Finance & Accounts Payable"
     />
 
-    <x-ui.card title="Filters">
+    <x-ui.card title="Filter Pencarian">
         <form method="GET" class="tw-grid tw-gap-3 md:tw-grid-cols-2 lg:tw-grid-cols-5 lg:tw-items-end">
             <div>
-                <label for="overpayment-q" class="form-label tw-text-ui-xs tw-font-semibold">Invoice / payment reference</label>
-                <input id="overpayment-q" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Search invoice or transfer" maxlength="100">
+                <label for="overpayment-q" class="form-label tw-text-ui-xs tw-font-semibold">No. Invoice / Referensi Pembayaran</label>
+                <input id="overpayment-q" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Cari invoice atau transfer" maxlength="100">
             </div>
             <div>
                 <label for="overpayment-supplier" class="form-label tw-text-ui-xs tw-font-semibold">Supplier</label>
                 <select id="overpayment-supplier" name="supplier_id" class="form-select form-select-sm">
-                    <option value="">All suppliers</option>
+                    <option value="">Semua Supplier</option>
                     @foreach($suppliers as $supplier)
                         <option value="{{ $supplier->hash }}" @selected((string) request('supplier_id') === (string) $supplier->hash)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>
                     @endforeach
@@ -28,7 +28,7 @@
             <div>
                 <label for="overpayment-status" class="form-label tw-text-ui-xs tw-font-semibold">Status</label>
                 <select id="overpayment-status" name="status" class="form-select form-select-sm">
-                    <option value="">All statuses</option>
+                    <option value="">Semua Status</option>
                     <option value="OPEN" @selected(request('status') === 'OPEN')>OPEN</option>
                     <option value="SETTLED" @selected(request('status') === 'SETTLED')>SETTLED</option>
                 </select>
@@ -38,32 +38,32 @@
                     id="overpayment-date-range"
                     start-name="date_from"
                     end-name="date_to"
-                    start-label="Created from"
-                    end-label="Created to"
+                    start-label="Dibuat dari"
+                    end-label="Dibuat sampai"
                     :start-value="request('date_from')"
                     :end-value="request('date_to')"
                     :compact="true"
                 />
             </div>
             <div class="md:tw-col-span-2 lg:tw-col-span-5 tw-flex tw-flex-wrap tw-items-center tw-gap-2">
-                <x-ui.button type="submit" size="sm">Apply filters</x-ui.button>
+                <x-ui.button type="submit" size="sm">Terapkan Filter</x-ui.button>
                 <x-ui.button :href="route('finance.overpayments.index')" variant="ghost" size="sm">Reset</x-ui.button>
             </div>
         </form>
     </x-ui.card>
 
-    <x-ui.data-table title="Receivables">
+    <x-ui.data-table title="Daftar Piutang & Pengembalian">
         <div class="table-responsive">
             <table class="table align-middle tw-text-ui-sm">
                 <thead>
                     <tr>
                         <th>Invoice</th>
                         <th>Supplier</th>
-                        <th>Payment reference(s)</th>
-                        <th class="text-end">Expected / Actual</th>
-                        <th class="text-end">Overpayment</th>
-                        <th>Status / Date</th>
-                        <th>Action</th>
+                        <th>Referensi Pembayaran</th>
+                        <th class="text-end">Target / Realisasi</th>
+                        <th class="text-end">Kelebihan Bayar</th>
+                        <th>Status / Tanggal</th>
+                        <th class="text-end" style="min-width: 150px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,35 +84,205 @@
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($refund->status)">{{ $refund->status }}</x-ui.status-chip>
                                 <span class="tw-mt-1 tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $refund->status === 'SETTLED' ? $refund->refund_date?->format('d M Y') : $refund->created_at?->format('d M Y') }}</span>
                             </td>
-                            <td>
+                            <td class="text-end">
                                 @if($refund->status === 'OPEN')
-                                    <details>
-                                        <summary class="tw-cursor-pointer tw-text-primary">Settle full refund</summary>
-                                        <form method="POST" action="{{ route('finance.overpayments.refund', $refund) }}" enctype="multipart/form-data" class="tw-mt-2 tw-grid tw-min-w-[260px] tw-gap-2">
-                                            @csrf
-                                            <input name="refund_amount" type="number" step="0.01" value="{{ $refund->overpayment_amount }}" class="form-control form-control-sm" required>
-                                            <input name="refund_reference" class="form-control form-control-sm" placeholder="Refund reference" required>
-                                            <x-ui.date-picker :id="'refund_date_'.$refund->id" name="refund_date" :value="now()->format('Y-m-d')" required />
-                                            <input name="proof" type="file" accept=".pdf,.jpg,.jpeg,.png" class="form-control form-control-sm" required>
-                                            <textarea name="notes" class="form-control form-control-sm" placeholder="Notes"></textarea>
-                                            <x-ui.button type="submit" size="sm">Settle Refund</x-ui.button>
-                                        </form>
-                                    </details>
+                                    <x-ui.button
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#refundModal-{{ $refund->id }}"
+                                        class="tw-whitespace-nowrap"
+                                    >
+                                        <x-ui.icon name="hand-coins" size="sm" />
+                                        <span>Proses Refund</span>
+                                    </x-ui.button>
                                 @else
-                                    <span class="tw-font-mono tw-text-ui-xs">{{ $refund->refund_reference }}</span>
-                                    @if($refund->attachments->first())
-                                        <a class="tw-mt-1 tw-block tw-text-ui-xs tw-text-primary" href="{{ route('attachments.show', $refund->attachments->first()) }}">View proof</a>
-                                    @endif
+                                    <div class="tw-flex tw-flex-col tw-items-end tw-gap-1">
+                                        <span class="tw-font-mono tw-text-ui-xs tw-font-semibold tw-text-on-surface">
+                                            {{ $refund->refund_reference }}
+                                        </span>
+                                        @if($refund->attachments->first())
+                                            <x-ui.button
+                                                :href="route('attachments.show', $refund->attachments->first())"
+                                                variant="outline"
+                                                size="sm"
+                                                target="_blank"
+                                                class="tw-whitespace-nowrap"
+                                            >
+                                                <x-ui.icon name="file-text" size="sm" />
+                                                <span>Bukti Transfer</span>
+                                            </x-ui.button>
+                                        @endif
+                                    </div>
                                 @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="tw-py-8 tw-text-center tw-text-on-surface-variant">No supplier overpayments.</td></tr>
+                        <tr><td colspan="7" class="tw-py-8 tw-text-center tw-text-on-surface-variant">Tidak ada data kelebihan bayar supplier.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
         <x-slot:pagination>{{ $overpayments->links() }}</x-slot:pagination>
     </x-ui.data-table>
+
+    {{-- Modal Proses Pengembalian Dana (Ditempatkan di luar tabel agar DOM & Accessibility valid) --}}
+    @foreach($overpayments as $refund)
+        @if($refund->status === 'OPEN')
+            <div
+                class="modal fade"
+                id="refundModal-{{ $refund->id }}"
+                tabindex="-1"
+                aria-labelledby="refundModalLabel-{{ $refund->id }}"
+                aria-hidden="true"
+            >
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <form
+                        method="POST"
+                        action="{{ route('finance.overpayments.refund', $refund) }}"
+                        enctype="multipart/form-data"
+                    >
+                        @csrf
+                        <div class="modal-content tw-rounded-ui-xl tw-border-0 tw-shadow-ui-modal">
+                            {{-- Modal Header --}}
+                            <div class="modal-header tw-border-b tw-border-outline-variant/60 tw-px-6 tw-py-4">
+                                <div class="tw-flex tw-items-center tw-gap-3">
+                                    <div class="tw-w-10 tw-h-10 tw-rounded-ui-md tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
+                                        <x-ui.icon name="hand-coins" size="md" />
+                                    </div>
+                                    <div>
+                                        <h5 class="modal-title tw-text-ui-md tw-font-bold tw-text-on-surface" id="refundModalLabel-{{ $refund->id }}">
+                                            Proses Pengembalian Kelebihan Bayar
+                                        </h5>
+                                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-m-0">
+                                            Catat pelunasan pengembalian dana (refund) dari supplier ke rekening ADASI
+                                        </p>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                            </div>
+
+                            {{-- Modal Body --}}
+                            <div class="modal-body tw-px-6 tw-py-5 tw-space-y-4">
+                                {{-- Ringkasan Konteks Transaksi --}}
+                                <div class="tw-rounded-ui-md tw-bg-surface-container tw-border tw-border-outline-variant/50 tw-p-4">
+                                    <h6 class="tw-text-ui-xs tw-font-bold tw-text-on-surface-variant tw-uppercase tw-tracking-wider tw-mb-3">
+                                        Ringkasan Piutang Refund
+                                    </h6>
+                                    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-3 tw-text-ui-xs">
+                                        <div>
+                                            <span class="tw-text-on-surface-variant tw-block">Nama Supplier:</span>
+                                            <strong class="tw-text-ui-sm tw-text-on-surface">
+                                                {{ $refund->supplier->supplier?->company_name ?: $refund->supplier->name }}
+                                            </strong>
+                                        </div>
+                                        <div>
+                                            <span class="tw-text-on-surface-variant tw-block">Nomor Invoice:</span>
+                                            <strong class="tw-text-ui-sm tw-text-on-surface tw-font-mono">
+                                                {{ $refund->invoice->invoice_number }}
+                                            </strong>
+                                        </div>
+                                        <div>
+                                            <span class="tw-text-on-surface-variant tw-block">Referensi Pembayaran Asli:</span>
+                                            <div class="tw-font-mono tw-text-ui-xs tw-text-on-surface">
+                                                @forelse($refund->payment?->transfers ?? [] as $transfer)
+                                                    <span class="tw-inline-block">{{ $transfer->transfer_reference }}</span>{{ !$loop->last ? ', ' : '' }}
+                                                @empty
+                                                    <span class="tw-text-on-surface-variant">—</span>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="tw-text-on-surface-variant tw-block">Nominal Wajib Dikembalikan (100%):</span>
+                                            <strong class="tw-text-ui-base tw-font-bold tw-font-mono tw-text-primary">
+                                                Rp {{ number_format($refund->overpayment_amount, 2, ',', '.') }}
+                                            </strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Hidden Full Refund Amount (Locked in system, non-negotiable) --}}
+                                <input type="hidden" name="refund_amount" value="{{ $refund->overpayment_amount }}">
+
+                                {{-- Form Inputs --}}
+                                <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
+                                    <div>
+                                        <label for="refund_reference_{{ $refund->id }}" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">
+                                            Nomor Referensi Transfer / Refund <span class="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="refund_reference_{{ $refund->id }}"
+                                            name="refund_reference"
+                                            class="form-control form-control-sm"
+                                            placeholder="Contoh: TRF-REFUND-20260901"
+                                            required
+                                            maxlength="100"
+                                        >
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
+                                            Masukkan nomor bukti transaksi transfer bank dari supplier.
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <x-ui.date-picker
+                                            :id="'refund_date_'.$refund->id"
+                                            name="refund_date"
+                                            label="Tanggal Penerimaan Refund"
+                                            :value="now()->format('Y-m-d')"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div class="sm:tw-col-span-2">
+                                        <label for="proof_{{ $refund->id }}" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">
+                                            Bukti Transfer Dana (PDF / Gambar) <span class="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            type="file"
+                                            id="proof_{{ $refund->id }}"
+                                            name="proof"
+                                            accept=".pdf,.jpg,.jpeg,.png"
+                                            class="form-control form-control-sm"
+                                            required
+                                        >
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
+                                            Format file yang didukung: PDF, JPG, JPEG, PNG (Maksimal 10 MB).
+                                        </div>
+                                    </div>
+
+                                    <div class="sm:tw-col-span-2">
+                                        <label for="notes_{{ $refund->id }}" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">
+                                            Catatan Rekonsiliasi (Opsional)
+                                        </label>
+                                        <textarea
+                                            id="notes_{{ $refund->id }}"
+                                            name="notes"
+                                            class="form-control form-control-sm"
+                                            rows="2"
+                                            placeholder="Catatan tambahan mengenai rekonsiliasi kelebihan bayar..."
+                                            maxlength="1000"
+                                        ></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Modal Footer --}}
+                            <div class="modal-footer tw-border-t tw-border-outline-variant/60 tw-px-6 tw-py-3 tw-bg-surface-container-low/50">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                                    Batal
+                                </button>
+                                <x-ui.button type="submit" variant="primary" size="sm">
+                                    <x-ui.icon name="check-circle" size="sm" />
+                                    <span>Simpan & Selesaikan Refund</span>
+                                </x-ui.button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+    @endforeach
 </div>
 @endsection

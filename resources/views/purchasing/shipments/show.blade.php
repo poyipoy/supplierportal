@@ -90,7 +90,7 @@
             <div class="shipment-tracking-step {{ $isDraft ? 'is-active' : 'is-completed' }}">
                 <div class="d-flex align-items-center justify-content-between">
                     <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 1</span>
-                    <x-ui.icon :name="$isDraft ? 'circle-dot' : 'check'" size="xs" :class="$isDraft ? 'text-primary' : 'text-success'" />
+                    <x-ui.icon :name="$isDraft ? 'circle-dot' : 'check'" size="sm" :class="$isDraft ? 'text-primary' : 'text-success'" />
                 </div>
                 <div class="fw-bold fs-6 tw-text-on-surface">Draft Allocation</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
@@ -103,11 +103,11 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 2</span>
                     @if($isArrived)
-                        <x-ui.icon name="check" size="xs" class="text-success" />
+                        <x-ui.icon name="check" size="sm" class="text-success" />
                     @elseif($isSubmitted)
-                        <x-ui.icon name="truck" size="xs" class="text-primary" />
+                        <x-ui.icon name="truck" size="sm" class="text-primary" />
                     @else
-                        <x-ui.icon name="circle" size="xs" class="tw-text-outline" />
+                        <x-ui.icon name="circle" size="sm" class="tw-text-outline" />
                     @endif
                 </div>
                 <div class="fw-bold fs-6 tw-text-on-surface">In Transit</div>
@@ -125,11 +125,11 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 3</span>
                     @if($isArrived && $hasQc)
-                        <x-ui.icon name="check" size="xs" class="text-success" />
+                        <x-ui.icon name="check" size="sm" class="text-success" />
                     @elseif($isArrived)
-                        <x-ui.icon name="package-check" size="xs" class="text-primary" />
+                        <x-ui.icon name="package-check" size="sm" class="text-primary" />
                     @else
-                        <x-ui.icon name="circle" size="xs" class="tw-text-outline" />
+                        <x-ui.icon name="circle" size="sm" class="tw-text-outline" />
                     @endif
                 </div>
                 <div class="fw-bold fs-6 tw-text-on-surface">Arrived at Plant</div>
@@ -150,9 +150,9 @@
                     <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 4</span>
                     @if($hasQc)
                         @php $allOk = $shipment->qcInspections->every(fn($i) => $i->status === 'ok'); @endphp
-                        <x-ui.icon :name="$allOk ? 'check-circle' : 'alert-circle'" size="xs" :class="$allOk ? 'text-success' : 'text-danger'" />
+                        <x-ui.icon :name="$allOk ? 'check-circle' : 'alert-circle'" size="sm" :class="$allOk ? 'text-success' : 'text-danger'" />
                     @else
-                        <x-ui.icon name="circle" size="xs" class="tw-text-outline" />
+                        <x-ui.icon name="circle" size="sm" class="tw-text-outline" />
                     @endif
                 </div>
                 <div class="fw-bold fs-6 tw-text-on-surface">QC Inspection</div>
@@ -244,7 +244,7 @@
                     <div>
                         <div class="d-flex align-items-center justify-content-between gap-1">
                             <span class="fw-bold tw-text-ui-xs tw-text-on-surface">{{ $docLabel }}</span>
-                            <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentDocTone($doc->status)" size="xs">
+                            <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentDocTone($doc->status)" size="sm">
                                 {{ \App\Support\StatusHelper::shipmentDocLabel($doc->status) }}
                             </x-ui.status-chip>
                         </div>
@@ -258,7 +258,7 @@
 
                             @if($attachment)
                                 <a href="{{ route('attachments.show', $attachment->id) }}" target="_blank" class="text-primary text-decoration-none d-inline-flex align-items-center gap-1 fw-medium">
-                                    <x-ui.icon name="paperclip" size="xs" />
+                                    <x-ui.icon name="paperclip" size="sm" />
                                     <span class="text-truncate" style="max-width: 170px;" title="{{ $attachment->file_name }}">
                                         {{ $attachment->file_name }}
                                     </span>
@@ -394,7 +394,7 @@
                                         </x-ui.status-chip>
                                     </td>
                                     <td class="text-end">
-                                        <x-ui.button :href="route('qc.inspections.show', $insp)" variant="ghost" size="xs">
+                                        <x-ui.button :href="route('qc.inspections.show', $insp)" variant="outline" size="sm">
                                             View Report
                                         </x-ui.button>
                                     </td>

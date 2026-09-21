@@ -10,7 +10,7 @@
     >
         <x-slot:actions>
             <x-ui.button type="button" onclick="window.print()" variant="primary" size="sm" class="d-print-none">
-                <x-ui.icon name="printer" size="xs" />
+                <x-ui.icon name="printer" size="sm" />
                 <span>Cetak Tanda Terima</span>
             </x-ui.button>
         </x-slot:actions>

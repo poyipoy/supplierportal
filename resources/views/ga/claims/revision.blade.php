@@ -101,7 +101,7 @@
                             <span>Batal</span>
                         </x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
-                            <x-ui.icon name="send" size="xs" />
+                            <x-ui.icon name="send" size="sm" />
                             <span>Kirim Revisi Klaim (Rev {{ $claim->revision_number + 1 }})</span>
                         </x-ui.button>
                     </div>

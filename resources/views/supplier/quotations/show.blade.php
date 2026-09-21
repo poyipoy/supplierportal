@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Penawaran: ' . ($quotation->purchaseRequisition->pr_number ?? '-') . ' - ADASI Portal')
-@section('page-title', 'Detail Penawaran Harga')
+@section('title', 'Quotation: ' . ($quotation->purchaseRequisition->pr_number ?? '-') . ' - ADASI Portal')
+@section('page-title', 'Quotation Details')
 
 @section('content')
 <div class="tw-grid tw-gap-4">
@@ -91,11 +91,24 @@
                                                 <span class="fw-semibold">Remark:</span> {{ $item->prItem->remark }}
                                             </div>
                                         @endif
+                                        @if($quotation->status === 'accepted')
+                                            <div class="tw-mt-1.5">
+                                                @if($item->award && $item->award->purchase_order_id)
+                                                    <span class="ui-status-chip ui-status-chip--success" style="font-size: 11px;">
+                                                        <x-ui.icon name="check-circle" size="sm" class="me-1" /> Awarded ({{ $item->award->purchaseOrder?->po_number ?? 'PO' }})
+                                                    </span>
+                                                @else
+                                                    <span class="ui-status-chip ui-status-chip--neutral" style="font-size: 11px;">
+                                                        <x-ui.icon name="minus-circle" size="sm" class="me-1" /> Not Awarded
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="text-start">
                                         @if($availability['specification']['code'] === 'not_available')
                                             <span class="ui-status-chip ui-status-chip--error">
-                                                <x-ui.icon name="x-circle" size="xs" class="me-1" /> Not Available
+                                                <x-ui.icon name="x-circle" size="sm" class="me-1" /> Not Available
                                             </span>
                                         @elseif($availability['quantity']['code'] === 'not_specified' && $availability['specification']['code'] === 'not_specified')
                                             <span class="tw-text-outline">Not specified</span>
@@ -240,7 +253,17 @@
                 @elseif($quotation->status === 'rejected')
                     <x-ui.alert tone="error" title="Quotation not selected">This quotation was not selected for an order by ADASI Purchasing.</x-ui.alert>
                 @elseif($quotation->status === 'accepted')
-                    <x-ui.alert tone="success" title="Quotation selected">An official PO will be issued through the procurement workflow.</x-ui.alert>
+                    @php
+                        $awardedCount = $quotation->items->filter(fn($i) => $i->award && $i->award->purchase_order_id)->count();
+                        $isPartial = $awardedCount > 0 && $awardedCount < $quotation->items->count();
+                    @endphp
+                    @if($isPartial)
+                        <x-ui.alert tone="warning" title="Partial award">
+                            {{ $awardedCount }} of {{ $quotation->items->count() }} items were awarded and issued to Purchase Order. Items not awarded were allocated to alternative offers.
+                        </x-ui.alert>
+                    @else
+                        <x-ui.alert tone="success" title="Quotation selected">An official PO will be issued through the procurement workflow.</x-ui.alert>
+                    @endif
                 @else
                     <x-ui.alert tone="info" title="Commercial evaluation pending">Your quotation has been recorded and is waiting for evaluation by Purchasing.</x-ui.alert>
                 @endif

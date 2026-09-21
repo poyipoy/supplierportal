@@ -94,7 +94,7 @@
                             <input type="text" name="notes" class="form-control form-control-sm" placeholder="Catatan batch DRP (opsional)...">
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
-                            <x-ui.icon name="plus" size="xs" />
+                            <x-ui.icon name="plus" size="sm" />
                             <span>Buat Batch DRP Draft</span>
                         </x-ui.button>
                     </div>
@@ -142,7 +142,7 @@
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Buka Batch</span>
                                 </x-ui.button>
                             </td>

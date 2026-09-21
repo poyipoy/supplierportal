@@ -6,13 +6,13 @@
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
         title="Dashboard Supplier Lokal"
-        description="Submit invoice digital, pantau verifikasi dokumen fisik, dan monitor jadwal pembayaran."
+        description="Ajukan invoice digital, pantau verifikasi dokumen fisik, dan monitor jadwal pembayaran."
         eyebrow="Penagihan & Invoice Lokal"
     >
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary">
                 <x-ui.icon name="plus" size="sm" />
-                <span>Submit Invoice</span>
+                <span>Ajukan Invoice</span>
             </x-ui.button>
             <x-ui.button :href="route('local-supplier.invoices.index')" variant="outline">
                 <x-ui.icon name="list" size="sm" />

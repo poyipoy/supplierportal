@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Accounting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\InvoiceFilterRequest;
 use App\Models\LocalInvoice;
+use App\Models\User;
 use App\Services\LocalInvoice\InvoiceQuery;
 use Illuminate\Support\Facades\Gate;
 
@@ -25,7 +26,12 @@ class InvoiceController extends Controller
         }
         $title = $physical ? 'Physical Verification' : ($payments ? 'Payment Schedule' : 'Invoice Register');
 
-        return view('accounting.invoices.index', ['invoices' => $query->filtered($filters, payments: $payments)->latest('id')->paginate(25)->withQueryString(), 'title' => $title, 'payments' => $payments]);
+        return view('accounting.invoices.index', [
+            'invoices' => $query->filtered($filters, payments: $payments)->latest('id')->paginate(25)->withQueryString(),
+            'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get(),
+            'title' => $title,
+            'payments' => $payments,
+        ]);
     }
 
     public function show(LocalInvoice $invoice)

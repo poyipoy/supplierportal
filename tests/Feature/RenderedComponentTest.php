@@ -42,6 +42,41 @@ BLADE);
         $this->assertNoCompilerLeakage($html);
     }
 
+    public function test_button_variants_render_expected_border_and_background_contracts(): void
+    {
+        $primary = Blade::render('<x-ui.button variant="primary">Submit</x-ui.button>');
+        $this->assertStringContainsString('tw-bg-primary', $primary);
+        $this->assertStringContainsString('tw-border-transparent', $primary);
+
+        $secondary = Blade::render('<x-ui.button variant="secondary">Draft</x-ui.button>');
+        $this->assertStringContainsString('tw-border-outline-variant', $secondary);
+        $this->assertStringContainsString('tw-bg-secondary-container', $secondary);
+
+        $outline = Blade::render('<x-ui.button variant="outline">Action</x-ui.button>');
+        $this->assertStringContainsString('tw-border-outline', $outline);
+        $this->assertStringContainsString('tw-bg-transparent', $outline);
+
+        $ghost = Blade::render('<x-ui.button variant="ghost">Cancel</x-ui.button>');
+        $this->assertStringContainsString('tw-border-transparent', $ghost);
+        $this->assertStringContainsString('tw-bg-transparent', $ghost);
+    }
+
+    public function test_icon_button_variants_render_expected_contracts(): void
+    {
+        $outline = Blade::render('<x-ui.icon-button icon="search" label="Search" variant="outline" />');
+        $this->assertStringContainsString('tw-border-outline', $outline);
+        $this->assertStringContainsString('tw-bg-transparent', $outline);
+        $this->assertStringContainsString('aria-label="Search"', $outline);
+
+        $secondary = Blade::render('<x-ui.icon-button icon="filter" label="Filter" variant="secondary" />');
+        $this->assertStringContainsString('tw-border-outline-variant', $secondary);
+        $this->assertStringContainsString('tw-bg-secondary-container', $secondary);
+
+        $ghost = Blade::render('<x-ui.icon-button icon="x" label="Close" variant="ghost" />');
+        $this->assertStringContainsString('tw-border-transparent', $ghost);
+        $this->assertStringContainsString('tw-bg-transparent', $ghost);
+    }
+
     public function test_page_header_with_actions_and_buttons_renders_cleanly(): void
     {
         $template = <<<'BLADE'
@@ -162,5 +197,44 @@ BLADE;
 
             $this->assertNoCompilerLeakage($html);
         }
+    }
+
+    public function test_local_invoice_filters_render_cleanly(): void
+    {
+        $user = \App\Models\User::factory()->make(['id' => 1, 'role' => 'finance']);
+        $this->actingAs($user);
+
+        $mockSupplier = \App\Models\User::factory()->make(['id' => 999, 'name' => 'PT Sumber Logam']);
+        $mockSupplier->setRelation('supplier', new \App\Models\Supplier(['company_name' => 'PT Sumber Logam Mandiri']));
+
+        $html = view('local-invoices.filters', [
+            'suppliers' => collect([$mockSupplier]),
+            'payments' => true,
+        ])->render();
+
+        $this->assertStringContainsString('Filter Lanjutan', $html);
+        $this->assertStringContainsString('Kriteria Filter Lanjutan', $html);
+        $this->assertStringContainsString('invoice-submitted-range', $html);
+        $this->assertStringContainsString('invoice-due-range', $html);
+        $this->assertStringContainsString('Organisasi Supplier', $html);
+        $this->assertStringContainsString('PT Sumber Logam Mandiri', $html);
+        $this->assertStringContainsString($mockSupplier->hash, $html);
+        $this->assertStringContainsString('Hanya Jatuh Tempo', $html);
+        $this->assertStringContainsString('Terapkan Filter', $html);
+        $this->assertNoCompilerLeakage($html);
+
+        // Verify supplier data isolation: supplier users cannot see supplier filter dropdown
+        $supplierActor = \App\Models\User::factory()->make(['id' => 50, 'role' => 'supplier']);
+        $this->actingAs($supplierActor);
+
+        $supplierHtml = view('local-invoices.filters', [
+            'suppliers' => collect([$mockSupplier]),
+            'payments' => false,
+        ])->render();
+
+        $this->assertStringNotContainsString('Organisasi Supplier', $supplierHtml);
+        $this->assertStringNotContainsString('invoice-supplier', $supplierHtml);
+        $this->assertStringNotContainsString('PT Sumber Logam Mandiri', $supplierHtml);
+        $this->assertNoCompilerLeakage($supplierHtml);
     }
 }

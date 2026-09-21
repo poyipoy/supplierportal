@@ -3,7 +3,7 @@
 @section('page-title', 'Daftar Pengajuan Klaim GA')
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw-grid tw-gap-6">
     <x-ui.page-header
         title="Daftar Pengajuan Klaim General Affairs"
         description="Semua pengajuan klaim karyawan ADASI lintas tipe (Entertain Sales, UPD Sales, UPD GA, Reimburse) dan status verifikasi."
@@ -71,12 +71,12 @@
                             </td>
                             <td class="text-end tw-whitespace-nowrap">
                                 <x-ui.button :href="route('ga.claims.show', $c)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Detail</span>
                                 </x-ui.button>
                                 @if($c->receipt)
                                     <a href="{{ route('ga.claims.receipt', $c) }}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Cetak Tanda Terima">
-                                        <x-ui.icon name="printer" size="xs" />
+                                        <x-ui.icon name="printer" size="sm" />
                                     </a>
                                 @endif
                             </td>

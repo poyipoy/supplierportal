@@ -45,7 +45,7 @@ class LocalInvoiceVoucherService
             }
 
             $invoice = LocalInvoice::whereKey($lockedItem->payable_id)->lockForUpdate()->firstOrFail();
-            if ($invoice->status !== LocalInvoice::STATUS_READY_TO_PAY) {
+            if (! $invoice->isReadyToPay()) {
                 throw new RuntimeException("Invoice [{$invoice->invoice_number}] is not Ready to Pay.");
             }
             $verification = $invoice->currentVerification()->lockForUpdate()->first();

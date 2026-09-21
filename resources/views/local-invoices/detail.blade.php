@@ -22,7 +22,7 @@
     {{-- Top Page Header --}}
     <x-ui.page-header
         :title="'Invoice '.$invoice->invoice_number"
-        :description="'Submission Ref: '.$invoice->submission_number.' · PO: '.$invoice->po_number"
+        :description="'No. Pengajuan: '.$invoice->submission_number.' · PO: '.$invoice->po_number"
         :eyebrow="'Vendor: '.$companyName"
     >
         <x-slot:meta>
@@ -31,11 +31,11 @@
             </x-ui.status-chip>
             @if($invoice->physical_verified_at)
                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-ui-xs tw-bg-success/10 tw-text-success tw-font-medium">
-                    <x-ui.icon name="check-circle" size="xs" /> Fisik Terverifikasi
+                    <x-ui.icon name="check-circle" size="sm" /> Fisik Terverifikasi
                 </span>
             @else
                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-ui-xs tw-bg-surface-container tw-text-on-surface-variant">
-                    <x-ui.icon name="clock" size="xs" /> Menunggu Fisik Asli
+                    <x-ui.icon name="clock" size="sm" /> Menunggu Fisik Asli
                 </span>
             @endif
         </x-slot:meta>
@@ -57,7 +57,7 @@
             </x-ui.button>
 
             @can('cancel', $invoice)
-                <form method="POST" action="{{ route('local-supplier.invoices.cancel', $invoice) }}" class="tw-inline" onsubmit="return confirm('Batalkan invoice ini dan lepaskan seluruh reservasi GR?');">
+                <form method="POST" action="{{ route('local-supplier.invoices.cancel', $invoice) }}" class="tw-inline" onsubmit="event.preventDefault(); window.AdasiAlert.confirmDanger({title: 'Batalkan Invoice?', text: 'Batalkan invoice ini dan lepaskan seluruh reservasi GR?', confirmText: 'Ya, Batalkan', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
                     @csrf
                     <x-ui.button type="submit" variant="danger" size="sm"><x-ui.icon name="x-circle" size="sm" /> Batalkan</x-ui.button>
                 </form>
@@ -90,7 +90,7 @@
                     @can('resubmit', $invoice)
                         <div class="tw-shrink-0">
                             <x-ui.button :href="route('local-supplier.invoices.revision', $invoice)" variant="primary" size="sm">
-                                <x-ui.icon name="file-edit" size="xs" /> Perbaiki Sekarang
+                                <x-ui.icon name="file-edit" size="sm" /> Perbaiki Sekarang
                             </x-ui.button>
                         </div>
                     @endcan
@@ -480,10 +480,10 @@
                                             size="sm"
                                             class="w-100 tw-shadow-sm"
                                         >
-                                            @if($isPositive) <x-ui.icon name="check" size="xs" />
-                                            @elseif($isWarning) <x-ui.icon name="file-edit" size="xs" />
-                                            @elseif($isDestructive) <x-ui.icon name="x-circle" size="xs" />
-                                            @else <x-ui.icon name="play" size="xs" /> @endif
+                                            @if($isPositive) <x-ui.icon name="check" size="sm" />
+                                            @elseif($isWarning) <x-ui.icon name="file-edit" size="sm" />
+                                            @elseif($isDestructive) <x-ui.icon name="x-circle" size="sm" />
+                                            @else <x-ui.icon name="play" size="sm" /> @endif
                                             <span>Konfirmasi {{ $label }}</span>
                                         </x-ui.button>
                                     </form>
@@ -561,21 +561,21 @@
             <x-ui.card title="Petunjuk Dokumen Fisik">
                 <div class="tw-space-y-3 tw-text-ui-xs tw-text-on-surface-variant">
                     <div class="tw-flex tw-gap-2.5 tw-items-start">
-                        <x-ui.icon name="map-pin" size="xs" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
+                        <x-ui.icon name="map-pin" size="sm" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                         <div>
                             <strong class="tw-text-on-surface tw-block">Loket Verifikasi:</strong>
                             Loket Accounting PT Astra Daido Steel Indonesia, Gd. Utama Lt. 1.
                         </div>
                     </div>
                     <div class="tw-flex tw-gap-2.5 tw-items-start">
-                        <x-ui.icon name="file-badge" size="xs" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
+                        <x-ui.icon name="file-badge" size="sm" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                         <div>
                             <strong class="tw-text-on-surface tw-block">Ketentuan Materai:</strong>
                             Tagihan di atas Rp 5.000.000 wajib bermaterai Rp 10.000 dan dicap basah.
                         </div>
                     </div>
                     <div class="tw-flex tw-gap-2.5 tw-items-start">
-                        <x-ui.icon name="receipt" size="xs" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
+                        <x-ui.icon name="receipt" size="sm" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                         <div>
                             <strong class="tw-text-on-surface tw-block">Bukti Tanda Terima:</strong>
                             Gunakan tombol <em>Kwitansi / Tanda Terima</em> di atas saat menyerahkan berkas fisik.

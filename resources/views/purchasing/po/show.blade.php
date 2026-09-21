@@ -651,7 +651,7 @@
                                         @foreach($uploadedDocs as $sDoc)
                                             <div class="tw-rounded-lg tw-bg-surface-container-low tw-border tw-border-outline-variant/70 tw-p-2 tw-transition-colors">
                                                 <div class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-mb-1.5 tw-min-w-0">
-                                                    <x-ui.icon name="truck" size="xs" class="text-primary flex-shrink-0" />
+                                                    <x-ui.icon name="truck" size="sm" class="text-primary flex-shrink-0" />
                                                     <a href="{{ route('purchasing.shipments.show', $sDoc['shipment']) }}" 
                                                        class="tw-text-ui-xs tw-font-semibold text-primary text-decoration-none hover:tw-underline tw-truncate" 
                                                        title="Open shipment {{ $sDoc['shipment_number'] }}">

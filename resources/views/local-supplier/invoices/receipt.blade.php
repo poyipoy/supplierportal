@@ -14,11 +14,11 @@
     >
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.invoices.show', $invoice)" variant="outline" size="sm" class="d-print-none">
-                <x-ui.icon name="arrow-left" size="xs" />
+                <x-ui.icon name="arrow-left" size="sm" />
                 <span>Lihat Detail Invoice</span>
             </x-ui.button>
             <x-ui.button type="button" data-print-receipt variant="primary" size="sm" class="d-print-none">
-                <x-ui.icon name="printer" size="xs" />
+                <x-ui.icon name="printer" size="sm" />
                 <span>Cetak Tanda Terima</span>
             </x-ui.button>
         </x-slot:actions>
@@ -78,11 +78,11 @@
 
         <div class="tw-mt-5 tw-pt-4 tw-border-t tw-border-outline-variant tw-flex tw-items-center tw-justify-between d-print-none">
             <x-ui.button :href="route('local-supplier.invoices.show', $invoice)" variant="outline" size="sm">
-                <x-ui.icon name="arrow-left" size="xs" />
+                <x-ui.icon name="arrow-left" size="sm" />
                 <span>Lihat Detail Invoice</span>
             </x-ui.button>
             <x-ui.button type="button" data-print-receipt variant="primary" size="sm">
-                <x-ui.icon name="printer" size="xs" />
+                <x-ui.icon name="printer" size="sm" />
                 <span>Cetak Tanda Terima</span>
             </x-ui.button>
         </div>

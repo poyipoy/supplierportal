@@ -6,7 +6,7 @@
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header title="Administration Overview" description="Review current administrative workload and open the records that require maintenance." eyebrow="Admin">
         <x-slot:actions>
-            <x-ui.button :href="route('admin.users.index')" variant="secondary" size="sm"><x-ui.icon name="users" /> Manage Users</x-ui.button>
+            <x-ui.button :href="route('admin.users.index')" variant="outline" size="sm"><x-ui.icon name="users" /> Manage Users</x-ui.button>
             <x-ui.button :href="route('admin.material-hs-code.index')" size="sm"><x-ui.icon name="boxes" /> Open Master Data</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>

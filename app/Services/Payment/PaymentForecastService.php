@@ -149,7 +149,7 @@ class PaymentForecastService
 
         // 2. Unbatched Local Invoices in READY_TO_PAY status
         $readyInvoices = LocalInvoice::with('currentVerification')
-            ->where('status', LocalInvoice::STATUS_READY_TO_PAY)
+            ->eligibleForPaymentBatch()
             ->whereNotIn('id', $batchedInvoiceIds)
             ->whereBetween('due_date', [$start->toDateString(), $end->toDateString()])
             ->get();

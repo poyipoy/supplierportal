@@ -692,7 +692,7 @@ class PurchaseOrder extends Model
      */
     public function reconcileOperationalStatus(): string
     {
-        if ($this->status === 'cancelled') {
+        if (in_array($this->status, ['cancelled', 'completed'], true)) {
             return $this->status;
         }
 

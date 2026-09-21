@@ -42,10 +42,10 @@
                             </div>
 
                             <div class="tw-flex tw-items-center tw-gap-2">
-                                <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.approve', $req) }}">
+                                <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.approve', $req) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: 'Setujui Perubahan Vendor?', text: 'Setujui perubahan profil/rekening vendor ini?', confirmText: 'Ya, Setujui', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
                                     @csrf
-                                    <x-ui.button type="submit" variant="primary" size="sm" onclick="return confirm('Setujui perubahan profil/rekening vendor ini?')">
-                                        <x-ui.icon name="check" size="xs" />
+                                    <x-ui.button type="submit" variant="primary" size="sm">
+                                        <x-ui.icon name="check" size="sm" />
                                         <span>Setujui</span>
                                     </x-ui.button>
                                 </form>
@@ -56,7 +56,7 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#rejectReqModal-{{ $req->id }}"
                                 >
-                                    <x-ui.icon name="x" size="xs" />
+                                    <x-ui.icon name="x" size="sm" />
                                     <span>Tolak</span>
                                 </button>
                             </div>
@@ -147,7 +147,7 @@
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('purchasing.local-vendors.show', $vendorUser)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Detail Master</span>
                                 </x-ui.button>
                             </td>

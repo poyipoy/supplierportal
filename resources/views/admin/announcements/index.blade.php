@@ -28,7 +28,7 @@
                             <td class="text-nowrap">{{ $ann->published_at ? $ann->published_at->format('d M Y, H:i') : '-' }}</td>
                             <td class="text-end text-nowrap">
                                 <div class="tw-inline-flex tw-items-center tw-gap-1">
-                                    <x-ui.button :href="route('admin.announcements.edit', $ann->id)" variant="secondary" size="sm">Edit</x-ui.button>
+                                    <x-ui.button :href="route('admin.announcements.edit', $ann->id)" variant="outline" size="sm">Edit</x-ui.button>
                                     <div class="dropdown">
                                         <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for {{ $ann->title }}">More</x-ui.button>
                                         <ul class="dropdown-menu dropdown-menu-end">

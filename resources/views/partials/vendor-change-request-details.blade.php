@@ -44,7 +44,7 @@
 <div class="tw-mt-3 tw-bg-surface tw-border tw-border-outline-variant tw-rounded-ui-sm tw-overflow-hidden">
     <div class="tw-px-3 tw-py-2 tw-bg-surface-container-low tw-border-b tw-border-outline-variant tw-flex tw-items-center tw-justify-between">
         <span class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-flex tw-items-center tw-gap-1.5">
-            <x-ui.icon name="file-text" size="xs" class="tw-text-primary" />
+            <x-ui.icon name="file-text" size="sm" class="tw-text-primary" />
             <span>Rincian Perbandingan Data yang Diajukan</span>
         </span>
         <span class="tw-text-[11px] tw-text-on-surface-variant">
@@ -78,7 +78,7 @@
                         <tr class="{{ $isChanged ? 'tw-bg-primary/[0.03]' : '' }}">
                             <td class="tw-py-2.5 tw-ps-3 tw-text-on-surface">
                                 <div class="tw-flex tw-items-center tw-gap-2">
-                                    <x-ui.icon :name="$meta['icon']" size="xs" class="tw-text-on-surface-variant/70 tw-shrink-0" />
+                                    <x-ui.icon :name="$meta['icon']" size="sm" class="tw-text-on-surface-variant/70 tw-shrink-0" />
                                     <span class="tw-font-medium">{{ $meta['label'] }}</span>
                                 </div>
                             </td>
@@ -98,13 +98,13 @@
                                     @endif
 
                                     @if($isChanged)
-                                        <span class="badge bg-primary-subtle text-primary tw-text-[10px] tw-py-0.5 tw-px-1.5">
+                                        <x-ui.status-chip tone="info" size="sm">
                                             Diubah
-                                        </span>
+                                        </x-ui.status-chip>
                                     @elseif($isNew)
-                                        <span class="badge bg-success-subtle text-success tw-text-[10px] tw-py-0.5 tw-px-1.5">
+                                        <x-ui.status-chip tone="success" size="sm">
                                             Data Baru
-                                        </span>
+                                        </x-ui.status-chip>
                                     @endif
                                 </div>
                             </td>

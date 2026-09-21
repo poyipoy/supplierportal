@@ -15,7 +15,7 @@
                 <span>Dashboard</span>
             </x-ui.button>
             <x-ui.button :href="route('finance.drp.ga')" variant="outline" size="sm">
-                <x-ui.icon name="credit-card" size="xs" />
+                <x-ui.icon name="credit-card" size="sm" />
                 <span>Kelola DRP GA</span>
             </x-ui.button>
         </x-slot:actions>
@@ -62,7 +62,7 @@
             </div>
             <div class="tw-flex tw-gap-2">
                 <x-ui.button type="submit" variant="primary" size="sm">
-                    <x-ui.icon name="search" size="xs" />
+                    <x-ui.icon name="search" size="sm" />
                     <span>Filter</span>
                 </x-ui.button>
                 @if(request()->hasAny(['search', 'status', 'employee_id']))
@@ -120,7 +120,7 @@
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.ga-claims.show', $claim)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
+                                    <x-ui.icon name="eye" size="sm" />
                                     <span>Detail & Verifikasi</span>
                                 </x-ui.button>
                             </td>

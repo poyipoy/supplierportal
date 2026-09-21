@@ -42,7 +42,10 @@ class InvoiceSubmissionService
 
                 // 1. Validate Wednesday delivery schedule if provided
                 if (! empty($data['scheduled_physical_delivery_date'])) {
-                    $sched = Carbon::parse($data['scheduled_physical_delivery_date']);
+                    $sched = Carbon::parse($data['scheduled_physical_delivery_date'])->startOfDay();
+                    if ($sched->isBefore(today())) {
+                        throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule cannot be in the past.']);
+                    }
                     if ($sched->dayOfWeek !== Carbon::WEDNESDAY) {
                         throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule must be on a Wednesday.']);
                     }
@@ -179,7 +182,10 @@ class InvoiceSubmissionService
 
                 // 1. Validate Wednesday delivery schedule if provided
                 if (! empty($data['scheduled_physical_delivery_date'])) {
-                    $sched = Carbon::parse($data['scheduled_physical_delivery_date']);
+                    $sched = Carbon::parse($data['scheduled_physical_delivery_date'])->startOfDay();
+                    if ($sched->isBefore(today())) {
+                        throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule cannot be in the past.']);
+                    }
                     if ($sched->dayOfWeek !== Carbon::WEDNESDAY) {
                         throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule must be on a Wednesday.']);
                     }

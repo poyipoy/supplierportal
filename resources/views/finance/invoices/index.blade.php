@@ -3,9 +3,9 @@
 @section('page-title', $title ?? 'Invoice Register')
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw-grid tw-gap-6">
     <x-ui.page-header
-        :title="$title ?? 'Invoice Register'"
+        :title="$title ?? 'Daftar Invoice / Invoice Register'"
         description="Daftar seluruh invoice supplier lokal, penerimaan dokumen fisik, status verifikasi, dan jadwal jatuh tempo."
         eyebrow="Finance & Accounts Payable"
     >

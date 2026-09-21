@@ -108,5 +108,7 @@ class DatabaseSeeder extends Seeder
             'valid_from'  => now()->toDateString(),
             'created_by'  => $admin->id,
         ]);
+
+        $this->call(EmployeeMasterSeeder::class);
     }
 }

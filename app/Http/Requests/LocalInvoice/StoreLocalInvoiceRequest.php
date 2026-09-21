@@ -113,6 +113,7 @@ class StoreLocalInvoiceRequest extends FormRequest
             'scheduled_physical_delivery_date' => [
                 'nullable',
                 'date_format:Y-m-d',
+                'after_or_equal:today',
                 function ($attribute, $value, $fail) {
                     if (! empty($value) && Carbon::parse($value)->dayOfWeek !== Carbon::WEDNESDAY) {
                         $fail('Jadwal penyerahan dokumen fisik harus jatuh pada hari Rabu.');
@@ -174,6 +175,7 @@ class StoreLocalInvoiceRequest extends FormRequest
             'supporting.max' => 'Maksimal 5 berkas yang diizinkan untuk Dokumen Pendukung.',
             'supporting.*.mimes' => 'Berkas Dokumen Pendukung harus berformat PDF, JPG, JPEG, atau PNG.',
             'supporting.*.max' => 'Ukuran setiap berkas Dokumen Pendukung tidak boleh melebihi 5 MB.',
+            'scheduled_physical_delivery_date.after_or_equal' => 'Jadwal penyerahan dokumen fisik tidak boleh di masa lampau.',
         ];
     }
 }

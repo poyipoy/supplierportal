@@ -24,6 +24,18 @@ class StatusHelper
         };
     }
 
+    public static function paymentBatchTone(string $status): string
+    {
+        return match (strtoupper($status)) {
+            'PAID' => 'success',
+            'FINALIZED' => 'info',
+            'PARTIALLY_PAID' => 'warning',
+            'DRAFT' => 'neutral',
+            'CANCELLED' => 'error',
+            default => 'neutral',
+        };
+    }
+
     public static function localInvoiceLabel(string $status): string
     {
         return match ($status) {

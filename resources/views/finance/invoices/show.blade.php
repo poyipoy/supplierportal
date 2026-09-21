@@ -147,7 +147,7 @@
                                 <input type="text" name="notes" id="cashier-notes" class="form-control form-control-sm" placeholder="Contoh: Diterima lengkap beserta materai 10.000">
                             </div>
                             <x-ui.button type="submit" variant="primary" size="sm">
-                                <x-ui.icon name="inbox" size="xs" />
+                                <x-ui.icon name="inbox" size="sm" />
                                 <span>Konfirmasi Terima Berkas Fisik Sekarang</span>
                             </x-ui.button>
                         </div>
@@ -262,7 +262,7 @@
                             @if(!$verification?->is_locked)
                                 <div class="tw-flex tw-justify-end">
                                     <x-ui.button id="btn-submit-section-a" type="submit" variant="primary" size="sm">
-                                        <x-ui.icon name="save" size="xs" />
+                                        <x-ui.icon name="save" size="sm" />
                                         <span>Simpan Section A</span>
                                     </x-ui.button>
                                 </div>
@@ -348,7 +348,7 @@
                             @if(!$verification?->is_locked)
                                 <div class="tw-flex tw-justify-end">
                                     <x-ui.button id="btn-submit-section-b" type="submit" variant="primary" size="sm">
-                                        <x-ui.icon name="save" size="xs" />
+                                        <x-ui.icon name="save" size="sm" />
                                         <span>Simpan Section B</span>
                                     </x-ui.button>
                                 </div>
@@ -438,7 +438,7 @@
                                 class="w-100"
                                 :disabled="!$verification || !$verification->is_section_a_passed || !$verification->is_section_b_passed"
                             >
-                                <x-ui.icon name="check-circle" size="xs" />
+                                <x-ui.icon name="check-circle" size="sm" />
                                 <span>Kunci & Setujui Ready to Pay</span>
                             </x-ui.button>
                         </form>
@@ -449,7 +449,7 @@
                             data-bs-toggle="modal"
                             data-bs-target="#revisionModal"
                         >
-                            <x-ui.icon name="rotate-ccw" size="xs" />
+                            <x-ui.icon name="rotate-ccw" size="sm" />
                             <span>Minta Revisi Dokumen</span>
                         </button>
                     </div>
@@ -459,7 +459,7 @@
             @if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_NEED_REVISION], true))
                 <x-ui.card title="Tolak Invoice" description="Penolakan melepaskan reservasi GR authoritative dan menyimpan alasan pada riwayat.">
                     <button type="button" class="btn btn-outline-danger btn-sm w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
-                        <x-ui.icon name="x-circle" size="xs" /> Tolak Invoice
+                        <x-ui.icon name="x-circle" size="sm" /> Tolak Invoice
                     </button>
                 </x-ui.card>
             @endif
