@@ -13,13 +13,13 @@ class FinanceVendorController extends Controller
 {
     public function index()
     {
-        $vendors = User::where('role', 'supplier')
-            ->whereHas('supplierScopes', fn ($q) => $q->where('scope', 'local'))
+        $vendors = User::localEligible()
             ->with(['supplier.bankAccounts', 'supplier.activeBankAccount'])
             ->latest('id')
             ->paginate(20);
 
         $pendingRequests = SupplierChangeRequest::where('status', SupplierChangeRequest::STATUS_PENDING)
+            ->whereHas('supplier', fn ($q) => $q->localEligible())
             ->with(['supplier.supplier', 'requester'])
             ->latest('id')
             ->get();
@@ -29,6 +29,8 @@ class FinanceVendorController extends Controller
 
     public function show(User $vendor)
     {
+        abort_unless($vendor->isLocalEligible(), 404);
+
         $vendor->load(['supplier.bankAccounts', 'supplier.masterDocuments', 'supplier.changeRequests']);
 
         return view('finance.vendors.show', compact('vendor'));

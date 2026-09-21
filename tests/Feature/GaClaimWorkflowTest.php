@@ -267,6 +267,35 @@ class GaClaimWorkflowTest extends TestCase
         $this->assertFalse($employee->fresh()->is_active);
     }
 
+    public function test_unsupported_employee_resource_routes_are_not_exposed_and_role_protection_is_enforced(): void
+    {
+        $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $employee = $this->createEmployee();
+
+        // Unsupported resource routes are not registered
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.create'));
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.show'));
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.edit'));
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.destroy'));
+
+        // Unsupported actions cannot be invoked via HTTP
+        $this->actingAs($ga)->get('/ga/employees/create')->assertStatus(405);
+        $this->actingAs($ga)->get("/ga/employees/{$employee->id}")->assertStatus(405);
+        $this->actingAs($ga)->get("/ga/employees/{$employee->id}/edit")->assertNotFound();
+        $this->actingAs($ga)->delete("/ga/employees/{$employee->id}")->assertStatus(405);
+
+        // Role protection blocks non-GA and non-admin
+        $this->actingAs($supplier)->get('/ga/employees')->assertForbidden();
+        $this->actingAs($supplier)->post('/ga/employees', [
+            'name' => 'Test Employee',
+            'department' => 'IT',
+            'bank_name' => 'BCA',
+            'account_number' => '123',
+            'account_holder_name' => 'Test',
+        ])->assertForbidden();
+    }
+
     public function test_finance_ga_claims_routes_and_verification(): void
     {
         $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);

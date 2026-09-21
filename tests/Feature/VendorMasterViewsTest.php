@@ -104,4 +104,56 @@ class VendorMasterViewsTest extends TestCase
         $responseShow->assertSee('NIB_Baja_Unggul.pdf');
         $responseShow->assertSee(route('supplier-master-documents.show', SupplierMasterDocument::first()));
     }
+
+    public function test_finance_cannot_access_import_only_supplier_in_vendor_master(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $importSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+
+        $response = $this->actingAs($finance)->get(route('finance.vendor-master.show', $importSupplier));
+        $response->assertNotFound();
+    }
+
+    public function test_finance_cannot_access_inactive_local_supplier_in_vendor_master(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $inactiveSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => false]);
+        $inactiveSupplier->supplierScopes()->delete();
+        $inactiveSupplier->supplierScopes()->create(['scope' => 'local']);
+
+        $response = $this->actingAs($finance)->get(route('finance.vendor-master.show', $inactiveSupplier));
+        $response->assertNotFound();
+    }
+
+    public function test_non_authorized_roles_remain_blocked_from_finance_vendor_master(): void
+    {
+        [$supplierUser] = $this->createLocalSupplierWithFullMaster();
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $qc = User::factory()->create(['role' => 'qc', 'is_active' => true]);
+
+        $this->actingAs($supplier)->get(route('finance.vendor-master.index'))->assertForbidden();
+        $this->actingAs($supplier)->get(route('finance.vendor-master.show', $supplierUser))->assertForbidden();
+
+        $this->actingAs($qc)->get(route('finance.vendor-master.index'))->assertForbidden();
+        $this->actingAs($qc)->get(route('finance.vendor-master.show', $supplierUser))->assertForbidden();
+    }
+
+    public function test_admin_can_access_active_local_supplier_but_not_import_or_inactive(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        [$activeSupplier] = $this->createLocalSupplierWithFullMaster();
+
+        $importSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+
+        $inactiveSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => false]);
+        $inactiveSupplier->supplierScopes()->delete();
+        $inactiveSupplier->supplierScopes()->create(['scope' => 'local']);
+
+        // Admin can access active local supplier
+        $this->actingAs($admin)->get(route('finance.vendor-master.show', $activeSupplier))->assertOk();
+
+        // Admin also blocked by domain eligibility (404) for non-local or inactive suppliers
+        $this->actingAs($admin)->get(route('finance.vendor-master.show', $importSupplier))->assertNotFound();
+        $this->actingAs($admin)->get(route('finance.vendor-master.show', $inactiveSupplier))->assertNotFound();
+    }
 }

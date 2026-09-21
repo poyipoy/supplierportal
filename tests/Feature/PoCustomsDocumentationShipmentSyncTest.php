@@ -324,6 +324,31 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $this->assertEquals('received', $poDoc->fresh()->status);
     }
 
+    public function test_supplier_po_detail_request_is_pure_read_and_does_not_mutate_database(): void
+    {
+        [$po, $shipment] = $this->createPoAndShipment($this->supplier);
+
+        $poDoc = $po->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $this->assertEquals('pending', $poDoc->status);
+
+        $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $shipmentDoc->update(['status' => ShipmentDocument::STATUS_RECEIVED]);
+
+        $writes = [];
+        DB::listen(function ($query) use (&$writes) {
+            if (preg_match('/^\s*(insert|update|delete)\s/i', $query->sql)) {
+                $writes[] = $query->sql;
+            }
+        });
+
+        $response = $this->actingAs($this->supplier)
+            ->get(route('supplier.purchase-orders.show', $po));
+
+        $response->assertOk();
+        $this->assertSame([], $writes, 'GET supplier.purchase-orders.show must not write to the database.');
+        $this->assertEquals('pending', $poDoc->fresh()->status);
+    }
+
     public function test_purchasing_po_detail_calculates_document_completion_accurately(): void
     {
         [$po, $shipment] = $this->createPoAndShipment($this->supplier);
