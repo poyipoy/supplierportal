@@ -58,15 +58,17 @@ class StatusHelper
     public static function localInvoiceTone(string $status): string
     {
         return [
+            'SUBMITTED' => 'primary',
             'WAITING_PHYSICAL_DOCUMENT' => 'warning',
             'UNDER_REVIEW' => 'info',
             'UNDER_VERIFICATION' => 'info',
-            'NEED_REVISION' => 'error',
+            'NEED_REVISION' => 'warning',
             'REJECTED' => 'error',
             'CANCELLED' => 'error',
             'EXPIRED' => 'error',
             'APPROVED' => 'success',
             'READY_TO_PAY' => 'success',
+            'PAYMENT_SCHEDULED' => 'info',
             'PAID' => 'success',
             'COMPLETED' => 'success',
         ][$status] ?? 'neutral';

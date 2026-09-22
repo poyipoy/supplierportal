@@ -27,6 +27,14 @@ class UserRoleMigrationRollbackTest extends TestCase
         try {
             $migration->down();
 
+            // Schema verification: enum contains exactly the old roles
+            $columnType = strtolower(DB::selectOne(
+                "SELECT COLUMN_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role'"
+            )->COLUMN_TYPE);
+            $this->assertSame("enum('admin','purchasing','supplier','qc','accounting')", $columnType);
+            $this->assertStringNotContainsString('finance', $columnType);
+            $this->assertStringNotContainsString('ga', $columnType);
+
             // Verification: can insert accounting user under rolled-back enum
             $userId = DB::table('users')->insertGetId([
                 'name' => 'Accounting User Clean',
@@ -38,6 +46,22 @@ class UserRoleMigrationRollbackTest extends TestCase
             ]);
 
             $this->assertSame('accounting', DB::table('users')->where('id', $userId)->value('role'));
+
+            // Verification: finance user can no longer be stored under rolled-back enum
+            $financeRejected = false;
+            try {
+                DB::table('users')->insert([
+                    'name' => 'Finance User Rejected',
+                    'email' => 'finance.rejected@adasi.co.id',
+                    'password' => 'secret',
+                    'role' => 'finance',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {
+                $financeRejected = true;
+            }
+            $this->assertTrue($financeRejected, 'Expected inserting finance user after rollback to fail.');
         } finally {
             $migration->up();
         }
@@ -72,6 +96,14 @@ class UserRoleMigrationRollbackTest extends TestCase
         try {
             // Run down(): unambiguous migration reversal
             $migration->down();
+
+            // Schema verification: enum contains exactly the old roles
+            $columnType = strtolower(DB::selectOne(
+                "SELECT COLUMN_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role'"
+            )->COLUMN_TYPE);
+            $this->assertSame("enum('admin','purchasing','supplier','qc','accounting')", $columnType);
+            $this->assertStringNotContainsString('finance', $columnType);
+            $this->assertStringNotContainsString('ga', $columnType);
 
             $this->assertSame('accounting', DB::table('users')->where('id', $userId)->value('role'));
             $this->assertDatabaseMissing('auth_audit_logs', [
@@ -111,6 +143,12 @@ class UserRoleMigrationRollbackTest extends TestCase
 
         // User role is preserved without silent data loss
         $this->assertSame('finance', DB::table('users')->where('id', $userId)->value('role'));
+
+        // Enum remains unchanged
+        $columnType = strtolower(DB::selectOne(
+            "SELECT COLUMN_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role'"
+        )->COLUMN_TYPE);
+        $this->assertStringContainsString('finance', $columnType);
     }
 
     public function test_presence_of_ga_users_refuses_rollback(): void
@@ -138,6 +176,12 @@ class UserRoleMigrationRollbackTest extends TestCase
 
         // GA user is preserved
         $this->assertSame('ga', DB::table('users')->where('id', $userId)->value('role'));
+
+        // Enum remains unchanged
+        $columnType = strtolower(DB::selectOne(
+            "SELECT COLUMN_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role'"
+        )->COLUMN_TYPE);
+        $this->assertStringContainsString('ga', $columnType);
     }
 
     public function test_unsafe_rollback_conditions_preserve_database_state_and_forward_migration_operates_normally(): void
@@ -178,5 +222,28 @@ class UserRoleMigrationRollbackTest extends TestCase
         $migration->up();
         $this->assertSame('ga', DB::table('users')->where('id', $gaUserId)->value('role'));
         $this->assertSame('finance', DB::table('users')->where('id', $financeUserId)->value('role'));
+    }
+
+    public function test_schema_verification_asserts_exact_pre_migration_enum_without_finance_or_ga(): void
+    {
+        $migration = $this->getMigration();
+
+        // Clear finance and ga users to allow clean rollback
+        DB::table('users')->whereIn('role', ['finance', 'ga'])->delete();
+
+        try {
+            $migration->down();
+
+            $columnType = strtolower(DB::selectOne(
+                "SELECT COLUMN_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'role'"
+            )->COLUMN_TYPE);
+
+            // Assert exact enum contents
+            $this->assertSame("enum('admin','purchasing','supplier','qc','accounting')", $columnType);
+            $this->assertStringNotContainsString('finance', $columnType);
+            $this->assertStringNotContainsString('ga', $columnType);
+        } finally {
+            $migration->up();
+        }
     }
 }

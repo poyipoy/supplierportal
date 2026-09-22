@@ -8,7 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Migrate any existing accounting users to finance and track them for safe rollback
+        // 1. Alter the role enum to support finance and ga while retaining accounting for migration compatibility
+        DB::statement("ALTER TABLE users MODIFY role ENUM('admin','purchasing','supplier','qc','accounting','finance','ga') NOT NULL DEFAULT 'supplier'");
+
+        // 2. Migrate any existing accounting users to finance and track them for safe rollback
         $migratedUserIds = DB::table('users')->where('role', 'accounting')->pluck('id')->all();
         if (! empty($migratedUserIds)) {
             DB::table('users')->whereIn('id', $migratedUserIds)->update(['role' => 'finance']);
@@ -24,9 +27,6 @@ return new class extends Migration
                 }
             }
         }
-
-        // 2. Alter the role enum to support finance and ga while retaining accounting for migration compatibility
-        DB::statement("ALTER TABLE users MODIFY role ENUM('admin','purchasing','supplier','qc','accounting','finance','ga') NOT NULL DEFAULT 'supplier'");
     }
 
     public function down(): void
@@ -64,7 +64,7 @@ return new class extends Migration
             }
         }
 
-        // 3. Restore previous enum without 'ga'
-        DB::statement("ALTER TABLE users MODIFY role ENUM('admin','purchasing','supplier','qc','accounting','finance') NOT NULL DEFAULT 'supplier'");
+        // 3. Restore previous enum without 'ga' and without 'finance'
+        DB::statement("ALTER TABLE users MODIFY role ENUM('admin','purchasing','supplier','qc','accounting') NOT NULL DEFAULT 'supplier'");
     }
 };
