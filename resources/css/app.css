@@ -435,6 +435,28 @@ html[data-sidebar-motion-ready="true"] {
         transition-delay: 0s, var(--ui-sidebar-motion-text-duration);
     }
 
+    .sidebar-portal-switcher {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--md-outline-variant);
+        background-color: var(--md-surface);
+        position: relative;
+    }
+
+    html[data-sidebar-collapsed="true"] .sidebar-portal-switcher {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    html[data-sidebar-collapsed="true"] .sidebar-portal-switcher .btn {
+        justify-content: center !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    html[data-sidebar-collapsed="true"] .sidebar-portal-switcher .dropdown-toggle::after {
+        display: none !important;
+    }
+
     .sidebar-control {
         align-items: center;
         border-bottom: 1px solid var(--md-outline-variant);

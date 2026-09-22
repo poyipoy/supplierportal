@@ -223,9 +223,18 @@ class UserController extends Controller
                 $data['password'] = Hash::make($request->password);
             }
 
+            $newScopes = $request->role === 'supplier'
+                ? array_values(array_unique((array) $request->input('supplier_scopes', [])))
+                : [];
+            sort($newScopes);
+
+            $scopesChanged = ($request->role === 'supplier' && $oldScopes !== $newScopes)
+                || ($oldRole === 'supplier' && $request->role !== 'supplier' && ! empty($oldScopes));
+
             $securityChanged = $passwordChanged
                 || $oldRole !== $request->role
-                || $oldActive !== $request->has('is_active');
+                || $oldActive !== $request->has('is_active')
+                || $scopesChanged;
 
             if ($securityChanged) {
                 $data['auth_session_version'] = ((int) $user->auth_session_version) + 1;

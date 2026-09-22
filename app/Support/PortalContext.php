@@ -3,9 +3,18 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class PortalContext
 {
+    public const SCOPE_IMPORT = 'import';
+
+    public const SCOPE_LOCAL = 'local';
+
+    public const LABEL_IMPORT = 'Material Procurement';
+
+    public const LABEL_LOCAL = 'Local Supplier';
+
     public static function dashboard(User $user): string
     {
         if ($user->isFinance()) {
@@ -21,16 +30,11 @@ class PortalContext
             return route($user->role.'.dashboard', absolute: false);
         }
 
-        $scopes = $user->supplierScopes()->pluck('scope')->all();
-        $context = session('supplier_context');
-        if (count($scopes) > 1 && ! in_array($context, $scopes, true)) {
-            return route('supplier-context.index', absolute: false);
-        }
-        $context = count($scopes) === 1 ? $scopes[0] : $context;
+        $context = self::resolve($user);
 
         return match ($context) {
-            'local' => route('local-supplier.dashboard', absolute: false),
-            'import' => route('supplier.dashboard', absolute: false),
+            self::SCOPE_LOCAL => route('local-supplier.dashboard', absolute: false),
+            self::SCOPE_IMPORT => route('supplier.dashboard', absolute: false),
             default => route('supplier-context.index', absolute: false),
         };
     }
@@ -40,13 +44,93 @@ class PortalContext
         if (! $user->isSupplier()) {
             return $user->isLocalOperator();
         }
-        if (request()->routeIs('local-supplier.*')) {
-            return true;
+
+        return self::current($user) === self::SCOPE_LOCAL;
+    }
+
+    public static function current(?User $user = null): ?string
+    {
+        $user ??= auth()->user();
+
+        if (! $user instanceof User || ! $user->isSupplier()) {
+            return null;
         }
+
+        if (request()->routeIs('local-supplier.*')) {
+            return $user->hasSupplierScope(self::SCOPE_LOCAL) ? self::SCOPE_LOCAL : null;
+        }
+
         if (request()->routeIs('supplier.*')) {
+            return $user->hasSupplierScope(self::SCOPE_IMPORT) ? self::SCOPE_IMPORT : null;
+        }
+
+        return self::resolve($user);
+    }
+
+    public static function resolve(User $user): ?string
+    {
+        if (! $user->isSupplier()) {
+            return null;
+        }
+
+        $scopes = $user->supplierScopes()->pluck('scope')->all();
+
+        if (count($scopes) === 1) {
+            return $scopes[0];
+        }
+
+        if (count($scopes) > 1) {
+            $context = session('supplier_context');
+            if ($context && in_array($context, $scopes, true)) {
+                return $context;
+            }
+        }
+
+        return null;
+    }
+
+    public static function isDualScope(?User $user = null): bool
+    {
+        $user ??= auth()->user();
+
+        if (! $user instanceof User || ! $user->isSupplier()) {
             return false;
         }
 
-        return $user->hasSupplierScope('local') && (! $user->hasSupplierScope('import') || session('supplier_context') === 'local');
+        return $user->hasSupplierScope(self::SCOPE_IMPORT) && $user->hasSupplierScope(self::SCOPE_LOCAL);
+    }
+
+    public static function switchTo(Request $request, string $scope): void
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $user instanceof User
+            && $user->is_active
+            && $user->isSupplier()
+            && in_array($scope, [self::SCOPE_IMPORT, self::SCOPE_LOCAL], true)
+            && $user->hasSupplierScope($scope),
+            403
+        );
+
+        $request->session()->put('supplier_context', $scope);
+    }
+
+    public static function label(?string $scope): string
+    {
+        return match ($scope) {
+            self::SCOPE_IMPORT => self::LABEL_IMPORT,
+            self::SCOPE_LOCAL => self::LABEL_LOCAL,
+            default => '',
+        };
+    }
+
+    public static function description(?string $scope): string
+    {
+        return match ($scope) {
+            self::SCOPE_IMPORT => 'Quotation, PO, Shipment',
+            self::SCOPE_LOCAL => 'Invoice, Vendor Profile',
+            default => '',
+        };
     }
 }

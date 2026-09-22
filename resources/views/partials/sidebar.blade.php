@@ -18,6 +18,68 @@
         </a>
     </div>
 
+    @if(\App\Support\PortalContext::isDualScope())
+        @php
+            $currentScope = \App\Support\PortalContext::current();
+            $currentLabel = \App\Support\PortalContext::label($currentScope);
+        @endphp
+        <div class="sidebar-portal-switcher dropdown">
+            <button
+                class="btn btn-sm w-100 d-flex align-items-center justify-content-between dropdown-toggle tw-bg-surface-container tw-text-on-surface tw-border tw-border-outline-variant tw-rounded-md tw-px-2.5 tw-py-1.5 tw-text-ui-sm tw-font-medium hover:tw-bg-surface-container-high ui-focus-ring"
+                type="button"
+                id="portalContextSwitcherDropdown"
+                data-bs-toggle="dropdown"
+                data-bs-auto-close="true"
+                aria-expanded="false"
+                title="Switch Portal"
+                aria-label="Switch Portal Context — Current: {{ $currentLabel ?: 'Portal' }}"
+            >
+                <span class="d-flex align-items-center tw-gap-2 text-truncate">
+                    <x-ui.icon name="arrow-left-right" size="sm" class="tw-text-primary tw-shrink-0" />
+                    <span class="text-truncate sidebar-type-text" style="--sidebar-type-steps: 18;">{{ $currentLabel ?: 'Portal' }}</span>
+                </span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-start shadow-sm border py-1 tw-min-w-[220px]" aria-labelledby="portalContextSwitcherDropdown">
+                <div class="dropdown-header tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant tw-uppercase tw-tracking-wider px-3 py-1.5">
+                    Portal
+                </div>
+                <hr class="dropdown-divider my-1">
+                <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
+                    @csrf
+                    <input type="hidden" name="context" value="local">
+                    <button
+                        type="submit"
+                        class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 {{ $currentScope === 'local' ? 'active' : '' }}"
+                    >
+                        <div class="d-flex flex-column text-start">
+                            <span class="tw-font-medium tw-text-ui-sm">Local Supplier</span>
+                            <span class="tw-text-ui-xs text-muted">Invoice, Vendor Profile</span>
+                        </div>
+                        @if($currentScope === 'local')
+                            <x-ui.icon name="check" size="sm" class="ms-2 tw-text-primary tw-shrink-0" />
+                        @endif
+                    </button>
+                </form>
+                <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
+                    @csrf
+                    <input type="hidden" name="context" value="import">
+                    <button
+                        type="submit"
+                        class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 {{ $currentScope === 'import' ? 'active' : '' }}"
+                    >
+                        <div class="d-flex flex-column text-start">
+                            <span class="tw-font-medium tw-text-ui-sm">Material Procurement</span>
+                            <span class="tw-text-ui-xs text-muted">Quotation, PO, Shipment</span>
+                        </div>
+                        @if($currentScope === 'import')
+                            <x-ui.icon name="check" size="sm" class="ms-2 tw-text-primary tw-shrink-0" />
+                        @endif
+                    </button>
+                </form>
+            </div>
+        </div>
+    @endif
+
     <div class="sidebar-control" aria-label="Sidebar controls">
         <x-ui.icon-button
             icon="panel-left"
@@ -45,11 +107,6 @@
     </div>
     <nav class="sidebar-menu" aria-label="{{ ucfirst(auth()->user()->role) }} navigation">
         @php $role = auth()->user()->role; @endphp
-
-        @if(auth()->user()->hasSupplierScope('import') && auth()->user()->hasSupplierScope('local'))
-            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 15;">Supplier Portal</span></div>
-            <x-ui.sidebar-item :href="route('supplier-context.index')" icon="arrow-left-right" label="Switch Portal">Switch Portal</x-ui.sidebar-item>
-        @endif
 
         @if($role === 'supplier' && \App\Support\PortalContext::isLocal(auth()->user()))
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
