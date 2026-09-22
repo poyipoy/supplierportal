@@ -14,6 +14,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::table('payment_groups')->where('status', 'CANCELLED')->exists()) {
+            throw new RuntimeException('Cannot rollback: Payment groups with CANCELLED status exist. Reassign or resolve CANCELLED payment groups before rolling back.');
+        }
+
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE payment_groups MODIFY status ENUM('UNPAID', 'PAID') NOT NULL DEFAULT 'UNPAID'");
         }

@@ -207,7 +207,7 @@ class LocalInvoiceTest extends TestCase
     public function test_context_resolution_and_navigation(): void
     {
         $this->actingAs($this->supplier)->get(route('dashboard'))->assertRedirect(route('local-supplier.dashboard', absolute: false));
-        $this->get(route('local-supplier.dashboard'))->assertSee('Submit Invoice')->assertDontSee('Quotation Period');
+        $this->get(route('local-supplier.dashboard'))->assertSee('Ajukan Invoice')->assertDontSee('Quotation Period');
         $both = $this->supplier(['import', 'local']);
         $this->actingAs($both)->withSession(['supplier_context' => null])->get(route('dashboard'))->assertRedirect(route('supplier-context.index', absolute: false));
         $this->post(route('supplier-context.store'), ['context' => 'local'])->assertRedirect(route('local-supplier.dashboard', absolute: false));

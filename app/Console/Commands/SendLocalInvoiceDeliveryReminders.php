@@ -21,12 +21,17 @@ class SendLocalInvoiceDeliveryReminders extends Command
         $invoices = LocalInvoice::where('status', LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT)
             ->whereNotNull('scheduled_physical_delivery_date')
             ->whereBetween('scheduled_physical_delivery_date', [$targetDateStart->toDateString(), $targetDateEnd->toDateString()])
+            ->where(function ($query) {
+                $query->whereNull('delivery_reminder_sent_at')
+                    ->orWhereColumn('delivery_reminder_sent_at', '<', 'rescheduled_at');
+            })
             ->get();
 
         $this->info("Found {$invoices->count()} invoices with upcoming physical delivery schedules.");
 
         foreach ($invoices as $invoice) {
             $notificationService->sendPhysicalDeliveryReminder($invoice);
+            $invoice->update(['delivery_reminder_sent_at' => now()]);
             $this->line("Sent delivery reminder for invoice [{$invoice->invoice_number}] to [{$invoice->supplier?->email}].");
         }
 

@@ -104,6 +104,7 @@ class VendorMasterV2Test extends TestCase
     public function test_supplier_creates_change_request_and_purchasing_approves(): void
     {
         $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
         $supplier = Supplier::create([
             'user_id' => $supplierUser->id,
             'company_name' => 'PT Baja Mulia Old',
@@ -152,6 +153,7 @@ class VendorMasterV2Test extends TestCase
     public function test_finance_can_approve_change_request(): void
     {
         $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
         Supplier::create([
             'user_id' => $supplierUser->id,
             'company_name' => 'PT Logam Jaya',
@@ -175,6 +177,7 @@ class VendorMasterV2Test extends TestCase
     public function test_supplier_cannot_approve_own_change_request(): void
     {
         $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
         Supplier::create([
             'user_id' => $supplierUser->id,
             'company_name' => 'PT Test',
@@ -191,6 +194,7 @@ class VendorMasterV2Test extends TestCase
     public function test_change_request_rejection_requires_notes_and_does_not_mutate_master(): void
     {
         $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
         $supplier = Supplier::create([
             'user_id' => $supplierUser->id,
             'company_name' => 'PT Original',
@@ -210,5 +214,68 @@ class VendorMasterV2Test extends TestCase
 
         // Master remains unchanged
         $this->assertSame('PT Original', $supplier->fresh()->company_name);
+    }
+
+    public function test_import_only_supplier_change_request_cannot_be_approved(): void
+    {
+        $importSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        // Default factory only gives 'import' scope
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $req = $this->changeRequestService->submitChangeRequest($importSupplier, ['company_name' => 'PT Import']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Change request must belong to an active local supplier.');
+        $this->changeRequestService->approve($req, $finance, 'Should fail');
+    }
+
+    public function test_inactive_supplier_change_request_cannot_be_approved(): void
+    {
+        $supplierUser = User::factory()->create(['role' => 'supplier', 'is_active' => false]);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $req = $this->changeRequestService->submitChangeRequest($supplierUser, ['company_name' => 'PT Inactive']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Change request must belong to an active local supplier.');
+        $this->changeRequestService->approve($req, $finance, 'Should fail');
+    }
+
+    public function test_import_only_supplier_change_request_cannot_be_rejected(): void
+    {
+        $importSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $req = $this->changeRequestService->submitChangeRequest($importSupplier, ['company_name' => 'PT Import']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Change request must belong to an active local supplier.');
+        $this->changeRequestService->reject($req, $finance, 'Rejection note');
+    }
+
+    public function test_inactive_supplier_change_request_cannot_be_rejected(): void
+    {
+        $supplierUser = User::factory()->create(['role' => 'supplier', 'is_active' => false]);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $req = $this->changeRequestService->submitChangeRequest($supplierUser, ['company_name' => 'PT Inactive']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Change request must belong to an active local supplier.');
+        $this->changeRequestService->reject($req, $finance, 'Rejection note');
+    }
+
+    public function test_supplier_cannot_reject_own_change_request(): void
+    {
+        $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
+
+        $req = $this->changeRequestService->submitChangeRequest($supplierUser, ['company_name' => 'PT Test']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Supplier cannot reject their own change request.');
+        $this->changeRequestService->reject($req, $supplierUser, 'Rejecting myself');
     }
 }

@@ -43,6 +43,7 @@ class LocalInvoice extends Model
             'has_po_discrepancy' => 'boolean',
             'submitted_ppn_amount' => 'decimal:2',
             'scheduled_physical_delivery_date' => 'date',
+            'delivery_reminder_sent_at' => 'datetime',
             'missed_delivery_count' => 'integer',
             'rescheduled_at' => 'datetime',
             'cashier_received_at' => 'datetime',

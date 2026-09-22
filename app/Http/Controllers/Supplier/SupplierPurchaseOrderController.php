@@ -174,9 +174,7 @@ class SupplierPurchaseOrderController extends Controller
         $poSummary = $progressService->poSummary($po);
         $itemProjections = collect($poSummary['items'] ?? []);
 
-        // Persist any status the linked shipment documents already advanced
-        // past, then read. The summary itself no longer writes.
-        $po->reconcileCustomsDocumentationStatus();
+        // Read-only customs documentation summary for display (does not write to DB)
         $customsSummary = $po->customsDocumentationSummary();
 
         return view('supplier.po.show', compact('po', 'quotationRates', 'itemProjections', 'poSummary', 'customsSummary'));

@@ -3,25 +3,14 @@
 namespace Tests\Feature\LocalInvoice;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class LocalInvoiceMigrationTest extends TestCase
 {
-    use DatabaseTruncation;
-
-    protected function beforeTruncatingDatabase(): void
-    {
-        $this->assertSame('adasi_portal_test', DB::connection()->getDatabaseName());
-    }
-
-    protected function tearDown(): void
-    {
-        $this->truncateTablesForAllConnections();
-        parent::tearDown();
-    }
+    use RefreshDatabase;
 
     public function test_existing_supplier_backfill_and_schema_constraints(): void
     {

@@ -80,6 +80,10 @@ class VendorChangeRequestService
             $proposed = $req->proposed_data;
             $supplierUser = $req->supplier;
 
+            if (! $supplierUser instanceof User || ! $supplierUser->isLocalEligible()) {
+                throw new InvalidArgumentException('Change request must belong to an active local supplier.');
+            }
+
             // Apply profile updates
             $supplier = $supplierUser->supplier ?? new Supplier(['user_id' => $supplierUser->id]);
 
@@ -152,6 +156,11 @@ class VendorChangeRequestService
 
             if ($req->status !== SupplierChangeRequest::STATUS_PENDING) {
                 throw new RuntimeException('Change request is not in PENDING status.');
+            }
+
+            $supplierUser = $req->supplier;
+            if (! $supplierUser instanceof User || ! $supplierUser->isLocalEligible()) {
+                throw new InvalidArgumentException('Change request must belong to an active local supplier.');
             }
 
             $req->update([
