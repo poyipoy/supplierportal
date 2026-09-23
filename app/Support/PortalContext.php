@@ -48,6 +48,15 @@ class PortalContext
         return self::current($user) === self::SCOPE_LOCAL;
     }
 
+    public static function isImport(User $user): bool
+    {
+        if (! $user->isSupplier()) {
+            return false;
+        }
+
+        return self::current($user) === self::SCOPE_IMPORT;
+    }
+
     public static function current(?User $user = null): ?string
     {
         $user ??= auth()->user();

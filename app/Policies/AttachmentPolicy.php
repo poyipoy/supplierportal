@@ -26,7 +26,9 @@ class AttachmentPolicy
         if ($user->role === 'admin') {
             return true;
         }
-        if ($user->role === 'purchasing' && $attachment->attachable_type !== SupplierOverpaymentRefund::class) return true;
+        if ($user->role === 'purchasing' && $attachment->attachable_type !== SupplierOverpaymentRefund::class) {
+            return true;
+        }
 
         $attachable = $attachment->attachable;
 
@@ -69,6 +71,8 @@ class AttachmentPolicy
 
                 Message::class => $attachable->conversation
                     && $attachable->conversation->isMember($user->id),
+
+                SupplierOverpaymentRefund::class => (int) $attachable->supplier_id === (int) $user->id,
 
                 default => false,
             };

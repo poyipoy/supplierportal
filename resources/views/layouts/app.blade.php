@@ -238,10 +238,16 @@
     <script>
         @auth
             function updateBadges() {
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                };
+
                 // Notification badge
-                fetch("{{ route('notifications.unread-count') }}")
-                    .then(r => r.json())
+                fetch("{{ route('notifications.unread-count') }}", { headers })
+                    .then(r => r.ok ? r.json() : null)
                     .then(data => {
+                        if (!data) return;
                         document.querySelectorAll('.notif-badge').forEach(badge => {
                             if (data.count > 0) {
                                 badge.textContent = data.count;
@@ -254,13 +260,15 @@
                         if (typeof updateNotificationCategoryBadges === 'function') {
                             updateNotificationCategoryBadges(data.category_counts);
                         }
-                    });
+                    })
+                    .catch(() => {});
 
                 // Chat badge
-                @if((auth()->user()->isPurchasing() || (auth()->user()->hasSupplierScope('import') && ! \App\Support\PortalContext::isLocal(auth()->user()))))
-                    fetch("{{ route('conversations.unread-count') }}")
-                        .then(r => r.json())
+                @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
+                    fetch("{{ route('conversations.unread-count') }}", { headers })
+                        .then(r => r.ok ? r.json() : null)
                         .then(data => {
+                            if (!data) return;
                             document.querySelectorAll('.chat-badge').forEach(badge => {
                                 badge.setAttribute('aria-label', `Unread conversations: ${data.count}`);
                                 const sidebarLink = badge.closest('.sidebar-link');
@@ -279,9 +287,10 @@
                                     badge.classList.add('d-none');
                                 }
                             });
-                        });
+                        })
+                        .catch(() => {});
                 @endif
-                }
+            }
 
             // Run immediately on load
             updateBadges();

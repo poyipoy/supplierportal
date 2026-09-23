@@ -10,7 +10,7 @@
 >
     <div class="sidebar-brand">
         <a href="{{ $dashboardUrl }}" class="sidebar-brand-link" aria-label="ADASI Supplier Portal — Dashboard">
-            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" class="sidebar-brand-logo">
+            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" class="sidebar-brand-logo" draggable="false">
             <span class="brand-text sidebar-type-text" style="--sidebar-type-steps: 15;">
                 <strong>ADASI</strong>
                 <small>Supplier Portal</small>
@@ -22,10 +22,11 @@
         @php
             $currentScope = \App\Support\PortalContext::current();
             $currentLabel = \App\Support\PortalContext::label($currentScope);
+            $currentIcon = $currentScope === 'local' ? 'receipt-text' : 'globe';
         @endphp
         <div class="sidebar-portal-switcher dropdown">
             <button
-                class="btn btn-sm w-100 d-flex align-items-center justify-content-between dropdown-toggle tw-bg-surface-container tw-text-on-surface tw-border tw-border-outline-variant tw-rounded-md tw-px-2.5 tw-py-1.5 tw-text-ui-sm tw-font-medium hover:tw-bg-surface-container-high ui-focus-ring"
+                class="btn btn-sm w-100 d-flex align-items-center justify-content-between dropdown-toggle tw-bg-surface tw-text-on-surface tw-border tw-border-outline-variant tw-rounded-lg tw-px-2.5 tw-py-2 tw-text-ui-sm tw-font-medium hover:tw-border-primary/50 hover:tw-bg-surface-container-low hover:tw-shadow-xs tw-transition ui-focus-ring"
                 type="button"
                 id="portalContextSwitcherDropdown"
                 data-bs-toggle="dropdown"
@@ -34,48 +35,69 @@
                 title="Switch Portal"
                 aria-label="Switch Portal Context — Current: {{ $currentLabel ?: 'Portal' }}"
             >
-                <span class="d-flex align-items-center tw-gap-2 text-truncate">
-                    <x-ui.icon name="arrow-left-right" size="sm" class="tw-text-primary tw-shrink-0" />
-                    <span class="text-truncate sidebar-type-text" style="--sidebar-type-steps: 18;">{{ $currentLabel ?: 'Portal' }}</span>
+                <span class="d-flex align-items-center tw-gap-2.5 text-truncate">
+                    <span class="tw-w-6 tw-h-6 tw-rounded tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
+                        <x-ui.icon :name="$currentIcon" size="sm" />
+                    </span>
+                    <span class="text-truncate tw-font-semibold sidebar-type-text" style="--sidebar-type-steps: 18;">{{ $currentLabel ?: 'Portal' }}</span>
                 </span>
             </button>
-            <div class="dropdown-menu dropdown-menu-start shadow-sm border py-1 tw-min-w-[220px]" aria-labelledby="portalContextSwitcherDropdown">
-                <div class="dropdown-header tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant tw-uppercase tw-tracking-wider px-3 py-1.5">
-                    Portal
+            <div class="dropdown-menu dropdown-menu-start tw-shadow-xl tw-border tw-border-outline-variant tw-rounded-xl tw-p-1.5 tw-min-w-[270px] tw-bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
+                <div class="tw-px-2.5 tw-pt-1.5 tw-pb-2 tw-flex tw-items-center tw-justify-between">
+                    <span class="tw-text-[10px] tw-font-bold tw-text-on-surface-variant tw-uppercase tw-tracking-wider">PILIH PORTAL</span>
+                    <span class="tw-text-[10px] tw-text-on-surface-variant/70 tw-font-mono">Dual Scope</span>
                 </div>
-                <hr class="dropdown-divider my-1">
-                <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
-                    @csrf
-                    <input type="hidden" name="context" value="local">
-                    <button
-                        type="submit"
-                        class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 {{ $currentScope === 'local' ? 'active' : '' }}"
-                    >
-                        <div class="d-flex flex-column text-start">
-                            <span class="tw-font-medium tw-text-ui-sm">Local Supplier</span>
-                            <span class="tw-text-ui-xs text-muted">Invoice, Vendor Profile</span>
-                        </div>
-                        @if($currentScope === 'local')
-                            <x-ui.icon name="check" size="sm" class="ms-2 tw-text-primary tw-shrink-0" />
-                        @endif
-                    </button>
-                </form>
-                <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
-                    @csrf
-                    <input type="hidden" name="context" value="import">
-                    <button
-                        type="submit"
-                        class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 {{ $currentScope === 'import' ? 'active' : '' }}"
-                    >
-                        <div class="d-flex flex-column text-start">
-                            <span class="tw-font-medium tw-text-ui-sm">Material Procurement</span>
-                            <span class="tw-text-ui-xs text-muted">Quotation, PO, Shipment</span>
-                        </div>
-                        @if($currentScope === 'import')
-                            <x-ui.icon name="check" size="sm" class="ms-2 tw-text-primary tw-shrink-0" />
-                        @endif
-                    </button>
-                </form>
+                <div class="tw-space-y-1">
+                    {{-- Local Supplier Option --}}
+                    <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
+                        @csrf
+                        <input type="hidden" name="context" value="local">
+                        <button
+                            type="submit"
+                            class="dropdown-item tw-w-full tw-flex tw-items-center tw-justify-between tw-gap-3 tw-p-2.5 tw-rounded-lg tw-transition-colors tw-text-start {{ $currentScope === 'local' ? 'tw-bg-primary/10 tw-border tw-border-primary/20' : 'tw-bg-transparent hover:tw-bg-surface-container tw-border tw-border-transparent' }}"
+                        >
+                            <div class="tw-flex tw-items-center tw-gap-3">
+                                <span class="tw-w-8 tw-h-8 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-shrink-0 {{ $currentScope === 'local' ? 'tw-bg-primary tw-text-white tw-shadow-sm' : 'tw-bg-surface-container-high tw-text-on-surface-variant' }}">
+                                    <x-ui.icon name="receipt-text" size="sm" />
+                                </span>
+                                <div class="tw-flex tw-flex-col">
+                                    <span class="tw-font-semibold tw-text-ui-sm {{ $currentScope === 'local' ? 'tw-text-primary' : 'tw-text-on-surface' }}">Local Supplier</span>
+                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">Invoice, Vendor Profile</span>
+                                </div>
+                            </div>
+                            @if($currentScope === 'local')
+                                <span class="tw-w-5 tw-h-5 tw-rounded-full tw-bg-primary tw-text-white tw-flex tw-items-center tw-justify-center tw-shrink-0 tw-shadow-xs">
+                                    <x-ui.icon name="check" size="xs" />
+                                </span>
+                            @endif
+                        </button>
+                    </form>
+
+                    {{-- Material Procurement Option --}}
+                    <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
+                        @csrf
+                        <input type="hidden" name="context" value="import">
+                        <button
+                            type="submit"
+                            class="dropdown-item tw-w-full tw-flex tw-items-center tw-justify-between tw-gap-3 tw-p-2.5 tw-rounded-lg tw-transition-colors tw-text-start {{ $currentScope === 'import' ? 'tw-bg-primary/10 tw-border tw-border-primary/20' : 'tw-bg-transparent hover:tw-bg-surface-container tw-border tw-border-transparent' }}"
+                        >
+                            <div class="tw-flex tw-items-center tw-gap-3">
+                                <span class="tw-w-8 tw-h-8 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-shrink-0 {{ $currentScope === 'import' ? 'tw-bg-primary tw-text-white tw-shadow-sm' : 'tw-bg-surface-container-high tw-text-on-surface-variant' }}">
+                                    <x-ui.icon name="globe" size="sm" />
+                                </span>
+                                <div class="tw-flex tw-flex-col">
+                                    <span class="tw-font-semibold tw-text-ui-sm {{ $currentScope === 'import' ? 'tw-text-primary' : 'tw-text-on-surface' }}">Material Procurement</span>
+                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">Quotation, PO, Shipment</span>
+                                </div>
+                            </div>
+                            @if($currentScope === 'import')
+                                <span class="tw-w-5 tw-h-5 tw-rounded-full tw-bg-primary tw-text-white tw-flex tw-items-center tw-justify-center tw-shrink-0 tw-shadow-xs">
+                                    <x-ui.icon name="check" size="xs" />
+                                </span>
+                            @endif
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     @endif
@@ -107,14 +129,42 @@
     </div>
     <nav class="sidebar-menu" aria-label="{{ ucfirst(auth()->user()->role) }} navigation">
         @php $role = auth()->user()->role; @endphp
+        @if($role === 'supplier')
+            @php $activePortalScope = \App\Support\PortalContext::current(); @endphp
+            @if($activePortalScope === \App\Support\PortalContext::SCOPE_LOCAL)
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
+                <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Ajukan Invoice">Ajukan Invoice</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Daftar Invoice">Daftar Invoice</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" label="Profil Vendor">Profil Vendor</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" label="Informasi ADASI">Informasi ADASI</x-ui.sidebar-item>
+            @elseif($activePortalScope === \App\Support\PortalContext::SCOPE_IMPORT)
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
+                <x-ui.sidebar-item :href="route('supplier.dashboard')" icon="gauge" :active="request()->routeIs('supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
 
-        @if($role === 'supplier' && \App\Support\PortalContext::isLocal(auth()->user()))
-            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
-            <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Ajukan Invoice">Ajukan Invoice</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Daftar Invoice">Daftar Invoice</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" label="Profil Vendor">Profil Vendor</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" label="Informasi ADASI">Informasi ADASI</x-ui.sidebar-item>
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Business</span></div>
+                <x-ui.sidebar-item :href="route('supplier.quotations.index')" icon="calendar-days" :active="request()->routeIs('supplier.quotations.*')" label="Quotation Period">Quotation Period</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('supplier.purchase-orders.index')" icon="receipt" :active="request()->routeIs('supplier.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('supplier.shipments.index')" icon="truck" :active="request()->routeIs('supplier.shipments.*')" label="Shipments and Deliveries">Shipments & Deliveries</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" label="Negotiation and Chat">
+                    Negotiation & Chat
+                    <x-slot:trailing>
+                        <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="Unread conversations: {{ $initChatCount }}">{{ $initChatCount }}</span>
+                    </x-slot:trailing>
+                </x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('supplier.claims.index')" icon="shield-alert" :active="request()->routeIs('supplier.claims.*')" label="Material Claim">Material Claim</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('supplier.price-history.index')" icon="trending-up" :active="request()->routeIs('supplier.price-history.*')" label="Price History">Price History</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
+
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 11;">Information</span></div>
+                <x-ui.sidebar-item :href="route('supplier.announcements.index')" icon="info" :active="request()->routeIs('supplier.announcements.*')" label="ADASI Information">ADASI Information</x-ui.sidebar-item>
+            @else
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 6;">Portal</span></div>
+                <div class="px-3 py-3 tw-text-ui-xs tw-text-on-surface-variant d-flex flex-column align-items-center text-center tw-gap-2">
+                    <x-ui.icon name="info" size="sm" class="tw-text-on-surface-variant tw-shrink-0" />
+                    <span>Silakan pilih portal terlebih dahulu.</span>
+                </div>
+            @endif
         @elseif($role === 'finance')
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Finance AP</span></div>
             <x-ui.sidebar-item :href="route('finance.dashboard')" icon="gauge" :active="request()->routeIs('finance.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
@@ -154,8 +204,13 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier')" icon="chart-no-axes-combined" :active="request()->routeIs('purchasing.comparison.*')" label="Price Comparison">Price Comparison</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.purchase-orders.index')" icon="receipt" :active="request()->routeIs('purchasing.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.shipments.index')" icon="truck" :active="request()->routeIs('purchasing.shipments.*')" label="Shipments and Logistics">Shipments & Logistics</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('purchasing.local-vendors.index')" icon="building-2" :active="request()->routeIs('purchasing.local-vendors.*')" label="Local Vendors">Local Vendors</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('purchasing.local-procurement.index')" icon="package-check" :active="request()->routeIs('purchasing.local-procurement.*')" label="Local PO & GR">Local PO & GR</x-ui.sidebar-item>
+
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Local Invoice</span></div>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.local-vendors.index')" icon="building-2" :active="request()->routeIs('purchasing.local-vendors.*')" label="Local Vendors">Local Vendors</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.local-procurement.index')" icon="package-check" :active="request()->routeIs('purchasing.local-procurement.*')" label="Local PO & GR">Local PO & GR</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.drp.supplier')" icon="wallet" :active="request()->routeIs('purchasing.drp.supplier', 'purchasing.drp.show')" label="DRP Supplier">DRP Supplier</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.drp.ga')" icon="credit-card" :active="request()->routeIs('purchasing.drp.ga')" label="DRP GA">DRP GA</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.drp.paid.index')" icon="badge-check" :active="request()->routeIs('purchasing.drp.paid.*')" label="DRP Paid">DRP Paid</x-ui.sidebar-item>
 
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Collaboration</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index')" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" label="Negotiation and Chat">
@@ -169,28 +224,6 @@
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 9;">Reporting</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.reports.index')" icon="file-chart-column" :active="request()->routeIs('purchasing.reports.*')" label="Report">Report</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
-
-        @elseif($role === 'supplier' && auth()->user()->hasSupplierScope('import'))
-            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
-            <x-ui.sidebar-item :href="route('supplier.dashboard')" icon="gauge" :active="request()->routeIs('supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
-
-            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Business</span></div>
-            <x-ui.sidebar-item :href="route('supplier.quotations.index')" icon="calendar-days" :active="request()->routeIs('supplier.quotations.*')" label="Quotation Period">Quotation Period</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('supplier.purchase-orders.index')" icon="receipt" :active="request()->routeIs('supplier.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('supplier.shipments.index')" icon="truck" :active="request()->routeIs('supplier.shipments.*')" label="Shipments and Deliveries">Shipments & Deliveries</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" label="Negotiation and Chat">
-                Negotiation & Chat
-                <x-slot:trailing>
-                    <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="Unread conversations: {{ $initChatCount }}">{{ $initChatCount }}</span>
-                </x-slot:trailing>
-            </x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('supplier.claims.index')" icon="shield-alert" :active="request()->routeIs('supplier.claims.*')" label="Material Claim">Material Claim</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('supplier.price-history.index')" icon="trending-up" :active="request()->routeIs('supplier.price-history.*')" label="Price History">Price History</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
-
-            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 11;">Information</span></div>
-            <x-ui.sidebar-item :href="route('supplier.announcements.index')" icon="info" :active="request()->routeIs('supplier.announcements.*')" label="ADASI Information">ADASI Information</x-ui.sidebar-item>
-
         @elseif($role === 'qc')
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
             <x-ui.sidebar-item :href="route('qc.dashboard')" icon="gauge" :active="request()->routeIs('qc.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>

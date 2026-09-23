@@ -7,18 +7,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Carbon;
 
 class PaymentBatch extends Model
 {
     use HasHashids;
 
     public const TYPE_SUPPLIER = 'SUPPLIER';
+
     public const TYPE_GA = 'GA';
 
     public const STATUS_DRAFT = 'DRAFT';
+
     public const STATUS_FINALIZED = 'FINALIZED';
+
     public const STATUS_PARTIALLY_PAID = 'PARTIALLY_PAID';
+
     public const STATUS_PAID = 'PAID';
+
     public const STATUS_CANCELLED = 'CANCELLED';
 
     public const ACTIVE_STATUSES = [
@@ -90,7 +96,7 @@ class PaymentBatch extends Model
         return (float) ($this->total_subtotal ?? 0);
     }
 
-    public function getBatchDateAttribute(): ?\Illuminate\Support\Carbon
+    public function getBatchDateAttribute(): ?Carbon
     {
         return $this->created_at;
     }
@@ -199,5 +205,74 @@ class PaymentBatch extends Model
         $remaining = $totalNet - $this->actual_paid_amount;
 
         return max(0.0, $remaining);
+    }
+
+    public function getOverpayments()
+    {
+        if ($this->relationLoaded('groups')) {
+            $overpayments = collect();
+            foreach ($this->groups as $group) {
+                $items = $group->relationLoaded('items') ? $group->items : $group->items()->get();
+                foreach ($items as $item) {
+                    if ($item->status === PaymentItem::STATUS_ACTIVE) {
+                        $payment = $item->relationLoaded('localInvoicePayment')
+                            ? $item->localInvoicePayment
+                            : $item->localInvoicePayment()->first();
+
+                        if ($payment) {
+                            $overpayment = $payment->relationLoaded('overpayment')
+                                ? $payment->overpayment
+                                : $payment->overpayment()->first();
+
+                            if ($overpayment) {
+                                $overpayments->push($overpayment);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return $overpayments;
+        }
+
+        return SupplierOverpaymentRefund::whereHas('payment.item.group', function ($q) {
+            $q->where('payment_batch_id', $this->id);
+        })->get();
+    }
+
+    public function hasOverpayment(): bool
+    {
+        return $this->getOverpayments()->isNotEmpty();
+    }
+
+    public function hasOpenOverpayment(): bool
+    {
+        return $this->getOverpayments()->contains(function ($op) {
+            return $op->status === SupplierOverpaymentRefund::STATUS_OPEN;
+        });
+    }
+
+    public function getTotalOverpaymentAmountAttribute(): float
+    {
+        return (float) $this->getOverpayments()->sum('overpayment_amount');
+    }
+
+    public function getOverpaymentStatusAttribute(): ?string
+    {
+        $overpayments = $this->getOverpayments();
+        if ($overpayments->isEmpty()) {
+            return null;
+        }
+
+        if ($overpayments->contains(fn ($op) => $op->status === SupplierOverpaymentRefund::STATUS_OPEN)) {
+            return SupplierOverpaymentRefund::STATUS_OPEN;
+        }
+
+        return SupplierOverpaymentRefund::STATUS_SETTLED;
+    }
+
+    public function getActualTransferredAmountAttribute(): float
+    {
+        return $this->actual_paid_amount + $this->total_overpayment_amount;
     }
 }

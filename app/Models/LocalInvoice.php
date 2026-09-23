@@ -3,19 +3,28 @@
 namespace App\Models;
 
 use App\Traits\HasHashids;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LocalInvoice extends Model
 {
     use HasHashids;
 
     public const STATUS_WAITING_PHYSICAL_DOCUMENT = 'WAITING_PHYSICAL_DOCUMENT';
+
     public const STATUS_UNDER_VERIFICATION = 'UNDER_VERIFICATION';
+
     public const STATUS_NEED_REVISION = 'NEED_REVISION';
+
     public const STATUS_READY_TO_PAY = 'READY_TO_PAY';
+
     public const STATUS_PAID = 'PAID';
+
     public const STATUS_EXPIRED = 'EXPIRED';
+
     public const STATUS_REJECTED = 'REJECTED';
+
     public const STATUS_CANCELLED = 'CANCELLED';
 
     public const STATUSES = [
@@ -73,7 +82,7 @@ class LocalInvoice extends Model
         return $this->hasMany(LocalInvoiceRevision::class);
     }
 
-    public function latestRevision(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function latestRevision(): HasOne
     {
         return $this->hasOne(LocalInvoiceRevision::class)->ofMany([
             'revision_number' => 'max',
@@ -105,7 +114,7 @@ class LocalInvoice extends Model
         return $this->hasMany(LocalInvoiceVerification::class);
     }
 
-    public function currentVerification(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function currentVerification(): HasOne
     {
         return $this->hasOne(LocalInvoiceVerification::class)->ofMany([
             'revision_number' => 'max',
@@ -140,6 +149,11 @@ class LocalInvoice extends Model
     public function payment()
     {
         return $this->hasOne(LocalInvoicePayment::class);
+    }
+
+    public function overpaymentRefund()
+    {
+        return $this->hasOne(SupplierOverpaymentRefund::class, 'local_invoice_id');
     }
 
     public function isPaid(): bool
@@ -199,14 +213,14 @@ class LocalInvoice extends Model
         return $this->due_date ? (int) today()->diffInDays($this->due_date, false) : null;
     }
 
-    public function scopeOverdue(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeOverdue(Builder $query): Builder
     {
         return $query->whereNotIn('status', [self::STATUS_PAID, 'COMPLETED', self::STATUS_EXPIRED])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<', today());
     }
 
-    public function scopeIsOverdue(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeIsOverdue(Builder $query): Builder
     {
         return $this->scopeOverdue($query);
     }

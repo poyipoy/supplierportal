@@ -19,6 +19,11 @@ class PurchasingNavigation
         'purchasing.comparison.vs-best',
         'purchasing.purchase-orders.index',
         'purchasing.shipments.index',
+        'purchasing.local-vendors.index',
+        'purchasing.local-procurement.index',
+        'purchasing.drp.supplier',
+        'purchasing.drp.ga',
+        'purchasing.drp.paid.index',
         'purchasing.conversations.index',
         'purchasing.claims.index',
         'purchasing.reports.index',
@@ -160,8 +165,8 @@ class PurchasingNavigation
     public static function listRoutePaths(): array
     {
         return collect(self::LIST_ROUTES)
-            ->filter(fn(string $routeName) => Route::has($routeName))
-            ->map(fn(string $routeName) => parse_url(route($routeName), PHP_URL_PATH))
+            ->filter(fn (string $routeName) => Route::has($routeName))
+            ->map(fn (string $routeName) => parse_url(route($routeName), PHP_URL_PATH))
             ->filter()
             ->values()
             ->all();
@@ -176,7 +181,7 @@ class PurchasingNavigation
         $segments = explode('.', $routeName);
 
         if (count($segments) >= 3) {
-            $listCandidate = $segments[0] . '.' . $segments[1] . '.index';
+            $listCandidate = $segments[0].'.'.$segments[1].'.index';
             if (self::isListRoute($listCandidate)) {
                 return $listCandidate;
             }

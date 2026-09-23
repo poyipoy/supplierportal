@@ -86,6 +86,18 @@ class TwoFactorAuthenticationTest extends TestCase
         $response->assertSessionMissing('url.intended');
     }
 
+    public function test_pending_challenge_does_not_preserve_polling_or_api_intended_url(): void
+    {
+        [$user] = $this->mfaUser();
+
+        $response = $this->withSession(['url.intended' => 'http://localhost/notifications/unread-count'])
+            ->post('/login', ['email' => $user->email, 'password' => 'password']);
+
+        $response->assertSessionHas(TwoFactorService::PENDING_LOGIN_KEY, fn (array $pending): bool => $pending['intended'] === route('dashboard', absolute: false)
+        );
+        $response->assertSessionMissing('url.intended');
+    }
+
     public function test_two_factor_challenge_is_throttled_after_five_failed_codes(): void
     {
         [$user] = $this->mfaUser();

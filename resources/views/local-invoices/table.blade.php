@@ -14,7 +14,9 @@
                     <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Jatuh Tempo</th>
                 @endif
                 @if($payments ?? false)
-                    <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Termin (Hari)</th>
+                    @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Termin (Hari)</th>
+                    @endif
                     <th scope="col" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">Jadwal Bayar</th>
                 @endif
                 <th scope="col" class="text-end tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant" style="min-width: 130px;">Aksi</th>
@@ -64,6 +66,19 @@
                         <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($row->status)">
                             {{ \App\Support\StatusHelper::localInvoiceLabel($row->status) }}
                         </x-ui.status-chip>
+                        @if($row->overpaymentRefund)
+                            @if($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
+                                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-mt-1 tw-block tw-w-max">
+                                    <x-ui.icon name="alert-circle" size="xs" />
+                                    Kelebihan Bayar: Rp {{ number_format((float) $row->overpaymentRefund->overpayment_amount, 0, ',', '.') }} (Perlu Refund)
+                                </span>
+                            @elseif($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
+                                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-mt-1 tw-block tw-w-max">
+                                    <x-ui.icon name="check-circle" size="xs" />
+                                    Refund Selesai
+                                </span>
+                            @endif
+                        @endif
                     </td>
                     @if(!auth()->user()?->isSupplier())
                     <td>
@@ -93,11 +108,13 @@
                     </td>
                     @endif
                     @if($payments ?? false)
-                        <td>
-                            <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                Net {{ $row->payment_term_days_snapshot }} hari
-                            </span>
-                        </td>
+                        @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
+                            <td>
+                                <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
+                                    Net {{ $row->payment_term_days_snapshot }} hari
+                                </span>
+                            </td>
+                        @endif
                         <td>
                             <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
                                 {{ $row->scheduled_payment_date?->format('d M Y') ?? '—' }}
@@ -118,7 +135,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ (in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) ? 1 : 0) + (($payments ?? false) ? 2 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + 6 }}">
+                    <td colspan="{{ (in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) ? 1 : 0) + ((($payments ?? false) && !auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier') ? 1 : 0) + (($payments ?? false) ? 1 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + 6 }}">
                         <x-ui.empty-state
                             icon="inbox"
                             title="Tidak ada invoice ditemukan"

@@ -14,10 +14,10 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>Register Klaim</span>
             </x-ui.button>
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+            <x-ui.button type="button" variant="primary" size="sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
                 <x-ui.icon name="plus" size="sm" />
                 <span>Tambah Karyawan</span>
-            </button>
+            </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -76,7 +76,7 @@
                         <th scope="col">Nomor Rekening</th>
                         <th scope="col">Atas Nama</th>
                         <th scope="col">Status</th>
-                        <th scope="col" class="text-end">Aksi</th>
+                        <th scope="col" class="text-end tw-whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,29 +92,41 @@
                             <td><span class="tw-font-mono tw-text-ui-sm">{{ $emp->account_number }}</span></td>
                             <td>{{ $emp->account_holder_name }}</td>
                             <td>
-                                @if($emp->is_active)
-                                    <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-success/10 tw-text-success tw-font-bold">Aktif</span>
-                                @else
-                                    <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-error/10 tw-text-error tw-font-bold">Non-aktif</span>
-                                @endif
+                                <x-ui.status-chip :tone="$emp->is_active ? 'success' : 'neutral'">
+                                    {{ $emp->is_active ? 'Aktif' : 'Non-aktif' }}
+                                </x-ui.status-chip>
                             </td>
-                            <td class="text-end">
-                                <div class="tw-flex tw-items-center tw-justify-end tw-gap-1">
+                            <td class="text-end tw-whitespace-nowrap">
+                                <div class="tw-inline-flex tw-items-center tw-justify-end tw-gap-1.5">
                                     <button
                                         type="button"
-                                        class="btn btn-xs btn-outline-primary"
+                                        class="ui-data-action ui-data-action--primary ui-motion ui-focus-ring tw-gap-1.5 active:tw-scale-[0.98]"
                                         data-bs-toggle="modal"
                                         data-bs-target="#editEmployeeModal-{{ $emp->id }}"
+                                        aria-label="Edit data {{ $emp->name }}"
                                     >
-                                        Edit
+                                        <x-ui.icon name="pencil" size="sm" class="tw-shrink-0" />
+                                        <span>Edit</span>
                                     </button>
-                                    <form method="POST" action="{{ route('ga.employees.toggle-status', $emp) }}" class="tw-inline" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: 'Ubah Status Karyawan?', text: 'Ubah status aktif karyawan ini?', confirmText: 'Ya, Ubah', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
+                                    <form
+                                        method="POST"
+                                        action="{{ route('ga.employees.toggle-status', $emp) }}"
+                                        class="tw-inline"
+                                        onsubmit="event.preventDefault(); {{ $emp->is_active ? 'window.AdasiAlert.confirmDanger' : 'window.AdasiAlert.confirm' }}({
+                                            title: '{{ $emp->is_active ? 'Nonaktifkan Karyawan?' : 'Aktifkan Karyawan?' }}',
+                                            text: '{{ $emp->is_active ? 'Karyawan ' . addslashes(e($emp->name)) . ' tidak akan dapat dipilih pada pengajuan klaim baru.' : 'Karyawan ' . addslashes(e($emp->name)) . ' akan diaktifkan kembali untuk pengajuan klaim.' }}',
+                                            confirmText: '{{ $emp->is_active ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan' }}',
+                                            cancelText: 'Batal'
+                                        }).then(r => { if (r.isConfirmed) this.submit(); });"
+                                    >
                                         @csrf
                                         <button
                                             type="submit"
-                                            class="btn btn-xs {{ $emp->is_active ? 'btn-outline-danger' : 'btn-outline-success' }}"
+                                            class="ui-data-action {{ $emp->is_active ? 'ui-data-action--danger' : 'ui-data-action--success' }} ui-motion ui-focus-ring tw-gap-1.5 active:tw-scale-[0.98]"
+                                            aria-label="{{ $emp->is_active ? 'Nonaktifkan ' : 'Aktifkan ' }}{{ $emp->name }}"
                                         >
-                                            {{ $emp->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                                            <x-ui.icon name="{{ $emp->is_active ? 'user-x' : 'user-check' }}" size="sm" class="tw-shrink-0" />
+                                            <span>{{ $emp->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</span>
                                         </button>
                                     </form>
                                 </div>
@@ -169,9 +181,13 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                                            <button type="submit" class="btn btn-primary btn-sm">Simpan Perubahan</button>
+                                        <div class="modal-footer tw-gap-2">
+                                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                                                <span>Batal</span>
+                                            </x-ui.button>
+                                            <x-ui.button type="submit" variant="primary" size="sm">
+                                                <span>Simpan Perubahan</span>
+                                            </x-ui.button>
                                         </div>
                                     </div>
                                 </form>
@@ -236,9 +252,14 @@
                         <input type="text" name="account_holder_name" class="form-control form-control-sm" required placeholder="Sesuai buku tabungan">
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Simpan Karyawan</button>
+                <div class="modal-footer tw-gap-2">
+                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                        <span>Batal</span>
+                    </x-ui.button>
+                    <x-ui.button type="submit" variant="primary" size="sm">
+                        <x-ui.icon name="plus" size="sm" />
+                        <span>Simpan Karyawan</span>
+                    </x-ui.button>
                 </div>
             </div>
         </form>

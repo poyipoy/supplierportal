@@ -73,7 +73,8 @@ class SupplierVendorProfileTest extends TestCase
         $response->assertOk();
         $response->assertSee('PT Baja Unggul');
         $response->assertSee('Kawasan Industri MM2100');
-        $response->assertSee('Net 45 Hari');
+        $response->assertDontSee('Net 45 Hari');
+        $response->assertDontSee('Payment Term');
         $response->assertSee('1234567890');
         $response->assertSee('NIB_Baja_Unggul.pdf');
     }
@@ -127,5 +128,29 @@ class SupplierVendorProfileTest extends TestCase
 
         $doc = SupplierMasterDocument::where('supplier_id', $user->id)->first();
         Storage::disk('private')->assertExists($doc->file_path);
+    }
+
+    public function test_local_supplier_cannot_see_payment_term_in_dashboard_or_invoice_form(): void
+    {
+        $user = $this->createLocalSupplier([
+            'company_name' => 'PT Baja Unggul',
+            'payment_term_days' => 45,
+            'npwp' => '01.234.567.8-999.000',
+        ]);
+
+        // Dashboard
+        $dashboardResponse = $this->actingAs($user)->get(route('local-supplier.dashboard'));
+        $dashboardResponse->assertOk();
+        $dashboardResponse->assertSee('PT Baja Unggul');
+        $dashboardResponse->assertSee('01.234.567.8-999.000');
+        $dashboardResponse->assertDontSee('Ketentuan Termin');
+        $dashboardResponse->assertDontSee('Net 45 Hari');
+
+        // Invoice create form
+        $formResponse = $this->actingAs($user)->get(route('local-supplier.invoices.create'));
+        $formResponse->assertOk();
+        $formResponse->assertDontSee('Net 45 Hari');
+        $formResponse->assertDontSee('Termin Pembayaran');
+        $formResponse->assertDontSee('ketentuan termin pembayaran resmi');
     }
 }

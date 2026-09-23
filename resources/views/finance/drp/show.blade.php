@@ -233,9 +233,28 @@
                                         @if($item->status === 'ACTIVE')
                                             @if($item->localInvoicePayment)
                                                 @if($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_FINALIZED)
-                                                    <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-success/10 tw-text-success">
-                                                        Lunas (Rp {{ number_format($item->localInvoicePayment->actual_paid_total, 0, ',', '.') }})
-                                                    </span>
+                                                    <div class="tw-flex tw-flex-col tw-gap-1">
+                                                        <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-success/10 tw-text-success tw-w-fit">
+                                                            Lunas (Rp {{ number_format($item->localInvoicePayment->actual_paid_total, 0, ',', '.') }})
+                                                        </span>
+                                                        @if($item->localInvoicePayment->overpayment)
+                                                            @if($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
+                                                                <a href="{{ route('finance.overpayments.index', ['q' => $item->payable?->invoice_number ?? $item->item_reference]) }}"
+                                                                   class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-w-fit tw-no-underline hover:tw-underline"
+                                                                   title="Kelebihan bayar belum direfund oleh supplier">
+                                                                    <x-ui.icon name="alert-circle" size="xs" />
+                                                                    <span>Overpayment: Rp {{ number_format($item->localInvoicePayment->overpayment->overpayment_amount, 0, ',', '.') }} (Open)</span>
+                                                                </a>
+                                                            @elseif($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
+                                                                <a href="{{ route('finance.overpayments.index', ['q' => $item->payable?->invoice_number ?? $item->item_reference]) }}"
+                                                                   class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-w-fit tw-no-underline hover:tw-underline"
+                                                                   title="Kelebihan bayar telah diselesaikan">
+                                                                    <x-ui.icon name="check-circle" size="xs" />
+                                                                    <span>Overpayment Selesai (Rp {{ number_format($item->localInvoicePayment->overpayment->overpayment_amount, 0, ',', '.') }})</span>
+                                                                </a>
+                                                            @endif
+                                                        @endif
+                                                    </div>
                                                 @elseif($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_CORRECTION_REQUIRED)
                                                     <div class="tw-flex tw-flex-col tw-gap-0.5">
                                                         <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-warning/10 tw-text-warning-container-foreground tw-w-fit">
@@ -268,6 +287,12 @@
                                         @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER && $item->status === \App\Models\PaymentItem::STATUS_ACTIVE)
                                             @if($item->localInvoiceVoucher)
                                                 <div class="tw-inline-flex tw-items-center tw-gap-1.5">
+                                                    @if($item->localInvoicePayment?->overpayment)
+                                                        <x-ui.button :href="route('finance.overpayments.index', ['q' => $item->payable?->invoice_number ?? $item->item_reference])" variant="outline" size="sm" title="Buka Refund Overpayment">
+                                                            <x-ui.icon name="corner-up-left" size="sm" class="tw-text-amber-600" />
+                                                            <span>Refund</span>
+                                                        </x-ui.button>
+                                                    @endif
                                                     <x-ui.button :href="route('finance.vouchers.print', $item->localInvoiceVoucher)" variant="outline" size="sm" target="_blank" title="Cetak / Download PDF Voucher">
                                                         <x-ui.icon name="printer" size="sm" />
                                                         <span>Cetak PDF</span>

@@ -77,10 +77,11 @@
                     <h3 class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-on-surface">
                         {{ auth()->user()->supplier?->company_name ?: auth()->user()->name }}
                     </h3>
-                    <span class="tw-text-ui-xs tw-text-on-surface-variant">
-                        Ketentuan Termin: <strong>Net {{ auth()->user()->supplier?->payment_term_days ?? 30 }} Hari</strong>
-                        @if(auth()->user()->supplier?->npwp) · NPWP: {{ auth()->user()->supplier->npwp }} @endif
-                    </span>
+                    @if(auth()->user()->supplier?->npwp)
+                        <span class="tw-text-ui-xs tw-text-on-surface-variant">
+                            NPWP: {{ auth()->user()->supplier->npwp }}
+                        </span>
+                    @endif
                 </div>
             </div>
             <div>

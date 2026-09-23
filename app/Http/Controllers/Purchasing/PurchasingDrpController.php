@@ -1,24 +1,65 @@
 <?php
 
-namespace App\Http\Controllers\Finance;
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Finance\LocalInvoiceSettlementController;
+use App\Models\LocalInvoiceVoucher;
 use App\Models\PaymentBatch;
 use App\Models\SupplierOverpaymentRefund;
-use App\Services\Payment\PaymentExecutionService;
+use App\Services\Payment\PaymentVoucherService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
-class FinanceDrpPaidController extends Controller
+class PurchasingDrpController extends Controller
 {
-    public function index(Request $request)
+    public function indexSupplier(Request $request): View
     {
-        $tab = $request->query('tab', 'unpaid');
-        $type = $request->query('type');
+        $batches = PaymentBatch::where('batch_type', PaymentBatch::TYPE_SUPPLIER)
+            ->withCount('groups')
+            ->latest('id')
+            ->paginate(15);
+
+        return view('purchasing.drp.supplier', compact('batches'));
+    }
+
+    public function indexGa(Request $request): View
+    {
+        $batches = PaymentBatch::where('batch_type', PaymentBatch::TYPE_GA)
+            ->withCount('groups')
+            ->latest('id')
+            ->paginate(15);
+
+        return view('purchasing.drp.ga', compact('batches'));
+    }
+
+    public function show(PaymentBatch $batch, PaymentVoucherService $voucherService): View
+    {
+        $batch->load([
+            'groups.items.payable',
+            'groups.items.localInvoicePayment.overpayment',
+            'groups.items.localInvoiceVoucher.payment.transfers',
+            'creator',
+            'finalizer',
+        ]);
+
+        return view('purchasing.drp.show', [
+            'batch' => $batch,
+            'voucherService' => $voucherService,
+        ]);
+    }
+
+    public function indexPaid(Request $request): View
+    {
+        $tab = (string) $request->query('tab', 'unpaid');
+        $type = (string) $request->query('type', '');
         $q = trim((string) $request->query('q', ''));
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
-        $overpaymentStatus = $request->query('overpayment_status');
+        $overpaymentStatus = (string) $request->query('overpayment_status', '');
 
         // Metrics calculations
         $unpaidStatuses = [
@@ -48,7 +89,13 @@ class FinanceDrpPaidController extends Controller
 
         $openOverpaymentsCount = (int) SupplierOverpaymentRefund::where('status', SupplierOverpaymentRefund::STATUS_OPEN)->count();
 
-        $query = PaymentBatch::with(['creator', 'finalizer', 'groups.items.localInvoiceVoucher', 'groups.items.localInvoicePayment.overpayment', 'groups.items.payable'])
+        $query = PaymentBatch::with([
+            'creator',
+            'finalizer',
+            'groups.items.localInvoiceVoucher',
+            'groups.items.localInvoicePayment.overpayment',
+            'groups.items.payable',
+        ])
             ->withCount('groups')
             ->where('status', '!=', PaymentBatch::STATUS_CANCELLED);
 
@@ -81,13 +128,13 @@ class FinanceDrpPaidController extends Controller
         }
 
         // Filter by batch type
-        if (! empty($type)) {
+        if ($type !== '') {
             $query->where('batch_type', strtoupper($type));
         }
 
         // Filter by overpayment status
-        if (! empty($overpaymentStatus) && $overpaymentStatus !== 'all') {
-            $os = strtolower(trim((string) $overpaymentStatus));
+        if ($overpaymentStatus !== '' && $overpaymentStatus !== 'all') {
+            $os = strtolower(trim($overpaymentStatus));
             if ($os === 'has_overpayment') {
                 $query->whereHas('groups.items.localInvoicePayment.overpayment');
             } elseif ($os === 'open') {
@@ -113,51 +160,24 @@ class FinanceDrpPaidController extends Controller
 
         $batches = $query->latest('id')->paginate(15)->withQueryString();
 
-        return view('finance.drp.paid', compact('batches', 'tab', 'type', 'q', 'dateFrom', 'dateTo', 'metrics', 'overpaymentStatus', 'openOverpaymentsCount'));
+        return view('purchasing.drp.paid', compact(
+            'batches',
+            'tab',
+            'type',
+            'q',
+            'dateFrom',
+            'dateTo',
+            'metrics',
+            'overpaymentStatus',
+            'openOverpaymentsCount'
+        ));
     }
 
-    public function markBatchPaid(PaymentBatch $batch, Request $request, PaymentExecutionService $service)
-    {
-        if ($batch->isDraft()) {
-            throw ValidationException::withMessages([
-                'batch' => 'Batch DRP masih berstatus DRAFT. Finalisasi batch terlebih dahulu sebelum dapat ditandai lunas.',
-            ]);
-        }
-
-        if ($batch->isPaid()) {
-            throw ValidationException::withMessages([
-                'batch' => "Batch DRP [{$batch->batch_number}] sudah berstatus PAID.",
-            ]);
-        }
-
-        $data = $request->validate([
-            'transfer_reference' => ['required', 'string', 'max:100'],
-            'transfer_date' => ['required', 'date_format:Y-m-d'],
-            'payment_notes' => ['nullable', 'string', 'max:1000'],
-            'custom_amounts' => ['nullable', 'array'],
-            'custom_amounts.*' => ['nullable', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'],
-            'correction_reasons' => ['nullable', 'array'],
-            'correction_reasons.*' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $service->markEntireBatchPaid($batch, $data, $request->user());
-
-        $freshBatch = $batch->fresh(['groups.items.localInvoicePayment.overpayment']);
-        $totalOverpayment = (float) $freshBatch->total_overpayment_amount;
-
-        if ($freshBatch->status === PaymentBatch::STATUS_PARTIALLY_PAID) {
-            $message = "Batch DRP [{$batch->batch_number}] berhasil diproses dengan status Sebagian Lunas (Partially Paid).";
-            if ($totalOverpayment > 0) {
-                $message .= ' Terdeteksi kelebihan bayar sebesar Rp '.number_format($totalOverpayment, 0, ',', '.').' yang otomatis dicatat pada modul Refund Overpayment.';
-            }
-        } else {
-            if ($totalOverpayment > 0) {
-                $message = "Batch DRP [{$batch->batch_number}] berhasil ditandai Lunas (PAID). Terdeteksi kelebihan bayar sebesar Rp ".number_format($totalOverpayment, 0, ',', '.').' yang otomatis dicatat pada modul Refund Overpayment.';
-            } else {
-                $message = "Batch DRP [{$batch->batch_number}] berhasil ditandai Lunas (PAID).";
-            }
-        }
-
-        return back()->with('success', $message);
+    public function printVoucher(
+        Request $request,
+        LocalInvoiceVoucher $voucher,
+        LocalInvoiceSettlementController $settlementController
+    ): Response {
+        return $settlementController->printVoucher($request, $voucher);
     }
 }

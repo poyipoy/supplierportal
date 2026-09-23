@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
-use App\Models\GaClaim;
 use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
@@ -65,7 +64,7 @@ class FinanceDrpController extends Controller
 
     public function show(PaymentBatch $batch, PaymentVoucherService $voucherService)
     {
-        $batch->load(['groups.items.payable', 'groups.items.localInvoicePayment', 'groups.items.localInvoiceVoucher.payment.transfers', 'creator', 'finalizer']);
+        $batch->load(['groups.items.payable', 'groups.items.localInvoicePayment.overpayment', 'groups.items.localInvoiceVoucher.payment.transfers', 'creator', 'finalizer']);
 
         return view('finance.drp.show', [
             'batch' => $batch,
@@ -128,10 +127,13 @@ class FinanceDrpController extends Controller
 
     private function resolveSupplierFilter(mixed $value): ?User
     {
-        if ($value === null || $value === '') return null;
+        if ($value === null || $value === '') {
+            return null;
+        }
         abort_unless(is_string($value) && ! ctype_digit($value), 404);
         $supplier = (new User)->resolveRouteBinding($value);
         abort_unless($supplier instanceof User && $supplier->isLocalEligible(), 404);
+
         return $supplier;
     }
 }

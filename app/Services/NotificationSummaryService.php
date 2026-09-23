@@ -62,9 +62,12 @@ class NotificationSummaryService
         });
 
         $counts = collect($categories)->mapWithKeys(function ($option, string $key) use ($notifications, $unreadNotifications): array {
+            $unreadCount = $this->filterByCategory($unreadNotifications, $key)->count();
+            $loadedTotal = $this->filterByCategory($notifications, $key)->count();
+
             return [$key => [
-                'total' => $this->filterByCategory($notifications, $key)->count(),
-                'unread' => $this->filterByCategory($unreadNotifications, $key)->count(),
+                'total' => max($unreadCount, $loadedTotal),
+                'unread' => $unreadCount,
             ]];
         })->all();
 

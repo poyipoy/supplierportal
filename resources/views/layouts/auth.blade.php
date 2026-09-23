@@ -49,6 +49,9 @@
             height: 100%;
             object-fit: cover;
             object-position: center;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
         }
         .auth-brand-panel__overlay {
             position: absolute;
@@ -83,6 +86,9 @@
             height: 2rem;
             width: auto;
             flex-shrink: 0;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
         }
         .auth-brand-logo__text {
             font-size: var(--ui-font-size-sm);
@@ -168,6 +174,9 @@
         .auth-mobile-brand img {
             height: 2.25rem;
             width: auto;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
         }
         .auth-mobile-brand__name {
             font-weight: 700;
@@ -210,13 +219,13 @@
         {{-- Left Column: Industrial Image Panel --}}
         <aside class="auth-brand-panel" aria-label="ADASI Supplier Portal information">
             <div class="auth-brand-panel__image">
-                <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager">
+                <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager" draggable="false">
                 <div class="auth-brand-panel__overlay"></div>
             </div>
 
             <div class="auth-brand-panel__content">
                 <div class="auth-brand-logo">
-                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo">
+                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo" draggable="false">
                     <div>
                         <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
                         <span class="auth-brand-logo__sub">Supplier Portal</span>
@@ -238,7 +247,7 @@
         <section class="auth-form-panel">
             <div class="auth-form-surface">
                 <a href="{{ route('login') }}" class="auth-mobile-brand">
-                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="">
+                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" draggable="false">
                     <span>
                         <span class="auth-mobile-brand__name">ADASI</span>
                         <span class="auth-mobile-brand__sub">Supplier Portal</span>

@@ -19,6 +19,7 @@ class InvoiceFilterRequest extends FormRequest
             'q' => ['nullable', 'string', 'max:100'], 'supplier' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(LocalInvoice::STATUSES)],
             'payment_status' => ['nullable', 'string', 'in:ALL,UNPAID,PAID,all,unpaid,paid'],
+            'overpayment_status' => ['nullable', 'string', 'in:all,open,settled,ALL,OPEN,SETTLED'],
             'from' => ['nullable', 'date_format:Y-m-d'], 'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
             'due_from' => ['nullable', 'date_format:Y-m-d'], 'due_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:due_from'],
             'overdue' => ['nullable', 'boolean'], 'history' => ['nullable', 'boolean'],

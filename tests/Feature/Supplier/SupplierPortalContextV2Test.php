@@ -307,6 +307,8 @@ class SupplierPortalContextV2Test extends TestCase
 
         $response->assertOk();
         $response->assertSee('portalContextSwitcherDropdown');
+        $response->assertSee('PILIH PORTAL');
+        $response->assertSee('Dual Scope');
         $response->assertSee('Local Supplier');
         $response->assertSee('Material Procurement');
         $response->assertSee('Invoice, Vendor Profile');
@@ -346,5 +348,34 @@ class SupplierPortalContextV2Test extends TestCase
         $response->assertSee('Aktif');
         $response->assertDontSee('Pengadaan Impor');
         $response->assertDontSee('Invoice Lokal');
+    }
+
+    public function test_unselected_context_renders_neutral_sidebar_and_hides_chat_icon(): void
+    {
+        $dualSupplier = $this->supplierWithScopes(['import', 'local']);
+
+        $this->assertFalse(PortalContext::isImport($dualSupplier));
+
+        $response = $this->actingAs($dualSupplier)
+            ->get(route('supplier-context.index'));
+
+        $response->assertOk();
+        // Should show neutral guidance in sidebar
+        $response->assertSee('Silakan pilih portal terlebih dahulu.');
+        // Should NOT render portal module navigation items in sidebar
+        $response->assertDontSee('Quotation Period');
+        $response->assertDontSee('Daftar Invoice');
+        // Should NOT render chat icon in topbar
+        $response->assertDontSee('data-chat-drawer');
+
+        // When in Material Procurement context, Material Procurement menu and chat icon should render
+        $importResponse = $this->actingAs($dualSupplier)
+            ->withSession(['supplier_context' => 'import'])
+            ->get(route('supplier.dashboard'));
+
+        $importResponse->assertOk();
+        $importResponse->assertSee('Quotation Period');
+        $importResponse->assertSee('data-chat-drawer');
+        $importResponse->assertDontSee('Silakan pilih portal terlebih dahulu.');
     }
 }

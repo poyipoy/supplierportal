@@ -1,7 +1,6 @@
 @php
     $invoice = $invoice ?? null;
     $supplier = auth()->user()->supplier;
-    $termDays = (int) ($invoice->payment_term_days_snapshot ?? $supplier?->payment_term_days ?? 30);
     $companyName = $supplier?->company_name ?: auth()->user()->name;
     $isPkp = (bool) ($supplier?->is_pkp ?? false);
     $vendorCategory = $supplier?->vendor_category ?: $supplier?->category ?: 'Barang';
@@ -25,7 +24,7 @@
     <div class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
         <div class="lg:tw-col-span-8 tw-space-y-6">
             {{-- 1. Profil Vendor & Ketentuan --}}
-            <x-ui.form-section title="Informasi Vendor" description="Profil supplier terdaftar dan ketentuan termin pembayaran resmi.">
+            <x-ui.form-section title="Informasi Vendor" description="Profil supplier terdaftar.">
                 <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4">
                     <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3">
                         <div class="tw-flex tw-items-center tw-gap-3">
@@ -44,10 +43,6 @@
                             <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-font-medium tw-bg-surface-high tw-text-on-surface">
                                 <x-ui.icon name="tag" size="sm" class="tw-text-on-surface-variant" />
                                 <span>{{ $vendorCategory }}</span>
-                            </span>
-                            <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-font-medium tw-bg-surface-high tw-text-on-surface">
-                                <x-ui.icon name="clock" size="sm" class="tw-text-on-surface-variant" />
-                                <span>Net {{ $termDays }} Hari</span>
                             </span>
                         </div>
                     </div>
@@ -480,13 +475,9 @@
                         </div>
                     </div>
 
-                    {{-- Info Termin & Ketentuan --}}
-                    <div class="tw-text-ui-xs tw-text-on-surface-variant tw-space-y-1.5 tw-pt-1">
-                        <div class="tw-flex tw-items-center tw-justify-between">
-                            <span>Termin Pembayaran:</span>
-                            <span class="tw-font-semibold tw-text-on-surface">Net {{ $termDays }} Hari</span>
-                        </div>
-                        <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-2 tw-leading-relaxed">
+                    {{-- Petunjuk Pengajuan --}}
+                    <div class="tw-text-ui-xs tw-text-on-surface-variant tw-pt-1">
+                        <p class="tw-text-[11px] tw-text-on-surface-variant tw-m-0 tw-leading-relaxed">
                             Pastikan nominal DPP sama persis dengan total GR utuh yang dipilih agar proses verifikasi Finance berjalan lancar.
                         </p>
                     </div>

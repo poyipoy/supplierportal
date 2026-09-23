@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\UserTwoFactorController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ConversationMessageController;
 use App\Http\Controllers\ExportDownloadController;
+use App\Http\Controllers\Finance\LocalProcurementController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Purchasing\AwardConsolidationController;
@@ -29,12 +30,15 @@ use App\Http\Controllers\Purchasing\PriceComparisonController;
 use App\Http\Controllers\Purchasing\PrItemController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Purchasing\PurchasingController;
+use App\Http\Controllers\Purchasing\PurchasingDrpController;
+use App\Http\Controllers\Purchasing\PurchasingLocalVendorController;
 use App\Http\Controllers\Purchasing\QuotationListController;
 use App\Http\Controllers\Purchasing\ReportController;
 use App\Http\Controllers\Purchasing\ShipmentController;
 use App\Http\Controllers\Qc\DashboardController;
 use App\Http\Controllers\Qc\QcExportController;
 use App\Http\Controllers\Qc\QcInspectionController;
+use App\Http\Controllers\ReceiptVerificationController;
 use App\Http\Controllers\Supplier\ClaimController;
 use App\Http\Controllers\Supplier\ExportController as SupplierExportController;
 use App\Http\Controllers\Supplier\QuotationController;
@@ -59,10 +63,10 @@ require __DIR__.'/ga.php';
 Route::get('/', function () {
     return redirect()->route('login');
 });
-Route::get('/verify-receipt/supplier/{receipt}', [\App\Http\Controllers\ReceiptVerificationController::class, 'verifySupplier'])
+Route::get('/verify-receipt/supplier/{receipt}', [ReceiptVerificationController::class, 'verifySupplier'])
     ->middleware('throttle:60,1')
     ->name('receipts.verify-supplier');
-Route::get('/verify-receipt/ga/{receipt}', [\App\Http\Controllers\ReceiptVerificationController::class, 'verifyGa'])
+Route::get('/verify-receipt/ga/{receipt}', [ReceiptVerificationController::class, 'verifyGa'])
     ->middleware('throttle:60,1')
     ->name('receipts.verify-ga');
 
@@ -223,13 +227,13 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
     Route::get('/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
     // Local Vendors & Read-Only Invoices
-    Route::get('/local-vendors', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'index'])->name('local-vendors.index');
-    Route::get('/local-vendors/{vendor}', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'show'])->name('local-vendors.show');
-    Route::post('/local-vendors/change-requests/{request}/approve', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'approveChange'])->name('local-vendors.change-requests.approve');
-    Route::post('/local-vendors/change-requests/{request}/reject', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'rejectChange'])->name('local-vendors.change-requests.reject');
-    Route::get('/local-invoices/{invoice}', [\App\Http\Controllers\Purchasing\PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
+    Route::get('/local-vendors', [PurchasingLocalVendorController::class, 'index'])->name('local-vendors.index');
+    Route::get('/local-vendors/{vendor}', [PurchasingLocalVendorController::class, 'show'])->name('local-vendors.show');
+    Route::post('/local-vendors/change-requests/{request}/approve', [PurchasingLocalVendorController::class, 'approveChange'])->name('local-vendors.change-requests.approve');
+    Route::post('/local-vendors/change-requests/{request}/reject', [PurchasingLocalVendorController::class, 'rejectChange'])->name('local-vendors.change-requests.reject');
+    Route::get('/local-invoices/{invoice}', [PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
 
-    Route::prefix('local-procurement')->name('local-procurement.')->controller(\App\Http\Controllers\Finance\LocalProcurementController::class)->group(function () {
+    Route::prefix('local-procurement')->name('local-procurement.')->controller(LocalProcurementController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'store')->name('store');
@@ -245,6 +249,15 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
         Route::put('/goods-receipts/{goodsReceipt}', 'updateGoodsReceipt')->name('goods-receipts.update');
         Route::post('/goods-receipts/{goodsReceipt}/cancel', 'cancelGoodsReceipt')->name('goods-receipts.cancel');
     });
+
+    // Read-Only DRP (Supplier, GA, Paid) & Vouchers
+    Route::prefix('drp')->name('drp.')->controller(PurchasingDrpController::class)->group(function () {
+        Route::get('/supplier', 'indexSupplier')->name('supplier');
+        Route::get('/ga', 'indexGa')->name('ga');
+        Route::get('/paid', 'indexPaid')->name('paid.index');
+        Route::get('/{batch}', 'show')->name('show');
+    });
+    Route::get('/vouchers/{voucher}/print', [PurchasingDrpController::class, 'printVoucher'])->name('vouchers.print');
 });
 
 /*
