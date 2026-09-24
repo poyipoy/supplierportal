@@ -67,6 +67,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'purchasing.navigation' => RememberPurchasingListUrl::class,
             'mfa.pending' => EnsurePendingTwoFactorChallenge::class,
             'no-store' => NoStoreResponse::class,
+            'registration.session' => \App\Http\Middleware\EnsureRegistrationSession::class,
         ]);
 
         $middleware->redirectUsersTo(function () {

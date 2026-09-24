@@ -20,6 +20,11 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasHashids, Notifiable;
 
+    public const ACCOUNT_STATUS_PENDING = 'PENDING';
+    public const ACCOUNT_STATUS_REVISION = 'REVISION';
+    public const ACCOUNT_STATUS_ACTIVE = 'ACTIVE';
+    public const ACCOUNT_STATUS_REJECTED = 'REJECTED';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -31,6 +36,7 @@ class User extends Authenticatable
         'password',
         'role',
         'is_active',
+        'account_status',
     ];
 
     /**
@@ -148,6 +154,26 @@ class User extends Authenticatable
             ->withPivot('invited_at');
     }
 
+    public function registrationAttempts(): HasMany
+    {
+        return $this->hasMany(SupplierRegistrationAttempt::class, 'user_id');
+    }
+
+    public function latestRegistrationAttempt(): HasOne
+    {
+        return $this->hasOne(SupplierRegistrationAttempt::class, 'user_id')->latestOfMany();
+    }
+
+    public function registrationAccesses(): HasMany
+    {
+        return $this->hasMany(SupplierRegistrationAccess::class, 'user_id');
+    }
+
+    public function registrationAudits(): HasMany
+    {
+        return $this->hasMany(SupplierRegistrationAudit::class, 'user_id');
+    }
+
     // ─── Query Scopes ───
 
     /**
@@ -156,6 +182,7 @@ class User extends Authenticatable
     public function scopeImportEligible(Builder $query): Builder
     {
         return $query->where('role', 'supplier')
+            ->where('account_status', self::ACCOUNT_STATUS_ACTIVE)
             ->where('is_active', true)
             ->whereHas('supplierScopes', fn (Builder $q) => $q->where('scope', 'import'));
     }
@@ -166,6 +193,7 @@ class User extends Authenticatable
     public function scopeLocalEligible(Builder $query): Builder
     {
         return $query->where('role', 'supplier')
+            ->where('account_status', self::ACCOUNT_STATUS_ACTIVE)
             ->where('is_active', true)
             ->whereHas('supplierScopes', fn (Builder $q) => $q->where('scope', 'local'));
     }
@@ -194,12 +222,18 @@ class User extends Authenticatable
 
     public function isImportEligible(): bool
     {
-        return $this->isSupplier() && $this->is_active && $this->hasSupplierScope('import');
+        return $this->isSupplier()
+            && $this->account_status === self::ACCOUNT_STATUS_ACTIVE
+            && $this->is_active
+            && $this->hasSupplierScope('import');
     }
 
     public function isLocalEligible(): bool
     {
-        return $this->isSupplier() && $this->is_active && $this->hasSupplierScope('local');
+        return $this->isSupplier()
+            && $this->account_status === self::ACCOUNT_STATUS_ACTIVE
+            && $this->is_active
+            && $this->hasSupplierScope('local');
     }
 
     public function hasTwoFactorAuthentication(): bool
@@ -218,7 +252,7 @@ class User extends Authenticatable
      */
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token)
     {
-        if (! $this->is_active) {
+        if (! $this->is_active || $this->account_status !== self::ACCOUNT_STATUS_ACTIVE) {
             return;
         }
 
@@ -245,6 +279,7 @@ class User extends Authenticatable
             || DB::table('attachments')->where('uploaded_by', $this->id)->exists()
             || DB::table('claim_attachments')->where('uploaded_by', $this->id)->exists()
             || DB::table('periods')->where('created_by', $this->id)->exists()
-            || DB::table('exchange_rates')->where('created_by', $this->id)->exists();
+            || DB::table('exchange_rates')->where('created_by', $this->id)->exists()
+            || DB::table('supplier_registration_attempts')->where('user_id', $this->id)->exists();
     }
 }

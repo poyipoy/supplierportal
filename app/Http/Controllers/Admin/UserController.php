@@ -127,6 +127,7 @@ class UserController extends Controller
                 'password' => Hash::make($request->password),
                 'role' => $request->role,
                 'is_active' => $request->has('is_active') ? true : false,
+                'account_status' => User::ACCOUNT_STATUS_ACTIVE,
             ]);
 
             if ($request->role === 'supplier') {

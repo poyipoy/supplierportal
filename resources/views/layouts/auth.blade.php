@@ -215,33 +215,37 @@
     </style>
 </head>
 <body class="tw-m-0 tw-min-h-screen tw-bg-surface tw-font-sans tw-text-on-surface tw-antialiased">
-    <main class="auth-shell">
-        {{-- Left Column: Industrial Image Panel --}}
-        <aside class="auth-brand-panel" aria-label="ADASI Supplier Portal information">
-            <div class="auth-brand-panel__image">
-                <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager" draggable="false">
-                <div class="auth-brand-panel__overlay"></div>
-            </div>
+    <main class="auth-shell" @yield('shell-attributes')>
+        @hasSection('brand-panel')
+            @yield('brand-panel')
+        @else
+            {{-- Left Column: Industrial Image Panel --}}
+            <aside class="auth-brand-panel" aria-label="ADASI Supplier Portal information">
+                <div class="auth-brand-panel__image">
+                    <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager" draggable="false">
+                    <div class="auth-brand-panel__overlay"></div>
+                </div>
 
-            <div class="auth-brand-panel__content">
-                <div class="auth-brand-logo">
-                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo" draggable="false">
-                    <div>
-                        <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
-                        <span class="auth-brand-logo__sub">Supplier Portal</span>
+                <div class="auth-brand-panel__content">
+                    <div class="auth-brand-logo">
+                        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo" draggable="false">
+                        <div>
+                            <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
+                            <span class="auth-brand-logo__sub">Supplier Portal</span>
+                        </div>
+                    </div>
+
+                    <div class="auth-brand-headline">
+                        <h1>Integrated procurement. One shared platform.</h1>
+                        <p>Manage purchasing activities, supplier collaboration, and order progress in a single portal.</p>
+                    </div>
+
+                    <div class="auth-brand-footer">
+                        PT. Astra Daido Steel Indonesia
                     </div>
                 </div>
-
-                <div class="auth-brand-headline">
-                    <h1>Integrated procurement. One shared platform.</h1>
-                    <p>Manage purchasing activities, supplier collaboration, and order progress in a single portal.</p>
-                </div>
-
-                <div class="auth-brand-footer">
-                    PT. Astra Daido Steel Indonesia
-                </div>
-            </div>
-        </aside>
+            </aside>
+        @endif
 
         {{-- Right Column: Authentication Form --}}
         <section class="auth-form-panel">
