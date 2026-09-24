@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Contracts\GeneratesWorkbook;
 use App\Contracts\TracksExportProgress;
 use App\Jobs\Callbacks\MarkExportFailed;
 use App\Models\ExportJob;
@@ -52,6 +53,23 @@ class ProcessExportJob implements ShouldQueue
         $totalRows = max(0, $export->progressTotalRows());
         $export->setExportProgressContext((int) $record->getKey());
         $path = 'exports/'.$record->user_id.'/'.$record->getKey().'/'.$record->file_name;
+
+        if ($export instanceof GeneratesWorkbook) {
+            $progress->handoffToExportQueue(
+                $record,
+                $path,
+                $totalRows,
+                function () use ($record): void {
+                    $pending = GenerateWorkbookJob::dispatch((int) $record->getKey())
+                        ->onQueue('exports');
+
+                    // Force dispatch before the surrounding database transaction commits.
+                    unset($pending);
+                },
+            );
+
+            return;
+        }
 
         $progress->handoffToExportQueue(
             $record,

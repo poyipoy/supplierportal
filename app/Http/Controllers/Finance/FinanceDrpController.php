@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Exports\PaymentBatchDrpExport;
 use App\Http\Controllers\Controller;
 use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
@@ -9,8 +10,8 @@ use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\User;
 use App\Services\Payment\PaymentBatchService;
-use App\Services\Payment\PaymentExecutionService;
 use App\Services\Payment\PaymentVoucherService;
+use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 
 class FinanceDrpController extends Controller
@@ -120,9 +121,48 @@ class FinanceDrpController extends Controller
         return back()->with('success', 'Voucher details updated.');
     }
 
-    public function markPaid(PaymentGroup $group, Request $request, PaymentExecutionService $service)
+    public function export(PaymentBatch $batch, Request $request)
     {
-        abort(409, 'Pelunasan per-grup tidak tersedia. Seluruh penandaan DRP Lunas (PAID) wajib dilakukan secara terpusat melalui menu DRP Paid.');
+        if ($batch->batch_type !== PaymentBatch::TYPE_SUPPLIER) {
+            abort(422, 'Hanya DRP Supplier yang dapat diexport.');
+        }
+
+        if ($batch->status === PaymentBatch::STATUS_CANCELLED) {
+            abort(422, 'Batch DRP yang dibatalkan tidak dapat diexport.');
+        }
+
+        $hasActiveItems = $batch->groups()
+            ->where('status', '!=', PaymentGroup::STATUS_CANCELLED)
+            ->whereHas('items', function ($q) {
+                $q->where('status', PaymentItem::STATUS_ACTIVE)
+                    ->where('payable_type', LocalInvoice::class);
+            })
+            ->exists();
+
+        if (! $hasActiveItems) {
+            abort(422, 'Batch DRP tidak memiliki tagihan aktif untuk diexport.');
+        }
+
+        $exportJob = ExportDispatcher::dispatch(
+            "DRP Supplier {$batch->batch_number}",
+            PaymentBatchDrpExport::class,
+            [$request->user()->id, [$batch->id]],
+            "DRP_{$batch->batch_number}.xlsx"
+        );
+
+        $message = 'Permintaan export DRP telah diterima. File akan terunduh otomatis setelah siap.';
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'export_job_id' => $exportJob->getRouteKey(),
+                'exports_url' => route('exports.index', absolute: false),
+                'status_url' => route('exports.status', $exportJob, absolute: false),
+                'cancel_url' => route('exports.cancel', $exportJob, absolute: false),
+            ], 202);
+        }
+
+        return back()->with('info', $message);
     }
 
     private function resolveSupplierFilter(mixed $value): ?User

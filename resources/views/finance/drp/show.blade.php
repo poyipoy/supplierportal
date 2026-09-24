@@ -14,6 +14,17 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>Kembali ke Daftar</span>
             </x-ui.button>
+            @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER && $batch->status !== \App\Models\PaymentBatch::STATUS_CANCELLED)
+                <x-ui.button
+                    :href="route('finance.drp.export', $batch)"
+                    variant="outline"
+                    size="sm"
+                    data-async-export
+                >
+                    <x-ui.icon name="download" size="sm" />
+                    <span>Export Excel</span>
+                </x-ui.button>
+            @endif
             @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
                 <button
                     type="button"

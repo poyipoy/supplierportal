@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\LocalInvoicesExport;
+use App\Exports\PaymentBatchDrpExport;
 use App\Models\ExportJob;
 use App\Services\ExportProgressService;
 use Illuminate\Http\Request;
@@ -10,12 +11,17 @@ use Illuminate\Support\Facades\Storage;
 
 class ExportDownloadController extends Controller
 {
+    private const LOCAL_EXPORT_CLASSES = [
+        LocalInvoicesExport::class,
+        PaymentBatchDrpExport::class,
+    ];
+
     public function index(Request $request)
     {
         $query = ExportJob::query()
             ->where('user_id', $request->user()->getKey())
-            ->when($request->user()->isLocalOperator(), fn ($query) => $query->where('export_class', LocalInvoicesExport::class))
-            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->where('export_class', '!=', LocalInvoicesExport::class))
+            ->when($request->user()->isLocalOperator(), fn ($query) => $query->whereIn('export_class', self::LOCAL_EXPORT_CLASSES))
+            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->whereNotIn('export_class', self::LOCAL_EXPORT_CLASSES))
             ->latest()
             ->orderByDesc('id');
         $jobs = $query->paginate(20)->withQueryString();
@@ -123,7 +129,7 @@ class ExportDownloadController extends Controller
 
     private function authorizeDomain(Request $request, ExportJob $exportJob): void
     {
-        $local = $exportJob->export_class === LocalInvoicesExport::class;
+        $local = in_array($exportJob->export_class, self::LOCAL_EXPORT_CLASSES, true);
         abort_if($request->user()->isLocalOperator() && ! $local, 403);
         abort_if($local && ! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), 403);
     }
