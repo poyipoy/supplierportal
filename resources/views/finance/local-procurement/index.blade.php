@@ -10,8 +10,12 @@
         eyebrow="Pengadaan Lokal"
     >
         <x-slot:actions>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localPoGrImportModal">
+            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#uploadPoDocumentModal">
                 <x-ui.icon name="file-up" size="sm" />
+                <span>Upload Dokumen PO</span>
+            </x-ui.button>
+            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localPoGrImportModal">
+                <x-ui.icon name="file-spreadsheet" size="sm" />
                 <span>Import XLSX</span>
             </x-ui.button>
             <x-ui.button :href="route($routePrefix.'.create')" size="sm" variant="primary">
@@ -152,9 +156,17 @@
                     @forelse($purchaseOrders as $po)
                         <tr>
                             <td>
-                                <a href="{{ route($routePrefix.'.show', $po) }}" class="tw-font-mono tw-font-semibold tw-text-primary hover:tw-text-primary-hover tw-no-underline hover:tw-underline">
-                                    {{ $po->po_number }}
-                                </a>
+                                <div class="d-flex align-items-center tw-gap-1.5">
+                                    <a href="{{ route($routePrefix.'.show', $po) }}" class="tw-font-mono tw-font-semibold tw-text-primary hover:tw-text-primary-hover tw-no-underline hover:tw-underline">
+                                        {{ $po->po_number }}
+                                    </a>
+                                    @if($po->latestPoDocument())
+                                        <a href="{{ route('attachments.show', $po->latestPoDocument()->id) }}" target="_blank" class="badge bg-light text-primary border tw-no-underline hover:tw-bg-primary hover:tw-text-white tw-transition-colors" title="Lihat Dokumen PO (PDF)">
+                                            <x-ui.icon name="file-text" size="xs" />
+                                            <span>PDF</span>
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <div class="tw-font-medium tw-text-on-surface">
@@ -217,4 +229,5 @@
 </div>
 
 @include('finance.local-procurement._import_modal')
+@include('finance.local-procurement._upload_po_modal')
 @endsection

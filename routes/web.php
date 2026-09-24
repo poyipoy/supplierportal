@@ -37,6 +37,7 @@ use App\Http\Controllers\Purchasing\ReportController;
 use App\Http\Controllers\Purchasing\ShipmentController;
 use App\Http\Controllers\Qc\DashboardController;
 use App\Http\Controllers\Qc\QcExportController;
+use App\Http\Controllers\Auth\SupplierRegistrationController;
 use App\Http\Controllers\Qc\QcInspectionController;
 use App\Http\Controllers\ReceiptVerificationController;
 use App\Http\Controllers\Supplier\ClaimController;
@@ -46,6 +47,7 @@ use App\Http\Controllers\Supplier\SupplierController;
 use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
 use App\Http\Controllers\Supplier\SupplierShipmentController;
+use App\Http\Controllers\SupplierRegistrationReviewController;
 use App\Models\PurchaseRequisition;
 use App\Support\PortalContext;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +71,44 @@ Route::get('/verify-receipt/supplier/{receipt}', [ReceiptVerificationController:
 Route::get('/verify-receipt/ga/{receipt}', [ReceiptVerificationController::class, 'verifyGa'])
     ->middleware('throttle:60,1')
     ->name('receipts.verify-ga');
+
+// Supplier Public Registration & Status Tracking
+Route::get('/supplier/register', [SupplierRegistrationController::class, 'create'])->name('supplier.register');
+Route::post('/supplier/register', [SupplierRegistrationController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('supplier.register.store');
+
+Route::prefix('supplier/registration')->name('supplier.registration.')->group(function () {
+    Route::get('/access', [SupplierRegistrationController::class, 'showAccessForm'])->name('access-form');
+    Route::post('/access', [SupplierRegistrationController::class, 'authenticateAccess'])
+        ->middleware('throttle:10,1')
+        ->name('access');
+    Route::post('/logout', [SupplierRegistrationController::class, 'logoutAccess'])->name('logout');
+    Route::get('/success', [SupplierRegistrationController::class, 'success'])->name('success');
+
+    // Registration session protected routes
+    Route::middleware('registration.session')->group(function () {
+        Route::get('/status', [SupplierRegistrationController::class, 'status'])->name('status');
+        Route::get('/edit', [SupplierRegistrationController::class, 'edit'])->name('edit');
+        Route::post('/resubmit', [SupplierRegistrationController::class, 'resubmit'])
+            ->middleware('throttle:10,1')
+            ->name('resubmit');
+        Route::get('/documents/{document}', [SupplierRegistrationController::class, 'downloadDocument'])->name('document.download');
+    });
+});
+
+// Supplier Registrations Reviewer (Admin, Finance, Purchasing)
+Route::middleware(['auth', 'role:admin,finance,purchasing'])
+    ->prefix('supplier-registrations')
+    ->name('supplier-registrations.')
+    ->group(function () {
+        Route::get('/', [SupplierRegistrationReviewController::class, 'index'])->name('index');
+        Route::get('/{attempt}', [SupplierRegistrationReviewController::class, 'show'])->name('show');
+        Route::post('/{attempt}/revision', [SupplierRegistrationReviewController::class, 'requestRevision'])->name('revision');
+        Route::post('/{attempt}/reject', [SupplierRegistrationReviewController::class, 'reject'])->name('reject');
+        Route::post('/{attempt}/approve', [SupplierRegistrationReviewController::class, 'approve'])->name('approve');
+        Route::get('/{attempt}/documents/{document}', [SupplierRegistrationReviewController::class, 'downloadDocument'])->name('document');
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -240,6 +280,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
         Route::get('/import/template', 'template')->name('import.template');
         Route::post('/import/preview', 'preview')->name('import.preview');
         Route::post('/import/confirm', 'confirm')->name('import.confirm');
+        Route::post('/upload-po', 'uploadPo')->name('upload-po');
         Route::get('/{purchaseOrder}', 'show')->name('show');
         Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
         Route::put('/{purchaseOrder}', 'update')->name('update');

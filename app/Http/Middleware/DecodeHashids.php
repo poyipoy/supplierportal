@@ -30,6 +30,7 @@ class DecodeHashids
         // with hashed route keys. Keep these names in the decode allow-list so
         // a raw integer can never reach the controller through a crafted URL.
         'purchaseOrder',
+        'purchase_order',
         'goodsReceipt',
         'voucher',
         'payment',
@@ -51,6 +52,7 @@ class DecodeHashids
         'claim',         // Route::resource('claims')       → MaterialClaim (purchasing resource)
         'user',          // Route::resource('users')        → User (admin)
         'shipment',      // Route::resource('shipments')    → Shipment
+        'attempt',       // Supplier registration attempt
     ];
 
     /**

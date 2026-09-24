@@ -53,9 +53,15 @@
             <x-ui.form-section title="Informasi Invoice & Alokasi Penerimaan Barang (GR)" description="Satu invoice terhubung ke satu PO dan satu atau lebih Penerimaan Barang (GR) utuh. Total nilai GR terpilih harus sama persis dengan DPP.">
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <div>
-                        <label for="invoice-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">
-                            Nomor Invoice <span class="tw-text-error">*</span>
-                        </label>
+                        <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
+                            <label for="invoice-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
+                                Nomor Invoice <span class="tw-text-error">*</span>
+                            </label>
+                            <span id="invoice-autofill-badge" class="tw-hidden tw-items-center tw-gap-1 tw-text-[11px] tw-text-primary tw-font-semibold tw-bg-primary/10 tw-px-2 tw-py-0.5 tw-rounded">
+                                <x-ui.icon name="sparkles" size="sm" class="tw-w-3 tw-h-3" />
+                                <span>Dari Nama Berkas</span>
+                            </span>
+                        </div>
                         <input
                             name="invoice_number"
                             id="invoice-number"
@@ -65,6 +71,9 @@
                             @readonly(isset($invoice))
                             required
                         >
+                        <div id="invoice-autofill-filename" class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1 tw-hidden">
+                            Nomor terdeteksi: <strong class="tw-font-mono tw-text-primary"></strong>
+                        </div>
                     </div>
 
                     <div>
@@ -279,9 +288,15 @@
                         }"
                     >
                         <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
-                            <label for="tax_invoice_number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
-                                Nomor Faktur Pajak @if($isPkp) <span class="tw-text-error">*</span> @else <span class="tw-text-on-surface-variant tw-font-normal">(Opsional untuk Non-PKP)</span> @endif
-                            </label>
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <label for="tax_invoice_number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
+                                    Nomor Faktur Pajak @if($isPkp) <span class="tw-text-error">*</span> @else <span class="tw-text-on-surface-variant tw-font-normal">(Opsional untuk Non-PKP)</span> @endif
+                                </label>
+                                <span id="tax-autofill-badge" class="tw-hidden tw-items-center tw-gap-1 tw-text-[11px] tw-text-primary tw-font-semibold tw-bg-primary/10 tw-px-2 tw-py-0.5 tw-rounded">
+                                    <x-ui.icon name="sparkles" size="sm" class="tw-w-3 tw-h-3" />
+                                    <span>Dari Nama Berkas</span>
+                                </span>
+                            </div>
                             <template x-if="rawDigits.length > 0">
                                 <span
                                     class="tw-text-ui-xs tw-font-mono tw-transition-colors"
@@ -607,6 +622,75 @@ if (initialDpp > 0 && (!taxInput.value || Number(taxInput.value) === 0)) {
     calculateTax();
 }
 updateTotals(0, false);
+
+// Filename Autofill for Invoice Number and Tax Invoice Number (R-02)
+const fileInvoiceInput = document.getElementById('file_invoice');
+const invoiceNumberInput = document.getElementById('invoice-number');
+const invoiceAutofillBadge = document.getElementById('invoice-autofill-badge');
+const invoiceAutofillFilename = document.getElementById('invoice-autofill-filename');
+
+fileInvoiceInput?.addEventListener('change', function() {
+    const files = Array.from(this.files || []);
+    if (files.length === 0) return;
+
+    const candidates = files.map(f => {
+        const lastDot = f.name.lastIndexOf('.');
+        return lastDot !== -1 ? f.name.substring(0, lastDot).trim() : f.name.trim();
+    });
+
+    const uniqueCandidates = [...new Set(candidates)];
+    if (uniqueCandidates.length === 1 && uniqueCandidates[0] !== '') {
+        const derived = uniqueCandidates[0];
+        if (invoiceNumberInput && !invoiceNumberInput.hasAttribute('readonly')) {
+            invoiceNumberInput.value = derived;
+        }
+        if (invoiceAutofillBadge) {
+            invoiceAutofillBadge.classList.remove('tw-hidden');
+            invoiceAutofillBadge.classList.add('tw-inline-flex');
+        }
+        if (invoiceAutofillFilename) {
+            invoiceAutofillFilename.classList.remove('tw-hidden');
+            const bold = invoiceAutofillFilename.querySelector('strong');
+            if (bold) bold.textContent = derived;
+        }
+    } else if (uniqueCandidates.length > 1) {
+        if (invoiceAutofillFilename) {
+            invoiceAutofillFilename.classList.remove('tw-hidden');
+            invoiceAutofillFilename.innerHTML = '<span class="tw-text-error">Peringatan: Berkas invoice yang dipilih memiliki nama berbeda (' + uniqueCandidates.join(', ') + ')</span>';
+        }
+    }
+});
+
+const fileTaxInput = document.getElementById('file_tax_invoice');
+const taxInvoiceInput = document.getElementById('tax_invoice_number');
+const taxAutofillBadge = document.getElementById('tax-autofill-badge');
+
+fileTaxInput?.addEventListener('change', function() {
+    const files = Array.from(this.files || []);
+    if (files.length === 0) return;
+
+    const candidates = files.map(f => {
+        const lastDot = f.name.lastIndexOf('.');
+        const base = lastDot !== -1 ? f.name.substring(0, lastDot).trim() : f.name.trim();
+        const digits = base.replace(/\D/g, '');
+        if (digits.length === 17) {
+            return digits.slice(0, 2) + '.' + digits.slice(2, 4) + '.' + digits.slice(4, 6) + '.' + digits.slice(6);
+        } else if (digits.length === 16) {
+            return digits.slice(0, 3) + '.' + digits.slice(3, 6) + '-' + digits.slice(6, 8) + '.' + digits.slice(8);
+        }
+        return null;
+    }).filter(Boolean);
+
+    const unique = [...new Set(candidates)];
+    if (unique.length === 1 && taxInvoiceInput) {
+        taxInvoiceInput.value = unique[0];
+        taxInvoiceInput.dispatchEvent(new Event('input', { bubbles: true }));
+        if (taxAutofillBadge) {
+            taxAutofillBadge.classList.remove('tw-hidden');
+            taxAutofillBadge.classList.add('tw-inline-flex');
+        }
+    }
+});
 
 // Submit button loading state
 const invoiceForm = document.getElementById('localInvoiceForm');

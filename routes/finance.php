@@ -47,6 +47,7 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
     Route::post('/ga-claims/{claim}/verify', [\App\Http\Controllers\Finance\FinanceGaClaimController::class, 'verify'])->name('ga-claims.verify');
 
     // DRP Batch Detail, Finalize, Item Removal, Fee Override, Voucher, Pay
+    Route::get('/drp/{batch}/export', [FinanceDrpController::class, 'export'])->name('drp.export');
     Route::get('/drp/{batch}', [FinanceDrpController::class, 'show'])->name('drp.show');
     Route::post('/drp/{batch}/finalize', [FinanceDrpController::class, 'finalize'])->name('drp.finalize');
     Route::post('/drp/{batch}/cancel', [FinanceDrpController::class, 'cancelBatch'])->name('drp.cancel');
@@ -63,6 +64,7 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
         Route::get('/import/template', [LocalProcurementController::class, 'template'])->name('import.template');
         Route::post('/import/preview', [LocalProcurementController::class, 'preview'])->name('import.preview');
         Route::post('/import/confirm', [LocalProcurementController::class, 'confirm'])->name('import.confirm');
+        Route::post('/upload-po', [LocalProcurementController::class, 'uploadPo'])->name('upload-po');
         Route::get('/{purchaseOrder}', [LocalProcurementController::class, 'show'])->name('show');
         Route::get('/{purchaseOrder}/edit', [LocalProcurementController::class, 'edit'])->name('edit');
         Route::put('/{purchaseOrder}', [LocalProcurementController::class, 'update'])->name('update');

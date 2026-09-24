@@ -134,6 +134,7 @@
             @if($activePortalScope === \App\Support\PortalContext::SCOPE_LOCAL)
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
                 <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.purchase-orders.index')" icon="package-check" :active="request()->routeIs('local-supplier.purchase-orders.*')" label="Purchase Orders">Purchase Orders</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Ajukan Invoice">Ajukan Invoice</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Daftar Invoice">Daftar Invoice</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" label="Profil Vendor">Profil Vendor</x-ui.sidebar-item>
@@ -177,6 +178,7 @@
             <x-ui.sidebar-item :href="route('finance.overpayments.index')" icon="circle-dollar-sign" :active="request()->routeIs('finance.overpayments.*')" label="Supplier Overpayment">Supplier Overpayment</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('finance.master-invoices')" icon="database" :active="request()->routeIs('finance.master-invoices')" label="Master Invoices">Master Invoices</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('finance.vendor-master.index')" icon="building-2" :active="request()->routeIs('finance.vendor-master.*')" label="Vendor Master">Vendor Master</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('supplier-registrations.index')" icon="user-plus" :active="request()->routeIs('supplier-registrations.*')" label="Supplier Registrations">Supplier Registrations</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
         @elseif($role === 'ga')
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 16;">General Affairs</span></div>
@@ -200,6 +202,7 @@
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 11;">Procurement</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.periods.index')" icon="calendar-days" :active="request()->routeIs('purchasing.periods.*')" label="Period Management">Period Management</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.requisitions.index')" icon="clipboard-list" :active="request()->routeIs('purchasing.requisitions.*')" label="Purchase Requisition">Purchase Requisition</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('supplier-registrations.index')" icon="user-plus" :active="request()->routeIs('supplier-registrations.*')" label="Supplier Registrations">Supplier Registrations</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.quotations.index')" icon="tags" :active="request()->routeIs('purchasing.quotations.*')" label="Quotation">Quotation</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier')" icon="chart-no-axes-combined" :active="request()->routeIs('purchasing.comparison.*')" label="Price Comparison">Price Comparison</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.purchase-orders.index')" icon="receipt" :active="request()->routeIs('purchasing.purchase-orders.*')" label="Purchase Order">Purchase Order</x-ui.sidebar-item>
@@ -238,6 +241,7 @@
 
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Administration</span></div>
             <x-ui.sidebar-item :href="route('admin.users.index')" icon="users" :active="request()->routeIs('admin.users.*')" label="Users">Users</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('supplier-registrations.index')" icon="user-plus" :active="request()->routeIs('supplier-registrations.*')" label="Supplier Registrations">Supplier Registrations</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('admin.exchange-rates.index')" icon="badge-dollar-sign" :active="request()->routeIs('admin.exchange-rates.*')" label="Exchange Rates">Exchange Rates</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('admin.material-hs-code.index')" icon="boxes" :active="request()->routeIs('admin.material-hs-code.*', 'admin.material-masters.*', 'admin.hs-code-rules.*', 'admin.master-data-quality.*')" label="Materials and HS Code">Materials and HS Code</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('admin.auth-audit-logs.index')" icon="shield-check" :active="request()->routeIs('admin.auth-audit-logs.*')" label="Authentication Audit">Authentication Audit</x-ui.sidebar-item>
