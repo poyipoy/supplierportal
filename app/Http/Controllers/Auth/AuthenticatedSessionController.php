@@ -43,7 +43,10 @@ class AuthenticatedSessionController extends Controller
 
         $completeLogin->complete($request, $user, $request->boolean('remember'));
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $intended = $request->session()->pull('url.intended');
+        $redirectUrl = TwoFactorService::safeIntendedUrl($request, $intended, route('dashboard', absolute: false));
+
+        return redirect()->to($redirectUrl);
     }
 
     /**

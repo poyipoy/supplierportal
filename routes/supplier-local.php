@@ -16,8 +16,10 @@ Route::middleware(['auth', 'role:supplier'])->group(function () {
 });
 Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('local-supplier')->name('local-supplier.')->group(function () {
     Route::get('/dashboard', [InvoiceController::class, 'dashboard'])->name('dashboard');
-    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/purchase-orders', [\App\Http\Controllers\LocalSupplier\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('/purchase-orders/search', [InvoiceController::class, 'searchPurchaseOrders'])->name('purchase-orders.search');
+    Route::get('/purchase-orders/{purchase_order}', [\App\Http\Controllers\LocalSupplier\PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
     Route::post('/invoices', [InvoiceController::class, 'store'])->middleware('throttle:30,1')->name('invoices.store');
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');

@@ -3,6 +3,14 @@
 @section('page-title', 'Detail & Verifikasi Invoice')
 
 @section('content')
+@php
+    $isLocked = (bool) ($verification?->is_locked || in_array($invoice->status, [
+        \App\Models\LocalInvoice::STATUS_READY_TO_PAY,
+        \App\Models\LocalInvoice::STATUS_PAID,
+        \App\Models\LocalInvoice::STATUS_REJECTED,
+        \App\Models\LocalInvoice::STATUS_CANCELLED,
+    ], true));
+@endphp
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
         :title="'Invoice '.$invoice->invoice_number"
@@ -163,9 +171,39 @@
                     title="Section A: Pemeriksaan Dokumen & Referensi"
                     description="Periksa kelengkapan berkas fisik Invoice, Faktur Pajak, PO, Surat Jalan, dan GR."
                 >
+                    <x-slot:actions>
+                        @if($isLocked)
+                            <x-ui.status-chip tone="neutral">
+                                <x-ui.icon name="lock" size="xs" />
+                                <span>Terkunci (Read-Only)</span>
+                            </x-ui.status-chip>
+                        @elseif($verification?->is_section_a_passed)
+                            <x-ui.status-chip tone="success">
+                                <x-ui.icon name="check" size="xs" />
+                                <span>Lolos (Passed)</span>
+                            </x-ui.status-chip>
+                        @endif
+                    </x-slot:actions>
+
+                    @if($isLocked)
+                        <div class="tw-mb-4 tw-p-3 tw-rounded-lg tw-bg-surface-container tw-border tw-border-outline-variant tw-flex tw-items-center tw-gap-2.5 tw-text-ui-xs tw-text-on-surface-variant">
+                            <x-ui.icon name="lock" size="sm" class="tw-text-primary tw-shrink-0" />
+                            <span>
+                                Section A telah terkunci dan disetujui
+                                @if($verification?->verifier)
+                                    oleh <strong class="tw-text-on-surface">{{ $verification->verifier->name }}</strong>
+                                @endif
+                                @if($verification?->verified_at)
+                                    pada <span class="tw-font-medium tw-text-on-surface">{{ $verification->verified_at->format('d M Y H:i') }}</span>
+                                @endif
+                                . Seluruh data pemeriksaan fisik dan referensi bersifat <em>read-only</em>.
+                            </span>
+                        </div>
+                    @endif
+
                     <form id="form-verify-section-a" method="POST" action="{{ route('finance.invoices.verify-section-a', $invoice) }}">
                         @csrf
-                        <div class="tw-space-y-4">
+                        <fieldset @disabled($isLocked) class="tw-m-0 tw-p-0 tw-border-0 tw-space-y-4">
                             {{-- 1. Invoice Check --}}
                             <div class="tw-p-3 tw-rounded tw-bg-surface-container tw-border tw-border-outline-variant">
                                 <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
@@ -259,7 +297,7 @@
                                 <input type="text" name="gr_notes" class="form-control form-control-sm" placeholder="Catatan GR" value="{{ $verification->gr_notes ?? '' }}">
                             </div>
 
-                            @if(!$verification?->is_locked)
+                            @if(!$isLocked)
                                 <div class="tw-flex tw-justify-end">
                                     <x-ui.button id="btn-submit-section-a" type="submit" variant="primary" size="sm">
                                         <x-ui.icon name="save" size="sm" />
@@ -267,7 +305,7 @@
                                     </x-ui.button>
                                 </div>
                             @endif
-                        </div>
+                        </fieldset>
                     </form>
                 </x-ui.card>
 
@@ -278,9 +316,32 @@
                     title="Section B: Verifikasi Perpajakan"
                     description="Validasi PPN dan tentukan tarif PPh 23 / PPh 4(2) / PPh 21."
                 >
+                    <x-slot:actions>
+                        @if($isLocked)
+                            <x-ui.status-chip tone="neutral">
+                                <x-ui.icon name="lock" size="xs" />
+                                <span>Terkunci (Read-Only)</span>
+                            </x-ui.status-chip>
+                        @elseif($verification?->is_section_b_passed)
+                            <x-ui.status-chip tone="success">
+                                <x-ui.icon name="check" size="xs" />
+                                <span>Lolos (Passed)</span>
+                            </x-ui.status-chip>
+                        @endif
+                    </x-slot:actions>
+
+                    @if($isLocked)
+                        <div class="tw-mb-4 tw-p-3 tw-rounded-lg tw-bg-surface-container tw-border tw-border-outline-variant tw-flex tw-items-center tw-gap-2.5 tw-text-ui-xs tw-text-on-surface-variant">
+                            <x-ui.icon name="lock" size="sm" class="tw-text-primary tw-shrink-0" />
+                            <span>
+                                Section B telah diverifikasi dan dikunci. Perhitungan dasar pengenaan pajak, PPN, dan pemotongan PPh bersifat final.
+                            </span>
+                        </div>
+                    @endif
+
                     <form id="form-verify-section-b" method="POST" action="{{ route('finance.invoices.verify-section-b', $invoice) }}">
                         @csrf
-                        <div class="tw-space-y-4">
+                        <fieldset @disabled($isLocked) class="tw-m-0 tw-p-0 tw-border-0 tw-space-y-4">
                             @if($invoice->tax_invoice_number)
                                 <div class="tw-p-2.5 tw-rounded tw-bg-surface-container tw-border tw-border-outline-variant tw-flex tw-items-center tw-justify-between">
                                     <span class="tw-text-ui-xs tw-text-on-surface-variant">Nomor Faktur Pajak (NSFP) Supplier:</span>
@@ -345,7 +406,7 @@
                                 <textarea name="tax_notes" class="form-control form-control-sm" rows="2" placeholder="Keterangan dasar pengenaan pajak / tarif khusus...">{{ $verification->tax_notes ?? '' }}</textarea>
                             </div>
 
-                            @if(!$verification?->is_locked)
+                            @if(!$isLocked)
                                 <div class="tw-flex tw-justify-end">
                                     <x-ui.button id="btn-submit-section-b" type="submit" variant="primary" size="sm">
                                         <x-ui.icon name="save" size="sm" />
@@ -353,7 +414,7 @@
                                     </x-ui.button>
                                 </div>
                             @endif
-                        </div>
+                        </fieldset>
                     </form>
                 </x-ui.card>
             @endif
@@ -425,7 +486,7 @@
             @endif
 
             {{-- Final Approval Actions --}}
-            @if($invoice->status === \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION && !$verification?->is_locked)
+            @if(!$isLocked && $invoice->status === \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION)
                 <x-ui.card title="Aksi Persetujuan Final">
                     <div class="tw-space-y-3">
                         <form method="POST" action="{{ route('finance.invoices.approve-ready-to-pay', $invoice) }}">
@@ -566,6 +627,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    @if(!$isLocked)
     // Helper to update approval button state
     function updateApprovalButton(canApprove) {
         const approveBtn = document.getElementById('btn-approve-ready-to-pay');
@@ -580,7 +642,6 @@ document.addEventListener('DOMContentLoaded', function () {
             approveBtn.classList.add('disabled', 'tw-cursor-not-allowed', 'tw-opacity-50');
         }
     }
-
     // 2. AJAX Submission for Section A
     const formSectionA = document.getElementById('form-verify-section-a');
     if (formSectionA) {
@@ -688,6 +749,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+    @endif
 
     // 4. Auto-calculation for PPh 23
     const pph23App = document.getElementById('pph23-app');
@@ -701,6 +763,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
         }
 
+        @if(!$isLocked)
         function calculatePph23() {
             if (!pph23App.checked) {
                 pph23Amount.value = '0.00';
@@ -743,6 +806,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         }
+        @else
+        // Read-only calculation hint display
+        if (pph23App.checked) {
+            const currentAmt = parseFloat(pph23Amount.value) || 0;
+            const base = parseFloat(pph23Base.value) || 0;
+            const rate = parseFloat(pph23Rate.value) || 0;
+            if (pph23Hint && base > 0 && rate > 0) {
+                pph23Hint.textContent = `Dikenakan: ${rate}% × Rp ${formatRupiah(base)} = Rp ${formatRupiah(currentAmt)}`;
+            }
+        }
+        @endif
     }
 });
 </script>

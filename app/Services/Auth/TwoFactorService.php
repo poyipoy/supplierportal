@@ -272,22 +272,50 @@ class TwoFactorService
         return hash_hmac('sha256', $this->normalizeCode($code), hash('sha256', (string) config('app.key')));
     }
 
-    private function safeIntendedUrl(Request $request, string $intended): string
+    public static function safeIntendedUrl(Request $request, ?string $intended, ?string $default = null): string
     {
-        if (str_starts_with($intended, '/') && ! str_starts_with($intended, '//')) {
-            return $intended;
+        $defaultUrl = $default ?? route('dashboard', absolute: false);
+
+        if ($intended === null || trim($intended) === '') {
+            return $defaultUrl;
         }
 
-        $parts = parse_url($intended);
+        $path = $intended;
 
-        if (is_array($parts)
-            && isset($parts['host'])
-            && strcasecmp($parts['host'], $request->getHost()) === 0
-            && (! isset($parts['scheme']) || strcasecmp($parts['scheme'], $request->getScheme()) === 0)
-            && (! isset($parts['port']) || (int) $parts['port'] === $request->getPort())) {
-            return $intended;
+        if (! str_starts_with($intended, '/') || str_starts_with($intended, '//')) {
+            $parts = parse_url($intended);
+
+            if (! is_array($parts)
+                || ! isset($parts['host'])
+                || strcasecmp($parts['host'], $request->getHost()) !== 0
+                || (isset($parts['scheme']) && strcasecmp($parts['scheme'], $request->getScheme()) !== 0)
+                || (isset($parts['port']) && (int) $parts['port'] !== $request->getPort())) {
+                return $defaultUrl;
+            }
+
+            $path = $parts['path'] ?? '/';
+            if (isset($parts['query'])) {
+                $path .= '?'.$parts['query'];
+            }
         }
 
-        return route('dashboard', absolute: false);
+        $trimmedPath = ltrim((string) parse_url($path, PHP_URL_PATH), '/');
+        $disallowedPatterns = [
+            'notifications/*',
+            'conversations/*',
+            'exports/*',
+            'attachments/*',
+            'api/*',
+            '*/unread-count',
+            '*/status',
+        ];
+
+        foreach ($disallowedPatterns as $pattern) {
+            if (fnmatch($pattern, $trimmedPath)) {
+                return $defaultUrl;
+            }
+        }
+
+        return $path;
     }
 }

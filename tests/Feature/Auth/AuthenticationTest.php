@@ -71,4 +71,43 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect(route('login'));
     }
+
+    public function test_login_does_not_redirect_to_polling_or_api_intended_urls(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->withSession(['url.intended' => 'http://localhost/notifications/unread-count'])
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertNull(session('url.intended'));
+    }
+
+    public function test_login_preserves_valid_page_intended_url(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->withSession(['url.intended' => '/profile'])
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect('/profile');
+    }
+
+    public function test_unauthenticated_polling_endpoints_return_unauthorized_json(): void
+    {
+        $response = $this->get('/notifications/unread-count');
+
+        $response->assertStatus(401)
+            ->assertJson(['message' => 'Unauthenticated.']);
+
+        $this->assertNull(session('url.intended'));
+    }
 }

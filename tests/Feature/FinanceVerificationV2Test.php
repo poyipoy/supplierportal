@@ -15,7 +15,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
-use RuntimeException;
 use Tests\TestCase;
 
 class FinanceVerificationV2Test extends TestCase
@@ -23,7 +22,9 @@ class FinanceVerificationV2Test extends TestCase
     use RefreshDatabase;
 
     protected InvoiceSubmissionService $submissionService;
+
     protected InvoicePhysicalReceiptService $receiptService;
+
     protected InvoiceVerificationService $verificationService;
 
     protected function setUp(): void
@@ -348,5 +349,60 @@ class FinanceVerificationV2Test extends TestCase
         ]);
 
         $responseRedirectA->assertRedirect(route('finance.invoices.show', $invoice).'#section-a');
+    }
+
+    public function test_section_a_and_b_are_disabled_and_locked_when_invoice_is_approved_ready_to_pay(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+
+        // 1. Initially in UNDER_VERIFICATION, form inputs are editable and save buttons are present
+        $responseInitial = $this->actingAs($finance)->get(route('finance.invoices.show', $invoice));
+        $responseInitial->assertOk();
+        $responseInitial->assertDontSee('Terkunci (Read-Only)');
+        $responseInitial->assertSee('Simpan Section A');
+        $responseInitial->assertSee('Simpan Section B');
+        $responseInitial->assertDontSee('<fieldset disabled', false);
+
+        // 2. Perform verification and approve to READY_TO_PAY
+        $this->verificationService->verifySectionA($invoice, [
+            'invoice_check' => LocalInvoiceVerification::CHECK_OK,
+            'tax_invoice_check' => LocalInvoiceVerification::CHECK_OK,
+            'po_check' => LocalInvoiceVerification::CHECK_OK,
+            'delivery_note_check' => LocalInvoiceVerification::CHECK_OK,
+            'gr_check' => LocalInvoiceVerification::CHECK_OK,
+        ], $finance);
+
+        $this->verificationService->verifySectionB($invoice, [
+            'ppn_status' => LocalInvoiceVerification::PPN_SESUAI,
+            'verified_ppn' => 1100000,
+            'pph_23_applicable' => true,
+            'pph_23_base' => 10000000,
+            'pph_23_rate' => 2.0,
+            'pph_23_amount' => 200000,
+        ], $finance);
+
+        $this->verificationService->lockAndApprove($invoice, $finance);
+        $invoice->refresh();
+
+        $this->assertSame(LocalInvoice::STATUS_READY_TO_PAY, $invoice->status);
+        $this->assertTrue($invoice->currentVerification->is_locked);
+
+        // 3. Re-visit show page: must be locked
+        $responseLocked = $this->actingAs($finance)->get(route('finance.invoices.show', $invoice));
+        $responseLocked->assertOk();
+
+        // Must display locked chips and notices
+        $responseLocked->assertSee('Terkunci (Read-Only)');
+        $responseLocked->assertSee('Section A telah terkunci dan disetujui');
+        $responseLocked->assertSee('Section B telah diverifikasi dan dikunci');
+
+        // Form controls must be inside fieldset disabled
+        $responseLocked->assertSee('<fieldset disabled', false);
+
+        // Save buttons and Final Approval button must NOT be present
+        $responseLocked->assertDontSee('Simpan Section A');
+        $responseLocked->assertDontSee('Simpan Section B');
+        $responseLocked->assertDontSee('Kunci & Setujui Ready to Pay');
+        $responseLocked->assertDontSee('btn-approve-ready-to-pay');
     }
 }

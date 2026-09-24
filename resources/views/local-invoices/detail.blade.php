@@ -5,8 +5,9 @@
     $remDays = $invoice->remainingDays();
     $payment = $invoice->payment;
     $isUnderpaid = $payment && $payment->status === \App\Models\LocalInvoicePayment::STATUS_CORRECTION_REQUIRED;
-    $overpaymentRefund = $payment?->overpayment;
+    $overpaymentRefund = $payment?->overpayment ?? $invoice->overpaymentRefund;
     $isOverpaid = $overpaymentRefund && $overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN;
+    $isSettledOverpaid = $overpaymentRefund && $overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED;
 @endphp
 
 @if($errors->any())
@@ -150,27 +151,278 @@
     @if($isOverpaid)
         @php
             $overAmount = (float) $overpaymentRefund->overpayment_amount;
-            $expectedNet = (float) $payment->expected_amount;
-            $alreadyPaid = (float) $payment->actual_paid_total;
+            $expectedNet = $payment ? (float) $payment->expected_amount : (float) ($invoice->invoice_amount + $invoice->tax_amount);
+            $alreadyPaid = $payment ? (float) $payment->actual_paid_total : ($expectedNet + $overAmount);
+            $adasiBank = config('finance.adasi_refund_account.bank_name', 'Bank Central Asia (BCA)');
+            $adasiAccNo = config('finance.adasi_refund_account.account_number', '123-456-7890');
+            $adasiAccHolder = config('finance.adasi_refund_account.account_holder', 'PT Astra Daido Steel Indonesia');
+            $adasiFinanceContact = config('finance.adasi_refund_account.finance_contact', 'finance@adasi.co.id');
+            $adasiFinanceEmail = config('finance.adasi_refund_account.finance_email');
+            if (empty($adasiFinanceEmail) && preg_match('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', (string) $adasiFinanceContact, $emailMatches)) {
+                $adasiFinanceEmail = $emailMatches[0];
+            }
+            $adasiFinanceWa = config('finance.adasi_refund_account.finance_wa');
         @endphp
-        <div class="tw-rounded-ui-md tw-border tw-border-primary/30 tw-bg-primary/5 tw-p-4">
-            <div class="tw-flex tw-items-start tw-gap-3">
-                <div class="tw-w-8 tw-h-8 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
-                    <x-ui.icon name="info" size="sm" />
+        <div class="tw-rounded-ui-md tw-border tw-border-amber-500/30 tw-bg-amber-500/5 tw-p-5">
+            <div class="tw-flex tw-items-start tw-gap-3.5">
+                <div class="tw-w-9 tw-h-9 tw-rounded-full tw-bg-amber-500/10 tw-text-amber-600 dark:tw-text-amber-400 tw-flex tw-items-center tw-justify-center tw-shrink-0">
+                    <x-ui.icon name="alert-triangle" size="sm" />
                 </div>
                 <div class="tw-min-w-0 tw-flex-1">
-                    <div class="tw-flex tw-items-center tw-gap-2">
-                        <h4 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">Pemberitahuan Kelebihan Pembayaran (Overpayment)</h4>
-                        <span class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-bold tw-bg-primary/20 tw-text-primary">
+                    <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                        <h4 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">Pemberitahuan Kelebihan Pembayaran (Overpayment)</h4>
+                        <span class="tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300">
                             Perlu Pengembalian Dana
                         </span>
                     </div>
-                    <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
-                        Transfer yang dikirimkan oleh Finance ADASI melebihi nilai tagihan invoice Anda sebesar <strong>Rp {{ number_format($overAmount, 0, ',', '.') }}</strong> (Nilai Tagihan: Rp {{ number_format($expectedNet, 0, ',', '.') }}, Ditransfer: Rp {{ number_format($alreadyPaid, 0, ',', '.') }}).
-                    </p>
                     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">
-                        <strong>Petunjuk Pengembalian Dana:</strong> Harap lakukan transfer pengembalian dana selisih lebih tersebut ke rekening resmi PT Astra Daido Steel Indonesia dan konfirmasi bukti transfer kepada tim Finance ADASI.
+                        Transfer yang dikirimkan oleh Finance ADASI melebihi nilai tagihan invoice Anda sebesar <strong class="tw-text-amber-700 dark:tw-text-amber-400">Rp {{ number_format($overAmount, 0, ',', '.') }}</strong>.
                     </p>
+
+                    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-3 tw-mt-3 tw-p-3 tw-bg-surface tw-rounded-ui-sm tw-border tw-border-outline-variant/50">
+                        <div>
+                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">Nilai Tagihan</span>
+                            <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ number_format($expectedNet, 0, ',', '.') }}</span>
+                        </div>
+                        <div>
+                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">Total Ditransfer</span>
+                            <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ number_format($alreadyPaid, 0, ',', '.') }}</span>
+                        </div>
+                        <div>
+                            <span class="tw-text-[11px] tw-text-amber-700 dark:tw-text-amber-400 tw-block tw-font-medium">Kelebihan Bayar</span>
+                            <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-amber-700 dark:tw-text-amber-400">Rp {{ number_format($overAmount, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="tw-mt-4 tw-p-4 tw-rounded-ui-sm tw-bg-surface-container-low tw-border tw-border-outline-variant/60">
+                        <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-mb-2">
+                            <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-1.5">
+                                <x-ui.icon name="building-2" size="xs" /> Rekening Tujuan Refund Resmi ADASI
+                            </span>
+                            @if($adasiAccNo)
+                                <button type="button"
+                                    class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-primary/10 tw-text-primary hover:tw-bg-primary/20 tw-transition-colors"
+                                    data-copy-text="{{ $adasiAccNo }}"
+                                    title="Salin Nomor Rekening">
+                                    <x-ui.icon name="copy" size="xs" />
+                                    <span>Salin Nomor Rekening</span>
+                                </button>
+                            @endif
+                        </div>
+                        <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-3 tw-text-ui-xs">
+                            <div>
+                                <span class="tw-text-on-surface-variant tw-block">Bank</span>
+                                <span class="tw-font-semibold tw-text-on-surface">{{ $adasiBank }}</span>
+                            </div>
+                            <div>
+                                <span class="tw-text-on-surface-variant tw-block">Nomor Rekening</span>
+                                <span class="tw-font-mono tw-font-bold tw-text-on-surface">{{ $adasiAccNo }}</span>
+                            </div>
+                            <div>
+                                <span class="tw-text-on-surface-variant tw-block">Atas Nama</span>
+                                <span class="tw-font-semibold tw-text-on-surface">{{ $adasiAccHolder }}</span>
+                            </div>
+                            <div>
+                                <span class="tw-text-on-surface-variant tw-block">Kontak Finance</span>
+                                @if(!empty($adasiFinanceEmail) || !empty($adasiFinanceWa))
+                                    <div class="tw-mt-1.5 tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                                        @if(!empty($adasiFinanceEmail))
+                                            @php
+                                                $mailSubject = '[Konfirmasi Refund Kelebihan Bayar] Invoice ' . ($invoice->invoice_number ?? '') . ' - ' . $companyName;
+                                                $mailBody = "Kepada Yth.\n"
+                                                    . "Tim Finance & Accounting\n"
+                                                    . "PT Astra Daido Steel Indonesia (ADASI)\n\n"
+                                                    . "Dengan hormat,\n\n"
+                                                    . "Sehubungan dengan kelebihan pembayaran (overpayment) pada invoice kami, bersama email ini kami bermaksud untuk mengonfirmasikan pengembalian dana (refund) dengan rincian data sebagai berikut:\n\n"
+                                                    . "A. RINCIAN INVOICE & PEMBAYARAN:\n"
+                                                    . "• Nama Vendor / Supplier : " . $companyName . "\n"
+                                                    . "• No. Invoice            : " . ($invoice->invoice_number ?? '-') . "\n"
+                                                    . "• No. Pengajuan          : " . ($invoice->submission_number ?? '-') . "\n"
+                                                    . "• No. Purchase Order (PO): " . ($invoice->po_number ?? '-') . "\n"
+                                                    . "• Nilai Tagihan Netto    : Rp " . number_format($expectedNet, 0, ',', '.') . "\n"
+                                                    . "• Total Ditransfer ADASI : Rp " . number_format($alreadyPaid, 0, ',', '.') . "\n"
+                                                    . "--------------------------------------------------\n"
+                                                    . "• Nominal Selisih Lebih  : Rp " . number_format($overAmount, 0, ',', '.') . "\n\n"
+                                                    . "B. DATA PENGEMBALIAN DANA (REFUND):\n"
+                                                    . "• Rekening Tujuan ADASI  : " . $adasiBank . " - " . $adasiAccNo . " (a.n. " . $adasiAccHolder . ")\n"
+                                                    . "• Bank Pengirim          : \n"
+                                                    . "• No. Rekening Pengirim  : \n"
+                                                    . "• Atas Nama Pengirim     : \n"
+                                                    . "• Tanggal Transfer       : \n"
+                                                    . "• Nominal Refund         : Rp " . number_format($overAmount, 0, ',', '.') . "\n\n"
+                                                    . "C. LAMPIRAN BUKTI TRANSFER:\n"
+                                                    . "Bersama email ini kami sertakan dokumen/bukti transfer pengembalian dana tersebut sebagai bahan verifikasi.\n\n"
+                                                    . "Mohon kesediaan Tim Finance ADASI untuk memeriksa dan mengonfirmasi penerimaan dana pengembalian ini.\n\n"
+                                                    . "Atas perhatian dan kerja samanya, kami ucapkan terima kasih.\n\n"
+                                                    . "Hormat kami,\n"
+                                                    . $companyName;
+                                                $fullDraftText = "Subjek: " . $mailSubject . "\n\n" . $mailBody;
+                                                $mailUrl = 'mailto:' . $adasiFinanceEmail . '?subject=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
+                                                $gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' . rawurlencode($adasiFinanceEmail) . '&su=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
+                                                $outlookUrl = 'https://outlook.office.com/mail/deeplink/compose?to=' . rawurlencode($adasiFinanceEmail) . '&subject=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
+                                            @endphp
+                                            <textarea id="email-draft-text-{{ $invoice->id }}" class="d-none" aria-hidden="true">{{ $fullDraftText }}</textarea>
+                                            <div class="dropdown tw-inline-block">
+                                                <button type="button"
+                                                    class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-primary/10 hover:tw-bg-primary/20 tw-text-primary dark:tw-text-primary-light tw-transition-colors"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false"
+                                                    title="Pilihan Kontak Email ({{ $adasiFinanceEmail }})">
+                                                    <x-ui.icon name="mail" size="sm" class="tw-w-4 tw-h-4 tw-shrink-0" />
+                                                    <span>Email</span>
+                                                    <x-ui.icon name="chevron-down" size="xs" class="tw-w-3 tw-h-3 tw-shrink-0 tw-opacity-70" />
+                                                </button>
+                                                <ul class="dropdown-menu shadow-sm tw-text-ui-xs tw-border tw-border-outline-variant tw-rounded-ui-md tw-py-1 tw-min-w-[220px] z-[1060]">
+                                                    <li>
+                                                        <a class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container"
+                                                            href="{{ $gmailUrl }}"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer">
+                                                            <x-ui.icon name="external-link" size="xs" class="tw-text-primary tw-shrink-0" />
+                                                            <span>Buka di Gmail (Web)</span>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container"
+                                                            href="{{ $outlookUrl }}"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer">
+                                                            <x-ui.icon name="external-link" size="xs" class="tw-text-primary tw-shrink-0" />
+                                                            <span>Buka di Outlook (Web)</span>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container"
+                                                            href="{{ $mailUrl }}">
+                                                            <x-ui.icon name="mail" size="xs" class="tw-text-primary tw-shrink-0" />
+                                                            <span>Aplikasi Email Bawaan</span>
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider my-1 tw-border-outline-variant/60"></li>
+                                                    <li>
+                                                        <button type="button"
+                                                            class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container tw-w-full tw-text-left"
+                                                            data-copy-target="#email-draft-text-{{ $invoice->id }}"
+                                                            data-copy-text="{{ $fullDraftText }}"
+                                                            data-copy-msg="Draf email konfirmasi refund berhasil disalin ke clipboard!">
+                                                            <x-ui.icon name="file-text" size="xs" class="tw-text-primary tw-shrink-0" />
+                                                            <span>Salin Teks Draf Pesan</span>
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button"
+                                                            class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container tw-w-full tw-text-left"
+                                                            data-copy-text="{{ $adasiFinanceEmail }}"
+                                                            data-copy-msg="Alamat email Finance ({{ $adasiFinanceEmail }}) berhasil disalin!">
+                                                            <x-ui.icon name="copy" size="xs" class="tw-text-primary tw-shrink-0" />
+                                                            <span>Salin Alamat Email Saja</span>
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        @endif
+                                        @if(!empty($adasiFinanceWa))
+                                            @php
+                                                $cleanWa = preg_replace('/[^0-9]/', '', (string) $adasiFinanceWa);
+                                                if (str_starts_with($cleanWa, '0')) {
+                                                    $cleanWa = '62' . substr($cleanWa, 1);
+                                                }
+                                                $waText = "Halo Tim Finance ADASI,\n\n"
+                                                    . "Kami ingin mengonfirmasikan pengembalian kelebihan bayar (refund) invoice dengan rincian:\n"
+                                                    . "• Vendor: " . $companyName . "\n"
+                                                    . "• No. Invoice: " . ($invoice->invoice_number ?? '-') . "\n"
+                                                    . "• No. PO: " . ($invoice->po_number ?? '-') . "\n"
+                                                    . "• Nilai Kelebihan Bayar: Rp " . number_format($overAmount, 0, ',', '.') . "\n"
+                                                    . "• Rekening Tujuan: " . $adasiBank . " (" . $adasiAccNo . " a.n. " . $adasiAccHolder . ")\n\n"
+                                                    . "Bukti transfer terlampir. Mohon dicek dan dikonfirmasi. Terima kasih.";
+                                                $waUrl = 'https://wa.me/' . $cleanWa . '?text=' . rawurlencode($waText);
+                                            @endphp
+                                            <a href="{{ $waUrl }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-emerald-500/10 hover:tw-bg-emerald-500/20 tw-text-emerald-700 dark:tw-text-emerald-400 dark:hover:tw-text-emerald-300 hover:tw-underline tw-transition-colors"
+                                                title="Hubungi via WhatsApp">
+                                                <x-ui.icon name="whatsapp" size="sm" class="tw-w-4 tw-h-4 tw-shrink-0" />
+                                                <span>WhatsApp</span>
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="tw-m-0 tw-mt-3 tw-text-[11px] tw-text-on-surface-variant">
+                        <strong>Petunjuk:</strong> Harap transfer pengembalian dana selisih lebih tersebut ke rekening resmi di atas, kemudian konfirmasikan bukti transfer kepada tim Finance ADASI.
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($isSettledOverpaid)
+        @php
+            $proof = $overpaymentRefund->attachments->first();
+        @endphp
+        <div class="tw-rounded-ui-md tw-border tw-border-emerald-500/30 tw-bg-emerald-500/5 tw-p-5">
+            <div class="tw-flex tw-items-start tw-gap-3.5">
+                <div class="tw-w-9 tw-h-9 tw-rounded-full tw-bg-emerald-500/10 tw-text-emerald-600 dark:tw-text-emerald-400 tw-flex tw-items-center tw-justify-center tw-shrink-0">
+                    <x-ui.icon name="check-circle" size="sm" />
+                </div>
+                <div class="tw-min-w-0 tw-flex-1">
+                    <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                        <h4 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">Penyelesaian Kelebihan Pembayaran (Overpayment)</h4>
+                        <span class="tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300">
+                            Selesai / Terverifikasi
+                        </span>
+                    </div>
+                    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">
+                        Pengembalian kelebihan dana atas invoice ini telah diselesaikan dan diverifikasi oleh tim Finance ADASI.
+                    </p>
+
+                    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-3 tw-mt-3 tw-p-3.5 tw-bg-surface tw-rounded-ui-sm tw-border tw-border-outline-variant/50 tw-text-ui-xs">
+                        <div>
+                            <span class="tw-text-on-surface-variant tw-block">Nominal Dikembalikan</span>
+                            <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-emerald-700 dark:tw-text-emerald-400">
+                                Rp {{ number_format((float) ($overpaymentRefund->refund_amount ?? $overpaymentRefund->overpayment_amount), 0, ',', '.') }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="tw-text-on-surface-variant tw-block">Tanggal Pengembalian</span>
+                            <span class="tw-font-semibold tw-text-on-surface">
+                                {{ $overpaymentRefund->refund_date ? $overpaymentRefund->refund_date->format('d M Y') : ($overpaymentRefund->settled_at ? $overpaymentRefund->settled_at->format('d M Y') : '-') }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="tw-text-on-surface-variant tw-block">Nomor Referensi Refund</span>
+                            <span class="tw-font-mono tw-font-semibold tw-text-on-surface">
+                                {{ $overpaymentRefund->refund_reference ?: '-' }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="tw-text-on-surface-variant tw-block">Catatan Finance</span>
+                            <span class="tw-text-on-surface">
+                                {{ $overpaymentRefund->notes ?: '-' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    @if($proof)
+                        <div class="tw-mt-3 tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-rounded-ui-sm tw-bg-surface-container-low tw-border tw-border-outline-variant/60">
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-min-w-0">
+                                <x-ui.icon name="file-text" size="xs" class="tw-text-primary tw-shrink-0" />
+                                <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface tw-truncate" title="{{ $proof->file_name }}">
+                                    Bukti Penyelesaian: {{ $proof->file_name }}
+                                </span>
+                            </div>
+                            <a href="{{ route('attachments.show', $proof->id) }}"
+                                target="_blank"
+                                class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-primary/10 tw-text-primary hover:tw-bg-primary/20 tw-transition-colors tw-shrink-0">
+                                <x-ui.icon name="download" size="xs" />
+                                <span>Unduh Bukti</span>
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -369,7 +621,7 @@
         {{-- Right Column: Sticky Workflow Actions, Status Stepper & Information (Offset accounts for 56px navbar) --}}
         <div class="lg:tw-col-span-4 tw-space-y-6 tw-sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
             {{-- Payment & Due Date Card (Internal only, hidden from Supplier) --}}
-            @if(!auth()->user()?->isSupplier())
+            @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
             <x-ui.card title="Jadwal Pembayaran">
                 <div class="tw-space-y-3">
                     <div class="tw-flex tw-justify-between tw-text-ui-xs">
@@ -515,6 +767,7 @@
                         'payment_scheduled' => 'Jadwal Bayar Ditentukan',
                         'partial_payment' => 'Pembayaran Parsial',
                         'overpaid' => 'Kelebihan Pembayaran',
+                        'refund_settled' => 'Refund Kelebihan Bayar Selesai',
                         'completed' => 'Pembayaran Selesai',
                         'paid' => 'Invoice Lunas',
                         'cancelled' => 'Invoice Dibatalkan',

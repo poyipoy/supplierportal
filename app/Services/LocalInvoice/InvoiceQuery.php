@@ -3,6 +3,7 @@
 namespace App\Services\LocalInvoice;
 
 use App\Models\LocalInvoice;
+use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -10,7 +11,7 @@ class InvoiceQuery
 {
     public function filtered(array $filters, ?int $owner = null, bool $payments = false): Builder
     {
-        $query = LocalInvoice::query()->with(['supplier.supplier', 'receipt']);
+        $query = LocalInvoice::query()->with(['supplier.supplier', 'receipt', 'overpaymentRefund']);
         if ($owner !== null) {
             $query->where('supplier_id', $owner);
         }
@@ -18,6 +19,18 @@ class InvoiceQuery
             $query->whereIn('status', ! empty($filters['history'])
                 ? [LocalInvoice::STATUS_READY_TO_PAY, LocalInvoice::STATUS_PAID, 'APPROVED', 'PAYMENT_SCHEDULED', 'COMPLETED']
                 : [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);
+        }
+        if (! empty($filters['overpayment_status'])) {
+            $os = strtolower((string) $filters['overpayment_status']);
+            if ($os === 'open') {
+                $query->whereHas('overpaymentRefund', function ($q) {
+                    $q->where('status', SupplierOverpaymentRefund::STATUS_OPEN);
+                });
+            } elseif ($os === 'settled') {
+                $query->whereHas('overpaymentRefund', function ($q) {
+                    $q->where('status', SupplierOverpaymentRefund::STATUS_SETTLED);
+                });
+            }
         }
         if ($status = $filters['status'] ?? null) {
             $query->where('status', $status);

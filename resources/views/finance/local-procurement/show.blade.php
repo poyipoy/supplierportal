@@ -23,6 +23,13 @@
                 <span>Kembali ke Daftar</span>
             </x-ui.button>
 
+            @if($purchaseOrder->latestPoDocument())
+                <x-ui.button :href="route('attachments.show', $purchaseOrder->latestPoDocument()->id)" target="_blank" variant="outline" size="sm">
+                    <x-ui.icon name="file-text" size="sm" />
+                    <span>Dokumen PO (PDF)</span>
+                </x-ui.button>
+            @endif
+
             @if($purchaseOrder->status === 'OPEN')
                 <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#addGrModal">
                     <x-ui.icon name="plus" size="sm" />
@@ -135,6 +142,8 @@
                     <tr>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Nomor GR</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal GR</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Deskripsi Barang</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Qty</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Nilai Penerimaan (Rp)</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Terhubung ke Invoice</th>
@@ -155,6 +164,14 @@
                                 <span class="tw-text-ui-xs tw-text-on-surface-variant">
                                     {{ $gr->gr_date?->format('d M Y') ?? '—' }}
                                 </span>
+                            </td>
+                            <td>
+                                <span class="tw-text-ui-xs tw-text-on-surface">
+                                    {{ $gr->description ?: '—' }}
+                                </span>
+                            </td>
+                            <td class="text-end tw-font-mono tw-text-ui-xs tw-text-on-surface">
+                                {{ number_format($gr->qty, 4, ',', '.') }}
                             </td>
                             <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
                                 Rp {{ number_format($gr->received_amount, 2, ',', '.') }}
@@ -252,6 +269,24 @@
                                                 </div>
 
                                                 <div>
+                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">Kuantitas (Qty) <span class="text-danger">*</span></label>
+                                                    <input
+                                                        name="qty"
+                                                        type="number"
+                                                        step="0.0001"
+                                                        min="0.0001"
+                                                        class="form-control form-control-sm tw-font-mono"
+                                                        value="{{ $gr->qty }}"
+                                                        required
+                                                    >
+                                                </div>
+
+                                                <div>
+                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">Deskripsi Barang (Opsional)</label>
+                                                    <input name="description" class="form-control form-control-sm" value="{{ $gr->description }}" placeholder="Deskripsi material / barang...">
+                                                </div>
+
+                                                <div>
                                                     <label class="form-label tw-text-ui-xs tw-font-semibold">Catatan (Opsional)</label>
                                                     <input name="notes" class="form-control form-control-sm" value="{{ $gr->notes }}" placeholder="Keterangan penerimaan barang...">
                                                 </div>
@@ -303,7 +338,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td colspan="7" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="9" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
                                 Belum ada berkas Goods Receipt (GR) yang tercatat untuk Purchase Order ini.
                             </td>
                         </tr>
@@ -369,6 +404,24 @@
                             <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
                                 Akumulasi total seluruh GR aktif tidak boleh melebihi plafon PO (Rp {{ number_format($purchaseOrder->total_amount, 2, ',', '.') }}).
                             </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label tw-text-ui-xs tw-font-semibold">Kuantitas (Qty) <span class="text-danger">*</span></label>
+                            <input
+                                name="qty"
+                                type="number"
+                                step="0.0001"
+                                min="0.0001"
+                                class="form-control form-control-sm tw-font-mono"
+                                placeholder="1.0000"
+                                required
+                            >
+                        </div>
+
+                        <div>
+                            <label class="form-label tw-text-ui-xs tw-font-semibold">Deskripsi Barang (Opsional)</label>
+                            <input name="description" class="form-control form-control-sm" placeholder="Deskripsi material / barang...">
                         </div>
 
                         <div>

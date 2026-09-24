@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Attachment;
+use App\Models\LocalPurchaseOrder;
 use App\Models\MaterialClaim;
 use App\Models\Message;
 use App\Models\PurchaseOrder;
@@ -26,7 +27,9 @@ class AttachmentPolicy
         if ($user->role === 'admin') {
             return true;
         }
-        if ($user->role === 'purchasing' && $attachment->attachable_type !== SupplierOverpaymentRefund::class) return true;
+        if ($user->role === 'purchasing' && $attachment->attachable_type !== SupplierOverpaymentRefund::class) {
+            return true;
+        }
 
         $attachable = $attachment->attachable;
 
@@ -37,7 +40,10 @@ class AttachmentPolicy
         $type = $attachment->attachable_type;
 
         if ($user->role === 'finance') {
-            return $type === SupplierOverpaymentRefund::class;
+            return in_array($type, [
+                SupplierOverpaymentRefund::class,
+                LocalPurchaseOrder::class,
+            ], true);
         }
 
         // ── QC ──
@@ -69,6 +75,10 @@ class AttachmentPolicy
 
                 Message::class => $attachable->conversation
                     && $attachable->conversation->isMember($user->id),
+
+                SupplierOverpaymentRefund::class => (int) $attachable->supplier_id === (int) $user->id,
+
+                LocalPurchaseOrder::class => (int) $attachable->supplier_id === (int) $user->id,
 
                 default => false,
             };

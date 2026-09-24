@@ -46,7 +46,11 @@ class TwoFactorChallengeController extends Controller
         }
 
         $remember = (bool) ($pending['remember'] ?? false);
-        $intended = (string) ($pending['intended'] ?? route('dashboard', absolute: false));
+        $intended = TwoFactorService::safeIntendedUrl(
+            $request,
+            (string) ($pending['intended'] ?? ''),
+            route('dashboard', absolute: false)
+        );
         $twoFactor->forgetPendingLogin($request);
         event(new AuthSecurityEvent($method === 'recovery' ? 'mfa_recovery_code_used' : 'mfa_challenge_succeeded', $user));
         $completeLogin->complete($request, $user, $remember);

@@ -29,8 +29,8 @@
 
     {{-- Right: User info + Notifications + Chat --}}
     <div class="d-flex align-items-center gap-2">
-        {{-- Chat Icon (Only for Purchasing and Supplier) --}}
-        @if((auth()->user()->isPurchasing() || (auth()->user()->hasSupplierScope('import') && ! \App\Support\PortalContext::isLocal(auth()->user()))))
+        {{-- Chat Icon (Only for Purchasing and Supplier in Material Procurement context) --}}
+        @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
             <x-ui.icon-button
                 :href="route(auth()->user()->role . '.conversations.index')"
                 icon="message-circle-more"

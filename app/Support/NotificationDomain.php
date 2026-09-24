@@ -37,7 +37,7 @@ class NotificationDomain
         }
 
         // Global indicators (system-wide events)
-        $globalPrefixes = ['export.', 'announcement.', 'system.', 'auth.'];
+        $globalPrefixes = ['export.', 'announcement.', 'system.', 'auth.', 'supplier_registration.'];
         foreach ($globalPrefixes as $prefix) {
             if (Str::startsWith($event, $prefix)) {
                 return self::GLOBAL;

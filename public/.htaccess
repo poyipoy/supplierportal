@@ -21,6 +21,15 @@
 
     RewriteEngine On
 
+    # Prevent Direct URL Access & External Hotlinking for Brand Assets
+    RewriteCond %{REQUEST_URI} assets/images/ [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://%{HTTP_HOST} [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://www\.%{HTTP_HOST} [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://localhost(:[0-9]+)? [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://127\.0\.0\.1(:[0-9]+)? [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://.*\.test(:[0-9]+)? [NC]
+    RewriteRule \.(jpe?g|png|gif|webp|svg)$ - [F,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

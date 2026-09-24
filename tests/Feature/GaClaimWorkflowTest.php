@@ -9,6 +9,7 @@ use App\Services\Ga\GaClaimService;
 use App\Services\Ga\GaVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Tests\TestCase;
@@ -18,6 +19,7 @@ class GaClaimWorkflowTest extends TestCase
     use RefreshDatabase;
 
     protected GaClaimService $claimService;
+
     protected GaVerificationService $verificationService;
 
     protected function setUp(): void
@@ -235,7 +237,10 @@ class GaClaimWorkflowTest extends TestCase
         $response->assertSee('pagination');
         $response->assertSee('page-link');
         $response->assertSee('page-item');
-
+        $response->assertDontSee('&laquo;');
+        $response->assertDontSee('&raquo;');
+        $response->assertSee('Previous');
+        $response->assertSee('Next');
 
         // Store
         $responseStore = $this->actingAs($ga)->post(route('ga.employees.store'), [
@@ -248,7 +253,7 @@ class GaClaimWorkflowTest extends TestCase
         $responseStore->assertRedirect();
         $this->assertDatabaseHas('employees', ['name' => 'Bambang Sudirman', 'is_active' => true]);
 
-        $employee = \App\Models\Employee::where('name', 'Bambang Sudirman')->first();
+        $employee = Employee::where('name', 'Bambang Sudirman')->first();
 
         // Update
         $responseUpdate = $this->actingAs($ga)->put(route('ga.employees.update', $employee), [
@@ -274,10 +279,10 @@ class GaClaimWorkflowTest extends TestCase
         $employee = $this->createEmployee();
 
         // Unsupported resource routes are not registered
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.create'));
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.show'));
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.edit'));
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('ga.employees.destroy'));
+        $this->assertFalse(Route::has('ga.employees.create'));
+        $this->assertFalse(Route::has('ga.employees.show'));
+        $this->assertFalse(Route::has('ga.employees.edit'));
+        $this->assertFalse(Route::has('ga.employees.destroy'));
 
         // Unsupported actions cannot be invoked via HTTP
         $this->actingAs($ga)->get('/ga/employees/create')->assertStatus(405);

@@ -66,13 +66,7 @@
                         <span class="tw-text-on-surface-variant tw-block">Telepon Perusahaan:</span>
                         <span>{{ $supplier?->phone ?? '—' }}</span>
                     </div>
-                    <div>
-                        <span class="tw-text-on-surface-variant tw-block">Payment Term:</span>
-                        <div class="tw-flex tw-items-center tw-gap-1.5">
-                            <strong>Net {{ $supplier?->payment_term_days ?? 30 }} Hari</strong>
-                            <span class="tw-text-[10px] tw-bg-surface-container tw-text-on-surface-variant tw-px-1.5 tw-py-0.5 tw-rounded" title="Payment term ditentukan oleh internal ADASI">Internal</span>
-                        </div>
-                    </div>
+
                     <div class="tw-col-span-full">
                         <span class="tw-text-on-surface-variant tw-block">Alamat:</span>
                         <span>{{ $supplier?->address ?? '—' }}</span>

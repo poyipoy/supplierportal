@@ -12,6 +12,7 @@ use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SupplierScopeMiddleware;
 use App\Support\PortalContext;
 use App\Support\RateLimitResponse;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -66,6 +67,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'purchasing.navigation' => RememberPurchasingListUrl::class,
             'mfa.pending' => EnsurePendingTwoFactorChallenge::class,
             'no-store' => NoStoreResponse::class,
+            'registration.session' => \App\Http\Middleware\EnsureRegistrationSession::class,
         ]);
 
         $middleware->redirectUsersTo(function () {
@@ -83,6 +85,13 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (AuthenticationException $exception, Request $request) {
+            if ($request->expectsJson()
+                || $request->is('notifications/unread-count', 'conversations/unread-count', 'conversations/*/messages/latest', 'exports/*/status')) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+        });
+
         $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
             if ($request->expectsJson()) {
                 return null;

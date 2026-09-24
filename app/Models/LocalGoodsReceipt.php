@@ -12,8 +12,11 @@ class LocalGoodsReceipt extends Model
     use HasFactory, HasHashids;
 
     public const STATUS_AVAILABLE = 'AVAILABLE';
+
     public const STATUS_RESERVED = 'RESERVED';
+
     public const STATUS_INVOICED = 'INVOICED';
+
     public const STATUS_CANCELLED = 'CANCELLED';
 
     protected $fillable = [
@@ -21,6 +24,8 @@ class LocalGoodsReceipt extends Model
         'local_purchase_order_id',
         'gr_date',
         'received_amount',
+        'qty',
+        'description',
         'notes',
         'status',
         'current_invoice_id',
@@ -32,6 +37,7 @@ class LocalGoodsReceipt extends Model
     protected $casts = [
         'gr_date' => 'date',
         'received_amount' => 'decimal:2',
+        'qty' => 'decimal:4',
     ];
 
     public function purchaseOrder(): BelongsTo

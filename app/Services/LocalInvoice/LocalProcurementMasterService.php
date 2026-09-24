@@ -135,7 +135,10 @@ class LocalProcurementMasterService
             $this->assertCap($po, $grAmount);
             $gr = $po->goodsReceipts()->create([
                 'gr_number' => $grNumber, 'gr_date' => $data['gr_date'],
-                'received_amount' => $grAmount, 'notes' => $data['notes'] ?? null,
+                'received_amount' => $grAmount,
+                'qty' => isset($data['qty']) ? (float) $data['qty'] : 0,
+                'description' => $data['description'] ?? null,
+                'notes' => $data['notes'] ?? null,
                 'status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'source' => $source,
                 'created_by' => $actor->id, 'updated_by' => $actor->id,
             ]);
@@ -165,7 +168,10 @@ class LocalProcurementMasterService
             $before = $gr->toArray();
             $gr->update([
                 'gr_number' => $grNumber, 'gr_date' => $data['gr_date'],
-                'received_amount' => $grAmount, 'notes' => $data['notes'] ?? null,
+                'received_amount' => $grAmount,
+                'qty' => isset($data['qty']) ? (float) $data['qty'] : $gr->qty,
+                'description' => array_key_exists('description', $data) ? $data['description'] : $gr->description,
+                'notes' => $data['notes'] ?? null,
                 'updated_by' => $actor->id,
             ]);
             $this->audit->record($gr, 'gr_updated', $actor, $before, $gr->fresh()->toArray());

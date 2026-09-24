@@ -3,12 +3,13 @@
         request()->filled('from') || request()->filled('to'),
         request()->filled('due_from') || request()->filled('due_to'),
         request()->filled('supplier'),
+        request()->filled('overpayment_status') && request('overpayment_status') !== 'all',
         request()->boolean('overdue'),
         request()->boolean('history'),
     ])->filter()->count();
 
     $hasAdvancedFilters = $advancedFilterCount > 0;
-    $hasAnyFilters = request()->hasAny(['q', 'status', 'from', 'to', 'due_from', 'due_to', 'supplier', 'overdue', 'history']);
+    $hasAnyFilters = request()->hasAny(['q', 'status', 'from', 'to', 'due_from', 'due_to', 'supplier', 'overdue', 'history', 'overpayment_status']);
 
     $suppliers = $suppliers ?? (auth()->check() && ! auth()->user()->isSupplier()
         ? \App\Models\User::localEligible()->with('supplier')->orderBy('name')->get()
@@ -103,7 +104,7 @@
             </div>
 
             {{-- 3-Column Inputs Grid --}}
-            <div class="tw-pt-3.5 tw-grid tw-gap-4 sm:tw-grid-cols-2 {{ auth()->user()->isSupplier() ? 'lg:tw-grid-cols-2' : 'lg:tw-grid-cols-3' }} tw-items-start">
+            <div class="tw-pt-3.5 tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-3 tw-items-start">
                 <div>
                     <label class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">Rentang Tanggal Pengajuan</label>
                     <x-ui.date-range-picker
@@ -130,6 +131,15 @@
                         :end-value="request('due_to')"
                         :compact="true"
                     />
+                </div>
+
+                <div>
+                    <label for="invoice-overpayment-status" class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">Status Kelebihan Bayar</label>
+                    <select name="overpayment_status" id="invoice-overpayment-status" class="form-select form-select-sm tw-min-h-[var(--ui-control-height-md)] tw-w-full">
+                        <option value="all" @selected(request('overpayment_status') === 'all' || !request()->filled('overpayment_status'))>Semua Status Refund</option>
+                        <option value="open" @selected(request('overpayment_status') === 'open')>Perlu Refund (Open)</option>
+                        <option value="settled" @selected(request('overpayment_status') === 'settled')>Refund Selesai (Settled)</option>
+                    </select>
                 </div>
 
                 @if(! auth()->user()->isSupplier())

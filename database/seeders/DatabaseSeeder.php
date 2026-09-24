@@ -110,5 +110,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(EmployeeMasterSeeder::class);
+        $this->call(LocalInvoiceSampleSeeder::class);
     }
 }

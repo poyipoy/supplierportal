@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentBatch;
+use App\Models\SupplierOverpaymentRefund;
 use App\Services\Payment\PaymentExecutionService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +18,7 @@ class FinanceDrpPaidController extends Controller
         $q = trim((string) $request->query('q', ''));
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
+        $overpaymentStatus = $request->query('overpayment_status');
 
         // Metrics calculations
         $unpaidStatuses = [
@@ -44,7 +46,9 @@ class FinanceDrpPaidController extends Controller
             'paid_amount' => $paidAmount,
         ];
 
-        $query = PaymentBatch::with(['creator', 'finalizer', 'groups.items.localInvoiceVoucher', 'groups.items.localInvoicePayment', 'groups.items.payable'])
+        $openOverpaymentsCount = (int) SupplierOverpaymentRefund::where('status', SupplierOverpaymentRefund::STATUS_OPEN)->count();
+
+        $query = PaymentBatch::with(['creator', 'finalizer', 'groups.items.localInvoiceVoucher', 'groups.items.localInvoicePayment.overpayment', 'groups.items.payable'])
             ->withCount('groups')
             ->where('status', '!=', PaymentBatch::STATUS_CANCELLED);
 
@@ -81,6 +85,24 @@ class FinanceDrpPaidController extends Controller
             $query->where('batch_type', strtoupper($type));
         }
 
+        // Filter by overpayment status
+        if (! empty($overpaymentStatus) && $overpaymentStatus !== 'all') {
+            $os = strtolower(trim((string) $overpaymentStatus));
+            if ($os === 'has_overpayment') {
+                $query->whereHas('groups.items.localInvoicePayment.overpayment');
+            } elseif ($os === 'open') {
+                $query->whereHas('groups.items.localInvoicePayment.overpayment', function ($op) {
+                    $op->where('status', SupplierOverpaymentRefund::STATUS_OPEN);
+                });
+            } elseif ($os === 'settled') {
+                $query->whereHas('groups.items.localInvoicePayment.overpayment', function ($op) {
+                    $op->where('status', SupplierOverpaymentRefund::STATUS_SETTLED);
+                })->whereDoesntHave('groups.items.localInvoicePayment.overpayment', function ($op) {
+                    $op->where('status', SupplierOverpaymentRefund::STATUS_OPEN);
+                });
+            }
+        }
+
         // Date range filters
         if (! empty($dateFrom)) {
             $query->whereDate('created_at', '>=', $dateFrom);
@@ -91,7 +113,7 @@ class FinanceDrpPaidController extends Controller
 
         $batches = $query->latest('id')->paginate(15)->withQueryString();
 
-        return view('finance.drp.paid', compact('batches', 'tab', 'type', 'q', 'dateFrom', 'dateTo', 'metrics'));
+        return view('finance.drp.paid', compact('batches', 'tab', 'type', 'q', 'dateFrom', 'dateTo', 'metrics', 'overpaymentStatus', 'openOverpaymentsCount'));
     }
 
     public function markBatchPaid(PaymentBatch $batch, Request $request, PaymentExecutionService $service)
@@ -120,10 +142,21 @@ class FinanceDrpPaidController extends Controller
 
         $service->markEntireBatchPaid($batch, $data, $request->user());
 
-        $freshBatch = $batch->fresh();
-        $message = $freshBatch->status === PaymentBatch::STATUS_PARTIALLY_PAID
-            ? "Batch DRP [{$batch->batch_number}] berhasil diproses dengan status Sebagian Lunas (Partially Paid)."
-            : "Batch DRP [{$batch->batch_number}] berhasil ditandai Lunas (PAID).";
+        $freshBatch = $batch->fresh(['groups.items.localInvoicePayment.overpayment']);
+        $totalOverpayment = (float) $freshBatch->total_overpayment_amount;
+
+        if ($freshBatch->status === PaymentBatch::STATUS_PARTIALLY_PAID) {
+            $message = "Batch DRP [{$batch->batch_number}] berhasil diproses dengan status Sebagian Lunas (Partially Paid).";
+            if ($totalOverpayment > 0) {
+                $message .= ' Terdeteksi kelebihan bayar sebesar Rp '.number_format($totalOverpayment, 0, ',', '.').' yang otomatis dicatat pada modul Refund Overpayment.';
+            }
+        } else {
+            if ($totalOverpayment > 0) {
+                $message = "Batch DRP [{$batch->batch_number}] berhasil ditandai Lunas (PAID). Terdeteksi kelebihan bayar sebesar Rp ".number_format($totalOverpayment, 0, ',', '.').' yang otomatis dicatat pada modul Refund Overpayment.';
+            } else {
+                $message = "Batch DRP [{$batch->batch_number}] berhasil ditandai Lunas (PAID).";
+            }
+        }
 
         return back()->with('success', $message);
     }

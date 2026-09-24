@@ -27,6 +27,31 @@ class InvoiceSubmissionService
     public function submit(User $actor, array $data, array $files): LocalInvoice
     {
         Gate::forUser($actor)->authorize('create', LocalInvoice::class);
+
+        $parser = app(InvoiceFilenameParser::class);
+        if (! empty($files['invoice'])) {
+            $derivedInvoice = $parser->parseInvoiceNumber($files['invoice'], $data['invoice_number'] ?? null);
+            if ($derivedInvoice !== null) {
+                if (! empty($data['invoice_number']) && $data['invoice_number'] !== $derivedInvoice) {
+                    throw ValidationException::withMessages([
+                        'invoice_number' => "Nomor invoice ({$data['invoice_number']}) tidak sesuai dengan nama berkas invoice ({$derivedInvoice}).",
+                    ]);
+                }
+                $data['invoice_number'] = $derivedInvoice;
+            }
+        }
+        if (! empty($files['tax_invoice'])) {
+            $derivedTax = $parser->parseTaxInvoiceNumber($files['tax_invoice'], $data['tax_invoice_number'] ?? null);
+            if ($derivedTax !== null) {
+                if (! empty($data['tax_invoice_number']) && $parser->normalizeDigits($data['tax_invoice_number']) !== $parser->normalizeDigits($derivedTax)) {
+                    throw ValidationException::withMessages([
+                        'tax_invoice_number' => "Nomor faktur pajak ({$data['tax_invoice_number']}) tidak sesuai dengan nama berkas faktur pajak ({$derivedTax}).",
+                    ]);
+                }
+                $data['tax_invoice_number'] = $derivedTax;
+            }
+        }
+
         $written = [];
         try {
             return DB::transaction(function () use ($actor, $data, $files, &$written) {
@@ -169,6 +194,28 @@ class InvoiceSubmissionService
     public function resubmit(User $actor, LocalInvoice $invoice, array $data, array $files): LocalInvoice
     {
         Gate::forUser($actor)->authorize('resubmit', $invoice);
+
+        $parser = app(InvoiceFilenameParser::class);
+        if (! empty($files['invoice'])) {
+            $derivedInvoice = $parser->parseInvoiceNumber($files['invoice'], $invoice->invoice_number);
+            if ($derivedInvoice !== null && $derivedInvoice !== $invoice->invoice_number) {
+                throw ValidationException::withMessages([
+                    'invoice_number' => "Nomor invoice dari berkas yang diunggah ({$derivedInvoice}) tidak sesuai dengan nomor invoice tagihan ({$invoice->invoice_number}).",
+                ]);
+            }
+        }
+        if (! empty($files['tax_invoice'])) {
+            $derivedTax = $parser->parseTaxInvoiceNumber($files['tax_invoice'], $data['tax_invoice_number'] ?? null);
+            if ($derivedTax !== null) {
+                if (! empty($data['tax_invoice_number']) && $parser->normalizeDigits($data['tax_invoice_number']) !== $parser->normalizeDigits($derivedTax)) {
+                    throw ValidationException::withMessages([
+                        'tax_invoice_number' => "Nomor faktur pajak ({$data['tax_invoice_number']}) tidak sesuai dengan nama berkas faktur pajak ({$derivedTax}).",
+                    ]);
+                }
+                $data['tax_invoice_number'] = $derivedTax;
+            }
+        }
+
         $written = [];
         try {
             return DB::transaction(function () use ($actor, $invoice, $data, $files, &$written) {

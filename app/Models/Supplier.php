@@ -9,10 +9,14 @@ class Supplier extends Model
 {
     protected $fillable = [
         'user_id',
+        'company_title',
         'company_name',
         'address',
         'phone',
+        'nib',
+        'nib_fingerprint',
         'npwp',
+        'tax_identity_fingerprint',
         'category',
         'vendor_category',
         'is_pkp',

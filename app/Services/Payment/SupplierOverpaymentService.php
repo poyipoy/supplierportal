@@ -4,6 +4,7 @@ namespace App\Services\Payment;
 
 use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
+use App\Services\LocalInvoice\InvoiceNotificationService;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,10 @@ use Throwable;
 
 class SupplierOverpaymentService
 {
-    public function __construct(private LocalFinanceAuditService $audit) {}
+    public function __construct(
+        private LocalFinanceAuditService $audit,
+        private InvoiceNotificationService $notifications
+    ) {}
 
     public function settle(SupplierOverpaymentRefund $refund, array $data, ?UploadedFile $proof, User $actor): SupplierOverpaymentRefund
     {
@@ -38,7 +42,9 @@ class SupplierOverpaymentService
                 throw ValidationException::withMessages(['proof' => 'Refund proof could not be stored.']);
             }
         } finally {
-            if (is_resource($stream)) fclose($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
         }
 
         try {
@@ -56,6 +62,26 @@ class SupplierOverpaymentService
                 $locked->attachments()->create(['file_path' => $path, 'file_name' => $proof->getClientOriginalName(),
                     'file_type' => $proof->getMimeType(), 'uploaded_by' => $actor->id]);
                 $this->audit->record($locked, 'overpayment_refunded', $actor, ['status' => SupplierOverpaymentRefund::STATUS_OPEN], $locked->fresh()->toArray());
+
+                $invoice = $locked->invoice;
+                if ($invoice) {
+                    $notes = 'Refund kelebihan bayar sebesar Rp '.number_format((float) $data['refund_amount'], 0, ',', '.').' telah diselesaikan oleh Finance ADASI (Ref: '.trim($data['refund_reference']).').';
+                    if (! empty($data['notes'])) {
+                        $notes .= ' Catatan: '.trim($data['notes']);
+                    }
+
+                    $history = $invoice->statusHistories()->create([
+                        'from_status' => $invoice->status,
+                        'to_status' => $invoice->status,
+                        'actor_id' => $actor->id,
+                        'event' => 'refund_settled',
+                        'notes' => $notes,
+                        'created_at' => now(),
+                    ]);
+
+                    $this->notifications->send($invoice, $history);
+                }
+
                 return $locked->fresh('attachments');
             });
         } catch (Throwable $e) {

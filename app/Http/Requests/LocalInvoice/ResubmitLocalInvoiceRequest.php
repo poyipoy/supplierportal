@@ -4,12 +4,25 @@ namespace App\Http\Requests\LocalInvoice;
 
 use App\Services\VendorMaster\VendorMasterService;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
 {
     public function authorize(): bool
     {
         return $this->user()->can('resubmit', $this->route('invoice'));
+    }
+
+    protected function prepareForValidation(): void
+    {
+        parent::prepareForValidation();
+
+        $invoice = $this->route('invoice');
+        if ($invoice && $this->has('invoice_number') && $this->input('invoice_number') !== $invoice->invoice_number) {
+            throw ValidationException::withMessages([
+                'invoice_number' => "Nomor invoice dari berkas yang diunggah ({$this->input('invoice_number')}) tidak sesuai dengan nomor invoice tagihan ini ({$invoice->invoice_number}). Nomor invoice tidak boleh diubah saat revisi.",
+            ]);
+        }
     }
 
     public function rules(): array
@@ -56,6 +69,7 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
                 $validCount = $invoice->documents()->whereIn('id', $value)->count();
                 if ($validCount !== count(array_unique($value))) {
                     $fail('Beberapa dokumen lampiran yang dipilih tidak valid untuk tagihan ini.');
+
                     return;
                 }
             }
@@ -65,7 +79,7 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
                 $uploaded = $this->file($type);
                 $newCount = is_array($uploaded) ? count($uploaded) : ($uploaded ? 1 : 0);
                 if ($retainedCount + $newCount > 5) {
-                    $fail('Total berkas tersimpan dan baru untuk ' . $type . ' melebihi batas maksimal 5 berkas.');
+                    $fail('Total berkas tersimpan dan baru untuk '.$type.' melebihi batas maksimal 5 berkas.');
                 }
             }
         };

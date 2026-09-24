@@ -94,23 +94,25 @@ class LoginRequest extends FormRequest
         // ~200ms a bcrypt comparison costs — a gap wide enough to enumerate
         // valid addresses remotely. Hashing against a precomputed dummy hash
         // on the miss path keeps both branches on the same CPU budget.
-        $targetHash = ($user instanceof User && $user->is_active)
+        $isActiveAndEligible = ($user instanceof User && $user->is_active && $user->account_status === User::ACCOUNT_STATUS_ACTIVE);
+
+        $targetHash = $isActiveAndEligible
             ? (string) $user->password
             : (string) config('auth_security.dummy_hash');
 
         $passwordMatches = Hash::check($this->string('password')->toString(), $targetHash);
 
-        if (! $user instanceof User || ! $user->is_active || ! $passwordMatches) {
+        if (! $isActiveAndEligible || ! $passwordMatches) {
             $limiter->hit($this, $email);
             $this->session()->flash('auth_turnstile_required', $limiter->requiresTurnstile($this, $email));
 
             // Manual verification bypasses the guard, so the Failed event that
             // normally feeds the audit trail never fires. Only name the user
-            // when the account is active, matching what the guard used to
+            // when the account is active and eligible, matching what the guard used to
             // resolve for these credentials.
             event(new AuthSecurityEvent(
                 'login_failed',
-                $user instanceof User && $user->is_active ? $user : null,
+                $isActiveAndEligible ? $user : null,
                 $email,
                 ['guard' => 'web'],
             ));

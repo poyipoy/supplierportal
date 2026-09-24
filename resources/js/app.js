@@ -4,6 +4,7 @@ import './unsaved-changes';
 import './number-input-helper';
 import './chart-theme';
 import './submit-guard';
+import './asset-protection';
 import { adasiFileUploadComponent } from './file-upload';
 
 window.Alpine = Alpine;

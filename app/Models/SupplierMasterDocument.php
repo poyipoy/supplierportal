@@ -12,11 +12,13 @@ class SupplierMasterDocument extends Model
     public const TYPE_NIB = 'NIB';
     public const TYPE_NPWP = 'NPWP';
     public const TYPE_SPPKP = 'SPPKP';
+    public const TYPE_SKD = 'SKD';
     public const TYPE_SURAT_PERNYATAAN_REKENING = 'SURAT_PERNYATAAN_REKENING';
     public const TYPE_OTHER = 'OTHER';
 
     protected $fillable = [
         'supplier_id',
+        'supplier_bank_account_id',
         'document_type',
         'file_path',
         'original_filename',
@@ -30,6 +32,11 @@ class SupplierMasterDocument extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supplier_id');
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(SupplierBankAccount::class, 'supplier_bank_account_id');
     }
 
     public function uploader(): BelongsTo

@@ -22,6 +22,15 @@
                 <x-ui.icon name="credit-card" size="sm" />
                 <span>DRP GA</span>
             </x-ui.button>
+            <x-ui.button :href="route('finance.overpayments.index')" variant="outline" size="sm" class="tw-relative">
+                <x-ui.icon name="alert-circle" size="sm" class="{{ ($openOverpaymentsCount ?? 0) > 0 ? 'tw-text-amber-500' : '' }}" />
+                <span>Refund Overpayment</span>
+                @if(($openOverpaymentsCount ?? 0) > 0)
+                    <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-amber-500 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.2">
+                        {{ $openOverpaymentsCount }}
+                    </span>
+                @endif
+            </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -121,6 +130,16 @@
                         </select>
                     </div>
 
+                    <div class="tw-w-44">
+                        <label for="drp-overpayment-status" class="visually-hidden">Status Overpayment</label>
+                        <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw-text-ui-xs">
+                            <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>Semua Overpayment</option>
+                            <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>Ada Kelebihan Bayar</option>
+                            <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>Perlu Refund (Open)</option>
+                            <option value="settled" @selected(($overpaymentStatus ?? '') === 'settled')>Refund Selesai (Settled)</option>
+                        </select>
+                    </div>
+
                     <div class="tw-w-64">
                         <x-ui.date-range-picker
                             id="paid-date-range"
@@ -141,7 +160,7 @@
                     <x-ui.icon name="filter" size="sm" />
                     <span>Filter</span>
                 </x-ui.button>
-                @if($q || $type || $dateFrom || $dateTo || $tab !== 'unpaid')
+                @if($q || $type || $dateFrom || $dateTo || ($overpaymentStatus && $overpaymentStatus !== 'all') || $tab !== 'unpaid')
                     <x-ui.button :href="route('finance.drp.paid.index', ['tab' => $tab])" size="sm" variant="ghost">
                         <x-ui.icon name="rotate-ccw" size="sm" />
                         <span>Reset</span>
@@ -200,6 +219,11 @@
                                 <div class="tw-font-bold tw-text-on-surface">
                                     Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
                                 </div>
+                                @if($batch->hasOverpayment())
+                                    <div class="tw-text-[11px] tw-text-amber-700 dark:tw-text-amber-400 tw-font-semibold tw-mt-0.5" title="Nominal transfer riil melebihi net DRP">
+                                        Transfer: Rp {{ number_format($batch->actual_transferred_amount, 0, ',', '.') }}
+                                    </div>
+                                @endif
                                 @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                     <div class="tw-text-[11px] tw-text-warning-container-foreground tw-font-semibold tw-mt-0.5" title="Sisa nominal yang belum lunas">
                                         Sisa: Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
@@ -225,6 +249,23 @@
                                             Ref: {{ $sampleGroup->transfer_reference }}
                                         </div>
                                     @endif
+                                    @if($batch->hasOverpayment())
+                                        @if($batch->hasOpenOverpayment())
+                                            <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
+                                               class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-mt-1 tw-no-underline hover:tw-underline"
+                                               title="Klik untuk membuka modul pengembalian dana overpayment">
+                                                <x-ui.icon name="alert-circle" size="xs" />
+                                                <span>Overpayment: Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }} (Open)</span>
+                                            </a>
+                                        @else
+                                            <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
+                                               class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-mt-1 tw-no-underline hover:tw-underline"
+                                               title="Klik untuk melihat riwayat penyelesaian overpayment">
+                                                <x-ui.icon name="check-circle" size="xs" />
+                                                <span>Overpayment Selesai (Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }})</span>
+                                            </a>
+                                        @endif
+                                    @endif
                                 @elseif($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                     <div class="tw-flex tw-flex-col tw-gap-0.5">
                                         <span class="tw-text-ui-xs tw-text-primary tw-font-semibold">Sebagian Sudah Dibayar</span>
@@ -233,6 +274,23 @@
                                             <span class="tw-text-on-surface-variant">·</span>
                                             <span class="tw-text-warning-container-foreground tw-font-bold">Sisa: Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}</span>
                                         </div>
+                                        @if($batch->hasOverpayment())
+                                            @if($batch->hasOpenOverpayment())
+                                                <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
+                                                   class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-mt-0.5 tw-no-underline hover:tw-underline"
+                                                   title="Klik untuk membuka modul pengembalian dana overpayment">
+                                                    <x-ui.icon name="alert-circle" size="xs" />
+                                                    <span>Overpayment: Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }} (Open)</span>
+                                                </a>
+                                            @else
+                                                <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
+                                                   class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-mt-0.5 tw-no-underline hover:tw-underline"
+                                                   title="Klik untuk melihat riwayat penyelesaian overpayment">
+                                                    <x-ui.icon name="check-circle" size="xs" />
+                                                    <span>Overpayment Selesai (Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }})</span>
+                                                </a>
+                                            @endif
+                                        @endif
                                         @if($batch->hasUnvoucheredSupplierItems())
                                             <span class="tw-text-[11px] tw-text-warning-container-foreground tw-font-semibold tw-flex tw-items-center tw-gap-1 tw-mt-0.5">
                                                 <x-ui.icon name="alert-triangle" size="sm" />
@@ -322,7 +380,34 @@
     {{-- Modal Konfirmasi Bayar Batch (Ditempatkan di luar tabel agar HTML5 DOM & Alpine.js valid) --}}
     @foreach($batches as $batch)
         @if(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]) && ! $batch->hasUnvoucheredSupplierItems())
-            <div class="modal fade" id="markPaidModal-{{ $batch->id }}" tabindex="-1" aria-hidden="true" x-data="{ hasAdjustment: false }">
+            <div class="modal fade" id="markPaidModal-{{ $batch->id }}" tabindex="-1" aria-hidden="true"
+                 x-data="{
+                     hasAdjustment: false,
+                     adjustments: {},
+                     updateItem(id, expected, actualVal) {
+                         const actual = parseFloat(actualVal) || 0;
+                         const diff = Math.round((actual - expected) * 100) / 100;
+                         this.adjustments[id] = { expected, actual, diff };
+                     },
+                     get totalOverpayment() {
+                         if (!this.hasAdjustment) return 0;
+                         let total = 0;
+                         for (const key in this.adjustments) {
+                             if (this.adjustments[key] && this.adjustments[key].diff > 0.009) {
+                                 total += this.adjustments[key].diff;
+                             }
+                         }
+                         return Math.round(total * 100) / 100;
+                     },
+                     get overpaidCount() {
+                         if (!this.hasAdjustment) return 0;
+                         let count = 0;
+                         for (const key in this.adjustments) {
+                             if (this.adjustments[key] && this.adjustments[key].diff > 0.009) count++;
+                         }
+                         return count;
+                     }
+                 }">
                 <div class="modal-dialog modal-dialog-centered {{ $batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER ? 'modal-lg' : '' }}">
                     <form method="POST" action="{{ route('finance.drp.paid.mark-paid', $batch) }}">
                         @csrf
@@ -430,6 +515,21 @@
                                                     Kelebihan bayar akan otomatis dicatat sebagai <strong>Supplier Overpayment</strong>.
                                                 </p>
 
+                                                <template x-if="hasAdjustment && totalOverpayment > 0.009">
+                                                    <div class="tw-rounded-lg tw-border tw-border-amber-300 tw-bg-amber-50 dark:tw-bg-amber-950/40 dark:tw-border-amber-700 tw-p-3 tw-text-ui-xs">
+                                                        <div class="tw-flex tw-items-center tw-gap-2 tw-text-amber-800 dark:tw-text-amber-300 tw-font-bold">
+                                                            <x-ui.icon name="alert-circle" size="sm" />
+                                                            <span>Perhatian: Terdeteksi Kelebihan Bayar (Overpayment)</span>
+                                                        </div>
+                                                        <div class="tw-mt-1 tw-text-on-surface">
+                                                            Total kelebihan bayar: <span class="tw-font-mono tw-font-bold tw-text-amber-700 dark:tw-text-amber-400">+Rp <span x-text="totalOverpayment.toLocaleString('id-ID')"></span></span> pada <span x-text="overpaidCount"></span> tagihan.
+                                                        </div>
+                                                        <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1 tw-mb-0">
+                                                            Kelebihan dana akan otomatis dicatat sebagai <strong>Supplier Overpayment (OPEN)</strong> pada modul Refund Overpayment. Supplier akan menerima notifikasi pengembalian dana ke rekening resmi ADASI.
+                                                        </p>
+                                                    </div>
+                                                </template>
+
                                                 <div class="tw-space-y-2.5">
                                                     @php $hasActiveItem = false; @endphp
                                                     @foreach($batch->groups as $group)
@@ -469,6 +569,10 @@
                                                                              actual: '{{ (float) $defaultPayAmount }}',
                                                                              get diff() {
                                                                                  return Math.round(((parseFloat(this.actual) || 0) - this.expected) * 100) / 100;
+                                                                             },
+                                                                             init() {
+                                                                                 updateItem('{{ $item->id }}', this.expected, this.actual);
+                                                                                 this.$watch('actual', val => updateItem('{{ $item->id }}', this.expected, val));
                                                                              }
                                                                          }">
                                                                         <div class="tw-flex tw-justify-between tw-items-start tw-mb-1.5">

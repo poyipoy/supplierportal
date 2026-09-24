@@ -2,12 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Employee;
 use App\Models\GaClaim;
-use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoicePayment;
 use App\Models\LocalInvoiceVoucher;
-use App\Models\LocalPurchaseOrder;
 use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
@@ -31,7 +30,9 @@ class FinanceDrpPaidTest extends TestCase
     use RefreshDatabase;
 
     private User $finance;
+
     private User $admin;
+
     private User $supplier;
 
     protected function setUp(): void
@@ -134,7 +135,7 @@ class FinanceDrpPaidTest extends TestCase
     public function test_mark_batch_paid_successfully_marks_ga_batch_as_paid(): void
     {
         $gaUser = User::factory()->create(['role' => 'ga', 'is_active' => true]);
-        $employee = \App\Models\Employee::create([
+        $employee = Employee::create([
             'name' => 'Budi GA',
             'department' => 'General Affairs',
             'bank_name' => 'BCA',
@@ -1095,5 +1096,150 @@ class FinanceDrpPaidTest extends TestCase
         $payment->refresh();
         $this->assertSame(LocalInvoicePayment::STATUS_FINALIZED, $payment->status);
         $this->assertSame('500.00', (string) $payment->actual_paid_total);
+    }
+
+    public function test_drp_paid_renders_overpayment_badge_and_filters_by_overpayment_status(): void
+    {
+        $masters = app(LocalProcurementMasterService::class);
+        $po1 = $masters->createPurchaseOrder($this->finance, [
+            'supplier_id' => $this->supplier->id,
+            'po_number' => 'PO-OP-FILTER-01',
+            'po_date' => '2026-09-10',
+            'total_amount' => '1000.00',
+        ]);
+        $gr1 = $masters->createGoodsReceipt($this->finance, $po1, [
+            'gr_number' => 'GR-OP-FILTER-01',
+            'gr_date' => '2026-09-11',
+            'received_amount' => '1000.00',
+        ]);
+        $inv1 = app(InvoiceSubmissionService::class)->submit($this->supplier, [
+            'invoice_number' => 'INV-OP-FILTER-01',
+            'invoice_date' => '2026-09-12',
+            'local_purchase_order_id' => $po1->id,
+            'goods_receipt_ids' => [$gr1->id],
+            'invoice_amount' => '1000.00',
+            'tax_amount' => '0.00',
+            'ppn_scheme' => '0%',
+        ], ['invoice' => UploadedFile::fake()->create('inv1.pdf', 10, 'application/pdf')]);
+        app(LocalGrReservationService::class)->consume($inv1, $this->finance);
+        $inv1->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
+        $inv1->currentVerification()->create([
+            'revision_number' => 1,
+            'is_section_a_passed' => true,
+            'is_section_b_passed' => true,
+            'is_locked' => true,
+            'verified_ppn' => '0.00',
+            'pph_23_applicable' => false,
+            'pph_4_2_applicable' => false,
+            'pph_21_applicable' => false,
+        ]);
+
+        $batch1 = PaymentBatch::create([
+            'batch_number' => 'DRP-BATCH-OVERPAY-1',
+            'batch_type' => PaymentBatch::TYPE_SUPPLIER,
+            'status' => PaymentBatch::STATUS_FINALIZED,
+            'total_subtotal' => 1000,
+            'total_bank_fee' => 0,
+            'total_net_amount' => 1000,
+            'created_by' => $this->finance->id,
+            'finalized_at' => now(),
+        ]);
+        $grp1 = $batch1->groups()->create([
+            'payee_type' => 'supplier',
+            'payee_id' => $this->supplier->id,
+            'payee_name' => 'PT Supplier Testing',
+            'bank_name' => 'BCA',
+            'account_number' => '112244',
+            'account_holder_name' => 'PT Supplier Testing',
+            'subtotal_amount' => 1000,
+            'bank_fee' => 0,
+            'net_payment_amount' => 1000,
+            'status' => PaymentGroup::STATUS_UNPAID,
+        ]);
+        $item1 = $grp1->items()->create([
+            'payable_type' => LocalInvoice::class,
+            'payable_id' => $inv1->id,
+            'amount' => 1000,
+            'status' => PaymentItem::STATUS_ACTIVE,
+        ]);
+        app(LocalInvoiceVoucherService::class)->finalize($item1, [
+            'voucher_date' => '2026-09-16',
+            'payment_method' => 'BANK',
+        ], $this->finance);
+
+        // Batch 2 without overpayment (normal)
+        PaymentBatch::create([
+            'batch_number' => 'DRP-BATCH-NORMAL-2',
+            'batch_type' => PaymentBatch::TYPE_SUPPLIER,
+            'status' => PaymentBatch::STATUS_PAID,
+            'total_subtotal' => 2000,
+            'total_bank_fee' => 0,
+            'total_net_amount' => 2000,
+            'created_by' => $this->finance->id,
+            'paid_at' => now(),
+        ]);
+
+        // Settle batch 1 with overpayment: 1200 vs 1000
+        $res = $this->actingAs($this->finance)->post(route('finance.drp.paid.mark-paid', $batch1), [
+            'transfer_reference' => 'TRF-TEST-OP-1',
+            'transfer_date' => '2026-09-17',
+            'custom_amounts' => [
+                $item1->id => '1200.00',
+            ],
+        ]);
+        $res->assertRedirect();
+        $res->assertSessionHas('success', fn ($msg) => str_contains($msg, 'Terdeteksi kelebihan bayar sebesar Rp 200'));
+
+        // Visit DRP Paid list and assert overpayment badge and transfer amount appear
+        $listRes = $this->actingAs($this->finance)->get(route('finance.drp.paid.index', ['tab' => 'paid']));
+        $listRes->assertOk();
+        $listRes->assertSee('DRP-BATCH-OVERPAY-1');
+        $listRes->assertSee('Overpayment: Rp 200 (Open)');
+        $listRes->assertSee('Transfer: Rp 1.200');
+        $listRes->assertSee('Refund Overpayment');
+
+        // Test filter overpayment_status=has_overpayment
+        $filterAllOp = $this->actingAs($this->finance)->get(route('finance.drp.paid.index', [
+            'tab' => 'paid',
+            'overpayment_status' => 'has_overpayment',
+        ]));
+        $filterAllOp->assertOk();
+        $filterAllOp->assertSee('DRP-BATCH-OVERPAY-1');
+        $filterAllOp->assertDontSee('DRP-BATCH-NORMAL-2');
+
+        // Test filter overpayment_status=open
+        $filterOpen = $this->actingAs($this->finance)->get(route('finance.drp.paid.index', [
+            'tab' => 'paid',
+            'overpayment_status' => 'open',
+        ]));
+        $filterOpen->assertOk();
+        $filterOpen->assertSee('DRP-BATCH-OVERPAY-1');
+
+        // Test filter overpayment_status=settled (should NOT see DRP-BATCH-OVERPAY-1 because it is still OPEN)
+        $filterSettled = $this->actingAs($this->finance)->get(route('finance.drp.paid.index', [
+            'tab' => 'paid',
+            'overpayment_status' => 'settled',
+        ]));
+        $filterSettled->assertOk();
+        $filterSettled->assertDontSee('DRP-BATCH-OVERPAY-1');
+
+        // Now settle the refund
+        $refund = SupplierOverpaymentRefund::where('supplier_id', $this->supplier->id)->firstOrFail();
+        $refund->update(['status' => SupplierOverpaymentRefund::STATUS_SETTLED]);
+
+        // Re-check settled filter
+        $filterSettledAfter = $this->actingAs($this->finance)->get(route('finance.drp.paid.index', [
+            'tab' => 'paid',
+            'overpayment_status' => 'settled',
+        ]));
+        $filterSettledAfter->assertOk();
+        $filterSettledAfter->assertSee('DRP-BATCH-OVERPAY-1');
+        $filterSettledAfter->assertSee('Overpayment Selesai (Rp 200)');
+
+        // Test DRP Show
+        $showRes = $this->actingAs($this->finance)->get(route('finance.drp.show', $batch1));
+        $showRes->assertOk();
+        $showRes->assertSee('Overpayment Selesai (Rp 200)');
+        $showRes->assertSee('Refund');
     }
 }

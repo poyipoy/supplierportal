@@ -77,6 +77,11 @@
         Sign In
     </button>
 </form>
+
+<div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-text-center tw-text-ui-xs tw-text-on-surface-variant">
+    <p class="tw-m-0">New supplier? <a href="{{ route('supplier.register') }}" class="tw-font-semibold tw-text-primary hover:tw-underline">Register company</a></p>
+    <p class="tw-m-0 tw-mt-1.5"><a href="{{ route('supplier.registration.access-form') }}" class="tw-text-on-surface-variant hover:tw-text-primary hover:tw-underline">Check registration status</a></p>
+</div>
 @endsection
 
 @section('scripts')

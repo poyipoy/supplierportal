@@ -3,10 +3,12 @@
 namespace App\Http\Requests\LocalInvoice;
 
 use App\Models\LocalInvoice;
+use App\Services\LocalInvoice\InvoiceFilenameParser;
 use App\Services\VendorMaster\VendorMasterService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class StoreLocalInvoiceRequest extends FormRequest
 {
@@ -17,6 +19,43 @@ class StoreLocalInvoiceRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $parser = app(InvoiceFilenameParser::class);
+
+        $rawInvoiceInput = $this->input('invoice_number');
+        $rawTaxInput = $this->input('tax_invoice_number');
+        if (! $this->has('_original_invoice_number') && $rawInvoiceInput !== null) {
+            $this->merge(['_original_invoice_number' => $rawInvoiceInput]);
+        }
+        if (! $this->has('_original_tax_invoice_number') && $rawTaxInput !== null) {
+            $this->merge(['_original_tax_invoice_number' => $rawTaxInput]);
+        }
+
+        // Derive invoice number from uploaded invoice file(s)
+        $invoiceFiles = $this->file('invoice');
+        if (! empty($invoiceFiles)) {
+            try {
+                $derivedInvoiceNumber = $parser->parseInvoiceNumber($invoiceFiles, $rawInvoiceInput);
+                if ($derivedInvoiceNumber !== null) {
+                    $this->merge(['invoice_number' => $derivedInvoiceNumber]);
+                }
+            } catch (\Throwable) {
+                // Defer to withValidator so file validation errors take precedence
+            }
+        }
+
+        // Derive tax invoice number from uploaded tax_invoice file(s)
+        $taxFiles = $this->file('tax_invoice');
+        if (! empty($taxFiles)) {
+            try {
+                $derivedTaxNumber = $parser->parseTaxInvoiceNumber($taxFiles, $rawTaxInput);
+                if ($derivedTaxNumber !== null) {
+                    $this->merge(['tax_invoice_number' => $derivedTaxNumber]);
+                }
+            } catch (\Throwable) {
+                // Defer to withValidator
+            }
+        }
+
         $poNumber = $this->input('po_number');
         $internalPoReference = $this->input('internal_po_reference');
         $manualPoNumber = $this->input('manual_po_number');
@@ -139,7 +178,7 @@ class StoreLocalInvoiceRequest extends FormRequest
         if (is_array($fileVal)) {
             return [
                 $field => [$required ? 'required' : 'nullable', 'array', 'min:1', 'max:5'],
-                $field . '.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+                $field.'.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             ];
         }
 
@@ -177,5 +216,46 @@ class StoreLocalInvoiceRequest extends FormRequest
             'supporting.*.max' => 'Ukuran setiap berkas Dokumen Pendukung tidak boleh melebihi 5 MB.',
             'scheduled_physical_delivery_date.after_or_equal' => 'Jadwal penyerahan dokumen fisik tidak boleh di masa lampau.',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $parser = app(InvoiceFilenameParser::class);
+
+            $invoiceFiles = $this->file('invoice');
+            if (! empty($invoiceFiles) && ! $validator->errors()->has('invoice') && ! $validator->errors()->has('invoice.*')) {
+                try {
+                    $rawSubmitted = $this->input('_original_invoice_number');
+                    $derivedInvoiceNumber = $parser->parseInvoiceNumber($invoiceFiles, $rawSubmitted);
+                    if (is_string($rawSubmitted) && trim($rawSubmitted) !== '' && trim($rawSubmitted) !== $derivedInvoiceNumber) {
+                        $validator->errors()->add('invoice_number', "Nomor invoice yang diinput ({$rawSubmitted}) tidak sesuai dengan nama berkas invoice yang diunggah ({$derivedInvoiceNumber}). Nomor tagihan wajib mengikuti nama berkas.");
+                    }
+                } catch (ValidationException $e) {
+                    foreach ($e->errors() as $key => $messages) {
+                        foreach ($messages as $msg) {
+                            $validator->errors()->add($key, $msg);
+                        }
+                    }
+                }
+            }
+
+            $taxFiles = $this->file('tax_invoice');
+            if (! empty($taxFiles) && ! $validator->errors()->has('tax_invoice') && ! $validator->errors()->has('tax_invoice.*')) {
+                try {
+                    $rawSubmittedTax = $this->input('_original_tax_invoice_number');
+                    $derivedTaxNumber = $parser->parseTaxInvoiceNumber($taxFiles, $rawSubmittedTax);
+                    if ($derivedTaxNumber !== null && is_string($rawSubmittedTax) && trim($rawSubmittedTax) !== '' && $parser->normalizeDigits($rawSubmittedTax) !== $parser->normalizeDigits($derivedTaxNumber)) {
+                        $validator->errors()->add('tax_invoice_number', "Nomor faktur pajak yang diinput ({$rawSubmittedTax}) tidak sesuai dengan nama berkas faktur pajak yang diunggah ({$derivedTaxNumber}).");
+                    }
+                } catch (ValidationException $e) {
+                    foreach ($e->errors() as $key => $messages) {
+                        foreach ($messages as $msg) {
+                            $validator->errors()->add($key, $msg);
+                        }
+                    }
+                }
+            }
+        });
     }
 }
