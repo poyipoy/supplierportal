@@ -6,7 +6,10 @@
     'tone' => 'primary',
     'meta' => null,
     'valueId' => null,
+    'valueMetric' => null,
+    'metaMetric' => null,
     'flat' => false,
+    'active' => false,
 ])
 
 @php
@@ -26,15 +29,17 @@
     @if($href) href="{{ $href }}" @endif
     {{ $attributes->class([
         'ui-motion ui-focus-ring tw-flex tw-h-full tw-items-start tw-justify-between tw-gap-4 tw-bg-surface-container tw-p-4 tw-text-on-surface tw-no-underline',
-        'tw-rounded-ui-md tw-border tw-border-outline tw-shadow-none' => !$flat,
-        'hover:tw-border-primary' => $href && !$flat,
+        'tw-rounded-ui-md tw-border tw-shadow-none' => !$flat,
+        'tw-border-outline' => !$flat && !$active,
+        'tw-border-primary tw-ring-2 tw-ring-primary' => !$flat && $active,
+        'hover:tw-border-primary' => $href && !$flat && !$active,
         'hover:tw-bg-surface-low' => $href && $flat,
     ]) }}
 >
     <span class="tw-min-w-0">
         <span class="tw-block tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">{{ $label }}</span>
-        <span @if($valueId) id="{{ $valueId }}" @endif class="ui-tabular-nums tw-mt-1 tw-block tw-text-ui-2xl tw-font-semibold {{ $valueClasses }}">{{ $value }}</span>
-        @if($meta)<span class="tw-mt-1 tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $meta }}</span>@endif
+        <span @if($valueId) id="{{ $valueId }}" @endif @if($valueMetric) data-metric="{{ $valueMetric }}" @endif class="ui-tabular-nums tw-mt-1 tw-block tw-text-ui-2xl tw-font-semibold {{ $valueClasses }}">{{ $value }}</span>
+        @if($meta)<span @if($metaMetric) data-metric="{{ $metaMetric }}" @endif class="tw-mt-1 tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $meta }}</span>@endif
     </span>
     <span class="tw-inline-flex tw-shrink-0 tw-items-center tw-gap-1 {{ $iconClasses }}">
         <x-ui.icon :name="$icon" size="lg" />

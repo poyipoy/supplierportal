@@ -20,8 +20,11 @@ class QuotationMtcReplacementLifecycleTest extends TestCase
     use RefreshDatabase;
 
     private User $purchasing;
+
     private User $supplier;
+
     private PurchaseRequisition $pr;
+
     private PrItem $prItem;
 
     protected function setUp(): void

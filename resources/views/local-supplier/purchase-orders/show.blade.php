@@ -34,9 +34,9 @@
     {{-- Summary Cards Grid --}}
     @php
         $activeGrs = $purchaseOrder->goodsReceipts->where('status', '!=', \App\Models\LocalGoodsReceipt::STATUS_CANCELLED);
-        $totalGrAmount = (float) $activeGrs->sum('received_amount');
-        $remainingPoAllocation = max(0, (float) $purchaseOrder->total_amount - $totalGrAmount);
+        $totalGrQty = (float) $activeGrs->sum('qty');
         $invoicedAmount = (float) $purchaseOrder->invoices->whereNotIn('status', [\App\Models\LocalInvoice::STATUS_REJECTED, \App\Models\LocalInvoice::STATUS_CANCELLED])->sum('invoice_amount');
+        $remainingPoCeiling = max(0, (float) $purchaseOrder->total_amount - $invoicedAmount);
     @endphp
 
     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4">
@@ -50,18 +50,18 @@
 
         <x-ui.metric-card
             label="Total Realisasi GR"
-            :value="'Rp ' . number_format($totalGrAmount, 0, ',', '.')"
+            :value="number_format($totalGrQty, 4, ',', '.')"
             icon="package-check"
             tone="success"
             :meta="$activeGrs->count() . ' penerimaan barang tercatat'"
         />
 
         <x-ui.metric-card
-            label="Sisa Alokasi PO"
-            :value="'Rp ' . number_format($remainingPoAllocation, 0, ',', '.')"
+            label="Sisa Plafon PO"
+            :value="'Rp ' . number_format($remainingPoCeiling, 0, ',', '.')"
             icon="layers"
-            :tone="$remainingPoAllocation > 0 ? 'neutral' : 'warning'"
-            meta="Kapasitas penerimaan tersisa"
+            :tone="$remainingPoCeiling > 0 ? 'neutral' : 'warning'"
+            meta="Kapasitas penagihan tersisa"
         />
 
         <x-ui.metric-card
@@ -130,7 +130,6 @@
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal GR</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Qty</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Deskripsi / Keterangan</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Nilai Penerimaan</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status GR</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status Penagihan</th>
                     </tr>
@@ -154,9 +153,6 @@
                                     {{ $gr->description ?: '-' }}
                                 </span>
                             </td>
-                            <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
-                                Rp {{ number_format($gr->received_amount, 2, ',', '.') }}
-                            </td>
                             <td class="text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($gr->status)">
                                     {{ $gr->status }}
@@ -176,7 +172,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="6" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
                                 Belum ada berkas Goods Receipt (GR) yang diterbitkan untuk PO ini.
                             </td>
                         </tr>

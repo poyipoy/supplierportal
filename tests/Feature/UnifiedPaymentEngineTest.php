@@ -7,7 +7,6 @@ use App\Models\GaClaim;
 use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
-use App\Models\PaymentItem;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\SupplierScope;

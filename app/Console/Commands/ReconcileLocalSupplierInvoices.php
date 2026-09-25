@@ -33,6 +33,7 @@ class ReconcileLocalSupplierInvoices extends Command
         foreach ($requiredColumns as $table => $columns) {
             if (! Schema::hasTable($table)) {
                 $issues[] = $this->issue('schema', 0, "Required table {$table} is missing; run the Local Supplier settlement migration.");
+
                 continue;
             }
             foreach ($columns as $column) {
@@ -61,8 +62,8 @@ class ReconcileLocalSupplierInvoices extends Command
                     if (! $receipt->purchaseOrder) {
                         $issues[] = $this->issue('gr_orphan', $receipt->id, 'GR does not reference an existing PO.');
                     }
-                    if (bccomp((string) $receipt->received_amount, '0', 2) <= 0) {
-                        $issues[] = $this->issue('gr_amount', $receipt->id, 'GR amount is missing or not positive.');
+                    if ($receipt->qty === null || bccomp((string) $receipt->qty, '0', 4) <= 0) {
+                        $issues[] = $this->issue('gr_qty', $receipt->id, 'GR quantity is missing or not positive.');
                     }
                 }
             });
@@ -71,37 +72,38 @@ class ReconcileLocalSupplierInvoices extends Command
         if (Schema::hasColumn('local_invoices', 'local_purchase_order_id')
             && Schema::hasTable('local_invoice_goods_receipts')) {
             LocalInvoice::with(['localPurchaseOrder', 'goodsReceiptHistories.goodsReceipt'])->whereNotNull('local_purchase_order_id')->orderBy('id')->chunkById(250, function ($invoices) use (&$issues): void {
-            foreach ($invoices as $invoice) {
-                $po = $invoice->localPurchaseOrder;
-                if (! $po) {
-                    $issues[] = $this->issue('invoice_po', $invoice->id, 'Authoritative invoice references a missing PO.');
-                    continue;
-                }
-                if ((int) $po->supplier_id !== (int) $invoice->supplier_id) {
-                    $issues[] = $this->issue('invoice_supplier', $invoice->id, 'Invoice supplier does not match its PO supplier.');
-                }
+                foreach ($invoices as $invoice) {
+                    $po = $invoice->localPurchaseOrder;
+                    if (! $po) {
+                        $issues[] = $this->issue('invoice_po', $invoice->id, 'Authoritative invoice references a missing PO.');
 
-                $active = $invoice->goodsReceiptHistories->whereIn('state', [LocalInvoiceGoodsReceipt::STATE_RESERVED, LocalInvoiceGoodsReceipt::STATE_CONSUMED]);
-                if ($active->isEmpty()) {
-                    $issues[] = $this->issue('invoice_gr', $invoice->id, 'Authoritative invoice has no active GR history.');
-                    continue;
-                }
+                        continue;
+                    }
+                    if ((int) $po->supplier_id !== (int) $invoice->supplier_id) {
+                        $issues[] = $this->issue('invoice_supplier', $invoice->id, 'Invoice supplier does not match its PO supplier.');
+                    }
 
-                $total = $active->reduce(fn (string $sum, LocalInvoiceGoodsReceipt $history) => bcadd($sum, (string) $history->gr_amount_snapshot, 2), '0.00');
-                if (bccomp($total, (string) $invoice->invoice_amount, 2) !== 0) {
-                    $issues[] = $this->issue('invoice_gr_total', $invoice->id, "Active GR snapshots total {$total}, invoice DPP is {$invoice->invoice_amount}.");
-                }
+                    $active = $invoice->goodsReceiptHistories->whereIn('state', [LocalInvoiceGoodsReceipt::STATE_RESERVED, LocalInvoiceGoodsReceipt::STATE_CONSUMED]);
+                    if ($active->isEmpty()) {
+                        $issues[] = $this->issue('invoice_gr', $invoice->id, 'Authoritative invoice has no active GR history.');
 
-                foreach ($active as $history) {
-                    $receipt = $history->goodsReceipt;
-                    $expectedStatus = $history->state === LocalInvoiceGoodsReceipt::STATE_CONSUMED
-                        ? LocalGoodsReceipt::STATUS_INVOICED
-                        : LocalGoodsReceipt::STATUS_RESERVED;
-                    if (! $receipt || (int) $receipt->current_invoice_id !== (int) $invoice->id || $receipt->status !== $expectedStatus) {
-                        $issues[] = $this->issue('gr_owner_state', $history->id, 'GR current owner/status disagrees with invoice history state.');
+                        continue;
+                    }
+
+                    if (bccomp((string) $invoice->invoice_amount, (string) $po->total_amount, 2) > 0) {
+                        $issues[] = $this->issue('invoice_po_ceiling', $invoice->id, "Invoice DPP {$invoice->invoice_amount} exceeds PO total amount {$po->total_amount}.");
+                    }
+
+                    foreach ($active as $history) {
+                        $receipt = $history->goodsReceipt;
+                        $expectedStatus = $history->state === LocalInvoiceGoodsReceipt::STATE_CONSUMED
+                            ? LocalGoodsReceipt::STATUS_INVOICED
+                            : LocalGoodsReceipt::STATUS_RESERVED;
+                        if (! $receipt || (int) $receipt->current_invoice_id !== (int) $invoice->id || $receipt->status !== $expectedStatus) {
+                            $issues[] = $this->issue('gr_owner_state', $history->id, 'GR current owner/status disagrees with invoice history state.');
+                        }
                     }
                 }
-            }
             });
         }
 

@@ -7,7 +7,6 @@ use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -53,10 +52,15 @@ class LocalGrReservationService
             }
         }
 
-        $total = $this->sumAmounts($receipts);
-        if (bccomp($total, (string) $invoice->invoice_amount, 2) !== 0) {
+        $otherInvoiced = LocalInvoice::where('local_purchase_order_id', $po->id)
+            ->where('id', '!=', $invoice->id)
+            ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+            ->sum('invoice_amount');
+
+        if (bccomp(bcadd((string) $otherInvoiced, (string) $invoice->invoice_amount, 2), (string) $po->total_amount, 2) > 0) {
+            $remaining = bcsub((string) $po->total_amount, (string) $otherInvoiced, 2);
             throw ValidationException::withMessages([
-                'goods_receipt_ids' => 'Selected GR total is Rp '.number_format((float) $total, 2, ',', '.').' while invoice DPP is Rp '.number_format((float) $invoice->invoice_amount, 2, ',', '.').'.',
+                'goods_receipt_ids' => 'Invoice DPP exceeds the remaining PO financial ceiling of Rp '.number_format((float) $remaining, 2, ',', '.').'.',
             ]);
         }
 
@@ -83,7 +87,7 @@ class LocalGrReservationService
                 'local_goods_receipt_id' => $receipt->id,
                 'state' => LocalInvoiceGoodsReceipt::STATE_RESERVED,
                 'gr_number_snapshot' => $receipt->gr_number,
-                'gr_amount_snapshot' => $receipt->received_amount,
+                'gr_qty_snapshot' => $receipt->qty,
                 'reserved_at' => now(),
             ]);
             app(LocalFinanceAuditService::class)->record($receipt, 'gr_reserved', $supplier, $before, $receipt->fresh()->toArray(), ['invoice_id' => $invoice->id, 'po_id' => $po->id]);
@@ -160,11 +164,7 @@ class LocalGrReservationService
             throw ValidationException::withMessages(['goods_receipt_ids' => 'Goods Receipt selection contains an invalid or duplicate value.']);
         }
         sort($normalized, SORT_NUMERIC);
-        return $normalized;
-    }
 
-    private function sumAmounts(Collection $receipts): string
-    {
-        return $receipts->reduce(fn (string $sum, LocalGoodsReceipt $receipt) => bcadd($sum, (string) $receipt->received_amount, 2), '0.00');
+        return $normalized;
     }
 }

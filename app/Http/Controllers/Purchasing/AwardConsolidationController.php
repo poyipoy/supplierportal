@@ -9,6 +9,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Services\PurchaseOrderGenerationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -45,7 +46,7 @@ class AwardConsolidationController extends Controller
             ->orderBy('supplier_id')->orderBy('pr_id')->orderBy('pr_item_id')
             ->paginate(50)->withQueryString();
         $suppliers = User::importEligible()
-            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('pr_item_awards')->distinct()->pluck('supplier_id'))
+            ->orWhereIn('id', DB::table('pr_item_awards')->distinct()->pluck('supplier_id'))
             ->orderBy('name')->get(['id', 'name']);
 
         return view('purchasing.po.consolidate-awards', compact('awards', 'suppliers'));

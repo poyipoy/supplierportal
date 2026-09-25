@@ -19,6 +19,7 @@ use RuntimeException;
 class PaymentExecutionService
 {
     private ?LocalInvoiceVoucherService $voucherService;
+
     private ?LocalInvoicePaymentService $paymentService;
 
     public function __construct(

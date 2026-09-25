@@ -39,7 +39,7 @@ return new class extends Migration
         });
 
         // Make payment_term_days_snapshot nullable at submission (populated upon cashier receipt)
-        DB::statement("ALTER TABLE local_invoices MODIFY payment_term_days_snapshot SMALLINT UNSIGNED NULL");
+        DB::statement('ALTER TABLE local_invoices MODIFY payment_term_days_snapshot SMALLINT UNSIGNED NULL');
 
         // 2. Add fields to local_invoice_revisions
         Schema::table('local_invoice_revisions', function (Blueprint $table) {

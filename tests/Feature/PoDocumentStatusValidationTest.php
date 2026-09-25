@@ -18,8 +18,11 @@ class PoDocumentStatusValidationTest extends TestCase
     use RefreshDatabase;
 
     private User $purchasing;
+
     private User $supplier;
+
     private PurchaseOrder $po;
+
     private PoDocument $document;
 
     protected function setUp(): void

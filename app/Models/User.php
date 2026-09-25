@@ -21,8 +21,11 @@ class User extends Authenticatable
     use HasFactory, HasHashids, Notifiable;
 
     public const ACCOUNT_STATUS_PENDING = 'PENDING';
+
     public const ACCOUNT_STATUS_REVISION = 'REVISION';
+
     public const ACCOUNT_STATUS_ACTIVE = 'ACTIVE';
+
     public const ACCOUNT_STATUS_REJECTED = 'REJECTED';
 
     /**
@@ -107,7 +110,7 @@ class User extends Authenticatable
         return $this->hasMany(SupplierBankAccount::class, 'supplier_id');
     }
 
-    public function activeSupplierBankAccount(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function activeSupplierBankAccount(): HasOne
     {
         return $this->hasOne(SupplierBankAccount::class, 'supplier_id')
             ->where('status', SupplierBankAccount::STATUS_VERIFIED);

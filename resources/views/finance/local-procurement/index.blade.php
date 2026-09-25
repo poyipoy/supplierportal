@@ -14,9 +14,13 @@
                 <x-ui.icon name="file-up" size="sm" />
                 <span>Upload Dokumen PO</span>
             </x-ui.button>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localPoGrImportModal">
+            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localPoImportModal">
                 <x-ui.icon name="file-spreadsheet" size="sm" />
-                <span>Import XLSX</span>
+                <span>Import PO</span>
+            </x-ui.button>
+            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localGrImportModal">
+                <x-ui.icon name="package-check" size="sm" />
+                <span>Import GR</span>
             </x-ui.button>
             <x-ui.button :href="route($routePrefix.'.create')" size="sm" variant="primary">
                 <x-ui.icon name="plus" size="sm" />
@@ -53,11 +57,11 @@
         />
 
         <x-ui.metric-card
-            label="Total Nilai GR Aktif"
-            :value="'Rp ' . number_format($metrics['active_gr_amount'] ?? 0, 0, ',', '.')"
+            label="Total Realisasi GR"
+            :value="number_format($metrics['active_gr_qty'] ?? 0, 2, ',', '.') . ' pcs'"
             icon="package-check"
             tone="success"
-            meta="Akumulasi penerimaan barang"
+            :meta="number_format($metrics['active_gr_count'] ?? 0) . ' dokumen GR aktif'"
         />
     </div>
 
@@ -186,7 +190,7 @@
                             </td>
                             <td class="text-end">
                                 <div class="tw-font-mono tw-font-semibold tw-text-on-surface">
-                                    Rp {{ number_format($po->active_gr_amount ?? 0, 2, ',', '.') }}
+                                    {{ number_format($po->active_gr_qty ?? 0, 2, ',', '.') }} pcs
                                 </div>
                                 <div class="tw-text-[11px] tw-text-on-surface-variant">
                                     {{ $po->active_gr_count }} berkas GR
@@ -228,6 +232,7 @@
     </x-ui.data-table>
 </div>
 
-@include('finance.local-procurement._import_modal')
+@include('finance.local-procurement._import_po_modal')
+@include('finance.local-procurement._import_gr_modal')
 @include('finance.local-procurement._upload_po_modal')
 @endsection

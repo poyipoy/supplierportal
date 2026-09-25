@@ -2,13 +2,13 @@
 
 namespace App\Services\LocalInvoice;
 
-use App\Models\LocalInvoice;
 use App\Models\LocalGoodsReceipt;
+use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
-use InvalidArgumentException;
 use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 
 class LocalPoReferenceService
 {
@@ -85,9 +85,10 @@ class LocalPoReferenceService
         foreach ($dbPos as $po) {
             if (! isset($results[$po->po_number])) {
                 $poValue = (float) $po->total_amount;
-                $remainingValue = $authoritativeSchema
-                    ? (float) $po->goodsReceipts->sum('received_amount')
-                    : (float) $po->total_amount;
+                $previouslyInvoiced = (float) LocalInvoice::where('local_purchase_order_id', $po->id)
+                    ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+                    ->sum('invoice_amount');
+                $remainingValue = max(0.0, round($poValue - $previouslyInvoiced, 2));
                 $hasGr = $po->goodsReceipts->isNotEmpty();
 
                 $results[$po->po_number] = [
@@ -104,7 +105,7 @@ class LocalPoReferenceService
                         'id' => $gr->id,
                         'gr_number' => $gr->gr_number,
                         'gr_date' => $gr->gr_date?->format('Y-m-d'),
-                        'received_amount' => (float) $gr->received_amount,
+                        'qty' => (float) $gr->qty,
                     ])->values()->all(),
                 ];
             }

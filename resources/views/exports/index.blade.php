@@ -8,8 +8,7 @@
     <x-ui.page-header
         title="Export History"
         description="Review generated files and download completed exports within their retention window."
-        eyebrow="Data Exports"
-    >
+        eyebrow="Data Exports">
         <x-slot:meta>
             @if($hasPending)
                 <x-ui.status-chip tone="info" id="exportPollingState"><x-ui.icon name="refresh-cw" size="sm" />Refreshing status</x-ui.status-chip>

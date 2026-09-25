@@ -3,7 +3,7 @@
 @section('page-title', 'DRP Paid (Monitoring Pelunasan)')
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div id="purchasingDrpPaidContainer" class="tw-grid tw-gap-6 tw-pb-16" data-server-tabs-container>
     <x-ui.page-header
         title="DRP Paid (Monitoring Pelunasan)"
         description="Pantau status pelunasan seluruh batch DRP Supplier & GA, telusuri rincian transfer, dan riwayat penyelesaian pembayaran."
@@ -33,6 +33,7 @@
             icon="layers"
             tone="neutral"
             meta="Seluruh batch terdaftar"
+            value-metric="total_batches"
         />
 
         <x-ui.metric-card
@@ -42,6 +43,12 @@
             tone="warning"
             :meta="number_format($metrics['unpaid_count']) . ' Batch belum lunas'"
             :href="route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid']))"
+            data-server-tab
+            data-server-tab-card
+            data-tab-name="unpaid"
+            :active="$tab === 'unpaid'"
+            value-metric="unpaid_amount"
+            meta-metric="unpaid_count"
         />
 
         <x-ui.metric-card
@@ -51,6 +58,12 @@
             tone="success"
             :meta="number_format($metrics['paid_count']) . ' Batch selesai dibayar'"
             :href="route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid']))"
+            data-server-tab
+            data-server-tab-card
+            data-tab-name="paid"
+            :active="$tab === 'paid'"
+            value-metric="paid_amount"
+            meta-metric="paid_count"
         />
     </div>
 
@@ -60,30 +73,36 @@
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'unpaid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                data-server-tab
+                data-tab-name="unpaid"
             >
                 <x-ui.icon name="clock" size="sm" />
                 <span>Belum Paid</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
                     {{ $metrics['unpaid_count'] }}
                 </span>
             </a>
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'paid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                data-server-tab
+                data-tab-name="paid"
             >
                 <x-ui.icon name="badge-check" size="sm" />
                 <span>Sudah Paid</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
                     {{ $metrics['paid_count'] }}
                 </span>
             </a>
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'all'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'all' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                data-server-tab
+                data-tab-name="all"
             >
                 <x-ui.icon name="layers" size="sm" />
                 <span>Semua Batch</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
                     {{ $metrics['total_batches'] }}
                 </span>
             </a>
@@ -91,7 +110,7 @@
     </div>
 
     {{-- Search & Filter Toolbar --}}
-    <form method="GET" action="{{ route('purchasing.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0">
+    <form method="GET" action="{{ route('purchasing.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0" data-server-tabs-form>
         <input type="hidden" name="tab" value="{{ $tab }}">
 
         <x-ui.toolbar aria-label="Kontrol filter batch DRP">
@@ -161,145 +180,19 @@
         </x-ui.toolbar>
     </form>
 
-    {{-- Data Table Section --}}
-    <x-ui.data-table
-        title="Daftar Monitoring & Pelunasan Batch DRP"
-        :description="'Menampilkan ' . $batches->total() . ' batch DRP terdaftar.'"
-    >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Batch Number</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tipe & Tanggal</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Grup / Item</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Total Tagihan (Rp)</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Net Bayar (Rp)</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Info Pembayaran</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($batches as $batch)
-                        <tr>
-                            <td>
-                                <strong class="tw-font-mono tw-text-on-surface">{{ $batch->batch_number }}</strong>
-                                @if($batch->notes)
-                                    <div class="tw-text-[11px] tw-text-on-surface-variant tw-truncate tw-max-w-xs" title="{{ $batch->notes }}">
-                                        {{ $batch->notes }}
-                                    </div>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="tw-flex tw-items-center tw-gap-1.5">
-                                    <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold {{ $batch->batch_type === 'SUPPLIER' ? 'tw-bg-primary/10 tw-text-primary' : 'tw-bg-secondary/10 tw-text-secondary' }}">
-                                        {{ $batch->batch_type }}
-                                    </span>
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $batch->created_at?->format('d M Y') }}</span>
-                                </div>
-                                <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5">
-                                    Oleh: {{ $batch->creator?->name ?? 'System' }}
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <span class="tw-font-semibold">{{ $batch->groups_count }}</span>
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant">rekening</span>
-                            </td>
-                            <td class="text-end tw-font-mono">
-                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
-                            </td>
-                            <td class="text-end tw-font-mono">
-                                <div class="tw-font-bold tw-text-on-surface">
-                                    Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
-                                </div>
-                                @if($batch->hasOverpayment())
-                                    <div class="tw-text-[11px] tw-text-amber-700 dark:tw-text-amber-400 tw-font-semibold tw-mt-0.5" title="Nominal transfer riil melebihi net DRP">
-                                        Transfer: Rp {{ number_format($batch->actual_transferred_amount, 0, ',', '.') }}
-                                    </div>
-                                @endif
-                                @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-                                    <div class="tw-text-[11px] tw-text-warning-container-foreground tw-font-semibold tw-mt-0.5" title="Sisa nominal yang belum lunas">
-                                        Sisa: Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
-                                    {{ $batch->status }}
-                                </x-ui.status-chip>
-                            </td>
-                            <td>
-                                @if($batch->status === \App\Models\PaymentBatch::STATUS_PAID)
-                                    @php
-                                        $sampleGroup = $batch->groups->firstWhere('status', 'PAID');
-                                    @endphp
-                                    <div class="tw-text-ui-xs tw-text-success tw-font-semibold tw-flex tw-items-center tw-gap-1">
-                                        <x-ui.icon name="check-circle" size="sm" />
-                                        <span>Lunas: {{ $batch->paid_at?->format('d M Y') ?? '-' }}</span>
-                                    </div>
-                                    @if($sampleGroup?->transfer_reference)
-                                        <div class="tw-text-[11px] tw-font-mono tw-text-on-surface-variant">
-                                            Ref: {{ $sampleGroup->transfer_reference }}
-                                        </div>
-                                    @endif
-                                    @if($batch->hasOverpayment())
-                                        @if($batch->hasOpenOverpayment())
-                                            <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-mt-1"
-                                                  title="Ada kelebihan bayar yang belum direfund">
-                                                <x-ui.icon name="alert-circle" size="xs" />
-                                                <span>Overpayment: Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }} (Open)</span>
-                                            </span>
-                                        @else
-                                            <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-mt-1"
-                                                  title="Kelebihan bayar telah diselesaikan">
-                                                <x-ui.icon name="check-circle" size="xs" />
-                                                <span>Overpayment Selesai (Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }})</span>
-                                            </span>
-                                        @endif
-                                    @endif
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-                                    <div class="tw-flex tw-flex-col tw-gap-0.5">
-                                        <span class="tw-text-ui-xs tw-text-primary tw-font-semibold">Sebagian Sudah Dibayar</span>
-                                        <div class="tw-text-[11px] tw-font-mono tw-text-on-surface-variant">
-                                            <span class="tw-text-success tw-font-medium">Terbayar: Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}</span>
-                                            <span class="tw-text-on-surface-variant">·</span>
-                                            <span class="tw-text-warning-container-foreground tw-font-bold">Sisa: Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}</span>
-                                        </div>
-                                    </div>
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_FINALIZED)
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium">Siap Ditransfer / Dibayar</span>
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_CANCELLED)
-                                    <span class="tw-text-ui-xs tw-text-error tw-font-medium">Dibatalkan</span>
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                    <span class="tw-text-ui-xs tw-text-warning-container-foreground tw-font-medium">Draft (Belum Final)</span>
-                                @else
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium">-</span>
-                                @endif
-                            </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route('purchasing.drp.show', $batch)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>Detail</span>
-                                </x-ui.button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
-                                Tidak ada batch DRP yang sesuai dengan filter yang dipilih.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($batches->hasPages())
-            <x-slot:pagination>
-                {{ $batches->links() }}
-            </x-slot:pagination>
-        @endif
-    </x-ui.data-table>
+    {{-- Data Table Section (AJAX-swappable container) --}}
+    <div id="purchasingDrpPaidTableContent" data-server-tabs-content>
+        @include('purchasing.drp._paid_table_content', ['batches' => $batches])
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof AdasiServerTabs !== 'undefined') {
+        AdasiServerTabs.init('#purchasingDrpPaidContainer');
+    }
+});
+</script>
+@endpush

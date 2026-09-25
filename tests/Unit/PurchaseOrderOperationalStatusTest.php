@@ -9,7 +9,7 @@ class PurchaseOrderOperationalStatusTest extends TestCase
 {
     public function test_completed_po_is_not_demoted_by_operational_reconciliation(): void
     {
-        $po = new PurchaseOrder();
+        $po = new PurchaseOrder;
         $po->status = 'completed';
 
         $result = $po->reconcileOperationalStatus();
@@ -20,7 +20,7 @@ class PurchaseOrderOperationalStatusTest extends TestCase
 
     public function test_cancelled_po_is_not_modified_by_operational_reconciliation(): void
     {
-        $po = new PurchaseOrder();
+        $po = new PurchaseOrder;
         $po->status = 'cancelled';
 
         $result = $po->reconcileOperationalStatus();

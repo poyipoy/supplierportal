@@ -8,6 +8,7 @@ use App\Models\Period;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
+use Illuminate\Support\Facades\Cache;
 
 class SupplierController extends Controller
 {
@@ -16,15 +17,15 @@ class SupplierController extends Controller
         $sid = auth()->id();
 
         // ─── Cached widget counts per supplier (5 menit) ───
-        $widgetData = \Illuminate\Support\Facades\Cache::remember(
-            'supplier_dashboard_widgets_' . $sid,
+        $widgetData = Cache::remember(
+            'supplier_dashboard_widgets_'.$sid,
             now()->addMinutes(5),
             function () use ($sid) {
                 $periodeAktif = Period::where('status', 'open')->count();
                 $belumDirespons = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])
                     ->visibleToSupplier($sid)
-                    ->whereHas('period', fn($q) => $q->where('status', 'open'))
-                    ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))->count();
+                    ->whereHas('period', fn ($q) => $q->where('status', 'open'))
+                    ->whereDoesntHave('quotations', fn ($q) => $q->where('supplier_id', $sid))->count();
                 $penawaranTerkirim = Quotation::where('supplier_id', $sid)->where('status', 'submitted')
                     ->whereMonth('submitted_at', now()->month)->whereYear('submitted_at', now()->year)->count();
                 $poDiterima = PurchaseOrder::where('supplier_id', $sid)->count();
@@ -39,14 +40,14 @@ class SupplierController extends Controller
         $prBelumRespons = PurchaseRequisition::with('period', 'items')
             ->whereIn('status', ['submitted', 'bidding'])
             ->visibleToSupplier($sid)
-            ->whereHas('period', fn($q) => $q->where('status', 'open'))
-            ->whereDoesntHave('quotations', fn($q) => $q->where('supplier_id', $sid))
+            ->whereHas('period', fn ($q) => $q->where('status', 'open'))
+            ->whereDoesntHave('quotations', fn ($q) => $q->where('supplier_id', $sid))
             ->orderBy('created_at', 'desc')->take(5)->get();
 
         $poTerbaru = PurchaseOrder::with([
-                'quotations.purchaseRequisition.period',
-                'materialClaims' => fn($q) => $q->where('supplier_id', $sid)->latest(),
-            ])
+            'quotations.purchaseRequisition.period',
+            'materialClaims' => fn ($q) => $q->where('supplier_id', $sid)->latest(),
+        ])
             ->where('supplier_id', $sid)
             ->orderBy('created_at', 'desc')->take(5)->get();
 

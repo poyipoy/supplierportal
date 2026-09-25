@@ -505,7 +505,11 @@ class CalendarController {
         window.setTimeout(() => {
             if (!this.isOpen) {
                 this.panel.hidden = true;
-                this.placeholder.after(this.panel);
+                if (this.placeholder && this.placeholder.parentNode) {
+                    this.placeholder.after(this.panel);
+                } else if (this.panel.parentNode === document.body) {
+                    this.panel.remove();
+                }
             }
         }, this.prefersReducedMotion() ? 0 : 160);
         if (activeController === this) activeController = null;
@@ -971,15 +975,27 @@ class CalendarController {
 }
 
 export function initializeAdasiCalendars(root = document) {
-    if (!engineReady) return;
-    root.querySelectorAll?.('[data-adasi-date-picker]').forEach((wrapper) => {
+    if (!engineReady) {
+        bootAdasiCalendars().then(() => initializeAdasiCalendars(root));
+        return;
+    }
+    const singleElements = [
+        ...(root.matches?.('[data-adasi-date-picker]') ? [root] : []),
+        ...(root.querySelectorAll?.('[data-adasi-date-picker]') || []),
+    ];
+    singleElements.forEach((wrapper) => {
         if (!instances.has(wrapper)) {
             const controller = new CalendarController(wrapper, 'single');
             instances.set(wrapper, controller);
             controller.initialize();
         }
     });
-    root.querySelectorAll?.('[data-adasi-date-range]').forEach((wrapper) => {
+
+    const rangeElements = [
+        ...(root.matches?.('[data-adasi-date-range]') ? [root] : []),
+        ...(root.querySelectorAll?.('[data-adasi-date-range]') || []),
+    ];
+    rangeElements.forEach((wrapper) => {
         if (!instances.has(wrapper)) {
             const controller = new CalendarController(wrapper, 'range');
             instances.set(wrapper, controller);
@@ -996,9 +1012,14 @@ export function resetAdasiCalendar(target) {
     controller?.syncFromNative();
 }
 
+export function closeActiveCalendar() {
+    activeController?.close({ restoreFocus: false });
+}
+
 window.AdasiCalendar = Object.freeze({
     initialize: initializeAdasiCalendars,
     reset: resetAdasiCalendar,
+    closeActive: closeActiveCalendar,
 });
 
 export async function bootAdasiCalendars() {

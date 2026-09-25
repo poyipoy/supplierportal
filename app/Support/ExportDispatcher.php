@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Exports\InspectionsExport;
 use App\Exports\LocalInvoicesExport;
 use App\Exports\PaymentBatchDrpExport;
+use App\Exports\PaymentBatchTransferExport;
 use App\Exports\PurchaseOrderDetailExport;
 use App\Exports\PurchaseOrdersExport;
 use App\Exports\PurchaseRequisitionDetailExport;
@@ -27,6 +28,7 @@ class ExportDispatcher
     private const SUPPORTED_EXPORT_CLASSES = [
         LocalInvoicesExport::class,
         PaymentBatchDrpExport::class,
+        PaymentBatchTransferExport::class,
         RequisitionsExport::class,
         PurchaseOrdersExport::class,
         PurchaseRequisitionDetailExport::class,

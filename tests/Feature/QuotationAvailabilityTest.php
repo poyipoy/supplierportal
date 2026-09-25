@@ -1120,7 +1120,6 @@ class QuotationAvailabilityTest extends TestCase
         $this->assertSame('Currently experiencing supply chain delay from overseas mill', $quotation->general_notes);
     }
 
-
     private function quotationConversation(Quotation $quotation): Conversation
     {
         return Conversation::create([

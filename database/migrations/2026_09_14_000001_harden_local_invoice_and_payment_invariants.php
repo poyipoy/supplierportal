@@ -26,7 +26,7 @@ return new class extends Migration
                 'REJECTED'
             ) NOT NULL DEFAULT 'WAITING_PHYSICAL_DOCUMENT'");
 
-            DB::statement("ALTER TABLE local_invoices MODIFY payment_term_days_snapshot SMALLINT UNSIGNED NULL");
+            DB::statement('ALTER TABLE local_invoices MODIFY payment_term_days_snapshot SMALLINT UNSIGNED NULL');
         }
 
         // Convert any legacy status rows to canonical V2 statuses

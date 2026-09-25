@@ -2,199 +2,310 @@
 
 namespace App\Services\Payment;
 
-use App\Models\GaClaim;
 use App\Models\LocalInvoice;
-use App\Models\PaymentBatch;
-use App\Models\PaymentGroup;
-use App\Models\PaymentItem;
+use App\Support\Money;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
 class PaymentForecastService
 {
-    /**
-     * Get weekly payment forecast (next 4 weeks).
-     */
-    public function getWeeklyForecast(): array
-    {
-        $weeks = [];
-        $startDate = Carbon::now()->startOfWeek();
+    public const DEFAULT_WEEKLY_PERIODS = 12;
 
-        // Preload all active DRP items and their groups/batches
-        $activeDrpItems = $this->getActiveDrpItems();
-        $batchedInvoiceIds = $activeDrpItems->where('payable_type', LocalInvoice::class)->pluck('payable_id')->unique()->all();
-        $batchedClaimIds = $activeDrpItems->where('payable_type', GaClaim::class)->pluck('payable_id')->unique()->all();
-
-        for ($i = 0; $i < 4; $i++) {
-            $weekStart = (clone $startDate)->addWeeks($i)->startOfDay();
-            $weekEnd = (clone $weekStart)->endOfWeek()->endOfDay();
-
-            $forecast = $this->calculatePeriodForecast(
-                $weekStart,
-                $weekEnd,
-                $activeDrpItems,
-                $batchedInvoiceIds,
-                $batchedClaimIds
-            );
-
-            $weeks[] = array_merge([
-                'week' => 'Week '.($i + 1),
-                'week_number' => $i + 1,
-                'label' => 'Week '.($i + 1).' ('.$weekStart->format('d M').' - '.$weekEnd->format('d M').')',
-                'start' => $weekStart->toDateString(),
-                'start_date' => $weekStart->toDateString(),
-                'end' => $weekEnd->toDateString(),
-                'end_date' => $weekEnd->toDateString(),
-            ], $forecast);
-        }
-
-        return $weeks;
-    }
+    public const DEFAULT_MONTHLY_PERIODS = 6;
 
     /**
-     * Get monthly payment forecast (next 6 months).
+     * Get available months for the forecast month selector.
+     * Defaults to last 5 months, current month, and 1 month ahead (total 7 months).
      */
-    public function getMonthlyForecast(): array
+    public function getAvailableMonths(int $pastMonths = 5, int $futureMonths = 1, ?CarbonInterface $referenceDate = null): array
     {
+        $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+        $startMonth = (clone $ref)->startOfMonth()->subMonths($pastMonths);
+        $totalMonths = $pastMonths + 1 + $futureMonths;
         $months = [];
-        $startMonth = Carbon::now()->startOfMonth();
 
-        // Preload all active DRP items and their groups/batches
-        $activeDrpItems = $this->getActiveDrpItems();
-        $batchedInvoiceIds = $activeDrpItems->where('payable_type', LocalInvoice::class)->pluck('payable_id')->unique()->all();
-        $batchedClaimIds = $activeDrpItems->where('payable_type', GaClaim::class)->pluck('payable_id')->unique()->all();
-
-        for ($i = 0; $i < 6; $i++) {
-            $monthStart = (clone $startMonth)->addMonths($i)->startOfDay();
-            $monthEnd = (clone $monthStart)->endOfMonth()->endOfDay();
-
-            $forecast = $this->calculatePeriodForecast(
-                $monthStart,
-                $monthEnd,
-                $activeDrpItems,
-                $batchedInvoiceIds,
-                $batchedClaimIds
-            );
-
-            $months[] = array_merge([
-                'month' => $monthStart->format('F Y'),
-                'label' => $monthStart->format('M Y'),
-                'start' => $monthStart->toDateString(),
-                'start_date' => $monthStart->toDateString(),
-                'end' => $monthEnd->toDateString(),
-                'end_date' => $monthEnd->toDateString(),
-                'amount' => $forecast['total'],
-            ], $forecast);
+        for ($i = 0; $i < $totalMonths; $i++) {
+            $m = (clone $startMonth)->addMonths($i);
+            $months[] = [
+                'key' => $m->format('Y-m'),
+                'year' => (int) $m->format('Y'),
+                'month' => (int) $m->format('n'),
+                'label' => $m->translatedFormat('F Y'),
+                'short_label' => $m->translatedFormat('M Y'),
+                'is_current' => $m->format('Y-m') === $ref->format('Y-m'),
+            ];
         }
 
         return $months;
     }
 
     /**
-     * Load active items belonging to unpaid groups in active DRP batches.
+     * Get weekly payment forecast partitioned per month into 7-day blocks:
+     * Week 1: 1-7, Week 2: 8-14, Week 3: 15-21, Week 4: 22-28, Week 5: 29-end.
+     * Cumulative amount resets at Week 1 of the given month.
      */
-    protected function getActiveDrpItems()
+    public function getWeeklyForecast(string|CarbonInterface|int|null $month = null, ?CarbonInterface $referenceDate = null): array
     {
-        return PaymentItem::with(['group.batch'])
-            ->where('status', PaymentItem::STATUS_ACTIVE)
-            ->whereHas('group', function ($g) {
-                $g->where('status', PaymentGroup::STATUS_UNPAID)
-                    ->whereHas('batch', fn ($b) => $b->whereIn('status', PaymentBatch::ACTIVE_STATUSES));
-            })
-            ->get();
+        if (is_int($month)) {
+            $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+        } elseif ($month instanceof CarbonInterface) {
+            $ref = Carbon::instance($month);
+        } elseif (is_string($month) && ! empty($month)) {
+            $ref = Carbon::parse($month)->startOfMonth();
+        } else {
+            $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+        }
+
+        return $this->aggregateWeeklyByMonth($ref);
     }
 
     /**
-     * Calculate period forecast ensuring canonical precedence and preventing double-counting:
-     * 1. If payable is in active DRP: forecast using DRP planned/payment date.
-     * 2. Else if payable is READY_TO_PAY: forecast using due_date (LocalInvoice) or ready_to_pay_at / claim_date (GaClaim).
-     * 3. Exclude UNDER_VERIFICATION and legacy states.
+     * Aggregate weekly Ready-to-Pay events for a specific calendar month.
      */
-    protected function calculatePeriodForecast(
-        CarbonInterface $start,
-        CarbonInterface $end,
-        $activeDrpItems,
-        array $batchedInvoiceIds,
-        array $batchedClaimIds
-    ): array {
-        $supplierAmount = 0.0;
-        $gaAmount = 0.0;
-        $drpAmount = 0.0;
-        $count = 0;
+    protected function aggregateWeeklyByMonth(Carbon $ref): array
+    {
+        $targetMonth = (clone $ref)->startOfMonth();
+        $daysInMonth = $targetMonth->daysInMonth;
+        $monthStart = (clone $targetMonth)->startOfDay();
+        $monthEnd = (clone $targetMonth)->endOfMonth()->endOfDay();
 
-        // 1. Active DRP items falling into this period
-        foreach ($activeDrpItems as $item) {
-            $group = $item->group;
-            if (! $group) {
-                continue;
-            }
-
-            // Planned/payment date: transfer_date if set, otherwise group created_at
-            $itemDate = $group->transfer_date
-                ? Carbon::parse($group->transfer_date)
-                : Carbon::parse($group->created_at);
-
-            if ($itemDate->betweenIncluded($start, $end)) {
-                $amount = (float) $item->amount;
-                $drpAmount += $amount;
-                $count++;
-
-                if ($item->payable_type === LocalInvoice::class || $group->batch?->batch_type === PaymentBatch::TYPE_SUPPLIER) {
-                    $supplierAmount += $amount;
-                } else {
-                    $gaAmount += $amount;
-                }
-            }
-        }
-
-        // 2. Unbatched Local Invoices in READY_TO_PAY status
-        $readyInvoices = LocalInvoice::with('currentVerification')
-            ->eligibleForPaymentBatch()
-            ->whereNotIn('id', $batchedInvoiceIds)
-            ->whereBetween('due_date', [$start->toDateString(), $end->toDateString()])
-            ->get();
-
-        foreach ($readyInvoices as $inv) {
-            $verification = $inv->currentVerification;
-            $amount = $verification
-                ? $verification->calculateNetPayable((float) $inv->invoice_amount)
-                : ((float) $inv->invoice_amount + (float) $inv->tax_amount);
-
-            $supplierAmount += $amount;
-            $count++;
-        }
-
-        // 3. Unbatched GA Claims in READY_TO_PAY status
-        $readyClaims = GaClaim::where('status', GaClaim::STATUS_READY_TO_PAY)
-            ->whereNotIn('id', $batchedClaimIds)
-            ->where(function ($q) use ($start, $end) {
-                $q->whereBetween('ready_to_pay_at', [$start->toDateTimeString(), $end->toDateTimeString()])
-                    ->orWhere(function ($sub) use ($start, $end) {
+        // 1. Fetch invoices within this month
+        $invoices = LocalInvoice::with('currentVerification')
+            ->where(function ($q) use ($monthStart, $monthEnd) {
+                $q->whereBetween('ready_to_pay_at', [$monthStart, $monthEnd])
+                    ->orWhere(function ($sub) use ($monthStart, $monthEnd) {
                         $sub->whereNull('ready_to_pay_at')
-                            ->whereBetween('claim_date', [$start->toDateString(), $end->toDateString()]);
+                            ->whereBetween('approved_at', [$monthStart, $monthEnd]);
                     });
             })
+            ->whereNotIn('status', [
+                LocalInvoice::STATUS_REJECTED,
+                LocalInvoice::STATUS_CANCELLED,
+            ])
             ->get();
 
-        foreach ($readyClaims as $claim) {
-            $gaAmount += (float) $claim->amount;
-            $count++;
+        // 2. Define 7-day week intervals
+        $weekDefinitions = [
+            ['week_number' => 1, 'start_day' => 1, 'end_day' => 7],
+            ['week_number' => 2, 'start_day' => 8, 'end_day' => 14],
+            ['week_number' => 3, 'start_day' => 15, 'end_day' => 21],
+            ['week_number' => 4, 'start_day' => 22, 'end_day' => 28],
+        ];
+
+        if ($daysInMonth > 28) {
+            $weekDefinitions[] = [
+                'week_number' => 5,
+                'start_day' => 29,
+                'end_day' => $daysInMonth,
+            ];
         }
 
-        $supplierAmount = round($supplierAmount, 2);
-        $gaAmount = round($gaAmount, 2);
-        $drpAmount = round($drpAmount, 2);
-        $total = round($supplierAmount + $gaAmount, 2);
+        $periods = [];
+        $cumulativeAmount = Money::zero();
+
+        foreach ($weekDefinitions as $idx => $def) {
+            $weekNumber = $def['week_number'];
+            $periodStart = (clone $targetMonth)->day($def['start_day'])->startOfDay();
+            $periodEnd = (clone $targetMonth)->day($def['end_day'])->endOfDay();
+
+            $monthName = $targetMonth->translatedFormat('M');
+            $monthFull = $targetMonth->translatedFormat('F');
+            $year = $targetMonth->format('Y');
+
+            $label = sprintf('Minggu %d (%02d %s - %02d %s %s)', $weekNumber, $def['start_day'], $monthName, $def['end_day'], $monthName, $year);
+            $shortLabel = sprintf('W%d (%02d-%02d %s)', $weekNumber, $def['start_day'], $def['end_day'], $monthName);
+            $periodName = 'Minggu '.$weekNumber;
+
+            $periodInvoices = $invoices->filter(function ($inv) use ($periodStart, $periodEnd) {
+                $eventAt = $inv->ready_to_pay_at ?? $inv->approved_at;
+                if (! $eventAt) {
+                    return false;
+                }
+                $eventDate = $eventAt instanceof CarbonInterface ? $eventAt : Carbon::parse($eventAt);
+
+                return $eventDate->betweenIncluded($periodStart, $periodEnd);
+            });
+
+            $periodAmount = Money::zero();
+            $invoiceCount = 0;
+
+            foreach ($periodInvoices as $inv) {
+                $payable = $this->getInvoicePayableAmount($inv);
+                $periodAmount = Money::add($periodAmount, $payable);
+                $invoiceCount++;
+            }
+
+            $cumulativeAmount = Money::add($cumulativeAmount, $periodAmount);
+
+            $periods[] = [
+                'period_type' => 'week',
+                'period_index' => $idx,
+                'week_number' => $weekNumber,
+                'week' => $periodName,
+                'start' => $periodStart->toDateString(),
+                'start_date' => $periodStart->toDateString(),
+                'end' => $periodEnd->toDateString(),
+                'end_date' => $periodEnd->toDateString(),
+                'label' => $label,
+                'short_label' => $shortLabel,
+                'month_key' => $targetMonth->format('Y-m'),
+                'month_name' => $monthFull.' '.$year,
+                'count' => $invoiceCount,
+                'invoice_count' => $invoiceCount,
+                'period_amount' => (float) $periodAmount,
+                'period_amount_exact' => $periodAmount,
+                'period_amount_formatted' => 'Rp '.number_format((float) $periodAmount, 0, ',', '.'),
+                'cumulative_amount' => (float) $cumulativeAmount,
+                'cumulative_amount_exact' => $cumulativeAmount,
+                'cumulative_amount_formatted' => 'Rp '.number_format((float) $cumulativeAmount, 0, ',', '.'),
+                // Backward-compatibility keys
+                'total' => (float) $periodAmount,
+                'total_amount' => (float) $periodAmount,
+                'supplier_amount' => (float) $periodAmount,
+                'ga_amount' => 0.0,
+                'drp_amount' => 0.0,
+            ];
+        }
+
+        return $periods;
+    }
+
+    /**
+     * Get monthly payment forecast (rolling last N months including current month).
+     */
+    public function getMonthlyForecast(int $monthsCount = self::DEFAULT_MONTHLY_PERIODS, ?CarbonInterface $referenceDate = null): array
+    {
+        return $this->aggregateMonthlyForecast($monthsCount, $referenceDate);
+    }
+
+    /**
+     * Aggregate monthly payment forecast based on ready_to_pay_at events.
+     */
+    protected function aggregateMonthlyForecast(int $periodCount, ?CarbonInterface $referenceDate = null): array
+    {
+        $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+        $windowStart = (clone $ref)->startOfMonth()->subMonths($periodCount - 1)->startOfDay();
+        $windowEnd = (clone $ref)->endOfMonth()->endOfDay();
+
+        $invoices = LocalInvoice::with('currentVerification')
+            ->where(function ($q) use ($windowStart, $windowEnd) {
+                $q->whereBetween('ready_to_pay_at', [$windowStart, $windowEnd])
+                    ->orWhere(function ($sub) use ($windowStart, $windowEnd) {
+                        $sub->whereNull('ready_to_pay_at')
+                            ->whereBetween('approved_at', [$windowStart, $windowEnd]);
+                    });
+            })
+            ->whereNotIn('status', [
+                LocalInvoice::STATUS_REJECTED,
+                LocalInvoice::STATUS_CANCELLED,
+            ])
+            ->get();
+
+        $periods = [];
+        $cumulativeAmount = Money::zero();
+
+        for ($i = 0; $i < $periodCount; $i++) {
+            $periodStart = (clone $windowStart)->addMonths($i)->startOfMonth()->startOfDay();
+            $periodEnd = (clone $periodStart)->endOfMonth()->endOfDay();
+
+            $label = $periodStart->translatedFormat('M Y');
+            $shortLabel = $periodStart->translatedFormat('M Y');
+            $periodName = $periodStart->translatedFormat('F Y');
+
+            $periodInvoices = $invoices->filter(function ($inv) use ($periodStart, $periodEnd) {
+                $eventAt = $inv->ready_to_pay_at ?? $inv->approved_at;
+                if (! $eventAt) {
+                    return false;
+                }
+                $eventDate = $eventAt instanceof CarbonInterface ? $eventAt : Carbon::parse($eventAt);
+
+                return $eventDate->betweenIncluded($periodStart, $periodEnd);
+            });
+
+            $periodAmount = Money::zero();
+            $invoiceCount = 0;
+
+            foreach ($periodInvoices as $inv) {
+                $payable = $this->getInvoicePayableAmount($inv);
+                $periodAmount = Money::add($periodAmount, $payable);
+                $invoiceCount++;
+            }
+
+            $cumulativeAmount = Money::add($cumulativeAmount, $periodAmount);
+
+            $periods[] = [
+                'period_type' => 'month',
+                'period_index' => $i,
+                'month' => $periodName,
+                'start' => $periodStart->toDateString(),
+                'start_date' => $periodStart->toDateString(),
+                'end' => $periodEnd->toDateString(),
+                'end_date' => $periodEnd->toDateString(),
+                'label' => $label,
+                'short_label' => $shortLabel,
+                'count' => $invoiceCount,
+                'invoice_count' => $invoiceCount,
+                'amount' => (float) $periodAmount,
+                'period_amount' => (float) $periodAmount,
+                'period_amount_exact' => $periodAmount,
+                'period_amount_formatted' => 'Rp '.number_format((float) $periodAmount, 0, ',', '.'),
+                'cumulative_amount' => (float) $cumulativeAmount,
+                'cumulative_amount_exact' => $cumulativeAmount,
+                'cumulative_amount_formatted' => 'Rp '.number_format((float) $cumulativeAmount, 0, ',', '.'),
+                // Backward-compatibility keys
+                'total' => (float) $periodAmount,
+                'total_amount' => (float) $periodAmount,
+                'supplier_amount' => (float) $periodAmount,
+                'ga_amount' => 0.0,
+                'drp_amount' => 0.0,
+            ];
+        }
+
+        return $periods;
+    }
+
+    /**
+     * Get current operational Ready-to-Pay summary (outstanding invoices awaiting payment).
+     */
+    public function getCurrentReadyToPaySummary(): array
+    {
+        $invoices = LocalInvoice::with('currentVerification')
+            ->whereIn('status', [
+                LocalInvoice::STATUS_READY_TO_PAY,
+                'APPROVED',
+                'PAYMENT_SCHEDULED',
+            ])
+            ->get();
+
+        $totalPayable = Money::zero();
+        $count = $invoices->count();
+
+        foreach ($invoices as $invoice) {
+            $payable = $this->getInvoicePayableAmount($invoice);
+            $totalPayable = Money::add($totalPayable, $payable);
+        }
 
         return [
             'count' => $count,
-            'supplier_amount' => $supplierAmount,
-            'supplier_net_payable' => $supplierAmount,
-            'ga_amount' => $gaAmount,
-            'ga_payable' => $gaAmount,
-            'drp_amount' => $drpAmount,
-            'total' => $total,
-            'total_amount' => $total,
+            'invoice_count' => $count,
+            'total_amount' => (float) $totalPayable,
+            'total_amount_exact' => $totalPayable,
+            'total_amount_formatted' => 'Rp '.number_format((float) $totalPayable, 0, ',', '.'),
+            'amount' => (float) $totalPayable,
         ];
+    }
+
+    /**
+     * Authoritative net payable calculation for an invoice matching payment engine.
+     */
+    public function getInvoicePayableAmount(LocalInvoice $invoice): string
+    {
+        $verification = $invoice->currentVerification;
+
+        if ($verification) {
+            return $verification->netPayableExact($invoice->invoice_amount);
+        }
+
+        return Money::add($invoice->invoice_amount, $invoice->tax_amount);
     }
 }

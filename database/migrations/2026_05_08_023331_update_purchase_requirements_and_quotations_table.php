@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -40,7 +40,7 @@ return new class extends Migration
                 'estimated_delivery',
                 'payment_terms',
                 'validity_period',
-                'general_notes'
+                'general_notes',
             ]);
         });
 

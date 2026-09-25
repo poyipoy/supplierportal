@@ -106,12 +106,30 @@
     {{-- Daftar Batch DRP Supplier --}}
     <x-ui.data-table
         title="Daftar Batch DRP Supplier"
-        description="Riwayat dan status seluruh batch DRP Supplier yang terdaftar."
+        description="Riwayat dan status seluruh batch DRP Supplier yang terdaftar. Pilih satu atau lebih batch untuk export transfer."
     >
+        <x-slot:toolbar>
+            <x-ui.button
+                type="button"
+                variant="primary"
+                size="sm"
+                id="btnExportTransfer"
+                disabled
+                title="Pilih minimal satu batch DRP untuk melakukan export transfer"
+            >
+                <x-ui.icon name="download" size="sm" />
+                <span>Export Transfer</span>
+                <span id="exportTransferCount" class="tw-hidden tw-ml-1.5 tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-white/20 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.5"></span>
+            </x-ui.button>
+        </x-slot:toolbar>
+
         <div class="table-responsive">
-            <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
+            <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100" id="drpBatchTable">
                 <thead class="table-light">
                     <tr>
+                        <th scope="col" style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAllBatches" title="Pilih semua batch">
+                        </th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Batch Number</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Grup Penerima</th>
@@ -124,6 +142,11 @@
                 <tbody>
                     @forelse($batches as $batch)
                         <tr>
+                            <td>
+                                @if($batch->status !== \App\Models\PaymentBatch::STATUS_CANCELLED)
+                                    <input type="checkbox" class="form-check-input batch-checkbox" value="{{ $batch->hash }}" data-batch-number="{{ $batch->batch_number }}">
+                                @endif
+                            </td>
                             <td>
                                 <strong class="tw-font-mono tw-text-on-surface">{{ $batch->batch_number }}</strong>
                             </td>
@@ -149,7 +172,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
                                 Belum ada batch DRP Supplier.
                             </td>
                         </tr>
@@ -166,3 +189,186 @@
     </x-ui.data-table>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAll = document.getElementById('selectAllBatches');
+    const checkboxes = () => document.querySelectorAll('.batch-checkbox');
+    const btnExport = document.getElementById('btnExportTransfer');
+    const countBadge = document.getElementById('exportTransferCount');
+
+    function updateExportButton() {
+        const checked = document.querySelectorAll('.batch-checkbox:checked');
+        const count = checked.length;
+
+        btnExport.disabled = count === 0;
+
+        if (count > 0) {
+            countBadge.textContent = count;
+            countBadge.classList.remove('tw-hidden');
+        } else {
+            countBadge.classList.add('tw-hidden');
+        }
+
+        // Update select-all checkbox state
+        const allBoxes = checkboxes();
+        if (allBoxes.length > 0) {
+            selectAll.checked = checked.length === allBoxes.length;
+            selectAll.indeterminate = checked.length > 0 && checked.length < allBoxes.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            checkboxes().forEach(cb => cb.checked = selectAll.checked);
+            updateExportButton();
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('batch-checkbox')) {
+            updateExportButton();
+        }
+    });
+
+    if (btnExport) {
+        btnExport.addEventListener('click', function () {
+            const selected = document.querySelectorAll('.batch-checkbox:checked');
+            if (selected.length === 0) return;
+
+            const batchIds = Array.from(selected).map(cb => cb.value);
+
+            // Confirm action
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Export Transfer DRP',
+                    html: `Anda akan mengexport <strong>${batchIds.length}</strong> batch DRP menjadi satu file TARIKAN TRANSFER.<br><br>Lanjutkan?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Export',
+                    cancelButtonText: 'Batal',
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        dispatchExport(batchIds);
+                    }
+                });
+            } else {
+                if (confirm('Export ' + batchIds.length + ' batch DRP menjadi satu file transfer?')) {
+                    dispatchExport(batchIds);
+                }
+            }
+        });
+    }
+
+    function dispatchExport(batchIds) {
+        btnExport.disabled = true;
+
+        fetch("{{ route('finance.drp.export-transfer') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '{{ csrf_token() }}',
+            },
+            body: JSON.stringify({ batch_ids: batchIds }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => { throw data; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (typeof AdasiToast !== 'undefined') {
+                AdasiToast.success(data.message || 'Export transfer berhasil didispatch.');
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire('Berhasil', data.message || 'Export transfer berhasil didispatch.', 'success');
+            } else {
+                alert(data.message || 'Export berhasil didispatch.');
+            }
+
+            // Persist to pending export storage
+            try {
+                const existing = JSON.parse(localStorage.getItem('adasi:pending-export-jobs:v1') || '[]');
+                existing.push({
+                    exportJobId: String(data.export_job_id),
+                    statusUrl: data.status_url,
+                    startedAt: Date.now(),
+                    exportsUrl: data.exports_url || null,
+                    cancelUrl: data.cancel_url || null,
+                    status: 'queued',
+                    stage: 'queued',
+                    progress: 0,
+                    processedRows: 0,
+                    totalRows: 0,
+                });
+                localStorage.setItem('adasi:pending-export-jobs:v1', JSON.stringify(existing.slice(-25)));
+            } catch (e) {}
+
+            // Poll for completion and trigger download
+            if (data.status_url) {
+                pollExportStatus(data.status_url);
+            }
+
+            // Uncheck all after dispatch
+            checkboxes().forEach(cb => cb.checked = false);
+            if (selectAll) selectAll.checked = false;
+            updateExportButton();
+        })
+        .catch(err => {
+            const msg = err.message || err.error || 'Terjadi kesalahan saat export transfer.';
+            if (typeof AdasiToast !== 'undefined') {
+                AdasiToast.error(msg);
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire('Gagal', msg, 'error');
+            } else {
+                alert(msg);
+            }
+            updateExportButton();
+        });
+    }
+
+    function pollExportStatus(statusUrl) {
+        let attempts = 0;
+        const maxAttempts = 120; // 3 minutes max
+
+        const check = () => {
+            attempts++;
+            if (attempts > maxAttempts) return;
+
+            fetch(statusUrl, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(job => {
+                if (job.status === 'completed' && job.download_url) {
+                    if (typeof AdasiToast !== 'undefined') {
+                        AdasiToast.success('Export transfer selesai. Mengunduh file...');
+                    }
+                    const a = document.createElement('a');
+                    a.href = job.download_url;
+                    a.download = job.file_name || 'DRP_TRANSFER.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else if (job.status === 'failed') {
+                    const failMsg = job.message || 'Export transfer gagal diproses.';
+                    if (typeof AdasiToast !== 'undefined') {
+                        AdasiToast.error(failMsg);
+                    }
+                } else if (job.status === 'queued' || job.status === 'processing') {
+                    setTimeout(check, 1500);
+                }
+            })
+            .catch(() => {
+                // Silently stop polling on network error
+            });
+        };
+
+        setTimeout(check, 1500);
+    }
+});
+</script>
+@endpush
+

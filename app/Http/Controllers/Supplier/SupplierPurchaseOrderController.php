@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Supplier;
 use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
+use App\Services\MaterialProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
@@ -170,7 +171,7 @@ class SupplierPurchaseOrderController extends Controller
             return [$q->id => $q->exchange_rate];
         });
 
-        $progressService = app(\App\Services\MaterialProgressService::class);
+        $progressService = app(MaterialProgressService::class);
         $poSummary = $progressService->poSummary($po);
         $itemProjections = collect($poSummary['items'] ?? []);
 

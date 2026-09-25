@@ -3,7 +3,7 @@
 @section('page-title', 'DRP Paid (Monitoring & Eksekusi Pelunasan)')
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div id="drpPaidContainer" class="tw-grid tw-gap-6 tw-pb-16" data-server-tabs-container>
     <x-ui.page-header
         title="DRP Paid (Monitoring & Pelunasan)"
         description="Pantau status pelunasan seluruh batch DRP Supplier & GA, telusuri bukti transfer, dan tandai batch lunas (Mark Paid) secara terpadu."
@@ -26,7 +26,7 @@
                 <x-ui.icon name="alert-circle" size="sm" class="{{ ($openOverpaymentsCount ?? 0) > 0 ? 'tw-text-amber-500' : '' }}" />
                 <span>Refund Overpayment</span>
                 @if(($openOverpaymentsCount ?? 0) > 0)
-                    <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-amber-500 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.2">
+                    <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-amber-500 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.2" data-overpayment-count>
                         {{ $openOverpaymentsCount }}
                     </span>
                 @endif
@@ -42,6 +42,7 @@
             icon="layers"
             tone="neutral"
             meta="Seluruh batch terdaftar"
+            value-metric="total_batches"
         />
 
         <x-ui.metric-card
@@ -51,6 +52,12 @@
             tone="warning"
             :meta="number_format($metrics['unpaid_count']) . ' Batch belum lunas'"
             :href="route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid']))"
+            data-server-tab
+            data-server-tab-card
+            data-tab-name="unpaid"
+            :active="$tab === 'unpaid'"
+            value-metric="unpaid_amount"
+            meta-metric="unpaid_count"
         />
 
         <x-ui.metric-card
@@ -60,6 +67,12 @@
             tone="success"
             :meta="number_format($metrics['paid_count']) . ' Batch selesai dibayar'"
             :href="route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid']))"
+            data-server-tab
+            data-server-tab-card
+            data-tab-name="paid"
+            :active="$tab === 'paid'"
+            value-metric="paid_amount"
+            meta-metric="paid_count"
         />
     </div>
 
@@ -69,30 +82,36 @@
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'unpaid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                data-server-tab
+                data-tab-name="unpaid"
             >
                 <x-ui.icon name="clock" size="sm" />
                 <span>Belum Paid</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
                     {{ $metrics['unpaid_count'] }}
                 </span>
             </a>
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'paid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                data-server-tab
+                data-tab-name="paid"
             >
                 <x-ui.icon name="badge-check" size="sm" />
                 <span>Sudah Paid</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
                     {{ $metrics['paid_count'] }}
                 </span>
             </a>
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'all'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'all' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                data-server-tab
+                data-tab-name="all"
             >
                 <x-ui.icon name="layers" size="sm" />
                 <span>Semua Batch</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
                     {{ $metrics['total_batches'] }}
                 </span>
             </a>
@@ -100,7 +119,7 @@
     </div>
 
     {{-- Search & Filter Toolbar --}}
-    <form method="GET" action="{{ route('finance.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0">
+    <form method="GET" action="{{ route('finance.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0" data-server-tabs-form>
         <input type="hidden" name="tab" value="{{ $tab }}">
 
         <x-ui.toolbar aria-label="Kontrol filter batch DRP">
@@ -170,212 +189,10 @@
         </x-ui.toolbar>
     </form>
 
-    {{-- Data Table Section --}}
-    <x-ui.data-table
-        title="Daftar Monitoring & Pelunasan Batch DRP"
-        :description="'Menampilkan ' . $batches->total() . ' batch DRP terdaftar.'"
-    >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Batch Number</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tipe & Tanggal</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Grup / Item</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Total Tagihan (Rp)</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Net Bayar (Rp)</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Info Pembayaran</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($batches as $batch)
-                        <tr>
-                            <td>
-                                <a href="{{ route('finance.drp.show', $batch) }}" class="tw-font-mono tw-font-semibold tw-text-primary hover:tw-text-primary-hover tw-no-underline hover:tw-underline">
-                                    {{ $batch->batch_number }}
-                                </a>
-                            </td>
-                            <td>
-                                <div class="tw-flex tw-items-center tw-gap-1.5">
-                                    <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold {{ $batch->batch_type === 'SUPPLIER' ? 'tw-bg-primary/10 tw-text-primary' : 'tw-bg-secondary/10 tw-text-secondary' }}">
-                                        {{ $batch->batch_type }}
-                                    </span>
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $batch->created_at?->format('d M Y') }}</span>
-                                </div>
-                                <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5">
-                                    Oleh: {{ $batch->creator?->name ?? 'System' }}
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <span class="tw-font-semibold">{{ $batch->groups_count }}</span>
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant">rekening</span>
-                            </td>
-                            <td class="text-end tw-font-mono">
-                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
-                            </td>
-                            <td class="text-end tw-font-mono">
-                                <div class="tw-font-bold tw-text-on-surface">
-                                    Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
-                                </div>
-                                @if($batch->hasOverpayment())
-                                    <div class="tw-text-[11px] tw-text-amber-700 dark:tw-text-amber-400 tw-font-semibold tw-mt-0.5" title="Nominal transfer riil melebihi net DRP">
-                                        Transfer: Rp {{ number_format($batch->actual_transferred_amount, 0, ',', '.') }}
-                                    </div>
-                                @endif
-                                @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-                                    <div class="tw-text-[11px] tw-text-warning-container-foreground tw-font-semibold tw-mt-0.5" title="Sisa nominal yang belum lunas">
-                                        Sisa: Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
-                                    {{ $batch->status }}
-                                </x-ui.status-chip>
-                            </td>
-                            <td>
-                                @if($batch->status === \App\Models\PaymentBatch::STATUS_PAID)
-                                    @php
-                                        $sampleGroup = $batch->groups->firstWhere('status', 'PAID');
-                                    @endphp
-                                    <div class="tw-text-ui-xs tw-text-success tw-font-semibold tw-flex tw-items-center tw-gap-1">
-                                        <x-ui.icon name="check-circle" size="sm" />
-                                        <span>Lunas: {{ $batch->paid_at?->format('d M Y') ?? '-' }}</span>
-                                    </div>
-                                    @if($sampleGroup?->transfer_reference)
-                                        <div class="tw-text-[11px] tw-font-mono tw-text-on-surface-variant">
-                                            Ref: {{ $sampleGroup->transfer_reference }}
-                                        </div>
-                                    @endif
-                                    @if($batch->hasOverpayment())
-                                        @if($batch->hasOpenOverpayment())
-                                            <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                               class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-mt-1 tw-no-underline hover:tw-underline"
-                                               title="Klik untuk membuka modul pengembalian dana overpayment">
-                                                <x-ui.icon name="alert-circle" size="xs" />
-                                                <span>Overpayment: Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }} (Open)</span>
-                                            </a>
-                                        @else
-                                            <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                               class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-mt-1 tw-no-underline hover:tw-underline"
-                                               title="Klik untuk melihat riwayat penyelesaian overpayment">
-                                                <x-ui.icon name="check-circle" size="xs" />
-                                                <span>Overpayment Selesai (Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }})</span>
-                                            </a>
-                                        @endif
-                                    @endif
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-                                    <div class="tw-flex tw-flex-col tw-gap-0.5">
-                                        <span class="tw-text-ui-xs tw-text-primary tw-font-semibold">Sebagian Sudah Dibayar</span>
-                                        <div class="tw-text-[11px] tw-font-mono tw-text-on-surface-variant">
-                                            <span class="tw-text-success tw-font-medium">Terbayar: Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}</span>
-                                            <span class="tw-text-on-surface-variant">·</span>
-                                            <span class="tw-text-warning-container-foreground tw-font-bold">Sisa: Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}</span>
-                                        </div>
-                                        @if($batch->hasOverpayment())
-                                            @if($batch->hasOpenOverpayment())
-                                                <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                                   class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-mt-0.5 tw-no-underline hover:tw-underline"
-                                                   title="Klik untuk membuka modul pengembalian dana overpayment">
-                                                    <x-ui.icon name="alert-circle" size="xs" />
-                                                    <span>Overpayment: Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }} (Open)</span>
-                                                </a>
-                                            @else
-                                                <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                                   class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-mt-0.5 tw-no-underline hover:tw-underline"
-                                                   title="Klik untuk melihat riwayat penyelesaian overpayment">
-                                                    <x-ui.icon name="check-circle" size="xs" />
-                                                    <span>Overpayment Selesai (Rp {{ number_format($batch->total_overpayment_amount, 0, ',', '.') }})</span>
-                                                </a>
-                                            @endif
-                                        @endif
-                                        @if($batch->hasUnvoucheredSupplierItems())
-                                            <span class="tw-text-[11px] tw-text-warning-container-foreground tw-font-semibold tw-flex tw-items-center tw-gap-1 tw-mt-0.5">
-                                                <x-ui.icon name="alert-triangle" size="sm" />
-                                                <span>Ada voucher belum dibuat</span>
-                                            </span>
-                                        @endif
-                                    </div>
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_FINALIZED)
-                                    @if($batch->hasUnvoucheredSupplierItems())
-                                        <div class="tw-flex tw-flex-col tw-gap-0.5">
-                                            <span class="tw-text-ui-xs tw-text-warning-container-foreground tw-font-semibold tw-flex tw-items-center tw-gap-1">
-                                                <x-ui.icon name="alert-triangle" size="sm" />
-                                                <span>Voucher Belum Lengkap</span>
-                                            </span>
-                                            <span class="tw-text-[11px] tw-text-on-surface-variant">Generate di Detail DRP</span>
-                                        </div>
-                                    @else
-                                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium">Siap Ditransfer / Dibayar</span>
-                                    @endif
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_CANCELLED)
-                                    <span class="tw-text-ui-xs tw-text-error tw-font-medium">Dibatalkan</span>
-                                @elseif($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                    <span class="tw-text-ui-xs tw-text-warning-container-foreground tw-font-medium">Perlu Difinalisasi</span>
-                                @else
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium">-</span>
-                                @endif
-                            </td>
-                            <td class="text-end">
-                                <div class="tw-inline-flex tw-items-center tw-gap-1.5">
-                                    <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
-                                        <x-ui.icon name="eye" size="sm" />
-                                        <span>Detail</span>
-                                    </x-ui.button>
-
-                                    @if(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]))
-                                        @php
-                                            $unvoucheredCount = $batch->unvoucheredSupplierItemsCount();
-                                        @endphp
-
-                                        @if($unvoucheredCount > 0)
-                                            <span class="tw-inline-block" tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Terdapat {{ $unvoucheredCount }} tagihan yang belum diterbitkan Voucher Bayar. Buka Detail DRP untuk generate voucher terlebih dahulu.">
-                                                <x-ui.button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    disabled
-                                                    class="tw-opacity-50 tw-cursor-not-allowed"
-                                                >
-                                                    <x-ui.icon name="badge-check" size="sm" />
-                                                    <span>Tandai Paid</span>
-                                                </x-ui.button>
-                                            </span>
-                                        @else
-                                            <x-ui.button
-                                                type="button"
-                                                size="sm"
-                                                variant="primary"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#markPaidModal-{{ $batch->id }}"
-                                            >
-                                                <x-ui.icon name="badge-check" size="sm" />
-                                                <span>Tandai Paid</span>
-                                            </x-ui.button>
-                                        @endif
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
-                                Tidak ada batch DRP yang sesuai dengan filter yang dipilih.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($batches->hasPages())
-            <x-slot:pagination>
-                {{ $batches->links() }}
-            </x-slot:pagination>
-        @endif
-    </x-ui.data-table>
+    {{-- Data Table Section (AJAX-swappable container) --}}
+    <div id="drpPaidTableContent" data-server-tabs-content>
+        @include('finance.drp._paid_table_content', ['batches' => $batches])
+    </div>
 
     {{-- Modal Konfirmasi Bayar Batch (Ditempatkan di luar tabel agar HTML5 DOM & Alpine.js valid) --}}
     @foreach($batches as $batch)
@@ -689,3 +506,200 @@
     @endforeach
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Export Transfer Checkbox Logic (re-bindable after AJAX swap) ---
+    function initBatchSelection() {
+        const selectAll = document.getElementById('selectAllBatchesPaid');
+        if (selectAll) {
+            // Remove prior listeners by cloning
+            const fresh = selectAll.cloneNode(true);
+            selectAll.parentNode.replaceChild(fresh, selectAll);
+            fresh.addEventListener('change', function () {
+                document.querySelectorAll('.batch-checkbox-paid').forEach(cb => cb.checked = fresh.checked);
+                syncExportButton();
+            });
+        }
+        syncExportButton();
+    }
+
+    function syncExportButton() {
+        const btnExport = document.getElementById('btnExportTransferPaid');
+        const countBadge = document.getElementById('exportTransferCountPaid');
+        const selectAll = document.getElementById('selectAllBatchesPaid');
+        if (!btnExport) return;
+
+        const checked = document.querySelectorAll('.batch-checkbox-paid:checked');
+        const allBoxes = document.querySelectorAll('.batch-checkbox-paid');
+        const count = checked.length;
+
+        btnExport.disabled = count === 0;
+        if (count > 0) {
+            countBadge.textContent = count;
+            countBadge.classList.remove('tw-hidden');
+        } else {
+            countBadge.classList.add('tw-hidden');
+        }
+        if (allBoxes.length > 0 && selectAll) {
+            selectAll.checked = count === allBoxes.length;
+            selectAll.indeterminate = count > 0 && count < allBoxes.length;
+        }
+    }
+
+    // Delegated change handler (survives DOM swaps)
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('batch-checkbox-paid')) {
+            syncExportButton();
+        }
+    });
+
+    // Delegated export button click (survives DOM swaps)
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('#btnExportTransferPaid');
+        if (!btn || btn.disabled) return;
+
+        const selected = document.querySelectorAll('.batch-checkbox-paid:checked');
+        if (selected.length === 0) return;
+
+        const batchIds = Array.from(selected).map(cb => cb.value);
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Export Transfer DRP',
+                html: `Anda akan mengekspor <strong>${batchIds.length}</strong> batch DRP menjadi satu file TARIKAN TRANSFER.<br><br>Lanjutkan?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Export',
+                cancelButtonText: 'Batal',
+            }).then(result => {
+                if (result.isConfirmed) {
+                    dispatchExport(batchIds);
+                }
+            });
+        } else {
+            if (confirm('Export ' + batchIds.length + ' batch DRP menjadi satu file transfer?')) {
+                dispatchExport(batchIds);
+            }
+        }
+    });
+
+    function dispatchExport(batchIds) {
+        const btnExport = document.getElementById('btnExportTransferPaid');
+        if (btnExport) btnExport.disabled = true;
+
+        fetch("{{ route('finance.drp.export-transfer') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '{{ csrf_token() }}',
+            },
+            body: JSON.stringify({ batch_ids: batchIds }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => { throw data; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (typeof AdasiToast !== 'undefined') {
+                AdasiToast.success(data.message || 'Export transfer berhasil didispatch.');
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire('Berhasil', data.message || 'Export transfer berhasil didispatch.', 'success');
+            } else {
+                alert(data.message || 'Export berhasil didispatch.');
+            }
+
+            try {
+                const existing = JSON.parse(localStorage.getItem('adasi:pending-export-jobs:v1') || '[]');
+                existing.push({
+                    exportJobId: String(data.export_job_id),
+                    statusUrl: data.status_url,
+                    startedAt: Date.now(),
+                    exportsUrl: data.exports_url || null,
+                    cancelUrl: data.cancel_url || null,
+                    status: 'queued',
+                    stage: 'queued',
+                    progress: 0,
+                    processedRows: 0,
+                    totalRows: 0,
+                });
+                localStorage.setItem('adasi:pending-export-jobs:v1', JSON.stringify(existing.slice(-25)));
+            } catch (e) {}
+
+            if (data.status_url) {
+                pollExportStatusPaid(data.status_url);
+            }
+
+            document.querySelectorAll('.batch-checkbox-paid').forEach(cb => cb.checked = false);
+            initBatchSelection();
+        })
+        .catch(err => {
+            const msg = err.message || err.error || 'Terjadi kesalahan saat export transfer.';
+            if (typeof AdasiToast !== 'undefined') {
+                AdasiToast.error(msg);
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire('Gagal', msg, 'error');
+            } else {
+                alert(msg);
+            }
+            syncExportButton();
+        });
+    }
+
+    function pollExportStatusPaid(statusUrl) {
+        let attempts = 0;
+        const maxAttempts = 120;
+
+        const check = () => {
+            attempts++;
+            if (attempts > maxAttempts) return;
+
+            fetch(statusUrl, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(job => {
+                if (job.status === 'completed' && job.download_url) {
+                    if (typeof AdasiToast !== 'undefined') {
+                        AdasiToast.success('Export transfer selesai. Mengunduh file...');
+                    }
+                    const a = document.createElement('a');
+                    a.href = job.download_url;
+                    a.download = job.file_name || 'DRP_TRANSFER.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else if (job.status === 'failed') {
+                    const failMsg = job.message || 'Export transfer gagal diproses.';
+                    if (typeof AdasiToast !== 'undefined') {
+                        AdasiToast.error(failMsg);
+                    }
+                } else if (job.status === 'queued' || job.status === 'processing') {
+                    setTimeout(check, 1500);
+                }
+            })
+            .catch(() => {});
+        };
+
+        setTimeout(check, 1500);
+    }
+
+    // Initial bind
+    initBatchSelection();
+
+    // --- Initialize AdasiServerTabs for zero-reload tab/filter/pagination ---
+    if (typeof AdasiServerTabs !== 'undefined') {
+        AdasiServerTabs.init('#drpPaidContainer', {
+            onUpdated: function () {
+                initBatchSelection();
+            },
+        });
+    }
+});
+</script>
+@endpush
+

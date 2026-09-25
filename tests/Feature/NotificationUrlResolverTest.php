@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Announcement;
 use App\Models\Conversation;
 use App\Models\ExportJob;
 use App\Models\LocalInvoice;

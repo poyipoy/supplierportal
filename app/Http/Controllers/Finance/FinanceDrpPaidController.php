@@ -111,7 +111,24 @@ class FinanceDrpPaidController extends Controller
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
+        // Whitelist tab input
+        if (! in_array($tab, ['unpaid', 'paid', 'all'], true)) {
+            $tab = 'unpaid';
+        }
+
         $batches = $query->latest('id')->paginate(15)->withQueryString();
+
+        // AJAX: return JSON with rendered HTML fragment + metrics
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'html' => view('finance.drp._paid_table_content', compact('batches'))->render(),
+                'metrics' => $metrics,
+                'tab' => $tab,
+                'openOverpaymentsCount' => $openOverpaymentsCount,
+                'url' => $request->fullUrl(),
+            ]);
+        }
 
         return view('finance.drp.paid', compact('batches', 'tab', 'type', 'q', 'dateFrom', 'dateTo', 'metrics', 'overpaymentStatus', 'openOverpaymentsCount'));
     }

@@ -19,15 +19,17 @@ class LocalProcurementDummySeeder extends Seeder
 
         if (! $admin) {
             $this->command?->error('No Admin or Finance user found. Aborting seeder.');
+
             return;
         }
 
         $supplier6 = User::localEligible()->where('id', 20)->first()
-            ?? User::localEligible()->whereHas('supplier', fn($q) => $q->where('company_name', 'like', '%Supplier 6%')->orWhere('company_name', 'like', '%Supplier Enam%'))->first()
+            ?? User::localEligible()->whereHas('supplier', fn ($q) => $q->where('company_name', 'like', '%Supplier 6%')->orWhere('company_name', 'like', '%Supplier Enam%'))->first()
             ?? User::localEligible()->first();
 
         if (! $supplier6) {
             $this->command?->error('No local suppliers found. Aborting seeder.');
+
             return;
         }
 
@@ -150,7 +152,8 @@ class LocalProcurementDummySeeder extends Seeder
                         $service->createGoodsReceipt($admin, $po, [
                             'gr_number' => $grNumber,
                             'gr_date' => $grDate,
-                            'received_amount' => number_format($def['gr_unit_amount'], 2, '.', ''),
+                            'qty' => '10.0000',
+                            'description' => "Penerimaan {$def['gr_desc']} batch {$grIndex}/10",
                             'notes' => "Penerimaan {$def['gr_desc']} batch {$grIndex}/10",
                         ], LocalPurchaseOrder::SOURCE_MANUAL);
                         $createdGrCount++;

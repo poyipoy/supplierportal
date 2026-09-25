@@ -7,7 +7,6 @@ use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
-use App\Models\SupplierBankAccount;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
@@ -397,7 +396,7 @@ class PaymentBatchService
             $batch = $grp->batch()->lockForUpdate()->firstOrFail();
 
             if ($batch->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException("Fee override is only permitted while DRP is in DRAFT status.");
+                throw new RuntimeException('Fee override is only permitted while DRP is in DRAFT status.');
             }
 
             $fee = Money::normalize($newFee);
@@ -443,7 +442,7 @@ class PaymentBatchService
                 ->get();
 
             if ($activeItems->isEmpty()) {
-                throw new RuntimeException("Cannot finalize DRP: batch contains no active items.");
+                throw new RuntimeException('Cannot finalize DRP: batch contains no active items.');
             }
 
             // 2. Each payable must still be in READY_TO_PAY status
@@ -451,12 +450,12 @@ class PaymentBatchService
                 if ($item->payable_type === LocalInvoice::class) {
                     $inv = LocalInvoice::find($item->payable_id);
                     if (! $inv || ! $inv->isReadyToPay()) {
-                        throw new RuntimeException("Cannot finalize DRP: invoice [".($inv?->invoice_number ?? $item->payable_id)."] is no longer Ready to Pay.");
+                        throw new RuntimeException('Cannot finalize DRP: invoice ['.($inv?->invoice_number ?? $item->payable_id).'] is no longer Ready to Pay.');
                     }
                 } elseif ($item->payable_type === GaClaim::class) {
                     $clm = GaClaim::find($item->payable_id);
                     if (! $clm || $clm->status !== GaClaim::STATUS_READY_TO_PAY) {
-                        throw new RuntimeException("Cannot finalize DRP: claim [".($clm?->claim_number ?? $item->payable_id)."] is no longer Ready to Pay.");
+                        throw new RuntimeException('Cannot finalize DRP: claim ['.($clm?->claim_number ?? $item->payable_id).'] is no longer Ready to Pay.');
                     }
                 }
             }

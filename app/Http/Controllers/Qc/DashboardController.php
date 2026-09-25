@@ -23,7 +23,7 @@ class DashboardController extends Controller
             ->sortBy('inspected_at')
             ->groupBy(fn ($inspection) => $inspection->inspected_at->format('Y-m'))
             ->map(fn ($items, $period) => [
-                'label' => Carbon::parse($period . '-01')->format('M Y'),
+                'label' => Carbon::parse($period.'-01')->format('M Y'),
                 'ok' => $items->where('status', 'ok')->count(),
                 'ng' => $items->where('status', 'ng')->count(),
             ])

@@ -17,6 +17,7 @@ class VendorMasterV2Test extends TestCase
     use RefreshDatabase;
 
     protected VendorMasterService $vendorMasterService;
+
     protected VendorChangeRequestService $changeRequestService;
 
     protected function setUp(): void

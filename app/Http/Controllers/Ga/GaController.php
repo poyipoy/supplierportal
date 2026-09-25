@@ -10,7 +10,9 @@ use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Services\Ga\GaClaimService;
 use App\Services\Payment\PaymentBatchService;
+use chillerlan\QRCode\QRCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
 class GaController extends Controller
 {
@@ -40,12 +42,12 @@ class GaController extends Controller
     {
         $employees = Employee::active()->orderBy('name')->get();
         $employeeOptions = $employees->map(function (Employee $emp) {
-            $accountDetail = $emp->bank_name . ' (' . $emp->account_number . ($emp->account_holder_name ? ' a.n ' . $emp->account_holder_name : '') . ')';
+            $accountDetail = $emp->bank_name.' ('.$emp->account_number.($emp->account_holder_name ? ' a.n '.$emp->account_holder_name : '').')';
 
             return [
                 'value' => (string) $emp->id,
                 'label' => $emp->name,
-                'sublabel' => $emp->department . ' · ' . $accountDetail,
+                'sublabel' => $emp->department.' · '.$accountDetail,
                 'badge' => $emp->bank_name,
                 'badgeTone' => $emp->isBca() ? 'neutral' : 'warning',
                 'searchKeywords' => strtolower(implode(' ', array_filter([
@@ -91,8 +93,8 @@ class GaController extends Controller
         $claim->load(['employee', 'receipt']);
         abort_unless($claim->receipt, 404);
 
-        $signedUrl = \Illuminate\Support\Facades\URL::signedRoute('receipts.verify-ga', ['receipt' => $claim->receipt->receipt_number]);
-        $qrCode = (new \chillerlan\QRCode\QRCode([
+        $signedUrl = URL::signedRoute('receipts.verify-ga', ['receipt' => $claim->receipt->receipt_number]);
+        $qrCode = (new QRCode([
             'outputBase64' => true,
             'scale' => 4,
         ]))->render($signedUrl);

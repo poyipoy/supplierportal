@@ -219,7 +219,7 @@ class FinanceDrpPaidTest extends TestCase
         $gr = $masters->createGoodsReceipt($this->finance, $po, [
             'gr_number' => 'GR-DRP-PAID-01',
             'gr_date' => '2026-09-11',
-            'received_amount' => '1000.00',
+            'qty' => '1.0000',
         ]);
 
         $invoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -334,7 +334,7 @@ class FinanceDrpPaidTest extends TestCase
         $gr = $masters->createGoodsReceipt($this->finance, $po, [
             'gr_number' => 'GR-DRP-NOVOUCHER-01',
             'gr_date' => '2026-09-11',
-            'received_amount' => '1000.00',
+            'qty' => '1.0000',
         ]);
 
         $invoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -438,7 +438,7 @@ class FinanceDrpPaidTest extends TestCase
         $gr = $masters->createGoodsReceipt($this->finance, $po, [
             'gr_number' => 'GR-BLOCK-PRIMARY',
             'gr_date' => '2026-09-11',
-            'received_amount' => '500.00',
+            'qty' => '1.0000',
         ]);
 
         $invoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -561,7 +561,7 @@ class FinanceDrpPaidTest extends TestCase
         $gr = $masters->createGoodsReceipt($this->finance, $po, [
             'gr_number' => 'GR-VOUCHER-01',
             'gr_date' => '2026-09-11',
-            'received_amount' => '500.00',
+            'qty' => '1.0000',
         ]);
 
         $invoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -829,7 +829,7 @@ class FinanceDrpPaidTest extends TestCase
         $gr = $masters->createGoodsReceipt($this->finance, $po, [
             'gr_number' => 'GR-OVERPAY-01',
             'gr_date' => '2026-09-11',
-            'received_amount' => '500.00',
+            'qty' => '1.0000',
         ]);
 
         $invoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -946,7 +946,7 @@ class FinanceDrpPaidTest extends TestCase
         $gr = $masters->createGoodsReceipt($this->finance, $po, [
             'gr_number' => 'GR-UNDERPAY-01',
             'gr_date' => '2026-09-11',
-            'received_amount' => '500.00',
+            'qty' => '1.0000',
         ]);
 
         $invoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -1110,7 +1110,7 @@ class FinanceDrpPaidTest extends TestCase
         $gr1 = $masters->createGoodsReceipt($this->finance, $po1, [
             'gr_number' => 'GR-OP-FILTER-01',
             'gr_date' => '2026-09-11',
-            'received_amount' => '1000.00',
+            'qty' => '1.0000',
         ]);
         $inv1 = app(InvoiceSubmissionService::class)->submit($this->supplier, [
             'invoice_number' => 'INV-OP-FILTER-01',
@@ -1120,7 +1120,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => UploadedFile::fake()->create('inv1.pdf', 10, 'application/pdf')]);
+        ], ['invoice' => UploadedFile::fake()->create('INV-OP-FILTER-01.pdf', 10, 'application/pdf')]);
         app(LocalGrReservationService::class)->consume($inv1, $this->finance);
         $inv1->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
         $inv1->currentVerification()->create([

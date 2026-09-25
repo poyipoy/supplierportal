@@ -2,7 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Period;
+use App\Models\PurchaseRequisition;
+use App\Models\Quotation;
+use App\Models\Supplier;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -106,12 +111,12 @@ class ProfileTest extends TestCase
     {
         $purchasing = User::factory()->create(['role' => 'purchasing']);
         $supplierUser = User::factory()->create(['role' => 'supplier']);
-        \App\Models\Supplier::create([
+        Supplier::create([
             'user_id' => $supplierUser->id,
             'company_name' => 'Supplier Co',
         ]);
 
-        $period = \App\Models\Period::create([
+        $period = Period::create([
             'name' => 'Period 2026',
             'month' => 9,
             'year' => 2026,
@@ -119,14 +124,14 @@ class ProfileTest extends TestCase
             'created_by' => $purchasing->id,
         ]);
 
-        $pr = \App\Models\PurchaseRequisition::create([
+        $pr = PurchaseRequisition::create([
             'period_id' => $period->id,
             'created_by' => $purchasing->id,
             'pr_number' => 'REQ/09/2026/001',
             'status' => 'submitted',
         ]);
 
-        \App\Models\Quotation::create([
+        Quotation::create([
             'pr_id' => $pr->id,
             'supplier_id' => $supplierUser->id,
             'currency' => 'USD',
@@ -155,7 +160,7 @@ class ProfileTest extends TestCase
     public function test_user_with_purchase_requisition_cannot_delete_account_and_session_is_preserved(): void
     {
         $purchasing = User::factory()->create(['role' => 'purchasing']);
-        $period = \App\Models\Period::create([
+        $period = Period::create([
             'name' => 'Period PR Test',
             'month' => 9,
             'year' => 2026,
@@ -163,7 +168,7 @@ class ProfileTest extends TestCase
             'created_by' => $purchasing->id,
         ]);
 
-        \App\Models\PurchaseRequisition::create([
+        PurchaseRequisition::create([
             'period_id' => $period->id,
             'created_by' => $purchasing->id,
             'pr_number' => 'REQ/09/2026/002',
@@ -191,7 +196,7 @@ class ProfileTest extends TestCase
 
         // Simulate a database-level delete exception by hooking deleting event
         User::deleting(function () {
-            throw new \Illuminate\Database\QueryException(
+            throw new QueryException(
                 'mysql',
                 'DELETE FROM users WHERE id = ?',
                 [],

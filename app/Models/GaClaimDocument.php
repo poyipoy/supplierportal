@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GaClaimDocument extends Model
 {
     use HasHashids;
+
     protected $guarded = ['id'];
 
     public function claim(): BelongsTo

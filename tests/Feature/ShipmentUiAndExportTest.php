@@ -3,9 +3,6 @@
 namespace Tests\Feature;
 
 use App\Exports\ShipmentsExport;
-use App\Models\ExportJob;
-use App\Models\PurchaseOrder;
-use App\Models\Shipment;
 use App\Models\User;
 use App\Services\ShipmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

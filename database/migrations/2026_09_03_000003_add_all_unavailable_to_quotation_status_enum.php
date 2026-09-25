@@ -28,7 +28,7 @@ return new class extends Migration
                 ->exists();
 
             if ($hasAllUnavailable) {
-                throw new \RuntimeException('Cannot rollback migration: quotations with status all_unavailable exist in the database.');
+                throw new RuntimeException('Cannot rollback migration: quotations with status all_unavailable exist in the database.');
             }
 
             DB::statement("ALTER TABLE quotations MODIFY COLUMN status ENUM('draft','submitted','revision_requested','accepted','rejected') DEFAULT 'draft'");

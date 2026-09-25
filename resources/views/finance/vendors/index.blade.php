@@ -5,8 +5,8 @@
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Vendor Master V2 (Data Rekanan Lokal)"
-        description="Kelola profil master rekanan supplier lokal, nomor rekening bank terverifikasi, status PKP/kategori vendor, dan persetujuan pengajuan perubahan data."
+        title="Data Vendor"
+        description="Kelola profil master vendor lokal, nomor rekening bank terverifikasi, status PKP/kategori vendor, dan persetujuan pengajuan perubahan data."
         eyebrow="Finance & Accounts Payable"
     >
         <x-slot:actions>

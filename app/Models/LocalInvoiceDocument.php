@@ -23,12 +23,13 @@ class LocalInvoiceDocument extends Model
 
     public function getFormattedFileSizeAttribute(): string
     {
-        if (!$this->file_size) {
+        if (! $this->file_size) {
             return '';
         }
         if ($this->file_size >= 1048576) {
-            return number_format($this->file_size / 1048576, 1) . ' MB';
+            return number_format($this->file_size / 1048576, 1).' MB';
         }
-        return number_format($this->file_size / 1024, 1) . ' KB';
+
+        return number_format($this->file_size / 1024, 1).' KB';
     }
 }

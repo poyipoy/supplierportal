@@ -6,6 +6,7 @@ use App\Http\Middleware\EnforceAuthSessionSecurity;
 use App\Http\Middleware\EnforceSupplierDomain;
 use App\Http\Middleware\EnsurePasswordConfirmation;
 use App\Http\Middleware\EnsurePendingTwoFactorChallenge;
+use App\Http\Middleware\EnsureRegistrationSession;
 use App\Http\Middleware\NoStoreResponse;
 use App\Http\Middleware\RememberPurchasingListUrl;
 use App\Http\Middleware\RoleMiddleware;
@@ -67,7 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'purchasing.navigation' => RememberPurchasingListUrl::class,
             'mfa.pending' => EnsurePendingTwoFactorChallenge::class,
             'no-store' => NoStoreResponse::class,
-            'registration.session' => \App\Http\Middleware\EnsureRegistrationSession::class,
+            'registration.session' => EnsureRegistrationSession::class,
         ]);
 
         $middleware->redirectUsersTo(function () {

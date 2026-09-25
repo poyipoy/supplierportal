@@ -58,7 +58,6 @@ class InvoiceFilenameAutoFillTest extends TestCase
         $this->gr = $masters->createGoodsReceipt($this->finance, $this->po, [
             'gr_number' => 'GR-AUTO-001',
             'gr_date' => '2026-09-21',
-            'received_amount' => '100000.00',
             'qty' => '10.0000',
         ]);
     }
@@ -203,7 +202,6 @@ class InvoiceFilenameAutoFillTest extends TestCase
         $gr2 = $masters->createGoodsReceipt($this->finance, $this->po, [
             'gr_number' => 'GR-AUTO-002',
             'gr_date' => '2026-09-22',
-            'received_amount' => '100000.00',
             'qty' => '5.0000',
         ]);
 

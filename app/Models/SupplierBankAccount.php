@@ -9,8 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SupplierBankAccount extends Model
 {
     public const STATUS_PENDING = 'PENDING';
+
     public const STATUS_VERIFIED = 'VERIFIED';
+
     public const STATUS_REJECTED = 'REJECTED';
+
     public const STATUS_INACTIVE = 'INACTIVE';
 
     protected $fillable = [

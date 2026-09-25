@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -30,14 +31,14 @@ return new class extends Migration
 
     private function backfillSequences(string $type, string $table): void
     {
-        $rows = \Illuminate\Support\Facades\DB::table($table)
+        $rows = DB::table($table)
             ->selectRaw('YEAR(created_at) as y, MONTH(created_at) as m, COUNT(*) as total')
             ->whereNotNull('created_at')
             ->groupByRaw('YEAR(created_at), MONTH(created_at)')
             ->get();
 
         foreach ($rows as $row) {
-            \Illuminate\Support\Facades\DB::table('document_sequences')->insert([
+            DB::table('document_sequences')->insert([
                 'type' => $type,
                 'year' => $row->y,
                 'month' => $row->m,

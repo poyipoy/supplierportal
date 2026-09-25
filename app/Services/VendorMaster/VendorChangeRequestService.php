@@ -3,7 +3,6 @@
 namespace App\Services\VendorMaster;
 
 use App\Models\Supplier;
-use App\Models\SupplierBankAccount;
 use App\Models\SupplierChangeRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

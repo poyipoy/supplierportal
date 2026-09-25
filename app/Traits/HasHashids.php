@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use Illuminate\Database\Eloquent\Model;
 use Vinkla\Hashids\Facades\Hashids;
 
 trait HasHashids
@@ -23,7 +24,7 @@ trait HasHashids
      *
      * @param  mixed  $value
      * @param  string|null  $field
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @return Model|null
      */
     public function resolveRouteBinding($value, $field = null)
     {
@@ -52,8 +53,6 @@ trait HasHashids
 
     /**
      * Accessor to easily get the hashed ID via $model->hash.
-     *
-     * @return string
      */
     public function getHashAttribute(): string
     {

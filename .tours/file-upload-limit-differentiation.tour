@@ -1,0 +1,32 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "File Upload Limit & Mode Differentiation Tour",
+  "description": "Walkthrough of how 'Batas maksimal 5 berkas tercapai' was isolated to multi-upload only, and single-upload was enhanced with a dedicated 'Ganti Berkas' replace action and dynamic backend validation messages.",
+  "steps": [
+    {
+      "file": "resources/views/components/ui/file-upload.blade.php",
+      "line": 224,
+      "description": "### 1. Blade Component Action Differentiation\nPreviously, lines 224-250 unconditionally rendered `<div x-show=\"!canAddMore\"><span>Batas maksimal {{ $maxFiles }} berkas tercapai</span></div>` regardless of whether the component was in single-upload or multi-upload mode. Because `canAddMore` evaluates to `false` when a single file is selected, single-upload fields (PR spreadsheet import, PO uploads, registration docs) mistakenly displayed 'Batas maksimal 5 berkas tercapai'.\n\nNow, the secondary action block is wrapped in `@if($multiple)`:\n- Multi-upload displays 'Tambah Berkas (X/5)' and 'Batas maksimal X berkas tercapai'.\n- Single-upload displays a dashed 'Ganti Berkas' button that opens the file chooser or accepts file drag-and-drop to replace the current file."
+    },
+    {
+      "file": "resources/views/components/ui/file-upload.blade.php",
+      "line": 148,
+      "description": "### 2. Drag & Drop Replacement on Single Upload\nThe scrollable file items container previously guarded dragover and drop with `if (canAddMore)`. In single-upload mode, `canAddMore` became `false` as soon as 1 file was chosen, preventing users from dropping a replacement file. This is now relaxed to `if (canAddMore || !isMultiple)`."
+    },
+    {
+      "file": "resources/js/file-upload.js",
+      "line": 140,
+      "description": "### 3. Client-Side Multi-Upload Limit Error\nIn `resources/js/file-upload.js`, the multi-upload client error notice was updated from invoice-specific 'per kategori' to generic 'Batas maksimal X berkas telah tercapai.', and `handleDrop` now allows drop-to-replace when `!this.isMultiple`."
+    },
+    {
+      "file": "app/Http/Requests/LocalInvoice/StoreLocalInvoiceRequest.php",
+      "line": 208,
+      "description": "### 4. Backend Form Request Dynamic Validation Messages\nIn `StoreLocalInvoiceRequest.php`, the hardcoded `'invoice.max' => 'Maksimal 5 berkas yang diizinkan untuk Berkas Invoice.'` caused single-file uploads that exceeded the 5 MB limit to receive the confusing count error 'Maksimal 5 berkas'.\n\n`messages()` now dynamically inspects `is_array($this->file($field))`:\n- If multi-file array: `'invoice.max' => 'Maksimal 5 berkas yang diizinkan untuk Berkas Invoice.'` and `'invoice.*.max' => 'Ukuran setiap berkas Berkas Invoice tidak boleh melebihi 5 MB.'`\n- If single file: `'invoice.max' => 'Ukuran berkas Berkas Invoice tidak boleh melebihi 5 MB.'`"
+    },
+    {
+      "file": "tests/Feature/RenderedComponentTest.php",
+      "line": 244,
+      "description": "### 5. Automated Feature & Unit Tests\nAdded regression tests verifying:\n1. Single-mode renders 'Ganti Berkas' and omits 'Batas maksimal 5 berkas tercapai'.\n2. Multi-mode renders 'Tambah Berkas' and 'Batas maksimal 5 berkas tercapai'.\n3. `StoreLocalInvoiceRequest` produces size error for single upload and count error for multi upload."
+    }
+  ]
+}

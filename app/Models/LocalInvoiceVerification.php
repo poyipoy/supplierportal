@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class LocalInvoiceVerification extends Model
 {
     public const CHECK_OK = 'OK';
+
     public const CHECK_NOT_OK = 'NOT_OK';
+
     public const CHECK_NOT_APPLICABLE = 'NOT_APPLICABLE';
 
     public const PPN_SESUAI = 'SESUAI';
+
     public const PPN_TIDAK_SESUAI = 'TIDAK_SESUAI';
 
     protected $guarded = ['id'];

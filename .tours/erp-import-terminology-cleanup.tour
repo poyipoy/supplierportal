@@ -1,0 +1,37 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "ERP Import Terminology Cleanup Tour",
+  "description": "Walkthrough of how raw ERP export session/table names 'tdpur' and 'whinh' were replaced with user-friendly business procurement terms 'Purchase Order (PO) ERP' and 'Goods Receipt (GR) ERP'.",
+  "steps": [
+    {
+      "file": "resources/views/finance/local-procurement/_import_po_modal.blade.php",
+      "line": 20,
+      "description": "### 1. Purchase Order ERP Modal UI Cleanup\nPreviously, this modal used raw technical term 'tdpur' in multiple user-facing elements:\n- File upload label: `File Spreadsheet PO tdpur (.xlsx)`\n- Template card title: `Template tdpur`\n- Mapping heading: `Pemetaan Kolom ERP Infor tdpur:`\n\nThese have now been refined to standard procurement terminology:\n- Label: `File Spreadsheet Purchase Order (PO) ERP (.xlsx)`\n- Template title: `Template Purchase Order (PO) ERP`\n- Mapping heading: `Pemetaan Kolom ERP Infor Purchase Order (PO):`"
+    },
+    {
+      "file": "resources/views/finance/local-procurement/_import_gr_modal.blade.php",
+      "line": 20,
+      "description": "### 2. Goods Receipt ERP Modal UI Cleanup\nSimilarly, the GR modal used raw warehouse inbound session name 'whinh':\n- File upload label: `File Spreadsheet GR whinh (.xlsx)`\n- Template card title: `Template whinh`\n- Mapping heading: `Ketentuan Agregasi & Pemetaan ERP whinh:`\n\nThese have now been updated to:\n- Label: `File Spreadsheet Goods Receipt (GR) ERP (.xlsx)`\n- Template title: `Template Goods Receipt (GR) ERP`\n- Mapping heading: `Ketentuan Agregasi & Pemetaan ERP Infor Goods Receipt (GR):`"
+    },
+    {
+      "file": "app/Http/Controllers/Finance/LocalProcurementController.php",
+      "line": 141,
+      "description": "### 3. Template Download Filenames\nUpdated template download endpoints in `LocalProcurementController`:\n- `poTemplate()`: returns `infor-erp-po-template.xlsx` (previously `infor-erp-tdpur-po-template.xlsx`).\n- `grTemplate()`: returns `infor-erp-gr-template.xlsx` (previously `infor-erp-whinh-gr-template.xlsx`)."
+    },
+    {
+      "file": "app/Services/LocalInvoice/LocalPoImportService.php",
+      "line": 150,
+      "description": "### 4. Background Audit Notes in Services\nIn `LocalPoImportService`, the automatic PO description was updated from `Imported via Infor ERP tdpur` to `Imported via Infor ERP Purchase Order`.\nIn `LocalGrImportService`, the automatic GR notes were updated from `Imported via Infor ERP whinh (...)` to `Imported via Infor ERP Goods Receipt (...)`."
+    },
+    {
+      "file": "tests/Feature/LocalInvoice/LocalPoImportTest.php",
+      "line": 306,
+      "description": "### 5. Automated Regression Tests\nUpdated template download assertion to `infor-erp-po-template.xlsx` and added `test_po_import_modal_uses_business_terminology_without_tdpur` asserting that 'tdpur' does not appear in user-facing views."
+    },
+    {
+      "file": "tests/Feature/LocalInvoice/LocalGrImportTest.php",
+      "line": 432,
+      "description": "### 6. Automated Regression Tests for GR\nUpdated template download assertion to `infor-erp-gr-template.xlsx` and added `test_gr_import_modal_uses_business_terminology_without_whinh` asserting that 'whinh' does not appear in user-facing views."
+    }
+  ]
+}

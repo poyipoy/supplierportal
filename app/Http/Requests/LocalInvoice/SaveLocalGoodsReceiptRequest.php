@@ -19,7 +19,6 @@ class SaveLocalGoodsReceiptRequest extends FormRequest
         return [
             'gr_number' => ['required', 'string', 'max:100', Rule::unique('local_goods_receipts')->ignore($gr?->id)],
             'gr_date' => ['required', 'date_format:Y-m-d'],
-            'received_amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'],
             'qty' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,8}(\.\d{1,4})?$/'],
             'description' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:2000'],

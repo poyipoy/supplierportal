@@ -22,7 +22,7 @@ return new class extends Migration
             ->exists();
 
         if ($duplicates) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Cannot add unique constraint to po_quotations: duplicate quotation_id records already exist in the database. Manual reconciliation required.'
             );
         }

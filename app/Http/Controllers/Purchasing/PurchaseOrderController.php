@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\MaterialProgressService;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
@@ -178,7 +179,7 @@ class PurchaseOrderController extends Controller
         }
 
         $suppliers = User::importEligible()
-            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
+            ->orWhereIn('id', DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
             ->get();
 
         return view('purchasing.po.index', compact('suppliers'));
@@ -257,7 +258,7 @@ class PurchaseOrderController extends Controller
         });
 
         // Material progress projections and summary
-        $progressService = app(\App\Services\MaterialProgressService::class);
+        $progressService = app(MaterialProgressService::class);
         $poProgressSummary = $progressService->poSummary($po);
         $itemProjections = collect($poProgressSummary['items'] ?? []);
 

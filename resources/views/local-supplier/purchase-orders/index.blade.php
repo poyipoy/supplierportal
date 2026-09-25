@@ -123,10 +123,10 @@
                             </td>
                             <td class="text-end">
                                 <div class="tw-font-mono tw-font-semibold tw-text-on-surface">
-                                    Rp {{ number_format($po->active_gr_amount ?? 0, 2, ',', '.') }}
+                                    {{ number_format((float) ($po->active_gr_qty ?? 0), 4, ',', '.') }} pcs
                                 </div>
                                 <div class="tw-text-[11px] tw-text-on-surface-variant">
-                                    {{ $po->active_gr_count }} penerimaan barang (GR)
+                                    {{ $po->active_gr_count }} berkas GR
                                 </div>
                             </td>
                             <td class="text-center">

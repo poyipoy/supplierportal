@@ -17,7 +17,6 @@ class BankList
     /**
      * Format bank list for x-ui.searchable-select component.
      *
-     * @param string|null $currentValue
      * @return array<int, array<string, mixed>>
      */
     public static function options(?string $currentValue = null): array
@@ -64,7 +63,7 @@ class BankList
 
             $options[] = [
                 'value' => $cleanCurrent,
-                'label' => $cleanCurrent . ($aliasMatch ? " ({$aliasMatch})" : ''),
+                'label' => $cleanCurrent.($aliasMatch ? " ({$aliasMatch})" : ''),
                 'sublabel' => null,
                 'badge' => null,
                 'badgeTone' => 'neutral',

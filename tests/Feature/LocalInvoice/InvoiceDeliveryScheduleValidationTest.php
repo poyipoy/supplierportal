@@ -9,6 +9,7 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -21,7 +22,9 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
     use RefreshDatabase;
 
     private User $supplierUser;
+
     private LocalPurchaseOrder $po;
+
     private LocalGoodsReceipt $gr;
 
     protected function setUp(): void
@@ -50,7 +53,7 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
         ]);
 
         $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
-        $masters = app(\App\Services\LocalInvoice\LocalProcurementMasterService::class);
+        $masters = app(LocalProcurementMasterService::class);
         $this->po = $masters->createPurchaseOrder($finance, [
             'supplier_id' => $this->supplierUser->id,
             'po_number' => 'PO-TEST-001',
@@ -60,7 +63,7 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
         $this->gr = $masters->createGoodsReceipt($finance, $this->po, [
             'gr_number' => 'GR-TEST-001',
             'gr_date' => '2026-09-11',
-            'received_amount' => '1000000.00',
+            'qty' => '1.0000',
         ]);
     }
 

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\LocalInvoice;
+use chillerlan\QRCode\QRCode;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 
 class LocalInvoiceReceiptController extends Controller
 {
@@ -14,8 +16,8 @@ class LocalInvoiceReceiptController extends Controller
         abort_unless($invoice->receipt, 404);
         Gate::authorize('view', $invoice->receipt);
 
-        $signedUrl = \Illuminate\Support\Facades\URL::signedRoute('receipts.verify-supplier', ['receipt' => $invoice->receipt->receipt_number]);
-        $qrCode = (new \chillerlan\QRCode\QRCode([
+        $signedUrl = URL::signedRoute('receipts.verify-supplier', ['receipt' => $invoice->receipt->receipt_number]);
+        $qrCode = (new QRCode([
             'outputBase64' => true,
             'scale' => 4,
         ]))->render($signedUrl);

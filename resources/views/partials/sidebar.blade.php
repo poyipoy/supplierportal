@@ -18,28 +18,60 @@
         </a>
     </div>
 
+    <div class="sidebar-control" aria-label="Sidebar controls">
+        <x-ui.icon-button
+            icon="panel-left"
+            label="Toggle sidebar"
+            size="lg"
+            class="sidebar-toggle sidebar-toggle--desktop tw-text-on-surface-variant"
+            x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
+            x-bind:aria-label="sidebarToggleLabel"
+            x-bind:title="sidebarToggleLabel"
+            x-bind:aria-expanded="(!desktopCollapsed).toString()"
+            aria-controls="sidebar"
+        >
+            <x-slot:visual>
+                <span class="sidebar-toggle-icons" x-bind:class="sidebarIsExpanded ? 'is-expanded' : 'is-collapsed'" aria-hidden="true">
+                    <span class="sidebar-toggle-icon sidebar-toggle-icon--collapse">
+                        <x-ui.icon name="panel-left-close" size="md" />
+                    </span>
+                    <span class="sidebar-toggle-icon sidebar-toggle-icon--expand">
+                        <x-ui.icon name="panel-left-open" size="md" />
+                    </span>
+                </span>
+                <span class="sidebar-toggle-label sidebar-type-text" style="--sidebar-type-steps: 16;">Collapse sidebar</span>
+            </x-slot:visual>
+        </x-ui.icon-button>
+    </div>
+
     @if(\App\Support\PortalContext::isDualScope())
         @php
             $currentScope = \App\Support\PortalContext::current();
             $currentLabel = \App\Support\PortalContext::label($currentScope);
             $currentIcon = $currentScope === 'local' ? 'receipt-text' : 'globe';
+            $typingSteps = max(6, min(24, mb_strlen((string) ($currentLabel ?: 'Portal'))));
         @endphp
         <div class="sidebar-portal-switcher dropdown">
             <button
-                class="btn btn-sm w-100 d-flex align-items-center justify-content-between dropdown-toggle tw-bg-surface tw-text-on-surface tw-border tw-border-outline-variant tw-rounded-lg tw-px-2.5 tw-py-2 tw-text-ui-sm tw-font-medium hover:tw-border-primary/50 hover:tw-bg-surface-container-low hover:tw-shadow-xs tw-transition ui-focus-ring"
+                class="btn sidebar-portal-switcher-btn dropdown-toggle ui-focus-ring"
                 type="button"
                 id="portalContextSwitcherDropdown"
                 data-bs-toggle="dropdown"
                 data-bs-auto-close="true"
                 aria-expanded="false"
-                title="Switch Portal"
+                data-sidebar-tooltip
+                data-bs-title="{{ $currentLabel ?: 'Switch Portal' }}"
+                title="{{ $currentLabel ?: 'Switch Portal' }}"
                 aria-label="Switch Portal Context — Current: {{ $currentLabel ?: 'Portal' }}"
             >
-                <span class="d-flex align-items-center tw-gap-2.5 text-truncate">
+                <span class="sidebar-portal-switcher-icon" aria-hidden="true">
                     <span class="tw-w-6 tw-h-6 tw-rounded tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
                         <x-ui.icon :name="$currentIcon" size="sm" />
                     </span>
-                    <span class="text-truncate tw-font-semibold sidebar-type-text" style="--sidebar-type-steps: 18;">{{ $currentLabel ?: 'Portal' }}</span>
+                </span>
+                <span class="sidebar-portal-switcher-label sidebar-type-text" style="--sidebar-type-steps: {{ $typingSteps }};">{{ $currentLabel ?: 'Portal' }}</span>
+                <span class="sidebar-portal-switcher-chevron" aria-hidden="true">
+                    <x-ui.icon name="chevron-down" size="xs" />
                 </span>
             </button>
             <div class="dropdown-menu dropdown-menu-start tw-shadow-xl tw-border tw-border-outline-variant tw-rounded-xl tw-p-1.5 tw-min-w-[270px] tw-bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
@@ -102,43 +134,21 @@
         </div>
     @endif
 
-    <div class="sidebar-control" aria-label="Sidebar controls">
-        <x-ui.icon-button
-            icon="panel-left"
-            label="Toggle sidebar"
-            size="lg"
-            class="sidebar-toggle sidebar-toggle--desktop tw-text-on-surface-variant"
-            x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
-            x-bind:aria-label="sidebarToggleLabel"
-            x-bind:title="sidebarToggleLabel"
-            x-bind:aria-expanded="(!desktopCollapsed).toString()"
-            aria-controls="sidebar"
-        >
-            <x-slot:visual>
-                <span class="sidebar-toggle-icons" x-bind:class="sidebarIsExpanded ? 'is-expanded' : 'is-collapsed'" aria-hidden="true">
-                    <span class="sidebar-toggle-icon sidebar-toggle-icon--collapse">
-                        <x-ui.icon name="panel-left-close" size="md" />
-                    </span>
-                    <span class="sidebar-toggle-icon sidebar-toggle-icon--expand">
-                        <x-ui.icon name="panel-left-open" size="md" />
-                    </span>
-                </span>
-                <span class="sidebar-toggle-label sidebar-type-text" style="--sidebar-type-steps: 16;">Collapse sidebar</span>
-            </x-slot:visual>
-        </x-ui.icon-button>
-    </div>
     <nav class="sidebar-menu" aria-label="{{ ucfirst(auth()->user()->role) }} navigation">
         @php $role = auth()->user()->role; @endphp
         @if($role === 'supplier')
             @php $activePortalScope = \App\Support\PortalContext::current(); @endphp
             @if($activePortalScope === \App\Support\PortalContext::SCOPE_LOCAL)
-                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Overview</span></div>
                 <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
-                <x-ui.sidebar-item :href="route('local-supplier.purchase-orders.index')" icon="package-check" :active="request()->routeIs('local-supplier.purchase-orders.*')" label="Purchase Orders">Purchase Orders</x-ui.sidebar-item>
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">Invoice</span></div>
                 <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" label="Ajukan Invoice">Ajukan Invoice</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" label="Daftar Invoice">Daftar Invoice</x-ui.sidebar-item>
-                <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" label="Profil Vendor">Profil Vendor</x-ui.sidebar-item>
-                <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" label="Informasi ADASI">Informasi ADASI</x-ui.sidebar-item>
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Informasi Supplier</span></div>
+                <x-ui.sidebar-item :href="route('local-supplier.purchase-orders.index')" icon="package-check" :active="request()->routeIs('local-supplier.purchase-orders.*')" label="Purchase Orders">Purchase Orders</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" label="Profil Vendor">Profil</x-ui.sidebar-item>
+                <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Informasi ADASI</span></div>
+                <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" label="Informasi ADASI">Pengumuman</x-ui.sidebar-item>
             @elseif($activePortalScope === \App\Support\PortalContext::SCOPE_IMPORT)
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">Overview</span></div>
                 <x-ui.sidebar-item :href="route('supplier.dashboard')" icon="gauge" :active="request()->routeIs('supplier.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
@@ -167,18 +177,21 @@
                 </div>
             @endif
         @elseif($role === 'finance')
-            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Finance AP</span></div>
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Overview</span></div>
             <x-ui.sidebar-item :href="route('finance.dashboard')" icon="gauge" :active="request()->routeIs('finance.dashboard')" label="Dashboard">Dashboard</x-ui.sidebar-item>
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Finance AP</span></div>
             <x-ui.sidebar-item :href="route('finance.invoices.index')" icon="receipt" :active="request()->routeIs('finance.invoices.*')" label="Invoice Register">Invoice Register</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('finance.ga-claims.index')" icon="file-text" :active="request()->routeIs('finance.ga-claims.*')" label="Klaim GA">Klaim GA</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('finance.drp.supplier')" icon="wallet" :active="request()->routeIs('finance.drp.supplier', 'finance.drp.show')" label="DRP Supplier">DRP Supplier</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('finance.drp.ga')" icon="credit-card" :active="request()->routeIs('finance.drp.ga')" label="DRP GA">DRP GA</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('finance.drp.paid.index')" icon="badge-check" :active="request()->routeIs('finance.drp.paid.*')" label="DRP Paid">DRP Paid</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('finance.local-procurement.index')" icon="package-check" :active="request()->routeIs('finance.local-procurement.*')" label="Local PO & GR">Master PO & GR</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('finance.overpayments.index')" icon="circle-dollar-sign" :active="request()->routeIs('finance.overpayments.*')" label="Supplier Overpayment">Supplier Overpayment</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('finance.master-invoices')" icon="database" :active="request()->routeIs('finance.master-invoices')" label="Master Invoices">Master Invoices</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('finance.vendor-master.index')" icon="building-2" :active="request()->routeIs('finance.vendor-master.*')" label="Vendor Master">Vendor Master</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('supplier-registrations.index')" icon="user-plus" :active="request()->routeIs('supplier-registrations.*')" label="Supplier Registrations">Supplier Registrations</x-ui.sidebar-item>
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Master Data</span></div>
+            <x-ui.sidebar-item :href="route('finance.local-procurement.index')" icon="package-check" :active="request()->routeIs('finance.local-procurement.*')" label="Local PO & GR">Master PO & GR</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.master-invoices')" icon="database" :active="request()->routeIs('finance.master-invoices')" label="Master Invoices">Master Invoices</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('finance.vendor-master.index')" icon="building-2" :active="request()->routeIs('finance.vendor-master.*')" label="Master Vendor">Master Vendor</x-ui.sidebar-item>
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">Reporting</span></div>
             <x-ui.sidebar-item :href="route('exports.index')" icon="file-spreadsheet" :active="request()->routeIs('exports.*')" label="Export History">Export History</x-ui.sidebar-item>
         @elseif($role === 'ga')
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 16;">General Affairs</span></div>

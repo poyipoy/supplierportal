@@ -176,7 +176,9 @@ final class RateLimitResponse
 
     /**
      * @param  array<string, int|string>  $headers
+     *
      * @template TResponse of Response
+     *
      * @param  TResponse  $response
      * @return TResponse
      */

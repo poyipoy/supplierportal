@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\Materials\DimensionRange;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -571,7 +572,7 @@ class QuotationItem extends Model
         return $this->hasOne(PrItemAward::class, 'quotation_item_id');
     }
 
-    public function shipmentItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function shipmentItems(): HasMany
     {
         return $this->hasMany(ShipmentItem::class, 'quotation_item_id');
     }

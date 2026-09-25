@@ -145,9 +145,9 @@
                     {{-- Scrollable File Items Container --}}
                     <div
                         class="tw-max-h-36 tw-overflow-y-auto tw-space-y-1.5 tw-pr-1 ui-scrollable-list"
-                        @dragover.prevent="if (canAddMore) isDragging = true"
+                        @dragover.prevent="if (canAddMore || !isMultiple) isDragging = true"
                         @dragleave.prevent="isDragging = false"
-                        @drop.prevent="if (canAddMore) handleDrop($event)"
+                        @drop.prevent="if (canAddMore || !isMultiple) handleDrop($event)"
                     >
                         {{-- 2.1 Existing Saved Files --}}
                         <template x-for="(file, idx) in existingFiles" :key="'exist-' + idx">
@@ -223,30 +223,48 @@
 
                     {{-- Secondary Action / Limit Notice --}}
                     <div>
-                        {{-- Can add more files --}}
-                        <div
-                            x-show="canAddMore"
-                            @click="$refs.fileInput.click()"
-                            @dragover.prevent="isDragging = true"
-                            @dragleave.prevent="isDragging = false"
-                            @drop.prevent="handleDrop($event)"
-                            tabindex="0"
-                            @keydown.enter.prevent="$refs.fileInput.click()"
-                            class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
-                            :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
-                        >
-                            <x-ui.icon name="plus" size="sm" />
-                            <span>Tambah Berkas (<span x-text="totalFilesCount"></span>/{{ $maxFiles }})</span>
-                        </div>
+                        @if($multiple)
+                            {{-- Multi-upload: Can add more files --}}
+                            <div
+                                x-show="canAddMore"
+                                @click="$refs.fileInput.click()"
+                                @dragover.prevent="isDragging = true"
+                                @dragleave.prevent="isDragging = false"
+                                @drop.prevent="handleDrop($event)"
+                                tabindex="0"
+                                @keydown.enter.prevent="$refs.fileInput.click()"
+                                class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
+                                :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
+                            >
+                                <x-ui.icon name="plus" size="sm" />
+                                <span>Tambah Berkas (<span x-text="totalFilesCount"></span>/{{ $maxFiles }})</span>
+                            </div>
 
-                        {{-- Max files limit reached notice --}}
-                        <div
-                            x-show="!canAddMore"
-                            class="tw-text-center tw-py-1.5 tw-px-2.5 tw-rounded-ui-sm tw-bg-surface-container-high/60 tw-border tw-border-outline-variant/60 tw-text-[11px] tw-font-medium tw-text-on-surface-variant"
-                        >
-                            <x-ui.icon name="check-circle" size="sm" class="tw-inline tw-text-success tw-me-1" />
-                            <span>Batas maksimal {{ $maxFiles }} berkas tercapai</span>
-                        </div>
+                            {{-- Multi-upload: Max files limit reached notice --}}
+                            <div
+                                x-show="!canAddMore"
+                                class="tw-text-center tw-py-1.5 tw-px-2.5 tw-rounded-ui-sm tw-bg-surface-container-high/60 tw-border tw-border-outline-variant/60 tw-text-[11px] tw-font-medium tw-text-on-surface-variant"
+                            >
+                                <x-ui.icon name="check-circle" size="sm" class="tw-inline tw-text-success tw-me-1" />
+                                <span>Batas maksimal {{ $maxFiles }} berkas tercapai</span>
+                            </div>
+                        @else
+                            {{-- Single-upload: Replace file action --}}
+                            <div
+                                @click="$refs.fileInput.click()"
+                                @dragover.prevent="isDragging = true"
+                                @dragleave.prevent="isDragging = false"
+                                @drop.prevent="handleDrop($event)"
+                                tabindex="0"
+                                @keydown.enter.prevent="$refs.fileInput.click()"
+                                class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
+                                :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
+                                title="Pilih berkas baru untuk mengganti berkas saat ini"
+                            >
+                                <x-ui.icon name="refresh-cw" size="sm" />
+                                <span>Ganti Berkas</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </template>

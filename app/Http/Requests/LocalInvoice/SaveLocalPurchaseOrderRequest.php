@@ -15,6 +15,7 @@ class SaveLocalPurchaseOrderRequest extends FormRequest
     public function rules(): array
     {
         $po = $this->route('purchaseOrder');
+
         return [
             'po_number' => ['required', 'string', 'max:100', Rule::unique('local_purchase_orders')->ignore($po?->id)],
             'supplier_id' => ['required', 'integer', 'exists:users,id'],

@@ -43,7 +43,7 @@ return new class extends Migration
 
         if ($inserted > 0) {
             // Log for visibility
-            logger()->info("Backfilled {$inserted} po_documents records for " . $poIds->count() . " POs.");
+            logger()->info("Backfilled {$inserted} po_documents records for ".$poIds->count().' POs.');
         }
     }
 

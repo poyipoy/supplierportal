@@ -28,7 +28,7 @@ class GaVerificationService
             $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
             if ($clm->status !== GaClaim::STATUS_BASIC_VERIFIED) {
-                throw new RuntimeException("Cannot verify claim: claim must be in BASIC_VERIFIED status before Finance verification.");
+                throw new RuntimeException('Cannot verify claim: claim must be in BASIC_VERIFIED status before Finance verification.');
             }
 
             if ($approve) {

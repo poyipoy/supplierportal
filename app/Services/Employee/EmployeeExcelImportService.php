@@ -6,7 +6,6 @@ use App\Models\Employee;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use RuntimeException;
 
 class EmployeeExcelImportService
 {
@@ -33,8 +32,6 @@ class EmployeeExcelImportService
     /**
      * Import employee records from the specified Excel file and sheet.
      *
-     * @param string|null $filePath
-     * @param string|null $sheetName
      * @return array{total: int, created: int, updated: int}
      */
     public function import(?string $filePath = null, ?string $sheetName = null): array
