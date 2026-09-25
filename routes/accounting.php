@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Accounting\InvoiceController;
-use App\Http\Controllers\Accounting\InvoiceWorkflowController;
 use App\Http\Controllers\Accounting\ReportController;
 use App\Http\Controllers\LocalInvoiceReceiptController;
 use Illuminate\Support\Facades\Route;

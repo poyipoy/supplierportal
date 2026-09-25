@@ -22,7 +22,9 @@ class CashierReceiptAndExpiryTest extends TestCase
     use RefreshDatabase;
 
     protected InvoiceSubmissionService $submissionService;
+
     protected InvoicePhysicalReceiptService $receiptService;
+
     protected InvoiceExpiryService $expiryService;
 
     protected function setUp(): void

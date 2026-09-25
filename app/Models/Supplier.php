@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Supplier extends Model
 {
@@ -41,23 +43,23 @@ class Supplier extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function bankAccounts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function bankAccounts(): HasMany
     {
         return $this->hasMany(SupplierBankAccount::class, 'supplier_id', 'user_id');
     }
 
-    public function activeBankAccount(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function activeBankAccount(): HasOne
     {
         return $this->hasOne(SupplierBankAccount::class, 'supplier_id', 'user_id')
             ->where('status', SupplierBankAccount::STATUS_VERIFIED);
     }
 
-    public function changeRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function changeRequests(): HasMany
     {
         return $this->hasMany(SupplierChangeRequest::class, 'supplier_id', 'user_id');
     }
 
-    public function masterDocuments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function masterDocuments(): HasMany
     {
         return $this->hasMany(SupplierMasterDocument::class, 'supplier_id', 'user_id');
     }
@@ -67,6 +69,7 @@ class Supplier extends Model
     public function requiresSuratJalan(): bool
     {
         $cat = $this->vendor_category ?: $this->category;
+
         return strcasecmp(trim((string) $cat), 'Barang') === 0;
     }
 

@@ -75,4 +75,14 @@ class LocalPurchaseOrder extends Model
     {
         $this->attributes['po_date'] = $value;
     }
+
+    public function remainingCeiling(?int $excludeInvoiceId = null): float
+    {
+        $invoiced = (float) $this->invoices
+            ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+            ->when($excludeInvoiceId, fn ($collection) => $collection->where('id', '!=', $excludeInvoiceId))
+            ->sum('invoice_amount');
+
+        return max(0.0, round((float) $this->total_amount - $invoiced, 2));
+    }
 }

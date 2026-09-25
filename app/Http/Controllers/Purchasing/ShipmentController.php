@@ -11,6 +11,7 @@ use App\Services\ShipmentService;
 use App\Support\NumberFormat;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -69,6 +70,7 @@ class ShipmentController extends Controller
             return DataTables::eloquent($query)
                 ->addColumn('shipment_number_display', function ($shp) {
                     $url = route('purchasing.shipments.show', $shp);
+
                     return '<a href="'.e($url).'" class="fw-bold text-primary text-decoration-none">'.e($shp->shipment_number).'</a>';
                 })
                 ->addColumn('supplier_name', fn ($shp) => e($shp->supplier->company_name ?? $shp->supplier->name ?? '-'))
@@ -77,19 +79,23 @@ class ShipmentController extends Controller
                     if ($pos->isEmpty()) {
                         return '<span class="tw-text-outline">-</span>';
                     }
+
                     return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
                 })
                 ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.$shp->items->count().'</span>')
                 ->addColumn('total_qty', function ($shp) {
                     $total = (int) $shp->items->sum('shipped_qty');
+
                     return '<span class="fw-bold text-primary ui-tabular-nums">'.number_format($total).' pcs</span>';
                 })
                 ->addColumn('actual_weight', function ($shp) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
+
                     return '<span class="ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
                 ->addColumn('total_weight', function ($shp) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
+
                     return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
                 ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.$shp->shipment_date->format('d M Y').'</span>' : '-')
@@ -98,6 +104,7 @@ class ShipmentController extends Controller
                     if ($shp->actual_arrival_date) {
                         return '<span class="ui-tabular-nums text-success fw-semibold">'.$shp->actual_arrival_date->format('d M Y').'</span>';
                     }
+
                     return '<span class="tw-text-outline">-</span>';
                 })
                 ->addColumn('status_badge', function ($shp) {
@@ -108,6 +115,7 @@ class ShipmentController extends Controller
                 })
                 ->addColumn('action', function ($shp) {
                     $url = route('purchasing.shipments.show', $shp);
+
                     return '<a href="'.e($url).'" class="ui-data-action ui-data-action--primary">Details</a>';
                 })
                 ->rawColumns(['shipment_number_display', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'estimated_arrival', 'actual_arrival', 'status_badge', 'action'])
@@ -116,7 +124,7 @@ class ShipmentController extends Controller
 
         $shipments = $query->paginate(15)->withQueryString();
         $suppliers = User::importEligible()
-            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
+            ->orWhereIn('id', DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
             ->orderBy('name')->get();
 
         return view('purchasing.shipments.index', compact('shipments', 'suppliers'));

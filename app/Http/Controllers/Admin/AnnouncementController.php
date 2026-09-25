@@ -11,10 +11,14 @@ class AnnouncementController extends Controller
     public function index()
     {
         $announcements = Announcement::with('creator')->orderBy('created_at', 'desc')->paginate(15);
+
         return view('admin.announcements.index', compact('announcements'));
     }
 
-    public function create() { return view('admin.announcements.create'); }
+    public function create()
+    {
+        return view('admin.announcements.create');
+    }
 
     public function store(Request $request)
     {
@@ -24,10 +28,14 @@ class AnnouncementController extends Controller
             'created_by' => auth()->id(),
             'published_at' => $request->has('is_published') ? now() : null,
         ]);
-        return redirect()->route('admin.announcements.index')->with('success', "Announcement successfully created.");
+
+        return redirect()->route('admin.announcements.index')->with('success', 'Announcement successfully created.');
     }
 
-    public function edit(Announcement $announcement) { return view('admin.announcements.edit', compact('announcement')); }
+    public function edit(Announcement $announcement)
+    {
+        return view('admin.announcements.edit', compact('announcement'));
+    }
 
     public function update(Request $request, Announcement $announcement)
     {
@@ -36,18 +44,21 @@ class AnnouncementController extends Controller
             'title' => $request->input('title'), 'content' => $request->input('content'),
             'published_at' => $request->has('is_published') ? ($announcement->published_at ?? now()) : null,
         ]);
-        return redirect()->route('admin.announcements.index')->with('success', "Announcement successfully updated.");
+
+        return redirect()->route('admin.announcements.index')->with('success', 'Announcement successfully updated.');
     }
 
     public function destroy(Announcement $announcement)
     {
         $announcement->delete();
-        return redirect()->route('admin.announcements.index')->with('success', "Announcement successfully deleted.");
+
+        return redirect()->route('admin.announcements.index')->with('success', 'Announcement successfully deleted.');
     }
 
     public function togglePublish(Announcement $announcement)
     {
         $announcement->update(['published_at' => $announcement->published_at ? null : now()]);
-        return back()->with('success', $announcement->published_at ? "Announcement published." : "Announcement withdrawn.");
+
+        return back()->with('success', $announcement->published_at ? 'Announcement published.' : 'Announcement withdrawn.');
     }
 }

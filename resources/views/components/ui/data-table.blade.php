@@ -7,15 +7,19 @@
     'density' => 'compact',
 ])
 
+@php
+    $tableActions = $toolbar ?? $actions ?? null;
+@endphp
+
 <section {{ $attributes->class(['ui-data-table tw-min-w-0 tw-max-w-full tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface tw-shadow-none', 'ui-table--compact' => $density === 'compact']) }}>
-    @if($title || $description || isset($toolbar) || isset($filters))
+    @if($title || $description || $tableActions || isset($filters))
         <header class="tw-grid tw-gap-2.5 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-p-3.5 shell:tw-px-4">
             <div class="tw-flex tw-flex-col tw-gap-2.5 shell:tw-flex-row shell:tw-items-center shell:tw-justify-between">
                 <div class="tw-min-w-0">
                     @if($title)<h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">{{ $title }}</h2>@endif
                     @if($description)<p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">{{ $description }}</p>@endif
                 </div>
-                @isset($toolbar)<div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">{{ $toolbar }}</div>@endisset
+                @if($tableActions)<div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">{{ $tableActions }}</div>@endif
             </div>
             @isset($filters)<div class="tw-flex tw-flex-col tw-gap-2.5 shell:tw-flex-row shell:tw-flex-wrap shell:tw-items-end">{{ $filters }}</div>@endisset
         </header>

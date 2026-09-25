@@ -9,7 +9,6 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class LocalGoodsReceiptInformationTest extends TestCase
@@ -62,7 +61,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.goods-receipts.store', $this->po), [
             'gr_number' => 'GR-2026-001',
             'gr_date' => '2026-09-24',
-            'received_amount' => '250000.00',
             'qty' => '15.5000',
             'description' => 'Steel Plates Grade A',
             'notes' => 'Delivered in good condition',
@@ -74,7 +72,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $this->assertDatabaseHas('local_goods_receipts', [
             'gr_number' => 'GR-2026-001',
             'local_purchase_order_id' => $this->po->id,
-            'received_amount' => '250000.00',
             'qty' => '15.5000',
             'description' => 'Steel Plates Grade A',
             'notes' => 'Delivered in good condition',
@@ -91,7 +88,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $gr = $this->service->createGoodsReceipt($this->finance, $this->po, [
             'gr_number' => 'GR-2026-002',
             'gr_date' => '2026-09-24',
-            'received_amount' => '100000.00',
             'qty' => '10.0000',
             'description' => 'Initial Description',
         ]);
@@ -99,7 +95,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $response = $this->actingAs($this->finance)->put(route('finance.local-procurement.goods-receipts.update', $gr), [
             'gr_number' => 'GR-2026-002',
             'gr_date' => '2026-09-24',
-            'received_amount' => '120000.00',
             'qty' => '12.2500',
             'description' => 'Updated Description Material B',
             'notes' => 'Updated notes',
@@ -110,7 +105,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $gr->refresh();
         $this->assertSame('12.2500', (string) $gr->qty);
         $this->assertSame('Updated Description Material B', $gr->description);
-        $this->assertSame('120000.00', (string) $gr->received_amount);
     }
 
     public function test_validation_fails_for_invalid_qty(): void
@@ -119,7 +113,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.goods-receipts.store', $this->po), [
             'gr_number' => 'GR-FAIL-001',
             'gr_date' => '2026-09-24',
-            'received_amount' => '50000.00',
         ]);
         $response->assertSessionHasErrors(['qty']);
 
@@ -127,7 +120,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.goods-receipts.store', $this->po), [
             'gr_number' => 'GR-FAIL-002',
             'gr_date' => '2026-09-24',
-            'received_amount' => '50000.00',
             'qty' => '0',
         ]);
         $response->assertSessionHasErrors(['qty']);
@@ -136,7 +128,6 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.goods-receipts.store', $this->po), [
             'gr_number' => 'GR-FAIL-003',
             'gr_date' => '2026-09-24',
-            'received_amount' => '50000.00',
             'qty' => '-5.5',
         ]);
         $response->assertSessionHasErrors(['qty']);
@@ -145,32 +136,29 @@ class LocalGoodsReceiptInformationTest extends TestCase
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.goods-receipts.store', $this->po), [
             'gr_number' => 'GR-FAIL-004',
             'gr_date' => '2026-09-24',
-            'received_amount' => '50000.00',
             'qty' => '1.12345',
         ]);
         $response->assertSessionHasErrors(['qty']);
     }
 
-    public function test_qty_does_not_affect_po_cap_validation(): void
+    public function test_goods_receipt_created_with_valid_quantities(): void
     {
-        // PO total amount is 1,000,000.00
-        // A huge qty (e.g. 999999) with valid monetary received_amount (500,000.00) must succeed because PO cap is monetary
-        $gr = $this->service->createGoodsReceipt($this->finance, $this->po, [
+        $gr1 = $this->service->createGoodsReceipt($this->finance, $this->po, [
             'gr_number' => 'GR-CAP-001',
             'gr_date' => '2026-09-24',
-            'received_amount' => '500000.00',
             'qty' => '99999.0000',
             'description' => 'High quantity items',
         ]);
-        $this->assertNotNull($gr->id);
+        $this->assertNotNull($gr1->id);
+        $this->assertSame('99999.0000', (string) $gr1->qty);
 
-        // However, if received_amount exceeds remaining PO cap (500,000.00 + 600,000.00 > 1,000,000.00), it must fail regardless of qty
-        $this->expectException(ValidationException::class);
-        $this->service->createGoodsReceipt($this->finance, $this->po, [
+        $gr2 = $this->service->createGoodsReceipt($this->finance, $this->po, [
             'gr_number' => 'GR-CAP-002',
             'gr_date' => '2026-09-24',
-            'received_amount' => '600000.00',
-            'qty' => '1.0000',
+            'qty' => '500.5000',
+            'description' => 'Additional items',
         ]);
+        $this->assertNotNull($gr2->id);
+        $this->assertSame('500.5000', (string) $gr2->qty);
     }
 }

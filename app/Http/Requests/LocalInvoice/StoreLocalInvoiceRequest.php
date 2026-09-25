@@ -189,7 +189,7 @@ class StoreLocalInvoiceRequest extends FormRequest
 
     public function messages(): array
     {
-        return [
+        $messages = [
             'tax_invoice_number.required' => 'Nomor Faktur Pajak wajib diisi untuk vendor PKP.',
             'tax_invoice_number.regex' => 'Format Nomor Faktur Pajak tidak valid. Gunakan format Coretax 17 digit (contoh: 01.00.26.00000000001) atau 16 digit e-Faktur.',
             'tax_invoice_number.unique' => 'Nomor Faktur Pajak ini sudah pernah digunakan pada tagihan Anda sebelumnya.',
@@ -200,22 +200,28 @@ class StoreLocalInvoiceRequest extends FormRequest
             'goods_receipt_ids.required_with' => 'Paling sedikit satu Penerimaan Barang (GR) utuh wajib dipilih.',
             'goods_receipt_ids.min' => 'Paling sedikit satu Penerimaan Barang (GR) utuh wajib dipilih.',
             'invoice.required' => 'Berkas Invoice wajib diunggah.',
-            'invoice.max' => 'Maksimal 5 berkas yang diizinkan untuk Berkas Invoice.',
-            'invoice.*.mimes' => 'Berkas Invoice harus berformat PDF, JPG, JPEG, atau PNG.',
-            'invoice.*.max' => 'Ukuran setiap berkas Invoice tidak boleh melebihi 5 MB.',
             'tax_invoice.required' => 'Berkas Faktur Pajak wajib diunggah untuk vendor PKP.',
-            'tax_invoice.max' => 'Maksimal 5 berkas yang diizinkan untuk Faktur Pajak.',
-            'tax_invoice.*.mimes' => 'Berkas Faktur Pajak harus berformat PDF, JPG, JPEG, atau PNG.',
-            'tax_invoice.*.max' => 'Ukuran setiap berkas Faktur Pajak tidak boleh melebihi 5 MB.',
             'delivery_note.required' => 'Berkas Surat Jalan (Delivery Note) wajib diunggah untuk kategori Barang.',
-            'delivery_note.max' => 'Maksimal 5 berkas yang diizinkan untuk Surat Jalan.',
-            'delivery_note.*.mimes' => 'Berkas Surat Jalan harus berformat PDF, JPG, JPEG, atau PNG.',
-            'delivery_note.*.max' => 'Ukuran setiap berkas Surat Jalan tidak boleh melebihi 5 MB.',
-            'supporting.max' => 'Maksimal 5 berkas yang diizinkan untuk Dokumen Pendukung.',
-            'supporting.*.mimes' => 'Berkas Dokumen Pendukung harus berformat PDF, JPG, JPEG, atau PNG.',
-            'supporting.*.max' => 'Ukuran setiap berkas Dokumen Pendukung tidak boleh melebihi 5 MB.',
             'scheduled_physical_delivery_date.after_or_equal' => 'Jadwal penyerahan dokumen fisik tidak boleh di masa lampau.',
         ];
+
+        foreach ([
+            'invoice' => 'Berkas Invoice',
+            'tax_invoice' => 'Faktur Pajak',
+            'delivery_note' => 'Surat Jalan',
+            'supporting' => 'Dokumen Pendukung',
+        ] as $field => $label) {
+            if (is_array($this->file($field))) {
+                $messages["{$field}.max"] = "Maksimal 5 berkas yang diizinkan untuk {$label}.";
+                $messages["{$field}.*.mimes"] = "Berkas {$label} harus berformat PDF, JPG, JPEG, atau PNG.";
+                $messages["{$field}.*.max"] = "Ukuran setiap berkas {$label} tidak boleh melebihi 5 MB.";
+            } else {
+                $messages["{$field}.max"] = "Ukuran berkas {$label} tidak boleh melebihi 5 MB.";
+                $messages["{$field}.mimes"] = "Berkas {$label} harus berformat PDF, JPG, JPEG, atau PNG.";
+            }
+        }
+
+        return $messages;
     }
 
     public function withValidator($validator): void

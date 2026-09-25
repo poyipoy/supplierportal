@@ -77,7 +77,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $this->gr1 = $masters->createGoodsReceipt($this->finance, $this->po, [
             'gr_number' => 'GR-OP-001',
             'gr_date' => '2026-09-11',
-            'received_amount' => '1000.00',
+            'qty' => 10.0,
         ]);
     }
 
@@ -276,7 +276,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $gr2 = $masters->createGoodsReceipt($this->finance, $po2, [
             'gr_number' => 'GR-OP-002',
             'gr_date' => '2026-09-11',
-            'received_amount' => '500.00',
+            'qty' => 10.0,
         ]);
 
         $settledInvoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -399,7 +399,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $gr3 = $masters->createGoodsReceipt($this->finance, $po3, [
             'gr_number' => 'GR-OP-003',
             'gr_date' => '2026-09-11',
-            'received_amount' => '500.00',
+            'qty' => 10.0,
         ]);
 
         $settledInvoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [

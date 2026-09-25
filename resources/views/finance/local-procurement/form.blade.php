@@ -3,7 +3,7 @@
 @php
     $isEdit = $purchaseOrder->exists;
     $isLocked = $isEdit && ($purchaseOrder->goodsReceipts()->exists() || $purchaseOrder->invoices()->exists());
-    $activeGrTotal = $isEdit ? (float) $purchaseOrder->goodsReceipts()->where('status', '!=', \App\Models\LocalGoodsReceipt::STATUS_CANCELLED)->sum('received_amount') : 0;
+    $activeInvoicedTotal = $isEdit ? (float) $purchaseOrder->invoices()->whereNotIn('status', [\App\Models\LocalInvoice::STATUS_REJECTED, \App\Models\LocalInvoice::STATUS_CANCELLED])->sum('invoice_amount') : 0;
     $initialAmount = old('total_amount', $purchaseOrder->total_amount ?? '');
 @endphp
 
@@ -163,7 +163,7 @@
                                     type="number"
                                     name="total_amount"
                                     id="total_amount"
-                                    min="{{ $isLocked && $activeGrTotal > 0 ? $activeGrTotal : '0.01' }}"
+                                    min="{{ $isLocked && $activeInvoicedTotal > 0 ? $activeInvoicedTotal : '0.01' }}"
                                     step="0.01"
                                     class="form-control form-control-sm tw-font-mono @error('total_amount') is-invalid @enderror"
                                     value="{{ $initialAmount }}"
@@ -174,9 +174,9 @@
                             @error('total_amount')
                                 <div class="text-danger tw-text-ui-xs tw-mt-1">{{ $message }}</div>
                             @enderror
-                            @if($isLocked && $activeGrTotal > 0)
+                            @if($isLocked && $activeInvoicedTotal > 0)
                                 <div class="form-text tw-text-[11px] tw-text-warning tw-mt-1">
-                                    Batas minimum: Rp {{ number_format($activeGrTotal, 2, ',', '.') }} (total akumulasi GR aktif).
+                                    Batas minimum: Rp {{ number_format($activeInvoicedTotal, 2, ',', '.') }} (total akumulasi invoice aktif).
                                 </div>
                             @endif
                         </div>

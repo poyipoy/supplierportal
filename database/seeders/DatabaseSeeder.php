@@ -17,96 +17,96 @@ class DatabaseSeeder extends Seeder
     {
         // ─── Admin ───
         $admin = User::create([
-            'name'     => 'Administrator',
-            'email'    => 'admin@adasi.com',
+            'name' => 'Administrator',
+            'email' => 'admin@adasi.com',
             'password' => Hash::make('password'),
-            'role'     => 'admin',
+            'role' => 'admin',
             'is_active' => true,
         ]);
 
         // ─── Purchasing ───
         User::create([
-            'name'     => 'Purchasing ADASI',
-            'email'    => 'purchasing@adasi.com',
+            'name' => 'Purchasing ADASI',
+            'email' => 'purchasing@adasi.com',
             'password' => Hash::make('password'),
-            'role'     => 'purchasing',
+            'role' => 'purchasing',
             'is_active' => true,
         ]);
 
         // ─── QC ───
         User::create([
-            'name'     => 'QC Inspector',
-            'email'    => 'qc@adasi.com',
+            'name' => 'QC Inspector',
+            'email' => 'qc@adasi.com',
             'password' => Hash::make('password'),
-            'role'     => 'qc',
+            'role' => 'qc',
             'is_active' => true,
         ]);
 
         // ─── Supplier 1 ───
         $supplier1 = User::create([
-            'name'     => 'Supplier Satu',
-            'email'    => 'supplier1@test.com',
+            'name' => 'Supplier Satu',
+            'email' => 'supplier1@test.com',
             'password' => Hash::make('password'),
-            'role'     => 'supplier',
+            'role' => 'supplier',
             'is_active' => true,
         ]);
 
         $supplier1->supplierScopes()->firstOrCreate(['scope' => 'import']);
         Supplier::create([
-            'user_id'      => $supplier1->id,
+            'user_id' => $supplier1->id,
             'company_name' => 'PT. Supplier Satu',
-            'address'      => 'Jl. Industri No. 1, Karawang',
-            'phone'        => '021-12345678',
-            'npwp'         => '01.234.567.8-012.000',
-            'category'     => 'Steel',
+            'address' => 'Jl. Industri No. 1, Karawang',
+            'phone' => '021-12345678',
+            'npwp' => '01.234.567.8-012.000',
+            'category' => 'Steel',
         ]);
 
         // ─── Supplier 2 ───
         $supplier2 = User::create([
-            'name'     => 'Supplier Dua',
-            'email'    => 'supplier2@test.com',
+            'name' => 'Supplier Dua',
+            'email' => 'supplier2@test.com',
             'password' => Hash::make('password'),
-            'role'     => 'supplier',
+            'role' => 'supplier',
             'is_active' => true,
         ]);
 
         $supplier2->supplierScopes()->firstOrCreate(['scope' => 'import']);
         Supplier::create([
-            'user_id'      => $supplier2->id,
+            'user_id' => $supplier2->id,
             'company_name' => 'PT. Supplier Dua',
-            'address'      => 'Jl. Industri No. 2, Bekasi',
-            'phone'        => '021-87654321',
-            'npwp'         => '09.876.543.2-098.000',
-            'category'     => 'Steel',
+            'address' => 'Jl. Industri No. 2, Bekasi',
+            'phone' => '021-87654321',
+            'npwp' => '09.876.543.2-098.000',
+            'category' => 'Steel',
         ]);
 
         // ─── Exchange Rates (valid_from: hari ini) ───
         ExchangeRate::create([
-            'currency'    => ExchangeRate::CURRENCY_USD,
+            'currency' => ExchangeRate::CURRENCY_USD,
             'rate_to_idr' => 16200.0000,
-            'valid_from'  => now()->toDateString(),
-            'created_by'  => $admin->id,
+            'valid_from' => now()->toDateString(),
+            'created_by' => $admin->id,
         ]);
 
         ExchangeRate::create([
-            'currency'    => ExchangeRate::CURRENCY_JPY,
+            'currency' => ExchangeRate::CURRENCY_JPY,
             'rate_to_idr' => 108.0000,
-            'valid_from'  => now()->toDateString(),
-            'created_by'  => $admin->id,
+            'valid_from' => now()->toDateString(),
+            'created_by' => $admin->id,
         ]);
 
         ExchangeRate::create([
-            'currency'    => ExchangeRate::CURRENCY_IDR,
+            'currency' => ExchangeRate::CURRENCY_IDR,
             'rate_to_idr' => 1.0000,
-            'valid_from'  => now()->toDateString(),
-            'created_by'  => $admin->id,
+            'valid_from' => now()->toDateString(),
+            'created_by' => $admin->id,
         ]);
 
         ExchangeRate::create([
-            'currency'    => ExchangeRate::CURRENCY_CNY,
+            'currency' => ExchangeRate::CURRENCY_CNY,
             'rate_to_idr' => 2250.0000,
-            'valid_from'  => now()->toDateString(),
-            'created_by'  => $admin->id,
+            'valid_from' => now()->toDateString(),
+            'created_by' => $admin->id,
         ]);
 
         $this->call(EmployeeMasterSeeder::class);

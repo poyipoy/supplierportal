@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Quotation;
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
 
@@ -132,7 +133,7 @@ class StatusHelper
 
     public static function quotationValidityMeta(mixed $validityPeriod, ?string $status = null): array
     {
-        if ($status === \App\Models\Quotation::STATUS_ALL_UNAVAILABLE) {
+        if ($status === Quotation::STATUS_ALL_UNAVAILABLE) {
             return [
                 'label' => 'N/A',
                 'class' => 'bg-secondary',
@@ -475,18 +476,18 @@ class StatusHelper
 
     private static array $materialProgressBadges = [
         'awaiting_confirmation' => 'bg-secondary',
-        'order_confirmed'       => 'bg-info',
-        'material_preparation'  => 'bg-warning text-dark',
-        'on_production'         => 'bg-primary',
-        'ready_to_ship'         => 'bg-success',
+        'order_confirmed' => 'bg-info',
+        'material_preparation' => 'bg-warning text-dark',
+        'on_production' => 'bg-primary',
+        'ready_to_ship' => 'bg-success',
     ];
 
     private static array $materialProgressLabels = [
         'awaiting_confirmation' => 'Awaiting Confirmation',
-        'order_confirmed'       => 'Order Confirmed',
-        'material_preparation'  => 'Material Preparation',
-        'on_production'         => 'On Production',
-        'ready_to_ship'         => 'Ready to Ship',
+        'order_confirmed' => 'Order Confirmed',
+        'material_preparation' => 'Material Preparation',
+        'on_production' => 'On Production',
+        'ready_to_ship' => 'Ready to Ship',
     ];
 
     public static function materialProgressBadge(string $status): string
@@ -556,8 +557,8 @@ class StatusHelper
      * Render a semantic status chip.
      *
      * @param  string  $badgeClass  CSS class (e.g., 'bg-success')
-     * @param  string  $label       Display text
-     * @return string  Raw HTML string
+     * @param  string  $label  Display text
+     * @return string Raw HTML string
      */
     public static function badge(string $badgeClass, string $label): string
     {
@@ -572,7 +573,7 @@ class StatusHelper
         $escapedLabel = e($label);
         $tone = self::semanticTone($badgeClass);
         $tooltip = $description
-            ? ' data-bs-toggle="tooltip" data-bs-title="' . e($description) . '"'
+            ? ' data-bs-toggle="tooltip" data-bs-title="'.e($description).'"'
             : '';
 
         return '<span class="ui-status-chip ui-status-chip--'.$tone.'"'.$tooltip.'>'.$escapedLabel.'</span>';

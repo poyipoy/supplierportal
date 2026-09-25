@@ -2,20 +2,23 @@
 
 namespace App\Models;
 
+use App\Traits\HasHashids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use App\Traits\HasHashids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Conversation extends Model
 {
     use HasFactory, HasHashids;
 
     public const STATUS_OPEN = 'open';
+
     public const STATUS_WAITING_SUPPLIER = 'waiting_supplier';
+
     public const STATUS_WAITING_PURCHASING = 'waiting_purchasing';
+
     public const STATUS_RESOLVED = 'resolved';
 
     protected $fillable = [
@@ -68,7 +71,7 @@ class Conversation extends Model
     {
         return $query->where(function ($q) use ($userId) {
             $q->where('purchasing_user_id', $userId)
-              ->orWhere('supplier_user_id', $userId);
+                ->orWhere('supplier_user_id', $userId);
         });
     }
 
@@ -90,6 +93,7 @@ class Conversation extends Model
         if ($this->purchasing_user_id == $userId) {
             return $this->supplierUser;
         }
+
         return $this->purchasingUser;
     }
 
@@ -175,11 +179,12 @@ class Conversation extends Model
     public function getContextLabelAttribute(): string
     {
         if ($this->conversable_type === PurchaseRequisition::class) {
-            return 'PR: ' . ($this->conversable?->pr_number ?? 'Draft Requisition');
+            return 'PR: '.($this->conversable?->pr_number ?? 'Draft Requisition');
         }
         if ($this->conversable_type === PurchaseOrder::class) {
-            return 'PO: ' . ($this->conversable?->po_number ?? 'Purchase Order');
+            return 'PO: '.($this->conversable?->po_number ?? 'Purchase Order');
         }
+
         return 'Diskusi Pengadaan';
     }
 }

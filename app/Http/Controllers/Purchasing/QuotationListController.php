@@ -88,7 +88,7 @@ class QuotationListController extends Controller
             ->appends($request->except(PurchasingNavigation::RETURN_URL_KEY));
 
         $suppliers = User::importEligible()
-            ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('quotations')->distinct()->pluck('supplier_id'))
+            ->orWhereIn('id', DB::table('quotations')->distinct()->pluck('supplier_id'))
             ->orderBy('name')->get();
 
         return view('purchasing.quotations.index', compact('quotations', 'suppliers'));

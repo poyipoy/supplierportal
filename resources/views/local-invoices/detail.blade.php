@@ -497,9 +497,9 @@
                         <div><span class="tw-text-on-surface-variant tw-block">Tanggal PO</span><strong class="tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_date?->format('d M Y') ?? '—' }}</strong></div>
                         <div><span class="tw-text-on-surface-variant tw-block">Total Nilai PO</span><strong class="tw-font-mono tw-text-on-surface">Rp {{ number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.') }}</strong></div>
                     </div>
-                    <div class="table-responsive"><table class="table table-sm align-middle tw-m-0 tw-text-ui-xs"><thead><tr><th>Nomor GR</th><th>Tanggal GR</th><th class="text-end">Nilai Utuh</th><th>Status</th></tr></thead><tbody>
+                    <div class="table-responsive"><table class="table table-sm align-middle tw-m-0 tw-text-ui-xs"><thead><tr><th>Nomor GR</th><th>Tanggal GR</th><th class="text-end">Qty</th><th>Status</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
-                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date?->format('d M Y') ?? '—' }}</td><td class="text-end tw-font-mono">Rp {{ number_format($history->gr_amount_snapshot, 2, ',', '.') }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ $history->state }}</x-ui.status-chip></td></tr>
+                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date?->format('d M Y') ?? '—' }}</td><td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ $history->state }}</x-ui.status-chip></td></tr>
                         @empty
                             <tr><td colspan="4" class="tw-text-center tw-text-on-surface-variant">Belum ada riwayat GR.</td></tr>
                         @endforelse

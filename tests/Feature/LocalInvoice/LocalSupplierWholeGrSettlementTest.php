@@ -36,9 +36,13 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
     use RefreshDatabase;
 
     private User $supplier;
+
     private User $finance;
+
     private LocalPurchaseOrder $po;
+
     private LocalGoodsReceipt $gr1;
+
     private LocalGoodsReceipt $gr2;
 
     protected function setUp(): void
@@ -52,8 +56,8 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
         $masters = app(LocalProcurementMasterService::class);
         $this->po = $masters->createPurchaseOrder($this->finance, ['supplier_id' => $this->supplier->id, 'po_number' => 'PO-WHOLE-001', 'po_date' => '2026-09-10', 'total_amount' => '300.00']);
-        $this->gr1 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-001', 'gr_date' => '2026-09-11', 'received_amount' => '100.00']);
-        $this->gr2 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-002', 'gr_date' => '2026-09-12', 'received_amount' => '200.00']);
+        $this->gr1 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-001', 'gr_date' => '2026-09-11', 'qty' => 10.0]);
+        $this->gr2 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-002', 'gr_date' => '2026-09-12', 'qty' => 20.0]);
     }
 
     private function invoice(array $overrides = []): LocalInvoice
@@ -244,7 +248,9 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $payment = app(LocalInvoicePaymentService::class)->recordCorrection($payment, ['amount' => '1.00', 'transfer_reference' => 'TRF-CORR', 'transfer_date' => '2026-09-16', 'correction_reason' => 'Short transfer correction'], $this->finance);
         $this->assertSame(LocalInvoicePayment::STATUS_FINALIZED, $payment->status);
         $refund = $payment->overpayment;
-        if ($refund) $this->fail('An exact correction should not create an overpayment.');
+        if ($refund) {
+            $this->fail('An exact correction should not create an overpayment.');
+        }
     }
 
     public function test_import_validation_is_atomic_and_exact_supplier_match(): void
@@ -280,7 +286,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->assertSame(2, $counts['newGr']);
         $po = LocalPurchaseOrder::where('po_number', 'PO-IMPORT-VALID')->firstOrFail();
         $this->assertSame(LocalPurchaseOrder::SOURCE_IMPORT, $po->source);
-        $this->assertSame('500.00', $po->goodsReceipts()->sum('received_amount'));
+        $this->assertSame(2, $po->goodsReceipts()->count());
     }
 
     public function test_new_master_routes_require_hashed_keys_and_role_access(): void
@@ -373,7 +379,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             $gr = $masters->createGoodsReceipt($this->finance, $po, [
                 'gr_number' => $grNumber,
                 'gr_date' => '2026-09-11',
-                'received_amount' => '100.00',
+                'qty' => 10.0,
             ]);
             $grIds[] = $gr->id;
             $expectedGrNumbers[] = $grNumber;
@@ -394,5 +400,28 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
 
         $this->assertSame($expectedRefString, $invoice->fresh()->internal_gr_reference);
         $this->assertSame(10, $invoice->goodsReceiptHistories()->where('state', 'RESERVED')->count());
+    }
+
+    public function test_invoice_cannot_exceed_po_ceiling(): void
+    {
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($this->finance, [
+            'supplier_id' => $this->supplier->id,
+            'po_number' => 'PO-CEIL-001',
+            'po_date' => '2026-09-10',
+            'total_amount' => '100.00',
+        ]);
+        $gr = $masters->createGoodsReceipt($this->finance, $po, ['gr_number' => 'GR-CEIL-001', 'gr_date' => '2026-09-11', 'qty' => 5.0]);
+
+        $this->expectException(ValidationException::class);
+        app(InvoiceSubmissionService::class)->submit($this->supplier, [
+            'invoice_number' => 'INV-CEIL-001',
+            'invoice_date' => '2026-09-13',
+            'local_purchase_order_id' => $po->id,
+            'goods_receipt_ids' => [$gr->id],
+            'invoice_amount' => '150.00',
+            'tax_amount' => '0.00',
+            'ppn_scheme' => '0%',
+        ], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
     }
 }

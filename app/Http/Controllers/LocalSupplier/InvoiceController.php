@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\InvoiceFilterRequest;
 use App\Http\Requests\LocalInvoice\ResubmitLocalInvoiceRequest;
 use App\Http\Requests\LocalInvoice\StoreLocalInvoiceRequest;
-use App\Models\LocalInvoice;
 use App\Models\LocalGoodsReceipt;
+use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
@@ -45,21 +45,28 @@ class InvoiceController extends Controller
                 ->with(['goodsReceipts' => fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)->orderBy('gr_date')])
                 ->latest('id')->limit(10)->get();
 
-            return response()->json(['data' => $orders->map(fn (LocalPurchaseOrder $po) => [
-                'id' => $po->id,
-                'po_number' => $po->po_number,
-                'description' => $po->description,
-                'total_amount' => (float) $po->total_amount,
-                'formatted_total_amount' => 'Rp '.number_format($po->total_amount, 0, ',', '.'),
-                'remaining_amount' => (float) $po->goodsReceipts->sum('received_amount'),
-                'formatted_remaining_amount' => 'Rp '.number_format($po->goodsReceipts->sum('received_amount'), 0, ',', '.'),
-                'has_gr' => true,
-                'gr_reference' => $po->goodsReceipts->pluck('gr_number')->implode(', '),
-                'status' => $po->status,
-                'goods_receipts' => $po->goodsReceipts->map(fn (LocalGoodsReceipt $gr) => [
-                    'id' => $gr->id, 'gr_number' => $gr->gr_number, 'gr_date' => $gr->gr_date?->format('Y-m-d'), 'received_amount' => (float) $gr->received_amount,
-                ])->values(),
-            ])->values()]);
+            return response()->json(['data' => $orders->map(function (LocalPurchaseOrder $po) {
+                $previouslyInvoiced = (float) LocalInvoice::where('local_purchase_order_id', $po->id)
+                    ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+                    ->sum('invoice_amount');
+                $remainingAmount = max(0.0, round((float) $po->total_amount - $previouslyInvoiced, 2));
+
+                return [
+                    'id' => $po->id,
+                    'po_number' => $po->po_number,
+                    'description' => $po->description,
+                    'total_amount' => (float) $po->total_amount,
+                    'formatted_total_amount' => 'Rp '.number_format($po->total_amount, 0, ',', '.'),
+                    'remaining_amount' => $remainingAmount,
+                    'formatted_remaining_amount' => 'Rp '.number_format($remainingAmount, 0, ',', '.'),
+                    'has_gr' => true,
+                    'gr_reference' => $po->goodsReceipts->pluck('gr_number')->implode(', '),
+                    'status' => $po->status,
+                    'goods_receipts' => $po->goodsReceipts->map(fn (LocalGoodsReceipt $gr) => [
+                        'id' => $gr->id, 'gr_number' => $gr->gr_number, 'gr_date' => $gr->gr_date?->format('Y-m-d'), 'qty' => (float) $gr->qty,
+                    ])->values(),
+                ];
+            })->values()]);
         }
         $results = $poReferenceService->searchInternalPos($request->user(), $query, 10);
 
@@ -120,6 +127,7 @@ class InvoiceController extends Controller
     public function cancel(Request $request, LocalInvoice $invoice, InvoiceSubmissionService $service)
     {
         $service->cancel($request->user(), $invoice);
+
         return redirect()->route('local-supplier.invoices.index')->with('success', 'Invoice berhasil dibatalkan dan reservasi GR telah dilepas kembali.');
     }
 
@@ -132,12 +140,17 @@ class InvoiceController extends Controller
         return LocalPurchaseOrder::where('supplier_id', auth()->id())
             ->where(function ($q) use ($invoice) {
                 $q->where('status', LocalPurchaseOrder::STATUS_OPEN);
-                if ($invoice?->local_purchase_order_id) $q->orWhereKey($invoice->local_purchase_order_id);
+                if ($invoice?->local_purchase_order_id) {
+                    $q->orWhereKey($invoice->local_purchase_order_id);
+                }
             })
             ->whereHas('goodsReceipts', fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)
                 ->when($invoice, fn ($q) => $q->orWhere('current_invoice_id', $invoice->id)))
-            ->with(['goodsReceipts' => fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)
-                ->when($invoice, fn ($q) => $q->orWhere('current_invoice_id', $invoice->id))->orderBy('gr_date')])
+            ->with([
+                'goodsReceipts' => fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)
+                    ->when($invoice, fn ($q) => $q->orWhere('current_invoice_id', $invoice->id))->orderBy('gr_date'),
+                'invoices' => fn ($q) => $q->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED]),
+            ])
             ->orderByDesc('po_date')->get();
     }
 }

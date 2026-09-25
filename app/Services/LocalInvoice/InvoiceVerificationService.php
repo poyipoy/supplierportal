@@ -24,7 +24,7 @@ class InvoiceVerificationService
     {
         $this->assertFinanceOrAdmin($reviewer);
 
-        return DB::transaction(function () use ($invoice, $data, $reviewer) {
+        return DB::transaction(function () use ($invoice, $data) {
             /** @var LocalInvoice $inv */
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
@@ -86,7 +86,7 @@ class InvoiceVerificationService
     {
         $this->assertFinanceOrAdmin($reviewer);
 
-        return DB::transaction(function () use ($invoice, $data, $reviewer) {
+        return DB::transaction(function () use ($invoice, $data) {
             /** @var LocalInvoice $inv */
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
@@ -257,7 +257,10 @@ class InvoiceVerificationService
     public function reject(LocalInvoice $invoice, string $reason, User $reviewer): LocalInvoice
     {
         $this->assertFinanceOrAdmin($reviewer);
-        if (trim($reason) === '') throw new InvalidArgumentException('Rejection reason is mandatory.');
+        if (trim($reason) === '') {
+            throw new InvalidArgumentException('Rejection reason is mandatory.');
+        }
+
         return DB::transaction(function () use ($invoice, $reason, $reviewer) {
             $inv = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             if (! in_array($inv->status, [LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, LocalInvoice::STATUS_UNDER_VERIFICATION, LocalInvoice::STATUS_NEED_REVISION], true)) {
@@ -268,6 +271,7 @@ class InvoiceVerificationService
             $inv->update(['status' => LocalInvoice::STATUS_REJECTED]);
             $history = $inv->statusHistories()->create(['from_status' => $from, 'to_status' => LocalInvoice::STATUS_REJECTED, 'actor_id' => $reviewer->id, 'event' => 'rejected', 'notes' => trim($reason), 'created_at' => now()]);
             $this->notifications->send($inv, $history);
+
             return $inv->fresh();
         });
     }

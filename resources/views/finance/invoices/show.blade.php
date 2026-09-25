@@ -112,13 +112,13 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm align-middle tw-m-0 tw-text-ui-xs">
-                            <thead><tr><th>GR Number</th><th>Date</th><th class="text-end">Whole Amount</th><th>Status</th></tr></thead>
+                            <thead><tr><th>GR Number</th><th>Date</th><th class="text-end">Qty</th><th>Status</th></tr></thead>
                             <tbody>
                             @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
                                 <tr>
                                     <td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td>
                                     <td>{{ $history->goodsReceipt?->gr_date?->format('d M Y') ?? '—' }}</td>
-                                    <td class="text-end tw-font-mono">Rp {{ number_format($history->gr_amount_snapshot, 2, ',', '.') }}</td>
+                                    <td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td>
                                     <td><x-ui.status-chip :tone="$history->state === 'CONSUMED' ? 'success' : ($history->state === 'RELEASED' ? 'neutral' : 'warning')">{{ $history->state }}</x-ui.status-chip></td>
                                 </tr>
                             @empty

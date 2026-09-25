@@ -3,10 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\LocalGoodsReceipt;
-use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceVerification;
 use App\Models\LocalPurchaseOrder;
-use App\Models\PaymentBatch;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\SupplierScope;
@@ -22,7 +20,6 @@ use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 
 class LocalInvoiceSampleSeeder extends Seeder
 {
@@ -199,8 +196,8 @@ class LocalInvoiceSampleSeeder extends Seeder
                 'invoice_date' => '2026-09-18',
                 'local_purchase_order_id' => $po1->id,
                 'goods_receipt_ids' => [$gr1_1->id],
-                'invoice_amount' => (float) $gr1_1->received_amount,
-                'tax_amount' => round((float) $gr1_1->received_amount * 0.11, 2),
+                'invoice_amount' => 5000000.00,
+                'tax_amount' => 550000.00,
                 'ppn_scheme' => '11%',
                 'tax_invoice_number' => '010.001-26.12345671',
                 'scheduled_physical_delivery_date' => $wedDate,
@@ -213,7 +210,7 @@ class LocalInvoiceSampleSeeder extends Seeder
         // ─────────────────────────────────────────────────────────────
         $gr1_2 = LocalGoodsReceipt::where('gr_number', 'GR-LOC-2026-001-02')->firstOrFail();
         $gr1_3 = LocalGoodsReceipt::where('gr_number', 'GR-LOC-2026-001-03')->firstOrFail();
-        $dpp2 = (float) $gr1_2->received_amount + (float) $gr1_3->received_amount;
+        $dpp2 = 10000000.00;
 
         $inv2 = $submitService->submit(
             $supplier1,
@@ -254,8 +251,8 @@ class LocalInvoiceSampleSeeder extends Seeder
                 'invoice_date' => '2026-09-12',
                 'local_purchase_order_id' => $po2->id,
                 'goods_receipt_ids' => [$gr2_1->id],
-                'invoice_amount' => (float) $gr2_1->received_amount,
-                'tax_amount' => round((float) $gr2_1->received_amount * 0.11, 2),
+                'invoice_amount' => 8000000.00,
+                'tax_amount' => 880000.00,
                 'ppn_scheme' => '11%',
                 'tax_invoice_number' => '010.001-26.12345673',
                 'scheduled_physical_delivery_date' => $wedDate,
@@ -275,7 +272,7 @@ class LocalInvoiceSampleSeeder extends Seeder
         // ─────────────────────────────────────────────────────────────
         $gr2_2 = LocalGoodsReceipt::where('gr_number', 'GR-LOC-2026-002-02')->firstOrFail();
         $gr2_3 = LocalGoodsReceipt::where('gr_number', 'GR-LOC-2026-002-03')->firstOrFail();
-        $dpp4 = (float) $gr2_2->received_amount + (float) $gr2_3->received_amount;
+        $dpp4 = 16000000.00;
 
         $inv4 = $submitService->submit(
             $supplier1,
@@ -316,7 +313,7 @@ class LocalInvoiceSampleSeeder extends Seeder
         $po3 = LocalPurchaseOrder::where('po_number', 'PO-LOC-2026-003')->firstOrFail();
         $gr3_1 = LocalGoodsReceipt::where('gr_number', 'GR-LOC-2026-003-01')->firstOrFail();
         $gr3_2 = LocalGoodsReceipt::where('gr_number', 'GR-LOC-2026-003-02')->firstOrFail();
-        $dpp5 = (float) $gr3_1->received_amount + (float) $gr3_2->received_amount;
+        $dpp5 = 24000000.00;
 
         $inv5 = $submitService->submit(
             $supplier1,
@@ -367,8 +364,8 @@ class LocalInvoiceSampleSeeder extends Seeder
                 'invoice_date' => '2026-08-25',
                 'local_purchase_order_id' => $po4->id,
                 'goods_receipt_ids' => [$gr4_1->id],
-                'invoice_amount' => (float) $gr4_1->received_amount,
-                'tax_amount' => round((float) $gr4_1->received_amount * 0.11, 2),
+                'invoice_amount' => 15000000.00,
+                'tax_amount' => 1650000.00,
                 'ppn_scheme' => '11%',
                 'tax_invoice_number' => '010.001-26.12345676',
                 'scheduled_physical_delivery_date' => $wedDate,
@@ -425,8 +422,8 @@ class LocalInvoiceSampleSeeder extends Seeder
                 'invoice_date' => '2026-09-20',
                 'local_purchase_order_id' => $po7->id,
                 'goods_receipt_ids' => [$gr7_1->id],
-                'invoice_amount' => (float) $gr7_1->received_amount,
-                'tax_amount' => round((float) $gr7_1->received_amount * 0.11, 2),
+                'invoice_amount' => 6000000.00,
+                'tax_amount' => 660000.00,
                 'ppn_scheme' => '11%',
                 'tax_invoice_number' => '010.002-26.98765431',
                 'scheduled_physical_delivery_date' => $wedDate,
@@ -447,8 +444,8 @@ class LocalInvoiceSampleSeeder extends Seeder
                 'invoice_date' => '2026-09-14',
                 'local_purchase_order_id' => $po8->id,
                 'goods_receipt_ids' => [$gr8_1->id],
-                'invoice_amount' => (float) $gr8_1->received_amount,
-                'tax_amount' => round((float) $gr8_1->received_amount * 0.11, 2),
+                'invoice_amount' => 3500000.00,
+                'tax_amount' => 385000.00,
                 'ppn_scheme' => '11%',
                 'tax_invoice_number' => '010.002-26.98765432',
                 'scheduled_physical_delivery_date' => $wedDate,

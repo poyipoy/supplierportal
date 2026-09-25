@@ -4,7 +4,6 @@ namespace Tests\Feature\Finance;
 
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
-use App\Models\LocalInvoiceGoodsReceipt;
 use App\Models\LocalInvoiceVerification;
 use App\Models\LocalPurchaseOrder;
 use App\Models\PaymentBatch;
@@ -21,7 +20,9 @@ class DrpLegacyInvoiceEligibilityTest extends TestCase
     use RefreshDatabase;
 
     private User $financeUser;
+
     private User $supplierUser;
+
     private LocalInvoice $approvedInvoice;
 
     protected function setUp(): void
@@ -77,7 +78,7 @@ class DrpLegacyInvoiceEligibilityTest extends TestCase
             'local_purchase_order_id' => $po->id,
             'gr_number' => 'GR-LEGACY-001',
             'gr_date' => '2026-09-02',
-            'received_amount' => 1000000,
+            'qty' => 1.0,
             'status' => LocalGoodsReceipt::STATUS_INVOICED,
         ]);
 

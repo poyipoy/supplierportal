@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\LocalInvoicesExport;
 use App\Exports\PaymentBatchDrpExport;
+use App\Exports\PaymentBatchTransferExport;
 use App\Models\ExportJob;
 use App\Services\ExportProgressService;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class ExportDownloadController extends Controller
     private const LOCAL_EXPORT_CLASSES = [
         LocalInvoicesExport::class,
         PaymentBatchDrpExport::class,
+        PaymentBatchTransferExport::class,
     ];
 
     public function index(Request $request)
@@ -30,8 +32,8 @@ class ExportDownloadController extends Controller
             ->values();
         $hasPending = ExportJob::query()
             ->where('user_id', $request->user()->getKey())
-            ->when($request->user()->isLocalOperator(), fn ($query) => $query->where('export_class', LocalInvoicesExport::class))
-            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->where('export_class', '!=', LocalInvoicesExport::class))
+            ->when($request->user()->isLocalOperator(), fn ($query) => $query->whereIn('export_class', self::LOCAL_EXPORT_CLASSES))
+            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->whereNotIn('export_class', self::LOCAL_EXPORT_CLASSES))
             ->whereIn('status', [ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING])
             ->exists();
 

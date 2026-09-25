@@ -7,6 +7,7 @@ use App\Models\LocalPurchaseOrder;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class LocalPoGrImportService
@@ -37,36 +38,58 @@ class LocalPoGrImportService
         foreach ($rows as $row) {
             $number = (int) $row['_row'];
             $rowErrors = [];
-            foreach ($row['_formula_columns'] as $column) $rowErrors[] = [$column, 'Excel formulas are not allowed.'];
+            foreach ($row['_formula_columns'] as $column) {
+                $rowErrors[] = [$column, 'Excel formulas are not allowed.'];
+            }
             foreach (['po_number', 'supplier_name', 'po_date', 'po_amount'] as $field) {
-                if ($row[$field] === null || $row[$field] === '') $rowErrors[] = [$field, 'This field is required.'];
+                if ($row[$field] === null || $row[$field] === '') {
+                    $rowErrors[] = [$field, 'This field is required.'];
+                }
             }
             $supplierMatches = $suppliers->get(mb_strtolower(trim((string) $row['supplier_name'])), collect());
-            if ($supplierMatches->count() !== 1) $rowErrors[] = ['supplier_name', $supplierMatches->isEmpty() ? 'No exact active Local Supplier match was found.' : 'Supplier name is ambiguous.'];
+            if ($supplierMatches->count() !== 1) {
+                $rowErrors[] = ['supplier_name', $supplierMatches->isEmpty() ? 'No exact active Local Supplier match was found.' : 'Supplier name is ambiguous.'];
+            }
             $poDate = $this->date($row['po_date']);
-            if (! $poDate) $rowErrors[] = ['po_date', 'Use a valid date.'];
+            if (! $poDate) {
+                $rowErrors[] = ['po_date', 'Use a valid date.'];
+            }
             $poAmount = $this->money($row['po_amount']);
-            if ($poAmount === null || bccomp($poAmount, '0', 2) <= 0) $rowErrors[] = ['po_amount', 'PO amount must be a positive number with up to two decimal places.'];
+            if ($poAmount === null || bccomp($poAmount, '0', 2) <= 0) {
+                $rowErrors[] = ['po_amount', 'PO amount must be a positive number with up to two decimal places.'];
+            }
 
             $grFields = [$row['gr_number'], $row['gr_date'], $row['gr_amount']];
             $hasAnyGr = collect($grFields)->contains(fn ($v) => $v !== null && $v !== '');
             $hasAllGr = collect($grFields)->every(fn ($v) => $v !== null && $v !== '');
-            if ($hasAnyGr && ! $hasAllGr) $rowErrors[] = ['gr_number', 'GR Number, GR Date, and GR Amount must be supplied together.'];
+            if ($hasAnyGr && ! $hasAllGr) {
+                $rowErrors[] = ['gr_number', 'GR Number, GR Date, and GR Amount must be supplied together.'];
+            }
             $grDate = $hasAllGr ? $this->date($row['gr_date']) : null;
-            if ($hasAllGr && ! $grDate) $rowErrors[] = ['gr_date', 'Use a valid date.'];
+            if ($hasAllGr && ! $grDate) {
+                $rowErrors[] = ['gr_date', 'Use a valid date.'];
+            }
             $grAmount = $hasAllGr ? $this->money($row['gr_amount']) : null;
-            if ($hasAllGr && ($grAmount === null || bccomp($grAmount, '0', 2) <= 0)) $rowErrors[] = ['gr_amount', 'GR amount must be a positive number with up to two decimal places.'];
+            if ($hasAllGr && ($grAmount === null || bccomp($grAmount, '0', 2) <= 0)) {
+                $rowErrors[] = ['gr_amount', 'GR amount must be a positive number with up to two decimal places.'];
+            }
 
             $poKey = mb_strtolower(trim((string) $row['po_number']));
             $header = [$supplierMatches->first()?->id, $poDate, $poAmount ?? '0.00', trim((string) $row['po_remarks'])];
-            if (isset($headers[$poKey]) && $headers[$poKey] !== $header) $rowErrors[] = ['po_number', 'Repeated PO rows have conflicting header values.'];
+            if (isset($headers[$poKey]) && $headers[$poKey] !== $header) {
+                $rowErrors[] = ['po_number', 'Repeated PO rows have conflicting header values.'];
+            }
             $headers[$poKey] ??= $header;
             if ($hasAllGr) {
                 $grKey = mb_strtolower(trim((string) $row['gr_number']));
-                if (isset($seenGr[$grKey])) $rowErrors[] = ['gr_number', 'Duplicate GR Number in workbook.'];
+                if (isset($seenGr[$grKey])) {
+                    $rowErrors[] = ['gr_number', 'Duplicate GR Number in workbook.'];
+                }
                 $seenGr[$grKey] = true;
             }
-            foreach ($rowErrors as [$field, $message]) $errors[] = ['row' => $number, 'column' => $field, 'message' => $message];
+            foreach ($rowErrors as [$field, $message]) {
+                $errors[] = ['row' => $number, 'column' => $field, 'message' => $message];
+            }
             $normalized[] = [
                 '_row' => $number, 'po_number' => trim((string) $row['po_number']), 'supplier_id' => $supplierMatches->first()?->id,
                 'supplier_name' => trim((string) $row['supplier_name']), 'po_date' => $poDate, 'po_amount' => $poAmount ?? '0.00',
@@ -75,6 +98,7 @@ class LocalPoGrImportService
             ];
         }
         $errors = array_merge($errors, $this->databaseErrors($normalized));
+
         return ['success' => $errors === [], 'rows' => $normalized, 'errors' => $errors, 'summary' => $this->summary($normalized, $errors)];
     }
 
@@ -82,7 +106,9 @@ class LocalPoGrImportService
     {
         return DB::transaction(function () use ($actor, $rows, $metadata) {
             $result = $this->validate($rows);
-            if (! $result['success']) throw \Illuminate\Validation\ValidationException::withMessages(['import_file' => collect($result['errors'])->map(fn ($e) => "Row {$e['row']} {$e['column']}: {$e['message']}")->all()]);
+            if (! $result['success']) {
+                throw ValidationException::withMessages(['import_file' => collect($result['errors'])->map(fn ($e) => "Row {$e['row']} {$e['column']}: {$e['message']}")->all()]);
+            }
             $poCache = [];
             $newPo = $newGr = 0;
             foreach ($result['rows'] as $row) {
@@ -96,7 +122,12 @@ class LocalPoGrImportService
                     $poCache[$key] = $po;
                 }
                 if ($row['gr_number']) {
-                    $this->masters->createGoodsReceipt($actor, $poCache[$key], ['gr_number' => $row['gr_number'], 'gr_date' => $row['gr_date'], 'received_amount' => $row['gr_amount'], 'notes' => $row['gr_remarks']], LocalPurchaseOrder::SOURCE_IMPORT);
+                    $this->masters->createGoodsReceipt($actor, $poCache[$key], [
+                        'gr_number' => $row['gr_number'],
+                        'gr_date' => $row['gr_date'],
+                        'qty' => (float) ($row['qty'] ?? 1.0),
+                        'notes' => $row['gr_remarks'],
+                    ], LocalPurchaseOrder::SOURCE_IMPORT);
                     $newGr++;
                 }
             }
@@ -122,27 +153,38 @@ class LocalPoGrImportService
                 if ((int) $existing->supplier_id !== (int) $first['supplier_id'] || $existing->po_date?->format('Y-m-d') !== $first['po_date'] || bccomp((string) $existing->total_amount, $first['po_amount'], 2) !== 0 || trim((string) $existing->description) !== trim((string) $first['po_remarks'])) {
                     $errors[] = ['row' => $first['_row'], 'column' => 'po_number', 'message' => 'Existing PO header differs; import cannot update master values.'];
                 }
-                if ($existing->status !== LocalPurchaseOrder::STATUS_OPEN && $group->contains(fn ($r) => $r['gr_number'])) $errors[] = ['row' => $first['_row'], 'column' => 'po_number', 'message' => 'New GR cannot be added to a closed or cancelled PO.'];
+                if ($existing->status !== LocalPurchaseOrder::STATUS_OPEN && $group->contains(fn ($r) => $r['gr_number'])) {
+                    $errors[] = ['row' => $first['_row'], 'column' => 'po_number', 'message' => 'New GR cannot be added to a closed or cancelled PO.'];
+                }
             }
-            $existingGrTotal = $existing ? (string) $existing->goodsReceipts()->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->sum('received_amount') : '0.00';
-            $incoming = $group->reduce(fn ($sum, $r) => $r['gr_amount'] ? bcadd($sum, $r['gr_amount'], 2) : $sum, '0.00');
-            if (bccomp(bcadd($existingGrTotal, $incoming, 2), $first['po_amount'], 2) > 0) $errors[] = ['row' => $first['_row'], 'column' => 'gr_amount', 'message' => 'Cumulative non-cancelled GR amount exceeds the PO amount.'];
         }
-        foreach ($rows as $row) if ($row['gr_number'] && LocalGoodsReceipt::whereRaw('LOWER(gr_number) = ?', [mb_strtolower($row['gr_number'])])->exists()) $errors[] = ['row' => $row['_row'], 'column' => 'gr_number', 'message' => 'GR Number already exists.'];
+        foreach ($rows as $row) {
+            if ($row['gr_number'] && LocalGoodsReceipt::whereRaw('LOWER(gr_number) = ?', [mb_strtolower($row['gr_number'])])->exists()) {
+                $errors[] = ['row' => $row['_row'], 'column' => 'gr_number', 'message' => 'GR Number already exists.'];
+            }
+        }
+
         return $errors;
     }
 
     private function date(mixed $value): ?string
     {
         try {
-            if (is_numeric($value)) return Carbon::instance(ExcelDate::excelToDateTimeObject($value))->format('Y-m-d');
+            if (is_numeric($value)) {
+                return Carbon::instance(ExcelDate::excelToDateTimeObject($value))->format('Y-m-d');
+            }
+
             return Carbon::createFromFormat('Y-m-d', trim((string) $value))->format('Y-m-d');
-        } catch (\Throwable) { return null; }
+        } catch (\Throwable) {
+            return null;
+        }
     }
+
     private function summary(array $rows, array $errors): array
     {
         $poNumbers = collect($rows)->pluck('po_number')->filter()->map(fn ($v) => mb_strtolower($v))->unique();
         $existing = LocalPurchaseOrder::whereIn(DB::raw('LOWER(po_number)'), $poNumbers->all())->count();
+
         return ['total' => count($rows), 'new_po' => max(0, $poNumbers->count() - $existing), 'existing_po' => $existing, 'new_gr' => collect($rows)->whereNotNull('gr_number')->count(), 'invalid' => count($errors)];
     }
 
@@ -162,6 +204,7 @@ class LocalPoGrImportService
         }
 
         [$whole, $fraction] = explode('.', $value, 2);
+
         return $whole.'.'.str_pad($fraction, 2, '0');
     }
 }

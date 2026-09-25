@@ -9,6 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,7 @@ class PurchasingController extends Controller
     public function dashboard()
     {
         // ─── Cached dashboard widgets (10 menit) ───
-        $dashboardData = \Illuminate\Support\Facades\Cache::remember(
+        $dashboardData = Cache::remember(
             'purchasing_dashboard_widgets',
             now()->addMinutes(10),
             function () {
@@ -34,12 +35,12 @@ class PurchasingController extends Controller
                     ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mn, COUNT(*) as total')
                     ->groupByRaw('YEAR(created_at), MONTH(created_at)')
                     ->get()
-                    ->keyBy(fn($row) => $row->yr . '-' . $row->mn);
+                    ->keyBy(fn ($row) => $row->yr.'-'.$row->mn);
 
                 $prPerBulan = [];
                 for ($i = 5; $i >= 0; $i--) {
                     $d = Carbon::now()->subMonths($i);
-                    $key = $d->year . '-' . $d->month;
+                    $key = $d->year.'-'.$d->month;
                     $prPerBulan[] = [
                         'label' => $d->format('M Y'),
                         'count' => (int) ($prCounts->get($key)?->total ?? 0),
@@ -136,7 +137,7 @@ class PurchasingController extends Controller
 
         // Exchange rates are cached by ExchangeRate::latestRate.
         $latestRates = collect(ExchangeRate::CURRENCIES)
-            ->mapWithKeys(fn($currency) => [$currency => ExchangeRate::latestRate($currency)]);
+            ->mapWithKeys(fn ($currency) => [$currency => ExchangeRate::latestRate($currency)]);
 
         return view('purchasing.dashboard', compact(
             'prAktif', 'menungguPenawaran', 'poBerjalan', 'materialMingguIni',
@@ -157,6 +158,7 @@ class PurchasingController extends Controller
             'valid_from' => now(),
             'created_by' => auth()->id(),
         ]);
-        return back()->with('success', $request->currency . ' exchange rate successfully updated.');
+
+        return back()->with('success', $request->currency.' exchange rate successfully updated.');
     }
 }

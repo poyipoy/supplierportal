@@ -542,7 +542,7 @@ class QcInspectionController extends Controller
     /**
      * Delete files staged to disk during an aborted transaction.
      *
-     * @param array<int, string> $stagedPaths
+     * @param  array<int, string>  $stagedPaths
      */
     private function cleanupStagedAttachments(array $stagedPaths): void
     {

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Conversation;
+use App\Models\Period;
 use App\Models\PurchaseRequisition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,8 +14,11 @@ class ChatDrawerDraftIsolationTest extends TestCase
     use RefreshDatabase;
 
     private User $purchasingUser;
+
     private User $supplierUser;
+
     private User $unauthorizedUser;
+
     private Conversation $conversation;
 
     protected function setUp(): void
@@ -25,7 +29,7 @@ class ChatDrawerDraftIsolationTest extends TestCase
         $this->supplierUser = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
         $this->unauthorizedUser = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
 
-        $period = \App\Models\Period::create([
+        $period = Period::create([
             'name' => 'Period Chat Test',
             'month' => 9,
             'year' => 2026,

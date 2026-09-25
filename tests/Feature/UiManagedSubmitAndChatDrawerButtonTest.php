@@ -17,10 +17,15 @@ class UiManagedSubmitAndChatDrawerButtonTest extends TestCase
     use RefreshDatabase;
 
     private User $purchasingUser;
+
     private User $supplierUser;
+
     private Period $period;
+
     private PurchaseRequisition $pr;
+
     private Quotation $quotation;
+
     private PurchaseOrder $po;
 
     protected function setUp(): void
@@ -164,7 +169,7 @@ class UiManagedSubmitAndChatDrawerButtonTest extends TestCase
 
         // Must not contain raw hardcoded spinner-border string mutation on submitButton
         $this->assertStringNotContainsString(
-            "submitButton.innerHTML = `<span class=\"spinner-border spinner-border-sm me-1\"></span>Opening...`;",
+            'submitButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Opening...`;',
             $content,
             'chat-drawer must not mutate submitButton.innerHTML with hardcoded spinner-border'
         );
@@ -205,4 +210,3 @@ class UiManagedSubmitAndChatDrawerButtonTest extends TestCase
         );
     }
 }
-

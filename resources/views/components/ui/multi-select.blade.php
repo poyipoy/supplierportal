@@ -37,25 +37,34 @@
         if (is_array($item)) {
             $val = (string) ($item['value'] ?? $key);
             $lbl = (string) ($item['label'] ?? '');
+            $desc = isset($item['description']) ? (string) $item['description'] : null;
             $sub = isset($item['sublabel']) ? (string) $item['sublabel'] : null;
             $amt = isset($item['amount']) ? (float) $item['amount'] : 0.0;
+            $qty = isset($item['qty']) ? (float) $item['qty'] : null;
             $date = isset($item['date']) ? (string) $item['date'] : null;
-            $keywords = (string) ($item['searchKeywords'] ?? ($lbl . ' ' . ($sub ?? '') . ' ' . $amt));
+            $dateFormatted = isset($item['dateFormatted']) ? (string) $item['dateFormatted'] : null;
+            $keywords = (string) ($item['searchKeywords'] ?? ($lbl . ' ' . ($desc ?? '') . ' ' . ($sub ?? '') . ' ' . $amt));
             return [
                 'value' => $val,
                 'label' => $lbl,
-                'sublabel' => $sub,
+                'description' => $desc,
+                'sublabel' => $sub ?? ($date ? ('Tanggal: ' . ($dateFormatted ?? $date)) : null),
                 'amount' => $amt,
+                'qty' => $qty,
                 'date' => $date,
+                'dateFormatted' => $dateFormatted,
                 'searchKeywords' => strtolower($keywords),
             ];
         }
         return [
             'value' => (string) $key,
             'label' => (string) $item,
+            'description' => null,
             'sublabel' => null,
             'amount' => 0.0,
+            'qty' => null,
             'date' => null,
+            'dateFormatted' => null,
             'searchKeywords' => strtolower((string) $item),
         ];
     })->values()->all();
@@ -89,6 +98,7 @@
             return this.options.filter(opt =>
                 (opt.searchKeywords && opt.searchKeywords.includes(q)) ||
                 opt.label.toLowerCase().includes(q) ||
+                (opt.description && opt.description.toLowerCase().includes(q)) ||
                 (opt.sublabel && opt.sublabel.toLowerCase().includes(q))
             );
         },
@@ -113,7 +123,7 @@
             if (count === 0) {
                 return { count: 0, badgeText: '', text: this.defaultPlaceholder, totalFormatted: '' };
             }
-            const totalStr = this.formatRupiah(this.totalAmount);
+            const totalStr = this.totalAmount > 0 ? this.formatRupiah(this.totalAmount) : '';
             if (count === 1) {
                 const first = this.selectedOptions[0];
                 const lbl = first ? first.label : '1 GR';
@@ -173,10 +183,13 @@
             this.options = (newOptions || []).map(opt => ({
                 value: String(opt.id ?? opt.value),
                 label: String(opt.number ?? opt.label ?? ''),
-                sublabel: opt.date ? ('Tanggal: ' + opt.date) : (opt.sublabel ?? null),
+                description: opt.description ?? null,
+                sublabel: opt.sublabel ?? (opt.date ? ('Tanggal: ' + (opt.dateFormatted ?? opt.date)) : null),
                 amount: parseFloat(opt.amount ?? 0),
+                qty: opt.qty !== undefined ? parseFloat(opt.qty) : null,
                 date: opt.date ?? null,
-                searchKeywords: (String(opt.number ?? opt.label ?? '') + ' ' + (opt.amount ?? '') + ' ' + (opt.date ?? '')).toLowerCase(),
+                dateFormatted: opt.dateFormatted ?? null,
+                searchKeywords: (String(opt.number ?? opt.label ?? '') + ' ' + (opt.description ?? '') + ' ' + (opt.sublabel ?? '') + ' ' + (opt.amount ?? '') + ' ' + (opt.date ?? '')).toLowerCase(),
             }));
 
             this.isDisabled = this.options.length === 0;
@@ -410,15 +423,23 @@
 
                         <div class="tw-flex tw-flex-col tw-gap-0.5 tw-min-w-0">
                             <span class="tw-font-mono tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-truncate" x-text="opt.label"></span>
+                            <template x-if="opt.description">
+                                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" :title="opt.description">
+                                    <span class="tw-font-semibold tw-text-on-surface">Deskripsi:</span>
+                                    <span x-text="' ' + opt.description"></span>
+                                </span>
+                            </template>
                             <template x-if="opt.sublabel">
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" x-text="opt.sublabel"></span>
+                                <span class="tw-text-[11px] tw-text-on-surface-variant/80 tw-truncate" x-text="opt.sublabel"></span>
                             </template>
                         </div>
                     </div>
 
-                    <div class="tw-shrink-0 tw-text-end">
-                        <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-primary" x-text="formatRupiah(opt.amount)"></span>
-                    </div>
+                    <template x-if="opt.amount !== undefined && Number(opt.amount) > 0">
+                        <div class="tw-shrink-0 tw-text-end">
+                            <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-primary" x-text="formatRupiah(opt.amount)"></span>
+                        </div>
+                    </template>
                 </div>
             </template>
 
@@ -436,8 +457,15 @@
         {{-- Footer with Total Nominal & Done Button --}}
         <div class="tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-bg-surface-container-lowest tw-border-t tw-border-outline-variant/60">
             <div class="tw-text-ui-xs tw-text-on-surface">
-                <span class="tw-text-on-surface-variant">Total: </span>
-                <strong class="tw-font-mono tw-text-primary" x-text="formatRupiah(totalAmount)"></strong>
+                <template x-if="totalAmount > 0">
+                    <div>
+                        <span class="tw-text-on-surface-variant">Total: </span>
+                        <strong class="tw-font-mono tw-text-primary" x-text="formatRupiah(totalAmount)"></strong>
+                    </div>
+                </template>
+                <template x-if="!totalAmount || totalAmount === 0">
+                    <span class="tw-text-on-surface-variant" x-text="selectedValues.length + ' berkas GR terpilih'"></span>
+                </template>
             </div>
             <button
                 type="button"

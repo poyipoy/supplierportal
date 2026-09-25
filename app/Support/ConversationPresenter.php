@@ -19,11 +19,11 @@ class ConversationPresenter
         }
 
         return Quotation::with([
-                'exchange_rate',
-                'items.prItem',
-                'purchaseRequisition.period',
-                'purchaseOrders',
-            ])
+            'exchange_rate',
+            'items.prItem',
+            'purchaseRequisition.period',
+            'purchaseOrders',
+        ])
             ->where('pr_id', $conversation->conversable_id)
             ->where('supplier_id', $conversation->supplier_user_id)
             ->latest('updated_at')
@@ -47,7 +47,7 @@ class ConversationPresenter
                 'url' => self::contextUrl($viewer, $conversation, $quotation),
                 'fields' => array_values(array_filter([
                     ['label' => 'Supplier', 'value' => self::supplierName($conversation->supplierUser)],
-                    ['label' => 'Material', 'value' => $conversable->items->count() . ' item'],
+                    ['label' => 'Material', 'value' => $conversable->items->count().' item'],
                     ['label' => 'Quotation Status', 'value' => $quotation?->statusLabel() ?? 'None'],
                     ['label' => 'Currency', 'value' => $quotation?->currency],
                     ['label' => 'Total Quotation', 'value' => $quotation ? self::quotationTotal($quotation) : null],
@@ -212,7 +212,7 @@ class ConversationPresenter
                 'label' => 'Completed',
                 'class' => 'bg-success',
                 'description' => $conversation->resolved_at
-                    ? 'Resolved ' . $conversation->resolved_at->diffForHumans()
+                    ? 'Resolved '.$conversation->resolved_at->diffForHumans()
                     : 'The conversation is completed.',
                 'is_overdue' => false,
             ];
@@ -236,7 +236,7 @@ class ConversationPresenter
             return [
                 'label' => 'No reply for > 1 day',
                 'class' => 'bg-danger',
-                'description' => 'The latest message has been waiting for your reply since ' . $latest->created_at->diffForHumans() . '.',
+                'description' => 'The latest message has been waiting for your reply since '.$latest->created_at->diffForHumans().'.',
                 'is_overdue' => true,
             ];
         }
@@ -299,7 +299,7 @@ class ConversationPresenter
     {
         $amount = $quotation->items->sum(fn ($item) => $item->resolved_amount);
 
-        return number_format($amount, 2, ',', '.') . ' ' . $quotation->currency;
+        return number_format($amount, 2, ',', '.').' '.$quotation->currency;
     }
 
     private static function formatDate($date): ?string

@@ -25,6 +25,7 @@ class LocalInvoicePaymentService
     {
         $this->authorize($actor);
         $data['amount'] = $this->money($data['amount'] ?? null);
+
         return DB::transaction(function () use ($voucher, $data, $actor) {
             $lockedVoucher = LocalInvoiceVoucher::whereKey($voucher->id)->lockForUpdate()->firstOrFail();
             if ($lockedVoucher->status !== LocalInvoiceVoucher::STATUS_FINAL) {
@@ -48,6 +49,7 @@ class LocalInvoicePaymentService
                 'created_by' => $actor->id, 'updated_by' => $actor->id,
             ]);
             $this->addTransfer($payment, LocalInvoicePaymentTransfer::TYPE_PRIMARY, $data, $actor);
+
             return $this->reconcile($payment, $actor);
         });
     }
@@ -56,6 +58,7 @@ class LocalInvoicePaymentService
     {
         $this->authorize($actor);
         $data['amount'] = $this->money($data['amount'] ?? null);
+
         return DB::transaction(function () use ($payment, $data, $actor) {
             $locked = LocalInvoicePayment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== LocalInvoicePayment::STATUS_CORRECTION_REQUIRED) {
@@ -65,6 +68,7 @@ class LocalInvoicePaymentService
                 throw ValidationException::withMessages(['correction_reason' => 'Correction reason is required.']);
             }
             $this->addTransfer($locked, LocalInvoicePaymentTransfer::TYPE_CORRECTION, $data, $actor);
+
             return $this->reconcile($locked, $actor);
         });
     }
@@ -108,7 +112,7 @@ class LocalInvoicePaymentService
                 'to_status' => $invoice->status,
                 'actor_id' => $actor->id,
                 'event' => 'partial_payment',
-                'notes' => "Pembayaran parsial sebesar Rp " . number_format((float) ($latestTransfer?->amount ?? $actual), 0, ',', '.') . " dicatat (Ref: {$latestTransfer?->transfer_reference}). Total terbayar: Rp " . number_format((float) $actual, 0, ',', '.') . ", Sisa tagihan: Rp " . number_format((float) $remaining, 0, ',', '.') . ".{$reasonText}",
+                'notes' => 'Pembayaran parsial sebesar Rp '.number_format((float) ($latestTransfer?->amount ?? $actual), 0, ',', '.')." dicatat (Ref: {$latestTransfer?->transfer_reference}). Total terbayar: Rp ".number_format((float) $actual, 0, ',', '.').', Sisa tagihan: Rp '.number_format((float) $remaining, 0, ',', '.').".{$reasonText}",
                 'created_at' => now(),
             ]);
             $this->notifications->send($invoice, $history);
@@ -139,13 +143,14 @@ class LocalInvoicePaymentService
                 'to_status' => $invoice->status,
                 'actor_id' => $actor->id,
                 'event' => 'overpaid',
-                'notes' => "Terjadi kelebihan bayar sebesar Rp " . number_format((float) $overpaymentAmount, 0, ',', '.') . ". Kelebihan dana tercatat sebagai pengembalian (refund) ke ADASI.",
+                'notes' => 'Terjadi kelebihan bayar sebesar Rp '.number_format((float) $overpaymentAmount, 0, ',', '.').'. Kelebihan dana tercatat sebagai pengembalian (refund) ke ADASI.',
                 'created_at' => $now,
             ]);
             $this->notifications->send($invoice, $overHistory);
         }
         $this->syncContainers($payment);
         $this->audit->record($payment, 'settlement_finalized', $actor, null, $payment->fresh()->toArray());
+
         return $payment->fresh(['transfers', 'overpayment']);
     }
 
@@ -176,8 +181,11 @@ class LocalInvoicePaymentService
         if (! preg_match('/^\d{1,18}(?:\.\d{1,2})?$/', $value) || bccomp($value, '0', 2) <= 0) {
             throw ValidationException::withMessages(['amount' => 'Transfer amount must be positive with up to two decimal places.']);
         }
-        if (! str_contains($value, '.')) return $value.'.00';
+        if (! str_contains($value, '.')) {
+            return $value.'.00';
+        }
         [$whole, $fraction] = explode('.', $value, 2);
+
         return $whole.'.'.str_pad($fraction, 2, '0');
     }
 }

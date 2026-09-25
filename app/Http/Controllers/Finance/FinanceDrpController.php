@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exports\PaymentBatchDrpExport;
+use App\Exports\PaymentBatchTransferExport;
 use App\Http\Controllers\Controller;
 use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
@@ -11,8 +12,10 @@ use App\Models\PaymentItem;
 use App\Models\User;
 use App\Services\Payment\PaymentBatchService;
 use App\Services\Payment\PaymentVoucherService;
+use App\Support\BankTransferMapping;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
+use Vinkla\Hashids\Facades\Hashids;
 
 class FinanceDrpController extends Controller
 {
@@ -151,6 +154,142 @@ class FinanceDrpController extends Controller
         );
 
         $message = 'Permintaan export DRP telah diterima. File akan terunduh otomatis setelah siap.';
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'export_job_id' => $exportJob->getRouteKey(),
+                'exports_url' => route('exports.index', absolute: false),
+                'status_url' => route('exports.status', $exportJob, absolute: false),
+                'cancel_url' => route('exports.cancel', $exportJob, absolute: false),
+            ], 202);
+        }
+
+        return back()->with('info', $message);
+    }
+
+    /**
+     * POST /finance/drp/export-transfer
+     *
+     * Bulk export transfer data from multiple DRP batches into a single TARIKAN TRANSFER workbook.
+     * Validates ALL selected batches atomically before dispatching.
+     */
+    public function exportTransferBulk(Request $request)
+    {
+        $request->validate([
+            'batch_ids' => 'required|array|min:1',
+            'batch_ids.*' => 'required|string',
+        ]);
+
+        // Resolve hashed batch IDs to integers
+        $rawIds = $request->input('batch_ids');
+        $resolvedIds = [];
+        foreach ($rawIds as $hashId) {
+            if (ctype_digit((string) $hashId)) {
+                abort(422, 'Raw integer batch IDs are not accepted. Use hashed identifiers.');
+            }
+
+            try {
+                $decoded = Hashids::decode($hashId);
+            } catch (\Throwable) {
+                $decoded = [];
+            }
+
+            if (count($decoded) !== 1 || (int) $decoded[0] <= 0) {
+                abort(422, "Invalid batch identifier: {$hashId}");
+            }
+
+            $resolvedIds[] = (int) $decoded[0];
+        }
+
+        // Deduplicate
+        $resolvedIds = array_values(array_unique($resolvedIds));
+
+        if (empty($resolvedIds)) {
+            abort(422, 'No valid batch IDs provided.');
+        }
+
+        // Load all batches with eager loading
+        $batches = PaymentBatch::query()
+            ->whereIn('id', $resolvedIds)
+            ->with([
+                'groups' => fn ($q) => $q
+                    ->where('status', '!=', PaymentGroup::STATUS_CANCELLED)
+                    ->orderBy('id')
+                    ->with([
+                        'items' => fn ($q) => $q
+                            ->where('status', PaymentItem::STATUS_ACTIVE)
+                            ->where('payable_type', LocalInvoice::class)
+                            ->orderBy('id')
+                            ->with('payable'),
+                    ]),
+            ])
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
+
+        // Validate: all requested batches must exist
+        if ($batches->count() !== count($resolvedIds)) {
+            $foundIds = $batches->pluck('id')->toArray();
+            $missing = array_diff($resolvedIds, $foundIds);
+            abort(422, 'Beberapa batch DRP tidak ditemukan: '.implode(', ', $missing));
+        }
+
+        // Validate: all batches must be TYPE_SUPPLIER
+        $nonSupplier = $batches->filter(fn ($b) => $b->batch_type !== PaymentBatch::TYPE_SUPPLIER);
+        if ($nonSupplier->isNotEmpty()) {
+            $names = $nonSupplier->pluck('batch_number')->join(', ');
+            abort(422, "Hanya DRP Supplier yang dapat diexport transfer. Batch berikut bukan SUPPLIER: {$names}");
+        }
+
+        // Validate: no CANCELLED batches
+        $cancelled = $batches->filter(fn ($b) => $b->status === PaymentBatch::STATUS_CANCELLED);
+        if ($cancelled->isNotEmpty()) {
+            $names = $cancelled->pluck('batch_number')->join(', ');
+            abort(422, "Batch DRP yang dibatalkan tidak dapat diexport: {$names}");
+        }
+
+        // Validate: every batch must have at least one active supplier item
+        foreach ($batches as $batch) {
+            $hasActiveItems = $batch->groups->contains(function (PaymentGroup $group) {
+                return $group->items->contains(
+                    fn (PaymentItem $item) => $item->status === PaymentItem::STATUS_ACTIVE
+                        && $item->payable_type === LocalInvoice::class
+                );
+            });
+
+            if (! $hasActiveItems) {
+                abort(422, "Batch [{$batch->batch_number}] tidak memiliki tagihan aktif untuk export transfer.");
+            }
+        }
+
+        // Validate: all bank mappings resolve
+        $bankFailures = BankTransferMapping::validateBatches($batches);
+        if (! empty($bankFailures)) {
+            $details = collect($bankFailures)
+                ->map(fn ($f) => "[{$f['batch_number']}] bank: {$f['bank_name']}")
+                ->join('; ');
+            abort(422, "Bank tidak dapat dikenali untuk export transfer: {$details}");
+        }
+
+        // All validation passed — dispatch single export job
+        $fileName = 'DRP_TRANSFER_'.now()->format('Ymd').'.xlsx';
+        $batchNumbers = $batches->pluck('batch_number')->join(', ');
+        $label = "Transfer DRP: {$batchNumbers}";
+
+        // Truncate label if too long
+        if (strlen($label) > 200) {
+            $label = substr($label, 0, 197).'...';
+        }
+
+        $exportJob = ExportDispatcher::dispatch(
+            $label,
+            PaymentBatchTransferExport::class,
+            [$request->user()->id, $resolvedIds],
+            $fileName
+        );
+
+        $message = 'Permintaan export transfer DRP telah diterima. File akan terunduh otomatis setelah siap.';
 
         if ($request->wantsJson()) {
             return response()->json([

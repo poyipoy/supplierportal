@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\LocalInvoice\StoreLocalInvoiceRequest;
+use App\Models\Supplier;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
@@ -201,11 +205,11 @@ BLADE;
 
     public function test_local_invoice_filters_render_cleanly(): void
     {
-        $user = \App\Models\User::factory()->make(['id' => 1, 'role' => 'finance']);
+        $user = User::factory()->make(['id' => 1, 'role' => 'finance']);
         $this->actingAs($user);
 
-        $mockSupplier = \App\Models\User::factory()->make(['id' => 999, 'name' => 'PT Sumber Logam']);
-        $mockSupplier->setRelation('supplier', new \App\Models\Supplier(['company_name' => 'PT Sumber Logam Mandiri']));
+        $mockSupplier = User::factory()->make(['id' => 999, 'name' => 'PT Sumber Logam']);
+        $mockSupplier->setRelation('supplier', new Supplier(['company_name' => 'PT Sumber Logam Mandiri']));
 
         $html = view('local-invoices.filters', [
             'suppliers' => collect([$mockSupplier]),
@@ -224,7 +228,7 @@ BLADE;
         $this->assertNoCompilerLeakage($html);
 
         // Verify supplier data isolation: supplier users cannot see supplier filter dropdown
-        $supplierActor = \App\Models\User::factory()->make(['id' => 50, 'role' => 'supplier']);
+        $supplierActor = User::factory()->make(['id' => 50, 'role' => 'supplier']);
         $this->actingAs($supplierActor);
 
         $supplierHtml = view('local-invoices.filters', [
@@ -236,5 +240,69 @@ BLADE;
         $this->assertStringNotContainsString('invoice-supplier', $supplierHtml);
         $this->assertStringNotContainsString('PT Sumber Logam Mandiri', $supplierHtml);
         $this->assertNoCompilerLeakage($supplierHtml);
+    }
+
+    public function test_file_upload_single_mode_renders_ganti_berkas_and_omits_limit_reached_notice(): void
+    {
+        $html = Blade::render(<<<'BLADE'
+<x-ui.file-upload
+    name="import_file"
+    id="prImportFile"
+    label="Spreadsheet File"
+    helper="XLSX, XLS, or CSV format; maximum 10 MB and up to 1,000 rows."
+    accept=".xlsx,.xls,.csv"
+/>
+BLADE);
+
+        $this->assertStringContainsString('Ganti Berkas', $html);
+        $this->assertStringNotContainsString('Batas maksimal 5 berkas tercapai', $html);
+        $this->assertStringNotContainsString('Tambah Berkas', $html);
+        $this->assertNoCompilerLeakage($html);
+    }
+
+    public function test_file_upload_multi_mode_renders_tambah_berkas_and_limit_reached_notice(): void
+    {
+        $html = Blade::render(<<<'BLADE'
+<x-ui.file-upload
+    name="invoice"
+    id="file_invoice"
+    label="Berkas Invoice Fisik / Asli"
+    :multiple="true"
+    :max-files="5"
+/>
+BLADE);
+
+        $this->assertStringContainsString('Tambah Berkas', $html);
+        $this->assertStringContainsString('Batas maksimal 5 berkas tercapai', $html);
+        $this->assertStringNotContainsString('Ganti Berkas', $html);
+        $this->assertNoCompilerLeakage($html);
+    }
+
+    public function test_store_local_invoice_request_messages_differentiates_single_vs_multi_upload(): void
+    {
+        $requestSingle = new StoreLocalInvoiceRequest;
+        $requestSingle->files->set('invoice', UploadedFile::fake()->create('inv.pdf', 6000));
+        $messagesSingle = $requestSingle->messages();
+
+        $this->assertSame(
+            'Ukuran berkas Berkas Invoice tidak boleh melebihi 5 MB.',
+            $messagesSingle['invoice.max']
+        );
+
+        $requestMulti = new StoreLocalInvoiceRequest;
+        $requestMulti->files->set('invoice', [
+            UploadedFile::fake()->create('inv1.pdf', 100),
+            UploadedFile::fake()->create('inv2.pdf', 100),
+        ]);
+        $messagesMulti = $requestMulti->messages();
+
+        $this->assertSame(
+            'Maksimal 5 berkas yang diizinkan untuk Berkas Invoice.',
+            $messagesMulti['invoice.max']
+        );
+        $this->assertSame(
+            'Ukuran setiap berkas Berkas Invoice tidak boleh melebihi 5 MB.',
+            $messagesMulti['invoice.*.max']
+        );
     }
 }

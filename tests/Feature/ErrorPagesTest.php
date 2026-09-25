@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class ErrorPagesTest extends TestCase
@@ -17,7 +18,7 @@ class ErrorPagesTest extends TestCase
     public function test_custom_403_page_view_exists_and_renders(): void
     {
         $view = $this->view('errors.403', [
-            'exception' => new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Akses Ditolak'),
+            'exception' => new HttpException(403, 'Akses Ditolak'),
         ]);
 
         $view->assertSee('Akses Ditolak')

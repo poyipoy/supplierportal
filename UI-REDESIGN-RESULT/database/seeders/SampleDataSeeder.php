@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\ExchangeRate;
 use App\Models\Period;
+use App\Models\PoDocument;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
@@ -22,8 +23,9 @@ class SampleDataSeeder extends Seeder
         $supplier2User = User::with('supplier')->where('email', 'supplier2@test.com')->first();
         $rateUsd = ExchangeRate::where('currency', 'USD')->first();
 
-        if (!$purchasing || !$supplier1User || !$supplier2User || !$rateUsd) {
+        if (! $purchasing || ! $supplier1User || ! $supplier2User || ! $rateUsd) {
             echo "Base users or exchange rates missing. Please run DatabaseSeeder first.\n";
+
             return;
         }
 
@@ -143,10 +145,10 @@ class SampleDataSeeder extends Seeder
             $po->quotations()->syncWithoutDetaching([$quotation1->id]);
 
             // 7. Create PO Documents
-            \App\Models\PoDocument::create(['po_id' => $po->id, 'doc_type' => 'invoice', 'status' => 'received']);
-            \App\Models\PoDocument::create(['po_id' => $po->id, 'doc_type' => 'bl', 'status' => 'issued']);
-            \App\Models\PoDocument::create(['po_id' => $po->id, 'doc_type' => 'packing_list', 'status' => 'pending']);
-            \App\Models\PoDocument::create(['po_id' => $po->id, 'doc_type' => 'form_e', 'status' => 'processing']);
+            PoDocument::create(['po_id' => $po->id, 'doc_type' => 'invoice', 'status' => 'received']);
+            PoDocument::create(['po_id' => $po->id, 'doc_type' => 'bl', 'status' => 'issued']);
+            PoDocument::create(['po_id' => $po->id, 'doc_type' => 'packing_list', 'status' => 'pending']);
+            PoDocument::create(['po_id' => $po->id, 'doc_type' => 'form_e', 'status' => 'processing']);
 
             // 8. Create a pending PR (bidding state)
             $pr2 = PurchaseRequisition::create([

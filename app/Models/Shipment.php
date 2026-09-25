@@ -18,8 +18,11 @@ class Shipment extends Model
     use HasFactory, HasHashids, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_ARRIVED = 'arrived';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const STATUSES = [

@@ -28,3 +28,7 @@ Revise Portal/
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/scratch/
+/*.xlsx
+/.agents/
+/.claude/

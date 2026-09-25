@@ -9,7 +9,6 @@ use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\PrItemAwardService;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -22,9 +21,13 @@ class ItemLevelAwardTest extends TestCase
     use RefreshDatabase;
 
     private User $purchasing;
+
     private User $supplierA;
+
     private User $supplierB;
+
     private PrItemAwardService $awardService;
+
     private ExchangeRate $exchangeRate;
 
     protected function setUp(): void
@@ -257,14 +260,14 @@ class ItemLevelAwardTest extends TestCase
                 $this->awardService->awardItem($prItem, $qItem, $this->purchasing);
                 $this->fail("Expected awardItem to fail for quotation status '{$status}'");
             } catch (InvalidArgumentException $e) {
-                $this->assertStringContainsString("eligible", $e->getMessage());
+                $this->assertStringContainsString('eligible', $e->getMessage());
             }
 
             try {
                 $this->awardService->awardBatch($pr, [$prItem->id => $qItem->id], $this->purchasing);
                 $this->fail("Expected awardBatch to fail for quotation status '{$status}'");
             } catch (InvalidArgumentException $e) {
-                $this->assertStringContainsString("eligible", $e->getMessage());
+                $this->assertStringContainsString('eligible', $e->getMessage());
             }
         }
 

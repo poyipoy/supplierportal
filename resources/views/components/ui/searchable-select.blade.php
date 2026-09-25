@@ -11,9 +11,11 @@
     'required' => false,
     'disabled' => false,
     'emptyMessage' => 'Tidak ada data yang cocok',
+    'showSublabelOnTrigger' => true,
 ])
 
 @php
+    $showSub = filter_var($showSublabelOnTrigger, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
     $resolvedId = $id ?: preg_replace('/[^A-Za-z0-9_-]+/', '-', $name);
     $validationKey = trim(preg_replace('/\[([^\]]*)\]/', '.$1', $name), '.');
     $message = $error ?: (isset($errors) && $errors->has($validationKey) ? $errors->first($validationKey) : null);
@@ -193,12 +195,16 @@
     >
         <div class="tw-flex-1 tw-min-w-0 tw-truncate tw-pe-2">
             <template x-if="selectedOption">
-                <div class="tw-flex tw-flex-col tw-gap-0.5">
-                    <span class="tw-font-medium tw-text-on-surface tw-truncate" x-text="selectedOption.label"></span>
-                    <template x-if="selectedOption.sublabel">
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" x-text="selectedOption.sublabel"></span>
-                    </template>
-                </div>
+                @if($showSub)
+                    <div class="tw-flex tw-flex-col tw-gap-0.5">
+                        <span class="tw-font-medium tw-text-on-surface tw-truncate" x-text="selectedOption.label"></span>
+                        <template x-if="selectedOption.sublabel">
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" x-text="selectedOption.sublabel"></span>
+                        </template>
+                    </div>
+                @else
+                    <span class="tw-font-medium tw-text-on-surface tw-truncate tw-block" x-text="selectedOption.label"></span>
+                @endif
             </template>
             <template x-if="!selectedOption">
                 <span class="tw-text-on-surface-variant">{{ $placeholder }}</span>

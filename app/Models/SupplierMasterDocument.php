@@ -9,11 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SupplierMasterDocument extends Model
 {
     use HasHashids;
+
     public const TYPE_NIB = 'NIB';
+
     public const TYPE_NPWP = 'NPWP';
+
     public const TYPE_SPPKP = 'SPPKP';
+
     public const TYPE_SKD = 'SKD';
+
     public const TYPE_SURAT_PERNYATAAN_REKENING = 'SURAT_PERNYATAAN_REKENING';
+
     public const TYPE_OTHER = 'OTHER';
 
     protected $fillable = [

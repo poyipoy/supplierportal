@@ -2,17 +2,25 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Exports\LocalGrImportTemplateExport;
 use App\Exports\LocalPoGrImportTemplateExport;
+use App\Exports\LocalPoImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\SaveLocalGoodsReceiptRequest;
 use App\Http\Requests\LocalInvoice\SaveLocalPurchaseOrderRequest;
+use App\Http\Requests\LocalInvoice\UploadLocalGrImportRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoDocumentRequest;
+use App\Http\Requests\LocalInvoice\UploadLocalPoImportRequest;
+use App\Imports\LocalGrImport;
 use App\Imports\LocalPoGrImport;
+use App\Imports\LocalPoImport;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
+use App\Services\LocalInvoice\LocalGrImportService;
 use App\Services\LocalInvoice\LocalPoDocumentService;
 use App\Services\LocalInvoice\LocalPoGrImportService;
+use App\Services\LocalInvoice\LocalPoImportService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
@@ -26,7 +34,7 @@ class LocalProcurementController extends Controller
     {
         $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
         $query = LocalPurchaseOrder::with('supplier.supplier')->withCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)])
-            ->withSum(['goodsReceipts as active_gr_amount' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)], 'received_amount');
+            ->withSum(['goodsReceipts as active_gr_qty' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)], 'qty');
         if ($request->filled('q')) {
             $query->where('po_number', 'like', '%'.addcslashes($request->string('q'), '%_').'%');
         }
@@ -47,7 +55,8 @@ class LocalProcurementController extends Controller
             'total_pos' => LocalPurchaseOrder::count(),
             'total_po_amount' => (float) LocalPurchaseOrder::sum('total_amount'),
             'open_pos_count' => LocalPurchaseOrder::where('status', LocalPurchaseOrder::STATUS_OPEN)->count(),
-            'active_gr_amount' => (float) LocalGoodsReceipt::where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->sum('received_amount'),
+            'active_gr_qty' => (float) LocalGoodsReceipt::where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->sum('qty'),
+            'active_gr_count' => LocalGoodsReceipt::where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->count(),
         ];
 
         return view('finance.local-procurement.index', [
@@ -127,6 +136,106 @@ class LocalProcurementController extends Controller
     public function template()
     {
         return Excel::download(new LocalPoGrImportTemplateExport, 'local-po-gr-template.xlsx');
+    }
+
+    public function poTemplate()
+    {
+        return Excel::download(new LocalPoImportTemplateExport, 'infor-erp-po-template.xlsx');
+    }
+
+    public function grTemplate()
+    {
+        return Excel::download(new LocalGrImportTemplateExport, 'infor-erp-gr-template.xlsx');
+    }
+
+    public function poPreview(UploadLocalPoImportRequest $request, LocalPoImportService $service)
+    {
+        $import = new LocalPoImport;
+        SpreadsheetImportReader::import($import, $request->file('import_file'));
+        $base = $import->preview();
+        $result = $base['success'] ? $service->validate($base['rows']) : $base;
+        $service->recordPreview($request->user(), $request->file('import_file')->getClientOriginalName(), $result);
+        $token = Str::random(40);
+        if ($result['success']) {
+            session()->put('local_po_import.'.$token, $base['rows']);
+            session()->put('local_po_import_meta.'.$token, [
+                'original_filename' => $request->file('import_file')->getClientOriginalName(),
+                'previewed_at' => now()->toIso8601String(),
+            ]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'preview' => $result,
+                'token' => $token,
+                'confirm_url' => route($this->prefix().'.import.po.confirm'),
+            ]);
+        }
+
+        return redirect()->route($this->prefix().'.index');
+    }
+
+    public function poConfirm(Request $request, LocalPoImportService $service)
+    {
+        $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
+        $rows = session()->pull('local_po_import.'.$data['token']);
+        $metadata = session()->pull('local_po_import_meta.'.$data['token'], []);
+        abort_unless(is_array($rows), 419, 'Import preview expired. Upload the workbook again.');
+        $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
+
+        $msg = "Import PO selesai: {$counts['newPo']} PO baru dibuat";
+        if ($counts['existingPo'] > 0) {
+            $msg .= ", {$counts['existingPo']} PO sudah terdaftar (dilewati).";
+        } else {
+            $msg .= '.';
+        }
+
+        return redirect()->route($this->prefix().'.index')->with('success', $msg);
+    }
+
+    public function grPreview(UploadLocalGrImportRequest $request, LocalGrImportService $service)
+    {
+        $import = new LocalGrImport;
+        SpreadsheetImportReader::import($import, $request->file('import_file'));
+        $base = $import->preview();
+        $result = $base['success'] ? $service->validate($base['rows']) : $base;
+        $service->recordPreview($request->user(), $request->file('import_file')->getClientOriginalName(), $result);
+        $token = Str::random(40);
+        if ($result['success']) {
+            session()->put('local_gr_import.'.$token, $base['rows']);
+            session()->put('local_gr_import_meta.'.$token, [
+                'original_filename' => $request->file('import_file')->getClientOriginalName(),
+                'previewed_at' => now()->toIso8601String(),
+            ]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'preview' => $result,
+                'token' => $token,
+                'confirm_url' => route($this->prefix().'.import.gr.confirm'),
+            ]);
+        }
+
+        return redirect()->route($this->prefix().'.index');
+    }
+
+    public function grConfirm(Request $request, LocalGrImportService $service)
+    {
+        $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
+        $rows = session()->pull('local_gr_import.'.$data['token']);
+        $metadata = session()->pull('local_gr_import_meta.'.$data['token'], []);
+        abort_unless(is_array($rows), 419, 'Import preview expired. Upload the workbook again.');
+        $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
+
+        $msg = "Import GR selesai: {$counts['newGr']} GR baru dibuat dari {$counts['sourceRows']} baris ERP";
+        if ($counts['existingGr'] > 0) {
+            $msg .= ", {$counts['existingGr']} GR sudah terdaftar (dilewati).";
+        } else {
+            $msg .= '.';
+        }
+
+        return redirect()->route($this->prefix().'.index')->with('success', $msg);
     }
 
     public function preview(Request $request, LocalPoGrImportService $service)

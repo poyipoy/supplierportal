@@ -372,6 +372,7 @@ class InvoiceSubmissionService
     public function cancel(User $actor, LocalInvoice $invoice): LocalInvoice
     {
         Gate::forUser($actor)->authorize('cancel', $invoice);
+
         return DB::transaction(function () use ($actor, $invoice) {
             $locked = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             Gate::forUser($actor->fresh())->authorize('cancel', $locked);
@@ -380,6 +381,7 @@ class InvoiceSubmissionService
             $locked->update(['status' => LocalInvoice::STATUS_CANCELLED]);
             $history = $locked->statusHistories()->create(['from_status' => $from, 'to_status' => LocalInvoice::STATUS_CANCELLED, 'actor_id' => $actor->id, 'event' => 'cancelled', 'created_at' => now()]);
             $this->notifications->send($locked, $history);
+
             return $locked->fresh();
         });
     }

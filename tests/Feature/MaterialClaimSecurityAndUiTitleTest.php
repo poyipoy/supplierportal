@@ -19,10 +19,15 @@ class MaterialClaimSecurityAndUiTitleTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $purchasing;
+
     private User $supplier;
+
     private User $qc;
+
     private PurchaseOrder $po;
+
     private MaterialClaim $claim;
 
     protected function setUp(): void

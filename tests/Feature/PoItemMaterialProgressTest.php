@@ -9,19 +9,16 @@ use App\Models\PrItem;
 use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
-use App\Models\QcInspection;
 use App\Models\Quotation;
-use App\Models\QuotationItem;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Services\MaterialProgressService;
-use App\Services\NotificationService;
 use App\Services\PrItemAwardService;
 use App\Services\PurchaseOrderGenerationService;
 use App\Services\ShipmentService;
 use App\Support\StatusHelper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class PoItemMaterialProgressTest extends TestCase
@@ -1056,7 +1053,7 @@ class PoItemMaterialProgressTest extends TestCase
                 'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
             ]);
             $this->fail('Expected HttpException 403 was not thrown for purchasing user.');
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+        } catch (HttpException $e) {
             $this->assertSame(403, $e->getStatusCode());
         }
 
@@ -1067,7 +1064,7 @@ class PoItemMaterialProgressTest extends TestCase
                 'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
             ]);
             $this->fail('Expected HttpException 403 was not thrown for admin user.');
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+        } catch (HttpException $e) {
             $this->assertSame(403, $e->getStatusCode());
         }
     }
@@ -1077,10 +1074,9 @@ class PoItemMaterialProgressTest extends TestCase
      */
     public function test_f05_award_latest_progress_update_foreign_key(): void
     {
-        $award = new PrItemAward();
+        $award = new PrItemAward;
         $relation = $award->latestProgressUpdate();
 
         $this->assertSame('pr_item_award_id', $relation->getForeignKeyName());
     }
 }
-

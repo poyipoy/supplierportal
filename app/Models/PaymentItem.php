@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class PaymentItem extends Model
 {
     public const STATUS_ACTIVE = 'ACTIVE';
+
     public const STATUS_REMOVED = 'REMOVED';
 
     protected $guarded = ['id'];

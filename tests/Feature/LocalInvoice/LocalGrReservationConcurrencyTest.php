@@ -4,10 +4,10 @@ namespace Tests\Feature\LocalInvoice;
 
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
-use App\Models\LocalPurchaseOrder;
 use App\Models\Supplier;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Process\Process;
@@ -34,9 +34,9 @@ class LocalGrReservationConcurrencyTest extends TestCase
         SupplierScope::create(['supplier_id' => $supplier->id, 'scope' => 'local']);
         Supplier::create(['user_id' => $supplier->id, 'company_name' => 'Concurrent GR Supplier', 'category' => 'Parts', 'payment_term_days' => 30]);
         $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
-        $master = app(\App\Services\LocalInvoice\LocalProcurementMasterService::class);
+        $master = app(LocalProcurementMasterService::class);
         $po = $master->createPurchaseOrder($finance, ['supplier_id' => $supplier->id, 'po_number' => 'PO-CONCURRENT-GR', 'po_date' => '2026-09-15', 'total_amount' => '100.00']);
-        $gr = $master->createGoodsReceipt($finance, $po, ['gr_number' => 'GR-CONCURRENT-GR', 'gr_date' => '2026-09-15', 'received_amount' => '100.00']);
+        $gr = $master->createGoodsReceipt($finance, $po, ['gr_number' => 'GR-CONCURRENT-GR', 'gr_date' => '2026-09-15', 'qty' => 10.0]);
 
         $makeInvoice = function (string $number) use ($supplier, $po): LocalInvoice {
             return LocalInvoice::create([

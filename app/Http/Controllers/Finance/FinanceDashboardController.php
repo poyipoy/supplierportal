@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class FinanceDashboardController extends Controller
 {
-    public function dashboard(InvoiceQuery $query, PaymentForecastService $forecastService)
+    public function dashboard(Request $request, InvoiceQuery $query, PaymentForecastService $forecastService)
     {
         $dashboardData = $query->dashboard();
 
@@ -25,26 +25,37 @@ class FinanceDashboardController extends Controller
             'overdue' => $dashboardData['overdue'] ?? 0,
         ];
 
-        $weeklyForecast = $forecastService->getWeeklyForecast();
+        $selectedMonth = $request->query('month', now()->format('Y-m'));
+        $availableMonths = $forecastService->getAvailableMonths();
+        $weeklyForecast = $forecastService->getWeeklyForecast($selectedMonth);
         $monthlyForecast = $forecastService->getMonthlyForecast();
+        $readyToPaySummary = $forecastService->getCurrentReadyToPaySummary();
 
         $recentBatches = PaymentBatch::with('creator')->latest('id')->limit(5)->get();
         $recentInvoices = $dashboardData['invoices'] ?? LocalInvoice::latest('id')->limit(5)->get();
 
         return view('finance.dashboard', array_merge($dashboardData, [
             'kpis' => $kpis,
+            'selectedMonth' => $selectedMonth,
+            'availableMonths' => $availableMonths,
             'weeklyForecast' => $weeklyForecast,
             'monthlyForecast' => $monthlyForecast,
+            'readyToPaySummary' => $readyToPaySummary,
             'recentBatches' => $recentBatches,
             'recentInvoices' => $recentInvoices,
         ]));
     }
 
-    public function forecast(PaymentForecastService $forecastService)
+    public function forecast(Request $request, PaymentForecastService $forecastService)
     {
+        $selectedMonth = $request->query('month', now()->format('Y-m'));
+
         return response()->json([
-            'weekly' => $forecastService->getWeeklyForecast(),
+            'selected_month' => $selectedMonth,
+            'available_months' => $forecastService->getAvailableMonths(),
+            'weekly' => $forecastService->getWeeklyForecast($selectedMonth),
             'monthly' => $forecastService->getMonthlyForecast(),
+            'summary' => $forecastService->getCurrentReadyToPaySummary(),
         ]);
     }
 }

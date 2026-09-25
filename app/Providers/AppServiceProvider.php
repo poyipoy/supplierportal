@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
+use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
 use Illuminate\Notifications\Events\NotificationFailed;
@@ -22,8 +24,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(
-            \App\Services\LocalInvoice\Contracts\LocalPoProviderInterface::class,
-            \App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider::class
+            LocalPoProviderInterface::class,
+            DatabaseLocalPoProvider::class
         );
     }
 

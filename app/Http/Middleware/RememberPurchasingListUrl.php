@@ -12,7 +12,7 @@ class RememberPurchasingListUrl
     /**
      * Store the latest purchasing list URL, including active filters.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {

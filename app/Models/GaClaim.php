@@ -14,16 +14,25 @@ class GaClaim extends Model
     use HasHashids;
 
     public const STATUS_SUBMITTED = 'SUBMITTED';
+
     public const STATUS_BASIC_VERIFIED = 'BASIC_VERIFIED';
+
     public const STATUS_UNDER_VERIFICATION = 'UNDER_VERIFICATION';
+
     public const STATUS_NEED_REVISION = 'NEED_REVISION';
+
     public const STATUS_READY_TO_PAY = 'READY_TO_PAY';
+
     public const STATUS_PAID = 'PAID';
+
     public const STATUS_CANCELLED = 'CANCELLED';
 
     public const TYPE_ENTERTAIN_SALES = 'Entertain Sales';
+
     public const TYPE_UPD_SALES = 'UPD Sales';
+
     public const TYPE_UPD_GA = 'UPD GA';
+
     public const TYPE_REIMBURSE_CLAIM = 'Reimburse/Claim';
 
     public const CLAIM_TYPES = [

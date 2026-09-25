@@ -4,9 +4,12 @@
 
 @php
     $activeGrs = $purchaseOrder->goodsReceipts->where('status', '!=', \App\Models\LocalGoodsReceipt::STATUS_CANCELLED);
-    $activeGrTotal = (float) $activeGrs->sum('received_amount');
-    $remainingAmount = max(0, (float) $purchaseOrder->total_amount - $activeGrTotal);
-    $fulfillmentPercent = $purchaseOrder->total_amount > 0 ? min(100, round(($activeGrTotal / $purchaseOrder->total_amount) * 100, 1)) : 0;
+    $activeGrCount = $activeGrs->count();
+    $activeGrQty = (float) $activeGrs->sum('qty');
+    $activeInvoices = $purchaseOrder->invoices->whereNotIn('status', [\App\Models\LocalInvoice::STATUS_REJECTED, \App\Models\LocalInvoice::STATUS_CANCELLED]);
+    $invoicedTotal = (float) $activeInvoices->sum('invoice_amount');
+    $remainingPoAmount = max(0, (float) $purchaseOrder->total_amount - $invoicedTotal);
+    $invoicedPercent = $purchaseOrder->total_amount > 0 ? min(100, round(($invoicedTotal / $purchaseOrder->total_amount) * 100, 1)) : 0;
 @endphp
 
 @section('content')
@@ -15,8 +18,7 @@
     <x-ui.page-header
         :title="'PO ' . $purchaseOrder->po_number"
         :description="($purchaseOrder->supplier->supplier?->company_name ?: $purchaseOrder->supplier->name) . ' · IDR ' . number_format($purchaseOrder->total_amount, 2, ',', '.')"
-        eyebrow="Pengadaan Lokal"
-    >
+        eyebrow="Pengadaan Lokal">
         <x-slot:actions>
             <x-ui.button :href="route($routePrefix.'.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
@@ -95,25 +97,29 @@
             </div>
         </div>
 
-        {{-- Financial & GR Progress Card --}}
+        {{-- Financial & Invoiced Progress Card --}}
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4 tw-space-y-3">
             <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant tw-uppercase tw-tracking-wider">
-                Realisasi Penerimaan Barang (GR)
+                Status Finansial & Tagihan
             </div>
 
             <div class="tw-space-y-2 tw-text-ui-xs">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <span class="tw-text-on-surface-variant">Nilai Plafon PO:</span>
+                    <span class="tw-text-on-surface-variant">Plafon Nilai PO:</span>
                     <strong class="tw-font-mono tw-text-on-surface">Rp {{ number_format($purchaseOrder->total_amount, 2, ',', '.') }}</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <span class="tw-text-on-surface-variant">Total GR Aktif:</span>
-                    <strong class="tw-font-mono tw-text-success">Rp {{ number_format($activeGrTotal, 2, ',', '.') }}</strong>
+                    <span class="tw-text-on-surface-variant">Realisasi Invoice Aktif:</span>
+                    <strong class="tw-font-mono tw-text-success">Rp {{ number_format($invoicedTotal, 2, ',', '.') }}</strong>
+                </div>
+                <div class="tw-flex tw-items-center tw-justify-between">
+                    <span class="tw-text-on-surface-variant">Total Kuantitas GR:</span>
+                    <strong class="tw-font-mono tw-text-on-surface">{{ number_format($activeGrQty, 4, ',', '.') }} pcs ({{ $activeGrCount }} GR)</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1.5">
-                    <span class="tw-text-on-surface-variant">Sisa Saldo PO:</span>
-                    <strong class="tw-font-mono {{ $remainingAmount > 0 ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}">
-                        Rp {{ number_format($remainingAmount, 2, ',', '.') }}
+                    <span class="tw-text-on-surface-variant">Sisa Plafon PO:</span>
+                    <strong class="tw-font-mono {{ $remainingPoAmount > 0 ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}">
+                        Rp {{ number_format($remainingPoAmount, 2, ',', '.') }}
                     </strong>
                 </div>
             </div>
@@ -121,11 +127,11 @@
             {{-- Progress bar --}}
             <div class="tw-space-y-1 tw-pt-1">
                 <div class="tw-flex tw-items-center tw-justify-between tw-text-[11px] tw-text-on-surface-variant">
-                    <span>Realisasi GR:</span>
-                    <span class="tw-font-semibold tw-text-on-surface">{{ $fulfillmentPercent }}%</span>
+                    <span>Realisasi Invoice:</span>
+                    <span class="tw-font-semibold tw-text-on-surface">{{ $invoicedPercent }}%</span>
                 </div>
                 <div class="tw-w-full tw-bg-surface-high tw-rounded-full tw-h-2 tw-overflow-hidden">
-                    <div class="tw-bg-primary tw-h-2 tw-rounded-full tw-transition-all" style="width: {{ $fulfillmentPercent }}%"></div>
+                    <div class="tw-bg-primary tw-h-2 tw-rounded-full tw-transition-all" style="width: {{ $invoicedPercent }}%"></div>
                 </div>
             </div>
         </div>
@@ -144,7 +150,6 @@
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal GR</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Deskripsi Barang</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Qty</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Nilai Penerimaan (Rp)</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">Terhubung ke Invoice</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Sumber</th>
@@ -172,9 +177,6 @@
                             </td>
                             <td class="text-end tw-font-mono tw-text-ui-xs tw-text-on-surface">
                                 {{ number_format($gr->qty, 4, ',', '.') }}
-                            </td>
-                            <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
-                                Rp {{ number_format($gr->received_amount, 2, ',', '.') }}
                             </td>
                             <td class="text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($gr->status)">
@@ -256,19 +258,6 @@
                                                 </div>
 
                                                 <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">Nilai Penerimaan (Rp) <span class="text-danger">*</span></label>
-                                                    <input
-                                                        name="received_amount"
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0.01"
-                                                        class="form-control form-control-sm tw-font-mono"
-                                                        value="{{ $gr->received_amount }}"
-                                                        required
-                                                    >
-                                                </div>
-
-                                                <div>
                                                     <label class="form-label tw-text-ui-xs tw-font-semibold">Kuantitas (Qty) <span class="text-danger">*</span></label>
                                                     <input
                                                         name="qty"
@@ -318,7 +307,7 @@
                                             </div>
                                             <div class="modal-body tw-space-y-2">
                                                 <p class="tw-text-ui-sm tw-text-on-surface tw-mb-0">
-                                                    Apakah Anda yakin ingin membatalkan Goods Receipt <strong>{{ $gr->gr_number }}</strong> senilai <strong>Rp {{ number_format($gr->received_amount, 2, ',', '.') }}</strong>?
+                                                    Apakah Anda yakin ingin membatalkan Goods Receipt <strong>{{ $gr->gr_number }}</strong> (Qty: <strong>{{ number_format($gr->qty, 4, ',', '.') }}</strong>)?
                                                 </p>
                                                 <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">
                                                     Setelah dibatalkan, alokasi GR ini tidak dapat digunakan lagi oleh invoice supplier.
@@ -338,7 +327,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td colspan="9" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="8" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
                                 Belum ada berkas Goods Receipt (GR) yang tercatat untuk Purchase Order ini.
                             </td>
                         </tr>
@@ -369,10 +358,6 @@
                                 <span class="tw-text-on-surface-variant">Purchase Order:</span>
                                 <strong class="tw-font-mono">{{ $purchaseOrder->po_number }}</strong>
                             </div>
-                            <div class="tw-flex tw-justify-between">
-                                <span class="tw-text-on-surface-variant">Sisa Saldo PO:</span>
-                                <strong class="tw-font-mono tw-text-primary">Rp {{ number_format($remainingAmount, 2, ',', '.') }}</strong>
-                            </div>
                         </div>
 
                         <div>
@@ -388,22 +373,6 @@
                                 :value="now()->format('Y-m-d')"
                                 required="true"
                             />
-                        </div>
-
-                        <div>
-                            <label class="form-label tw-text-ui-xs tw-font-semibold">Nilai Penerimaan Barang (IDR) <span class="text-danger">*</span></label>
-                            <input
-                                name="received_amount"
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                class="form-control form-control-sm tw-font-mono"
-                                placeholder="0.00"
-                                required
-                            >
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
-                                Akumulasi total seluruh GR aktif tidak boleh melebihi plafon PO (Rp {{ number_format($purchaseOrder->total_amount, 2, ',', '.') }}).
-                            </div>
                         </div>
 
                         <div>

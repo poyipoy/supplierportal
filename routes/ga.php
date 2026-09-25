@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Ga\EmployeeController;
 use App\Http\Controllers\Ga\GaController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,8 +16,8 @@ Route::middleware(['auth', 'role:ga,admin'])->prefix('ga')->name('ga.')->group(f
     Route::post('/claims/{claim}/basic-verify', [GaController::class, 'basicVerify'])->name('claims.basic-verify');
 
     // Employee Master
-    Route::resource('employees', \App\Http\Controllers\Ga\EmployeeController::class)->only(['index', 'store', 'update']);
-    Route::post('/employees/{employee}/toggle-status', [\App\Http\Controllers\Ga\EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
+    Route::resource('employees', EmployeeController::class)->only(['index', 'store', 'update']);
+    Route::post('/employees/{employee}/toggle-status', [EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
 
     // DRP GA Draft
     Route::get('/drp-draft', [GaController::class, 'drpDraft'])->name('drp-draft');

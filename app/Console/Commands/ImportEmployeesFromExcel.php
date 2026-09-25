@@ -52,7 +52,7 @@ class ImportEmployeesFromExcel extends Command
 
             return Command::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('Gagal mengimpor data karyawan: ' . $e->getMessage());
+            $this->error('Gagal mengimpor data karyawan: '.$e->getMessage());
 
             return Command::FAILURE;
         }

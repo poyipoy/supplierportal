@@ -7,9 +7,8 @@ use App\Models\Conversation;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Support\PurchasingNavigation;
 use App\Support\ConversationPresenter;
-use Illuminate\Http\Request;
+use App\Support\PurchasingNavigation;
 use Illuminate\Support\Facades\DB;
 
 class ConversationController extends Controller
@@ -67,7 +66,7 @@ class ConversationController extends Controller
             ->whereIn('status', ['submitted', 'revision_requested', 'accepted'])
             ->exists();
 
-        if (!$hasQuotation) {
+        if (! $hasQuotation) {
             return back()->with('error', 'This supplier does not have a quotation for this requisition yet.');
         }
 
@@ -78,7 +77,7 @@ class ConversationController extends Controller
             ->where('supplier_user_id', $supplier_id)
             ->first();
 
-        if (!$conversation) {
+        if (! $conversation) {
             $conversation = Conversation::create([
                 'conversable_type' => PurchaseRequisition::class,
                 'conversable_id' => $pr_id,
@@ -118,7 +117,7 @@ class ConversationController extends Controller
             ->where('supplier_user_id', $supplier_id)
             ->first();
 
-        if (!$conversation) {
+        if (! $conversation) {
             $conversation = Conversation::create([
                 'conversable_type' => PurchaseOrder::class,
                 'conversable_id' => $po_id,

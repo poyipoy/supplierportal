@@ -27,7 +27,9 @@ class PaymentBatchSettlementTest extends TestCase
     use RefreshDatabase;
 
     private User $financeUser;
+
     private User $supplierBca;
+
     private User $supplierMandiri;
 
     protected function setUp(): void
@@ -102,7 +104,7 @@ class PaymentBatchSettlementTest extends TestCase
     {
         $po = LocalPurchaseOrder::create([
             'supplier_id' => $supplier->id,
-            'po_number' => 'PO-' . uniqid(),
+            'po_number' => 'PO-'.uniqid(),
             'status' => LocalPurchaseOrder::STATUS_OPEN,
             'currency' => 'IDR',
             'total_amount' => $amount,
@@ -111,15 +113,15 @@ class PaymentBatchSettlementTest extends TestCase
 
         $gr = LocalGoodsReceipt::create([
             'local_purchase_order_id' => $po->id,
-            'gr_number' => 'GR-' . uniqid(),
+            'gr_number' => 'GR-'.uniqid(),
             'gr_date' => '2026-09-02',
-            'received_amount' => $amount,
+            'qty' => 1.0,
             'status' => LocalGoodsReceipt::STATUS_INVOICED,
         ]);
 
         $invoice = LocalInvoice::create([
             'supplier_id' => $supplier->id,
-            'submission_number' => 'SUB-' . uniqid(),
+            'submission_number' => 'SUB-'.uniqid(),
             'invoice_number' => $invoiceNumber,
             'invoice_date' => '2026-09-03',
             'submitted_at' => now(),
@@ -141,8 +143,7 @@ class PaymentBatchSettlementTest extends TestCase
             'local_purchase_order_id' => $po->id,
             'local_goods_receipt_id' => $gr->id,
             'gr_number_snapshot' => $gr->gr_number,
-            'gr_amount_snapshot' => $amount,
-            'received_amount_snapshot' => $amount,
+            'gr_qty_snapshot' => 1.0,
             'state' => LocalInvoiceGoodsReceipt::STATE_CONSUMED,
             'consumed_by' => $this->financeUser->id,
             'consumed_at' => now(),

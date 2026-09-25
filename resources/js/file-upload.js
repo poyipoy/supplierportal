@@ -137,7 +137,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
 
             for (const file of incoming) {
                 if (this.totalFilesCount >= this.maxFiles) {
-                    this.clientError = 'Batas maksimal ' + this.maxFiles + ' berkas per kategori telah tercapai.';
+                    this.clientError = 'Batas maksimal ' + this.maxFiles + ' berkas telah tercapai.';
                     break;
                 }
                 if (file.size > this.maxBytes) {
@@ -155,7 +155,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
 
         handleDrop(event) {
             this.isDragging = false;
-            if (!this.canAddMore) return;
+            if (!this.canAddMore && this.isMultiple) return;
             const files = event.dataTransfer ? event.dataTransfer.files : null;
             if (files && files.length > 0) {
                 this.handleFiles(files);

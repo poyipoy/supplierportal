@@ -178,7 +178,7 @@ class FinanceVerificationV2Test extends TestCase
                 'tax_amount' => $invoice->tax_amount,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv_v2.pdf', 100),
+                'invoice' => UploadedFile::fake()->create($invoice->invoice_number.'.pdf', 100),
                 'tax_invoice' => UploadedFile::fake()->create('tax_v2.pdf', 100),
                 'delivery_note' => UploadedFile::fake()->create('sj_v2.pdf', 100),
             ]
@@ -196,8 +196,8 @@ class FinanceVerificationV2Test extends TestCase
         $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
         $response = $this->actingAs($finance)->get(route('finance.dashboard'));
         $response->assertOk();
-        $response->assertSee('Weekly Cash Outflow Forecast');
-        $response->assertSee('Monthly Cash Outflow Forecast');
+        $response->assertSee('Payment Forecast');
+        $response->assertSee('Akumulasi Invoice Ready to Pay');
 
         $this->actingAs($finance)->get(route('finance.invoices.index'))->assertOk();
         $this->actingAs($finance)->get(route('finance.drp.supplier'))->assertOk();

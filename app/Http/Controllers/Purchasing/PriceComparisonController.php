@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Vinkla\Hashids\Facades\Hashids;
@@ -30,10 +31,8 @@ class PriceComparisonController extends Controller
     /**
      * View 1: supplier comparison across all quotation items.
      * within a single PR, shown side by side.
-     *
-     * @return View|JsonResponse
      */
-    public function interSupplier(Request $request)
+    public function interSupplier(Request $request): View|JsonResponse
     {
         $eligiblePrs = PurchaseRequisition::query()
             ->select([
@@ -53,7 +52,7 @@ class PriceComparisonController extends Controller
             ->whereHas('quotations', function ($q) {
                 $q->whereIn('status', ['submitted', 'accepted', 'rejected']);
             }, '>=', 2)
-            ->where('created_at', '>=', now()->subYears(3)) // Limit the view to the latest three years.
+            ->where('created_at', '>=', now()->subYears(3))
             ->orderByDesc('created_at')
             ->get();
 
@@ -259,7 +258,7 @@ class PriceComparisonController extends Controller
             }
         }
 
-        return view('purchasing.comparison.inter-supplier', compact(
+        $viewData = compact(
             'eligiblePrs',
             'comparison',
             'chartData',
@@ -275,26 +274,42 @@ class PriceComparisonController extends Controller
             'assignedPurchaseOrderCount',
             'hasActionableAwardSelections',
             'allItemsAssignedToPurchaseOrder',
-        ));
+        );
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('purchasing.comparison._inter_supplier_content', $viewData)->render(),
+                'tab' => 'inter-supplier',
+                'url' => route('purchasing.comparison.inter-supplier', $request->query()),
+            ]);
+        }
+
+        return view('purchasing.comparison.inter-supplier', $viewData);
     }
 
     /**
      * View 2: historical material pricing for one supplier across periods.
      */
-    public function historical(Request $request)
+    public function historical(Request $request): View|JsonResponse
     {
-        $isJsonRequest = $request->ajax()
-            && ($request->wantsJson() || $request->input('view') === 'json');
-        $suppliers = $isJsonRequest
+        $isDataPayloadRequest = $request->input('view') === 'json';
+
+        // Cache the supplier dropdown list for 10 minutes when rendering the full page.
+        // Data payload requests skip this since they don't render the dropdown.
+        $suppliers = $isDataPayloadRequest
             ? collect()
-            : User::query()
-                ->select(['id', 'name', 'role'])
-                ->where(function ($query) {
-                    $query->importEligible()
-                        ->orWhereIn('id', \Illuminate\Support\Facades\DB::table('quotations')->distinct()->pluck('supplier_id'));
-                })
-                ->orderBy('name')
-                ->get();
+            : Cache::remember(
+                'purchasing:historical_suppliers:v1',
+                now()->addMinutes(10),
+                fn () => User::query()
+                    ->select(['id', 'name', 'role'])
+                    ->where(function ($query) {
+                        $query->importEligible()
+                            ->orWhereIn('id', DB::table('quotations')->distinct()->pluck('supplier_id'));
+                    })
+                    ->orderBy('name')
+                    ->get()
+            );
         $selectedSupplierValue = $request->query('supplier_id', $request->query('supplier'));
         $selectedSupplier = $this->resolveSupplierQuery($selectedSupplierValue);
         $selectedSupplierId = $selectedSupplier?->getRouteKey();
@@ -306,7 +321,7 @@ class PriceComparisonController extends Controller
         $yearlyRangeOptions = $this->historicalRangeOptions('yearly');
         $rangeOptions = $this->historicalRangeOptions($periodView);
         $dateFrom = $this->dateFromRange($range);
-        if ($isJsonRequest) {
+        if ($isDataPayloadRequest) {
             $materials = collect();
             if (
                 $selectedSupplierKey
@@ -374,11 +389,11 @@ class PriceComparisonController extends Controller
             'supplierName' => $selectedSupplier->name ?? '',
         ];
 
-        if ($isJsonRequest) {
+        if ($isDataPayloadRequest) {
             return response()->json($payload);
         }
 
-        return view('purchasing.comparison.historical', compact(
+        $viewData = compact(
             'suppliers',
             'materials',
             'chartData',
@@ -393,7 +408,17 @@ class PriceComparisonController extends Controller
             'monthlyRangeOptions',
             'yearlyRangeOptions',
             'payload'
-        ));
+        );
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('purchasing.comparison._historical_content', $viewData)->render(),
+                'tab' => 'historical',
+                'url' => route('purchasing.comparison.historical', $request->query()),
+            ]);
+        }
+
+        return view('purchasing.comparison.historical', $viewData);
     }
 
     public function historicalMaterials(Request $request)
@@ -409,20 +434,33 @@ class PriceComparisonController extends Controller
     /**
      * View 3: current price versus the historical MIN(price_per_kg).
      */
-    public function vsBestPrice(Request $request)
+    public function vsBestPrice(Request $request): View|JsonResponse
     {
         [$dateFrom, $dateTo] = $this->vsBestDateRange($request);
         $dateFromInput = $request->input('date_from');
         $dateToInput = $request->input('date_to');
         $competitiveThreshold = 2.0;
-        $summary = $this->emptyVsBestSummary();
 
-        return view('purchasing.comparison.vs-best', compact(
+        // Pre-populate summary with cached real data to avoid zero-flash on metric cards.
+        // Falls back to empty summary if cache is cold (first load or after invalidation).
+        $summary = $this->getCachedDefaultVsBestSummary($competitiveThreshold);
+
+        $viewData = compact(
             'dateFromInput',
             'dateToInput',
             'summary',
             'competitiveThreshold'
-        ));
+        );
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('purchasing.comparison._vs_best_content', $viewData)->render(),
+                'tab' => 'vs-best',
+                'url' => route('purchasing.comparison.vs-best', $request->query()),
+            ]);
+        }
+
+        return view('purchasing.comparison.vs-best', $viewData);
     }
 
     public function vsBestPriceData(Request $request)
@@ -430,26 +468,33 @@ class PriceComparisonController extends Controller
         [$dateFrom, $dateTo] = $this->vsBestDateRange($request);
         $competitiveThreshold = 2.0;
 
-        if (! ($dateFrom && $dateTo)) {
-            return response()->json([
-                'draw' => (int) $request->input('draw', 0),
-                'recordsTotal' => 0,
-                'recordsFiltered' => 0,
-                'data' => [],
-                'summary' => $this->emptyVsBestSummary(),
-            ]);
-        }
-
         $keyword = trim((string) $request->input('search.value', ''));
         $returnUrl = route('purchasing.comparison.vs-best', $request->only([
             'date_from',
             'date_to',
         ]));
-        $summaryQuery = $this->applyVsBestKeywordFilter(
-            $this->buildVsBestQuery($dateFrom, $dateTo),
-            $keyword
-        );
-        $summary = $this->buildVsBestSummary($summaryQuery, $competitiveThreshold);
+
+        // Cache unfiltered default summary (no date range, no keyword) for 5 minutes.
+        // This eliminates the ~183ms aggregate subquery on every default page load.
+        $isUnfilteredDefault = $dateFrom === null && $dateTo === null && $keyword === '';
+
+        if ($isUnfilteredDefault) {
+            $summary = Cache::remember(
+                'purchasing:vs_best_summary_unfiltered:v1',
+                now()->addMinutes(5),
+                function () use ($competitiveThreshold) {
+                    $summaryQuery = $this->buildVsBestQuery(null, null);
+
+                    return $this->buildVsBestSummary($summaryQuery, $competitiveThreshold);
+                }
+            );
+        } else {
+            $summaryQuery = $this->applyVsBestKeywordFilter(
+                $this->buildVsBestQuery($dateFrom, $dateTo),
+                $keyword
+            );
+            $summary = $this->buildVsBestSummary($summaryQuery, $competitiveThreshold);
+        }
 
         $dataTable = DataTables::query($this->buildVsBestQuery($dateFrom, $dateTo))
             ->filter(function ($query) use ($keyword) {
@@ -782,6 +827,15 @@ class PriceComparisonController extends Controller
             'total_potential_difference_idr' => 0,
             'average_diff_idr_per_kg' => null,
         ];
+    }
+
+    /**
+     * Retrieve cached default (unfiltered) vs-best summary for pre-populating metric cards.
+     * Falls back to empty summary if cache is cold.
+     */
+    private function getCachedDefaultVsBestSummary(float $competitiveThreshold): array
+    {
+        return Cache::get('purchasing:vs_best_summary_unfiltered:v1', $this->emptyVsBestSummary());
     }
 
     private function priceCompetitivenessStatus(?float $diffPercent, float $competitiveThreshold): array

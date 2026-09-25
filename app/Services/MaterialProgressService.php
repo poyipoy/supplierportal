@@ -234,7 +234,7 @@ class MaterialProgressService
                 "po_item_progress.updated:{$update->id}",
                 'Supplier Material Progress Updated',
                 "Supplier {$supplierName} updated {$materialName} on {$lockedPo->po_number}: {$fromLabel} → {$toLabel}. Current Supplier-controlled Qty: {$supplierControlledQty} pcs. Estimated Ready: {$readyFormatted}.",
-                route('purchasing.purchase-orders.show', $lockedPo, absolute: false) . '#material-progress',
+                route('purchasing.purchase-orders.show', $lockedPo, absolute: false).'#material-progress',
                 'clock text-primary',
                 [
                     'category' => NotificationCategory::OTHER,

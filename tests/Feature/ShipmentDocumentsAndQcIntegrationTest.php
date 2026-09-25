@@ -1457,4 +1457,3 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $response->assertViewHas('shipment', fn ($resolved) => $resolved && in_array((int) $resolved->id, [(int) $shipment1->id, (int) $shipment2->id], true));
     }
 }
-

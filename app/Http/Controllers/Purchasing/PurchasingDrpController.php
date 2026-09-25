@@ -11,6 +11,7 @@ use App\Models\PaymentBatch;
 use App\Models\SupplierOverpaymentRefund;
 use App\Services\Payment\PaymentVoucherService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -52,7 +53,7 @@ class PurchasingDrpController extends Controller
         ]);
     }
 
-    public function indexPaid(Request $request): View
+    public function indexPaid(Request $request): View|JsonResponse
     {
         $tab = (string) $request->query('tab', 'unpaid');
         $type = (string) $request->query('type', '');
@@ -158,7 +159,24 @@ class PurchasingDrpController extends Controller
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
+        // Whitelist tab input
+        if (! in_array($tab, ['unpaid', 'paid', 'all'], true)) {
+            $tab = 'unpaid';
+        }
+
         $batches = $query->latest('id')->paginate(15)->withQueryString();
+
+        // AJAX: return JSON with rendered HTML fragment + metrics
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'html' => view('purchasing.drp._paid_table_content', compact('batches'))->render(),
+                'metrics' => $metrics,
+                'tab' => $tab,
+                'openOverpaymentsCount' => $openOverpaymentsCount,
+                'url' => $request->fullUrl(),
+            ]);
+        }
 
         return view('purchasing.drp.paid', compact(
             'batches',

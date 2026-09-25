@@ -5,6 +5,7 @@ use App\Http\Controllers\LocalInvoiceDocumentController;
 use App\Http\Controllers\LocalInvoiceReceiptController;
 use App\Http\Controllers\LocalSupplier\InformationController;
 use App\Http\Controllers\LocalSupplier\InvoiceController;
+use App\Http\Controllers\LocalSupplier\PurchaseOrderController;
 use App\Http\Controllers\LocalSupplier\VendorProfileController;
 use App\Http\Controllers\SupplierContextController;
 use App\Http\Controllers\SupplierMasterDocumentController;
@@ -16,9 +17,9 @@ Route::middleware(['auth', 'role:supplier'])->group(function () {
 });
 Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('local-supplier')->name('local-supplier.')->group(function () {
     Route::get('/dashboard', [InvoiceController::class, 'dashboard'])->name('dashboard');
-    Route::get('/purchase-orders', [\App\Http\Controllers\LocalSupplier\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('/purchase-orders/search', [InvoiceController::class, 'searchPurchaseOrders'])->name('purchase-orders.search');
-    Route::get('/purchase-orders/{purchase_order}', [\App\Http\Controllers\LocalSupplier\PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::get('/purchase-orders/{purchase_order}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
     Route::post('/invoices', [InvoiceController::class, 'store'])->middleware('throttle:30,1')->name('invoices.store');

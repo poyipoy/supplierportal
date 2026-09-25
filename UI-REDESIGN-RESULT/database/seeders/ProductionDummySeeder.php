@@ -112,7 +112,7 @@ class ProductionDummySeeder extends Seeder
             [
                 'company_name' => $companyName,
                 'address' => 'Kawasan Industri Jababeka, Cikarang',
-                'phone' => '021-555-' . str_pad((string) $user->id, 4, '0', STR_PAD_LEFT),
+                'phone' => '021-555-'.str_pad((string) $user->id, 4, '0', STR_PAD_LEFT),
                 'npwp' => $npwp,
                 'category' => $category,
             ]
@@ -263,7 +263,7 @@ class ProductionDummySeeder extends Seeder
         $date = Carbon::create($year, $month, 1);
 
         $period = Period::create([
-            'name' => 'Periode ' . $monthNames[$month] . ' ' . $year,
+            'name' => 'Periode '.$monthNames[$month].' '.$year,
             'month' => $month,
             'year' => $year,
             'status' => $status,
@@ -544,7 +544,7 @@ class ProductionDummySeeder extends Seeder
                 $date = $cursor->copy()->day($day);
 
                 $requirement = $this->requirement(
-                    'REQ/' . $date->format('m/Y') . '/' . str_pad((string) $sequence, 3, '0', STR_PAD_LEFT),
+                    'REQ/'.$date->format('m/Y').'/'.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT),
                     $date->format('Y-m'),
                     ($sequence === 2 && $date->month % 2 === 0) ? $purchasing2 : $purchasing,
                     $this->extendedRequirementStatus($date, $sequence),
@@ -859,7 +859,7 @@ class ProductionDummySeeder extends Seeder
         return collect(array_keys($this->rates['USD']))
             ->reject(fn ($key) => $key === 'today')
             ->sortDesc()
-            ->first(fn ($key) => Carbon::parse($key . '-01')->lte($target))
+            ->first(fn ($key) => Carbon::parse($key.'-01')->lte($target))
             ?? 'today';
     }
 
@@ -971,8 +971,8 @@ class ProductionDummySeeder extends Seeder
 
     private function nextHistoricalPoNumber(Carbon $date): string
     {
-        $prefix = 'PO/' . $date->format('m/Y') . '/';
-        $lastSequence = PurchaseOrder::where('po_number', 'like', $prefix . '%')
+        $prefix = 'PO/'.$date->format('m/Y').'/';
+        $lastSequence = PurchaseOrder::where('po_number', 'like', $prefix.'%')
             ->pluck('po_number')
             ->map(function ($number) {
                 $parts = explode('/', $number);
@@ -981,7 +981,7 @@ class ProductionDummySeeder extends Seeder
             })
             ->max() ?? 0;
 
-        return $prefix . str_pad((string) ($lastSequence + 1), 3, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) ($lastSequence + 1), 3, '0', STR_PAD_LEFT);
     }
 
     private function purchaseOrder(
@@ -1134,9 +1134,9 @@ class ProductionDummySeeder extends Seeder
 
     private function dummyEvidence(QcInspection $inspection, User $uploadedBy, Carbon $date): void
     {
-        $path = 'attachments/' . $date->format('Y/m') . '/qc-ng-evidence-' . $inspection->id . '.jpg';
+        $path = 'attachments/'.$date->format('Y/m').'/qc-ng-evidence-'.$inspection->id.'.jpg';
 
-        Storage::disk('local')->put($path, 'Dummy QC NG evidence for inspection ' . $inspection->id);
+        Storage::disk('local')->put($path, 'Dummy QC NG evidence for inspection '.$inspection->id);
 
         $inspection->attachments()->create([
             'file_path' => $path,

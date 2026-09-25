@@ -6,10 +6,10 @@ use App\Exports\LocalInvoicesExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\InvoiceFilterRequest;
 use App\Models\LocalInvoice;
+use App\Models\User;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceVerificationService;
-use App\Models\User;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -76,7 +76,7 @@ class FinanceInvoiceController extends Controller
 
         try {
             $verification = $service->verifySectionA($invoice, $data, $request->user());
-        } catch (\InvalidArgumentException | \RuntimeException $e) {
+        } catch (\InvalidArgumentException|\RuntimeException $e) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -122,7 +122,7 @@ class FinanceInvoiceController extends Controller
 
         try {
             $verification = $service->verifySectionB($invoice, $data, $request->user());
-        } catch (\InvalidArgumentException | \RuntimeException $e) {
+        } catch (\InvalidArgumentException|\RuntimeException $e) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -169,6 +169,7 @@ class FinanceInvoiceController extends Controller
     {
         $data = $request->validate(['notes' => 'required|string|max:2000']);
         $service->reject($invoice, $data['notes'], $request->user());
+
         return back()->with('success', 'Invoice rejected and its GR reservations released.');
     }
 

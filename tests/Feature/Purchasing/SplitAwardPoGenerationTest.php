@@ -19,9 +19,13 @@ class SplitAwardPoGenerationTest extends TestCase
     use RefreshDatabase;
 
     private User $purchasing;
+
     private User $supplierA;
+
     private User $supplierB;
+
     private Period $period;
+
     private ExchangeRate $rate;
 
     protected function setUp(): void

@@ -12,6 +12,7 @@ use RuntimeException;
 class InvoiceExpiryService
 {
     public function __construct(private LocalGrReservationService $reservations) {}
+
     /**
      * Record a missed delivery schedule.
      * First missed Wednesday allows rescheduling.

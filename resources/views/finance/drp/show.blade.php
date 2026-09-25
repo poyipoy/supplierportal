@@ -22,7 +22,16 @@
                     data-async-export
                 >
                     <x-ui.icon name="download" size="sm" />
-                    <span>Export Excel</span>
+                    <span>Export Rekap</span>
+                </x-ui.button>
+                <x-ui.button
+                    type="button"
+                    id="btnExportTransferSingle"
+                    variant="primary"
+                    size="sm"
+                >
+                    <x-ui.icon name="file-spreadsheet" size="sm" />
+                    <span>Export Transfer</span>
                 </x-ui.button>
             @endif
             @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
@@ -511,6 +520,97 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             } else if (confirm(`${title}\n\n${text}`)) {
                 proceedSubmit();
+            }
+        });
+    }
+
+    const btnExportTransferSingle = document.getElementById('btnExportTransferSingle');
+    if (btnExportTransferSingle) {
+        btnExportTransferSingle.addEventListener('click', function () {
+            const doExport = () => {
+                btnExportTransferSingle.disabled = true;
+
+                fetch("{{ route('finance.drp.export-transfer') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '{{ csrf_token() }}',
+                    },
+                    body: JSON.stringify({ batch_ids: ['{{ $batch->hash }}'] }),
+                })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw e; });
+                    return res.json();
+                })
+                .then(data => {
+                    if (typeof AdasiToast !== 'undefined') {
+                        AdasiToast.success(data.message || 'Export transfer diproses.');
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire('Berhasil', data.message || 'Export transfer diproses.', 'success');
+                    }
+
+                    if (data.status_url) {
+                        let attempts = 0;
+                        const poll = () => {
+                            attempts++;
+                            if (attempts > 120) return;
+                            fetch(data.status_url, { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json())
+                                .then(job => {
+                                    if (job.status === 'completed' && job.download_url) {
+                                        if (typeof AdasiToast !== 'undefined') {
+                                            AdasiToast.success('Export transfer selesai. Mengunduh...');
+                                        }
+                                        const a = document.createElement('a');
+                                        a.href = job.download_url;
+                                        a.download = job.file_name || 'DRP_TRANSFER.xlsx';
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                        btnExportTransferSingle.disabled = false;
+                                    } else if (job.status === 'failed') {
+                                        if (typeof AdasiToast !== 'undefined') {
+                                            AdasiToast.error(job.message || 'Export gagal.');
+                                        }
+                                        btnExportTransferSingle.disabled = false;
+                                    } else if (job.status === 'queued' || job.status === 'processing') {
+                                        setTimeout(poll, 1500);
+                                    }
+                                })
+                                .catch(() => { btnExportTransferSingle.disabled = false; });
+                        };
+                        setTimeout(poll, 1500);
+                    } else {
+                        btnExportTransferSingle.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    const msg = err.message || err.error || 'Terjadi kesalahan saat export transfer.';
+                    if (typeof AdasiToast !== 'undefined') {
+                        AdasiToast.error(msg);
+                    } else if (typeof Swal !== 'undefined') {
+                        Swal.fire('Gagal', msg, 'error');
+                    } else {
+                        alert(msg);
+                    }
+                    btnExportTransferSingle.disabled = false;
+                });
+            };
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Export Transfer DRP',
+                    text: 'Export batch {{ $batch->batch_number }} ke format TARIKAN TRANSFER?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Export',
+                    cancelButtonText: 'Batal',
+                }).then(result => {
+                    if (result.isConfirmed) doExport();
+                });
+            } else if (confirm('Export batch {{ $batch->batch_number }} ke format TARIKAN TRANSFER?')) {
+                doExport();
             }
         });
     }

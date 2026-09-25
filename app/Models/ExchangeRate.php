@@ -9,8 +9,11 @@ use Illuminate\Support\Facades\Cache;
 class ExchangeRate extends Model
 {
     public const CURRENCY_USD = 'USD';
+
     public const CURRENCY_JPY = 'JPY';
+
     public const CURRENCY_IDR = 'IDR';
+
     public const CURRENCY_CNY = 'CNY';
 
     public const CURRENCIES = [
@@ -66,7 +69,7 @@ class ExchangeRate extends Model
      */
     public static function latestRate(string $currency): ?self
     {
-        $cacheKey = 'exchange_rate_latest_' . strtoupper($currency);
+        $cacheKey = 'exchange_rate_latest_'.strtoupper($currency);
 
         return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($currency) {
             return static::where('currency', $currency)
@@ -80,7 +83,6 @@ class ExchangeRate extends Model
      */
     public static function clearLatestRateCache(string $currency): void
     {
-        Cache::forget('exchange_rate_latest_' . strtoupper($currency));
+        Cache::forget('exchange_rate_latest_'.strtoupper($currency));
     }
 }
-

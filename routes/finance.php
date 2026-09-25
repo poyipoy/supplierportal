@@ -3,6 +3,7 @@
 use App\Http\Controllers\Finance\FinanceDashboardController;
 use App\Http\Controllers\Finance\FinanceDrpController;
 use App\Http\Controllers\Finance\FinanceDrpPaidController;
+use App\Http\Controllers\Finance\FinanceGaClaimController;
 use App\Http\Controllers\Finance\FinanceInvoiceController;
 use App\Http\Controllers\Finance\FinanceVendorController;
 use App\Http\Controllers\Finance\LocalInvoiceSettlementController;
@@ -42,9 +43,12 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
     Route::post('/drp-paid/{batch}/mark-paid', [FinanceDrpPaidController::class, 'markBatchPaid'])->name('drp.paid.mark-paid');
 
     // GA Claims Register & Verification
-    Route::get('/ga-claims', [\App\Http\Controllers\Finance\FinanceGaClaimController::class, 'index'])->name('ga-claims.index');
-    Route::get('/ga-claims/{claim}', [\App\Http\Controllers\Finance\FinanceGaClaimController::class, 'show'])->name('ga-claims.show');
-    Route::post('/ga-claims/{claim}/verify', [\App\Http\Controllers\Finance\FinanceGaClaimController::class, 'verify'])->name('ga-claims.verify');
+    Route::get('/ga-claims', [FinanceGaClaimController::class, 'index'])->name('ga-claims.index');
+    Route::get('/ga-claims/{claim}', [FinanceGaClaimController::class, 'show'])->name('ga-claims.show');
+    Route::post('/ga-claims/{claim}/verify', [FinanceGaClaimController::class, 'verify'])->name('ga-claims.verify');
+
+    // DRP Bulk Transfer Export (multi-batch → single TARIKAN TRANSFER workbook)
+    Route::post('/drp/export-transfer', [FinanceDrpController::class, 'exportTransferBulk'])->name('drp.export-transfer');
 
     // DRP Batch Detail, Finalize, Item Removal, Fee Override, Voucher, Pay
     Route::get('/drp/{batch}/export', [FinanceDrpController::class, 'export'])->name('drp.export');
@@ -61,6 +65,12 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
         Route::get('/', [LocalProcurementController::class, 'index'])->name('index');
         Route::get('/create', [LocalProcurementController::class, 'create'])->name('create');
         Route::post('/', [LocalProcurementController::class, 'store'])->name('store');
+        Route::get('/import/po/template', [LocalProcurementController::class, 'poTemplate'])->name('import.po.template');
+        Route::post('/import/po/preview', [LocalProcurementController::class, 'poPreview'])->name('import.po.preview');
+        Route::post('/import/po/confirm', [LocalProcurementController::class, 'poConfirm'])->name('import.po.confirm');
+        Route::get('/import/gr/template', [LocalProcurementController::class, 'grTemplate'])->name('import.gr.template');
+        Route::post('/import/gr/preview', [LocalProcurementController::class, 'grPreview'])->name('import.gr.preview');
+        Route::post('/import/gr/confirm', [LocalProcurementController::class, 'grConfirm'])->name('import.gr.confirm');
         Route::get('/import/template', [LocalProcurementController::class, 'template'])->name('import.template');
         Route::post('/import/preview', [LocalProcurementController::class, 'preview'])->name('import.preview');
         Route::post('/import/confirm', [LocalProcurementController::class, 'confirm'])->name('import.confirm');

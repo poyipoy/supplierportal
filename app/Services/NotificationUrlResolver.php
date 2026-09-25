@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Conversation;
 use App\Models\ExportJob;
+use App\Models\GaClaim;
 use App\Models\LocalInvoice;
+use App\Models\LocalInvoiceDocument;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
@@ -125,7 +127,7 @@ class NotificationUrlResolver
         }
 
         if ($name === 'local-invoice-documents.show') {
-            $document = $this->resolveModel(\App\Models\LocalInvoiceDocument::class, $parameters['document'] ?? null);
+            $document = $this->resolveModel(LocalInvoiceDocument::class, $parameters['document'] ?? null);
 
             return $document !== null && $user->can('view', $document);
         }
@@ -286,7 +288,7 @@ class NotificationUrlResolver
             'local-supplier.invoices.revision',
             'local-supplier.invoices.receipt' => ['invoice', LocalInvoice::class],
             'ga.claims.show',
-            'ga.claims.receipt' => ['claim', \App\Models\GaClaim::class],
+            'ga.claims.receipt' => ['claim', GaClaim::class],
             default => null,
         };
     }

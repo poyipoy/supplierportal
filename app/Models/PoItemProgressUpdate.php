@@ -9,15 +9,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PoItemProgressUpdate extends Model
 {
     public const STATUS_AWAITING_CONFIRMATION = 'awaiting_confirmation';
+
     public const STATUS_ORDER_CONFIRMED = 'order_confirmed';
+
     public const STATUS_MATERIAL_PREPARATION = 'material_preparation';
+
     public const STATUS_ON_PRODUCTION = 'on_production';
+
     public const STATUS_READY_TO_SHIP = 'ready_to_ship';
 
     public const STAGE_AWAITING_CONFIRMATION = self::STATUS_AWAITING_CONFIRMATION;
+
     public const STAGE_ORDER_CONFIRMED = self::STATUS_ORDER_CONFIRMED;
+
     public const STAGE_MATERIAL_PREPARATION = self::STATUS_MATERIAL_PREPARATION;
+
     public const STAGE_ON_PRODUCTION = self::STATUS_ON_PRODUCTION;
+
     public const STAGE_READY_TO_SHIP = self::STATUS_READY_TO_SHIP;
 
     public const STATUSES = [

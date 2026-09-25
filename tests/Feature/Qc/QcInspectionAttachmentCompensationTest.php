@@ -23,7 +23,9 @@ class QcInspectionAttachmentCompensationTest extends TestCase
     use RefreshDatabase;
 
     private User $qcUser;
+
     private PurchaseOrder $po;
+
     private PrItem $prItem;
 
     protected function setUp(): void

@@ -18,4 +18,15 @@ return [
         'finance_email' => env('ADASI_FINANCE_EMAIL', env('ADASI_REFUND_EMAIL', null)),
         'finance_wa' => env('ADASI_FINANCE_WA', env('ADASI_REFUND_WA', null)),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | BCA Transfer Debit Account
+    |--------------------------------------------------------------------------
+    |
+    | ADASI's BCA debiting account number used in the TARIKAN TRANSFER export
+    | (columns D "Debited Acc." and L "Charges Acc.").
+    |
+    */
+    'transfer_debit_account' => env('ADASI_TRANSFER_DEBIT_ACCOUNT', '5220310053'),
 ];

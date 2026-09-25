@@ -6,7 +6,6 @@ use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Tests\TestCase;
 

@@ -12,11 +12,14 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 class LocalPoGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToCollection, WithEvents, WithHeadingRow, WithMultipleSheets
 {
     private const HEADINGS = ['po_number', 'supplier_name', 'po_date', 'po_amount', 'po_remarks', 'gr_number', 'gr_date', 'gr_amount', 'gr_remarks'];
+
     private const REQUIRED = ['po_number', 'supplier_name', 'po_date', 'po_amount'];
 
     public function collection(Collection $collection): void
     {
-        if (! $this->validateCollectionContract($collection, self::REQUIRED, self::HEADINGS)) return;
+        if (! $this->validateCollectionContract($collection, self::REQUIRED, self::HEADINGS)) {
+            return;
+        }
         foreach ($collection as $index => $row) {
             $raw = $row->toArray();
             $this->rows[] = [

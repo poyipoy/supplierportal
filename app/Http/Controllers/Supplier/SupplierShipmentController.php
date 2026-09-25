@@ -54,6 +54,7 @@ class SupplierShipmentController extends Controller
             return DataTables::eloquent($query)
                 ->addColumn('shipment_number_display', function ($shp) {
                     $url = route('supplier.shipments.show', $shp);
+
                     return '<a href="'.e($url).'" class="fw-bold text-primary text-decoration-none">'.e($shp->shipment_number).'</a>';
                 })
                 ->addColumn('po_references', function ($shp) {
@@ -61,19 +62,23 @@ class SupplierShipmentController extends Controller
                     if ($pos->isEmpty()) {
                         return '<span class="tw-text-outline">-</span>';
                     }
+
                     return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
                 })
                 ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.$shp->items->count().'</span>')
                 ->addColumn('total_qty', function ($shp) {
                     $total = (int) $shp->items->sum('shipped_qty');
+
                     return '<span class="fw-bold text-primary ui-tabular-nums">'.number_format($total).' pcs</span>';
                 })
                 ->addColumn('actual_weight', function ($shp) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
+
                     return '<span class="ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
                 ->addColumn('total_weight', function ($shp) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
+
                     return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
                 ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.$shp->shipment_date->format('d M Y').'</span>' : '-')

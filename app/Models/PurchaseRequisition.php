@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\HasHashids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\HasHashids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
 
 class PurchaseRequisition extends Model
 {
-    use SoftDeletes, HasFactory, HasHashids;
+    use HasFactory, HasHashids, SoftDeletes;
 
     protected $table = 'purchase_requisitions';
 
@@ -29,11 +30,11 @@ class PurchaseRequisition extends Model
 
     public static function generatePrNumber(): string
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () {
+        return DB::transaction(function () {
             $year = (int) now()->year;
             $month = (int) now()->month;
 
-            $seq = \Illuminate\Support\Facades\DB::table('document_sequences')
+            $seq = DB::table('document_sequences')
                 ->where('type', 'PR')
                 ->where('year', $year)
                 ->where('month', $month)
@@ -42,12 +43,12 @@ class PurchaseRequisition extends Model
 
             if ($seq) {
                 $next = $seq->last_number + 1;
-                \Illuminate\Support\Facades\DB::table('document_sequences')
+                DB::table('document_sequences')
                     ->where('id', $seq->id)
                     ->update(['last_number' => $next, 'updated_at' => now()]);
             } else {
                 $next = 1;
-                \Illuminate\Support\Facades\DB::table('document_sequences')->insert([
+                DB::table('document_sequences')->insert([
                     'type' => 'PR',
                     'year' => $year,
                     'month' => $month,
@@ -57,7 +58,7 @@ class PurchaseRequisition extends Model
                 ]);
             }
 
-            return 'REQ/' . now()->format('m/Y') . '/' . str_pad($next, 3, '0', STR_PAD_LEFT);
+            return 'REQ/'.now()->format('m/Y').'/'.str_pad($next, 3, '0', STR_PAD_LEFT);
         });
     }
 

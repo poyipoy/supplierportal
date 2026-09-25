@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceGoodsReceipt;
 use App\Models\LocalInvoiceVoucher;
@@ -54,10 +55,10 @@ class LocalInvoiceVoucherService
             }
             if ($invoice->local_purchase_order_id) {
                 $histories = $invoice->goodsReceiptHistories()->whereIn('state', [LocalInvoiceGoodsReceipt::STATE_RESERVED, LocalInvoiceGoodsReceipt::STATE_CONSUMED])->get();
-                $receipts = \App\Models\LocalGoodsReceipt::where('current_invoice_id', $invoice->id)->lockForUpdate()->get();
+                $receipts = LocalGoodsReceipt::where('current_invoice_id', $invoice->id)->lockForUpdate()->get();
                 $historyIds = $histories->pluck('local_goods_receipt_id')->map(fn ($id) => (int) $id)->sort()->values()->all();
                 $receiptIds = $receipts->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
-                if ($histories->isEmpty() || $histories->contains(fn (LocalInvoiceGoodsReceipt $history) => $history->state !== LocalInvoiceGoodsReceipt::STATE_CONSUMED) || $receipts->isEmpty() || $receipts->contains(fn ($receipt) => $receipt->status !== \App\Models\LocalGoodsReceipt::STATUS_INVOICED) || $historyIds !== $receiptIds) {
+                if ($histories->isEmpty() || $histories->contains(fn (LocalInvoiceGoodsReceipt $history) => $history->state !== LocalInvoiceGoodsReceipt::STATE_CONSUMED) || $receipts->isEmpty() || $receipts->contains(fn ($receipt) => $receipt->status !== LocalGoodsReceipt::STATUS_INVOICED) || $historyIds !== $receiptIds) {
                     throw ValidationException::withMessages(['payment_item' => 'The authoritative GR allocation has not been fully consumed.']);
                 }
             }

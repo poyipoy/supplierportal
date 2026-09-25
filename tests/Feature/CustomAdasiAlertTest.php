@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Route;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class CustomAdasiAlertTest extends TestCase
@@ -16,9 +16,9 @@ class CustomAdasiAlertTest extends TestCase
         $guestLayout = file_get_contents(resource_path('views/layouts/guest.blade.php'));
 
         foreach ([$appLayout, $authLayout, $guestLayout] as $layout) {
-            $this->assertStringContainsString("assets/css/adasi-alert.css", $layout);
-            $this->assertStringContainsString("sweetalert2@11.7.32", $layout);
-            $this->assertStringContainsString("assets/js/adasi-alert.js", $layout);
+            $this->assertStringContainsString('assets/css/adasi-alert.css', $layout);
+            $this->assertStringContainsString('sweetalert2@11.7.32', $layout);
+            $this->assertStringContainsString('assets/js/adasi-alert.js', $layout);
         }
     }
 
