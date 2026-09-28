@@ -1111,7 +1111,6 @@
                     { data: 'status_badge', name: 'diff_percent', className: 'text-center', searchable: false },
                     { data: 'action', name: 'action', className: 'text-center', orderable: false, searchable: false }
                 ],
-                pageLength: 25,
                 order: [[4, 'desc']]
             });
         }

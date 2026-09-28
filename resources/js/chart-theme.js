@@ -27,7 +27,7 @@ export function resolveChartThemeColors() {
         onSurfaceVariant: getVar('--md-on-surface-variant', '#64748B'),
         outline: getVar('--md-outline', '#CBD5E1'),
         outlineVariant: getVar('--md-outline-variant', '#E2E8F0'),
-        gridLine: 'rgba(226, 232, 240, 0.75)',
+        gridLine: getVar('--md-chart-grid', 'rgba(226, 232, 240, 0.75)'),
         tooltipBg: 'rgba(15, 23, 42, 0.94)',
         tooltipText: '#F8FAFC',
         tooltipMuted: '#94A3B8',
@@ -198,6 +198,41 @@ export function applyGlobalChartDefaults(ChartInstance = window.Chart) {
     };
 }
 
+export function refreshChartTheme(ChartInstance = window.Chart) {
+    applyGlobalChartDefaults(ChartInstance);
+
+    if (!ChartInstance?.instances) return;
+
+    const colors = resolveChartThemeColors();
+    Object.values(ChartInstance.instances).forEach((chart) => {
+        if (!chart?.options) return;
+
+        Object.values(chart.options.scales || {}).forEach((scale) => {
+            if (scale.grid) scale.grid.color = colors.gridLine;
+            if (scale.border) scale.border.color = colors.outline;
+            if (scale.ticks) scale.ticks.color = colors.onSurfaceVariant;
+            if (scale.title) scale.title.color = colors.onSurfaceVariant;
+        });
+
+        const plugins = chart.options.plugins || (chart.options.plugins = {});
+        if (plugins.legend) {
+            plugins.legend.labels = { ...plugins.legend.labels, color: colors.onSurfaceVariant };
+        }
+        if (plugins.title) plugins.title.color = colors.onSurface;
+        if (plugins.tooltip) {
+            plugins.tooltip = {
+                ...plugins.tooltip,
+                backgroundColor: colors.tooltipBg,
+                titleColor: colors.tooltipText,
+                bodyColor: colors.tooltipText,
+                borderColor: colors.outline,
+            };
+        }
+
+        chart.update('none');
+    });
+}
+
 // Attach to window object for global availability
 const AdasiChart = {
     getColors: resolveChartThemeColors,
@@ -207,7 +242,10 @@ const AdasiChart = {
     getTooltip: getChartTooltip,
     getScales: getChartScales,
     applyDefaults: applyGlobalChartDefaults,
+    refreshTheme: refreshChartTheme,
 };
 
 window.AdasiChart = AdasiChart;
 export default AdasiChart;
+
+window.addEventListener('adasi:theme-change', () => refreshChartTheme());

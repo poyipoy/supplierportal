@@ -210,7 +210,6 @@
                 { data: 'status_badge', name: 'status', className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            pageLength: 25,
             order: []
         });
 

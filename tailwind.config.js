@@ -33,6 +33,19 @@ export default {
             },
             colors: {
                 background: 'var(--md-background)',
+                'on-primary': 'var(--md-on-primary)',
+                'on-primary-container': 'var(--md-on-primary-container)',
+                'on-secondary': 'var(--md-on-secondary)',
+                'on-secondary-container': 'var(--md-on-secondary-container)',
+                'on-error': 'var(--md-on-error)',
+                'on-error-container': 'var(--md-on-error-container)',
+                'on-success': 'var(--md-on-success)',
+                'on-success-container': 'var(--md-on-success-container)',
+                'on-warning': 'var(--md-on-warning)',
+                'on-warning-container': 'var(--md-on-warning-container)',
+                'on-info': 'var(--md-on-info)',
+                'on-info-container': 'var(--md-on-info-container)',
+
                 primary: {
                     DEFAULT: 'var(--md-primary)',
                     foreground: 'var(--md-on-primary)',
@@ -50,6 +63,12 @@ export default {
                     foreground: 'var(--md-on-error)',
                     container: 'var(--md-error-container)',
                     'container-foreground': 'var(--md-on-error-container)',
+                },
+                info: {
+                    DEFAULT: 'var(--md-info)',
+                    foreground: 'var(--md-on-info)',
+                    container: 'var(--md-info-container)',
+                    'container-foreground': 'var(--md-on-info-container)',
                 },
                 success: {
                     DEFAULT: 'var(--md-success)',

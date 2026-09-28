@@ -86,7 +86,6 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
             order: [[0, 'asc'], [1, 'asc']],
-            pageLength: 25
         });
     });
 </script>

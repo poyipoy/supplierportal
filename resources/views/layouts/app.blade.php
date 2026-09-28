@@ -9,6 +9,63 @@
     @auth
         <meta name="user-id" content="{{ auth()->id() }}">
     @endauth
+@auth
+        <script>
+            (() => {
+                const preferences = @js($preferenceFrontendPayload);
+                const root = document.documentElement;
+                const media = window.matchMedia('(prefers-color-scheme: dark)');
+                const storageKey = 'adasi.sidebar.' + preferences.accountId;
+                let sidebarCollapsed = preferences.sidebarState === 'collapsed';
+                let previewTheme = null;
+                let previewDensity = null;
+
+                try {
+                    const cached = JSON.parse(window.localStorage.getItem(storageKey) || 'null');
+                    if (cached && cached.revision === preferences.sidebarRevision && typeof cached.collapsed === 'boolean') {
+                        sidebarCollapsed = cached.collapsed;
+                    }
+                    window.localStorage.setItem(storageKey, JSON.stringify({ revision: preferences.sidebarRevision, collapsed: sidebarCollapsed }));
+                } catch (error) {
+                    // Restricted storage falls back to the account preference for this page load.
+                }
+
+                const savedTheme = preferences.theme;
+                const savedDensity = preferences.density;
+                const applyTheme = () => {
+                    const choice = previewTheme ?? savedTheme;
+                    const effective = choice === 'system' ? (media.matches ? 'dark' : 'light') : choice;
+                    root.dataset.theme = effective;
+                    root.dataset.bsTheme = effective;
+                    window.dispatchEvent(new CustomEvent('adasi:theme-change', { detail: { theme: effective } }));
+                };
+                const applyDensity = () => {
+                    root.dataset.density = previewDensity ?? savedDensity;
+                };
+
+                root.dataset.sidebarCollapsed = String(window.matchMedia('(min-width: 992px)').matches && sidebarCollapsed);
+                window.__adasiSidebarInitialCollapsed = sidebarCollapsed;
+                window.AdasiSidebarPreferences = Object.freeze({
+                    read: () => sidebarCollapsed,
+                    write: (collapsed) => {
+                        sidebarCollapsed = Boolean(collapsed);
+                        try { window.localStorage.setItem(storageKey, JSON.stringify({ revision: preferences.sidebarRevision, collapsed: sidebarCollapsed })); } catch (error) { /* Keep the in-memory state. */ }
+                    },
+                });
+                window.AdasiPreferences = Object.freeze({
+                    pageSize: Number(preferences.pageSize),
+                    theme: savedTheme,
+                    density: savedDensity,
+                    previewTheme: (value) => { previewTheme = value; applyTheme(); },
+                    previewDensity: (value) => { previewDensity = value; applyDensity(); },
+                    restoreSaved: () => { previewTheme = null; previewDensity = null; applyTheme(); applyDensity(); },
+                });
+                applyTheme();
+                applyDensity();
+                media.addEventListener('change', () => { if ((previewTheme ?? savedTheme) === 'system') applyTheme(); });
+            })();
+        </script>
+    @endauth
     <title>@yield('title', 'ADASI Supplier Portal')</title>
 
     <!-- Favicon -->
@@ -33,21 +90,7 @@
     <!-- ADASI Alert Theme -->
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
-    <script>
-        (() => {
-            const desktop = window.matchMedia('(min-width: 992px)').matches;
-            let collapsed = false;
 
-            try {
-                collapsed = desktop && window.localStorage.getItem('sidebarCollapsed') === 'true';
-            } catch (error) {
-                collapsed = false;
-            }
-
-            window.__adasiSidebarInitialCollapsed = collapsed;
-            document.documentElement.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
-        })();
-    </script>
 
     <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -128,6 +171,14 @@
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     @endif
+    <script>
+        window.AdasiDataTable = Object.freeze({
+            defaults: () => ({ pageLength: window.AdasiPreferences?.pageSize || 25, lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]] }),
+        });
+        if (window.jQuery?.fn?.dataTable) {
+            window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, window.AdasiDataTable.defaults());
+        }
+    </script>
     <script>
         // ADASI Loader — Inject overlay ke body
         const isDataTableRequest = (options = {}) => {

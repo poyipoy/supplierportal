@@ -80,6 +80,11 @@ class User extends Authenticatable
         return $this->hasOne(Supplier::class);
     }
 
+    public function preference(): HasOne
+    {
+        return $this->hasOne(UserPreference::class);
+    }
+
     public function supplierScopes(): HasMany
     {
         return $this->hasMany(SupplierScope::class, 'supplier_id');

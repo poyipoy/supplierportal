@@ -48,6 +48,7 @@ use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
 use App\Http\Controllers\Supplier\SupplierShipmentController;
 use App\Http\Controllers\SupplierRegistrationReviewController;
+use App\Http\Controllers\UserPreferenceController;
 use App\Models\PurchaseRequisition;
 use App\Support\PortalContext;
 use Illuminate\Support\Facades\Route;
@@ -131,6 +132,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->middleware('throttle:auth.credentials')->name('profile.destroy');
+    Route::get('/profile/customization', [UserPreferenceController::class, 'edit'])->name('profile.customization');
+    Route::patch('/profile/customization', [UserPreferenceController::class, 'update'])->name('profile.customization.update');
+    Route::delete('/profile/customization', [UserPreferenceController::class, 'reset'])->name('profile.customization.reset');
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
 
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {

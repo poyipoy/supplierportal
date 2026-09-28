@@ -82,7 +82,6 @@
                 { data: 'created_date', name: 'created_at' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            pageLength: 25,
             order: []
         });
 

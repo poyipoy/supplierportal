@@ -50,9 +50,11 @@ class FrontendAssetLoadingTest extends TestCase
             }
 
             $relativePath = str_replace('\\', '/', substr($file->getPathname(), strlen($viewRoot) + 1));
-            $contractPath = $relativePath === 'admin/material-hs-code/_script.blade.php'
-                ? resource_path('views/admin/material-hs-code/index.blade.php')
-                : $file->getPathname();
+            $contractPath = match ($relativePath) {
+                'admin/material-hs-code/_script.blade.php' => resource_path('views/admin/material-hs-code/index.blade.php'),
+                'purchasing/comparison/_scripts.blade.php' => resource_path('views/purchasing/comparison/vs-best.blade.php'),
+                default => $file->getPathname(),
+            };
 
             $this->assertStringContainsString(
                 "@section('uses-datatables', true)",

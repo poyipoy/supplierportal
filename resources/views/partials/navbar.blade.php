@@ -100,6 +100,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('profile.customization') }}" class="dropdown-item tw-py-1.5 small">
+                        <x-ui.icon name="sliders-horizontal" class="me-2" />Customization
+                    </a>
+                </li>
+                <li>
                     <hr class="dropdown-divider my-1">
                 </li>
                 <li>

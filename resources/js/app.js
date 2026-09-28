@@ -3,6 +3,7 @@ import { bootAdasiCalendars } from './calendar';
 import './unsaved-changes';
 import './number-input-helper';
 import './chart-theme';
+import './preferences';
 import './submit-guard';
 import './asset-protection';
 import './server-tabs';
@@ -348,7 +349,7 @@ Alpine.data('adasiShell', () => ({
 
     readStoredSidebarState() {
         try {
-            return window.localStorage.getItem('sidebarCollapsed') === 'true';
+            return window.AdasiSidebarPreferences?.read() === true;
         } catch (error) {
             return false;
         }
@@ -356,7 +357,7 @@ Alpine.data('adasiShell', () => ({
 
     storeDesktopSidebarState() {
         try {
-            window.localStorage.setItem('sidebarCollapsed', String(this.desktopCollapsed));
+            window.AdasiSidebarPreferences?.write(this.desktopCollapsed);
         } catch (error) {
             // Storage can be unavailable in restricted browser contexts.
         }

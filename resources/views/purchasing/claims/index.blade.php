@@ -114,7 +114,7 @@
 <script>
     $(document).ready(function() {
         var dtLang = {};
-        var dtOpts = { pageLength: 25, order: [] };
+        var dtOpts = { order: [] };
 
         $('#actionTable').DataTable(Object.assign({}, dtOpts, {
             processing: true,

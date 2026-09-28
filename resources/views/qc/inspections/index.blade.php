@@ -148,7 +148,7 @@
 <script>
     $(document).ready(function() {
         var dtLang = {};
-        var dtOpts = { pageLength: 25, order: [] };
+        var dtOpts = { order: [] };
 
         $('#waitingTable').DataTable(Object.assign({}, dtOpts, {
             processing: true,
