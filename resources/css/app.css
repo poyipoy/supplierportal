@@ -86,6 +86,10 @@
 
         /* Semantic roles: source of truth for Bootstrap and Tailwind bridges. */
         --md-primary: #1F5FA6;
+        --md-chart-primary: #1F5FA6;
+        --md-chart-primary-container: #EBF3FC;
+        --ui-primary-text: var(--md-primary);
+        --ui-primary-text-rgb: var(--md-primary-rgb);
         --md-primary-rgb: 31, 95, 166;
         --md-on-primary: #FFFFFF;
         --md-on-primary-rgb: 255, 255, 255;
@@ -304,6 +308,9 @@
     :root[data-theme="dark"] {
         color-scheme: dark;
         --md-primary-container: #1B3654;
+        --md-chart-primary-container: #1B3654;
+        --ui-primary-text: #A8C9F0;
+        --ui-primary-text-rgb: 168, 201, 240;
         --md-on-primary-container: #D9E9FF;
         --md-secondary: #AEBBD0;
         --md-secondary-rgb: 174, 187, 208;
@@ -379,9 +386,81 @@
     }
 
 
+    /* Trusted accent presets. Status and chart-series tokens stay on the brand palette. */
+    :root[data-accent="slate"] {
+        --md-primary: #475569;
+        --md-primary-rgb: 71, 85, 105;
+        --md-on-primary: #FFFFFF;
+        --md-on-primary-rgb: 255, 255, 255;
+        --md-primary-container: #F1F5F9;
+        --md-on-primary-container: #1E293B;
+        --ui-primary-text: #475569;
+        --ui-primary-text-rgb: 71, 85, 105;
+        --ui-primary-hover: #334155;
+        --ui-input-focus: var(--md-primary);
+        --bs-link-color: var(--ui-primary-text);
+        --bs-link-color-rgb: var(--ui-primary-text-rgb);
+        --bs-link-hover-color: var(--md-on-primary-container);
+        --bs-link-hover-color-rgb: 30, 41, 59;
+        --md-info: #1F5FA6;
+        --md-info-rgb: 31, 95, 166;
+        --md-on-info: #FFFFFF;
+        --md-on-info-rgb: 255, 255, 255;
+        --md-info-container: #EBF3FC;
+        --md-on-info-container: #0E3566;
+    }
+
+    :root[data-theme="dark"][data-accent="slate"] {
+        --md-primary: #AEBBD0;
+        --md-primary-rgb: 174, 187, 208;
+        --md-on-primary: #101725;
+        --md-on-primary-rgb: 16, 23, 37;
+        --md-primary-container: #2A3546;
+        --md-on-primary-container: #E0E7F1;
+        --ui-primary-text: #AEBBD0;
+        --ui-primary-text-rgb: 174, 187, 208;
+        --ui-primary-hover: #C1CDDF;
+        --bs-link-hover-color-rgb: 224, 231, 241;
+        --md-info-container: #1B3654;
+        --md-on-info-container: #D9E9FF;
+    }
+
+    :root[data-accent="slate"] .btn-primary {
+        --bs-btn-color: var(--md-on-primary);
+        --bs-btn-bg: var(--md-primary);
+        --bs-btn-border-color: var(--md-primary);
+        --bs-btn-hover-color: var(--md-on-primary);
+        --bs-btn-hover-bg: var(--ui-primary-hover);
+        --bs-btn-hover-border-color: var(--ui-primary-hover);
+        --bs-btn-active-color: var(--md-on-primary);
+        --bs-btn-active-bg: var(--md-primary);
+        --bs-btn-active-border-color: var(--md-primary);
+        --bs-btn-disabled-color: var(--md-on-primary);
+        --bs-btn-disabled-bg: var(--md-primary);
+        --bs-btn-disabled-border-color: var(--md-primary);
+        --bs-btn-focus-shadow-rgb: var(--md-primary-rgb);
+    }
+
+    :root[data-accent="slate"] .btn-outline-primary {
+        --bs-btn-color: var(--ui-primary-text);
+        --bs-btn-border-color: var(--md-primary);
+        --bs-btn-hover-color: var(--md-on-primary);
+        --bs-btn-hover-bg: var(--md-primary);
+        --bs-btn-hover-border-color: var(--md-primary);
+        --bs-btn-active-color: var(--md-on-primary);
+        --bs-btn-active-bg: var(--md-primary);
+        --bs-btn-active-border-color: var(--md-primary);
+        --bs-btn-disabled-color: var(--ui-primary-text);
+        --bs-btn-disabled-border-color: var(--md-primary);
+        --bs-btn-focus-shadow-rgb: var(--md-primary-rgb);
+    }
+
+    [data-accent-swatch="brand"] { background-color: #1F5FA6; }
+    [data-accent-swatch="slate"] { background-color: #475569; }
+
     :root[data-theme="dark"] .tw-text-primary,
     :root[data-theme="dark"] .hover\:tw-text-primary:hover {
-        color: #A8C9F0 !important;
+        color: var(--ui-primary-text) !important;
     }
 
     :root[data-theme="dark"] .tw-text-success {
@@ -400,9 +479,9 @@
     :root[data-theme="dark"] .text-danger { color: #FFB4AB !important; }
     :root[data-theme="dark"] .text-warning { color: #FFD28A !important; }
     :root[data-theme="dark"] .text-info { color: #A8C9F0 !important; }
-    :root[data-theme="dark"] .text-primary { color: #A8C9F0 !important; }
+    :root[data-theme="dark"] .text-primary { color: var(--ui-primary-text) !important; }
 
-    :root[data-theme="dark"] .btn-primary {
+    :root[data-theme="dark"]:not([data-accent="slate"]) .btn-primary {
         --bs-btn-color: var(--md-on-primary);
         --bs-btn-bg: var(--md-primary);
         --bs-btn-border-color: var(--md-primary);
@@ -411,8 +490,8 @@
         --bs-btn-hover-border-color: #2B70B5;
     }
 
-    :root[data-theme="dark"] .sidebar-link.active { color: #A8C9F0; }
-    :root[data-theme="dark"] .sidebar-link.active::before { background: #A8C9F0; }
+    :root[data-theme="dark"] .sidebar-link.active { color: var(--ui-primary-text); }
+    :root[data-theme="dark"] .sidebar-link.active::before { background: var(--ui-primary-text); }
 
     :root[data-theme="dark"] .tw-bg-emerald-600.tw-text-white {
         background-color: var(--md-success) !important;

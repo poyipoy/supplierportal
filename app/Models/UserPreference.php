@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserPreference extends Model
 {
-    protected $fillable = ['theme', 'density', 'sidebar_state', 'page_size', 'quick_access'];
+    protected $fillable = ['theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard_preferences'];
 
     protected function casts(): array
     {
-        return ['page_size' => 'integer', 'quick_access' => 'array', 'revision' => 'integer'];
+        return ['page_size' => 'integer', 'quick_access' => 'array', 'revision' => 'integer', 'sidebar_revision' => 'integer', 'dashboard_preferences' => 'array'];
     }
 
     public function user(): BelongsTo

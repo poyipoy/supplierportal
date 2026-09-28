@@ -16,8 +16,10 @@ class UserPreferenceMigrationTest extends TestCase
     {
         $this->assertSame('adasi_portal_test', DB::connection()->getDatabaseName());
         $migration = require database_path('migrations/2026_09_28_000001_create_user_preferences_table.php');
+        $extension = require database_path('migrations/2026_09_28_000002_extend_user_preferences_for_dashboard_customization.php');
 
         try {
+            $extension->down();
             $migration->down();
             $this->assertFalse(Schema::hasTable('user_preferences'));
 
@@ -25,9 +27,29 @@ class UserPreferenceMigrationTest extends TestCase
             $this->assertTrue(Schema::hasTable('user_preferences'));
             $this->assertTrue(Schema::hasColumn('user_preferences', 'revision'));
             $this->assertTrue(Schema::hasColumn('user_preferences', 'quick_access'));
+
+            $user = User::factory()->create(['role' => 'admin']);
+            $values = ['theme' => 'dark', 'density' => 'compact', 'sidebar_state' => 'collapsed', 'page_size' => 50, 'quick_access' => json_encode(['admin.users']), 'revision' => 7];
+            DB::table('user_preferences')->insert(['user_id' => $user->id, ...$values]);
+            $extension->up();
+            foreach (['accent', 'dashboard_preferences', 'sidebar_revision'] as $column) {
+                $this->assertTrue(Schema::hasColumn('user_preferences', $column));
+            }
+            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'accent' => 'brand', 'sidebar_revision' => 1, 'theme' => 'dark', 'revision' => 7]);
+            $this->assertSame([], $user->fresh()->preference->dashboard_preferences);
+            DB::table('user_preferences')->where('user_id', $user->id)->update(['accent' => 'slate', 'dashboard_preferences' => json_encode(['admin' => ['hidden' => ['admin.summary'], 'order' => []]])]);
+            $extension->down();
+            $this->assertFalse(Schema::hasColumn('user_preferences', 'accent'));
+            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'theme' => 'dark', 'revision' => 7]);
+            $extension->up();
+            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'accent' => 'brand', 'sidebar_revision' => 1]);
+            $this->assertSame(['admin.users'], $user->fresh()->preference->quick_access);
         } finally {
             if (! Schema::hasTable('user_preferences')) {
                 $migration->up();
+            }
+            if (! Schema::hasColumn('user_preferences', 'accent')) {
+                $extension->up();
             }
         }
     }

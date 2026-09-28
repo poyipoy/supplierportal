@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'defaults' => ['theme' => 'system', 'density' => 'comfortable', 'sidebar_state' => 'expanded', 'page_size' => 25, 'quick_access' => []],
+    'defaults' => ['theme' => 'system', 'density' => 'comfortable', 'sidebar_state' => 'expanded', 'page_size' => 25, 'quick_access' => [], 'accent' => 'brand', 'dashboard_preferences' => [], 'sidebar_revision' => 1],
+    'accents' => ['brand' => 'ADASI Blue', 'slate' => 'Slate'],
     'themes' => ['light', 'dark', 'system'],
     'densities' => ['comfortable', 'compact'],
     'sidebar_states' => ['expanded', 'collapsed'],

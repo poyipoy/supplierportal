@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Services\Dashboard\DashboardWidgetService;
 use App\Services\QuickAccessService;
 use App\Support\PortalContext;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,9 +17,20 @@ class UpdateUserPreferenceRequest extends FormRequest
         return $this->user() instanceof User;
     }
 
-    public function rules(): array
+    public function rules(DashboardWidgetService $dashboardWidgets): array
     {
+        $user = $this->user();
+        $widgets = $user instanceof User ? $dashboardWidgets->layoutFor($user, []) : [];
+        $keys = array_column($widgets, 'key');
+        $optionalKeys = array_column(array_filter($widgets, fn (array $widget): bool => ! $widget['required']), 'key');
+
         return [
+            'accent' => ['sometimes', 'required', Rule::in(array_keys(config('user_preferences.accents')))],
+            'dashboard' => ['sometimes', 'array:hidden,order'],
+            'dashboard.hidden' => ['sometimes', 'array', 'list', 'max:'.count($optionalKeys)],
+            'dashboard.hidden.*' => ['string', 'distinct:strict', Rule::in($optionalKeys)],
+            'dashboard.order' => ['sometimes', 'array', 'list', 'max:'.count($keys)],
+            'dashboard.order.*' => ['string', 'distinct:strict', Rule::in($keys)],
             'theme' => ['required', Rule::in(config('user_preferences.themes'))],
             'density' => ['required', Rule::in(config('user_preferences.densities'))],
             'sidebar_state' => ['required', Rule::in(config('user_preferences.sidebar_states'))],

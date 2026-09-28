@@ -21,7 +21,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- KPI Cards --}}
+    <x-ui.dashboard-layout audience="ga">
+        <x-slot:statuses>
+{{-- KPI Cards --}}
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-5 tw-gap-4">
         <x-ui.metric-card
             label="Diajukan"
@@ -59,8 +61,10 @@
             :href="route('ga.claims.index', ['status' => 'PAID'])"
         />
     </div>
+        </x-slot:statuses>
 
-    {{-- Recent Claims Table --}}
+        <x-slot:claims>
+{{-- Recent Claims Table --}}
     <x-ui.data-table
         title="Daftar Klaim GA Terbaru"
         description="10 pengajuan klaim karyawan terakhir yang tercatat dalam sistem."
@@ -127,5 +131,7 @@
             </table>
         </div>
     </x-ui.data-table>
+        </x-slot:claims>
+    </x-ui.dashboard-layout>
 </div>
 @endsection

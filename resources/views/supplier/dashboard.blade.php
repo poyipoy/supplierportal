@@ -25,12 +25,9 @@
         </x-ui.alert>
     @endif
 
-    {{-- Operational Tables & Side Column --}}
-    <div class="tw-grid tw-items-start tw-gap-4 lg:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
-        {{-- Main Operational Column --}}
-        <div class="tw-grid tw-min-w-0 tw-gap-4">
-            {{-- Requisitions Awaiting Quotation Queue --}}
-            <x-ui.data-table
+    <x-ui.dashboard-layout audience="supplier.import">
+        <x-slot:quotations class="lg:tw-col-span-8">
+<x-ui.data-table
                 title="Action Required: Requisitions Awaiting Quotation"
                 description="Open procurement opportunities from ADASI Purchasing available for your bid."
                 :empty="$prBelumRespons->isEmpty()"
@@ -78,7 +75,9 @@
                     </tbody>
                 </table>
             </x-ui.data-table>
+        </x-slot:quotations>
 
+        <x-slot:metrics class="lg:tw-col-span-8">
             {{-- Restrained operational summary follows the primary action queue. --}}
             <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="Supplier operational summary">
                 <x-ui.metric-card flat label="Active Periods" :value="$periodeAktif" icon="calendar" tone="neutral" :href="route('supplier.quotations.index')" />
@@ -86,9 +85,10 @@
                 <x-ui.metric-card flat label="Submitted This Month" :value="$penawaranTerkirim" icon="send" tone="success" :href="route('supplier.quotations.index')" />
                 <x-ui.metric-card flat label="Received POs" :value="$poDiterima" icon="receipt" tone="primary" :href="route('supplier.purchase-orders.index')" />
             </div>
+        </x-slot:metrics>
 
-            {{-- Latest Purchase Orders Tracker --}}
-            <x-ui.data-table
+        <x-slot:orders class="lg:tw-col-span-8">
+<x-ui.data-table
                 title="Latest Purchase Orders"
                 description="Active orders and recent deliveries issued to your supplier account."
                 :empty="$poTerbaru->isEmpty()"
@@ -144,9 +144,9 @@
                     </tbody>
                 </table>
             </x-ui.data-table>
-        </div>
+        </x-slot:orders>
 
-        {{-- Side Column: Announcements & Quick Links --}}
+        <x-slot:updates class="lg:tw-col-span-4">
         <aside class="tw-grid tw-gap-4">
             {{-- ADASI Announcements Card --}}
             <x-ui.card title="ADASI Announcements" padding="none">
@@ -192,6 +192,7 @@
                 </x-ui.button>
             </x-ui.card>
         </aside>
-    </div>
+        </x-slot:updates>
+    </x-ui.dashboard-layout>
 </div>
 @endsection

@@ -29,8 +29,8 @@ class UserPreferenceConcurrencyTest extends TestCase
         $start = microtime(true) + 2;
         $workerPath = base_path('tests/Feature/_user-preference-concurrency-worker.php');
         $processes = [
-            new Process([PHP_BINARY, $workerPath, (string) $user->id, 'dark', (string) $start], base_path(), ['APP_ENV' => 'testing']),
-            new Process([PHP_BINARY, $workerPath, (string) $user->id, 'light', (string) $start], base_path(), ['APP_ENV' => 'testing']),
+            new Process([PHP_BINARY, $workerPath, (string) $user->id, 'dark', (string) $start, 'slate'], base_path(), ['APP_ENV' => 'testing']),
+            new Process([PHP_BINARY, $workerPath, (string) $user->id, 'light', (string) $start, 'brand'], base_path(), ['APP_ENV' => 'testing']),
         ];
 
         foreach ($processes as $process) {
@@ -45,5 +45,8 @@ class UserPreferenceConcurrencyTest extends TestCase
         $this->assertSame(1, $user->preference()->count());
         $this->assertSame(2, $user->fresh()->preference->revision);
         $this->assertContains($user->fresh()->preference->theme, ['dark', 'light']);
+        $this->assertContains($user->fresh()->preference->accent, ['brand', 'slate']);
+        $this->assertSame(1, $user->fresh()->preference->sidebar_revision);
+        $this->assertSame(['admin.notifications'], $user->fresh()->preference->dashboard_preferences['admin']['hidden']);
     }
 }

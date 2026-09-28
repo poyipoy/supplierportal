@@ -31,6 +31,9 @@ class UserCustomizationTest extends TestCase
                     'page_size' => 25,
                     'quick_access' => [],
                     'revision' => 0,
+                    'accent' => 'brand',
+                    'dashboard_preferences' => [],
+                    'sidebar_revision' => 1,
                 ]);
 
             $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);

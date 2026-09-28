@@ -25,7 +25,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- KPI Metric Cards Grid --}}
+    <x-ui.dashboard-layout audience="finance">
+        <x-slot:statuses>
+{{-- KPI Metric Cards Grid --}}
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-6 tw-gap-4">
         <x-ui.metric-card
             label="Menunggu Fisik"
@@ -70,8 +72,10 @@
             :href="route('finance.invoices.index', ['overdue' => 1])"
         />
     </div>
+        </x-slot:statuses>
 
-    {{-- Payment Forecast Module --}}
+        <x-slot:forecast>
+{{-- Payment Forecast Module --}}
     <div x-data="paymentForecastModule()">
         <x-ui.card padding="none">
             <x-slot:header>
@@ -264,8 +268,10 @@
             </div>
         </x-ui.card>
     </div>
+        </x-slot:forecast>
 
-    {{-- Recent DRP Batches --}}
+        <x-slot:batches>
+{{-- Recent DRP Batches --}}
     <x-ui.data-table
         title="Recent Payment Batches (DRP)"
         description="Daftar 5 batch pembayaran DRP terakhir yang dibuat."
@@ -334,8 +340,10 @@
             </table>
         </div>
     </x-ui.data-table>
+        </x-slot:batches>
 
-    {{-- Recent Submissions Table --}}
+        <x-slot:invoices>
+{{-- Recent Submissions Table --}}
     <x-ui.data-table
         title="Recent Invoice Submissions"
         description="5 tagihan invoice supplier lokal terbaru yang masuk ke sistem."
@@ -349,6 +357,8 @@
 
         @include('local-invoices.table', ['invoices' => $recentInvoices ?? $invoices ?? [], 'portal' => 'finance', 'payments' => false])
     </x-ui.data-table>
+        </x-slot:invoices>
+    </x-ui.dashboard-layout>
 </div>
 @endsection
 

@@ -27,7 +27,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- 1. Operational Action Queue (What needs Purchasing attention now?) --}}
+    <x-ui.dashboard-layout audience="purchasing">
+        <x-slot:exceptions>
+{{-- 1. Operational Action Queue (What needs Purchasing attention now?) --}}
     @php
         $totalActionRequired = collect($operationalChecks)->sum('count');
     @endphp
@@ -92,8 +94,10 @@
             </tbody>
         </table>
     </x-ui.data-table>
+        </x-slot:exceptions>
 
-    {{-- 2. Restrained Operational Summary Metric Strip --}}
+        <x-slot:metrics>
+{{-- 2. Restrained Operational Summary Metric Strip --}}
     <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="Purchasing operational summary">
         <x-ui.metric-card
             flat
@@ -128,8 +132,10 @@
             :href="route('purchasing.purchase-orders.index', ['arrival' => 'this_week'])"
         />
     </div>
+        </x-slot:metrics>
 
-    {{-- 3. Analytics & Quick Reference --}}
+        <x-slot:analytics>
+{{-- 3. Analytics & Quick Reference --}}
     <div class="tw-grid tw-gap-5 lg:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
         {{-- PR Monthly Inflow Chart --}}
         <x-ui.card
@@ -186,11 +192,10 @@
             </x-ui.card>
         </div>
     </div>
+        </x-slot:analytics>
 
-    {{-- 4. Recent Operational Records (Latest 5 PRs & Nearest PO Arrivals) --}}
-    <div class="tw-grid tw-items-start tw-gap-5 lg:tw-grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        {{-- Latest PRs --}}
-        <x-ui.data-table title="Recent Requisitions" description="Most recently created purchase requisitions.">
+        <x-slot:recent_requisitions class="lg:tw-col-span-5">
+<x-ui.data-table title="Recent Requisitions" description="Most recently created purchase requisitions.">
             <x-slot:toolbar>
                 <x-ui.button :href="route('purchasing.requisitions.index')" variant="ghost" size="sm">
                     <span>View all</span>
@@ -222,9 +227,10 @@
                 </tbody>
             </table>
         </x-ui.data-table>
+        </x-slot:recent_requisitions>
 
-        {{-- Nearest PO Arrivals --}}
-        <x-ui.data-table title="Upcoming PO Arrivals" description="Active orders with closest estimated arrival dates.">
+        <x-slot:arrivals class="lg:tw-col-span-7">
+<x-ui.data-table title="Upcoming PO Arrivals" description="Active orders with closest estimated arrival dates.">
             <x-slot:toolbar>
                 <x-ui.button :href="route('purchasing.purchase-orders.index')" variant="ghost" size="sm">
                     <span>View all PO</span>
@@ -258,7 +264,8 @@
                 </tbody>
             </table>
         </x-ui.data-table>
-    </div>
+        </x-slot:arrivals>
+    </x-ui.dashboard-layout>
 </div>
 
 {{-- Exchange Rate Update Modal --}}

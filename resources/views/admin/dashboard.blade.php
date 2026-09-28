@@ -11,9 +11,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.75fr)] xl:tw-items-start">
-        <div class="tw-grid tw-gap-6">
-            <x-ui.data-table title="Administrative Attention" description="Current exchange-rate readiness from the configured currency set.">
+    <x-ui.dashboard-layout audience="admin">
+        <x-slot:rates class="lg:tw-col-span-8">
+<x-ui.data-table title="Administrative Attention" description="Current exchange-rate readiness from the configured currency set.">
                 <x-slot:toolbar>
                     <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal"><x-ui.icon name="plus" /> Add Effective Rate</x-ui.button>
                 </x-slot:toolbar>
@@ -38,8 +38,10 @@
                     </div>
                 </x-slot:pagination>
             </x-ui.data-table>
+        </x-slot:rates>
 
-            <x-ui.data-table title="Recent Administrative Activity" description="Latest notifications available to the signed-in administrator.">
+        <x-slot:notifications class="lg:tw-col-span-8">
+<x-ui.data-table title="Recent Administrative Activity" description="Latest notifications available to the signed-in administrator.">
                 <div class="tw-divide-y tw-divide-outline-variant">
                     @forelse($recentActivities as $act)
                         @php($activityUrl = $act->data['url'] ?? null)
@@ -58,8 +60,9 @@
                     @endforelse
                 </div>
             </x-ui.data-table>
-        </div>
+        </x-slot:notifications>
 
+        <x-slot:shortcuts class="lg:tw-col-span-4">
         <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="admin-shortcuts-title">
             <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
                 <h2 id="admin-shortcuts-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Administration Shortcuts</h2>
@@ -81,8 +84,9 @@
                 @endforeach
             </nav>
         </section>
-    </div>
+        </x-slot:shortcuts>
 
+        <x-slot:summary>
     <section class="tw-border-y tw-border-outline tw-bg-surface-container" aria-labelledby="admin-summary-title">
         <h2 id="admin-summary-title" class="tw-sr-only">Operational summary</h2>
         <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-4">
@@ -108,6 +112,8 @@
             </div>
         </dl>
     </section>
+        </x-slot:summary>
+    </x-ui.dashboard-layout>
 </div>
 
 <div class="modal fade" id="kursModal" tabindex="-1" aria-labelledby="kursModalTitle" aria-hidden="true">

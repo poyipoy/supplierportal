@@ -33,6 +33,8 @@ try {
         'sidebar_state' => 'expanded',
         'page_size' => 25,
         'quick_access' => [],
+        'accent' => $argv[4] ?? 'brand',
+        'dashboard' => ['hidden' => ['admin.notifications'], 'order' => ['admin.summary']],
     ]);
     echo 'saved';
 } catch (Throwable $exception) {

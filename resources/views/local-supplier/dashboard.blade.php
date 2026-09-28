@@ -21,6 +21,8 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.dashboard-layout audience="supplier.local">
+    <x-slot:statuses>
     {{-- KPI Metric Cards Grid --}}
     @php
         $totalInvoices = $counts->sum();
@@ -66,6 +68,8 @@
         />
     </div>
 
+    </x-slot:statuses>
+    <x-slot:company>
     {{-- Vendor Organization Quick Status --}}
     <x-ui.card>
         <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-4">
@@ -93,6 +97,8 @@
         </div>
     </x-ui.card>
 
+    </x-slot:company>
+    <x-slot:invoices>
     {{-- Recent Invoices --}}
     <x-ui.data-table
         title="Invoice Terbaru"
@@ -107,5 +113,7 @@
 
         @include('local-invoices.table', ['portal' => 'local-supplier', 'payments' => false])
     </x-ui.data-table>
+    </x-slot:invoices>
+    </x-ui.dashboard-layout>
 </div>
 @endsection

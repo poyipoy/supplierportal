@@ -19,6 +19,7 @@
                 let sidebarCollapsed = preferences.sidebarState === 'collapsed';
                 let previewTheme = null;
                 let previewDensity = null;
+                let previewAccent = null;
 
                 try {
                     const cached = JSON.parse(window.localStorage.getItem(storageKey) || 'null');
@@ -32,6 +33,12 @@
 
                 const savedTheme = preferences.theme;
                 const savedDensity = preferences.density;
+                const savedAccent = preferences.accent || 'brand';
+                const accentKeys = preferences.accentKeys || ['brand'];
+                const applyAccent = () => {
+                    root.dataset.accent = previewAccent ?? savedAccent;
+                    window.dispatchEvent(new CustomEvent('adasi:accent-change', { detail: { accent: root.dataset.accent } }));
+                };
                 const applyTheme = () => {
                     const choice = previewTheme ?? savedTheme;
                     const effective = choice === 'system' ? (media.matches ? 'dark' : 'light') : choice;
@@ -56,12 +63,15 @@
                     pageSize: Number(preferences.pageSize),
                     theme: savedTheme,
                     density: savedDensity,
+                    accent: savedAccent,
+                    previewAccent: (value) => { if (accentKeys.includes(value)) { previewAccent = value; applyAccent(); } },
                     previewTheme: (value) => { previewTheme = value; applyTheme(); },
                     previewDensity: (value) => { previewDensity = value; applyDensity(); },
-                    restoreSaved: () => { previewTheme = null; previewDensity = null; applyTheme(); applyDensity(); },
+                    restoreSaved: () => { previewTheme = null; previewDensity = null; previewAccent = null; applyTheme(); applyDensity(); applyAccent(); },
                 });
                 applyTheme();
                 applyDensity();
+                applyAccent();
                 media.addEventListener('change', () => { if ((previewTheme ?? savedTheme) === 'system') applyTheme(); });
             })();
         </script>

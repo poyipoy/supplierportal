@@ -9,8 +9,8 @@ export function resolveChartThemeColors() {
     const getVar = (name, fallback) => rootStyle.getPropertyValue(name).trim() || fallback;
 
     return {
-        primary: getVar('--md-primary', '#1F5FA6'),
-        primaryContainer: getVar('--md-primary-container', '#D4E3F5'),
+        primary: getVar('--md-chart-primary', '#1F5FA6'),
+        primaryContainer: getVar('--md-chart-primary-container', '#EBF3FC'),
         secondary: getVar('--md-secondary', '#476072'),
         secondaryContainer: getVar('--md-secondary-container', '#E2E8F0'),
         success: getVar('--md-success', '#1E8449'),
@@ -249,3 +249,12 @@ window.AdasiChart = AdasiChart;
 export default AdasiChart;
 
 window.addEventListener('adasi:theme-change', () => refreshChartTheme());
+
+window.addEventListener('adasi:accent-change', () => refreshChartTheme());
+
+// Page scripts can initialize charts before the deferred Vite module is ready.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => refreshChartTheme(), { once: true });
+} else {
+    refreshChartTheme();
+}
