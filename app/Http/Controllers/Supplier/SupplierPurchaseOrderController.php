@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Services\MaterialProgressService;
+use App\Services\RegionalDisplayFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
@@ -16,7 +17,7 @@ class SupplierPurchaseOrderController extends Controller
     /**
      * Supplier: View accepted POs (read-only).
      */
-    public function index(Request $request)
+    public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
         $supplierId = (int) auth()->id();
         $query = PurchaseOrder::query()
@@ -80,7 +81,7 @@ class SupplierPurchaseOrderController extends Controller
 
                     return '<span title="'.e($notes).'">'.e($preview).'</span>';
                 })
-                ->addColumn('total_idr', fn ($po) => 'Rp '.number_format((float) $po->resolved_total_idr, 0, ',', '.'))
+                ->addColumn('total_idr', fn ($po) => 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
                 ->addColumn('status_badge', function ($po) {
                     $tone = match (true) {
                         $po->is_overdue => 'error',
@@ -101,7 +102,7 @@ class SupplierPurchaseOrderController extends Controller
 
                     return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>';
                 })
-                ->addColumn('estimated_date', fn ($po) => $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-')
+                ->addColumn('estimated_date', fn ($po) => $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival, 'human') : '-')
                 ->addColumn('action', function ($po) {
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
                     if ($po->pending_claim_id) {

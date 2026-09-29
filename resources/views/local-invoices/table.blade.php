@@ -72,7 +72,7 @@
                         <td>
                             @if($row->due_date)
                                 <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                    {{ $row->due_date->format('d M Y') }}
+                                    {{ $regionalFormatter->date($row->due_date, 'human') }}
                                 </span>
                                 @php $rem = $row->remainingDays(); @endphp
                                 @if($rem !== null)
@@ -192,7 +192,7 @@
                         <td>
                             @if($row->due_date)
                                 <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                    {{ $row->due_date->format('d M Y') }}
+                                    {{ $regionalFormatter->date($row->due_date, 'human') }}
                                 </span>
                                 @php $rem = $row->remainingDays(); @endphp
                                 @if($rem !== null)
@@ -225,7 +225,7 @@
                             @endif
                             <td>
                                 <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                    {{ $row->scheduled_payment_date?->format('d M Y') ?? '—' }}
+                                    {{ $row->scheduled_payment_date ? $regionalFormatter->date($row->scheduled_payment_date, 'human') : '—' }}
                                 </span>
                             </td>
                         @endif
