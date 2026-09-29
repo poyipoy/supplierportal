@@ -101,8 +101,8 @@ class RegionalGaClaimDisplayTest extends TestCase
             $this->preference($user, 'iso', 'international');
             $regional = $this->request($user, $name, [$this->claim]);
             $this->assertSame($this->forms($baseline), $this->forms($regional));
-            $this->assertStringContainsString('28 Sep 23:35', $regional);
-            $this->assertStringNotContainsString('29 Sep 06:35', $regional);
+            $this->assertSame(['28 Sep 23:35'], $this->historyTimes($baseline));
+            $this->assertSame(['2026-09-29 06:35 WIB'], $this->historyTimes($regional));
             $this->assertStringContainsString('Original event', $regional);
             $this->assertStringContainsString(route('ga-claim-documents.show', $this->claim->documents->first()), $regional);
             $this->assertStringContainsString(route('ga.claims.receipt', $this->claim), $regional);
@@ -111,6 +111,71 @@ class RegionalGaClaimDisplayTest extends TestCase
                 $this->assertStringContainsString('122.1 KB', $regional);
                 $this->assertStringContainsString('name="approve" value="1"', $regional);
                 $this->assertStringContainsString('name="approve" value="0"', $regional);
+            }
+        }
+    }
+
+    public function test_history_instants_keep_system_parity_and_returned_order_without_mutating_claim_or_history(): void
+    {
+        $this->claim->statusHistories()->create([
+            'from_status' => GaClaim::STATUS_SUBMITTED, 'to_status' => GaClaim::STATUS_BASIC_VERIFIED,
+            'actor_id' => $this->finance->id, 'event' => 'basic_verified', 'notes' => 'Earlier instant added second',
+            'created_at' => '2026-09-28 22:15:00',
+        ]);
+        $this->claim->statusHistories()->create([
+            'from_status' => GaClaim::STATUS_BASIC_VERIFIED, 'to_status' => GaClaim::STATUS_READY_TO_PAY,
+            'actor_id' => $this->ga->id, 'event' => 'ready_to_pay', 'notes' => 'Later instant added third',
+            'created_at' => '2026-09-29 00:05:00',
+        ]);
+        $attributes = $this->claim->fresh()->getAttributes();
+        $histories = $this->claim->statusHistories()->get();
+        $historyAttributes = $histories->map(fn ($history) => $history->getAttributes())->all();
+        $ids = $histories->modelKeys();
+        foreach ([[$this->ga, 'ga.claims.show'], [$this->finance, 'finance.ga-claims.show']] as [$user, $name]) {
+            $system = $this->request($user, $name, [$this->claim]);
+            $this->assertSame(['28 Sep 23:35', '28 Sep 22:15', '29 Sep 00:05'], $this->historyTimes($system));
+            $this->preference($user, 'dmy', 'international');
+            $regional = $this->request($user, $name, [$this->claim]);
+            $this->assertSame(['29/09/2026 06:35 WIB', '29/09/2026 05:15 WIB', '29/09/2026 07:05 WIB'], $this->historyTimes($regional));
+            $this->assertSame($this->forms($system), $this->forms($regional));
+            $this->assertStringContainsString('Oleh: '.$this->ga->name, $regional);
+            $this->assertStringContainsString('Oleh: '.$this->finance->name, $regional);
+            $this->assertTrue(strpos($regional, 'Original event') < strpos($regional, 'Earlier instant added second'));
+            $this->assertTrue(strpos($regional, 'Earlier instant added second') < strpos($regional, 'Later instant added third'));
+            $this->assertSame($ids, $this->claim->statusHistories()->get()->modelKeys());
+            $this->assertSame($historyAttributes, $this->claim->statusHistories()->get()->map(fn ($history) => $history->getAttributes())->all());
+            $this->assertSame($attributes, $this->claim->fresh()->getAttributes());
+            $user->preference()->update(['time_format' => '12h']);
+            $twelveHour = $this->request($user, $name, [$this->claim]);
+            $this->assertSame(['29/09/2026 6:35 AM WIB', '29/09/2026 5:15 AM WIB', '29/09/2026 7:05 AM WIB'], $this->historyTimes($twelveHour));
+            $this->assertSame($this->forms($system), $this->forms($twelveHour));
+        }
+    }
+
+    public function test_history_preference_lookup_stays_one_for_one_and_multiple_events_on_both_roles(): void
+    {
+        $this->preference($this->ga, 'dmy', 'international');
+        $this->preference($this->finance, 'dmy', 'international');
+        $counter = (object) ['count' => 0];
+        DB::listen(function ($query) use ($counter): void {
+            if (str_contains(strtolower($query->sql), 'user_preferences')) {
+                $counter->count++;
+            }
+        });
+        foreach ([1, 6] as $eventCount) {
+            while ($this->claim->statusHistories()->count() < $eventCount) {
+                $this->claim->statusHistories()->create([
+                    'from_status' => GaClaim::STATUS_SUBMITTED, 'to_status' => GaClaim::STATUS_SUBMITTED,
+                    'actor_id' => $this->ga->id, 'event' => 'submitted', 'notes' => 'Repeated event',
+                    'created_at' => '2026-09-28 23:35:00',
+                ]);
+            }
+            foreach ([[$this->ga, 'ga.claims.show'], [$this->finance, 'finance.ga-claims.show']] as [$user, $name]) {
+                $counter->count = 0;
+                $html = $this->request($user, $name, [$this->claim]);
+                $this->assertSame(1, $counter->count, $name.' must reuse preferences across history events.');
+                $this->assertCount($eventCount, $this->historyTimes($html));
+                $this->assertSame(array_fill(0, $eventCount, '29/09/2026 06:35 WIB'), $this->historyTimes($html));
             }
         }
     }
@@ -234,6 +299,19 @@ class RegionalGaClaimDisplayTest extends TestCase
         $this->assertNotNull($node, 'Claim date cell must exist.');
 
         return trim($node->textContent);
+    }
+
+    private function historyTimes(string $html): array
+    {
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $times = [];
+        foreach ($xpath->query('//section[header//h2[normalize-space(.)="Jejak Status Klaim" or normalize-space(.)="Jejak Aktivitas Status"]]//div[strong and span]/span') as $node) {
+            $times[] = trim($node->textContent);
+        }
+
+        return $times;
     }
 
     private function forms(string $html): array

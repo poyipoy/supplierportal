@@ -85,6 +85,10 @@ class AppServiceProvider extends ServiceProvider
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
 
+        View::composer(['purchasing.claims.show', 'supplier.claims.show'], function ($view): void {
+            $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
         View::composer('layouts.app', function ($view): void {
             $user = auth()->user();
             if (! $user instanceof User) {

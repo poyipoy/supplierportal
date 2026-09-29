@@ -31,6 +31,8 @@ return [
         'date' => ['date' => 'd M Y', 'time' => null, 'separator' => ''],
         'datetime' => ['date' => 'd M Y', 'time' => 'H:i', 'separator' => ' '],
         'datetime_comma' => ['date' => 'd M Y', 'time' => 'H:i', 'separator' => ', '],
+        'date_full_human' => ['date' => 'd F Y', 'time' => null, 'separator' => ''],
+        'short_datetime' => ['date' => 'd M', 'time' => 'H:i', 'separator' => ' '],
     ],
     'number_profiles' => [
         'international' => ['decimal' => '.', 'group' => ','],

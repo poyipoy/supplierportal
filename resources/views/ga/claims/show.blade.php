@@ -160,7 +160,7 @@
                         <div class="tw-p-2 tw-rounded tw-bg-surface-container">
                             <div class="tw-flex tw-justify-between">
                                 <strong>{{ ucwords(str_replace('_', ' ', $hist->event)) }}</strong>
-                                <span class="tw-text-on-surface-variant">{{ $hist->created_at->format('d M H:i') }}</span>
+                                <span class="tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($hist->created_at, 'short_datetime') }}</span>
                             </div>
                             <div class="tw-text-on-surface-variant">Oleh: {{ $hist->actor?->name ?? 'System' }}</div>
                             @if($hist->notes)

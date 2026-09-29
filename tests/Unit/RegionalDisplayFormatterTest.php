@@ -157,10 +157,38 @@ class RegionalDisplayFormatterTest extends TestCase
             $factory->callComposer($view);
             $this->assertSame($formatter, $view->getData()['regionalFormatter'] ?? null, $name);
         }
-        foreach (['auth.login', 'exports.index', 'purchasing.claims.show'] as $name) {
+        foreach (['auth.login', 'exports.index', 'purchasing.claims.create', 'supplier.quotations.period'] as $name) {
             $view = $factory->make($name);
             $factory->callComposer($view);
             $this->assertArrayNotHasKey('regionalFormatter', $view->getData(), $name);
+        }
+    }
+
+    public function test_claim_and_history_timestamp_profiles_preserve_system_and_explicit_preferences(): void
+    {
+        $instant = new DateTimeImmutable('2026-09-28T23:35:00Z');
+        $system = new RegionalDisplayFormatter([]);
+        $this->assertSame('28 September 2026', $system->timestamp($instant, 'date_full_human'));
+        $this->assertSame('28 Sep 23:35', $system->timestamp($instant, 'short_datetime'));
+        $jakarta = new RegionalDisplayFormatter(['timezone' => 'Asia/Jakarta']);
+        $this->assertSame('29 September 2026 WIB', $jakarta->timestamp($instant, 'date_full_human'));
+        $this->assertSame('29 Sep 06:35 WIB', $jakarta->timestamp($instant, 'short_datetime'));
+        foreach (['human' => '29 Sep 2026', 'dmy' => '29/09/2026', 'iso' => '2026-09-29'] as $key => $date) {
+            $formatter = new RegionalDisplayFormatter(['timezone' => 'Asia/Jakarta', 'date_format' => $key, 'time_format' => '12h']);
+            $this->assertSame($date.' WIB', $formatter->timestamp($instant, 'date_full_human'));
+            $this->assertSame($date.' 6:35 AM WIB', $formatter->timestamp($instant, 'short_datetime'));
+        }
+        $this->assertSame('2026-09-28T23:35:00+00:00', $instant->format('c'));
+    }
+
+    public function test_material_claim_show_views_receive_only_the_existing_scoped_formatter(): void
+    {
+        $factory = app('view');
+        $formatter = app(RegionalDisplayFormatter::class);
+        foreach (['purchasing.claims.show', 'supplier.claims.show'] as $name) {
+            $view = $factory->make($name);
+            $factory->callComposer($view);
+            $this->assertSame($formatter, $view->getData()['regionalFormatter'] ?? null, $name);
         }
     }
 }

@@ -8,17 +8,21 @@ use App\Exports\QuotationDetailExport;
 use App\Exports\ShipmentsExport;
 use App\Models\ExchangeRate;
 use App\Models\LocalPurchaseOrder;
+use App\Models\MaterialClaim;
 use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
+use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\ShipmentService;
 use App\Support\Money;
 use App\Support\NumberFormat;
+use App\Support\StatusHelper;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -110,6 +114,9 @@ class RegionalScopeProtectionTest extends TestCase
             'shipment_date' => '2026-09-28', 'estimated_arrival_date' => '2026-09-30',
             'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $item->id, 'shipped_qty' => 2, 'actual_weight_kg' => '1234.5678']],
         ]);
+        $inspection = QcInspection::create(['po_id' => $po->id, 'inspected_by' => $purchasing->id, 'status' => 'ng', 'inspected_at' => '2026-09-28 23:35:00']);
+        $claim = MaterialClaim::create(['inspection_id' => $inspection->id, 'po_id' => $po->id, 'submitted_by' => $purchasing->id, 'supplier_id' => $supplier->id, 'status' => 'pending', 'description' => 'Scope protection', 'resolution_expected' => 'Replacement', 'deadline' => '2026-10-02']);
+        $claim->forceFill(['created_at' => '2026-09-28 23:35:00', 'updated_at' => '2026-09-28 23:35:00'])->save();
         $this->actingAs($purchasing);
         $snapshot = fn () => [
             'po_rows' => (new PurchaseOrderDetailExport($po->id))->collection()->all(),
@@ -122,6 +129,8 @@ class RegionalScopeProtectionTest extends TestCase
             'commercial' => [$item->fresh()->requested_amount, $item->fresh()->offer_amount, $item->fresh()->resolved_amount],
             'expiry' => $quotation->fresh()->isExpired(),
             'overdue' => $po->fresh()->is_overdue,
+            'claim' => $claim->fresh()->getAttributes(),
+            'deadline_meta' => StatusHelper::claimDeadlineMeta($claim->deadline, $claim->status),
         ];
         $before = $snapshot();
         $this->assertSame(2, $before['shipment_row'][4]);
@@ -134,6 +143,40 @@ class RegionalScopeProtectionTest extends TestCase
             app()->forgetScopedInstances();
             $this->assertSame($before, $snapshot());
         }
+    }
+
+    public function test_material_claim_notification_deadline_text_does_not_follow_regional_preferences(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-29T12:00:00Z'));
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+        $supplier = User::factory()->create(['role' => 'supplier']);
+        $po = PurchaseOrder::create(['supplier_id' => $supplier->id, 'currency' => 'USD', 'po_number' => 'PO-CLAIM-NOTIFICATION', 'status' => 'claim_needed', 'created_by' => $purchasing->id, 'estimated_arrival' => '2026-10-02']);
+        $messages = [];
+        $this->mock(NotificationService::class)
+            ->shouldReceive('send')->twice()
+            ->andReturnUsing(function (...$args) use (&$messages, $supplier): void {
+                $this->assertSame($supplier->id, $args[0]->id);
+                $this->assertSame('claim.created', $args[1]);
+                $messages[] = $args[4];
+            });
+        $this->actingAs($purchasing);
+        foreach (['system', 'iso'] as $date) {
+            if ($date !== 'system') {
+                foreach ([$purchasing, $supplier] as $user) {
+                    $user->preference()->create([...config('user_preferences.defaults'), 'timezone' => 'Asia/Jakarta', 'date_format' => $date, 'time_format' => '12h', 'number_format' => 'indonesian']);
+                }
+                app()->forgetScopedInstances();
+            }
+            $inspection = QcInspection::create(['po_id' => $po->id, 'inspected_by' => $purchasing->id, 'status' => 'ng', 'inspected_at' => '2026-09-28 23:35:00']);
+            $this->post(route('purchasing.claims.store'), [
+                'inspection_id' => $inspection->id, 'description' => 'Scope notification',
+                'resolution_expected' => 'Replacement', 'deadline' => '2026-10-02',
+            ])->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('success');
+        }
+        $this->assertCount(2, $messages);
+        $this->assertSame($messages[0], $messages[1]);
+        $this->assertSame('You received a new claim for PO PO-CLAIM-NOTIFICATION. Please respond before 02 Oct 2026.', $messages[0]);
+        $this->assertSame(['2026-10-02', '2026-10-02'], DB::table('material_claims')->orderBy('id')->pluck('deadline')->all());
     }
 
     private function purchaseOrder(): PurchaseOrder

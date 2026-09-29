@@ -34,13 +34,13 @@
                 <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 mb-3">
                     <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Submitted Date</div>
-                        <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $claim->created_at->format('d F Y') }}</div>
+                        <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $regionalFormatter->timestamp($claim->created_at, 'date_full_human') }}</div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-container border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Response Deadline</div>
                         <div class="fw-bold text-danger tw-text-ui-sm tw-mt-0.5 d-flex align-items-center gap-1">
                         <x-ui.icon name="clock" size="sm" />
-                            <span>{{ $claim->deadline->format('d F Y') }}</span>
+                            <span>{{ $claim->deadline ? $regionalFormatter->date($claim->deadline, 'full_human') : '-' }}</span>
                         </div>
                     </div>
                 </div>
@@ -104,7 +104,7 @@
                     </form>
                 @else
                     <div class="tw-text-on-surface-variant tw-text-ui-xs mb-2">
-                        Response submitted on: <strong>{{ $claim->updated_at->format('d M Y, H:i') }}</strong>
+                        Response submitted on: <strong>{{ $regionalFormatter->timestamp($claim->updated_at, 'datetime_comma') }}</strong>
                     </div>
                     <div class="p-3 tw-bg-surface-container border rounded mb-3 tw-text-on-surface tw-text-ui-xs leading-relaxed">
                         {{ $claim->supplier_response }}
