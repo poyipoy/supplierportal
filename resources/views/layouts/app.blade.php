@@ -59,7 +59,46 @@
                         try { window.localStorage.setItem(storageKey, JSON.stringify({ revision: preferences.sidebarRevision, collapsed: sidebarCollapsed })); } catch (error) { /* Keep the in-memory state. */ }
                     },
                 });
+                // Regional display is explicit and in-memory; raw values remain business inputs.
+                const regional = Object.freeze({ ...(preferences.regional || {}) });
+                const regionalRegistry = preferences.regionalRegistry || {};
+                const displayNumber = (text, profile = 'international') => {
+                    const target = regional.number_format;
+                    if (typeof text !== 'string' || !['international', 'indonesian'].includes(target)) return text;
+                    const source = regionalRegistry.number_profiles?.[profile];
+                    const destination = regionalRegistry.number_profiles?.[target];
+                    if (!source || !destination) return text;
+                    const parts = text.match(/^(\s*)([+-]?)([\d.,]+)(\s*)$/);
+                    if (!parts) return text;
+                    const decimalParts = parts[3].split(source.decimal);
+                    if (decimalParts.length > 2 || (decimalParts.length === 2 && !/^\d+$/.test(decimalParts[1]))) return text;
+                    const integer = decimalParts[0];
+                    const groups = source.group ? integer.split(source.group) : [integer];
+                    if (groups.length > 1 && (!/^\d{1,3}$/.test(groups[0]) || groups.slice(1).some(group => !/^\d{3}$/.test(group)))) return text;
+                    if (groups.some(group => !/^\d+$/.test(group))) return text;
+                    const digits = groups.join('');
+                    const grouped = destination.group ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, destination.group) : digits;
+                    const fraction = decimalParts.length === 2 ? destination.decimal + decimalParts[1] : '';
+                    return parts[1] + parts[2] + grouped + fraction + parts[4];
+                };
+                const displayDate = (value, profile = 'iso') => {
+                    if (typeof value !== 'string') return value;
+                    const parts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                    if (!parts) return value;
+                    const year = Number(parts[1]), month = Number(parts[2]), day = Number(parts[3]);
+                    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+                    const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                    if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1]) return value;
+                    const choice = regional.date_format === 'system' || !regionalRegistry.date_formats?.includes(regional.date_format) ? profile : regional.date_format;
+                    if (choice === 'human' && regionalRegistry.months?.[month - 1]) return parts[3] + ' ' + regionalRegistry.months[month - 1] + ' ' + parts[1];
+                    if (choice === 'dmy') return parts[3] + '/' + parts[2] + '/' + parts[1];
+                    return value;
+                };
+
                 window.AdasiPreferences = Object.freeze({
+                    regional,
+                    displayNumber,
+                    displayDate,
                     pageSize: Number(preferences.pageSize),
                     theme: savedTheme,
                     density: savedDensity,

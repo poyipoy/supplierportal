@@ -24,8 +24,8 @@
                             @php($rate = $latestRates[$currency] ?? null)
                             <tr>
                                 <td class="tw-font-mono tw-font-semibold tw-text-primary">{{ $currency }}</td>
-                                <td class="ui-tabular-nums text-end tw-font-medium">{{ $rate ? 'Rp ' . number_format($rate->rate_to_idr, 2, ',', '.') : '-' }}</td>
-                                <td>{{ $rate?->valid_from?->format('d M Y') ?? '-' }}</td>
+                                <td class="ui-tabular-nums text-end tw-font-medium">{{ $rate ? 'Rp ' . $regionalFormatter->number(number_format($rate->rate_to_idr, 2, ',', '.'), 'indonesian') : '-' }}</td>
+                                <td>{{ $rate?->valid_from ? $regionalFormatter->date($rate->valid_from, 'human') : '-' }}</td>
                                 <td><x-ui.status-chip :tone="$rate ? 'success' : 'warning'">{{ $rate ? 'Available' : 'Rate Required' }}</x-ui.status-chip></td>
                             </tr>
                         @endforeach
@@ -33,7 +33,7 @@
                 </table>
                 <x-slot:pagination>
                     <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ number_format($riwayatKursTotal) }} historical rate records retained.</span>
+                        <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $regionalFormatter->number(number_format($riwayatKursTotal), 'international') }} historical rate records retained.</span>
                         <x-ui.button :href="route('admin.exchange-rates.index')" variant="ghost" size="sm">View Rate History <x-ui.icon name="arrow-right" /></x-ui.button>
                     </div>
                 </x-slot:pagination>
@@ -92,22 +92,22 @@
         <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-4">
             <div class="tw-border-b tw-border-r tw-border-outline-variant tw-p-4 lg:tw-border-b-0">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Active Accounts</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($totalUsersActive) }}</dd>
-                <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ collect($usersByRole)->map(fn ($count, $role) => ucfirst($role) . ' ' . $count)->implode(' / ') }}</div>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($totalUsersActive), 'international') }}</dd>
+                <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ collect($usersByRole)->map(fn ($count, $role) => ucfirst($role) . ' ' . $regionalFormatter->number((string) $count, 'plain'))->implode(' / ') }}</div>
             </div>
             <div class="tw-border-b tw-border-outline-variant tw-p-4 lg:tw-border-b-0 lg:tw-border-r">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Registered Suppliers</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($supplierCount) }}</dd>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($supplierCount), 'international') }}</dd>
                 <a href="{{ route('admin.users.index') }}" class="ui-focus-ring tw-mt-1 tw-inline-block tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">Review supplier accounts</a>
             </div>
             <div class="tw-border-r tw-border-outline-variant tw-p-4">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">POs Created This Month</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($transaksiBulanIni) }}</dd>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($transaksiBulanIni), 'international') }}</dd>
                 <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Current calendar month</div>
             </div>
             <div class="tw-p-4">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Active Claims</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($klaimAktif) }}</dd>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($klaimAktif), 'international') }}</dd>
                 <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Pending or supplier response recorded</div>
             </div>
         </dl>

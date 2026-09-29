@@ -29,6 +29,7 @@ class UserPreferenceService
         $preferences = $stored instanceof UserPreference
             ? [
                 ...$defaults,
+                ...$this->regionalValues($stored),
                 'theme' => $stored->theme,
                 'density' => $stored->density,
                 'sidebar_state' => $stored->sidebar_state,
@@ -92,6 +93,7 @@ class UserPreferenceService
                 'quick_access' => $quickAccess,
                 'accent' => $values['accent'] ?? $savedAccent,
                 'dashboard_preferences' => $layouts,
+                ...$this->regionalValues($stored, $values),
             ]);
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $preference->sidebar_revision = max(1, (int) ($stored?->sidebar_revision ?? 1))
@@ -121,6 +123,18 @@ class UserPreferenceService
         }, 3);
     }
 
+    private function regionalValues(?UserPreference $stored, array $values = []): array
+    {
+        $regional = [];
+        foreach (['timezone' => 'timezones', 'date_format' => 'date_formats', 'time_format' => 'time_formats', 'number_format' => 'number_formats'] as $field => $registry) {
+            $value = array_key_exists($field, $values) ? $values[$field] : $stored?->{$field};
+            $regional[$field] = is_string($value) && isset(config('regional_display.'.$registry)[$value])
+                ? $value : config('user_preferences.defaults.'.$field);
+        }
+
+        return $regional;
+    }
+
     public function sidebarCacheVersion(User $user, array $preferences): string
     {
         return 'sidebar-v2:'.(int) $preferences['sidebar_revision'];
@@ -142,6 +156,12 @@ class UserPreferenceService
             'pageSize' => $preferences['page_size'],
             'sidebarRevision' => $this->sidebarCacheVersion($user, $preferences),
             'accountId' => (string) $user->getKey(),
+            'regional' => array_intersect_key($preferences, array_flip(['timezone', 'date_format', 'time_format', 'number_format'])),
+            'regionalRegistry' => [
+                'number_profiles' => config('regional_display.number_profiles'),
+                'date_formats' => array_keys(config('regional_display.date_formats')),
+                'months' => config('regional_display.months'),
+            ],
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Notifications\SystemNotification;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
 use App\Services\QuickAccessService;
+use App\Services\RegionalDisplayFormatter;
 use App\Services\UserPreferenceService;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Broadcasting\BroadcastEvent;
@@ -26,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(RegionalDisplayFormatter::class, function (): RegionalDisplayFormatter {
+            $user = auth()->user();
+
+            return new RegionalDisplayFormatter($user instanceof User ? app(UserPreferenceService::class)->for($user) : []);
+        });
+
         $this->app->bind(
             LocalPoProviderInterface::class,
             DatabaseLocalPoProvider::class
@@ -54,6 +61,13 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         });
+        View::composer([
+            'admin.dashboard', 'purchasing.dashboard', 'finance.dashboard', 'accounting.dashboard',
+            'qc.dashboard', 'ga.dashboard', 'supplier.dashboard', 'local-supplier.dashboard',
+        ], function ($view): void {
+            $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
         View::composer('layouts.app', function ($view): void {
             $user = auth()->user();
             if (! $user instanceof User) {

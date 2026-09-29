@@ -27,35 +27,35 @@
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-5 tw-gap-4">
         <x-ui.metric-card
             label="Diajukan"
-            :value="$kpis['submitted'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['submitted'] ?? 0), 'plain')"
             icon="file-text"
             tone="primary"
             :href="route('ga.claims.index', ['status' => 'SUBMITTED'])"
         />
         <x-ui.metric-card
             label="Verifikasi Dasar (GA)"
-            :value="$kpis['basic_verified'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['basic_verified'] ?? 0), 'plain')"
             icon="clipboard-check"
             tone="info"
             :href="route('ga.claims.index', ['status' => 'BASIC_VERIFIED'])"
         />
         <x-ui.metric-card
             label="Ready to Pay"
-            :value="$kpis['ready_to_pay'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['ready_to_pay'] ?? 0), 'plain')"
             icon="badge-check"
             tone="success"
             :href="route('ga.claims.index', ['status' => 'READY_TO_PAY'])"
         />
         <x-ui.metric-card
             label="Perlu Revisi"
-            :value="$kpis['need_revision'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['need_revision'] ?? 0), 'plain')"
             icon="file-edit"
             tone="error"
             :href="route('ga.claims.index', ['status' => 'NEED_REVISION'])"
         />
         <x-ui.metric-card
             label="Selesai Dibayar"
-            :value="$kpis['paid'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['paid'] ?? 0), 'plain')"
             icon="check-circle-2"
             tone="neutral"
             :href="route('ga.claims.index', ['status' => 'PAID'])"
@@ -104,9 +104,9 @@
                                     {{ $c->claim_type }}
                                 </span>
                             </td>
-                            <td>{{ $c->claim_date?->format('d M Y') }}</td>
+                            <td>{{ $c->claim_date ? $regionalFormatter->date($c->claim_date, 'human') : '' }}</td>
                             <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
-                                Rp {{ number_format($c->amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($c->amount, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="match($c->status) { 'PAID' => 'success', 'READY_TO_PAY' => 'success', 'NEED_REVISION' => 'error', 'BASIC_VERIFIED' => 'info', default => 'warning' }">

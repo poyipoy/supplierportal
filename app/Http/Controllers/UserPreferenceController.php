@@ -23,6 +23,7 @@ class UserPreferenceController extends Controller
         return view('profile.customization', [
             'preferences' => $effective,
             'accentChoices' => config('user_preferences.accents'),
+            'regionalChoices' => array_intersect_key(config('regional_display'), array_flip(['timezones', 'date_formats', 'time_formats', 'number_formats'])),
             'dashboardAudience' => $dashboardWidgets->audienceFor($user),
             'dashboardWidgets' => $dashboardWidgets->layoutFor($user, $effective['dashboard_preferences']),
             'quickAccessChoices' => $quickAccess->availableFor($user),
@@ -37,7 +38,7 @@ class UserPreferenceController extends Controller
         UserPreferenceService $preferences,
     ): RedirectResponse {
         $preferences->save($request->user(), $request->safe()->only([
-            'theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard',
+            'theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format',
         ]));
 
         return redirect()->route('profile.customization')->with('success', 'Customization saved.');

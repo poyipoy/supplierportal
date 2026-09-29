@@ -33,35 +33,35 @@
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-5 tw-gap-4">
         <x-ui.metric-card
             label="Total Diajukan"
-            :value="$totalInvoices"
+            :value="$regionalFormatter->number((string) ($totalInvoices), 'plain')"
             icon="receipt"
             tone="primary"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
             label="Dalam Proses"
-            :value="$inProgress"
+            :value="$regionalFormatter->number((string) ($inProgress), 'plain')"
             icon="clock"
             tone="warning"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
             label="Perlu Revisi"
-            :value="$counts['NEED_REVISION'] ?? 0"
+            :value="$regionalFormatter->number((string) ($counts['NEED_REVISION'] ?? 0), 'plain')"
             icon="alert-circle"
             tone="error"
             :href="route('local-supplier.invoices.index', ['status' => 'NEED_REVISION'])"
         />
         <x-ui.metric-card
             label="Siap Dibayar"
-            :value="$readyToPay"
+            :value="$regionalFormatter->number((string) ($readyToPay), 'plain')"
             icon="check-circle"
             tone="success"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
             label="Selesai / Lunas"
-            :value="$counts['COMPLETED'] ?? 0"
+            :value="$regionalFormatter->number((string) ($counts['COMPLETED'] ?? 0), 'plain')"
             icon="check"
             tone="primary"
             :href="route('local-supplier.invoices.index', ['status' => 'COMPLETED'])"

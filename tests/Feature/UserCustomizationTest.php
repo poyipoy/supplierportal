@@ -34,6 +34,10 @@ class UserCustomizationTest extends TestCase
                     'accent' => 'brand',
                     'dashboard_preferences' => [],
                     'sidebar_revision' => 1,
+                    'timezone' => 'system',
+                    'date_format' => 'system',
+                    'time_format' => 'system',
+                    'number_format' => 'system',
                 ]);
 
             $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);

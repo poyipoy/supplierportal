@@ -18,7 +18,10 @@ class UserPreferenceMigrationTest extends TestCase
         $migration = require database_path('migrations/2026_09_28_000001_create_user_preferences_table.php');
         $extension = require database_path('migrations/2026_09_28_000002_extend_user_preferences_for_dashboard_customization.php');
 
+        $regional = require database_path('migrations/2026_09_29_000001_extend_user_preferences_for_regional_preferences.php');
+
         try {
+            $regional->down();
             $extension->down();
             $migration->down();
             $this->assertFalse(Schema::hasTable('user_preferences'));
@@ -50,6 +53,9 @@ class UserPreferenceMigrationTest extends TestCase
             }
             if (! Schema::hasColumn('user_preferences', 'accent')) {
                 $extension->up();
+            }
+            if (! Schema::hasColumn('user_preferences', 'timezone')) {
+                $regional->up();
             }
         }
     }

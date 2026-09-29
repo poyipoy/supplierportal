@@ -102,7 +102,7 @@
         <x-ui.metric-card
             flat
             label="Active Requisitions"
-            :value="$prAktif"
+            :value="$regionalFormatter->number((string) ($prAktif), 'plain')"
             icon="clipboard-list"
             tone="neutral"
             :href="route('purchasing.requisitions.index', ['status' => 'submitted'])"
@@ -110,7 +110,7 @@
         <x-ui.metric-card
             flat
             label="Waiting for Quotation"
-            :value="$menungguPenawaran"
+            :value="$regionalFormatter->number((string) ($menungguPenawaran), 'plain')"
             icon="hourglass"
             tone="{{ $menungguPenawaran > 0 ? 'warning' : 'neutral' }}"
             :href="route('purchasing.requisitions.index', ['status' => 'bidding'])"
@@ -118,7 +118,7 @@
         <x-ui.metric-card
             flat
             label="Active Purchase Orders"
-            :value="$poBerjalan"
+            :value="$regionalFormatter->number((string) ($poBerjalan), 'plain')"
             icon="receipt"
             tone="primary"
             :href="route('purchasing.purchase-orders.index', ['status' => 'active'])"
@@ -126,7 +126,7 @@
         <x-ui.metric-card
             flat
             label="Arriving This Week"
-            :value="$materialMingguIni"
+            :value="$regionalFormatter->number((string) ($materialMingguIni), 'plain')"
             icon="truck"
             tone="{{ $materialMingguIni > 0 ? 'info' : 'neutral' }}"
             :href="route('purchasing.purchase-orders.index', ['arrival' => 'this_week'])"
@@ -180,14 +180,14 @@
                         <div class="col-6">
                             <div class="tw-p-2.5 tw-bg-surface-low border rounded text-center">
                                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ $currency }} → IDR</div>
-                                <div class="fw-bold tw-text-on-surface fs-6 tw-mt-0.5">Rp {{ $rate ? number_format($rate->rate_to_idr, 0, ',', '.') : '-' }}</div>
+                                <div class="fw-bold tw-text-on-surface fs-6 tw-mt-0.5">Rp {{ $rate ? $regionalFormatter->number(number_format($rate->rate_to_idr, 0, ',', '.'), 'indonesian') : '-' }}</div>
                             </div>
                         </div>
                     @endforeach
                 </div>
                 @php $lastRateUpdated = $latestRates->filter()->sortByDesc('valid_from')->first()?->valid_from; @endphp
                 @if($lastRateUpdated)
-                    <div class="tw-text-outline text-center mt-2 tw-text-ui-xs">Latest update: {{ $lastRateUpdated->format('d M Y') }}</div>
+                    <div class="tw-text-outline text-center mt-2 tw-text-ui-xs">Latest update: {{ $regionalFormatter->date($lastRateUpdated, 'human') }}</div>
                 @endif
             </x-ui.card>
         </div>
@@ -252,7 +252,7 @@
                         <tr>
                             <td class="fw-bold tw-text-on-surface">{{ $po->po_number }}</td>
                             <td>{{ $po->supplier->name }}</td>
-                            <td>{{ \Carbon\Carbon::parse($po->estimated_arrival)->format('d M Y') }}</td>
+                            <td>{{ $regionalFormatter->date($po->estimated_arrival, 'human') }}</td>
                             <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
                             <td class="text-end">
                                 <x-ui.icon-button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po)" icon="eye" label="View PO details" size="sm" />
@@ -307,6 +307,8 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    const displayDashboardNumber = (text) => window.AdasiPreferences?.displayNumber
+        ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
     const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
         primary: '#1F5FA6',
         surface: '#FFFFFF',
@@ -345,14 +347,14 @@
                     legend: { display: false },
                     tooltip: window.AdasiChart?.getTooltip({
                         callbacks: {
-                            label: (ctx) => ' ' + Number(ctx.parsed.y).toLocaleString('id-ID') + ' Requisitions',
+                            label: (ctx) => ' ' + displayDashboardNumber(Number(ctx.parsed.y).toLocaleString('id-ID')) + ' Requisitions',
                         }
                     }) || {},
                 },
                 scales: window.AdasiChart?.getScales({
                     yMaxTicks: 5,
                     yBeginAtZero: true,
-                    yFormat: (val) => Number(val).toLocaleString('id-ID'),
+                    yFormat: (val) => displayDashboardNumber(Number(val).toLocaleString('id-ID')),
                 }) || {},
             }
         });
@@ -411,7 +413,7 @@
                     },
                     tooltip: window.AdasiChart?.getTooltip({
                         callbacks: {
-                            label: (ctx) => ' ' + ctx.label + ': ' + Number(ctx.parsed).toLocaleString('id-ID') + ' POs',
+                            label: (ctx) => ' ' + ctx.label + ': ' + displayDashboardNumber(Number(ctx.parsed).toLocaleString('id-ID')) + ' POs',
                         }
                     }) || {},
                 }

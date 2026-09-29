@@ -1,0 +1,71 @@
+{
+  "date": "2026-09-29",
+  "fixtureMode": "real Laravel test responses from dedicated adasi_portal_test; GET-only temporary server",
+  "keyboard": {
+    "nativeArrowDown": "Timezone selected Asia/Jakarta",
+    "tab": "Timezone to Date Format",
+    "focusRing": "Existing ui-preference-option focus-within outline, using --ui-input-focus; dark #8FB9EA"
+  },
+  "targets": {
+    "height": 44,
+    "narrowViewport375": {
+      "documentWidth": 375,
+      "scrollWidth": 375,
+      "controlWidth": 303.2
+    },
+    "viewport320": {
+      "documentScrollWidth": 305,
+      "sectionWidth": 272.8
+    },
+    "zoom200": {
+      "viewport": 768,
+      "documentScrollWidth": 771,
+      "sectionWidth": 688.8,
+      "controlHeight": 88,
+      "note": "Regional section fits; 3px whole-shell overflow observed"
+    }
+  },
+  "contrast": {
+    "lightHelp": 4.758842787868666,
+    "darkHelp": 8.99367768179965,
+    "lightError": 6.487620347098538,
+    "darkError": 9.74826311808055,
+    "darkSelect": 11.201788790415135,
+    "darkFocus": 8.114475898117583
+  },
+  "regionalUnsaved": {
+    "payloadRemainedSystem": true,
+    "storageKeys": [
+      "adasi.sidebar.24"
+    ],
+    "regionalCacheWrites": 0
+  },
+  "finance": {
+    "visibleDate": "28/09/2026",
+    "visibleAmount": "Rp 1.250.000,5",
+    "compactChartAxis": "Rp 1,3M",
+    "rawStart": "2026-09-28",
+    "rawAmount": 1250000.5,
+    "selectedMonth": "2026-09",
+    "chartDatasets": [
+      [
+        1250000.5
+      ],
+      [
+        1250000.5
+      ]
+    ]
+  },
+  "qc": {
+    "instant": "29/09/2026, 6:35 AM WIB"
+  },
+  "validation": {
+    "all4fieldsAriaInvalid": true,
+    "errorIdsAssociated": true
+  },
+  "limitations": [
+    "Static test-response browser fixtures; no real login/save transport end-to-end against application DB",
+    "GET-only server intentionally returns404 to unrelated polling requests"
+  ],
+  "reviewRemediation": "Dark generic primary ring measured 2.56:1; native regional selects now reuse existing contrast-safe preference focus outline (8.11:1) without CSS/token changes"
+}

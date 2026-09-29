@@ -25,6 +25,10 @@ class UpdateUserPreferenceRequest extends FormRequest
         $optionalKeys = array_column(array_filter($widgets, fn (array $widget): bool => ! $widget['required']), 'key');
 
         return [
+            'timezone' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.timezones')))],
+            'date_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.date_formats')))],
+            'time_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.time_formats')))],
+            'number_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.number_formats')))],
             'accent' => ['sometimes', 'required', Rule::in(array_keys(config('user_preferences.accents')))],
             'dashboard' => ['sometimes', 'array:hidden,order'],
             'dashboard.hidden' => ['sometimes', 'array', 'list', 'max:'.count($optionalKeys)],

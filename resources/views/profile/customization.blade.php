@@ -131,6 +131,41 @@
         </section>
 
 
+        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="regional-title">
+            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
+                <h2 id="regional-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Regional Preferences</h2>
+                <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Choose display formats for supported dashboards. Save Changes to keep your selection.</p>
+            </header>
+            <fieldset class="tw-grid tw-grid-cols-1 tw-gap-5 tw-p-5 shell:tw-grid-cols-2">
+                <legend class="tw-sr-only">Regional display settings</legend>
+                @php
+                    $regionalFields = [
+                        'timezone' => ['label' => 'Timezone', 'choices' => 'timezones', 'help' => 'Timezone applies to an event instant. Calendar dates do not shift.'],
+                        'date_format' => ['label' => 'Date Format', 'choices' => 'date_formats', 'help' => 'Calendar date example: 28 Sep 2026. Only the presentation changes.'],
+                        'time_format' => ['label' => 'Time Format', 'choices' => 'time_formats', 'help' => 'Applies where a supported event timestamp already shows a time.'],
+                        'number_format' => ['label' => 'Number Format', 'choices' => 'number_formats', 'help' => 'Separators change; existing decimal precision, currency and units stay the same.'],
+                    ];
+                @endphp
+                @foreach($regionalFields as $field => $control)
+                    <div class="tw-grid tw-content-start tw-gap-2">
+                        <label for="regional-{{ $field }}" class="tw-text-ui-sm tw-font-semibold">{{ $control['label'] }}</label>
+                        <select id="regional-{{ $field }}" name="{{ $field }}" class="ui-input ui-preference-option tw-min-h-11 tw-w-full" aria-describedby="regional-{{ $field }}-help{{ $errors->has($field) ? ' regional-'.$field.'-error' : '' }}" aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}">
+                            @foreach($regionalChoices[$control['choices']] as $value => $choice)
+                                <option value="{{ $value }}" @selected(old($field, $preferences[$field]) === $value)>{{ $choice['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <div id="regional-{{ $field }}-help" class="tw-grid tw-gap-1 tw-text-ui-xs tw-text-on-surface-variant">
+                            <p class="tw-m-0">{{ $control['help'] }}</p>
+                            @foreach($regionalChoices[$control['choices']] as $value => $choice)
+                                <p class="tw-m-0"><span class="tw-font-semibold">{{ $choice['label'] }}:</span> {{ $choice['example'] }}</p>
+                            @endforeach
+                        </div>
+                        @error($field)<p id="regional-{{ $field }}-error" class="tw-m-0 tw-text-ui-xs tw-text-error">{{ $message }}</p>@enderror
+                    </div>
+                @endforeach
+            </fieldset>
+        </section>
+
         <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="dashboard-layout-title" data-dashboard-section>
             <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
                 <h2 id="dashboard-layout-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Dashboard Layout</h2>

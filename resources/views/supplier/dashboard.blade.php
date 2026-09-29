@@ -63,7 +63,7 @@
                                 <td class="fw-bold text-primary">{{ $pr->pr_number ?? '-' }}</td>
                                 <td class="fw-medium tw-text-on-surface">{{ $pr->period->display_label ?? $pr->period->name }}</td>
                                 <td class="text-center fw-semibold ui-tabular-nums">{{ $pr->items->count() }} item(s)</td>
-                                <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $pr->created_at->format('d M Y') }}</td>
+                                <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $regionalFormatter->timestamp($pr->created_at, 'date') }}</td>
                                 <td class="text-end">
                                     <x-ui.button :href="route('supplier.quotations.create', $pr)" size="sm">
                                         <x-ui.icon name="square-pen" size="sm" />
@@ -80,10 +80,10 @@
         <x-slot:metrics class="lg:tw-col-span-8">
             {{-- Restrained operational summary follows the primary action queue. --}}
             <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="Supplier operational summary">
-                <x-ui.metric-card flat label="Active Periods" :value="$periodeAktif" icon="calendar" tone="neutral" :href="route('supplier.quotations.index')" />
-                <x-ui.metric-card flat label="Awaiting Quotation" :value="$belumDirespons" icon="clock" :tone="$belumDirespons > 0 ? 'error' : 'neutral'" :href="route('supplier.quotations.index')" />
-                <x-ui.metric-card flat label="Submitted This Month" :value="$penawaranTerkirim" icon="send" tone="success" :href="route('supplier.quotations.index')" />
-                <x-ui.metric-card flat label="Received POs" :value="$poDiterima" icon="receipt" tone="primary" :href="route('supplier.purchase-orders.index')" />
+                <x-ui.metric-card flat label="Active Periods" :value="$regionalFormatter->number((string) ($periodeAktif), 'plain')" icon="calendar" tone="neutral" :href="route('supplier.quotations.index')" />
+                <x-ui.metric-card flat label="Awaiting Quotation" :value="$regionalFormatter->number((string) ($belumDirespons), 'plain')" icon="clock" :tone="$belumDirespons > 0 ? 'error' : 'neutral'" :href="route('supplier.quotations.index')" />
+                <x-ui.metric-card flat label="Submitted This Month" :value="$regionalFormatter->number((string) ($penawaranTerkirim), 'plain')" icon="send" tone="success" :href="route('supplier.quotations.index')" />
+                <x-ui.metric-card flat label="Received POs" :value="$regionalFormatter->number((string) ($poDiterima), 'plain')" icon="receipt" tone="primary" :href="route('supplier.purchase-orders.index')" />
             </div>
         </x-slot:metrics>
 
@@ -128,7 +128,7 @@
                                 <td class="fw-bold tw-text-on-surface">{{ $po->po_number }}</td>
                                 <td class="tw-text-on-surface-variant">{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequisition)->period)->display_label)->filter()->first() ?? '-' }}</td>
                                 <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" /></td>
-                                <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $po->created_at->format('d M Y') }}</td>
+                                <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $regionalFormatter->timestamp($po->created_at, 'date') }}</td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-1 justify-content-end align-items-center">
                                         @if($pendingClaim)
