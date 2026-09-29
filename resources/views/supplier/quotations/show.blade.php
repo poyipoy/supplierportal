@@ -127,27 +127,27 @@
                                         <div class="fw-bold text-primary"><span class="tw-opacity-70">Off:</span> {{ $item->is_available ? ($item->available_qty ?? '-') : '—' }}</div>
                                     </td>
                                     <td class="text-end ui-tabular-nums">
-                                        <div class="tw-text-[11px] tw-text-on-surface-variant"><span class="tw-opacity-70">Req:</span> {{ \App\Support\NumberFormat::maxDecimals($item->requested_weight_per_unit) }}</div>
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant"><span class="tw-opacity-70">Req:</span> {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->requested_weight_per_unit), 'decimal') }}</div>
                                         <div class="fw-bold text-primary">
-                                            <span class="tw-opacity-70">Off:</span> {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->requested_weight_per_unit) : '—' }}
+                                            <span class="tw-opacity-70">Off:</span> {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->requested_weight_per_unit), 'decimal') : '—' }}
                                             @if($item->is_available && $item->is_estimated_weight)
                                                 <span class="ui-status-chip ui-status-chip--warning ms-1" style="font-size: 10px;">Est</span>
                                             @endif
                                         </div>
                                     </td>
                                     <td class="text-end ui-tabular-nums">
-                                        <div class="tw-text-[11px] tw-text-on-surface-variant"><span class="tw-opacity-70">Req:</span> {{ \App\Support\NumberFormat::maxDecimals($item->requested_total_weight) }}</div>
-                                        <div class="fw-bold text-primary"><span class="tw-opacity-70">Off:</span> {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight) : '—' }}</div>
+                                        <div class="tw-text-[11px] tw-text-on-surface-variant"><span class="tw-opacity-70">Req:</span> {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->requested_total_weight), 'decimal') }}</div>
+                                        <div class="fw-bold text-primary"><span class="tw-opacity-70">Off:</span> {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_total_weight), 'decimal') : '—' }}</div>
                                     </td>
                                     <td class="text-end fw-bold ui-tabular-nums">
-                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) }}
+                                        {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4), 'decimal') }}
                                     </td>
-                                    <td class="text-end tw-text-on-surface-variant ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($requestedAmount) : '—' }}</td>
+                                    <td class="text-end tw-text-on-surface-variant ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($requestedAmount), 'decimal') : '—' }}</td>
                                     <td class="text-end fw-semibold text-primary ui-tabular-nums" data-offer-amount="{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '' }}">
-                                        {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}
+                                        {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amount), 'decimal') : '—' }}
                                     </td>
                                     <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">
-                                        {{ $idr !== null && $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($idr) : '—' }}
+                                        {{ $idr !== null && $item->is_available ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal') : '—' }}
                                     </td>
                                     <td class="text-start tw-text-on-surface-variant tw-text-ui-xs">
                                         @if($item->notes)
@@ -173,9 +173,9 @@
                         <tfoot class="table-light fw-bold border-top">
                             <tr>
                                 <td colspan="7" class="text-end tw-text-on-surface tw-uppercase">Total Offer Amount:</td>
-                                <td class="text-end tw-text-on-surface-variant ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($quotation->items->sum('requested_amount')) }}</td>
-                                <td class="text-end text-primary ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($totalAmount) }} {{ $quotation->currency }}</td>
-                                <td class="text-end text-primary ui-tabular-nums fs-6">{{ $rate !== null ? 'Rp '.\App\Support\NumberFormat::maxDecimals($totalIdr) : '—' }}</td>
+                                <td class="text-end tw-text-on-surface-variant ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($quotation->items->sum('requested_amount')), 'decimal') }}</td>
+                                <td class="text-end text-primary ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalAmount), 'decimal') }} {{ $quotation->currency }}</td>
+                                <td class="text-end text-primary ui-tabular-nums fs-6">{{ $rate !== null ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalIdr), 'decimal') : '—' }}</td>
                                 <td colspan="2"></td>
                             </tr>
                         </tfoot>
@@ -190,14 +190,14 @@
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Date Submitted</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
-                            {{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}
+                            {{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}
                         </div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Exchange Rate Snapshot</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
                             @if($quotation->exchange_rate)
-                                1 {{ $quotation->currency }} = Rp {{ \App\Support\NumberFormat::maxDecimals($quotation->exchange_rate->rate_to_idr) }}
+                                1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($quotation->exchange_rate->rate_to_idr), 'decimal') }}
                             @else
                                 -
                             @endif
@@ -206,13 +206,13 @@
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier Estimated Ready / Dispatch Date</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
-                            {{ $quotation->estimated_delivery ? \Carbon\Carbon::parse($quotation->estimated_delivery)->format('d F Y') : '-' }}
+                            {{ $quotation->estimated_delivery ? $regionalFormatter->date(\Carbon\Carbon::parse($quotation->estimated_delivery), 'full_human') : '-' }}
                         </div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Valid Until</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
-                            {{ $quotation->validity_period ? \Carbon\Carbon::parse($quotation->validity_period)->format('d F Y') : '-' }}
+                            {{ $quotation->validity_period ? $regionalFormatter->date(\Carbon\Carbon::parse($quotation->validity_period), 'full_human') : '-' }}
                         </div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">

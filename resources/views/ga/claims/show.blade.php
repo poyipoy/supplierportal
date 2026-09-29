@@ -34,7 +34,7 @@
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">Tanggal Pengajuan:</span>
-                        <strong class="tw-text-ui-sm tw-text-on-surface">{{ $claim->claim_date?->format('d M Y') }}</strong>
+                        <strong class="tw-text-ui-sm tw-text-on-surface">{{ $regionalFormatter->date($claim->claim_date, 'human') }}</strong>
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">Status Klaim:</span>
@@ -59,7 +59,7 @@
                     <div class="tw-col-span-full tw-border-t tw-border-outline-variant tw-pt-3">
                         <span class="tw-text-on-surface-variant tw-block">Nominal Pengajuan:</span>
                         <span class="tw-font-mono tw-font-bold tw-text-ui-lg tw-text-primary">
-                            Rp {{ number_format($claim->amount, 0, ',', '.') }}
+                            Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}
                         </span>
                     </div>
                     @if($claim->description)

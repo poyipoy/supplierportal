@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Exports\PurchaseOrderDetailExport;
 use App\Exports\PurchaseOrdersExport;
+use App\Exports\QuotationDetailExport;
+use App\Exports\ShipmentsExport;
 use App\Models\ExchangeRate;
 use App\Models\LocalPurchaseOrder;
 use App\Models\Period;
@@ -13,6 +16,7 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\RegionalDisplayFormatter;
+use App\Services\ShipmentService;
 use App\Support\Money;
 use App\Support\NumberFormat;
 use Carbon\Carbon;
@@ -87,6 +91,49 @@ class RegionalScopeProtectionTest extends TestCase
         $this->assertSame($calculation, Money::multiply('1250000.50', '0.11'));
         $this->assertSame('2026-09-28', $first->estimated_arrival->format('Y-m-d'));
         $this->assertSame('2026-09-28 23:35:00', $first->created_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_detail_exports_and_commercial_values_ignore_regional_display_settings(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-29T08:00:00Z'));
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+        $supplier = User::factory()->create(['role' => 'supplier']);
+        $period = Period::create(['name' => 'Regional Detail Scope', 'month' => 9, 'year' => 2026, 'status' => 'open', 'created_by' => $purchasing->id]);
+        $pr = PurchaseRequisition::create(['period_id' => $period->id, 'created_by' => $purchasing->id, 'pr_number' => 'REQ-DETAIL-SCOPE', 'status' => 'completed']);
+        $prItem = $pr->items()->create(['material_name' => 'Scope Plate', 'hs_code' => '7209.16.00', 'shape' => 'Flat', 'quantity' => 4, 'weight_needed' => '125.25', 'thickness' => 2.5, 'width' => 1000, 'length' => 2000]);
+        $rate = ExchangeRate::create(['currency' => 'USD', 'rate_to_idr' => '16000.1234', 'valid_from' => '2026-09-28', 'created_by' => $purchasing->id]);
+        $quotation = Quotation::create(['pr_id' => $pr->id, 'supplier_id' => $supplier->id, 'currency' => 'USD', 'exchange_rate_id' => $rate->id, 'status' => 'accepted', 'submitted_at' => '2026-09-28 23:35:00', 'estimated_delivery' => '2026-09-30', 'validity_period' => '2026-10-05']);
+        $item = $quotation->items()->create(['pr_item_id' => $prItem->id, 'price_per_kg' => '12.3456', 'amount' => '2500.5000', 'is_available' => true, 'available_qty' => 4, 'offered_weight_per_unit' => '125.25']);
+        $po = PurchaseOrder::create(['po_number' => 'PO-DETAIL-SCOPE', 'supplier_id' => $supplier->id, 'currency' => 'USD', 'exchange_rate_id' => $rate->id, 'status' => 'active', 'created_by' => $purchasing->id, 'estimated_arrival' => '2026-09-30']);
+        $po->quotations()->attach($quotation->id);
+        $shipment = app(ShipmentService::class)->createDraft($supplier, [
+            'shipment_date' => '2026-09-28', 'estimated_arrival_date' => '2026-09-30',
+            'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $item->id, 'shipped_qty' => 2, 'actual_weight_kg' => '1234.5678']],
+        ]);
+        $this->actingAs($purchasing);
+        $snapshot = fn () => [
+            'po_rows' => (new PurchaseOrderDetailExport($po->id))->collection()->all(),
+            'quotation_rows' => (new QuotationDetailExport($quotation->id))->collection()->all(),
+            'shipment_row' => (new ShipmentsExport)->map($shipment->fresh(['items', 'supplier'])),
+            'item' => $item->fresh()->getAttributes(),
+            'po' => $po->fresh()->getAttributes(),
+            'quotation' => $quotation->fresh()->getAttributes(),
+            'shipment' => $shipment->fresh()->getAttributes(),
+            'commercial' => [$item->fresh()->requested_amount, $item->fresh()->offer_amount, $item->fresh()->resolved_amount],
+            'expiry' => $quotation->fresh()->isExpired(),
+            'overdue' => $po->fresh()->is_overdue,
+        ];
+        $before = $snapshot();
+        $this->assertSame(2, $before['shipment_row'][4]);
+        $this->assertSame('1234.57', $before['shipment_row'][5]);
+        $this->assertSame('2026-09-28', $before['shipment_row'][6]);
+        $this->assertSame(2500.5, $before['commercial'][2]);
+        $preference = $purchasing->preference()->create(config('user_preferences.defaults'));
+        foreach (['international', 'indonesian'] as $number) {
+            $preference->update(['timezone' => 'Asia/Jakarta', 'date_format' => 'dmy', 'time_format' => '12h', 'number_format' => $number]);
+            app()->forgetScopedInstances();
+            $this->assertSame($before, $snapshot());
+        }
     }
 
     private function purchaseOrder(): PurchaseOrder

@@ -126,4 +126,41 @@ class RegionalDisplayFormatterTest extends TestCase
         $this->assertSame($zone, date_default_timezone_get());
         $this->assertSame($locale, app()->getLocale());
     }
+
+    public function test_detail_legacy_calendar_profiles_preserve_system_and_allow_explicit_choices(): void
+    {
+        $source = new DateTimeImmutable('2026-09-28T00:00:00Z');
+        $system = new RegionalDisplayFormatter(['timezone' => 'Asia/Jakarta']);
+        $this->assertSame('28 September 2026', $system->date($source, 'full_human'));
+        $this->assertSame('28/09/2026', $system->date($source, 'dmy'));
+
+        foreach (['human' => '28 Sep 2026', 'dmy' => '28/09/2026', 'iso' => '2026-09-28'] as $choice => $expected) {
+            $formatter = new RegionalDisplayFormatter(['date_format' => $choice, 'timezone' => 'Asia/Jakarta']);
+            $this->assertSame($expected, $formatter->date($source, 'full_human'));
+            $this->assertSame($expected, $formatter->date($source, 'dmy'));
+        }
+        $this->assertSame('2026-09-28T00:00:00+00:00', $source->format('c'));
+    }
+
+    public function test_detail_views_receive_the_same_scoped_formatter_without_global_injection(): void
+    {
+        $factory = app('view');
+        $formatter = app(RegionalDisplayFormatter::class);
+        foreach ([
+            'purchasing.po.show', 'supplier.po.show',
+            'purchasing.quotations.show', 'supplier.quotations.show',
+            'purchasing.shipments.show', 'supplier.shipments.show',
+            'ga.claims.index', 'ga.claims.show',
+            'finance.ga-claims.index', 'finance.ga-claims.show',
+        ] as $name) {
+            $view = $factory->make($name);
+            $factory->callComposer($view);
+            $this->assertSame($formatter, $view->getData()['regionalFormatter'] ?? null, $name);
+        }
+        foreach (['auth.login', 'exports.index', 'purchasing.claims.show'] as $name) {
+            $view = $factory->make($name);
+            $factory->callComposer($view);
+            $this->assertArrayNotHasKey('regionalFormatter', $view->getData(), $name);
+        }
+    }
 }

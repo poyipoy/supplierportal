@@ -21,7 +21,12 @@ return [
         'international' => ['label' => 'International — comma grouping, decimal point', 'example' => '1,250,000.50'],
         'indonesian' => ['label' => 'Indonesian — dot grouping, decimal comma', 'example' => '1.250.000,50'],
     ],
-    'date_profiles' => ['human' => 'd M Y', 'iso' => 'Y-m-d'],
+    'date_profiles' => [
+        'human' => 'd M Y',
+        'iso' => 'Y-m-d',
+        'full_human' => 'd F Y',
+        'dmy' => 'd/m/Y',
+    ],
     'timestamp_profiles' => [
         'date' => ['date' => 'd M Y', 'time' => null, 'separator' => ''],
         'datetime' => ['date' => 'd M Y', 'time' => 'H:i', 'separator' => ' '],

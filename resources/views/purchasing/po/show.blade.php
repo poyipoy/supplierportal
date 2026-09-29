@@ -195,7 +195,7 @@
         <div class="po-tracking-step {{ $po->estimated_arrival ? 'is-active' : '' }}">
             <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">3. PO Target Arrival Date</div>
             <div class="fw-bold {{ $po->is_overdue ? 'text-danger' : 'tw-text-on-surface' }} tw-text-ui-sm tw-mt-0.5">
-                {{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}
+                {{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}
             </div>
             <div class="tw-text-outline tw-text-ui-xs">
                 {{ $po->is_overdue ? 'Overdue' : 'Purchasing target at ADASI' }}
@@ -206,7 +206,7 @@
             <div class="fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw-text-outline' }} tw-text-ui-sm tw-mt-0.5">
                 @if($po->actual_arrival)
                     <x-ui.icon name="circle-check" size="sm" class="me-1 text-success" />
-                    {{ $po->actual_arrival->format('d M Y') }}
+                    {{ $regionalFormatter->date($po->actual_arrival) }}
                 @else
                     Pending Delivery
                 @endif
@@ -324,7 +324,7 @@
                                         <span class="tw-text-on-surface-variant fw-normal ms-2">
                                             ({{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }})
                                             @if($rate)
-                                                &bull; Locked Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ \App\Support\NumberFormat::maxDecimals($rate->rate_to_idr) }}
+                                                &bull; Locked Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($rate->rate_to_idr), 'decimal') }}
                                             @endif
                                         </span>
                                     </td>
@@ -352,15 +352,15 @@
                                     </td>
                                     <td class="text-center ui-tabular-nums">{{ $item->is_available ? ($item->available_qty ?? $item->prItem->quantity_value) : '—' }}</td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
-                                        {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed) : '—' }}
+                                        {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed), 'decimal') : '—' }}
                                         @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">Est Weight</span>@endif
                                     </td>
-                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
+                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
-                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) }}
+                                        {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4), 'decimal') }}
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}</td>
-                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($idr) : '—' }}</td>
+                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amount), 'decimal') : '—' }}</td>
+                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal') : '—' }}</td>
                                     <td class="text-nowrap">
                                         @if($quotation->purchaseRequisition)
                                             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none fw-medium" title="Open PR detail">
@@ -386,8 +386,8 @@
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="7" class="text-end tw-text-on-surface">GRAND TOTAL</td>
-                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($grandTotalAmount) }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ \App\Support\NumberFormat::maxDecimals($grandTotalIdr) }}</td>
+                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($grandTotalAmount), 'decimal') }} {{ $po->currency }}</td>
+                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($grandTotalIdr), 'decimal') }}</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
@@ -455,10 +455,10 @@
                                             </span>
                                         </td>
                                         <td class="text-center ui-tabular-nums tw-text-on-surface-variant" title="Supplier Original Estimated Ready / Dispatch Date">
-                                            {{ $p['original_supplier_ready_date'] ? \Carbon\Carbon::parse($p['original_supplier_ready_date'])->format('d M Y') : '-' }}
+                                            {{ $p['original_supplier_ready_date'] ? $regionalFormatter->date(\Carbon\Carbon::parse($p['original_supplier_ready_date'])) : '-' }}
                                         </td>
                                         <td class="text-center ui-tabular-nums fw-semibold {{ $p['current_estimated_ready_date'] ? 'text-primary' : 'tw-text-on-surface-variant' }}">
-                                            {{ $p['current_estimated_ready_date'] ? $p['current_estimated_ready_date']->format('d M Y') : '-' }}
+                                            {{ $p['current_estimated_ready_date'] ? $regionalFormatter->date($p['current_estimated_ready_date']) : '-' }}
                                         </td>
                                         <td class="text-center tw-text-on-surface-variant" style="font-size: 0.75rem;">
                                             @if($p['last_progress_update_at'])
@@ -780,14 +780,14 @@
                     <li class="pr-timeline-item {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'is-current' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
                         <div class="tw-text-ui-sm fw-bold {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning' : 'tw-text-on-surface-variant' }}">Estimated Arrival</div>
-                        <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}</time>
+                        <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs">{{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}</time>
                     </li>
 
                     <li class="pr-timeline-item {{ $po->actual_arrival ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
                         <div class="tw-text-ui-sm fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw-text-outline' }}">Material Arrival</div>
                         @if($po->actual_arrival)
-                            <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs">{{ $po->actual_arrival->format('d M Y') }}</time>
+                            <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs">{{ $regionalFormatter->date($po->actual_arrival) }}</time>
                         @endif
                     </li>
                 </ol>

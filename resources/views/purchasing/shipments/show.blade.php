@@ -94,7 +94,7 @@
                 </div>
                 <div class="fw-bold fs-6 tw-text-on-surface">Draft Allocation</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
-                    {{ $shipment->created_at->format('d M Y') }}
+                    {{ $regionalFormatter->timestamp($shipment->created_at, 'date') }}
                 </div>
             </div>
 
@@ -113,7 +113,7 @@
                 <div class="fw-bold fs-6 tw-text-on-surface">In Transit</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
                     @if($shipment->shipment_date)
-                        Dispatched: {{ $shipment->shipment_date->format('d M Y') }}
+                        Dispatched: {{ $regionalFormatter->date($shipment->shipment_date, 'human') }}
                     @else
                         Awaiting dispatch
                     @endif
@@ -135,9 +135,9 @@
                 <div class="fw-bold fs-6 tw-text-on-surface">Arrived at Plant</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
                     @if($shipment->actual_arrival_date)
-                        Arrived: {{ $shipment->actual_arrival_date->format('d M Y') }}
+                        Arrived: {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}
                     @elseif($shipment->estimated_arrival_date)
-                        ETA: {{ $shipment->estimated_arrival_date->format('d M Y') }}
+                        ETA: {{ $regionalFormatter->date($shipment->estimated_arrival_date, 'human') }}
                     @else
                         ETA pending
                     @endif
@@ -193,24 +193,24 @@
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Total Consignment Qty</div>
                 <div class="fw-bold text-primary fs-6 mt-1 ui-tabular-nums">
-                    {{ number_format($totalQty) }} pcs
+                    {{ $regionalFormatter->number(number_format($totalQty), 'international') }} pcs
                 </div>
             </div>
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Actual Weight</div>
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1 ui-tabular-nums">
-                    {{ \App\Support\NumberFormat::maxDecimals($totalWeight) }} Kg
+                    {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalWeight), 'decimal') }} Kg
                 </div>
             </div>
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Logistics Timeline</div>
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1">
                     @if($shipment->actual_arrival_date)
-                        <span class="text-success fw-bold">Arrived: {{ $shipment->actual_arrival_date->format('d M Y') }}</span>
+                        <span class="text-success fw-bold">Arrived: {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}</span>
                     @elseif($shipment->estimated_arrival_date)
-                        <span>ETA: {{ $shipment->estimated_arrival_date->format('d M Y') }}</span>
+                        <span>ETA: {{ $regionalFormatter->date($shipment->estimated_arrival_date, 'human') }}</span>
                     @else
-                        <span>Departed: {{ $shipment->shipment_date ? $shipment->shipment_date->format('d M Y') : '-' }}</span>
+                        <span>Departed: {{ $shipment->shipment_date ? $regionalFormatter->date($shipment->shipment_date, 'human') : '-' }}</span>
                     @endif
                 </div>
             </div>
@@ -340,10 +340,10 @@
                                 @if($prItem?->d_outer) | OD: {{ $prItem->d_outer }}mm @endif
                             </td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">
-                                {{ number_format($item->shipped_qty) }} pcs
+                                {{ $regionalFormatter->number(number_format($item->shipped_qty), 'international') }} pcs
                             </td>
                             <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
-                                {{ \App\Support\NumberFormat::maxDecimals($item->actual_weight_kg) }} Kg
+                                {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->actual_weight_kg), 'decimal') }} Kg
                             </td>
                             <td class="tw-text-on-surface-variant">
                                 {{ $item->notes ?? '-' }}
@@ -383,7 +383,7 @@
                             @foreach($shipment->qcInspections as $insp)
                                 <tr>
                                     <td class="ui-tabular-nums">
-                                        {{ $insp->inspected_at ? $insp->inspected_at->format('d M Y, H:i') : '-' }}
+                                        {{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}
                                     </td>
                                     <td class="fw-semibold">
                                         {{ $insp->inspector->name ?? '-' }}
