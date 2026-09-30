@@ -243,6 +243,10 @@ thead th.col-sticky-material {
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $formatNumber = fn ($value, $decimals = 2) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
+                            $formatInteger = fn ($value) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->number(number_format((float) $value, 0, ',', '.'), 'indonesian') : number_format((float) $value, 0, ',', '.')) : '-';
+                        @endphp
                         @foreach($comparison['matrix'] as $row)
                             @php
                                 $idrPrices = collect($row['prices'])->pluck('price_idr')->filter()->values();
@@ -253,13 +257,13 @@ thead th.col-sticky-material {
                                     <div class="tw-font-semibold tw-text-on-surface">{{ $row['item']->material_name }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)
                                         <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="High price spread (>15%)">
-                                            <x-ui.icon name="triangle-alert" class="me-1" />Spread {{ number_format($row['spread_pct'], 1) }}%
+                                            <x-ui.icon name="triangle-alert" class="me-1" />Spread {{ isset($regionalFormatter) ? $regionalFormatter->number(number_format($row['spread_pct'], 1, ',', '.'), 'indonesian') : number_format($row['spread_pct'], 1) }}%
                                         </div>
                                     @endif
                                 </td>
-                                <td class="text-center col-ref-qty">{{ number_format($row['item']->quantity_value, 0) }}</td>
-                                <td class="text-center col-ref-weight">{{ \App\Support\NumberFormat::maxDecimals($row['item']->weight_needed) }}</td>
-                                <td class="text-center fw-medium text-primary col-ref-total-weight">{{ \App\Support\NumberFormat::maxDecimals($row['item']->total_weight) }}</td>
+                                <td class="text-center col-ref-qty">{{ $formatInteger($row['item']->quantity_value) }}</td>
+                                <td class="text-center col-ref-weight">{{ $formatNumber($row['item']->weight_needed) }}</td>
+                                <td class="text-center fw-medium text-primary col-ref-total-weight">{{ $formatNumber($row['item']->total_weight) }}</td>
                                 @foreach($comparison['suppliers'] as $sup)
                                     @php $p = $row['prices'][$sup['quotation_id']] ?? null; @endphp
                                     @if($p && !$p['is_available'])
@@ -271,14 +275,14 @@ thead th.col-sticky-material {
                                         </td>
                                     @elseif($p && $p['price_per_kg'])
                                         <td class="text-end">
-                                            {{ \App\Support\NumberFormat::maxDecimals($p['price_per_kg'], 4) }}
+                                            {{ $formatNumber($p['price_per_kg'], 4) }}
                                             <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
-                                                Qty {{ $p['available_qty'] ?? '-' }} · {{ \App\Support\NumberFormat::maxDecimals($p['offered_total_weight']) }} kg
+                                                Qty {{ $p['available_qty'] ?? '-' }} · {{ $formatNumber($p['offered_total_weight']) }} kg
                                                 @if($p['is_estimated_weight']) · Est Weight @endif
                                             </div>
                                         </td>
                                         <td class="text-end fw-bold {{ ($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr) ? 'text-success bg-success bg-opacity-10' : '' }}">
-                                            Rp {{ \App\Support\NumberFormat::maxDecimals($p['price_idr']) }}
+                                            Rp {{ $formatNumber($p['price_idr']) }}
                                             @if($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr)
                                                 <x-ui.icon name="circle-check" class="ms-1" />
                                             @endif
@@ -287,8 +291,8 @@ thead th.col-sticky-material {
                                             @endif
                                         </td>
                                         <td class="text-end fw-semibold ui-tabular-nums">
-                                            {{ \App\Support\NumberFormat::maxDecimals($p['offer_amount']) }} {{ $p['currency'] }}
-                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">Rp {{ \App\Support\NumberFormat::maxDecimals($p['offer_amount_idr']) }}</div>
+                                            {{ $formatNumber($p['offer_amount']) }} {{ $p['currency'] }}
+                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">Rp {{ $formatNumber($p['offer_amount_idr']) }}</div>
                                             @if(!empty($p['is_selectable']))
                                                 <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
                                                     <label class="tw-inline-flex tw-items-center tw-gap-1.5 tw-cursor-pointer">

@@ -411,31 +411,36 @@
 
         function formatRupiah(value) {
             if (value === null || value === undefined || value === '') return '-';
-            return 'Rp ' + Number(value).toLocaleString('id-ID');
+            const text = 'Rp ' + Number(value).toLocaleString('id-ID');
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
         }
 
         function formatNumber(value, decimals = 2) {
             if (value === null || value === undefined || value === '') return '-';
-            return Number(value).toLocaleString('id-ID', {
+            const text = Number(value).toLocaleString('id-ID', {
                 minimumFractionDigits: decimals,
                 maximumFractionDigits: decimals,
             });
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
         }
 
         function formatMaxDecimals(value, maxDecimals = 2) {
             if (value === null || value === undefined || value === '') return '-';
-            return Number(value).toLocaleString('id-ID', {
+            const text = Number(value).toLocaleString('id-ID', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: maxDecimals,
             });
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
         }
 
         function formatPercent(value) {
             if (value === null || value === undefined) return '-';
-            return (Number(value) > 0 ? '+' : '') + Number(value).toLocaleString('id-ID', {
+            const text = Number(value).toLocaleString('id-ID', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-            }) + '%';
+            });
+            const formatted = window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
+            return (Number(value) > 0 ? '+' : '') + formatted + '%';
         }
 
         function changeHtml(value) {
@@ -1069,11 +1074,13 @@
 
         function formatRupiah(value) {
             if (value === null || value === undefined || value === '') return '-';
-            return 'Rp ' + Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            const text = 'Rp ' + Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
         }
 
         function formatInteger(value) {
-            return Number(value || 0).toLocaleString('id-ID');
+            const text = Number(value || 0).toLocaleString('id-ID');
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
         }
 
         function updateSummary(summary) {
@@ -1100,6 +1107,13 @@
                     dataSrc: function(json) {
                         updateSummary(json.summary);
                         return json.data || [];
+                    },
+                    error: function(xhr, error, thrown) {
+                        console.error('[vsBestTable] AJAX error:', error, thrown);
+                        if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
+                            window.AdasiToast.error('Gagal memuat data tabel perbandingan harga.');
+                        }
+                        $('#vsBestTable_processing').hide();
                     }
                 },
                 columns: [
@@ -1111,6 +1125,7 @@
                     { data: 'status_badge', name: 'diff_percent', className: 'text-center', searchable: false },
                     { data: 'action', name: 'action', className: 'text-center', orderable: false, searchable: false }
                 ],
+
                 order: [[4, 'desc']]
             });
         }

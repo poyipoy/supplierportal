@@ -232,4 +232,83 @@ class UserDashboardCustomizationTest extends TestCase
         $this->actingAs($user)->patch(route('profile.customization.update'), $payload)->assertSessionHasNoErrors();
         $this->assertSame($defaults['accent'], $user->preference()->first()->accent);
     }
+
+    public function test_granular_dashboard_reset_restores_defaults_without_mutating_other_preferences(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $pref = $user->preference()->create([
+            'theme' => 'dark',
+            'density' => 'compact',
+            'sidebar_state' => 'collapsed',
+            'page_size' => 50,
+            'accent' => 'slate',
+            'timezone' => 'Asia/Jakarta',
+            'date_format' => 'dmy',
+            'time_format' => '12h',
+            'number_format' => 'indonesian',
+            'quick_access' => ['admin.users'],
+            'dashboard_preferences' => [
+                'admin' => [
+                    'hidden' => ['admin.notifications'],
+                    'order' => ['admin.summary', 'admin.rates', 'admin.shortcuts', 'admin.notifications'],
+                ],
+            ],
+        ]);
+        $pref->revision = 3;
+        $pref->sidebar_revision = 2;
+        $pref->save();
+
+        $response = $this->actingAs($user)
+            ->delete(route('profile.customization.reset'), ['scope' => 'dashboard']);
+
+        $response->assertRedirect(route('profile.customization'));
+        $response->assertSessionHas('success', 'Dashboard layout reset to defaults.');
+
+        $saved = $user->fresh()->preference;
+        $this->assertSame('dark', $saved->theme);
+        $this->assertSame('compact', $saved->density);
+        $this->assertSame('collapsed', $saved->sidebar_state);
+        $this->assertSame(50, $saved->page_size);
+        $this->assertSame('slate', $saved->accent);
+        $this->assertSame('Asia/Jakarta', $saved->timezone);
+        $this->assertSame('dmy', $saved->date_format);
+        $this->assertSame('12h', $saved->time_format);
+        $this->assertSame('indonesian', $saved->number_format);
+        $this->assertSame(['admin.users'], $saved->quick_access);
+        $this->assertSame([], $saved->dashboard_preferences['admin']['hidden']);
+        $this->assertSame(
+            ['admin.rates', 'admin.notifications', 'admin.shortcuts', 'admin.summary'],
+            $saved->dashboard_preferences['admin']['order']
+        );
+        $this->assertSame(4, $saved->revision);
+        $this->assertSame(2, $saved->sidebar_revision);
+    }
+
+    public function test_granular_dashboard_reset_preserves_other_audiences_layouts(): void
+    {
+        $user = $this->supplier(['local', 'import']);
+        $user->preference()->create([
+            ...config('user_preferences.defaults'),
+            'dashboard_preferences' => [
+                'supplier.local' => [
+                    'hidden' => ['supplier.local.company'],
+                    'order' => ['supplier.local.invoices', 'supplier.local.statuses'],
+                ],
+                'supplier.import' => [
+                    'hidden' => ['supplier.import.metrics'],
+                    'order' => ['supplier.import.orders', 'supplier.import.quotations'],
+                ],
+            ],
+            'revision' => 1,
+            'sidebar_revision' => 1,
+        ]);
+
+        $this->actingAs($user)->withSession(['supplier_context' => 'local'])
+            ->delete(route('profile.customization.reset'), ['scope' => 'dashboard'])
+            ->assertRedirect(route('profile.customization'));
+
+        $saved = $user->fresh()->preference;
+        $this->assertSame([], $saved->dashboard_preferences['supplier.local']['hidden']);
+        $this->assertSame(['supplier.import.metrics'], $saved->dashboard_preferences['supplier.import']['hidden']);
+    }
 }

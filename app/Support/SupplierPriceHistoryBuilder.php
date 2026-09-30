@@ -193,7 +193,7 @@ class SupplierPriceHistoryBuilder
                 'purchase_order_id' => (int) $item->history_po_id,
                 'purchase_order_number' => $item->history_po_number,
                 'purchase_order_at' => $purchaseAt?->toIso8601String(),
-                'purchase_order_at_display' => $purchaseAt?->format('d M Y'),
+                'purchase_order_at_display' => $purchaseAt ? \App\Support\BusinessTime::format($purchaseAt, 'd M Y', false) : '-',
                 'pr_id' => $purchaseRequisition?->id,
                 'pr_number' => $purchaseRequisition?->pr_number ?? '-',
                 'pr_url' => route('supplier.quotations.show', $item->quotation),
@@ -202,7 +202,7 @@ class SupplierPriceHistoryBuilder
                 // Keep the legacy keys for existing consumers, but make
                 // their date explicitly represent the purchase event.
                 'submitted_at' => $purchaseAt?->toIso8601String(),
-                'submitted_at_display' => $purchaseAt?->format('d M Y'),
+                'submitted_at_display' => $purchaseAt ? \App\Support\BusinessTime::format($purchaseAt, 'd M Y', false) : '-',
                 'quotation_submitted_at' => $submittedAt?->toIso8601String(),
                 'status' => $item->quotation->status,
                 'status_label' => $this->statusLabel($item->quotation->status),

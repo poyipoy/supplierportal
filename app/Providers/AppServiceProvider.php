@@ -81,11 +81,24 @@ class AppServiceProvider extends ServiceProvider
             'purchasing.shipments.show', 'supplier.shipments.show',
             'ga.claims.index', 'ga.claims.show',
             'finance.ga-claims.index', 'finance.ga-claims.show',
+            'purchasing.comparison.inter-supplier',
+            'purchasing.comparison.historical',
+            'purchasing.comparison.vs-best',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
 
         View::composer(['purchasing.claims.show', 'supplier.claims.show'], function ($view): void {
+            $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
+        View::composer([
+            'local-invoices.detail', 'finance.invoices.show', 'purchasing.local-vendors.invoice-show',
+        ], function ($view): void {
+            $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
+        View::composer('exports.index', function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
 

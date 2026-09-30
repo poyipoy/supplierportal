@@ -167,9 +167,17 @@
         </section>
 
         <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="dashboard-layout-title" data-dashboard-section>
-            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
-                <h2 id="dashboard-layout-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Dashboard Layout</h2>
-                <p id="dashboard-layout-help" class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface">Hide optional panels or move them up and down. Required workflow panels stay visible. Save Changes to keep this layout.</p>
+            <header class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
+                <div>
+                    <h2 id="dashboard-layout-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Dashboard Layout</h2>
+                    <p id="dashboard-layout-help" class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface">Hide optional panels or drag and move them up and down. Required workflow panels stay visible. Save Changes to keep this layout.</p>
+                </div>
+                @if(count($dashboardRows))
+                    <button type="submit" form="resetDashboardLayout" class="ui-button ui-focus-ring tw-inline-flex tw-min-h-9 tw-items-center tw-justify-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface tw-px-3 tw-text-ui-xs tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container-high tw-transition-colors">
+                        <x-ui.icon name="rotate-ccw" size="xs" />
+                        <span>Reset Layout to Default</span>
+                    </button>
+                @endif
             </header>
             <div class="tw-grid tw-gap-3 tw-p-5">
                 @if(count($dashboardRows))
@@ -177,18 +185,23 @@
                         <legend class="tw-sr-only">Dashboard panels</legend>
                         <ol class="tw-m-0 tw-grid tw-list-none tw-gap-2 tw-p-0" data-dashboard-controls>
                             @foreach($dashboardRows as $widget)
-                                <li class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline tw-p-3" data-dashboard-choice data-widget-key="{{ $widget['key'] }}" data-widget-label="{{ $widget['label'] }}">
+                                <li class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline tw-p-3 tw-transition-colors" data-dashboard-choice data-widget-key="{{ $widget['key'] }}" data-widget-label="{{ $widget['label'] }}" draggable="true">
                                     <input type="hidden" name="dashboard[order][]" value="{{ $widget['key'] }}">
-                                    <div class="tw-grid tw-gap-1">
-                                        <span class="tw-text-ui-sm tw-font-semibold">{{ $widget['label'] }}</span>
-                                        @if($widget['required'])
-                                            <span class="tw-text-ui-xs tw-text-on-surface-variant">Always shown</span>
-                                        @else
-                                            <label class="tw-flex tw-min-h-11 tw-cursor-pointer tw-items-center tw-gap-2 tw-text-ui-sm">
-                                                <input class="tw-h-4 tw-w-4 tw-accent-primary" type="checkbox" name="dashboard[hidden][]" value="{{ $widget['key'] }}" @checked(in_array($widget['key'], $hiddenDashboardKeys, true)) aria-label="Hide {{ $widget['label'] }}" aria-describedby="dashboard-layout-help">
-                                                <span>Hide panel</span>
-                                            </label>
-                                        @endif
+                                    <div class="tw-flex tw-items-center tw-gap-3">
+                                        <span class="tw-hidden md:tw-inline-flex tw-cursor-grab tw-items-center tw-text-on-surface-variant active:tw-cursor-grabbing" data-dashboard-handle title="Drag to reorder {{ $widget['label'] }}" aria-hidden="true">
+                                            <x-ui.icon name="grip-vertical" size="sm" />
+                                        </span>
+                                        <div class="tw-grid tw-gap-1">
+                                            <span class="tw-text-ui-sm tw-font-semibold">{{ $widget['label'] }}</span>
+                                            @if($widget['required'])
+                                                <span class="tw-text-ui-xs tw-text-on-surface-variant">Always shown</span>
+                                            @else
+                                                <label class="tw-flex tw-min-h-11 tw-cursor-pointer tw-items-center tw-gap-2 tw-text-ui-sm">
+                                                    <input class="tw-h-4 tw-w-4 tw-accent-primary" type="checkbox" name="dashboard[hidden][]" value="{{ $widget['key'] }}" @checked(in_array($widget['key'], $hiddenDashboardKeys, true)) aria-label="Hide {{ $widget['label'] }}" aria-describedby="dashboard-layout-help">
+                                                    <span>Hide panel</span>
+                                                </label>
+                                            @endif
+                                        </div>
                                     </div>
                                     @unless($widget['required'])
                                         <div class="tw-flex tw-flex-wrap tw-gap-2">
@@ -250,6 +263,12 @@
         @csrf
         @method('DELETE')
     </form>
+
+    <form method="POST" action="{{ route('profile.customization.reset') }}" id="resetDashboardLayout" class="tw-sr-only" aria-hidden="true" tabindex="-1">
+        @csrf
+        @method('DELETE')
+        <input type="hidden" name="scope" value="dashboard">
+    </form>
 </div>
 
 @push('scripts')
@@ -263,6 +282,18 @@
             cancelText: 'Keep preferences',
         }).then((result) => {
             if (result.isConfirmed) document.getElementById('resetCustomization')?.requestSubmit();
+        });
+    });
+
+    document.querySelector('[form="resetDashboardLayout"]')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        window.AdasiAlert.confirm({
+            title: 'Reset dashboard layout?',
+            text: 'Dashboard panels for this portal will return to their default order and visibility. Other settings will not change.',
+            confirmText: 'Reset layout',
+            cancelText: 'Keep layout',
+        }).then((result) => {
+            if (result.isConfirmed) document.getElementById('resetDashboardLayout')?.requestSubmit();
         });
     });
 </script>

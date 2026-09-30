@@ -126,15 +126,15 @@
                     <div class="tw-mt-3 tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-2 tw-p-2.5 tw-rounded tw-bg-surface tw-border tw-border-outline-variant tw-text-ui-xs tw-font-mono">
                         <div>
                             <span class="tw-text-on-surface-variant tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">Nilai Tagihan Net:</span>
-                            <span class="tw-font-bold tw-text-on-surface">Rp {{ number_format($expectedNet, 0, ',', '.') }}</span>
+                            <span class="tw-font-bold tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
                             <span class="tw-text-success tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">Sudah Ditransfer:</span>
-                            <span class="tw-font-bold tw-text-success">Rp {{ number_format($alreadyPaid, 0, ',', '.') }}</span>
+                            <span class="tw-font-bold tw-text-success">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
                             <span class="tw-text-warning-container-foreground tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">Sisa Belum Dibayar:</span>
-                            <span class="tw-font-bold tw-text-warning-container-foreground">Rp {{ number_format($remainingPayable, 0, ',', '.') }}</span>
+                            <span class="tw-font-bold tw-text-warning-container-foreground">Rp {{ $regionalFormatter->number(number_format($remainingPayable, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                     </div>
                     @if($latestTransfer?->correction_reason)
@@ -176,21 +176,21 @@
                         </span>
                     </div>
                     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">
-                        Transfer yang dikirimkan oleh Finance ADASI melebihi nilai tagihan invoice Anda sebesar <strong class="tw-text-amber-700 dark:tw-text-amber-400">Rp {{ number_format($overAmount, 0, ',', '.') }}</strong>.
+                        Transfer yang dikirimkan oleh Finance ADASI melebihi nilai tagihan invoice Anda sebesar <strong class="tw-text-amber-700 dark:tw-text-amber-400">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</strong>.
                     </p>
 
                     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-3 tw-mt-3 tw-p-3 tw-bg-surface tw-rounded-ui-sm tw-border tw-border-outline-variant/50">
                         <div>
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">Nilai Tagihan</span>
-                            <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ number_format($expectedNet, 0, ',', '.') }}</span>
+                            <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">Total Ditransfer</span>
-                            <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ number_format($alreadyPaid, 0, ',', '.') }}</span>
+                            <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
                             <span class="tw-text-[11px] tw-text-amber-700 dark:tw-text-amber-400 tw-block tw-font-medium">Kelebihan Bayar</span>
-                            <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-amber-700 dark:tw-text-amber-400">Rp {{ number_format($overAmount, 0, ',', '.') }}</span>
+                            <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-amber-700 dark:tw-text-amber-400">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                     </div>
 
@@ -384,13 +384,13 @@
                         <div>
                             <span class="tw-text-on-surface-variant tw-block">Nominal Dikembalikan</span>
                             <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-emerald-700 dark:tw-text-emerald-400">
-                                Rp {{ number_format((float) ($overpaymentRefund->refund_amount ?? $overpaymentRefund->overpayment_amount), 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format((float) ($overpaymentRefund->refund_amount ?? $overpaymentRefund->overpayment_amount), 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                         <div>
                             <span class="tw-text-on-surface-variant tw-block">Tanggal Pengembalian</span>
                             <span class="tw-font-semibold tw-text-on-surface">
-                                {{ $overpaymentRefund->refund_date ? $overpaymentRefund->refund_date->format('d M Y') : ($overpaymentRefund->settled_at ? $overpaymentRefund->settled_at->format('d M Y') : '-') }}
+                                {{ $overpaymentRefund->refund_date ? $overpaymentRefund->refund_date->format('d M Y') : ($overpaymentRefund->settled_at ? \App\Support\BusinessTime::format($overpaymentRefund->settled_at, 'd M Y', false) : '-') }}
                             </span>
                         </div>
                         <div>
@@ -415,7 +415,7 @@
                                     Bukti Penyelesaian: {{ $proof->file_name }}
                                 </span>
                             </div>
-                            <a href="{{ route('attachments.show', $proof->id) }}"
+                            <a href="{{ route('attachments.show', $proof) }}"
                                 target="_blank"
                                 class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-primary/10 tw-text-primary hover:tw-bg-primary/20 tw-transition-colors tw-shrink-0">
                                 <x-ui.icon name="download" size="xs" />
@@ -441,7 +441,7 @@
                     </div>
                     <div>
                         <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Tanggal Invoice</span>
-                        <span class="tw-font-medium tw-text-ui-sm tw-text-on-surface">{{ $invoice->invoice_date->format('d M Y') }}</span>
+                        <span class="tw-font-medium tw-text-ui-sm tw-text-on-surface">{{ $regionalFormatter->date($invoice->invoice_date, 'human') }}</span>
                     </div>
                     <div>
                         <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Nomor Purchase Order (PO)</span>
@@ -465,7 +465,7 @@
                         <div>
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-uppercase tw-font-semibold tw-tracking-wider">Nilai DPP</span>
                             <span class="tw-block tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">
-                                Rp {{ number_format((float) $invoice->invoice_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format((float) $invoice->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-font-mono tw-block" title="Nilai Asli">
                                 IDR {{ $invoice->invoice_amount }}
@@ -474,7 +474,7 @@
                         <div>
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-uppercase tw-font-semibold tw-tracking-wider">PPN</span>
                             <span class="tw-block tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">
-                                Rp {{ number_format((float) $invoice->tax_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format((float) $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                             <span class="tw-text-[11px] tw-text-on-surface-variant tw-font-mono tw-block" title="Nilai Asli">
                                 IDR {{ $invoice->tax_amount }}
@@ -483,7 +483,7 @@
                         <div>
                             <span class="tw-text-[11px] tw-text-primary tw-uppercase tw-font-semibold tw-tracking-wider">Total Pembayaran</span>
                             <span class="tw-block tw-font-mono tw-font-bold tw-text-ui-base tw-text-primary">
-                                Rp {{ number_format((float) $totalAmount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format((float) $totalAmount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                     </div>
@@ -494,12 +494,12 @@
                 <x-ui.card title="Purchase Order (PO) & Penerimaan Barang (GR)" description="Invoice ini menggunakan referensi resmi dari master Local PO/GR.">
                     <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-4 tw-text-ui-xs tw-mb-4">
                         <div><span class="tw-text-on-surface-variant tw-block">Nomor PO</span><strong class="tw-font-mono tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_number }}</strong></div>
-                        <div><span class="tw-text-on-surface-variant tw-block">Tanggal PO</span><strong class="tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_date?->format('d M Y') ?? '—' }}</strong></div>
-                        <div><span class="tw-text-on-surface-variant tw-block">Total Nilai PO</span><strong class="tw-font-mono tw-text-on-surface">Rp {{ number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.') }}</strong></div>
+                        <div><span class="tw-text-on-surface-variant tw-block">Tanggal PO</span><strong class="tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
+                        <div><span class="tw-text-on-surface-variant tw-block">Total Nilai PO</span><strong class="tw-font-mono tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
                     </div>
                     <div class="table-responsive"><table class="table table-sm align-middle tw-m-0 tw-text-ui-xs"><thead><tr><th>Nomor GR</th><th>Tanggal GR</th><th class="text-end">Qty</th><th>Status</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
-                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date?->format('d M Y') ?? '—' }}</td><td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ $history->state }}</x-ui.status-chip></td></tr>
+                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ $history->state }}</x-ui.status-chip></td></tr>
                         @empty
                             <tr><td colspan="4" class="tw-text-center tw-text-on-surface-variant">Belum ada riwayat GR.</td></tr>
                         @endforelse
@@ -529,7 +529,7 @@
                                 @foreach($payment->transfers->sortBy('sequence_no') as $transfer)
                                     <tr>
                                         <td>{{ $transfer->sequence_no }}</td>
-                                        <td class="tw-font-medium">{{ $transfer->transfer_date?->format('d M Y') ?? '—' }}</td>
+                                        <td class="tw-font-medium">{{ $transfer->transfer_date ? $regionalFormatter->date($transfer->transfer_date, 'human') : '—' }}</td>
                                         <td>
                                             @if($transfer->transfer_type === 'primary')
                                                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
@@ -543,7 +543,7 @@
                                         </td>
                                         <td class="tw-font-mono tw-font-semibold">{{ $transfer->transfer_reference }}</td>
                                         <td class="text-end tw-font-mono tw-font-bold tw-text-success">
-                                            Rp {{ number_format((float) $transfer->amount, 0, ',', '.') }}
+                                            Rp {{ $regionalFormatter->number(number_format((float) $transfer->amount, 0, ',', '.'), 'indonesian') }}
                                         </td>
                                         <td class="tw-text-on-surface-variant">
                                             {{ $transfer->correction_reason ?: ($transfer->notes ?: '—') }}
@@ -555,14 +555,14 @@
                                 <tr class="tw-border-t tw-border-outline-variant tw-bg-surface-container-low">
                                     <th colspan="4" class="tw-font-bold">Total Uang Diterima:</th>
                                     <th class="text-end tw-font-mono tw-font-bold tw-text-ui-sm tw-text-success">
-                                        Rp {{ number_format((float) $payment->actual_paid_total, 0, ',', '.') }}
+                                        Rp {{ $regionalFormatter->number(number_format((float) $payment->actual_paid_total, 0, ',', '.'), 'indonesian') }}
                                     </th>
                                     <th>
                                         @if($payment->status === 'FINALIZED')
                                             <span class="tw-text-success tw-font-semibold">Lunas</span>
                                         @elseif($payment->status === 'CORRECTION_REQUIRED')
                                             <span class="tw-text-warning-container-foreground tw-font-semibold">
-                                                Sisa: Rp {{ number_format(max(0.0, (float) $payment->expected_amount - (float) $payment->actual_paid_total), 0, ',', '.') }}
+                                                Sisa: Rp {{ $regionalFormatter->number(number_format(max(0.0, (float) $payment->expected_amount - (float) $payment->actual_paid_total), 0, ',', '.'), 'indonesian') }}
                                             </span>
                                         @endif
                                     </th>
@@ -596,7 +596,7 @@
                                             <span class="tw-px-2 tw-py-0.2 tw-rounded-full tw-text-[10px] tw-font-semibold tw-bg-primary/10 tw-text-primary">Aktif</span>
                                         @endif
                                     </div>
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $rev->created_at->format('d M Y, H:i') }}</span>
+                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($rev->created_at, 'datetime_comma') }}</span>
                                 </div>
                                 @if($rev->reason)
                                     <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-2">
@@ -631,7 +631,7 @@
 
                     <div class="tw-flex tw-justify-between tw-items-center tw-text-ui-xs">
                         <span class="tw-text-on-surface-variant">Jatuh Tempo:</span>
-                        <span class="tw-font-semibold tw-text-on-surface">{{ $invoice->due_date?->format('d M Y') ?? '—' }}</span>
+                        <span class="tw-font-semibold tw-text-on-surface">{{ $invoice->due_date ? $regionalFormatter->date($invoice->due_date, 'human') : '—' }}</span>
                     </div>
 
                     @if($invoice->due_date && $remDays !== null)
@@ -651,14 +651,14 @@
                     @if($invoice->scheduled_payment_date)
                         <div class="tw-flex tw-justify-between tw-text-ui-xs tw-border-t tw-border-outline-variant tw-pt-2">
                             <span class="tw-text-on-surface-variant">Jadwal Bayar ADASI:</span>
-                            <span class="tw-font-bold tw-text-primary">{{ $invoice->scheduled_payment_date->format('d M Y') }}</span>
+                            <span class="tw-font-bold tw-text-primary">{{ $regionalFormatter->date($invoice->scheduled_payment_date, 'human') }}</span>
                         </div>
                     @endif
 
                     @if($invoice->completed_at)
                         <div class="tw-flex tw-justify-between tw-text-ui-xs tw-border-t tw-border-outline-variant tw-pt-2">
                             <span class="tw-text-on-surface-variant">Pembayaran Selesai:</span>
-                            <span class="tw-font-bold tw-text-success">{{ $invoice->completed_at->format('d M Y, H:i') }}</span>
+                            <span class="tw-font-bold tw-text-success">{{ $regionalFormatter->timestamp($invoice->completed_at, 'datetime_comma') }}</span>
                         </div>
                     @endif
                 </div>
@@ -786,7 +786,7 @@
                                         {{ $eventLabels[$history->event] ?? ucwords(str_replace('_', ' ', $history->event)) }}
                                     </span>
                                     <span class="tw-text-ui-xs tw-text-on-surface-variant">
-                                        {{ $history->created_at->format('d M Y, H:i') }}
+                                        {{ $regionalFormatter->timestamp($history->created_at, 'datetime_comma') }}
                                     </span>
                                 </div>
                                 <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-0.5">

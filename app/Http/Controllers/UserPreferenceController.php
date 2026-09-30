@@ -44,9 +44,36 @@ class UserPreferenceController extends Controller
         return redirect()->route('profile.customization')->with('success', 'Customization saved.');
     }
 
-    public function reset(Request $request, UserPreferenceService $preferences): RedirectResponse
-    {
-        $preferences->reset($request->user());
+    public function reset(
+        Request $request,
+        UserPreferenceService $preferences,
+        DashboardWidgetService $dashboardWidgets,
+    ): RedirectResponse {
+        $user = $request->user();
+
+        if ($request->input('scope') === 'dashboard') {
+            $audience = $dashboardWidgets->audienceFor($user);
+            if ($audience !== null) {
+                $stored = $user->preference()->first();
+                $preferences->save($user, [
+                    'theme' => $stored?->theme ?? config('user_preferences.defaults.theme'),
+                    'density' => $stored?->density ?? config('user_preferences.defaults.density'),
+                    'sidebar_state' => $stored?->sidebar_state ?? config('user_preferences.defaults.sidebar_state'),
+                    'page_size' => $stored?->page_size ?? config('user_preferences.defaults.page_size'),
+                    'quick_access' => is_array($stored?->quick_access) ? $stored->quick_access : [],
+                    'accent' => $stored?->accent ?? config('user_preferences.defaults.accent'),
+                    'dashboard' => ['hidden' => [], 'order' => []],
+                    'timezone' => $stored?->timezone ?? config('user_preferences.defaults.timezone'),
+                    'date_format' => $stored?->date_format ?? config('user_preferences.defaults.date_format'),
+                    'time_format' => $stored?->time_format ?? config('user_preferences.defaults.time_format'),
+                    'number_format' => $stored?->number_format ?? config('user_preferences.defaults.number_format'),
+                ]);
+            }
+
+            return redirect()->route('profile.customization')->with('success', 'Dashboard layout reset to defaults.');
+        }
+
+        $preferences->reset($user);
 
         return redirect()->route('profile.customization')->with('success', 'Customization reset to defaults.');
     }

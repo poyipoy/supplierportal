@@ -46,4 +46,33 @@ class UserDashboardUiTest extends TestCase
         $response->assertSee('Accent Color')->assertSee('Choose a supplier portal');
         $response->assertDontSee('data-dashboard-controls', false);
     }
+
+    public function test_customization_renders_drag_handle_and_draggable_attributes(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($user)->get(route('profile.customization'))->assertOk();
+        $response->assertSee('draggable="true"', false);
+        $response->assertSee('data-dashboard-handle', false);
+        $response->assertSee('data-dashboard-move="up"', false);
+        $response->assertSee('data-dashboard-move="down"', false);
+        $response->assertSee('data-dashboard-status', false);
+    }
+
+    public function test_dashboard_layout_component_renders_customize_affordance_link(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($user)->get(route('admin.dashboard'))->assertOk();
+        $response->assertSee('data-dashboard-customize-link', false);
+        $response->assertSee('Customize Layout');
+        $response->assertSee(route('profile.customization') . '#dashboard-layout-title', false);
+    }
+
+    public function test_granular_dashboard_reset_button_is_rendered(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($user)->get(route('profile.customization'))->assertOk();
+        $response->assertSee('Reset Layout to Default');
+        $response->assertSee('form="resetDashboardLayout"', false);
+        $response->assertSee('name="scope" value="dashboard"', false);
+    }
 }

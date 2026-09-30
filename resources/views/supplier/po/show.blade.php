@@ -535,6 +535,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    function renderProgressHistoryRows(history) {
+        const allowedTones = ['success', 'info', 'warning', 'neutral'];
+        const wrapper = document.createElement('div');
+        wrapper.className = 'tw-space-y-3';
+
+        function textElement(tagName, className, value) {
+            const element = document.createElement(tagName);
+            if (className) element.className = className;
+            element.textContent = value === null || value === undefined ? '' : String(value);
+            return element;
+        }
+
+        function appendText(parent, value) {
+            parent.appendChild(textElement('span', '', value));
+        }
+
+        history.forEach(item => {
+            const row = textElement('div', 'tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-text-ui-xs', '');
+            const header = textElement('div', 'd-flex justify-content-between align-items-center mb-1', '');
+            const tone = allowedTones.includes(item.status_tone) ? item.status_tone : 'neutral';
+            const status = textElement('span', `ui-status-chip ui-status-chip--${tone} fw-bold`, item.status_label);
+            const timestamp = textElement('span', 'text-muted', item.created_at_display || '-');
+            header.append(status, timestamp);
+
+            const details = textElement('div', 'tw-text-on-surface-variant mb-1', '');
+            details.appendChild(textElement('strong', '', 'Supplier-controlled Qty snapshot:'));
+            appendText(details, ` ${item.supplier_controlled_qty_snapshot} pcs`);
+            if (item.estimated_ready_date_display) {
+                appendText(details, ' • ');
+                details.appendChild(textElement('strong', '', 'Estimated Ready:'));
+                appendText(details, ` ${item.estimated_ready_date_display}`);
+            }
+            appendText(details, ' • ');
+            details.appendChild(textElement('strong', '', 'Updated by:'));
+            appendText(details, ` ${item.updated_by ?? 'Supplier User'}`);
+
+            row.append(header, details);
+            if (item.note) {
+                const note = textElement('div', 'tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant text-dark mt-1', '');
+                note.appendChild(textElement('em', '', `"${item.note}"`));
+                row.appendChild(note);
+            }
+            wrapper.appendChild(row);
+        });
+
+        return wrapper;
+    }
+
     document.querySelectorAll('.btn-view-progress-history').forEach(btn => {
         btn.addEventListener('click', function() {
             const materialName = this.dataset.materialName;
@@ -559,25 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                let html = '<div class="tw-space-y-3">';
-                data.history.forEach(item => {
-                    html += `
-                        <div class="tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-text-ui-xs">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="ui-status-chip ui-status-chip--${item.status_tone} fw-bold">${item.status_label}</span>
-                                <span class="text-muted">${item.created_at || '-'}</span>
-                            </div>
-                            <div class="tw-text-on-surface-variant mb-1">
-                                <strong>Supplier-controlled Qty snapshot:</strong> ${item.supplier_controlled_qty_snapshot} pcs
-                                ${item.estimated_ready_date ? ` &bull; <strong>Estimated Ready:</strong> ${item.estimated_ready_date}` : ''}
-                                &bull; <strong>Updated by:</strong> ${item.updated_by}
-                            </div>
-                            ${item.note ? `<div class="tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant text-dark mt-1"><em>"${item.note}"</em></div>` : ''}
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                bodyEl.innerHTML = html;
+                bodyEl.replaceChildren(renderProgressHistoryRows(data.history));
             })
             .catch(() => {
                 bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">Failed to load progress history.</div>';

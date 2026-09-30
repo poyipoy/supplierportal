@@ -152,12 +152,13 @@ class RegionalDisplayFormatterTest extends TestCase
             'purchasing.shipments.show', 'supplier.shipments.show',
             'ga.claims.index', 'ga.claims.show',
             'finance.ga-claims.index', 'finance.ga-claims.show',
+            'exports.index',
         ] as $name) {
             $view = $factory->make($name);
             $factory->callComposer($view);
             $this->assertSame($formatter, $view->getData()['regionalFormatter'] ?? null, $name);
         }
-        foreach (['auth.login', 'exports.index', 'purchasing.claims.create', 'supplier.quotations.period'] as $name) {
+        foreach (['auth.login', 'purchasing.claims.create', 'supplier.quotations.period'] as $name) {
             $view = $factory->make($name);
             $factory->callComposer($view);
             $this->assertArrayNotHasKey('regionalFormatter', $view->getData(), $name);

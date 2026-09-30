@@ -94,7 +94,7 @@ class RegionalProcurementDetailsTest extends TestCase
             $this->assertTextContains('29/09/2026 WIB', $display, 'Created instant crosses midnight; ETA is still the source calendar day.');
             $this->assertTextContains('02/10/2026', $display);
         } else {
-            $this->assertSame($this->eventTimes($system->getContent()), $this->eventTimes($regional->getContent()), 'Excluded PO event timestamps remain unchanged.');
+            $this->assertTextContains('29/09/2026, 06:35 WIB', $display, 'Purchasing PO event timestamps honor Regional preferences in Phase 2B.2B-7.');
         }
         $this->assertSame($rawMachine, $this->machineValues($regional->getContent()));
         $this->assertSame($modelBefore, $record->fresh()->getAttributes());
