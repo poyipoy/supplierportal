@@ -39,8 +39,9 @@ class UserPreferenceService
                 'accent' => isset(config('user_preferences.accents')[$stored->accent]) ? $stored->accent : $defaults['accent'],
                 'dashboard_preferences' => $this->dashboardWidgets->normalizeLayouts($user, is_array($stored->dashboard_preferences) ? $stored->dashboard_preferences : []),
                 'sidebar_revision' => max(1, (int) $stored->sidebar_revision),
+                'notification_preferences' => is_array($stored->notification_preferences) ? $stored->notification_preferences : [],
             ]
-            : [...$defaults, 'revision' => 0];
+            : [...$defaults, 'revision' => 0, 'notification_preferences' => []];
 
         $request->attributes->set($cacheKey, [
             'id' => $stored?->getKey(),
@@ -100,6 +101,7 @@ class UserPreferenceService
                 + ($previousSidebar !== $values['sidebar_state'] ? 1 : 0);
             $lockedUser->preference()->save($preference);
             request()->attributes->remove($this->requestCacheKey($lockedUser));
+            app(NotificationPreferenceService::class)->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());
         }, 3);
@@ -118,6 +120,33 @@ class UserPreferenceService
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $lockedUser->preference()->save($preference);
             request()->attributes->remove($this->requestCacheKey($lockedUser));
+            app(NotificationPreferenceService::class)->forget($lockedUser);
+
+            return $this->for($lockedUser->refresh());
+        }, 3);
+    }
+
+    public function saveNotificationPreferences(User $user, array $preferences): array
+    {
+        return DB::transaction(function () use ($user, $preferences): array {
+            $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            $stored = $lockedUser->preference()->first();
+            $notifications = app(NotificationPreferenceService::class);
+            $notifications->forget($lockedUser);
+            $overrides = $notifications->mergeOverrides(
+                $lockedUser,
+                is_array($stored?->notification_preferences) ? $stored->notification_preferences : [],
+                $preferences,
+            );
+            $preference = $stored ?? new UserPreference;
+            if ($stored === null) {
+                $preference->fill(config('user_preferences.defaults'));
+                $preference->sidebar_revision = 1;
+            }
+            $preference->notification_preferences = $overrides === [] ? null : $overrides;
+            $preference->revision = ($stored?->revision ?? 0) + 1;
+            $lockedUser->preference()->save($preference);
+            $notifications->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());
         }, 3);

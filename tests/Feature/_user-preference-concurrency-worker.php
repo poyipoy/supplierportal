@@ -17,25 +17,38 @@ config([
 ]);
 DB::purge('mysql');
 
-if (DB::connection()->getDatabaseName() !== 'adasi_portal_test') {
-    exit(3);
-}
-
 try {
+    if (config('database.connections.mysql.database') !== 'adasi_portal_test'
+        || DB::selectOne('SELECT DATABASE() AS db')->db !== 'adasi_portal_test') {
+        fwrite(STDERR, 'Preference concurrency workers require adasi_portal_test.');
+        exit(3);
+    }
+
     $user = User::findOrFail((int) $argv[1]);
     while (microtime(true) < (float) $argv[3]) {
         usleep(1000);
     }
 
-    app(UserPreferenceService::class)->save($user, [
-        'theme' => $argv[2],
-        'density' => 'comfortable',
-        'sidebar_state' => 'expanded',
-        'page_size' => 25,
-        'quick_access' => [],
-        'accent' => $argv[4] ?? 'brand',
-        'dashboard' => ['hidden' => ['admin.notifications'], 'order' => ['admin.summary']],
-    ]);
+    if (($argv[5] ?? null) === 'notifications') {
+        $enabled = match ($argv[2]) {
+            'true' => true,
+            'false' => false,
+            default => throw new InvalidArgumentException('Notification worker values must be true or false.'),
+        };
+        app(UserPreferenceService::class)->saveNotificationPreferences($user, [
+            'local_invoice_submission_received' => ['mail' => $enabled],
+        ]);
+    } else {
+        app(UserPreferenceService::class)->save($user, [
+            'theme' => $argv[2],
+            'density' => 'comfortable',
+            'sidebar_state' => 'expanded',
+            'page_size' => 25,
+            'quick_access' => [],
+            'accent' => $argv[4] ?? 'brand',
+            'dashboard' => ['hidden' => ['admin.notifications'], 'order' => ['admin.summary']],
+        ]);
+    }
     echo 'saved';
 } catch (Throwable $exception) {
     fwrite(STDERR, get_class($exception).': '.$exception->getMessage());

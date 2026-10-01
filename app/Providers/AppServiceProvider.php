@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Listeners\ApplyNotificationPreferences;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
+use App\Services\NotificationPreferenceService;
 use App\Services\QuickAccessService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\UserPreferenceService;
@@ -13,6 +15,7 @@ use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
 use Illuminate\Notifications\Events\NotificationFailed;
+use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(NotificationPreferenceService::class);
+
         $this->app->scoped(RegionalDisplayFormatter::class, function (): RegionalDisplayFormatter {
             $user = auth()->user();
 
@@ -44,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(NotificationSending::class, ApplyNotificationPreferences::class);
+
         // Enforce safety: testing environment (--env=testing or APP_ENV=testing) MUST NEVER touch adasi_portal
         if ($this->app->environment('testing') || (isset($_SERVER['argv']) && in_array('--env=testing', $_SERVER['argv'], true))) {
             if ((string) config('database.connections.mysql.database') === 'adasi_portal') {

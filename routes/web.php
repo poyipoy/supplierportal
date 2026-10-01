@@ -48,6 +48,7 @@ use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
 use App\Http\Controllers\Supplier\SupplierShipmentController;
 use App\Http\Controllers\SupplierRegistrationReviewController;
+use App\Http\Controllers\UserNotificationPreferenceController;
 use App\Http\Controllers\UserPreferenceController;
 use App\Models\PurchaseRequisition;
 use App\Support\PortalContext;
@@ -135,6 +136,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/customization', [UserPreferenceController::class, 'edit'])->name('profile.customization');
     Route::patch('/profile/customization', [UserPreferenceController::class, 'update'])->name('profile.customization.update');
     Route::delete('/profile/customization', [UserPreferenceController::class, 'reset'])->name('profile.customization.reset');
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
+        Route::get('/profile/notifications', [UserNotificationPreferenceController::class, 'index'])->name('profile.notifications');
+        Route::patch('/profile/notifications', [UserNotificationPreferenceController::class, 'update'])->name('profile.notifications.update');
+    });
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
 
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {

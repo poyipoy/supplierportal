@@ -37,7 +37,7 @@
     {{-- Security Section --}}
     <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="profile-security-title">
         <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
-            <h2 id="profile-security-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Sign-In Security</h2>
+            <h2 id="profile-security-title" tabindex="-1" class="ui-focus-ring tw-m-0 tw-scroll-mt-20 tw-text-ui-sm tw-font-semibold">Sign-In Security</h2>
             <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Manage two-factor authentication and active sessions.</p>
         </header>
 

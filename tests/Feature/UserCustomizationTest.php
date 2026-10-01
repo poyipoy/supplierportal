@@ -38,6 +38,7 @@ class UserCustomizationTest extends TestCase
                     'date_format' => 'system',
                     'time_format' => 'system',
                     'number_format' => 'system',
+                    'notification_preferences' => [],
                 ]);
 
             $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);
@@ -190,6 +191,23 @@ class UserCustomizationTest extends TestCase
         $user->delete();
 
         $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);
+    }
+
+    public function test_customization_save_and_reset_preserve_notification_overrides(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $overrides = ['local_invoice_submission_received' => ['mail' => false]];
+        $preference = $user->preference()->create([
+            'theme' => 'dark', 'density' => 'compact', 'sidebar_state' => 'collapsed',
+            'page_size' => 50, 'quick_access' => [],
+        ]);
+        $preference->forceFill(['notification_preferences' => $overrides])->save();
+
+        $this->actingAs($user)->patch(route('profile.customization.update'), $this->validPreferences())
+            ->assertSessionHasNoErrors();
+        $this->assertSame($overrides, $user->fresh()->preference->notification_preferences);
+        $this->delete(route('profile.customization.reset'))->assertRedirect(route('profile.customization'));
+        $this->assertSame($overrides, $user->fresh()->preference->notification_preferences);
     }
 
     private function validPreferences(array $overrides = []): array

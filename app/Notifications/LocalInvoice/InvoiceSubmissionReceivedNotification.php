@@ -2,12 +2,13 @@
 
 namespace App\Notifications\LocalInvoice;
 
+use App\Contracts\UserConfigurableNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class InvoiceSubmissionReceivedNotification extends Notification implements ShouldQueue
+class InvoiceSubmissionReceivedNotification extends Notification implements ShouldQueue, UserConfigurableNotification
 {
     use Queueable;
 
@@ -18,6 +19,11 @@ class InvoiceSubmissionReceivedNotification extends Notification implements Shou
         public string $url
     ) {
         $this->afterCommit();
+    }
+
+    public function preferenceKey(): string
+    {
+        return 'local_invoice_submission_received';
     }
 
     public function via(object $notifiable): array

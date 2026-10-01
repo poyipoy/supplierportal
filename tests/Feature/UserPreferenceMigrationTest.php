@@ -12,15 +12,24 @@ class UserPreferenceMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function beforeRefreshingDatabase(): void
+    {
+        $this->assertSame('adasi_portal_test', config('database.connections.mysql.database'));
+        $this->assertSame('adasi_portal_test', DB::selectOne('SELECT DATABASE() AS db')->db);
+    }
+
     public function test_migration_can_drop_and_recreate_its_table_on_the_dedicated_test_database(): void
     {
         $this->assertSame('adasi_portal_test', DB::connection()->getDatabaseName());
+        $this->assertSame('adasi_portal_test', DB::selectOne('SELECT DATABASE() AS db')->db);
         $migration = require database_path('migrations/2026_09_28_000001_create_user_preferences_table.php');
         $extension = require database_path('migrations/2026_09_28_000002_extend_user_preferences_for_dashboard_customization.php');
 
         $regional = require database_path('migrations/2026_09_29_000001_extend_user_preferences_for_regional_preferences.php');
+        $notifications = require database_path('migrations/2026_09_30_000001_add_notification_preferences_to_user_preferences_table.php');
 
         try {
+            $notifications->down();
             $regional->down();
             $extension->down();
             $migration->down();
@@ -47,6 +56,9 @@ class UserPreferenceMigrationTest extends TestCase
             $extension->up();
             $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'accent' => 'brand', 'sidebar_revision' => 1]);
             $this->assertSame(['admin.users'], $user->fresh()->preference->quick_access);
+            $regional->up();
+            $notifications->up();
+            $this->assertNull($user->fresh()->preference->notification_preferences);
         } finally {
             if (! Schema::hasTable('user_preferences')) {
                 $migration->up();
@@ -56,6 +68,9 @@ class UserPreferenceMigrationTest extends TestCase
             }
             if (! Schema::hasColumn('user_preferences', 'timezone')) {
                 $regional->up();
+            }
+            if (! Schema::hasColumn('user_preferences', 'notification_preferences')) {
+                $notifications->up();
             }
         }
     }

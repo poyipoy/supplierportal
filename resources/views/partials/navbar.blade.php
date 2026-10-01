@@ -96,7 +96,17 @@
                 </li>
                 <li>
                     <a href="{{ route('profile.edit') }}" class="dropdown-item tw-py-1.5 small">
-                        <x-ui.icon name="user-cog" class="me-2" />Profile & Security
+                        <x-ui.icon name="user-cog" class="me-2" />My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('profile.edit') . '#profile-security-title' }}" class="dropdown-item tw-py-1.5 small">
+                        <x-ui.icon name="shield-check" class="me-2" />Security
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('profile.notifications') }}" class="dropdown-item tw-py-1.5 small">
+                        <x-ui.icon name="bell" class="me-2" />Notifications
                     </a>
                 </li>
                 <li>

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -15,11 +16,8 @@ class TestingEnvironmentDatabaseSafetyTest extends TestCase
     {
         $activeDb = (string) config('database.connections.mysql.database');
 
-        $this->assertNotEquals('adasi_portal', $activeDb, 'Testing environment must never target the local adasi_portal database.');
-        $this->assertTrue(
-            str_ends_with($activeDb, '_test') || str_ends_with($activeDb, '_testing'),
-            "Testing database '{$activeDb}' must end with '_test' or '_testing'."
-        );
+        $this->assertSame('adasi_portal_test', $activeDb, 'Testing configuration must target the dedicated adasi_portal_test database.');
+        $this->assertSame('adasi_portal_test', DB::selectOne('SELECT DATABASE() AS db')->db, 'The live testing connection must target adasi_portal_test.');
     }
 
     public function test_destructive_migration_aborts_if_attempted_against_local_database_in_testing_mode(): void

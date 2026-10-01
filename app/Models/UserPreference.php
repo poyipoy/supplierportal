@@ -11,7 +11,7 @@ class UserPreference extends Model
 
     protected function casts(): array
     {
-        return ['page_size' => 'integer', 'quick_access' => 'array', 'revision' => 'integer', 'sidebar_revision' => 'integer', 'dashboard_preferences' => 'array'];
+        return ['page_size' => 'integer', 'quick_access' => 'array', 'revision' => 'integer', 'sidebar_revision' => 'integer', 'dashboard_preferences' => 'array', 'notification_preferences' => 'array'];
     }
 
     public function user(): BelongsTo
