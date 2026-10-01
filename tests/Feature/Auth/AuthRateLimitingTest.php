@@ -153,7 +153,8 @@ class AuthRateLimitingTest extends TestCase
             ->post(route('profile.two-factor.start'))
             ->assertTooManyRequests()
             ->assertHeader('Retry-After')
-            ->assertSee('Back to Profile');
+            ->assertSee('Back to Security')
+            ->assertSee('href="'.route('profile.security').'"', false);
     }
 
     public function test_mfa_setup_confirmation_uses_the_branded_rate_limit_page(): void
@@ -229,7 +230,6 @@ class AuthRateLimitingTest extends TestCase
             'verification.verify' => 'throttle:auth.credentials',
             'verification.send' => 'throttle:auth.email-security',
             'password.update' => 'throttle:auth.credentials',
-            'profile.destroy' => 'throttle:auth.credentials',
             'profile.logout-other-devices' => 'throttle:auth.credentials',
             'profile.two-factor.start' => 'throttle:auth.security-action',
             'profile.two-factor.confirm' => 'throttle:auth.mfa-code',

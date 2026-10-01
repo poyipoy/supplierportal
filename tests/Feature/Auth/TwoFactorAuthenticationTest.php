@@ -127,11 +127,13 @@ class TwoFactorAuthenticationTest extends TestCase
         $encryptedSecret = $start->getSession()->get(TwoFactorService::PENDING_SETUP_KEY);
         $secret = Crypt::decryptString($encryptedSecret);
         $setupPage = $this->get(route('profile.two-factor.setup'));
-        $setupPage->assertOk()->assertSee('data:image/svg+xml;base64,', false);
+        $setupPage->assertOk()->assertSee('data:image/svg+xml;base64,', false)
+            ->assertSee('href="'.route('profile.security').'"', false);
 
         $code = app(TwoFactorService::class)->authenticator()->getCurrentOtp($secret);
         $confirmation = $this->post(route('profile.two-factor.confirm'), ['code' => $code]);
-        $confirmation->assertOk()->assertViewIs('profile.two-factor-recovery-codes');
+        $confirmation->assertOk()->assertViewIs('profile.two-factor-recovery-codes')
+            ->assertSee('href="'.route('profile.security').'"', false);
         $codes = $confirmation->viewData('codes');
 
         $this->assertCount(8, $codes);
@@ -199,7 +201,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->post(parse_url($action['url'], PHP_URL_PATH), [
             '_method' => 'DELETE',
             'code' => $code,
-        ])->assertRedirect(route('profile.edit'));
+        ])->assertRedirect(route('profile.security'));
 
         $this->assertFalse($user->fresh()->hasTwoFactorAuthentication());
     }

@@ -1,4 +1,4 @@
-<section id="active-sessions">
+<section id="active-sessions" aria-labelledby="security-active-sessions-title" tabindex="-1" class="ui-focus-ring tw-scroll-mt-20">
     <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
         Devices currently signed in to your account. Up to {{ config('auth_security.session.max_concurrent_sessions', 3) }} sessions can stay active at once — signing in on a new device beyond that limit will automatically sign the oldest one out.
     </p>
@@ -11,10 +11,10 @@
 
     <div class="tw-grid tw-gap-2">
         @forelse ($activeSessions as $activeSession)
-            <div class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-px-3 tw-py-2.5">
-                <div class="tw-flex tw-items-start tw-gap-2.5">
+            <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-px-3 tw-py-2.5">
+                <div class="tw-flex tw-min-w-0 tw-items-start tw-gap-2.5">
                     <x-ui.icon name="monitor" size="sm" />
-                    <div>
+                    <div class="tw-min-w-0 tw-break-words">
                         <p class="tw-m-0 tw-text-ui-sm tw-font-medium tw-text-on-surface">
                             {{ $activeSession->ip_address ?: 'Unknown IP' }}
                             @if ($activeSession->is_current)
@@ -28,9 +28,10 @@
                 </div>
 
                 @unless ($activeSession->is_current)
-                    <form method="POST" action="{{ route('profile.sessions.revoke', $activeSession->id) }}">
+                    <form method="POST" action="{{ route('profile.sessions.revoke') }}">
                         @csrf
                         @method('DELETE')
+                        <input type="hidden" name="session_token" value="{{ $activeSession->revocation_token }}">
                         <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-shrink-0 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-error hover:tw-bg-error/10">
                             <x-ui.icon name="trash-2" size="sm" />Sign out
                         </button>

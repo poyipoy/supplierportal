@@ -100,7 +100,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('profile.edit') . '#profile-security-title' }}" class="dropdown-item tw-py-1.5 small">
+                    <a href="{{ route('profile.security') }}" class="dropdown-item tw-py-1.5 small">
                         <x-ui.icon name="shield-check" class="me-2" />Security
                     </a>
                 </li>

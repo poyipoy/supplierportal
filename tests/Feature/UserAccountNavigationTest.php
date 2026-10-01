@@ -32,7 +32,7 @@ class UserAccountNavigationTest extends TestCase
         }
         $this->assertSame(['My Profile', 'Security', 'Notifications', 'Customization', 'Logout'], $labels);
         $this->assertSame(route('profile.edit'), $actions->item(0)->getAttribute('href'));
-        $this->assertSame(route('profile.edit').'#profile-security-title', $actions->item(1)->getAttribute('href'));
+        $this->assertSame(route('profile.security'), $actions->item(1)->getAttribute('href'));
         $this->assertSame(route('profile.notifications'), $actions->item(2)->getAttribute('href'));
         $this->assertSame(route('profile.customization'), $actions->item(3)->getAttribute('href'));
         $this->assertStringContainsString($user->email, $menu->textContent);
@@ -44,16 +44,14 @@ class UserAccountNavigationTest extends TestCase
         $this->assertCount(0, $xpath->query('.//*[@role="menu"]', $menu));
     }
 
-    public function test_security_fragment_has_a_focusable_heading_and_scroll_clearance(): void
+    public function test_security_destination_has_a_dedicated_heading_and_no_obsolete_fragment(): void
     {
         $response = $this->actingAs(User::factory()->create(['role' => 'admin']))
-            ->get(route('profile.edit'))->assertOk();
-        $heading = $this->xpath($response->getContent())->query('//h2[@id="profile-security-title"]')->item(0);
+            ->get(route('profile.security'))->assertOk();
+        $heading = $this->xpath($response->getContent())->query('//h1')->item(0);
         $this->assertInstanceOf(DOMElement::class, $heading);
-        $this->assertSame('Sign-In Security', trim($heading->textContent));
-        $this->assertSame('-1', $heading->getAttribute('tabindex'));
-        $this->assertStringContainsString('ui-focus-ring', $heading->getAttribute('class'));
-        $this->assertStringContainsString('tw-scroll-mt-20', $heading->getAttribute('class'));
+        $this->assertSame('Security', trim($heading->textContent));
+        $response->assertDontSee('profile-security-title', false);
     }
 
     private function xpath(string $html): DOMXPath

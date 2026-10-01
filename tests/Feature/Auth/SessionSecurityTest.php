@@ -3,7 +3,12 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Services\Auth\SessionInventoryService;
+use DOMDocument;
+use DOMXPath;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -99,13 +104,13 @@ class SessionSecurityTest extends TestCase
         $originalVersion = $user->auth_session_version;
 
         $this->actingAs($user)
-            ->from('/profile')
+            ->from('/profile/security')
             ->put('/password', [
                 'current_password' => 'password',
                 'password' => 'An0ther!StrongPassword',
                 'password_confirmation' => 'An0ther!StrongPassword',
             ])
-            ->assertRedirect('/profile')
+            ->assertRedirect('/profile/security')
             ->assertSessionHasNoErrors();
 
         $this->assertAuthenticatedAs($user);
@@ -240,7 +245,7 @@ class SessionSecurityTest extends TestCase
         ]);
     }
 
-    public function test_active_sessions_profile_hides_idle_expired_rows(): void
+    public function test_active_sessions_security_page_hides_idle_expired_rows(): void
     {
         config()->set('session.driver', 'database');
         $user = User::factory()->create();
@@ -251,7 +256,7 @@ class SessionSecurityTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('profile.edit'))
+            ->get(route('profile.security'))
             ->assertOk()
             ->assertSee('VisibleActiveDevice')
             ->assertDontSee('HiddenExpiredDevice');
@@ -274,7 +279,8 @@ class SessionSecurityTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->delete(route('profile.sessions.revoke', 'someone-elses-device'))
+            ->from('/profile/security')
+            ->delete(route('profile.sessions.revoke'), ['session_token' => Crypt::encryptString('someone-elses-device')])
             ->assertRedirect();
 
         $this->assertDatabaseMissing('sessions', ['id' => 'someone-elses-device']);
@@ -302,7 +308,7 @@ class SessionSecurityTest extends TestCase
         ]);
 
         $this->actingAs($actor)
-            ->delete(route('profile.sessions.revoke', 'other-users-session'))
+            ->delete(route('profile.sessions.revoke'), ['session_token' => Crypt::encryptString('other-users-session')])
             ->assertRedirect()
             ->assertSessionHas('status', 'session-not-found');
 
@@ -326,7 +332,7 @@ class SessionSecurityTest extends TestCase
         $currentSessionId = $start->getCookie(config('session.cookie'))->getValue();
 
         $this->withCookie(config('session.cookie'), $currentSessionId)
-            ->delete(route('profile.sessions.revoke', $currentSessionId))
+            ->delete(route('profile.sessions.revoke'), ['session_token' => Crypt::encryptString($currentSessionId)])
             ->assertRedirect()
             ->assertSessionHas('warning', 'Use the sign-out button to end your current session.');
 
@@ -334,6 +340,131 @@ class SessionSecurityTest extends TestCase
         $this->assertDatabaseMissing('auth_audit_logs', [
             'user_id' => $user->id,
             'event' => 'session_revoked',
+        ]);
+    }
+
+    public function test_security_session_forms_transport_only_opaque_tokens(): void
+    {
+        $user = User::factory()->create();
+        $rawId = 'private-session-identifier-for-other-device';
+        $this->insertSession($user, $rawId);
+        $response = $this->actingAs($user)->get(route('profile.security'))->assertOk();
+        $response->assertDontSee($rawId, false)->assertDontSee('private-payload', false);
+
+        $document = new DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $document->loadHTML($response->getContent());
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+        $xpath = new DOMXPath($document);
+        $forms = $xpath->query('//form[@action="'.route('profile.sessions.revoke').'"]');
+        $this->assertCount(1, $forms);
+        $form = $forms->item(0);
+        $this->assertSame('POST', $form->getAttribute('method'));
+        $this->assertCount(1, $xpath->query('.//input[@name="_token"]', $form));
+        $this->assertCount(1, $xpath->query('.//input[@name="_method" and @value="DELETE"]', $form));
+        $token = $xpath->query('.//input[@name="session_token"]', $form)->item(0);
+        $this->assertNotNull($token);
+        $this->assertSame($rawId, Crypt::decryptString($token->getAttribute('value')));
+        $this->assertSame('profile/sessions', app('router')->getRoutes()->getByName('profile.sessions.revoke')->uri());
+    }
+
+    public function test_session_inventory_projection_omits_raw_ids_and_current_session_token(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $this->insertSession($user, 'current-private-id');
+        $this->insertSession($user, 'other-private-id');
+        $this->insertSession($other, 'another-users-private-id');
+        $sessions = app(SessionInventoryService::class)->activeSessionsFor($user, 'current-private-id');
+        $this->assertCount(2, $sessions);
+        foreach ($sessions as $session) {
+            $this->assertObjectNotHasProperty('id', $session);
+            $this->assertObjectNotHasProperty('payload', $session);
+            if ($session->is_current) {
+                $this->assertEmpty($session->revocation_token ?? null);
+            } else {
+                $this->assertSame('other-private-id', Crypt::decryptString($session->revocation_token));
+            }
+        }
+    }
+
+    public function test_tampered_session_token_fails_without_deleting_rows_or_logging_secrets(): void
+    {
+        $user = User::factory()->create();
+        $rawId = 'session-to-preserve-after-tampering';
+        $this->insertSession($user, $rawId);
+        $token = Crypt::encryptString($rawId);
+        $tampered = substr($token, 0, -8).'tampered';
+
+        $this->actingAs($user)->from('/profile/security')
+            ->delete(route('profile.sessions.revoke'), ['session_token' => $tampered])
+            ->assertRedirect('/profile/security')->assertSessionHas('status', 'session-not-found');
+        $this->assertDatabaseHas('sessions', ['id' => $rawId, 'user_id' => $user->id]);
+        $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseMissing('auth_audit_logs', ['user_id' => $user->id, 'event' => 'session_revoked']);
+        $this->get(route('profile.security'))->assertOk()->assertDontSee($tampered, false)
+            ->assertDontSee('DecryptException')->assertDontSee('Stack trace');
+    }
+
+    public function test_missing_or_unbounded_session_token_is_rejected_without_deletion(): void
+    {
+        $user = User::factory()->create();
+        $this->insertSession($user, 'session-preserved-by-validation');
+        foreach ([[], ['session_token' => ['invalid']], ['session_token' => str_repeat('x', 2049)]] as $payload) {
+            $this->actingAs($user)->from('/profile/security')->delete(route('profile.sessions.revoke'), $payload)
+                ->assertRedirect('/profile/security')->assertSessionHasErrors('session_token');
+            $this->assertDatabaseHas('sessions', ['id' => 'session-preserved-by-validation', 'user_id' => $user->id]);
+        }
+    }
+
+    public function test_plaintext_token_and_obsolete_raw_id_endpoint_cannot_revoke_a_session(): void
+    {
+        $user = User::factory()->create();
+        $rawId = 'raw-session-endpoint-must-be-unavailable';
+        $this->insertSession($user, $rawId);
+        $this->actingAs($user)->from('/profile/security')
+            ->delete(route('profile.sessions.revoke'), ['session_token' => $rawId])
+            ->assertRedirect('/profile/security')->assertSessionHas('status', 'session-not-found');
+        $this->delete('/profile/sessions/'.$rawId)->assertNotFound();
+        $this->assertDatabaseHas('sessions', ['id' => $rawId, 'user_id' => $user->id]);
+    }
+
+    public function test_opaque_session_revocation_requires_a_valid_csrf_token(): void
+    {
+        $this->app->bind(ValidateCsrfToken::class, fn ($app) => new class($app, $app['encrypter']) extends ValidateCsrfToken
+        {
+            protected function runningUnitTests(): bool
+            {
+                return false;
+            }
+        });
+        $user = User::factory()->create();
+        $rawId = 'session-preserved-without-csrf-token';
+        $this->insertSession($user, $rawId);
+        $payload = ['session_token' => Crypt::encryptString($rawId)];
+        $this->actingAs($user)->withSession(['_token' => 'expected-token'])
+            ->from('/profile/security')->delete(route('profile.sessions.revoke'), $payload)->assertStatus(419);
+        $this->assertDatabaseHas('sessions', ['id' => $rawId, 'user_id' => $user->id]);
+
+        $this->delete(route('profile.sessions.revoke'), [...$payload, '_token' => 'expected-token'])
+            ->assertRedirect('/profile/security')->assertSessionHas('status', 'session-revoked');
+        $this->assertDatabaseMissing('sessions', ['id' => $rawId]);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    private function insertSession(User $user, string $id): void
+    {
+        DB::table('sessions')->insert([
+            'id' => $id,
+            'user_id' => $user->id,
+            'ip_address' => '10.1.1.9',
+            'user_agent' => 'ExistingDevice',
+            'payload' => base64_encode('private-payload'),
+            'last_activity' => now()->timestamp,
         ]);
     }
 }

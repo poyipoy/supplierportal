@@ -130,9 +130,9 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile/security', [ProfileController::class, 'security'])
+        ->middleware('no-store')->name('profile.security');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])
-        ->middleware('throttle:auth.credentials')->name('profile.destroy');
     Route::get('/profile/customization', [UserPreferenceController::class, 'edit'])->name('profile.customization');
     Route::patch('/profile/customization', [UserPreferenceController::class, 'update'])->name('profile.customization.update');
     Route::delete('/profile/customization', [UserPreferenceController::class, 'reset'])->name('profile.customization.reset');

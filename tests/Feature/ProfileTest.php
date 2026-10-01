@@ -2,12 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Period;
-use App\Models\PurchaseRequisition;
-use App\Models\Quotation;
-use App\Models\Supplier;
 use App\Models\User;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,11 +19,18 @@ class ProfileTest extends TestCase
             ->get('/profile');
 
         $response->assertOk()
-            ->assertSeeText('Profile and Security')
+            ->assertSeeText('My Profile')
             ->assertSee('Account Information')
-            ->assertSee('Two-Factor Authentication')
-            ->assertSee('Other Devices')
-            ->assertSee('Danger Zone');
+            ->assertDontSeeText('Change Password')
+            ->assertDontSeeText('Two-Factor Authentication')
+            ->assertDontSeeText('Active Sessions')
+            ->assertDontSeeText('Log Out Other Devices')
+            ->assertDontSeeText('Delete Account')
+            ->assertDontSeeText('Danger Zone')
+            ->assertDontSee('profile-security-title', false)
+            ->assertDontSee('profile-danger-title', false)
+            ->assertDontSee('confirmUserDeletionModal', false)
+            ->assertDontSee('delete_account_password', false);
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -71,151 +73,47 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_account_deletion_named_route_is_absent(): void
+    {
+        $this->assertNull(app('router')->getRoutes()->getByName('profile.destroy'));
+    }
+
+    public function test_obsolete_profile_delete_request_cannot_delete_the_authenticated_user(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
+        $this
             ->actingAs($user)
             ->delete('/profile', [
                 'password' => 'password',
-            ]);
+            ])->assertStatus(405);
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->fresh());
-    }
-
-    public function test_user_with_quotation_cannot_delete_account_and_session_is_preserved(): void
-    {
-        $purchasing = User::factory()->create(['role' => 'purchasing']);
-        $supplierUser = User::factory()->create(['role' => 'supplier']);
-        Supplier::create([
-            'user_id' => $supplierUser->id,
-            'company_name' => 'Supplier Co',
-        ]);
-
-        $period = Period::create([
-            'name' => 'Period 2026',
-            'month' => 9,
-            'year' => 2026,
-            'status' => 'open',
-            'created_by' => $purchasing->id,
-        ]);
-
-        $pr = PurchaseRequisition::create([
-            'period_id' => $period->id,
-            'created_by' => $purchasing->id,
-            'pr_number' => 'REQ/09/2026/001',
-            'status' => 'submitted',
-        ]);
-
-        Quotation::create([
-            'pr_id' => $pr->id,
-            'supplier_id' => $supplierUser->id,
-            'currency' => 'USD',
-            'status' => 'submitted',
-            'submitted_at' => now(),
-        ]);
-
-        $response = $this
-            ->actingAs($supplierUser)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
-
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        // User row is preserved in database
-        $this->assertNotNull($supplierUser->fresh());
-
-        // User remains authenticated (session was not destroyed)
-        $this->assertAuthenticatedAs($supplierUser);
-    }
-
-    public function test_user_with_purchase_requisition_cannot_delete_account_and_session_is_preserved(): void
-    {
-        $purchasing = User::factory()->create(['role' => 'purchasing']);
-        $period = Period::create([
-            'name' => 'Period PR Test',
-            'month' => 9,
-            'year' => 2026,
-            'status' => 'open',
-            'created_by' => $purchasing->id,
-        ]);
-
-        PurchaseRequisition::create([
-            'period_id' => $period->id,
-            'created_by' => $purchasing->id,
-            'pr_number' => 'REQ/09/2026/002',
-            'status' => 'submitted',
-        ]);
-
-        $response = $this
-            ->actingAs($purchasing)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
-
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($purchasing->fresh());
-        $this->assertAuthenticatedAs($purchasing);
-    }
-
-    public function test_database_exception_fallback_preserves_authentication_and_returns_controlled_error(): void
-    {
-        $user = User::factory()->create();
-
-        // Simulate a database-level delete exception by hooking deleting event
-        User::deleting(function () {
-            throw new QueryException(
-                'mysql',
-                'DELETE FROM users WHERE id = ?',
-                [],
-                new \Exception('Integrity constraint violation')
-            );
-        });
-
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
-
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->fresh());
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_obsolete_method_spoofed_profile_delete_cannot_delete_the_authenticated_user(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/profile', [
+            '_method' => 'DELETE',
+            'password' => 'password',
+        ])->assertStatus(405);
+
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_administrator_cannot_delete_their_own_account_through_user_management(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin)->from(route('admin.users.index'))
+            ->delete(route('admin.users.destroy', $admin))
+            ->assertRedirect(route('admin.users.index'))
+            ->assertSessionHas('error', 'You cannot delete your own account.');
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+        $this->assertAuthenticatedAs($admin);
     }
 }

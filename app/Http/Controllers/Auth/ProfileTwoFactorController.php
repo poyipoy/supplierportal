@@ -15,7 +15,7 @@ class ProfileTwoFactorController extends Controller
     public function start(Request $request, TwoFactorService $twoFactor): RedirectResponse
     {
         if ($request->user()->hasTwoFactorAuthentication()) {
-            return redirect()->route('profile.edit')->with('status', 'two-factor-already-enabled');
+            return redirect()->route('profile.security')->with('status', 'two-factor-already-enabled');
         }
 
         $twoFactor->startSetup($request);
@@ -28,7 +28,7 @@ class ProfileTwoFactorController extends Controller
         $secret = $twoFactor->pendingSetupSecret($request);
 
         if ($secret === null || $request->user()->hasTwoFactorAuthentication()) {
-            return redirect()->route('profile.edit');
+            return redirect()->route('profile.security');
         }
 
         return view('profile.two-factor-setup', [
@@ -71,6 +71,6 @@ class ProfileTwoFactorController extends Controller
         $twoFactor->disable($request, $request->user());
         event(new AuthSecurityEvent('mfa_disabled', $request->user()));
 
-        return redirect()->route('profile.edit')->with('status', 'two-factor-disabled');
+        return redirect()->route('profile.security')->with('status', 'two-factor-disabled');
     }
 }

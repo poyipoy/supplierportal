@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\SessionInventoryService;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 
 class RevokeSessionController extends Controller
 {
@@ -16,9 +18,18 @@ class RevokeSessionController extends Controller
      */
     public function __invoke(
         Request $request,
-        string $sessionId,
         SessionInventoryService $sessions,
     ): RedirectResponse {
+        $validated = $request->validate([
+            'session_token' => ['required', 'string', 'max:2048'],
+        ]);
+
+        try {
+            $sessionId = Crypt::decryptString($validated['session_token']);
+        } catch (DecryptException) {
+            return back()->with('status', 'session-not-found');
+        }
+
         if (hash_equals((string) $request->session()->getId(), $sessionId)) {
             return back()->with('warning', 'Use the sign-out button to end your current session.');
         }

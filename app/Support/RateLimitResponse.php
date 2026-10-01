@@ -99,8 +99,8 @@ final class RateLimitResponse
                 'returnLabel' => 'Back to Verification',
             ],
             'profile.two-factor.start' => [
-                'returnUrl' => route('profile.edit'),
-                'returnLabel' => 'Back to Profile',
+                'returnUrl' => route('profile.security'),
+                'returnLabel' => 'Back to Security',
             ],
             'profile.two-factor.confirm' => [
                 'returnUrl' => route('profile.two-factor.setup'),

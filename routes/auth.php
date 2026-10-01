@@ -75,7 +75,7 @@ Route::middleware('auth')->group(function () {
     // which nukes all of them at once and requires a password). This is a
     // narrower, lower-friction action: it can only ever target a row that
     // already belongs to the current user, scoped inside RevokeSessionController.
-    Route::delete('profile/sessions/{sessionId}', RevokeSessionController::class)
+    Route::delete('profile/sessions', RevokeSessionController::class)
         ->middleware(['auth.session', 'throttle:auth.security-action'])
         ->name('profile.sessions.revoke');
 

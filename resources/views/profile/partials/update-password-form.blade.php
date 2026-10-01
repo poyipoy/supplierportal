@@ -1,4 +1,5 @@
 <section>
+    <p id="update_password_password_help" class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">Use a strong password with at least 12 characters containing uppercase, lowercase, numbers, and symbols.</p>
     <form method="POST" action="{{ route('password.update') }}">
         @csrf
         @method('PUT')
@@ -8,8 +9,10 @@
                 <label for="update_password_current_password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Current password</label>
                 <input id="update_password_current_password" name="current_password" type="password"
                     class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->updatePassword->has('current_password') ? 'tw-border-error' : 'tw-border-outline-strong' }}"
-                    autocomplete="current-password" maxlength="255" required>
-                @error('current_password', 'updatePassword')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
+                    autocomplete="current-password" maxlength="255"
+                    aria-invalid="{{ $errors->updatePassword->has('current_password') ? 'true' : 'false' }}"
+                    @if($errors->updatePassword->has('current_password')) aria-describedby="update_password_current_password_error" @endif required>
+                @error('current_password', 'updatePassword')<p id="update_password_current_password_error" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
             </div>
 
             <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
@@ -17,15 +20,19 @@
                     <label for="update_password_password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">New password</label>
                     <input id="update_password_password" name="password" type="password"
                         class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->updatePassword->has('password') ? 'tw-border-error' : 'tw-border-outline-strong' }}"
-                        autocomplete="new-password" minlength="12" maxlength="255" required>
-                    @error('password', 'updatePassword')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
+                        autocomplete="new-password" minlength="12" maxlength="255"
+                        aria-describedby="update_password_password_help{{ $errors->updatePassword->has('password') ? ' update_password_password_error' : '' }}"
+                        aria-invalid="{{ $errors->updatePassword->has('password') ? 'true' : 'false' }}" required>
+                    @error('password', 'updatePassword')<p id="update_password_password_error" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="tw-grid tw-gap-1.5">
                     <label for="update_password_password_confirmation" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Confirm new password</label>
                     <input id="update_password_password_confirmation" name="password_confirmation" type="password"
                         class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-strong tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary"
-                        autocomplete="new-password" minlength="12" maxlength="255" required>
+                        autocomplete="new-password" minlength="12" maxlength="255"
+                        aria-describedby="update_password_password_help{{ $errors->updatePassword->has('password') ? ' update_password_password_error' : '' }}"
+                        aria-invalid="{{ $errors->updatePassword->has('password') ? 'true' : 'false' }}" required>
                 </div>
             </div>
         </div>
