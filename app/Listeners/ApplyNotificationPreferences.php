@@ -24,7 +24,15 @@ class ApplyNotificationPreferences
                 return null;
             }
 
-            return $this->preferences->enabled($event->notifiable, $key) ? null : false;
+            if (! $this->preferences->enabled($event->notifiable, $key)) {
+                return false;
+            }
+
+            if ($event->channel === 'broadcast' && $this->preferences->deliveryFor($event->notifiable, $key) === 'silent') {
+                return false;
+            }
+
+            return null;
         } catch (Throwable $exception) {
             try {
                 Log::warning('Notification preference enforcement failed; legacy delivery retained.', [

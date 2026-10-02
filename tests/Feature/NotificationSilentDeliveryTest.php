@@ -94,4 +94,80 @@ class NotificationSilentDeliveryTest extends TestCase
         $merged = $service->mergeOverrides($user, $stored, [self::KEY => 0], []);
         $this->assertSame([self::KEY => false, $otherKey => false], $merged);
     }
+
+    public function test_silent_event_delivers_to_database_with_silent_flag_and_suppresses_broadcast(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => [self::KEY => 'silent']])->save();
+
+        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $user->notify($notification);
+
+        $this->assertSame(1, $user->notifications()->count());
+        $stored = $user->notifications()->sole();
+        $this->assertTrue($stored->data['silent'] ?? false);
+        \Illuminate\Support\Facades\Queue::assertNothingPushed();
+    }
+
+    public function test_off_event_suppresses_both_database_and_broadcast(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => [self::KEY => false]])->save();
+
+        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $user->notify($notification);
+
+        $this->assertSame(0, $user->notifications()->count());
+        \Illuminate\Support\Facades\Queue::assertNothingPushed();
+    }
+
+    public function test_normal_event_delivers_to_database_and_broadcast_without_silent_key(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+
+        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $user->notify($notification);
+
+        $this->assertSame(1, $user->notifications()->count());
+        $stored = $user->notifications()->sole();
+        $this->assertArrayNotHasKey('silent', $stored->data);
+        \Illuminate\Support\Facades\Queue::assertPushed(\Illuminate\Broadcasting\BroadcastEvent::class, 1);
+    }
+
+    public function test_caller_supplied_silent_flag_is_overridden_by_service(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+
+        // User is Normal; caller attempts to spoof silent => true
+        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', [
+            'event' => 'local_invoice.submitted',
+            'silent' => true,
+        ]);
+        $user->notify($notification);
+
+        $stored = $user->notifications()->sole();
+        $this->assertArrayNotHasKey('silent', $stored->data);
+    }
+
+    public function test_unregistered_event_delivered_normally_even_if_similar_silent_key_stored(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['unregistered_event_key' => 'silent']])->save();
+
+        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'unregistered_event']);
+        $user->notify($notification);
+
+        $this->assertSame(1, $user->notifications()->count());
+        $stored = $user->notifications()->sole();
+        $this->assertArrayNotHasKey('silent', $stored->data);
+        \Illuminate\Support\Facades\Queue::assertPushed(\Illuminate\Broadcasting\BroadcastEvent::class, 1);
+    }
 }

@@ -56,12 +56,30 @@ class SystemNotification extends Notification
      */
     public function toDatabase(object $notifiable): array
     {
-        return array_merge([
+        $payload = array_merge([
             'title' => $this->title,
             'message' => $this->message,
             'url' => $this->url,
             'icon' => $this->icon,
         ], $this->data);
+
+        if ($notifiable instanceof \App\Models\User) {
+            try {
+                $prefService = app(\App\Services\NotificationPreferenceService::class);
+                $key = $prefService->keyFor($this);
+                if ($key !== null && $prefService->deliveryFor($notifiable, $key) === 'silent') {
+                    $payload['silent'] = true;
+                } else {
+                    unset($payload['silent']);
+                }
+            } catch (\Throwable) {
+                unset($payload['silent']);
+            }
+        } else {
+            unset($payload['silent']);
+        }
+
+        return $payload;
     }
 
     /**
