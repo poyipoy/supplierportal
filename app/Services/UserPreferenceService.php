@@ -152,6 +152,25 @@ class UserPreferenceService
         }, 3);
     }
 
+    public function resetNotificationPreferences(User $user): array
+    {
+        return DB::transaction(function () use ($user): array {
+            $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            $stored = $lockedUser->preference()->first();
+            $preference = $stored ?? new UserPreference;
+            if ($stored === null) {
+                $preference->fill(config('user_preferences.defaults'));
+                $preference->sidebar_revision = 1;
+            }
+            $preference->notification_preferences = null;
+            $preference->revision = ($stored?->revision ?? 0) + 1;
+            $lockedUser->preference()->save($preference);
+            app(NotificationPreferenceService::class)->forget($lockedUser);
+
+            return $this->for($lockedUser->refresh());
+        }, 3);
+    }
+
     private function regionalValues(?UserPreference $stored, array $values = []): array
     {
         $regional = [];

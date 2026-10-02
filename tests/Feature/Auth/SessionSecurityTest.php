@@ -11,7 +11,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class SessionSecurityTest extends TestCase
@@ -116,24 +115,6 @@ class SessionSecurityTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->assertGreaterThan($originalVersion, $user->fresh()->auth_session_version);
         $this->assertSame($user->fresh()->auth_session_version, session('auth_session_version'));
-    }
-
-    public function test_password_reset_rotates_session_version_and_remember_token(): void
-    {
-        $user = User::factory()->create(['remember_token' => 'existing-remember-token']);
-        $originalVersion = $user->auth_session_version;
-        $token = Password::broker()->createToken($user);
-
-        $this->post('/reset-password', [
-            'token' => $token,
-            'email' => $user->email,
-            'password' => 'Reset!Password123',
-            'password_confirmation' => 'Reset!Password123',
-        ])->assertRedirect(route('login'));
-
-        $user->refresh();
-        $this->assertGreaterThan($originalVersion, $user->auth_session_version);
-        $this->assertNotSame('existing-remember-token', $user->remember_token);
     }
 
     public function test_admin_deactivation_revokes_existing_target_session(): void

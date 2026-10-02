@@ -24,6 +24,21 @@ class NotificationUrlResolverTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_security_destination_resolves_for_every_account_role(): void
+    {
+        $resolver = app(NotificationUrlResolver::class);
+        foreach (['admin', 'purchasing', 'supplier', 'qc', 'accounting', 'finance', 'ga'] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+            $notification = $this->notification($user, [
+                'event' => 'new_device_login',
+                'domain' => 'global',
+                'url' => route('profile.security', absolute: false).'#active-sessions',
+            ]);
+
+            $this->assertSame('/profile/security#active-sessions', $resolver->resolve($notification, $user));
+        }
+    }
+
     public function test_resolver_normalizes_absolute_and_legacy_pr_urls_for_each_role(): void
     {
         [$admin, $purchasing, $supplier, $qc, $pr, $quotation, $po] = $this->procurementData();

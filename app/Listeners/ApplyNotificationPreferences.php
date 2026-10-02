@@ -2,7 +2,6 @@
 
 namespace App\Listeners;
 
-use App\Contracts\UserConfigurableNotification;
 use App\Models\User;
 use App\Services\NotificationPreferenceService;
 use Illuminate\Notifications\Events\NotificationSending;
@@ -15,23 +14,17 @@ class ApplyNotificationPreferences
 
     public function handle(NotificationSending $event): ?bool
     {
-        if (! $event->notifiable instanceof User || ! $event->notification instanceof UserConfigurableNotification) {
+        if (! $event->notifiable instanceof User || ! in_array($event->channel, ['database', 'broadcast'], true)) {
             return null;
         }
 
         try {
-            $key = $event->notification->preferenceKey();
-            $registered = $this->preferences->registry()[$key] ?? null;
-            if (! is_array($registered) || ($registered['class'] ?? null) !== $event->notification::class) {
+            $key = $this->preferences->keyFor($event->notification);
+            if ($key === null) {
                 return null;
             }
 
-            $channel = $registered['channels'][$event->channel] ?? null;
-            if (! is_array($channel) || ($channel['configurable'] ?? false) !== true) {
-                return null;
-            }
-
-            return $this->preferences->enabled($event->notifiable, $key, $event->channel) ? null : false;
+            return $this->preferences->enabled($event->notifiable, $key) ? null : false;
         } catch (Throwable $exception) {
             try {
                 Log::warning('Notification preference enforcement failed; legacy delivery retained.', [

@@ -77,6 +77,13 @@ class SystemNotification extends Notification
         ], $this->data));
     }
 
+    public function event(): ?string
+    {
+        $event = $this->data['event'] ?? null;
+
+        return is_string($event) && $event !== '' ? $event : null;
+    }
+
     public function eventKey(): ?string
     {
         $eventKey = $this->data['event_key'] ?? null;

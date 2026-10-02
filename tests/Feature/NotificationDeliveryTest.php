@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Conversation;
+use App\Models\LocalInvoice;
 use App\Models\MaterialClaim;
 use App\Models\MaterialMaster;
 use App\Models\Period;
@@ -13,6 +14,7 @@ use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\LocalInvoice\InvoiceNotificationService;
 use App\Services\NotificationService;
 use App\Services\ShipmentService;
 use App\Support\NotificationCategory;
@@ -30,6 +32,41 @@ use Tests\TestCase;
 class NotificationDeliveryTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_physical_reminder_retries_are_idempotent_and_new_schedule_has_new_identity(): void
+    {
+        Queue::fake();
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $supplier->supplierScopes()->create(['scope' => 'local']);
+        $invoice = LocalInvoice::create([
+            'supplier_id' => $supplier->id,
+            'submission_number' => 'REMINDER-IDENTITY-001',
+            'submitted_at' => now(),
+            'invoice_number' => 'INV-REMINDER-001',
+            'invoice_date' => '2026-10-01',
+            'po_number' => 'PO-REMINDER-001',
+            'invoice_amount' => '100000.00',
+            'tax_amount' => '11000.00',
+            'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
+            'scheduled_physical_delivery_date' => '2026-10-07',
+        ]);
+        $service = app(InvoiceNotificationService::class);
+
+        $service->sendPhysicalDeliveryReminder($invoice);
+        $service->sendPhysicalDeliveryReminder($invoice);
+
+        $original = $supplier->notifications()->sole();
+        $this->assertSame('local_invoice.physical_delivery_reminder', $original->data['event']);
+        Queue::assertPushed(BroadcastEvent::class, 1);
+
+        $invoice->update(['rescheduled_at' => now(), 'scheduled_physical_delivery_date' => '2026-10-14']);
+        $service->sendPhysicalDeliveryReminder($invoice);
+        $service->sendPhysicalDeliveryReminder($invoice);
+
+        $this->assertSame(2, $supplier->notifications()->count());
+        $this->assertCount(2, $supplier->notifications()->pluck('data')->pluck('event_key')->unique());
+        Queue::assertPushed(BroadcastEvent::class, 2);
+    }
 
     public function test_delivery_targets_active_users_and_is_idempotent_per_event_key(): void
     {

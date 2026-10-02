@@ -4,16 +4,15 @@ namespace App\Listeners;
 
 use App\Events\AuthSecurityEvent;
 use App\Models\User;
-use App\Notifications\RepeatedLockoutAlertNotification;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\NotificationService;
+use App\Support\NotificationDomain;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\OtherDeviceLogout;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 class LogAuthenticationEvent
@@ -113,11 +112,8 @@ class LogAuthenticationEvent
             'The account "'.$normalized.'" was rate-limited '.$count.' times in the last hour.',
             route('admin.auth-audit-logs.index', absolute: false),
             'alert-triangle',
+            ['domain' => NotificationDomain::GLOBAL],
         );
-
-        if (config('auth_security.notifications.mail_enabled', false)) {
-            Notification::send($admins, new RepeatedLockoutAlertNotification($normalized, $count));
-        }
     }
 
     public function handleOtherDeviceLogout(OtherDeviceLogout $event): void

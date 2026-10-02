@@ -3,7 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Notifications\AdasiResetPasswordNotification;
 use App\Traits\HasHashids;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -246,23 +245,5 @@ class User extends Authenticatable
     public function hasTwoFactorAuthentication(): bool
     {
         return filled($this->two_factor_secret) && $this->two_factor_confirmed_at !== null;
-    }
-
-    /**
-     * Send the branded reset-password notification while preserving Laravel's
-     * password-broker token and expiration behavior.
-     *
-     * Deactivated accounts are intentionally skipped: the broker still
-     * creates a token (harmless, self-expires), but no email goes out and
-     * NewPasswordController separately refuses to honor a token for an
-     * inactive account, so a stale credential can't be "revived" this way.
-     */
-    public function sendPasswordResetNotification(#[\SensitiveParameter] $token)
-    {
-        if (! $this->is_active || $this->account_status !== self::ACCOUNT_STATUS_ACTIVE) {
-            return;
-        }
-
-        $this->notify(new AdasiResetPasswordNotification($token));
     }
 }

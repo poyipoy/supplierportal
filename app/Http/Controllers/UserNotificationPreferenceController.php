@@ -14,11 +14,24 @@ class UserNotificationPreferenceController extends Controller
     public function index(Request $request, NotificationPreferenceService $notifications): View
     {
         $user = $request->user();
+        $events = $notifications->eventsFor($user);
+        $categoryOrder = array_flip([
+            'Purchase requisitions', 'Quotations', 'Conversations', 'Purchase orders', 'Documents',
+            'Shipments and QC', 'Material claims', 'Local invoices', 'Supplier registration', 'Exports', 'Security',
+        ]);
+        uasort($events, fn (array $left, array $right): int => ($categoryOrder[$left['category']] ?? PHP_INT_MAX) <=> ($categoryOrder[$right['category']] ?? PHP_INT_MAX));
 
         return view('profile.notifications', [
-            'events' => $notifications->eventsFor($user),
+            'events' => $events,
             'effectivePreferences' => $notifications->effectivePreferences($user),
         ]);
+    }
+
+    public function reset(Request $request, UserPreferenceService $preferences): RedirectResponse
+    {
+        $preferences->resetNotificationPreferences($request->user());
+
+        return redirect()->route('profile.notifications')->with('success', 'Notification preferences reset to defaults.');
     }
 
     public function update(

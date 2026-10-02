@@ -9,7 +9,6 @@ use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceDocument;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Notifications\LocalInvoice\RevisionRequiredNotification;
 use App\Notifications\SystemNotification;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
@@ -257,14 +256,21 @@ class LocalInvoiceTest extends TestCase
         $this->get(route('local-invoice-documents.show', $invoice->documents()->first()))->assertRedirect(route('login'));
     }
 
-    public function test_notification_events_and_revision_email(): void
+    public function test_notification_events_and_revision_are_in_app_only(): void
     {
         $invoice = $this->submit();
         Notification::assertSentTo($this->operator, SystemNotification::class);
         app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
         Notification::assertSentTo($this->supplier, SystemNotification::class);
         app(InvoiceVerificationService::class)->requestRevision($invoice, 'Please replace Faktur Pajak', $this->operator);
-        Notification::assertSentTo($this->supplier, RevisionRequiredNotification::class, fn ($notification) => $notification->reason === 'Please replace Faktur Pajak' && $notification->url === route('local-supplier.invoices.show', $invoice));
+        Notification::assertSentTo($this->supplier, SystemNotification::class, function (SystemNotification $notification) use ($invoice): bool {
+            $data = $notification->toDatabase($this->supplier);
+
+            return $data['event'] === 'local_invoice.revision_requested'
+                && str_contains($data['message'], 'Please replace Faktur Pajak')
+                && $data['url'] === route('local-supplier.invoices.show', $invoice, absolute: false);
+        });
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 3);
     }
 
     public function test_storage_write_failure_rolls_back_submission(): void

@@ -7,10 +7,7 @@ use App\Models\LocalInvoice;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\User;
-use App\Notifications\LocalInvoice\InvoicePaidNotification;
-use App\Notifications\LocalInvoice\InvoiceSubmissionReceivedNotification;
-use App\Notifications\LocalInvoice\PhysicalDeliveryReminderNotification;
-use App\Notifications\LocalInvoice\RevisionRequiredNotification;
+use App\Notifications\SystemNotification;
 use App\Services\LocalInvoice\InvoiceNotificationService;
 use App\Services\Payment\PaymentBatchService;
 use App\Services\Payment\PaymentExecutionService;
@@ -619,7 +616,7 @@ class PaymentForecastAndReportingTest extends TestCase
         $resExport->assertSessionHas('success', 'Master invoices export queued.');
     }
 
-    public function test_supplier_email_events_and_no_internal_dates_exposed(): void
+    public function test_supplier_in_app_events_and_no_internal_dates_exposed(): void
     {
         Notification::fake();
 
@@ -652,21 +649,20 @@ class PaymentForecastAndReportingTest extends TestCase
         ]);
         $notificationService->send($invoice, $historySub);
 
-        Notification::assertSentTo($supplier, InvoiceSubmissionReceivedNotification::class, function ($n) use ($invoice) {
-            $mail = $n->toMail($invoice->supplier);
-            $this->assertStringContainsString($invoice->submissionNumber ?? $invoice->submission_number, $mail->subject);
+        Notification::assertSentTo($supplier, SystemNotification::class, function (SystemNotification $notification) use ($supplier, $invoice): bool {
+            $data = $notification->toDatabase($supplier);
 
-            return true;
+            return $data['event'] === 'local_invoice.submitted'
+                && str_contains($data['message'], $invoice->submission_number);
         });
+        Notification::assertSentTo($supplier, SystemNotification::class, 1);
+        Notification::assertSentTo($finance, SystemNotification::class, 1);
 
         // 2. Physical delivery reminder
         $notificationService->sendPhysicalDeliveryReminder($invoice);
 
-        Notification::assertSentTo($supplier, PhysicalDeliveryReminderNotification::class, function ($n) use ($invoice) {
-            $mail = $n->toMail($invoice->supplier);
-            $this->assertStringContainsString('Pengingat Pengiriman Berkas Fisik', $mail->subject);
-
-            return true;
+        Notification::assertSentTo($supplier, SystemNotification::class, function (SystemNotification $notification) use ($supplier): bool {
+            return $notification->toDatabase($supplier)['event'] === 'local_invoice.physical_delivery_reminder';
         });
 
         // 3. Need Revision event
@@ -679,8 +675,11 @@ class PaymentForecastAndReportingTest extends TestCase
         ]);
         $notificationService->send($invoice, $historyRev);
 
-        Notification::assertSentTo($supplier, RevisionRequiredNotification::class, function ($n) {
-            return $n->reason === 'Faktur pajak tidak valid';
+        Notification::assertSentTo($supplier, SystemNotification::class, function (SystemNotification $notification) use ($supplier): bool {
+            $data = $notification->toDatabase($supplier);
+
+            return $data['event'] === 'local_invoice.revision_requested'
+                && str_contains($data['message'], 'Faktur pajak tidak valid');
         });
 
         // 4. Paid event (Execution via PaymentExecutionService)
@@ -697,19 +696,20 @@ class PaymentForecastAndReportingTest extends TestCase
             'payment_notes' => 'Lunas via batch',
         ], $finance);
 
-        Notification::assertSentTo($supplier, InvoicePaidNotification::class, function ($n) use ($invoice) {
-            $mail = $n->toMail($invoice->supplier);
-            $this->assertStringContainsString('Konfirmasi Pembayaran Invoice', $mail->subject);
-            $this->assertStringContainsString('TRF-BCA-TEST-8899', implode(' ', $mail->introLines));
-
-            // CRITICAL INVARIANT: Never expose internal planned payment date to Supplier
-            foreach ($mail->introLines as $line) {
-                $this->assertStringNotContainsString('scheduled_payment_date', $line);
-                $this->assertStringNotContainsString('planned_date', $line);
-                $this->assertStringNotContainsString('internal_date', $line);
+        Notification::assertSentTo($supplier, SystemNotification::class, function (SystemNotification $notification) use ($supplier): bool {
+            $data = $notification->toDatabase($supplier);
+            if ($data['event'] !== 'local_invoice.paid') {
+                return false;
             }
+            $this->assertStringContainsString('TRF-BCA-TEST-8899', $data['message']);
+            $payload = json_encode($data);
+            $this->assertStringNotContainsString('scheduled_payment_date', $payload);
+            $this->assertStringNotContainsString('planned_date', $payload);
+            $this->assertStringNotContainsString('internal_date', $payload);
 
             return true;
         });
+        Notification::assertSentTo($supplier, SystemNotification::class, 4);
+        Notification::assertCount(5);
     }
 }

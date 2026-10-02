@@ -29,14 +29,16 @@ try {
         usleep(1000);
     }
 
-    if (($argv[5] ?? null) === 'notifications') {
+    if (($argv[5] ?? null) === 'notification-reset') {
+        app(UserPreferenceService::class)->resetNotificationPreferences($user);
+    } elseif (($argv[5] ?? null) === 'notifications') {
         $enabled = match ($argv[2]) {
             'true' => true,
             'false' => false,
             default => throw new InvalidArgumentException('Notification worker values must be true or false.'),
         };
         app(UserPreferenceService::class)->saveNotificationPreferences($user, [
-            'local_invoice_submission_received' => ['mail' => $enabled],
+            'local_invoice_submitted' => $enabled,
         ]);
     } else {
         app(UserPreferenceService::class)->save($user, [

@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import './password-assistance';
 import { bootAdasiCalendars } from './calendar';
 import './unsaved-changes';
 import './number-input-helper';

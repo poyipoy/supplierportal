@@ -3,9 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use App\Notifications\AdasiResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class PasswordPolicyTest extends TestCase
@@ -45,24 +43,6 @@ class PasswordPolicyTest extends TestCase
             'role' => 'purchasing',
             'is_active' => '1',
         ])->assertSessionHasErrors('password');
-    }
-
-    public function test_password_reset_rejects_weak_password(): void
-    {
-        Notification::fake();
-        $user = User::factory()->create();
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, AdasiResetPasswordNotification::class, function (AdasiResetPasswordNotification $notification) use ($user): bool {
-            $this->post('/reset-password', [
-                'token' => $notification->token,
-                'email' => $user->email,
-                'password' => 'weakpassword',
-                'password_confirmation' => 'weakpassword',
-            ])->assertSessionHasErrors('password');
-
-            return true;
-        });
     }
 
     public function test_existing_legacy_password_still_allows_login(): void

@@ -16,7 +16,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AuthSecurityServiceProvider extends ServiceProvider
@@ -49,24 +48,6 @@ class AuthSecurityServiceProvider extends ServiceProvider
 
     private function registerRateLimiters(): void
     {
-        RateLimiter::for('auth.password-reset-link', function (Request $request): array {
-            return [
-                $this->limit('password-reset-link:email', $this->emailIdentity($request), 'email_security'),
-                $this->limit('password-reset-link:ip', $this->ipIdentity($request), 'email_security', 'guest_ip'),
-            ];
-        });
-
-        RateLimiter::for('auth.password-reset', function (Request $request): array {
-            return [
-                $this->limit('password-reset:email', $this->emailIdentity($request), 'credentials'),
-                $this->limit('password-reset:ip', $this->ipIdentity($request), 'credentials', 'guest_ip'),
-            ];
-        });
-
-        RateLimiter::for('auth.email-security', function (Request $request): Limit {
-            return $this->limit('email-security:user', $this->authenticatedIdentity($request), 'email_security');
-        });
-
         RateLimiter::for('auth.credentials', function (Request $request): Limit {
             return $this->limit('credentials:user', $this->authenticatedIdentity($request), 'credentials');
         });
@@ -87,13 +68,6 @@ class AuthSecurityServiceProvider extends ServiceProvider
         return Limit::perSecond((int) $config['attempts'], (int) $config['decay_seconds'])
             ->by("{$scope}:".hash('sha256', $identity))
             ->response(static fn (Request $request, array $headers) => RateLimitResponse::forNamedLimiter($request, $headers));
-    }
-
-    private function emailIdentity(Request $request): string
-    {
-        $email = Str::lower(trim((string) $request->input('email', '')));
-
-        return $email === '' ? 'missing:'.$this->ipIdentity($request) : 'email:'.$email;
     }
 
     private function authenticatedIdentity(Request $request): string

@@ -4,13 +4,11 @@ namespace App\Services\Auth;
 
 use App\Events\AuthSecurityEvent;
 use App\Models\User;
-use App\Notifications\NewDeviceLoginNotification;
 use App\Services\NotificationService;
+use App\Support\NotificationDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Throwable;
 
 class CompleteLoginService
 {
@@ -51,28 +49,11 @@ class CompleteLoginService
                 'auth:new-device-login:'.Str::uuid(),
                 'New sign-in detected',
                 'Your account was signed in on a device that has not been used with this account before.',
-                route('profile.edit', absolute: false).'#active-sessions',
+                route('profile.security', absolute: false).'#active-sessions',
                 'monitor',
+                ['domain' => NotificationDomain::GLOBAL],
             );
 
-            // Outbound mail is disabled by office network policy; the in-app
-            // notification above plus the audit entry are the delivery path.
-            if (config('auth_security.notifications.mail_enabled', false)) {
-                try {
-                    $user->notify(new NewDeviceLoginNotification(
-                        (string) ($request->ip() ?? ''),
-                        Str::limit((string) $request->userAgent(), 512, ''),
-                        now(),
-                    ));
-                } catch (Throwable $exception) {
-                    Log::warning('New-device email notification dispatch failed.', [
-                        'user_id' => $user->getKey(),
-                        'channel' => 'mail',
-                        'queue' => config('queue.default'),
-                        'exception_class' => $exception::class,
-                    ]);
-                }
-            }
         }
     }
 }

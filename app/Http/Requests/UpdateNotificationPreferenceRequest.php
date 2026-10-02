@@ -24,11 +24,7 @@ class UpdateNotificationPreferenceRequest extends FormRequest
         ];
 
         foreach ($events as $key => $event) {
-            $channels = array_filter($event['channels'], fn (array $channel): bool => $channel['configurable']);
-            $rules['notification_preferences.'.$key] = ['sometimes', 'array:'.implode(',', array_keys($channels))];
-            foreach ($channels as $channel => $metadata) {
-                $rules['notification_preferences.'.$key.'.'.$channel] = ['sometimes', 'required', 'boolean'];
-            }
+            $rules['notification_preferences.'.$key] = ['sometimes', 'required', 'boolean'];
         }
 
         return $rules;

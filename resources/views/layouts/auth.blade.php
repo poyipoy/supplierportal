@@ -111,7 +111,7 @@
             margin: auto 0;
             padding: 2rem 0;
         }
-        .auth-brand-headline h1 {
+        .auth-brand-headline h1, .auth-brand-headline .auth-brand-title {
             margin: 0;
             font-size: var(--ui-font-size-2xl);
             font-weight: 700;
@@ -236,7 +236,11 @@
                     </div>
 
                     <div class="auth-brand-headline">
+                        @hasSection('page-heading')
+                        <p class="auth-brand-title">Integrated procurement. One shared platform.</p>
+                        @else
                         <h1>Integrated procurement. One shared platform.</h1>
+                        @endif
                         <p>Manage purchasing activities, supplier collaboration, and order progress in a single portal.</p>
                     </div>
 

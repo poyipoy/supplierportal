@@ -26,6 +26,35 @@ class UserPreferenceConcurrencyTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_concurrent_notification_reset_and_customization_save_preserve_both_updates(): void
+    {
+        $user = User::factory()->create(['role' => 'supplier']);
+        $user->supplierScopes()->create(['scope' => 'local']);
+        $preference = $user->preference()->create([...config('user_preferences.defaults'), 'timezone' => 'Asia/Jakarta']);
+        $preference->forceFill(['notification_preferences' => ['local_invoice_submitted' => false], 'revision' => 3])->save();
+        $start = microtime(true) + 2;
+        $worker = base_path('tests/Feature/_user-preference-concurrency-worker.php');
+        $processes = [
+            new Process([PHP_BINARY, $worker, (string) $user->id, 'true', (string) $start, 'brand', 'notification-reset'], base_path(), ['APP_ENV' => 'testing']),
+            new Process([PHP_BINARY, $worker, (string) $user->id, 'dark', (string) $start, 'slate'], base_path(), ['APP_ENV' => 'testing']),
+        ];
+        foreach ($processes as $process) {
+            $process->start();
+        }
+        foreach ($processes as $process) {
+            $process->wait();
+            $this->assertTrue($process->isSuccessful(), $process->getErrorOutput());
+            $this->assertSame('saved', trim($process->getOutput()));
+        }
+        $saved = $preference->fresh();
+        $this->assertNull($saved->notification_preferences);
+        $this->assertSame('dark', $saved->theme);
+        $this->assertSame('slate', $saved->accent);
+        $this->assertSame('Asia/Jakarta', $saved->timezone);
+        $this->assertSame(5, $saved->revision);
+        $this->assertSame(1, $user->preference()->count());
+    }
+
     public function test_concurrent_first_saves_create_one_row_and_increment_revision(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
@@ -75,7 +104,7 @@ class UserPreferenceConcurrencyTest extends TestCase
 
         $this->assertSame(1, $user->preference()->count());
         $preference = $user->fresh()->preference;
-        $this->assertSame(['local_invoice_submission_received' => ['mail' => false]], $preference->notification_preferences);
+        $this->assertSame(['local_invoice_submitted' => false], $preference->notification_preferences);
         $this->assertSame('dark', $preference->theme);
         $this->assertSame('slate', $preference->accent);
         $this->assertSame(2, $preference->revision);
@@ -95,7 +124,7 @@ class UserPreferenceConcurrencyTest extends TestCase
             'number_format' => 'indonesian',
         ]);
         $preference->forceFill([
-            'notification_preferences' => ['local_invoice_submission_received' => ['mail' => false]],
+            'notification_preferences' => ['local_invoice_submitted' => false],
             'revision' => 7,
             'sidebar_revision' => 4,
         ])->save();

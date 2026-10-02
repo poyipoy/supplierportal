@@ -139,6 +139,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/profile/notifications', [UserNotificationPreferenceController::class, 'index'])->name('profile.notifications');
         Route::patch('/profile/notifications', [UserNotificationPreferenceController::class, 'update'])->name('profile.notifications.update');
+        Route::delete('/profile/notifications', [UserNotificationPreferenceController::class, 'reset'])->name('profile.notifications.reset');
     });
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
 

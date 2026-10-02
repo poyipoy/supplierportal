@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\LocalInvoice;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Notifications\LocalInvoice\PhysicalDeliveryReminderNotification;
+use App\Notifications\SystemNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -71,7 +71,17 @@ class SendLocalInvoiceDeliveryRemindersTest extends TestCase
             ->expectsOutputToContain('Found 1 invoices with upcoming physical delivery schedules.')
             ->assertSuccessful();
 
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
+
+        Notification::assertSentTo($this->supplier, SystemNotification::class, function (SystemNotification $notification) use ($invoice): bool {
+            $data = $notification->toDatabase($this->supplier);
+
+            return $data['event'] === 'local_invoice.physical_delivery_reminder'
+                && $data['domain'] === 'local'
+                && $data['category'] === 'invoice'
+                && $data['local_invoice_id'] === $invoice->id
+                && $data['url'] === route('local-supplier.invoices.show', $invoice, absolute: false);
+        });
 
         $invoice->refresh();
         $this->assertNotNull($invoice->delivery_reminder_sent_at);
@@ -85,7 +95,7 @@ class SendLocalInvoiceDeliveryRemindersTest extends TestCase
 
         // First execution
         $this->artisan('local-invoices:send-delivery-reminders')->assertSuccessful();
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
 
         // Immediate repeated execution
         $this->artisan('local-invoices:send-delivery-reminders')
@@ -93,7 +103,7 @@ class SendLocalInvoiceDeliveryRemindersTest extends TestCase
             ->assertSuccessful();
 
         // Count must remain exactly 1
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
     }
 
     public function test_repeated_scheduler_execution_across_days_within_window_does_not_duplicate(): void
@@ -104,21 +114,21 @@ class SendLocalInvoiceDeliveryRemindersTest extends TestCase
 
         // Day 1
         $this->artisan('local-invoices:send-delivery-reminders')->assertSuccessful();
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
 
         // Day 2 (delivery is now 1 day away, but already reminded)
         $this->travel(1)->days();
         $this->artisan('local-invoices:send-delivery-reminders')
             ->expectsOutputToContain('Found 0 invoices with upcoming physical delivery schedules.')
             ->assertSuccessful();
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
 
         // Day 3 (delivery is today, but already reminded)
         $this->travel(1)->days();
         $this->artisan('local-invoices:send-delivery-reminders')
             ->expectsOutputToContain('Found 0 invoices with upcoming physical delivery schedules.')
             ->assertSuccessful();
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
     }
 
     public function test_invoices_outside_the_reminder_window_are_not_reminded(): void
@@ -163,16 +173,16 @@ class SendLocalInvoiceDeliveryRemindersTest extends TestCase
             ->expectsOutputToContain('Found 3 invoices with upcoming physical delivery schedules.')
             ->assertSuccessful();
 
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 2);
-        Notification::assertSentTo($supplierB, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 2);
+        Notification::assertSentTo($supplierB, SystemNotification::class, 1);
 
         // Repeat execution
         $this->artisan('local-invoices:send-delivery-reminders')
             ->expectsOutputToContain('Found 0 invoices with upcoming physical delivery schedules.')
             ->assertSuccessful();
 
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 2);
-        Notification::assertSentTo($supplierB, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 2);
+        Notification::assertSentTo($supplierB, SystemNotification::class, 1);
     }
 
     public function test_rescheduled_invoice_receives_new_reminder_for_rescheduled_date(): void
@@ -183,7 +193,7 @@ class SendLocalInvoiceDeliveryRemindersTest extends TestCase
 
         // First schedule reminded
         $this->artisan('local-invoices:send-delivery-reminders')->assertSuccessful();
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 1);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
 
         // Invoice was missed and rescheduled to next week
         $invoice->update([
@@ -201,6 +211,6 @@ class SendLocalInvoiceDeliveryRemindersTest extends TestCase
             ->assertSuccessful();
 
         // Receives exactly 1 additional reminder for the new schedule
-        Notification::assertSentTo($this->supplier, PhysicalDeliveryReminderNotification::class, 2);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 2);
     }
 }

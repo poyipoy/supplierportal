@@ -72,7 +72,6 @@ class DecodeHashids
 
     /** Routes with an intentional raw integer parameter. */
     protected const PLAIN_ROUTE_NAMES = [
-        'verification.verify',
     ];
 
     public function handle(Request $request, Closure $next)

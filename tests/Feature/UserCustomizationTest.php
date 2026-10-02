@@ -196,7 +196,7 @@ class UserCustomizationTest extends TestCase
     public function test_customization_save_and_reset_preserve_notification_overrides(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
-        $overrides = ['local_invoice_submission_received' => ['mail' => false]];
+        $overrides = ['local_invoice_submitted' => false];
         $preference = $user->preference()->create([
             'theme' => 'dark', 'density' => 'compact', 'sidebar_state' => 'collapsed',
             'page_size' => 50, 'quick_access' => [],

@@ -2,16 +2,12 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\LogoutOtherDevicesController;
-use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordAssistanceController;
 use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\ProfileTwoFactorController;
 use App\Http\Controllers\Auth\RevokeSessionController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
-use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -21,19 +17,9 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('no-store')->name('login.store');
 
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+    Route::get('forgot-password', [PasswordAssistanceController::class, 'show'])
         ->middleware('no-store')->name('password.request');
 
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->middleware(['throttle:auth.password-reset-link', 'no-store'])
-        ->name('password.email');
-
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
-        ->middleware('no-store')->name('password.reset');
-
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->middleware(['throttle:auth.password-reset', 'no-store'])
-        ->name('password.store');
 });
 
 Route::middleware(['mfa.pending', 'no-store'])->group(function () {
@@ -44,16 +30,6 @@ Route::middleware(['mfa.pending', 'no-store'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('verify-email', EmailVerificationPromptController::class)
-        ->name('verification.notice');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:auth.credentials'])
-        ->name('verification.verify');
-
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:auth.email-security')
-        ->name('verification.send');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->middleware('no-store')->name('password.confirm');

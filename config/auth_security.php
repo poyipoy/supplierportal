@@ -70,20 +70,7 @@ return [
     // otherwise the two branches diverge again.
     'dummy_hash' => env('AUTH_DUMMY_HASH', '$2y$12$e8p2xPjG.oQZkGgJ7K7Ie.4gPZ9Z7V1X2Y3Z4A5B6C7D8E9F0G1H2'),
 
-    // Office network policy forbids outbound mail triggered by auth events.
-    // Security alerts are delivered in-app and to auth_audit_logs instead;
-    // the mail channel stays opt-in per environment.
-    'notifications' => [
-        'mail_enabled' => (bool) env('AUTH_SECURITY_EMAIL_NOTIFICATIONS', false),
-        'in_app_enabled' => true,
-    ],
-
     'rate_limits' => [
-        'email_security' => [
-            'subject' => ['attempts' => 3, 'decay_seconds' => 900],
-            'guest_ip' => ['attempts' => 10, 'decay_seconds' => 900],
-        ],
-
         'credentials' => [
             'subject' => ['attempts' => 5, 'decay_seconds' => 300],
             'guest_ip' => ['attempts' => 10, 'decay_seconds' => 300],

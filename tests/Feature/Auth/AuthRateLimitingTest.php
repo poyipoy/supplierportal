@@ -16,77 +16,6 @@ class AuthRateLimitingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_password_reset_link_is_limited_per_email_without_blocking_another_email(): void
-    {
-        Notification::fake();
-
-        for ($attempt = 1; $attempt <= 3; $attempt++) {
-            $this->post(route('password.email'), ['email' => 'first@example.test'])
-                ->assertRedirect();
-        }
-
-        $this->post(route('password.email'), ['email' => 'first@example.test'])
-            ->assertTooManyRequests()
-            ->assertHeader('Retry-After')
-            ->assertHeader('Cache-Control', 'no-store, private')
-            ->assertSee('Please wait a moment')
-            ->assertSee('Back to Forgot Password');
-
-        $this->post(route('password.email'), ['email' => 'second@example.test'])
-            ->assertRedirect();
-    }
-
-    public function test_password_reset_link_has_an_ip_backstop(): void
-    {
-        Notification::fake();
-
-        for ($attempt = 1; $attempt <= 10; $attempt++) {
-            $this->post(route('password.email'), ['email' => "request{$attempt}@example.test"])
-                ->assertRedirect();
-        }
-
-        $this->post(route('password.email'), ['email' => 'request11@example.test'])
-            ->assertTooManyRequests()
-            ->assertSee('Back to Forgot Password');
-    }
-
-    public function test_password_reset_submission_is_limited_by_email_and_ip(): void
-    {
-        $payload = [
-            'token' => 'invalid-token',
-            'email' => 'reset@example.test',
-            'password' => 'Str0ng!Passphrase',
-            'password_confirmation' => 'Str0ng!Passphrase',
-        ];
-
-        for ($attempt = 1; $attempt <= 5; $attempt++) {
-            $this->post(route('password.store'), $payload)->assertRedirect();
-        }
-
-        $this->post(route('password.store'), $payload)
-            ->assertRedirect(route('password.request'))
-            ->assertHeader('Retry-After')
-            ->assertSessionHas('warning', fn (string $message): bool => str_contains($message, 'Too many requests'));
-    }
-
-    public function test_email_verification_resend_is_limited_per_authenticated_user(): void
-    {
-        Notification::fake();
-        $user = User::factory()->unverified()->create();
-
-        for ($attempt = 1; $attempt <= 3; $attempt++) {
-            $this->actingAs($user)
-                ->post(route('verification.send'))
-                ->assertRedirect();
-        }
-
-        $this->actingAs($user)
-            ->post(route('verification.send'))
-            ->assertRedirect(route('profile.edit'))
-            ->assertHeader('Retry-After')
-            ->assertSessionHas('warning', fn (string $message): bool => str_contains($message, 'Too many requests'));
-    }
-
     public function test_credential_checks_share_a_per_user_limit(): void
     {
         $user = User::factory()->create();
@@ -204,31 +133,20 @@ class AuthRateLimitingTest extends TestCase
 
     public function test_json_rate_limit_responses_remain_http_429_with_retry_headers(): void
     {
-        $payload = [
-            'token' => 'invalid-token',
-            'email' => 'json-reset@example.test',
-            'password' => 'Str0ng!Passphrase',
-            'password_confirmation' => 'Str0ng!Passphrase',
-        ];
-
+        $user = User::factory()->create();
+        $this->actingAs($user);
         for ($attempt = 1; $attempt <= 5; $attempt++) {
-            $this->post(route('password.store'), $payload)->assertRedirect();
+            $this->post('/confirm-password', ['password' => 'wrong'])->assertRedirect();
         }
-
-        $this->postJson(route('password.store'), $payload)
-            ->assertTooManyRequests()
-            ->assertHeader('Retry-After')
+        $this->postJson('/confirm-password', ['password' => 'wrong'])
+            ->assertTooManyRequests()->assertHeader('Retry-After')
             ->assertJsonPath('message', 'Too Many Attempts.');
     }
 
     public function test_all_security_routes_use_the_expected_named_limiter(): void
     {
         $expectedMiddleware = [
-            'password.email' => 'throttle:auth.password-reset-link',
-            'password.store' => 'throttle:auth.password-reset',
             'two-factor.challenge.store' => 'throttle:auth.mfa-code',
-            'verification.verify' => 'throttle:auth.credentials',
-            'verification.send' => 'throttle:auth.email-security',
             'password.update' => 'throttle:auth.credentials',
             'profile.logout-other-devices' => 'throttle:auth.credentials',
             'profile.two-factor.start' => 'throttle:auth.security-action',
