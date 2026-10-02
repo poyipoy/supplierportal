@@ -32,6 +32,13 @@
             $categoryCount = $groupedCategories->count();
             $allOpenInitially = ($totalEventsCount <= 12 || $categoryCount <= 2);
 
+            $totalEnabledCount = 0;
+            foreach ($events as $k => $e) {
+                if ((bool) old('notification_preferences.'.$k, $effectivePreferences[$k])) {
+                    $totalEnabledCount++;
+                }
+            }
+
             $initialCategoryStats = [];
             foreach ($groupedCategories as $catName => $catEvts) {
                 $onCount = 0;
@@ -54,6 +61,11 @@
                 dirtyCount: 0,
                 isSubmitting: false,
                 allExpanded: false,
+                searchQuery: '',
+                activeFilter: 'all',
+                totalEnabled: {{ $totalEnabledCount }},
+                totalEvents: {{ $totalEventsCount }},
+                visibleEventCount: {{ $totalEventsCount }},
                 categoryStats: @js($initialCategoryStats),
                 init() {
                     this.updateDirty();
@@ -72,6 +84,14 @@
                     });
                     this.dirtyCount = count;
                     this.updateCategoryStats();
+                    this.updateOverallStats();
+                    this.applyFilters();
+                },
+                updateOverallStats() {
+                    const cbs = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
+                    let enabled = 0;
+                    cbs.forEach(cb => { if (cb.checked) enabled++; });
+                    this.totalEnabled = enabled;
                 },
                 updateCategoryStats() {
                     this.$el.querySelectorAll('details[data-category]').forEach(detail => {
@@ -103,6 +123,59 @@
                     details.forEach(d => { d.open = anyClosed; });
                     this.allExpanded = anyClosed;
                 },
+                applyFilters() {
+                    const query = this.searchQuery.trim().toLowerCase();
+                    const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
+                    let count = 0;
+
+                    rows.forEach(row => {
+                        const label = (row.getAttribute('data-event-label') || '').toLowerCase();
+                        const desc = (row.getAttribute('data-event-desc') || '').toLowerCase();
+                        const scope = row.getAttribute('data-scope') || 'general';
+                        const cb = row.querySelector('input[type=checkbox][name^=\"notification_preferences\"]');
+                        const isEnabled = cb ? cb.checked : true;
+
+                        const matchesSearch = !query || label.includes(query) || desc.includes(query);
+                        let matchesFilter = true;
+                        if (this.activeFilter === 'enabled') {
+                            matchesFilter = isEnabled;
+                        } else if (this.activeFilter === 'muted') {
+                            matchesFilter = !isEnabled;
+                        }
+
+                        let matchesScope = true;
+                        if (this.scopeTab && this.scopeTab !== 'all') {
+                            matchesScope = (scope === this.scopeTab || scope === 'general');
+                        }
+
+                        const isVisible = matchesSearch && matchesFilter && matchesScope;
+                        if (isVisible) {
+                            row.removeAttribute('hidden');
+                            count++;
+                        } else {
+                            row.setAttribute('hidden', '');
+                        }
+                    });
+
+                    this.visibleEventCount = count;
+
+                    this.$el.querySelectorAll('details[data-category]').forEach(detail => {
+                        const visibleRows = detail.querySelectorAll('fieldset[data-event-key]:not([hidden])');
+                        if (visibleRows.length === 0) {
+                            detail.setAttribute('hidden', '');
+                        } else {
+                            detail.removeAttribute('hidden');
+                            if (query || this.activeFilter !== 'all') {
+                                detail.open = true;
+                            }
+                        }
+                    });
+                },
+                clearFilters() {
+                    this.searchQuery = '';
+                    this.activeFilter = 'all';
+                    this.applyFilters();
+                },
                 discard() {
                     const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
                     checkboxes.forEach(cb => {
@@ -121,17 +194,81 @@
             @csrf
             @method('PATCH')
 
-            @if($categoryCount > 1)
-                <div class="tw-flex tw-justify-end tw-items-center">
-                    <x-ui.button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        @click="toggleAllCategories()"
-                    >
-                        <span x-text="allExpanded ? 'Collapse all' : 'Expand all'">Expand all</span>
-                    </x-ui.button>
+            @if($totalEventsCount > 8)
+                <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-mb-1">
+                    <div class="tw-flex tw-items-center tw-gap-2">
+                        <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">Preferences</span>
+                        <div x-show="totalEvents === totalEnabled" @if($totalEnabledCount < $totalEventsCount) style="display: none;" @endif>
+                            <x-ui.status-chip tone="success">
+                                <span x-text="totalEnabled + ' of ' + totalEvents + ' enabled'">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled</span>
+                            </x-ui.status-chip>
+                        </div>
+                        <div x-show="totalEnabled < totalEvents" @if($totalEnabledCount === $totalEventsCount) style="display: none;" @endif>
+                            <x-ui.status-chip tone="warning">
+                                <span x-text="totalEnabled + ' of ' + totalEvents + ' enabled'">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled</span>
+                            </x-ui.status-chip>
+                        </div>
+                    </div>
                 </div>
+
+                <x-ui.toolbar class="tw-mb-2">
+                    <x-slot:search>
+                        <div class="tw-relative tw-w-full">
+                            <input
+                                type="search"
+                                class="ui-input tw-w-full tw-ps-9 tw-pe-3 tw-py-1.5 tw-text-ui-sm tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface tw-text-on-surface"
+                                placeholder="Search notifications..."
+                                x-model="searchQuery"
+                                @input="applyFilters()"
+                            >
+                            <div class="tw-pointer-events-none tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-ps-2.5 tw-text-on-surface-variant">
+                                <x-ui.icon name="search" size="sm" />
+                            </div>
+                        </div>
+                    </x-slot:search>
+
+                    <x-slot:filters>
+                        <div class="tw-inline-flex tw-rounded-ui-sm tw-border tw-border-outline tw-p-0.5 tw-bg-surface" role="group" aria-label="Filter notifications">
+                            <button
+                                type="button"
+                                class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
+                                :class="activeFilter === 'all' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                @click="activeFilter = 'all'; applyFilters()"
+                            >
+                                All
+                            </button>
+                            <button
+                                type="button"
+                                class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
+                                :class="activeFilter === 'enabled' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                @click="activeFilter = 'enabled'; applyFilters()"
+                            >
+                                Enabled
+                            </button>
+                            <button
+                                type="button"
+                                class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
+                                :class="activeFilter === 'muted' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                @click="activeFilter = 'muted'; applyFilters()"
+                            >
+                                Muted
+                            </button>
+                        </div>
+                    </x-slot:filters>
+
+                    <x-slot:actions>
+                        @if($categoryCount > 1)
+                            <x-ui.button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                @click="toggleAllCategories()"
+                            >
+                                <span x-text="allExpanded ? 'Collapse all' : 'Expand all'">Expand all</span>
+                            </x-ui.button>
+                        @endif
+                    </x-slot:actions>
+                </x-ui.toolbar>
             @endif
 
             @foreach($groupedCategories as $category => $categoryEvents)
@@ -164,23 +301,25 @@
                                 {{ $initialCategoryStats[$category]['on'] }} of {{ $initialCategoryStats[$category]['total'] }} on
                             </span>
                         </div>
-                        <div class="tw-flex tw-items-center tw-gap-2" @click.stop>
-                            <button
-                                type="button"
-                                class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
-                                @click="turnCategoryAll('{{ $category }}', true)"
-                            >
-                                Turn all on
-                            </button>
-                            <span class="tw-text-outline" aria-hidden="true">·</span>
-                            <button
-                                type="button"
-                                class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-on-surface-variant hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
-                                @click="turnCategoryAll('{{ $category }}', false)"
-                            >
-                                Turn all off
-                            </button>
-                        </div>
+                        @if($totalEventsCount > 8)
+                            <div class="tw-flex tw-items-center tw-gap-2" @click.stop>
+                                <button
+                                    type="button"
+                                    class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
+                                    @click="turnCategoryAll('{{ $category }}', true)"
+                                >
+                                    Turn all on
+                                </button>
+                                <span class="tw-text-outline" aria-hidden="true">·</span>
+                                <button
+                                    type="button"
+                                    class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-on-surface-variant hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
+                                    @click="turnCategoryAll('{{ $category }}', false)"
+                                >
+                                    Turn all off
+                                </button>
+                            </div>
+                        @endif
                     </summary>
                     <div class="tw-grid tw-gap-5 tw-p-5">
                         @foreach($categoryEvents as $key => $event)
@@ -189,7 +328,13 @@
                                 $controlId = 'notification-'.$key;
                                 $isChecked = (bool) old($field, $effectivePreferences[$key]);
                             @endphp
-                            <fieldset class="tw-grid tw-min-w-0 tw-gap-2 tw-py-3 tw-border-b tw-border-outline-variant last:tw-border-b-0">
+                            <fieldset
+                                class="tw-grid tw-min-w-0 tw-gap-2 tw-py-3 tw-border-b tw-border-outline-variant last:tw-border-b-0"
+                                data-event-key="{{ $key }}"
+                                data-event-label="{{ $event['label'] }}"
+                                data-event-desc="{{ $event['description'] }}"
+                                data-scope="{{ !empty($event['supplier_scopes']) ? (in_array('import', $event['supplier_scopes']) ? 'import' : 'local') : 'general' }}"
+                            >
                                 <legend class="tw-text-ui-sm tw-font-semibold">{{ $event['label'] }}</legend>
                                 <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3">
                                     <div class="tw-min-w-0 tw-flex-1">
@@ -218,6 +363,24 @@
                     </div>
                 </details>
             @endforeach
+
+            <div x-cloak x-show="visibleEventCount === 0" class="tw-border tw-border-outline tw-bg-surface tw-rounded-ui-sm tw-p-6">
+                <x-ui.empty-state
+                    icon="search-x"
+                    title="No notification preferences found"
+                    description="No notification settings match your current search and filter criteria."
+                >
+                    <x-ui.button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="tw-mt-4"
+                        @click="clearFilters()"
+                    >
+                        Clear filters
+                    </x-ui.button>
+                </x-ui.empty-state>
+            </div>
 
             <x-ui.action-bar class="tw-mt-2">
                 <x-slot:left>
