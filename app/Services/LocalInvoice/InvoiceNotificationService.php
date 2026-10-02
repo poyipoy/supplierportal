@@ -8,9 +8,17 @@ use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
-
 class InvoiceNotificationService
 {
+    private const UNREGISTERED_EVENT_TITLES = [
+        'delivery_missed' => 'Batas pengiriman berkas terlewat',
+        'expired' => 'Invoice kedaluwarsa',
+        'rescheduled' => 'Jadwal pengiriman berkas diubah',
+        'physical_verified' => 'Dokumen fisik terverifikasi',
+        'payment_scheduled' => 'Jadwal bayar ditentukan',
+        'completed' => 'Pembayaran selesai',
+    ];
+
     public function send(LocalInvoice $invoice, LocalInvoiceStatusHistory $history): void
     {
         if ($history->event === 'review_started') {
@@ -22,7 +30,7 @@ class InvoiceNotificationService
             ? User::whereIn('role', ['accounting', 'finance'])->where('is_active', true)->get()
             : collect([$invoice->supplier]);
 
-        $title = 'Local invoice: '.ucwords(str_replace('_', ' ', $history->event));
+        $title = $this->resolveTitle($history->event);
         $message = $invoice->submission_number.' — '.($history->notes ?: ($internal ? 'Waiting for physical documents.' : $invoice->invoice_number));
         $url = route(($internal ? 'finance' : 'local-supplier').'.invoices.show', $invoice, absolute: false);
 
@@ -76,5 +84,17 @@ class InvoiceNotificationService
             'receipt',
             ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL]
         );
+    }
+
+    private function resolveTitle(string $event): string
+    {
+        $registryLabel = config('notification_preferences.local_invoice_'.$event.'.label');
+
+        if (is_string($registryLabel) && $registryLabel !== '') {
+            return $registryLabel;
+        }
+
+        return self::UNREGISTERED_EVENT_TITLES[$event]
+            ?? ('Local invoice: '.ucwords(str_replace('_', ' ', $event)));
     }
 }
