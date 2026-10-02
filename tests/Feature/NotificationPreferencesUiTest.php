@@ -7,6 +7,8 @@ use DOMDocument;
 use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\MessageBag;
+use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
 
 class NotificationPreferencesUiTest extends TestCase
@@ -168,6 +170,94 @@ class NotificationPreferencesUiTest extends TestCase
         $resetForm = $xpath->query('//form[@id="reset-preferences-form" and @action="'.route('profile.notifications.reset').'"]');
         $this->assertCount(1, $resetForm);
         $this->assertCount(1, $xpath->query('.//input[@name="_method" and @value="DELETE"]', $resetForm->item(0)));
+    }
+
+    public function test_local_supplier_has_thirteen_checkboxes_and_no_required_wording(): void
+    {
+        $user = $this->localSupplier();
+        $response = $this->actingAs($user)->get(route('profile.notifications'))->assertOk();
+
+        $response->assertDontSeeText('Required notifications');
+
+        $xpath = $this->xpathFromHtml($response->getContent());
+        $this->assertCount(13, $xpath->query('//input[@type="checkbox"]'));
+
+        // Confirm bulk controls are button elements, never inputs
+        $bulkOn = $xpath->query('//button[normalize-space(.)="Turn all on"]');
+        $this->assertGreaterThan(0, $bulkOn->length);
+        foreach ($bulkOn as $btn) {
+            $this->assertSame('button', $btn->getAttribute('type'));
+        }
+
+        $bulkOff = $xpath->query('//button[normalize-space(.)="Turn all off"]');
+        $this->assertGreaterThan(0, $bulkOff->length);
+        foreach ($bulkOff as $btn) {
+            $this->assertSame('button', $btn->getAttribute('type'));
+        }
+    }
+
+    public function test_data_scope_attribute_values_on_event_rows(): void
+    {
+        $dualSupplier = $this->localSupplier();
+        $dualSupplier->supplierScopes()->firstOrCreate(['scope' => 'import']);
+        $response = $this->actingAs($dualSupplier)->get(route('profile.notifications'))->assertOk();
+
+        $xpath = $this->xpathFromHtml($response->getContent());
+        $this->assertGreaterThan(0, $xpath->query('//fieldset[@data-scope="import"]')->length);
+        $this->assertGreaterThan(0, $xpath->query('//fieldset[@data-scope="local"]')->length);
+        $this->assertGreaterThan(0, $xpath->query('//fieldset[@data-scope="general"]')->length);
+    }
+
+    public function test_category_collapse_and_open_initial_state_rules(): void
+    {
+        // 1. User with <= 12 events (ga has 1 event): category is open
+        $ga = User::factory()->create(['role' => 'ga']);
+        $gaResponse = $this->actingAs($ga)->get(route('profile.notifications'))->assertOk();
+        $gaXpath = $this->xpathFromHtml($gaResponse->getContent());
+        $gaDetails = $gaXpath->query('//details[@data-category]');
+        $this->assertCount(1, $gaDetails);
+        $this->assertTrue($gaDetails->item(0)->hasAttribute('open'));
+
+        // 2. User with > 12 events and > 2 categories (purchasing has >20 events):
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+        $purResponse = $this->actingAs($purchasing)->get(route('profile.notifications'))->assertOk();
+        $purXpath = $this->xpathFromHtml($purResponse->getContent());
+        $details = $purXpath->query('//details[@data-category]');
+        $this->assertGreaterThan(2, $details->length);
+
+        // First category is open by default
+        $this->assertTrue($details->item(0)->hasAttribute('open'));
+        // Second category is closed by default
+        $this->assertFalse($details->item(1)->hasAttribute('open'));
+
+        // 3. User with a muted event in a later category: that category opens
+        $secondCatName = $details->item(1)->getAttribute('data-category');
+        $firstEventInSecondCat = $purXpath->query('.//fieldset[@data-event-key]', $details->item(1))->item(0);
+        $eventKey = $firstEventInSecondCat->getAttribute('data-event-key');
+
+        $mutedUser = User::factory()->create(['role' => 'purchasing']);
+        $pref = $mutedUser->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => [$eventKey => false]])->save();
+
+        $mutedResponse = $this->actingAs($mutedUser)->get(route('profile.notifications'))->assertOk();
+        $mutedXpath = $this->xpathFromHtml($mutedResponse->getContent());
+        $mutedDetail = $mutedXpath->query('//details[@data-category="'.$secondCatName.'"]')->item(0);
+        $this->assertNotNull($mutedDetail);
+        $this->assertTrue($mutedDetail->hasAttribute('open'));
+
+        // 4. Validation error in a category forces that category open
+        $errorUser = User::factory()->create(['role' => 'purchasing']);
+        $errorBag = new MessageBag(['notification_preferences.'.$eventKey => 'Invalid value']);
+        $viewErrors = (new ViewErrorBag)->put('default', $errorBag);
+
+        $errorResponse = $this->actingAs($errorUser)
+            ->withSession(['errors' => $viewErrors])
+            ->get(route('profile.notifications'))
+            ->assertOk();
+        $errorXpath = $this->xpathFromHtml($errorResponse->getContent());
+        $errorDetail = $errorXpath->query('//details[@data-category="'.$secondCatName.'"]')->item(0);
+        $this->assertNotNull($errorDetail);
+        $this->assertTrue($errorDetail->hasAttribute('open'));
     }
 
     public function test_get_notifications_page_executes_at_most_one_user_preferences_query(): void
