@@ -40,6 +40,7 @@
             }
 
             $isSupplier = auth()->user()?->isSupplier();
+            $userRole = auth()->user()?->role;
             $hasImportScope = false;
             $hasLocalScope = false;
             foreach ($events as $e) {
@@ -129,6 +130,10 @@
                         if (labelSpan) {
                             labelSpan.textContent = turnOn ? 'On' : 'Off';
                         }
+                        const note = cb.closest('fieldset').querySelector('.action-required-note');
+                        if (note) {
+                            note.style.display = turnOn ? 'none' : 'inline-flex';
+                        }
                     });
                     this.updateDirty();
                 },
@@ -191,6 +196,25 @@
                     this.activeFilter = 'all';
                     this.applyFilters();
                 },
+                applyPreset(preset) {
+                    const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
+                    rows.forEach(row => {
+                        const cb = row.querySelector('input[type=checkbox][name^=\"notification_preferences\"]');
+                        if (!cb) return;
+                        const isActionRequired = row.getAttribute('data-priority') === 'action_required';
+                        const shouldCheck = (preset === 'everything') ? true : isActionRequired;
+                        cb.checked = shouldCheck;
+                        const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                        if (labelSpan) {
+                            labelSpan.textContent = shouldCheck ? 'On' : 'Off';
+                        }
+                        const note = row.querySelector('.action-required-note');
+                        if (note) {
+                            note.style.display = shouldCheck ? 'none' : 'inline-flex';
+                        }
+                    });
+                    this.updateDirty();
+                },
                 discard() {
                     const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
                     checkboxes.forEach(cb => {
@@ -198,6 +222,10 @@
                         const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
                         if (labelSpan) {
                             labelSpan.textContent = cb.checked ? 'On' : 'Off';
+                        }
+                        const note = cb.closest('fieldset').querySelector('.action-required-note');
+                        if (note) {
+                            note.style.display = cb.checked ? 'none' : 'inline-flex';
                         }
                     });
                     this.updateDirty();
@@ -293,31 +321,40 @@
                     </x-slot:search>
 
                     <x-slot:filters>
-                        <div class="tw-inline-flex tw-rounded-ui-sm tw-border tw-border-outline tw-p-0.5 tw-bg-surface" role="group" aria-label="Filter notifications">
-                            <button
-                                type="button"
-                                class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
-                                :class="activeFilter === 'all' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
-                                @click="activeFilter = 'all'; applyFilters()"
-                            >
-                                All
-                            </button>
-                            <button
-                                type="button"
-                                class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
-                                :class="activeFilter === 'enabled' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
-                                @click="activeFilter = 'enabled'; applyFilters()"
-                            >
-                                Enabled
-                            </button>
-                            <button
-                                type="button"
-                                class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
-                                :class="activeFilter === 'muted' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
-                                @click="activeFilter = 'muted'; applyFilters()"
-                            >
-                                Muted
-                            </button>
+                        <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-3">
+                            <div class="tw-inline-flex tw-rounded-ui-sm tw-border tw-border-outline tw-p-0.5 tw-bg-surface" role="group" aria-label="Filter notifications">
+                                <button
+                                    type="button"
+                                    class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
+                                    :class="activeFilter === 'all' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                    @click="activeFilter = 'all'; applyFilters()"
+                                >
+                                    All
+                                </button>
+                                <button
+                                    type="button"
+                                    class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
+                                    :class="activeFilter === 'enabled' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                    @click="activeFilter = 'enabled'; applyFilters()"
+                                >
+                                    Enabled
+                                </button>
+                                <button
+                                    type="button"
+                                    class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
+                                    :class="activeFilter === 'muted' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                    @click="activeFilter = 'muted'; applyFilters()"
+                                >
+                                    Muted
+                                </button>
+                            </div>
+
+                            <div class="tw-inline-flex tw-items-center tw-gap-1.5 tw-text-ui-xs tw-text-on-surface-variant">
+                                <span class="tw-font-medium">Presets:</span>
+                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('everything')">Everything</button>
+                                <span class="tw-text-outline" aria-hidden="true">·</span>
+                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('action_needed')">Action needed only</button>
+                            </div>
                         </div>
                     </x-slot:filters>
 
@@ -392,6 +429,8 @@
                                 $field = 'notification_preferences.'.$key;
                                 $controlId = 'notification-'.$key;
                                 $isChecked = (bool) old($field, $effectivePreferences[$key]);
+                                $isActionRequired = (($event['priority'] ?? null) === 'action_required')
+                                    && (!isset($event['priority_roles']) || in_array($userRole, $event['priority_roles'], true));
                             @endphp
                             <fieldset
                                 class="tw-grid tw-min-w-0 tw-gap-2 tw-py-3 tw-border-b tw-border-outline-variant last:tw-border-b-0"
@@ -399,11 +438,23 @@
                                 data-event-label="{{ $event['label'] }}"
                                 data-event-desc="{{ $event['description'] }}"
                                 data-scope="{{ !empty($event['supplier_scopes']) ? (in_array('import', $event['supplier_scopes']) ? 'import' : 'local') : 'general' }}"
+                                data-priority="{{ $isActionRequired ? 'action_required' : 'info' }}"
                             >
                                 <legend class="tw-text-ui-sm tw-font-semibold">{{ $event['label'] }}</legend>
                                 <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3">
                                     <div class="tw-min-w-0 tw-flex-1">
+                                        @if($isActionRequired)
+                                            <div class="tw-mb-1 tw-inline-flex tw-items-center">
+                                                <x-ui.status-chip tone="warning">Action needed</x-ui.status-chip>
+                                            </div>
+                                        @endif
                                         <p id="notification-{{ $key }}-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $event['description'] }}</p>
+                                        @if($isActionRequired)
+                                            <p class="action-required-note tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-warning tw-inline-flex tw-items-center tw-gap-1" @if($isChecked) style="display: none;" @endif>
+                                                <x-ui.icon name="triangle-alert" size="xs" />
+                                                <span>This notification requires your action. Muting it may cause you to miss pending tasks.</span>
+                                            </p>
+                                        @endif
                                     </div>
                                     <div class="tw-flex tw-items-center tw-gap-2.5 tw-shrink-0 tw-min-h-11">
                                         <input type="hidden" name="notification_preferences[{{ $key }}]" value="0">
@@ -414,7 +465,7 @@
                                             :checked="$isChecked"
                                             aria-describedby="notification-{{ $key }}-help @error($field) {{ $controlId }}-error @enderror"
                                             aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}"
-                                            onchange="this.parentElement.querySelector('label span[aria-hidden]').textContent = this.checked ? 'On' : 'Off'"
+                                            onchange="this.parentElement.querySelector('label span[aria-hidden]').textContent = this.checked ? 'On' : 'Off'; const note = this.closest('fieldset').querySelector('.action-required-note'); if (note) { note.style.display = this.checked ? 'none' : 'inline-flex'; }"
                                         />
                                         <label for="{{ $controlId }}" class="tw-cursor-pointer tw-select-none tw-text-ui-xs tw-font-medium tw-text-on-surface-variant tw-min-w-[1.75rem]">
                                             <span class="tw-sr-only">{{ $event['label'] }}</span>

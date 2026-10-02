@@ -22,6 +22,7 @@ return [
         'roles' => ['purchasing'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'quotation_revised' => [
         'class' => SystemNotification::class,
@@ -32,6 +33,7 @@ return [
         'roles' => ['purchasing'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'quotation_accepted' => [
         'class' => SystemNotification::class,
@@ -62,6 +64,7 @@ return [
         'roles' => ['supplier'],
         'supplier_scopes' => ['import'],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'quotation_negotiation_message' => [
         'class' => SystemNotification::class,
@@ -72,6 +75,7 @@ return [
         'roles' => ['supplier'],
         'supplier_scopes' => ['import'],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'conversation_message_created' => [
         'class' => SystemNotification::class,
@@ -92,6 +96,7 @@ return [
         'roles' => ['supplier'],
         'supplier_scopes' => ['import'],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'document_status_updated' => [
         'class' => SystemNotification::class,
@@ -134,6 +139,7 @@ return [
         'roles' => ['purchasing'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'po_material_arrived' => [
         'class' => SystemNotification::class,
@@ -144,6 +150,7 @@ return [
         'roles' => ['qc'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'qc_inspection_ok' => [
         'class' => SystemNotification::class,
@@ -174,6 +181,7 @@ return [
         'roles' => ['supplier'],
         'supplier_scopes' => ['import'],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'claim_responded' => [
         'class' => SystemNotification::class,
@@ -204,6 +212,8 @@ return [
         'roles' => ['finance', 'accounting', 'supplier'],
         'supplier_scopes' => ['local'],
         'default' => true,
+        'priority' => 'action_required',
+        'priority_roles' => ['finance', 'accounting'],
     ],
     'local_invoice_resubmitted' => [
         'class' => SystemNotification::class,
@@ -214,6 +224,8 @@ return [
         'roles' => ['finance', 'accounting', 'supplier'],
         'supplier_scopes' => ['local'],
         'default' => true,
+        'priority' => 'action_required',
+        'priority_roles' => ['finance', 'accounting'],
     ],
     'local_invoice_cancelled' => [
         'class' => SystemNotification::class,
@@ -254,6 +266,7 @@ return [
         'roles' => ['supplier'],
         'supplier_scopes' => ['local'],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'local_invoice_rejected' => [
         'class' => SystemNotification::class,
@@ -274,6 +287,7 @@ return [
         'roles' => ['supplier'],
         'supplier_scopes' => ['local'],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'local_invoice_paid' => [
         'class' => SystemNotification::class,
@@ -314,6 +328,7 @@ return [
         'roles' => ['supplier'],
         'supplier_scopes' => ['local'],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'supplier_registration_submitted' => [
         'class' => SystemNotification::class,
@@ -324,6 +339,7 @@ return [
         'roles' => ['admin', 'finance', 'purchasing'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'supplier_registration_resubmitted' => [
         'class' => SystemNotification::class,
@@ -334,6 +350,7 @@ return [
         'roles' => ['admin', 'finance', 'purchasing'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'supplier_registration_revision_requested' => [
         'class' => SystemNotification::class,
@@ -396,6 +413,7 @@ return [
         'roles' => ['admin', 'purchasing', 'supplier', 'qc', 'accounting', 'finance', 'ga'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
     'repeated_lockouts_detected' => [
         'class' => SystemNotification::class,
@@ -406,5 +424,6 @@ return [
         'roles' => ['admin'],
         'supplier_scopes' => [],
         'default' => true,
+        'priority' => 'action_required',
     ],
 ];
