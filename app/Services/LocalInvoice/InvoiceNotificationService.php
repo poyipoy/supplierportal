@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
+
 class InvoiceNotificationService
 {
     private const UNREGISTERED_EVENT_TITLES = [
