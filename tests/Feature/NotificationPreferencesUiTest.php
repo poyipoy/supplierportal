@@ -155,6 +155,18 @@ class NotificationPreferencesUiTest extends TestCase
         $response->assertSeeText('Save Changes');
         $response->assertSeeText('Discard');
         $response->assertSee('x-bind:disabled="dirtyCount === 0"', false);
+
+        $xpath = $this->xpathFromHtml($response->getContent());
+        $saveBtn = $xpath->query('//button[normalize-space(.)="Save Changes"]')->item(0);
+        $this->assertNotNull($saveBtn);
+        $this->assertFalse($saveBtn->hasAttribute('disabled'));
+
+        // All inputs in form remain enabled (no disabled attribute) regardless of category details open state
+        $inputs = $xpath->query('//form[@action="'.route('profile.notifications.update').'"]//input');
+        $this->assertGreaterThan(0, $inputs->length);
+        foreach ($inputs as $input) {
+            $this->assertFalse($input->hasAttribute('disabled'));
+        }
     }
 
     public function test_reset_to_defaults_confirmation_dialog_and_delete_form(): void
