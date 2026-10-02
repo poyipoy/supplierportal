@@ -43,11 +43,11 @@
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Submitted By</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $claim->submitter->name }}</div>
-                        <div class="tw-text-outline tw-text-ui-xs">{{ $claim->created_at->format('d M Y, H:i') }}</div>
+                        <div class="tw-text-outline tw-text-ui-xs">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime_comma') }}</div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Response Deadline</div>
-                        <div class="fw-bold text-danger tw-text-ui-sm tw-mt-0.5">{{ $claim->deadline->format('d F Y') }}</div>
+                        <div class="fw-bold text-danger tw-text-ui-sm tw-mt-0.5">{{ $claim->deadline ? $regionalFormatter->date($claim->deadline, 'full_human') : '-' }}</div>
                     </div>
                 </div>
 
@@ -80,7 +80,7 @@
             {{-- Supplier Response --}}
             @if($claim->status !== 'pending')
             <x-ui.card title="Supplier Response and Resolution" description="Formal reply and evidence submitted by supplier.">
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs mb-2">Responded: {{ $claim->updated_at->format('d M Y, H:i') }}</div>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs mb-2">Responded: {{ $regionalFormatter->timestamp($claim->updated_at, 'datetime_comma') }}</div>
                     <div class="p-3 tw-bg-surface-low rounded border tw-text-on-surface tw-text-ui-sm tw-whitespace-pre-line mb-3">
                         {{ $claim->supplier_response ?? 'No written response text provided.' }}
                     </div>
@@ -112,7 +112,7 @@
             {{-- Action Card --}}
             <x-ui.card title="Claim Resolution Action" description="Actions based on supplier response state.">
                 @if($claim->status === 'pending')
-                    <x-ui.alert tone="warning" title="Supplier response pending">Response deadline: {{ $claim->deadline->format('d M Y') }}.</x-ui.alert>
+                    <x-ui.alert tone="warning" title="Supplier response pending">Response deadline: {{ $claim->deadline ? $regionalFormatter->date($claim->deadline, 'human') : '-' }}.</x-ui.alert>
                 @elseif($claim->status === 'responded')
                     <x-ui.alert tone="info" title="Supplier response received" class="tw-mb-3">Review the proposed remedy and mark the claim as resolved if it is satisfactory.</x-ui.alert>
                     <form action="{{ route('purchasing.claims.resolve', $claim) }}" method="POST">

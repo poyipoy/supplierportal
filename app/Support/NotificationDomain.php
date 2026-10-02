@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use App\Services\NotificationPreferenceService;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
 
@@ -122,6 +123,32 @@ class NotificationDomain
     /**
      * Check if a user is eligible for a specific notification domain.
      */
+    public static function isUserEligibleForDeliveryDomain(User $user, string $domain): bool
+    {
+        if (! $user->isSupplier()) {
+            return self::isUserEligibleForDomain($user, $domain);
+        }
+
+        if (! $user->is_active || $user->account_status !== User::ACCOUNT_STATUS_ACTIVE) {
+            return false;
+        }
+
+        if ($domain === self::GLOBAL) {
+            return true;
+        }
+
+        if (! in_array($domain, [self::IMPORT, self::LOCAL], true)) {
+            return false;
+        }
+
+        try {
+            return app(NotificationPreferenceService::class)->hasSupplierScope($user, $domain);
+        } catch (\Throwable) {
+            // Preference-cache failure must not replace the authoritative account boundary.
+            return $user->hasSupplierScope($domain);
+        }
+    }
+
     public static function isUserEligibleForDomain(User $user, string $domain): bool
     {
         return in_array($domain, self::allowedDomainsForUser($user), true);

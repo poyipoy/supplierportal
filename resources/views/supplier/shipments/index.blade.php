@@ -131,11 +131,11 @@
                                 @endforeach
                             @endif
                         </td>
-                        <td class="text-center ui-tabular-nums">{{ $shp->items->count() }}</td>
-                        <td class="text-center fw-bold text-primary ui-tabular-nums">{{ number_format($totalQty) }} pcs</td>
-                        <td class="text-center ui-tabular-nums tw-text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($totalKg) }} Kg</td>
-                        <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $shp->shipment_date ? $shp->shipment_date->format('d M Y') : '-' }}</td>
-                        <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $shp->estimated_arrival_date ? $shp->estimated_arrival_date->format('d M Y') : '-' }}</td>
+                        <td class="text-center ui-tabular-nums">{{ $regionalFormatter->number((string) $shp->items->count(), 'plain') }}</td>
+                        <td class="text-center fw-bold text-primary ui-tabular-nums">{{ $regionalFormatter->number(number_format($totalQty), 'international') }} pcs</td>
+                        <td class="text-center ui-tabular-nums tw-text-on-surface-variant">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg), 'decimal') }} Kg</td>
+                        <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $shp->shipment_date ? $regionalFormatter->date($shp->shipment_date, 'human') : '-' }}</td>
+                        <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $shp->estimated_arrival_date ? $regionalFormatter->date($shp->estimated_arrival_date, 'human') : '-' }}</td>
                         <td class="text-center">
                             {!! \App\Support\StatusHelper::badge(\App\Support\StatusHelper::shipmentBadge($shp->status), \App\Support\StatusHelper::shipmentLabel($shp->status)) !!}
                         </td>
@@ -205,12 +205,11 @@
                 { data: 'items_count', name: 'items_count', className: 'text-center', orderable: false, searchable: false },
                 { data: 'total_qty', name: 'total_qty', className: 'text-center', orderable: false, searchable: false },
                 { data: 'actual_weight', name: 'actual_weight', className: 'text-center', orderable: false, searchable: false },
-                { data: 'shipment_date', name: 'shipment_date', className: 'tw-text-on-surface-variant' },
+                { data: 'shipment_date_display', name: 'shipment_date', className: 'tw-text-on-surface-variant' },
                 { data: 'estimated_arrival', name: 'estimated_arrival_date', className: 'tw-text-on-surface-variant' },
                 { data: 'status_badge', name: 'status', className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
-            pageLength: 25,
             order: []
         });
 

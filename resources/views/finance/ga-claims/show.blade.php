@@ -49,7 +49,7 @@
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">Tanggal Pengajuan:</span>
-                        <strong class="tw-text-ui-sm tw-text-on-surface">{{ $claim->claim_date?->format('d M Y') }}</strong>
+                        <strong class="tw-text-ui-sm tw-text-on-surface">{{ $regionalFormatter->date($claim->claim_date, 'human') }}</strong>
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">Status Klaim:</span>
@@ -74,7 +74,7 @@
                     <div class="tw-col-span-full tw-border-t tw-border-outline-variant tw-pt-3">
                         <span class="tw-text-on-surface-variant tw-block">Nominal Pengajuan:</span>
                         <span class="tw-font-mono tw-font-bold tw-text-ui-lg tw-text-primary">
-                            Rp {{ number_format($claim->amount, 0, ',', '.') }}
+                            Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}
                         </span>
                     </div>
                     @if($claim->description)
@@ -215,7 +215,7 @@
                         <div class="tw-p-2 tw-rounded tw-bg-surface-container">
                             <div class="tw-flex tw-justify-between">
                                 <strong>{{ ucwords(str_replace('_', ' ', $hist->event)) }}</strong>
-                                <span class="tw-text-on-surface-variant">{{ $hist->created_at->format('d M H:i') }}</span>
+                                <span class="tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($hist->created_at, 'short_datetime') }}</span>
                             </div>
                             <div class="tw-text-on-surface-variant">Oleh: {{ $hist->actor?->name ?? 'System' }}</div>
                             @if($hist->notes)

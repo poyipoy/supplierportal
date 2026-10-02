@@ -44,7 +44,7 @@
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">1. PR Issued</div>
                 <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5">
-                    {{ $firstPr?->created_at ? $firstPr->created_at->format('d M Y') : '-' }}
+                    {{ $firstPr?->created_at ? $regionalFormatter->timestamp($firstPr->created_at, 'date') : '-' }}
                 </div>
             </div>
         </div>
@@ -54,7 +54,7 @@
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">2. PO Created</div>
                 <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5">
-                    {{ $po->created_at->format('d M Y') }}
+                    {{ $regionalFormatter->timestamp($po->created_at, 'date') }}
                 </div>
             </div>
         </div>
@@ -64,7 +64,7 @@
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">3. PO Target Arrival Date</div>
                 <div class="fw-bold {{ $po->is_overdue ? 'text-danger' : 'tw-text-on-surface' }} tw-text-ui-xs tw-mt-0.5">
-                    {{ $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-' }}
+                    {{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}
                     @if($po->is_overdue) <span class="ui-status-chip ui-status-chip--error ms-1">Overdue</span> @endif
                 </div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs">Purchasing target at ADSI</div>
@@ -76,7 +76,7 @@
             <div>
                 <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">4. Actual Arrival</div>
                 <div class="fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw-text-on-surface-variant' }} tw-text-ui-xs tw-mt-0.5">
-                    {{ $po->actual_arrival ? $po->actual_arrival->format('d M Y') : 'In Transit' }}
+                    {{ $po->actual_arrival ? $regionalFormatter->date($po->actual_arrival) : 'In Transit' }}
                 </div>
             </div>
         </div>
@@ -142,14 +142,14 @@
                                             </span>
                                         </td>
                                         <td class="text-center ui-tabular-nums tw-text-on-surface-variant" title="Original quotation ready/dispatch commitment">
-                                            {{ $p['original_supplier_ready_date'] ? \Carbon\Carbon::parse($p['original_supplier_ready_date'])->format('d M Y') : '-' }}
+                                            {{ $p['original_supplier_ready_date'] ? $regionalFormatter->date(\Carbon\Carbon::parse($p['original_supplier_ready_date'])) : '-' }}
                                         </td>
                                         <td class="text-center ui-tabular-nums fw-semibold {{ $p['current_estimated_ready_date'] ? 'text-primary' : 'tw-text-on-surface-variant' }}">
-                                            {{ $p['current_estimated_ready_date'] ? $p['current_estimated_ready_date']->format('d M Y') : '-' }}
+                                            {{ $p['current_estimated_ready_date'] ? $regionalFormatter->date($p['current_estimated_ready_date']) : '-' }}
                                         </td>
                                         <td class="text-center tw-text-on-surface-variant" style="font-size: 0.75rem;">
                                             @if($p['last_progress_update_at'])
-                                                <div>{{ $p['last_progress_update_at']->format('d M Y H:i') }}</div>
+                                                <div>{{ $regionalFormatter->timestamp($p['last_progress_update_at'], 'datetime') }}</div>
                                                 <div class="tw-text-outline">{{ $p['last_updated_by'] ?? 'Supplier' }}</div>
                                             @else
                                                 <span class="text-muted">No updates</span>
@@ -221,7 +221,7 @@
                                         {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                         <span class="tw-text-on-surface-variant fw-normal ms-2">
                                             @if($rate)
-                                                &bull; Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ \App\Support\NumberFormat::maxDecimals($rate->rate_to_idr) }}
+                                                &bull; Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($rate->rate_to_idr), 'decimal') }}
                                             @endif
                                         </span>
                                     </td>
@@ -271,15 +271,15 @@
                                         @endif
                                     </td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
-                                        {{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed) : '—' }}
+                                        {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed), 'decimal') : '—' }}
                                         @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">Est Weight</span>@endif
                                     </td>
-                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
+                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums">
-                                        {{ \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) }}
+                                        {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4), 'decimal') }}
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '—' }}</td>
-                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.\App\Support\NumberFormat::maxDecimals($idr) : '—' }}</td>
+                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amount), 'decimal') : '—' }}</td>
+                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal') : '—' }}</td>
                                 </tr>
                             @endforeach
                         @endforeach
@@ -287,8 +287,8 @@
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="8" class="text-end tw-text-on-surface">TOTAL:</td>
-                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($totalAmount) }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ \App\Support\NumberFormat::maxDecimals($totalIdr) }}</td>
+                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalAmount), 'decimal') }} {{ $po->currency }}</td>
+                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalIdr), 'decimal') }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -535,6 +535,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    function renderProgressHistoryRows(history) {
+        const allowedTones = ['success', 'info', 'warning', 'neutral'];
+        const wrapper = document.createElement('div');
+        wrapper.className = 'tw-space-y-3';
+
+        function textElement(tagName, className, value) {
+            const element = document.createElement(tagName);
+            if (className) element.className = className;
+            element.textContent = value === null || value === undefined ? '' : String(value);
+            return element;
+        }
+
+        function appendText(parent, value) {
+            parent.appendChild(textElement('span', '', value));
+        }
+
+        history.forEach(item => {
+            const row = textElement('div', 'tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-text-ui-xs', '');
+            const header = textElement('div', 'd-flex justify-content-between align-items-center mb-1', '');
+            const tone = allowedTones.includes(item.status_tone) ? item.status_tone : 'neutral';
+            const status = textElement('span', `ui-status-chip ui-status-chip--${tone} fw-bold`, item.status_label);
+            const timestamp = textElement('span', 'text-muted', item.created_at_display || '-');
+            header.append(status, timestamp);
+
+            const details = textElement('div', 'tw-text-on-surface-variant mb-1', '');
+            details.appendChild(textElement('strong', '', 'Supplier-controlled Qty snapshot:'));
+            appendText(details, ` ${item.supplier_controlled_qty_snapshot} pcs`);
+            if (item.estimated_ready_date_display) {
+                appendText(details, ' • ');
+                details.appendChild(textElement('strong', '', 'Estimated Ready:'));
+                appendText(details, ` ${item.estimated_ready_date_display}`);
+            }
+            appendText(details, ' • ');
+            details.appendChild(textElement('strong', '', 'Updated by:'));
+            appendText(details, ` ${item.updated_by ?? 'Supplier User'}`);
+
+            row.append(header, details);
+            if (item.note) {
+                const note = textElement('div', 'tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant text-dark mt-1', '');
+                note.appendChild(textElement('em', '', `"${item.note}"`));
+                row.appendChild(note);
+            }
+            wrapper.appendChild(row);
+        });
+
+        return wrapper;
+    }
+
     document.querySelectorAll('.btn-view-progress-history').forEach(btn => {
         btn.addEventListener('click', function() {
             const materialName = this.dataset.materialName;
@@ -559,25 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                let html = '<div class="tw-space-y-3">';
-                data.history.forEach(item => {
-                    html += `
-                        <div class="tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-text-ui-xs">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="ui-status-chip ui-status-chip--${item.status_tone} fw-bold">${item.status_label}</span>
-                                <span class="text-muted">${item.created_at || '-'}</span>
-                            </div>
-                            <div class="tw-text-on-surface-variant mb-1">
-                                <strong>Supplier-controlled Qty snapshot:</strong> ${item.supplier_controlled_qty_snapshot} pcs
-                                ${item.estimated_ready_date ? ` &bull; <strong>Estimated Ready:</strong> ${item.estimated_ready_date}` : ''}
-                                &bull; <strong>Updated by:</strong> ${item.updated_by}
-                            </div>
-                            ${item.note ? `<div class="tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant text-dark mt-1"><em>"${item.note}"</em></div>` : ''}
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                bodyEl.innerHTML = html;
+                bodyEl.replaceChildren(renderProgressHistoryRows(data.history));
             })
             .catch(() => {
                 bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">Failed to load progress history.</div>';

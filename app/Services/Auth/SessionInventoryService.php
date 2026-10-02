@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 class SessionInventoryService
@@ -17,9 +18,12 @@ class SessionInventoryService
             ->where('last_activity', '>=', $this->activeCutoff())
             ->orderByDesc('last_activity')
             ->limit(20)
-            ->get()
+            ->get(['id', 'ip_address', 'user_agent', 'last_activity'])
             ->map(fn (object $session): object => (object) [
-                'id' => $session->id,
+                'revocation_token' => $currentSessionId !== null
+                    && hash_equals($currentSessionId, (string) $session->id)
+                        ? null
+                        : Crypt::encryptString((string) $session->id),
                 'is_current' => $currentSessionId !== null
                     && hash_equals($currentSessionId, (string) $session->id),
                 'ip_address' => $session->ip_address,

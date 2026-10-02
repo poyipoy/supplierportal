@@ -97,7 +97,7 @@
                     @forelse($claims as $claim)
                         <tr>
                             <td><strong class="tw-font-mono tw-text-primary">{{ $claim->claim_number }}</strong></td>
-                            <td>{{ $claim->claim_date?->format('d/m/Y') }}</td>
+                            <td>{{ $regionalFormatter->date($claim->claim_date, 'dmy') }}</td>
                             <td>
                                 <strong class="tw-text-on-surface tw-block">{{ $claim->employee?->name }}</strong>
                                 <span class="tw-text-on-surface-variant tw-text-[11px]">{{ $claim->employee?->department }}</span>
@@ -107,7 +107,7 @@
                                     {{ $claim->claim_type }}
                                 </span>
                             </td>
-                            <td><strong class="tw-font-mono tw-text-ui-sm">Rp {{ number_format($claim->amount, 0, ',', '.') }}</strong></td>
+                            <td><strong class="tw-font-mono tw-text-ui-sm">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</strong></td>
                             <td>
                                 <span class="tw-font-semibold">{{ $claim->employee?->bank_name }}</span> ·
                                 <span class="tw-font-mono">{{ $claim->employee?->account_number }}</span>

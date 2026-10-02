@@ -25,53 +25,57 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- KPI Metric Cards Grid --}}
+    <x-ui.dashboard-layout audience="finance">
+        <x-slot:statuses>
+{{-- KPI Metric Cards Grid --}}
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-6 tw-gap-4">
         <x-ui.metric-card
             label="Menunggu Fisik"
-            :value="$kpis['waiting_physical'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['waiting_physical'] ?? 0), 'plain')"
             icon="file-clock"
             tone="warning"
             :href="route('finance.invoices.index', ['status' => 'WAITING_PHYSICAL_DOCUMENT'])"
         />
         <x-ui.metric-card
             label="Sedang Verifikasi"
-            :value="$kpis['under_verification'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['under_verification'] ?? 0), 'plain')"
             icon="clipboard-check"
             tone="primary"
             :href="route('finance.invoices.index', ['status' => 'UNDER_VERIFICATION'])"
         />
         <x-ui.metric-card
             label="Perlu Revisi"
-            :value="$kpis['need_revision'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['need_revision'] ?? 0), 'plain')"
             icon="file-edit"
             tone="error"
             :href="route('finance.invoices.index', ['status' => 'NEED_REVISION'])"
         />
         <x-ui.metric-card
             label="Ready to Pay"
-            :value="$kpis['ready_to_pay'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['ready_to_pay'] ?? 0), 'plain')"
             icon="badge-check"
             tone="success"
             :href="route('finance.invoices.index', ['status' => 'READY_TO_PAY'])"
         />
         <x-ui.metric-card
             label="Selesai Dibayar"
-            :value="$kpis['paid'] ?? 0"
+            :value="$regionalFormatter->number((string) ($kpis['paid'] ?? 0), 'plain')"
             icon="check-circle-2"
             tone="neutral"
             :href="route('finance.invoices.index', ['status' => 'PAID'])"
         />
         <x-ui.metric-card
             label="Expired / Overdue"
-            :value="($kpis['expired'] ?? 0) + ($kpis['overdue'] ?? 0)"
+            :value="$regionalFormatter->number((string) (($kpis['expired'] ?? 0) + ($kpis['overdue'] ?? 0)), 'plain')"
             icon="alert-octagon"
             tone="error"
             :href="route('finance.invoices.index', ['overdue' => 1])"
         />
     </div>
+        </x-slot:statuses>
 
-    {{-- Payment Forecast Module --}}
+        <x-slot:forecast>
+{{-- Payment Forecast Module --}}
     <div x-data="paymentForecastModule()">
         <x-ui.card padding="none">
             <x-slot:header>
@@ -135,7 +139,7 @@
                             <x-ui.icon name="trending-up" class="tw-text-primary" size="sm" />
                         </div>
                         <div class="tw-text-xl lg:tw-text-2xl tw-font-bold tw-font-mono tw-text-on-surface tw-tracking-tight" x-text="formatRupiah(totalAccumulation)">
-                            Rp {{ number_format(end($weeklyForecast)['cumulative_amount'] ?? 0, 0, ',', '.') }}
+                            Rp {{ $regionalFormatter->number(number_format(end($weeklyForecast)['cumulative_amount'] ?? 0, 0, ',', '.'), 'indonesian') }}
                         </div>
                         <span class="tw-block tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
                             Akumulasi hingga <span x-text="latestPeriodLabel">{{ end($weeklyForecast)['label'] ?? 'periode terakhir' }}</span>
@@ -150,7 +154,7 @@
                         </div>
                         <div class="tw-flex tw-items-baseline tw-gap-2">
                             <span class="tw-text-xl lg:tw-text-2xl tw-font-bold tw-font-mono tw-text-on-surface tw-tracking-tight">
-                                {{ $readyToPaySummary['total_amount_formatted'] ?? 'Rp 0' }}
+                                Rp {{ $regionalFormatter->number(substr($readyToPaySummary['total_amount_formatted'] ?? 'Rp 0', 3), 'indonesian') }}
                             </span>
                         </div>
                         <span class="tw-block tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
@@ -166,7 +170,7 @@
                         </div>
                         <div class="tw-flex tw-items-baseline tw-gap-2">
                             <span class="tw-text-xl lg:tw-text-2xl tw-font-bold tw-font-mono tw-text-on-surface tw-tracking-tight" x-text="formatRupiah(currentPeriodAmount)">
-                                Rp {{ number_format(end($weeklyForecast)['period_amount'] ?? 0, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format(end($weeklyForecast)['period_amount'] ?? 0, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                         <span class="tw-block tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
@@ -224,7 +228,7 @@
                                     <tr>
                                         <td>
                                             <span class="tw-font-semibold tw-text-on-surface" x-text="row.week || row.month || row.label"></span>
-                                            <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant" x-text="row.start + ' s/d ' + row.end"></span>
+                                            <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant" x-text="formatDate(row.start) + ' s/d ' + formatDate(row.end)"></span>
                                         </td>
                                         <td class="text-center">
                                             <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-ui-xs tw-font-semibold"
@@ -242,7 +246,7 @@
                                     <tr class="forecast-ssr-row" x-show="false">
                                         <td>
                                             <span class="tw-font-semibold tw-text-on-surface">{{ $w['week'] ?? $w['label'] }}</span>
-                                            <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $w['start'] }} s/d {{ $w['end'] }}</span>
+                                            <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $regionalFormatter->date($w['start'], 'iso') }} s/d {{ $regionalFormatter->date($w['end'], 'iso') }}</span>
                                         </td>
                                         <td class="text-center">
                                             <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-ui-xs tw-font-semibold {{ $w['count'] > 0 ? 'tw-bg-primary/10 tw-text-primary' : 'tw-bg-surface-container tw-text-on-surface-variant' }}">
@@ -250,10 +254,10 @@
                                             </span>
                                         </td>
                                         <td class="text-end tw-font-mono tw-font-semibold tw-text-on-surface">
-                                            {{ $w['period_amount_formatted'] ?? ('Rp ' . number_format($w['period_amount'], 0, ',', '.')) }}
+                                            Rp {{ $regionalFormatter->number(substr($w['period_amount_formatted'] ?? ('Rp ' . number_format($w['period_amount'], 0, ',', '.')), 3), 'indonesian') }}
                                         </td>
                                         <td class="text-end tw-font-mono tw-font-bold tw-text-primary">
-                                            {{ $w['cumulative_amount_formatted'] ?? ('Rp ' . number_format($w['cumulative_amount'], 0, ',', '.')) }}
+                                            Rp {{ $regionalFormatter->number(substr($w['cumulative_amount_formatted'] ?? ('Rp ' . number_format($w['cumulative_amount'], 0, ',', '.')), 3), 'indonesian') }}
                                         </td>
                                     </tr>
                                 @endforeach
@@ -264,8 +268,10 @@
             </div>
         </x-ui.card>
     </div>
+        </x-slot:forecast>
 
-    {{-- Recent DRP Batches --}}
+        <x-slot:batches>
+{{-- Recent DRP Batches --}}
     <x-ui.data-table
         title="Recent Payment Batches (DRP)"
         description="Daftar 5 batch pembayaran DRP terakhir yang dibuat."
@@ -295,7 +301,7 @@
                         <tr>
                             <td>
                                 <span class="tw-font-bold tw-font-mono tw-text-on-surface">{{ $batch->batch_number }}</span>
-                                <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $batch->created_at->format('d M Y H:i') }}</span>
+                                <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($batch->created_at, 'datetime') }}</span>
                             </td>
                             <td>
                                 <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold {{ $batch->batch_type === 'SUPPLIER' ? 'tw-bg-primary/10 tw-text-primary' : 'tw-bg-info/10 tw-text-info' }}">
@@ -308,10 +314,10 @@
                                 </x-ui.status-chip>
                             </td>
                             <td class="text-end tw-font-mono tw-font-semibold tw-text-on-surface">
-                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($batch->total_subtotal, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td class="text-end tw-font-mono tw-text-on-surface-variant">
-                                Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($batch->total_bank_fee, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>
                                 <span class="tw-text-ui-xs">{{ $batch->creator?->name ?? 'System' }}</span>
@@ -334,8 +340,10 @@
             </table>
         </div>
     </x-ui.data-table>
+        </x-slot:batches>
 
-    {{-- Recent Submissions Table --}}
+        <x-slot:invoices>
+{{-- Recent Submissions Table --}}
     <x-ui.data-table
         title="Recent Invoice Submissions"
         description="5 tagihan invoice supplier lokal terbaru yang masuk ke sistem."
@@ -349,6 +357,8 @@
 
         @include('local-invoices.table', ['invoices' => $recentInvoices ?? $invoices ?? [], 'portal' => 'finance', 'payments' => false])
     </x-ui.data-table>
+        </x-slot:invoices>
+    </x-ui.dashboard-layout>
 </div>
 @endsection
 
@@ -389,9 +399,17 @@ window.paymentForecastModule = function() {
             return this.latestPeriod ? this.latestPeriod.period_amount : 0;
         },
 
+        formatNumber(text, profile = 'plain') {
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, profile) : text;
+        },
+
+        formatDate(value) {
+            return window.AdasiPreferences?.displayDate ? window.AdasiPreferences.displayDate(value, 'iso') : value;
+        },
+
         formatRupiah(val) {
             const num = Number(val) || 0;
-            return 'Rp ' + num.toLocaleString('id-ID');
+            return 'Rp ' + this.formatNumber(num.toLocaleString('id-ID'), 'indonesian');
         },
 
         setMode(newMode) {
@@ -543,9 +561,9 @@ window.paymentForecastModule = function() {
                                 color: colors.onSurfaceVariant,
                                 padding: 8,
                                 callback: function(value) {
-                                    if (value >= 1e9) return 'Rp ' + (value / 1e9).toFixed(1) + 'M';
-                                    if (value >= 1e6) return 'Rp ' + (value / 1e6).toFixed(0) + 'jt';
-                                    return 'Rp ' + Number(value).toLocaleString('id-ID');
+                                    if (value >= 1e9) return 'Rp ' + self.formatNumber((value / 1e9).toFixed(1), 'decimal') + 'M';
+                                    if (value >= 1e6) return 'Rp ' + self.formatNumber((value / 1e6).toFixed(0), 'decimal') + 'jt';
+                                    return 'Rp ' + self.formatNumber(Number(value).toLocaleString('id-ID'), 'indonesian');
                                 }
                             }
                         }

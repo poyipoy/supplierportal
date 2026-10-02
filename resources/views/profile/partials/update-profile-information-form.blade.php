@@ -1,7 +1,4 @@
 <section>
-    <form id="send-verification" method="POST" action="{{ route('verification.send') }}">
-        @csrf
-    </form>
 
     <form method="POST" action="{{ route('profile.update') }}">
         @csrf
@@ -23,14 +20,6 @@
                     value="{{ old('email', $user->email) }}" maxlength="255" autocomplete="username" required>
                 @error('email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
 
-                @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                    <x-ui.alert tone="warning" class="tw-mt-2">
-                        <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-2">
-                            <span class="tw-text-ui-sm">Your email address has not been verified.</span>
-                            <button form="send-verification" class="tw-text-ui-xs tw-font-semibold tw-text-primary tw-underline" type="submit">Send verification email</button>
-                        </div>
-                    </x-ui.alert>
-                @endif
             </div>
         </div>
 

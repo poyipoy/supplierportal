@@ -136,6 +136,18 @@
 
     <nav class="sidebar-menu" aria-label="{{ ucfirst(auth()->user()->role) }} navigation">
         @php $role = auth()->user()->role; @endphp
+        @if(!empty($quickAccessItems))
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 12;">Quick Access</span></div>
+            @foreach($quickAccessItems as $quickAccessItem)
+                <x-ui.sidebar-item
+                    :href="$quickAccessItem['url']"
+                    :icon="$quickAccessItem['icon']"
+                    :active="$quickAccessItem['active']"
+                    :label="$quickAccessItem['label']"
+                    data-quick-access
+                >{{ $quickAccessItem['label'] }}</x-ui.sidebar-item>
+            @endforeach
+        @endif
         @if($role === 'supplier')
             @php $activePortalScope = \App\Support\PortalContext::current(); @endphp
             @if($activePortalScope === \App\Support\PortalContext::SCOPE_LOCAL)

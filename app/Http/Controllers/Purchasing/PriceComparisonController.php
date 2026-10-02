@@ -11,6 +11,7 @@ use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\PrItemAwardService;
 use App\Services\PurchaseOrderGenerationService;
+use App\Services\RegionalDisplayFormatter;
 use App\Support\NumberFormat;
 use App\Support\PurchasingNavigation;
 use Carbon\Carbon;
@@ -28,33 +29,45 @@ class PriceComparisonController extends Controller
 {
     private const HISTORICAL_TABLE_PER_PAGE = 50;
 
+    public function __construct(
+        private ?RegionalDisplayFormatter $regionalFormatter = null
+    ) {
+        $this->regionalFormatter ??= app(RegionalDisplayFormatter::class);
+    }
+
     /**
      * View 1: supplier comparison across all quotation items.
      * within a single PR, shown side by side.
      */
     public function interSupplier(Request $request): View|JsonResponse
     {
-        $eligiblePrs = PurchaseRequisition::query()
-            ->select([
-                'purchase_requisitions.id',
-                'purchase_requisitions.period_id',
-                'purchase_requisitions.pr_number',
-                'purchase_requisitions.created_at',
-            ])
-            ->with([
-                'period:id,name,month,year',
-                'items:id,pr_id,material_name',
-            ])
-            ->withCount([
-                'quotations as eligible_quotation_count' => fn ($query) => $query
-                    ->whereIn('status', ['submitted', 'accepted', 'rejected']),
-            ])
-            ->whereHas('quotations', function ($q) {
-                $q->whereIn('status', ['submitted', 'accepted', 'rejected']);
-            }, '>=', 2)
-            ->where('created_at', '>=', now()->subYears(3))
-            ->orderByDesc('created_at')
-            ->get();
+        $eligiblePrCounts = DB::table('quotations')
+            ->select('pr_id', DB::raw('COUNT(*) as quotation_count'))
+            ->whereNull('deleted_at')
+            ->whereIn('status', ['submitted', 'accepted', 'rejected'])
+            ->groupBy('pr_id')
+            ->havingRaw('COUNT(*) >= 2')
+            ->pluck('quotation_count', 'pr_id');
+
+        $eligiblePrIds = $eligiblePrCounts->keys();
+
+        $eligiblePrs = $eligiblePrIds->isEmpty()
+            ? collect()
+            : PurchaseRequisition::query()
+                ->select([
+                    'purchase_requisitions.id',
+                    'purchase_requisitions.period_id',
+                    'purchase_requisitions.pr_number',
+                    'purchase_requisitions.created_at',
+                ])
+                ->with([
+                    'period:id,name,month,year',
+                    'items:id,pr_id,material_name',
+                ])
+                ->whereIn('purchase_requisitions.id', $eligiblePrIds)
+                ->where('created_at', '>=', now()->subYears(3))
+                ->orderByDesc('created_at')
+                ->get();
 
         $comparison = null;
         $chartData = null;
@@ -70,8 +83,9 @@ class PriceComparisonController extends Controller
         $hasActionableAwardSelections = false;
         $allItemsAssignedToPurchaseOrder = false;
 
-        $eligiblePrOptions = $eligiblePrs->map(function ($pr) {
-            $quotationCount = (int) $pr->eligible_quotation_count;
+        $eligiblePrOptions = $eligiblePrs->map(function ($pr) use ($eligiblePrCounts) {
+            $quotationCount = (int) ($eligiblePrCounts[$pr->id] ?? 0);
+            $pr->eligible_quotation_count = $quotationCount;
             $itemCount = $pr->items->count();
             $label = ($pr->pr_number ?? 'DRAFT')
                 .' - '
@@ -84,6 +98,7 @@ class PriceComparisonController extends Controller
             if ($itemCount > 3) {
                 $previewMaterials .= ' (+'.($itemCount - 3).' lainnya)';
             }
+
 
             return [
                 'id' => $pr->getRouteKey(),
@@ -515,7 +530,7 @@ class PriceComparisonController extends Controller
                 );
 
                 return '<div class="fw-bold">'.e($row->material_name).'</div>'
-                    .'<div class="text-muted small">Qty: '.number_format((int) ($row->quantity ?? 1), 0, ',', '.').'</div>'
+                    .'<div class="text-muted small">Qty: '.$this->regionalFormatter->number(number_format((int) ($row->quantity ?? 1), 0, ',', '.'), 'indonesian').'</div>'
                     .'<div class="text-muted small">Berat/unit: '.$this->formatNumber($row->weight_needed).' kg</div>'
                     .'<div class="text-muted small">Total weight: '.$this->formatNumber($row->total_weight).' kg</div>'
                     .'<a href="'.e($prUrl).'" class="small text-primary text-decoration-none">'
@@ -616,7 +631,7 @@ class PriceComparisonController extends Controller
         $currentTotalWeight = '(current_pr_items.weight_needed * CASE WHEN current_pr_items.quantity IS NULL OR current_pr_items.quantity < 1 THEN 1 ELSE current_pr_items.quantity END)';
         $potentialDifference = "CASE WHEN $currentPriceIdr IS NOT NULL AND $bestPriceIdr IS NOT NULL THEN GREATEST(0, $diffIdrPerKg) * $currentTotalWeight ELSE NULL END";
 
-        $bestPriceByMaterial = DB::table('quotation_items as history_items')
+        $rankedHistory = DB::table('quotation_items as history_items')
             ->join('po_quotations as history_po_links', 'history_items.quotation_id', '=', 'history_po_links.quotation_id')
             ->join('purchase_orders as history_pos', 'history_po_links.po_id', '=', 'history_pos.id')
             ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
@@ -629,28 +644,15 @@ class PriceComparisonController extends Controller
                 $query->whereNull('history_items.is_available')
                     ->orWhere('history_items.is_available', true);
             })
-            ->selectRaw('history_pr_items.material_name, MIN('.$historyPriceIdr.') as best_price_idr')
-            ->groupBy('history_pr_items.material_name');
+            ->whereNotNull('history_items.price_per_kg')
+            ->where('history_items.price_per_kg', '>', 0)
+            ->selectRaw('history_pr_items.material_name, history_items.id as best_item_id, ROW_NUMBER() OVER (PARTITION BY history_pr_items.material_name ORDER BY '.$historyPriceIdr.' ASC, history_items.id ASC) as rn');
 
-        $bestItemByMaterial = DB::table('quotation_items as history_items')
-            ->join('po_quotations as history_po_links', 'history_items.quotation_id', '=', 'history_po_links.quotation_id')
-            ->join('purchase_orders as history_pos', 'history_po_links.po_id', '=', 'history_pos.id')
-            ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
-            ->leftJoin('exchange_rates as history_po_rate', 'history_pos.exchange_rate_id', '=', 'history_po_rate.id')
-            ->leftJoin('exchange_rates as history_quote_rate', 'history_quotes.exchange_rate_id', '=', 'history_quote_rate.id')
-            ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
-            ->joinSub($bestPriceByMaterial, 'best_price', function ($join) use ($historyPriceIdr) {
-                $join->on('best_price.material_name', '=', 'history_pr_items.material_name')
-                    ->whereRaw('ABS(('.$historyPriceIdr.') - best_price.best_price_idr) < 0.0001');
-            })
-            ->whereNull('history_pos.deleted_at')
-            ->whereNull('history_quotes.deleted_at')
-            ->where(function ($query) {
-                $query->whereNull('history_items.is_available')
-                    ->orWhere('history_items.is_available', true);
-            })
-            ->selectRaw('best_price.material_name, MIN(history_items.id) as best_item_id')
-            ->groupBy('best_price.material_name');
+        $bestItemByMaterial = DB::query()
+            ->fromSub($rankedHistory, 'ranked_best')
+            ->where('rn', 1)
+            ->select(['material_name', 'best_item_id']);
+
 
         $query = DB::table('quotation_items as current_items')
             ->join('quotations as current_quotes', 'current_items.quotation_id', '=', 'current_quotes.id')
@@ -961,9 +963,13 @@ class PriceComparisonController extends Controller
 
     private function formatRupiah($value): string
     {
-        return $value !== null
-            ? 'Rp '.number_format((float) $value, 0, ',', '.')
-            : '-';
+        if ($value === null) {
+            return '-';
+        }
+
+        $formatted = number_format((float) $value, 0, ',', '.');
+
+        return 'Rp '.$this->regionalFormatter->number($formatted, 'indonesian');
     }
 
     private function formatSignedRupiah($value): string
@@ -974,15 +980,20 @@ class PriceComparisonController extends Controller
 
         $value = (float) $value;
         $prefix = $value > 0 ? '+' : ($value < 0 ? '-' : '');
+        $formatted = number_format(abs($value), 0, ',', '.');
 
-        return $prefix.'Rp '.number_format(abs($value), 0, ',', '.');
+        return $prefix.'Rp '.$this->regionalFormatter->number($formatted, 'indonesian');
     }
 
     private function formatNumber($value, int $decimals = 2): string
     {
-        return $value !== null
-            ? NumberFormat::maxDecimals($value, $decimals)
-            : '-';
+        if ($value === null) {
+            return '-';
+        }
+
+        $formatted = NumberFormat::maxDecimals($value, $decimals);
+
+        return $this->regionalFormatter->number($formatted, 'international');
     }
 
     private function formatPercent($value): string
@@ -992,15 +1003,23 @@ class PriceComparisonController extends Controller
         }
 
         $value = (float) $value;
+        $prefix = $value > 0 ? '+' : '';
+        $formatted = NumberFormat::maxDecimals($value);
 
-        return ($value > 0 ? '+' : '').NumberFormat::maxDecimals($value).'%';
+        return $prefix.$this->regionalFormatter->number($formatted, 'international').'%';
     }
 
     private function formatDate($value): ?string
     {
-        return $value
-            ? \Illuminate\Support\Carbon::parse($value)->format('d M Y')
-            : null;
+        if (! $value) {
+            return null;
+        }
+
+        $carbon = $value instanceof \DateTimeInterface
+            ? $value
+            : \Illuminate\Support\Carbon::parse($value);
+
+        return $this->regionalFormatter->timestamp($carbon, 'date');
     }
 
     private function buildMonthlyHistoricalData(
@@ -1145,7 +1164,7 @@ class PriceComparisonController extends Controller
                 'purchase_order_id' => (int) $item->history_po_id,
                 'purchase_order_number' => $item->history_po_number,
                 'purchase_order_at' => $purchaseAt?->toIso8601String(),
-                'purchase_order_at_display' => $purchaseAt?->format('d M Y'),
+                'purchase_order_at_display' => $purchaseAt ? $this->regionalFormatter->timestamp($purchaseAt, 'date') : '-',
                 'pr_id' => $purchaseRequisition?->id,
                 'pr_number' => $purchaseRequisition?->pr_number ?? '-',
                 'pr_url' => $purchaseRequisition
@@ -1161,7 +1180,7 @@ class PriceComparisonController extends Controller
                 'min_idr' => null,
                 'max_idr' => null,
                 'submitted_at' => $purchaseAt?->toIso8601String(),
-                'submitted_at_display' => $purchaseAt?->format('d M Y'),
+                'submitted_at_display' => $purchaseAt ? $this->regionalFormatter->timestamp($purchaseAt, 'date') : '-',
                 'quotation_submitted_at' => $quotationSubmittedAt?->toIso8601String(),
                 'change_pct' => $changeByRow->get($item->id.':'.$item->history_po_id),
             ];

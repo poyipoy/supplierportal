@@ -43,7 +43,6 @@ $(function () {
             { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
             { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
         ],
-        pageLength: 25,
         order: []
     });
 
@@ -71,7 +70,6 @@ $(function () {
             { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
             { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
         ],
-        pageLength: 25,
         order: []
     });
 

@@ -5,14 +5,9 @@ namespace App\Services\LocalInvoice;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceStatusHistory;
 use App\Models\User;
-use App\Notifications\LocalInvoice\InvoicePaidNotification;
-use App\Notifications\LocalInvoice\InvoiceSubmissionReceivedNotification;
-use App\Notifications\LocalInvoice\PhysicalDeliveryReminderNotification;
-use App\Notifications\LocalInvoice\RevisionRequiredNotification;
 use App\Services\NotificationService;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
-use Illuminate\Support\Facades\DB;
 
 class InvoiceNotificationService
 {
@@ -43,52 +38,17 @@ class InvoiceNotificationService
             ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL]
         );
 
-        // 2. Email events for supplier
-        $recipient = $invoice->supplier;
-        if (! $recipient) {
-            return;
-        }
-
-        if (in_array($history->event, ['submitted', 'resubmitted'], true)) {
-            DB::afterCommit(function () use ($recipient, $invoice) {
-                try {
-                    $recipient->notify(new InvoiceSubmissionReceivedNotification(
-                        $invoice->submission_number,
-                        $invoice->invoice_number,
-                        $invoice->scheduled_physical_delivery_date?->format('d M Y'),
-                        route('local-supplier.invoices.show', $invoice)
-                    ));
-                } catch (\Throwable $exception) {
-                    report($exception);
-                }
-            });
-        } elseif ($history->event === 'revision_requested') {
-            DB::afterCommit(function () use ($recipient, $invoice, $history) {
-                try {
-                    $recipient->notify(new RevisionRequiredNotification(
-                        $invoice->submission_number,
-                        $history->notes ?: 'Please check revision details.',
-                        route('local-supplier.invoices.show', $invoice)
-                    ));
-                } catch (\Throwable $exception) {
-                    report($exception);
-                }
-            });
-        } elseif ($history->event === 'paid') {
-            DB::afterCommit(function () use ($recipient, $invoice, $history) {
-                try {
-                    // Critical invariant: Never expose internal planned payment date to Supplier
-                    $recipient->notify(new InvoicePaidNotification(
-                        $invoice->submission_number,
-                        $invoice->invoice_number,
-                        (float) $invoice->invoice_amount,
-                        $history->notes,
-                        route('local-supplier.invoices.show', $invoice)
-                    ));
-                } catch (\Throwable $exception) {
-                    report($exception);
-                }
-            });
+        if ($internal && $invoice->supplier) {
+            app(NotificationService::class)->send(
+                $invoice->supplier,
+                'local_invoice.'.$history->event,
+                'local-invoice:'.$history->id,
+                $title,
+                $invoice->submission_number.' — '.$invoice->invoice_number,
+                route('local-supplier.invoices.show', $invoice, absolute: false),
+                'receipt',
+                ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL]
+            );
         }
     }
 
@@ -102,15 +62,19 @@ class InvoiceNotificationService
             return;
         }
 
-        try {
-            $recipient->notify(new PhysicalDeliveryReminderNotification(
-                $invoice->submission_number,
-                $invoice->invoice_number,
-                $invoice->scheduled_physical_delivery_date->format('d M Y'),
-                route('local-supplier.invoices.show', $invoice)
-            ));
-        } catch (\Throwable $exception) {
-            report($exception);
-        }
+        $key = 'local-invoice:physical-delivery-reminder:'.$invoice->id
+            .':revision:'.$invoice->revision_number
+            .':date:'.$invoice->scheduled_physical_delivery_date->toDateString()
+            .':schedule:'.($invoice->rescheduled_at?->getTimestamp() ?? 'initial');
+        app(NotificationService::class)->send(
+            $recipient,
+            'local_invoice.physical_delivery_reminder',
+            $key,
+            'Pengingat pengiriman berkas fisik',
+            $invoice->submission_number.' — Jadwal penyerahan berkas fisik invoice Anda sudah dekat.',
+            route('local-supplier.invoices.show', $invoice, absolute: false),
+            'receipt',
+            ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL]
+        );
     }
 }

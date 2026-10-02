@@ -38,7 +38,7 @@ class NotificationService
         $deliver = function () use ($recipientList, $event, $eventKey, $title, $message, $url, $icon, $data, $replace, $domain): void {
             $recipientList
                 ->filter(fn ($recipient) => $recipient instanceof User && (bool) $recipient->is_active)
-                ->filter(fn (User $recipient) => NotificationDomain::isUserEligibleForDomain($recipient, $domain))
+                ->filter(fn (User $recipient) => NotificationDomain::isUserEligibleForDeliveryDomain($recipient, $domain))
                 ->unique('id')
                 ->each(function (User $recipient) use ($event, $eventKey, $title, $message, $url, $icon, $data, $replace, $domain): void {
                     $notificationId = Uuid::uuid5(

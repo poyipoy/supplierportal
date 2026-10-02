@@ -6,8 +6,187 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="portal-scope" content="{{ \App\Support\PortalContext::current() ?? 'import' }}">
     @auth
         <meta name="user-id" content="{{ auth()->id() }}">
+    @endauth
+    @auth
+        <script>
+            (() => {
+                const preferences = @js($preferenceFrontendPayload);
+                const root = document.documentElement;
+                const media = window.matchMedia('(prefers-color-scheme: dark)');
+                const storageKey = 'adasi.sidebar.' + preferences.accountId;
+                let sidebarCollapsed = preferences.sidebarState === 'collapsed';
+                let previewTheme = null;
+                let previewDensity = null;
+                let previewAccent = null;
+
+                try {
+                    const cached = JSON.parse(window.localStorage.getItem(storageKey) || 'null');
+                    if (cached && cached.revision === preferences.sidebarRevision && typeof cached.collapsed === 'boolean') {
+                        sidebarCollapsed = cached.collapsed;
+                    }
+                    window.localStorage.setItem(storageKey, JSON.stringify({ revision: preferences.sidebarRevision, collapsed: sidebarCollapsed }));
+                } catch (error) {
+                    // Restricted storage falls back to the account preference for this page load.
+                }
+
+                const savedTheme = preferences.theme;
+                const savedDensity = preferences.density;
+                const savedAccent = preferences.accent || 'brand';
+                const accentKeys = preferences.accentKeys || ['brand'];
+                const applyAccent = () => {
+                    root.dataset.accent = previewAccent ?? savedAccent;
+                    window.dispatchEvent(new CustomEvent('adasi:accent-change', { detail: { accent: root.dataset.accent } }));
+                };
+                const applyTheme = () => {
+                    const choice = previewTheme ?? savedTheme;
+                    const effective = choice === 'system' ? (media.matches ? 'dark' : 'light') : choice;
+                    root.dataset.theme = effective;
+                    root.dataset.bsTheme = effective;
+                    window.dispatchEvent(new CustomEvent('adasi:theme-change', { detail: { theme: effective } }));
+                };
+                const applyDensity = () => {
+                    root.dataset.density = previewDensity ?? savedDensity;
+                };
+
+                root.dataset.sidebarCollapsed = String(window.matchMedia('(min-width: 992px)').matches && sidebarCollapsed);
+                window.__adasiSidebarInitialCollapsed = sidebarCollapsed;
+                window.AdasiSidebarPreferences = Object.freeze({
+                    read: () => sidebarCollapsed,
+                    write: (collapsed) => {
+                        sidebarCollapsed = Boolean(collapsed);
+                        try { window.localStorage.setItem(storageKey, JSON.stringify({ revision: preferences.sidebarRevision, collapsed: sidebarCollapsed })); } catch (error) { /* Keep the in-memory state. */ }
+                    },
+                });
+                // Regional display is explicit and in-memory; raw values remain business inputs.
+                const regional = Object.freeze({ ...(preferences.regional || {}) });
+                const regionalRegistry = preferences.regionalRegistry || {};
+                const displayNumber = (text, profile = 'international') => {
+                    const target = regional.number_format;
+                    if (typeof text !== 'string' || !['international', 'indonesian'].includes(target)) return text;
+                    const source = regionalRegistry.number_profiles?.[profile];
+                    const destination = regionalRegistry.number_profiles?.[target];
+                    if (!source || !destination) return text;
+                    const parts = text.match(/^(\s*)([+-]?)([\d.,]+)(\s*)$/);
+                    if (!parts) return text;
+                    const decimalParts = parts[3].split(source.decimal);
+                    if (decimalParts.length > 2 || (decimalParts.length === 2 && !/^\d+$/.test(decimalParts[1]))) return text;
+                    const integer = decimalParts[0];
+                    const groups = source.group ? integer.split(source.group) : [integer];
+                    if (groups.length > 1 && (!/^\d{1,3}$/.test(groups[0]) || groups.slice(1).some(group => !/^\d{3}$/.test(group)))) return text;
+                    if (groups.some(group => !/^\d+$/.test(group))) return text;
+                    const digits = groups.join('');
+                    const grouped = destination.group ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, destination.group) : digits;
+                    const fraction = decimalParts.length === 2 ? destination.decimal + decimalParts[1] : '';
+                    return parts[1] + parts[2] + grouped + fraction + parts[4];
+                };
+                const displayDate = (value, profile = 'iso') => {
+                    if (typeof value !== 'string') return value;
+                    const parts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                    if (!parts) return value;
+                    const year = Number(parts[1]), month = Number(parts[2]), day = Number(parts[3]);
+                    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+                    const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                    if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1]) return value;
+                    const choice = regional.date_format === 'system' || !regionalRegistry.date_formats?.includes(regional.date_format) ? profile : regional.date_format;
+                    if (choice === 'human' && regionalRegistry.months?.[month - 1]) return parts[3] + ' ' + regionalRegistry.months[month - 1] + ' ' + parts[1];
+                    if (choice === 'dmy') return parts[3] + '/' + parts[2] + '/' + parts[1];
+                    return value;
+                };
+
+                const displayTimestamp = (value, legacyRenderer) => {
+                    if (typeof value !== 'string') return '-';
+                    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/);
+                    if (!match) return '-';
+
+                    const source = {
+                        year: Number(match[1]), month: Number(match[2]), day: Number(match[3]),
+                        hour: Number(match[4]), minute: Number(match[5]), second: Number(match[6]),
+                    };
+                    const leap = source.year % 4 === 0 && (source.year % 100 !== 0 || source.year % 400 === 0);
+                    const monthDays = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                    if (source.year < 1 || source.month < 1 || source.month > 12 || source.day < 1 || source.day > monthDays[source.month - 1]
+                        || source.hour > 23 || source.minute > 59 || source.second > 59
+                        || (match[8] && (Number(match[9]) > 23 || Number(match[10]) > 59))
+                        || !Number.isFinite(Date.parse(value))) return '-';
+
+                    const timezone = regional.timezone === 'Asia/Jakarta' ? 'Asia/Jakarta' : 'system';
+                    const dateFormat = regionalRegistry.date_formats?.includes(regional.date_format) ? regional.date_format : 'system';
+                    const timeFormat = ['system', '24h', '12h'].includes(regional.time_format) ? regional.time_format : 'system';
+                    const explicitTimestampPreference = timezone !== 'system' || dateFormat !== 'system' || timeFormat !== 'system';
+
+                    if (!explicitTimestampPreference) {
+                        try {
+                            return typeof legacyRenderer === 'function' ? String(legacyRenderer(value) ?? '-') : '-';
+                        } catch (error) {
+                            return '-';
+                        }
+                    }
+
+                    let parts = source;
+                    if (timezone === 'Asia/Jakarta') {
+                        try {
+                            const formatted = new Intl.DateTimeFormat('en-GB', {
+                                timeZone: 'Asia/Jakarta', calendar: 'gregory', numberingSystem: 'latn',
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+                            }).formatToParts(new Date(value));
+                            const values = Object.fromEntries(formatted.map(part => [part.type, part.value]));
+                            parts = {
+                                year: Number(values.year), month: Number(values.month), day: Number(values.day),
+                                hour: Number(values.hour) % 24, minute: Number(values.minute),
+                            };
+                        } catch (error) {
+                            return '-';
+                        }
+                    }
+
+                    const year = String(parts.year).padStart(4, '0');
+                    const month = String(parts.month).padStart(2, '0');
+                    const day = String(parts.day).padStart(2, '0');
+                    const months = regionalRegistry.months;
+                    let dateText;
+                    if (dateFormat === 'iso') dateText = year + '-' + month + '-' + day;
+                    else if (dateFormat === 'dmy') dateText = day + '/' + month + '/' + year;
+                    else {
+                        const monthName = Array.isArray(months) ? months[parts.month - 1] : null;
+                        if (typeof monthName !== 'string') return '-';
+                        dateText = day + ' ' + monthName + ' ' + year;
+                    }
+
+                    let timeText;
+                    if (timeFormat === '12h') {
+                        const hour = parts.hour % 12 || 12;
+                        timeText = hour + ':' + String(parts.minute).padStart(2, '0') + (parts.hour < 12 ? ' AM' : ' PM');
+                    } else {
+                        timeText = String(parts.hour).padStart(2, '0') + ':' + String(parts.minute).padStart(2, '0');
+                    }
+
+                    return dateText + ' ' + timeText + (timezone === 'Asia/Jakarta' ? ' WIB' : '');
+                };
+
+                window.AdasiPreferences = Object.freeze({
+                    regional,
+                    displayNumber,
+                    displayDate,
+                    displayTimestamp,
+                    pageSize: Number(preferences.pageSize),
+                    theme: savedTheme,
+                    density: savedDensity,
+                    accent: savedAccent,
+                    previewAccent: (value) => { if (accentKeys.includes(value)) { previewAccent = value; applyAccent(); } },
+                    previewTheme: (value) => { previewTheme = value; applyTheme(); },
+                    previewDensity: (value) => { previewDensity = value; applyDensity(); },
+                    restoreSaved: () => { previewTheme = null; previewDensity = null; previewAccent = null; applyTheme(); applyDensity(); applyAccent(); },
+                });
+                applyTheme();
+                applyDensity();
+                applyAccent();
+                media.addEventListener('change', () => { if ((previewTheme ?? savedTheme) === 'system') applyTheme(); });
+            })();
+        </script>
     @endauth
     <title>@yield('title', 'ADASI Supplier Portal')</title>
 
@@ -33,21 +212,6 @@
     <!-- ADASI Alert Theme -->
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
-    <script>
-        (() => {
-            const desktop = window.matchMedia('(min-width: 992px)').matches;
-            let collapsed = false;
-
-            try {
-                collapsed = desktop && window.localStorage.getItem('sidebarCollapsed') === 'true';
-            } catch (error) {
-                collapsed = false;
-            }
-
-            window.__adasiSidebarInitialCollapsed = collapsed;
-            document.documentElement.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
-        })();
-    </script>
 
     <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -128,6 +292,14 @@
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     @endif
+    <script>
+        window.AdasiDataTable = Object.freeze({
+            defaults: () => ({ pageLength: window.AdasiPreferences?.pageSize || 25, lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]] }),
+        });
+        if (window.jQuery?.fn?.dataTable) {
+            window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, window.AdasiDataTable.defaults());
+        }
+    </script>
     <script>
         // ADASI Loader — Inject overlay ke body
         const isDataTableRequest = (options = {}) => {
@@ -237,14 +409,27 @@
     <!-- Custom JS -->
     <script>
         @auth
+            let badgeFetchActive = false;
+
             function updateBadges() {
+                if (badgeFetchActive || (document.visibilityState && document.visibilityState === 'hidden')) {
+                    return;
+                }
+
+                badgeFetchActive = true;
                 const headers = {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 };
 
+                const notifCtrl = new AbortController();
+                const notifTimeout = setTimeout(() => notifCtrl.abort(), 8000);
+
                 // Notification badge
-                fetch("{{ route('notifications.unread-count') }}", { headers })
+                const notifPromise = fetch("{{ route('notifications.unread-count') }}", {
+                    headers,
+                    signal: notifCtrl.signal
+                })
                     .then(r => r.ok ? r.json() : null)
                     .then(data => {
                         if (!data) return;
@@ -261,11 +446,18 @@
                             updateNotificationCategoryBadges(data.category_counts);
                         }
                     })
-                    .catch(() => {});
+                    .catch(() => {})
+                    .finally(() => clearTimeout(notifTimeout));
 
                 // Chat badge
                 @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
-                    fetch("{{ route('conversations.unread-count') }}", { headers })
+                    const chatCtrl = new AbortController();
+                    const chatTimeout = setTimeout(() => chatCtrl.abort(), 8000);
+
+                    const chatPromise = fetch("{{ route('conversations.unread-count') }}", {
+                        headers,
+                        signal: chatCtrl.signal
+                    })
                         .then(r => r.ok ? r.json() : null)
                         .then(data => {
                             if (!data) return;
@@ -288,12 +480,27 @@
                                 }
                             });
                         })
-                        .catch(() => {});
+                        .catch(() => {})
+                        .finally(() => clearTimeout(chatTimeout));
+
+                    Promise.allSettled([notifPromise, chatPromise]).finally(() => {
+                        badgeFetchActive = false;
+                    });
+                @else
+                    notifPromise.finally(() => {
+                        badgeFetchActive = false;
+                    });
                 @endif
             }
 
-            // Run immediately on load
-            updateBadges();
+            // Run after initial page assets have completely finished loading to avoid holding tab spinner
+            if (document.readyState === 'complete') {
+                setTimeout(updateBadges, 1000);
+            } else {
+                window.addEventListener('load', () => {
+                    setTimeout(updateBadges, 1000);
+                });
+            }
 
             // Polling every 30 seconds
             setInterval(updateBadges, 30000);

@@ -76,7 +76,6 @@ $(function () {
         serverSide: true,
         dom: 'rtip',
         order: [],
-        pageLength: 25,
         ajax: {
             url: @json(route('admin.auth-audit-logs.data')),
             data: function (data) {

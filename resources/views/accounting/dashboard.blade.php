@@ -25,6 +25,8 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.dashboard-layout audience="accounting">
+    <x-slot:statuses>
     {{-- KPI Metric Cards Grid --}}
     @php
         $totalInvoices = $counts->sum();
@@ -34,41 +36,43 @@
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-5 tw-gap-4">
         <x-ui.metric-card
             label="Total Invoices"
-            :value="$totalInvoices"
+            :value="$regionalFormatter->number((string) ($totalInvoices), 'plain')"
             icon="receipt"
             tone="primary"
             :href="route('accounting.invoices.index')"
         />
         <x-ui.metric-card
             label="Waiting Physical"
-            :value="$counts['WAITING_PHYSICAL_DOCUMENT'] ?? 0"
+            :value="$regionalFormatter->number((string) ($counts['WAITING_PHYSICAL_DOCUMENT'] ?? 0), 'plain')"
             icon="file-check"
             tone="warning"
             :href="route('accounting.physical-verification')"
         />
         <x-ui.metric-card
             label="Need Revision"
-            :value="$counts['NEED_REVISION'] ?? 0"
+            :value="$regionalFormatter->number((string) ($counts['NEED_REVISION'] ?? 0), 'plain')"
             icon="file-edit"
             tone="error"
             :href="route('accounting.invoices.index', ['status' => 'NEED_REVISION'])"
         />
         <x-ui.metric-card
             label="Ready to Pay"
-            :value="$scheduledTotal"
+            :value="$regionalFormatter->number((string) ($scheduledTotal), 'plain')"
             icon="calendar-clock"
             tone="success"
             :href="route('accounting.payment-schedule')"
         />
         <x-ui.metric-card
             label="Overdue Invoices"
-            :value="$overdue"
+            :value="$regionalFormatter->number((string) ($overdue), 'plain')"
             icon="alert-triangle"
             tone="error"
             :href="route('accounting.payment-schedule', ['overdue' => 1])"
         />
     </div>
 
+    </x-slot:statuses>
+    <x-slot:lifecycle>
     {{-- Secondary Status Funnel / Pipeline Overview --}}
     <x-ui.card>
         <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-4">
@@ -79,24 +83,26 @@
             <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2.5">
                 <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
                     <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-primary"></span>
-                    Submitted: <strong>{{ $counts['SUBMITTED'] ?? 0 }}</strong>
+                    Submitted: <strong>{{ $regionalFormatter->number((string) ($counts['SUBMITTED'] ?? 0), 'plain') }}</strong>
                 </span>
                 <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
                     <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-info"></span>
-                    Under Review: <strong>{{ $counts['UNDER_REVIEW'] ?? 0 }}</strong>
+                    Under Review: <strong>{{ $regionalFormatter->number((string) ($counts['UNDER_REVIEW'] ?? 0), 'plain') }}</strong>
                 </span>
                 <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
                     <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-success"></span>
-                    Completed: <strong>{{ $counts['COMPLETED'] ?? 0 }}</strong>
+                    Completed: <strong>{{ $regionalFormatter->number((string) ($counts['COMPLETED'] ?? 0), 'plain') }}</strong>
                 </span>
                 <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
                     <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-error"></span>
-                    Rejected: <strong>{{ $counts['REJECTED'] ?? 0 }}</strong>
+                    Rejected: <strong>{{ $regionalFormatter->number((string) ($counts['REJECTED'] ?? 0), 'plain') }}</strong>
                 </span>
             </div>
         </div>
     </x-ui.card>
 
+    </x-slot:lifecycle>
+    <x-slot:invoices>
     {{-- Recent Submissions --}}
     <x-ui.data-table
         title="Recent Submissions"
@@ -111,5 +117,7 @@
 
         @include('local-invoices.table', ['portal' => 'accounting', 'payments' => false])
     </x-ui.data-table>
+    </x-slot:invoices>
+    </x-ui.dashboard-layout>
 </div>
 @endsection

@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\RegionalDisplayFormatter;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
@@ -67,7 +68,7 @@ class MaterialClaimController extends Controller
             ->make(true);
     }
 
-    public function dataHistory(Request $request)
+    public function dataHistory(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
         $query = MaterialClaim::with(['purchaseOrder.supplier', 'inspection'])
             ->orderBy('created_at', 'desc');
@@ -77,9 +78,9 @@ class MaterialClaimController extends Controller
             ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn ($c) => $c->purchaseOrder->supplier->name ?? '-')
             ->addColumn('created_date', fn ($c) => $c->created_at->format('d M Y'))
-            ->addColumn('deadline_display', function ($c) {
+            ->addColumn('deadline_display', function ($c) use ($regionalFormatter) {
                 $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
-                $date = $c->deadline ? $c->deadline->format('d M Y') : '-';
+                $date = $c->deadline ? $regionalFormatter->date($c->deadline, 'human') : '-';
 
                 return '<div class="d-flex flex-column align-items-start gap-1">'
                     .'<span>'.e($date).'</span>'

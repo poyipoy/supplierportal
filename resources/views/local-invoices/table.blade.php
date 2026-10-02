@@ -55,24 +55,24 @@
                         </td>
                         <td>
                             <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                {{ $row->submitted_at?->format('d M Y') }}
+                                {{ $row->submitted_at ? $regionalFormatter->timestamp($row->submitted_at, 'date') : '-' }}
                             </span>
                             <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">
-                                {{ $row->submitted_at?->format('H:i') }} WIB
+                                {{ $row->submitted_at ? $regionalFormatter->time($row->submitted_at) : '-' }}
                             </span>
                         </td>
                         <td class="text-end">
                             <span class="tw-font-semibold tw-font-mono tw-text-on-surface">
-                                Rp {{ number_format($row->invoice_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($row->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                             <span class="tw-block tw-text-ui-xs tw-font-mono tw-text-on-surface-variant">
-                                PPN: Rp {{ number_format($row->tax_amount, 0, ',', '.') }}
+                                PPN: Rp {{ $regionalFormatter->number(number_format($row->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </td>
                         <td>
                             @if($row->due_date)
                                 <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                    {{ $row->due_date->format('d M Y') }}
+                                    {{ $regionalFormatter->date($row->due_date, 'human') }}
                                 </span>
                                 @php $rem = $row->remainingDays(); @endphp
                                 @if($rem !== null)
@@ -109,7 +109,7 @@
                                         @if($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
                                             <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-w-max">
                                                 <x-ui.icon name="alert-circle" size="xs" />
-                                                Kelebihan Bayar: Rp {{ number_format((float) $row->overpaymentRefund->overpayment_amount, 0, ',', '.') }} (Perlu Refund)
+                                                Kelebihan Bayar: Rp {{ $regionalFormatter->number(number_format((float) $row->overpaymentRefund->overpayment_amount, 0, ',', '.'), 'indonesian') }} (Perlu Refund)
                                             </span>
                                         @elseif($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
                                             <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-w-max">
@@ -156,18 +156,18 @@
                         @endif
                         <td>
                             <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                {{ $row->submitted_at?->format('d M Y') }}
+                                {{ $row->submitted_at ? $regionalFormatter->timestamp($row->submitted_at, 'date') : '-' }}
                             </span>
                             <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">
-                                {{ $row->submitted_at?->format('H:i') }}
+                                {{ $row->submitted_at ? $regionalFormatter->time($row->submitted_at) : '-' }}
                             </span>
                         </td>
                         <td class="text-end">
                             <span class="tw-font-semibold tw-font-mono tw-text-on-surface">
-                                Rp {{ number_format($row->invoice_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($row->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                             <span class="tw-block tw-text-ui-xs tw-font-mono tw-text-on-surface-variant">
-                                PPN: Rp {{ number_format($row->tax_amount, 0, ',', '.') }}
+                                PPN: Rp {{ $regionalFormatter->number(number_format($row->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </td>
                         <td>
@@ -178,7 +178,7 @@
                                 @if($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300 tw-mt-1 tw-block tw-w-max">
                                         <x-ui.icon name="alert-circle" size="xs" />
-                                        Kelebihan Bayar: Rp {{ number_format((float) $row->overpaymentRefund->overpayment_amount, 0, ',', '.') }} (Perlu Refund)
+                                        Kelebihan Bayar: Rp {{ $regionalFormatter->number(number_format((float) $row->overpaymentRefund->overpayment_amount, 0, ',', '.'), 'indonesian') }} (Perlu Refund)
                                     </span>
                                 @elseif($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300 tw-mt-1 tw-block tw-w-max">
@@ -192,7 +192,7 @@
                         <td>
                             @if($row->due_date)
                                 <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                    {{ $row->due_date->format('d M Y') }}
+                                    {{ $regionalFormatter->date($row->due_date, 'human') }}
                                 </span>
                                 @php $rem = $row->remainingDays(); @endphp
                                 @if($rem !== null)
@@ -225,7 +225,7 @@
                             @endif
                             <td>
                                 <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface">
-                                    {{ $row->scheduled_payment_date?->format('d M Y') ?? '—' }}
+                                    {{ $row->scheduled_payment_date ? $regionalFormatter->date($row->scheduled_payment_date, 'human') : '—' }}
                                 </span>
                             </td>
                         @endif

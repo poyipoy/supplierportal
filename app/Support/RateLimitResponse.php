@@ -90,17 +90,13 @@ final class RateLimitResponse
                 'returnUrl' => route('login'),
                 'returnLabel' => 'Back to Sign In',
             ],
-            'password.email' => [
-                'returnUrl' => route('password.request'),
-                'returnLabel' => 'Back to Forgot Password',
-            ],
             'two-factor.challenge.store' => [
                 'returnUrl' => route('two-factor.challenge'),
                 'returnLabel' => 'Back to Verification',
             ],
             'profile.two-factor.start' => [
-                'returnUrl' => route('profile.edit'),
-                'returnLabel' => 'Back to Profile',
+                'returnUrl' => route('profile.security'),
+                'returnLabel' => 'Back to Security',
             ],
             'profile.two-factor.confirm' => [
                 'returnUrl' => route('profile.two-factor.setup'),
@@ -116,10 +112,6 @@ final class RateLimitResponse
 
         if (is_string($referer) && self::isSameOrigin($request, $referer)) {
             return $referer;
-        }
-
-        if ($request->route()?->getName() === 'password.store') {
-            return route('password.request');
         }
 
         return $request->user() === null ? route('login') : route('profile.edit');

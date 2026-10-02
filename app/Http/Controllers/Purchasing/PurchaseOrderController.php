@@ -10,6 +10,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Services\MaterialProgressService;
 use App\Services\NotificationService;
+use App\Services\RegionalDisplayFormatter;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
@@ -26,7 +27,7 @@ class PurchaseOrderController extends Controller
     /**
      * List all POs.
      */
-    public function index(Request $request)
+    public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
         $supplierFilter = $this->resolveSupplierFilter($request->query('supplier_id'));
 
@@ -115,21 +116,21 @@ class PurchaseOrderController extends Controller
 
                     return '<span title="'.e($notes).'">'.e($preview).'</span>';
                 })
-                ->addColumn('total_idr', fn ($po) => 'Rp '.number_format((float) $po->resolved_total_idr, 0, ',', '.'))
+                ->addColumn('total_idr', fn ($po) => 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
                 ->addColumn('status_badge', function ($po) {
                     return StatusHelper::badge(
                         StatusHelper::poBadge($po->status, $po->is_overdue),
                         StatusHelper::poLabel($po->status, $po->is_overdue)
                     );
                 })
-                ->addColumn('estimated_date', function ($po) {
+                ->addColumn('estimated_date', function ($po) use ($regionalFormatter) {
                     $meta = StatusHelper::poArrivalMeta(
                         $po->estimated_arrival,
                         $po->is_overdue,
                         $po->status,
                         $po->actual_arrival
                     );
-                    $date = $po->estimated_arrival ? $po->estimated_arrival->format('d M Y') : '-';
+                    $date = $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival, 'human') : '-';
 
                     return '<div class="d-flex flex-column align-items-start gap-1">'
                         .'<span>'.e($date).'</span>'

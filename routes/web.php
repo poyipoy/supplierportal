@@ -48,6 +48,8 @@ use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
 use App\Http\Controllers\Supplier\SupplierShipmentController;
 use App\Http\Controllers\SupplierRegistrationReviewController;
+use App\Http\Controllers\UserNotificationPreferenceController;
+use App\Http\Controllers\UserPreferenceController;
 use App\Models\PurchaseRequisition;
 use App\Support\PortalContext;
 use Illuminate\Support\Facades\Route;
@@ -128,9 +130,17 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile/security', [ProfileController::class, 'security'])
+        ->middleware('no-store')->name('profile.security');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])
-        ->middleware('throttle:auth.credentials')->name('profile.destroy');
+    Route::get('/profile/customization', [UserPreferenceController::class, 'edit'])->name('profile.customization');
+    Route::patch('/profile/customization', [UserPreferenceController::class, 'update'])->name('profile.customization.update');
+    Route::delete('/profile/customization', [UserPreferenceController::class, 'reset'])->name('profile.customization.reset');
+    Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
+        Route::get('/profile/notifications', [UserNotificationPreferenceController::class, 'index'])->name('profile.notifications');
+        Route::patch('/profile/notifications', [UserNotificationPreferenceController::class, 'update'])->name('profile.notifications.update');
+        Route::delete('/profile/notifications', [UserNotificationPreferenceController::class, 'reset'])->name('profile.notifications.reset');
+    });
     Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
 
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {

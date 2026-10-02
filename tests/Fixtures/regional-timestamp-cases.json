@@ -1,0 +1,75 @@
+[
+  {
+    "name": "Jakarta human 24 hour crosses midnight",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "human", "time_format": "24h"},
+    "expected": "29 Sep 2026 06:35 WIB"
+  },
+  {
+    "name": "Jakarta human 12 hour",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "human", "time_format": "12h"},
+    "expected": "29 Sep 2026 6:35 AM WIB"
+  },
+  {
+    "name": "Jakarta day month year 24 hour",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "dmy", "time_format": "24h"},
+    "expected": "29/09/2026 06:35 WIB"
+  },
+  {
+    "name": "Jakarta day month year 12 hour",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "dmy", "time_format": "12h"},
+    "expected": "29/09/2026 6:35 AM WIB"
+  },
+  {
+    "name": "Jakarta ISO 24 hour",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "iso", "time_format": "24h"},
+    "expected": "2026-09-29 06:35 WIB"
+  },
+  {
+    "name": "Jakarta ISO 12 hour",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "iso", "time_format": "12h"},
+    "expected": "2026-09-29 6:35 AM WIB"
+  },
+  {
+    "name": "timezone only keeps legacy date and time profile",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "system", "time_format": "system"},
+    "expected": "29 Sep 2026 06:35 WIB"
+  },
+  {
+    "name": "date only keeps source offset and legacy time",
+    "value": "2026-09-28T23:35:00+05:30",
+    "preferences": {"timezone": "system", "date_format": "dmy", "time_format": "system"},
+    "expected": "28/09/2026 23:35"
+  },
+  {
+    "name": "time only keeps source offset and legacy date",
+    "value": "2026-09-28T23:35:00+05:30",
+    "preferences": {"timezone": "system", "date_format": "system", "time_format": "12h"},
+    "expected": "28 Sep 2026 11:35 PM"
+  },
+  {
+    "name": "Jakarta conversion crosses year boundary",
+    "value": "2026-12-31T20:30:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "iso", "time_format": "24h"},
+    "expected": "2027-01-01 03:30 WIB"
+  },
+  {
+    "name": "Jakarta conversion from leap day",
+    "value": "2024-02-29T18:35:00Z",
+    "preferences": {"timezone": "Asia/Jakarta", "date_format": "human", "time_format": "24h"},
+    "expected": "01 Mar 2024 01:35 WIB"
+  },
+  {
+    "name": "number-only preference keeps renderer-specific System timestamps",
+    "value": "2026-09-28T23:35:00Z",
+    "preferences": {"timezone": "system", "date_format": "system", "time_format": "system", "number_format": "indonesian"},
+    "expected": "28 Sep 2026 23:35",
+    "systemCompatibility": true
+  }
+]

@@ -7,6 +7,7 @@ use App\Models\PurchaseOrder;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Services\ShipmentService;
+use App\Services\RegionalDisplayFormatter;
 use App\Support\NumberFormat;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class SupplierShipmentController extends Controller
     /**
      * Display a listing of shipments for the authenticated supplier.
      */
-    public function index(Request $request)
+    public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
         $supplierId = auth()->id();
 
@@ -65,16 +66,18 @@ class SupplierShipmentController extends Controller
 
                     return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
                 })
-                ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.$shp->items->count().'</span>')
-                ->addColumn('total_qty', function ($shp) {
+                ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.e($regionalFormatter->number((string) $shp->items->count(), 'plain')).'</span>')
+                ->addColumn('total_qty', function ($shp) use ($regionalFormatter) {
                     $total = (int) $shp->items->sum('shipped_qty');
+                    $text = number_format($total);
 
-                    return '<span class="fw-bold text-primary ui-tabular-nums">'.number_format($total).' pcs</span>';
+                    return '<span class="fw-bold text-primary ui-tabular-nums">'.e($regionalFormatter->number($text, 'international')).' pcs</span>';
                 })
-                ->addColumn('actual_weight', function ($shp) {
+                ->addColumn('actual_weight', function ($shp) use ($regionalFormatter) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
+                    $text = NumberFormat::maxDecimals($total);
 
-                    return '<span class="ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
+                    return '<span class="ui-tabular-nums">'.e($regionalFormatter->number($text, 'decimal')).' Kg</span>';
                 })
                 ->addColumn('total_weight', function ($shp) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
@@ -82,7 +85,8 @@ class SupplierShipmentController extends Controller
                     return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
                 ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.$shp->shipment_date->format('d M Y').'</span>' : '-')
-                ->addColumn('estimated_arrival', fn ($shp) => $shp->estimated_arrival_date ? '<span class="ui-tabular-nums">'.$shp->estimated_arrival_date->format('d M Y').'</span>' : '-')
+                ->addColumn('shipment_date_display', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->shipment_date, 'human')).'</span>' : '-')
+                ->addColumn('estimated_arrival', fn ($shp) => $shp->estimated_arrival_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->estimated_arrival_date, 'human')).'</span>' : '-')
                 ->addColumn('status_badge', function ($shp) {
                     return StatusHelper::badge(
                         StatusHelper::shipmentBadge($shp->status),
@@ -116,7 +120,7 @@ class SupplierShipmentController extends Controller
                         .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($shp->shipment_number).'">More</button>'
                         .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
-                ->rawColumns(['shipment_number_display', 'po_references', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'estimated_arrival', 'status_badge', 'action'])
+                ->rawColumns(['shipment_number_display', 'po_references', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'status_badge', 'action'])
                 ->toJson();
         }
 

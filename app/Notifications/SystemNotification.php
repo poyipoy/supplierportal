@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
+use App\Services\NotificationPreferenceService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
@@ -56,12 +58,30 @@ class SystemNotification extends Notification
      */
     public function toDatabase(object $notifiable): array
     {
-        return array_merge([
+        $payload = array_merge([
             'title' => $this->title,
             'message' => $this->message,
             'url' => $this->url,
             'icon' => $this->icon,
         ], $this->data);
+
+        if ($notifiable instanceof User) {
+            try {
+                $prefService = app(NotificationPreferenceService::class);
+                $key = $prefService->keyFor($this);
+                if ($key !== null && $prefService->deliveryFor($notifiable, $key) === 'silent') {
+                    $payload['silent'] = true;
+                } else {
+                    unset($payload['silent']);
+                }
+            } catch (\Throwable) {
+                unset($payload['silent']);
+            }
+        } else {
+            unset($payload['silent']);
+        }
+
+        return $payload;
     }
 
     /**
@@ -75,6 +95,13 @@ class SystemNotification extends Notification
             'url' => $this->url,
             'icon' => $this->icon,
         ], $this->data));
+    }
+
+    public function event(): ?string
+    {
+        $event = $this->data['event'] ?? null;
+
+        return is_string($event) && $event !== '' ? $event : null;
     }
 
     public function eventKey(): ?string

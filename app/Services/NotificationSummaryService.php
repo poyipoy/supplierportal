@@ -18,10 +18,10 @@ class NotificationSummaryService
             $user->notifications()->latest()->take($limit)->get(['id', 'data', 'read_at', 'created_at']),
             $allowedDomains,
         );
-        $unreadNotifications = $this->filterByDomains(
+        $unreadNotifications = $this->excludeSilent($this->filterByDomains(
             $user->unreadNotifications()->get(['id', 'data', 'read_at', 'created_at']),
             $allowedDomains,
-        );
+        ));
 
         return $this->summary($categories, $notifications, $unreadNotifications);
     }
@@ -35,10 +35,10 @@ class NotificationSummaryService
             $user->notifications()->latest()->take($limit)->get(['id', 'data', 'read_at']),
             $allowedDomains,
         );
-        $unreadNotifications = $this->filterByDomains(
+        $unreadNotifications = $this->excludeSilent($this->filterByDomains(
             $user->unreadNotifications()->get(['id', 'data', 'read_at']),
             $allowedDomains,
-        );
+        ));
 
         $summary = $this->summary($categories, $notifications, $unreadNotifications);
 
@@ -46,6 +46,13 @@ class NotificationSummaryService
             'count' => $summary['count'],
             'category_counts' => $summary['category_counts'],
         ];
+    }
+
+    private function excludeSilent(Collection $notifications): Collection
+    {
+        return $notifications->reject(
+            fn ($notification) => ($notification->data['silent'] ?? false) === true
+        )->values();
     }
 
     private function filterByDomains(Collection $notifications, array $allowedDomains): Collection

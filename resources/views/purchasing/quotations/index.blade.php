@@ -194,17 +194,17 @@
                                 </td>
                                 <td>{{ $q->purchaseRequisition->period->display_label ?? $q->purchaseRequisition->period->name ?? '-' }}</td>
                                 <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $q->currency }}</span></td>
-                                <td class="text-center fw-medium">{{ $q->items->count() }}</td>
+                                <td class="text-center fw-medium">{{ $regionalFormatter->number((string) $q->items->count(), 'plain') }}</td>
                                 <td class="text-center">
                                     <x-status-badge type="quotation" :status="$q->status" />
                                 </td>
-                                <td class="tw-text-on-surface-variant">{{ $q->submitted_at ? $q->submitted_at->format('d M Y, H:i') : '-' }}</td>
+                                <td class="tw-text-on-surface-variant">{{ $q->submitted_at ? $regionalFormatter->timestamp($q->submitted_at, 'datetime_comma') : '-' }}</td>
                                 <td>
                                     @php
                                         $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($q->validity_period, $q->status);
                                     @endphp
                                     @if($q->validity_period)
-                                        <div class="fw-semibold tw-text-on-surface">{{ $q->validity_period->format('d M Y') }}</div>
+                                        <div class="fw-semibold tw-text-on-surface">{{ $regionalFormatter->date($q->validity_period, 'human') }}</div>
                                         {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                                     @else
                                         {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}

@@ -248,13 +248,15 @@ class LoginSecurityTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->create();
-
-        $known = $this->post('/forgot-password', ['email' => $user->email]);
-        $unknown = $this->post('/forgot-password', ['email' => 'unknown@example.test']);
-
-        $this->assertSame($known->getSession()->get('status'), $unknown->getSession()->get('status'));
-        $known->assertSessionHasNoErrors();
-        $unknown->assertSessionHasNoErrors();
+        $this->post('/forgot-password', ['email' => $user->email])->assertStatus(405);
+        $this->post('/forgot-password', ['email' => 'unknown@example.test'])->assertStatus(405);
+        $known = $this->get('/forgot-password?email='.urlencode($user->email));
+        $unknown = $this->get('/forgot-password?email=unknown@example.test');
+        $known->assertOk();
+        $unknown->assertOk();
+        $this->assertSame($known->viewData('template'), $unknown->viewData('template'));
+        Notification::assertNothingSent();
+        $this->assertDatabaseCount('password_reset_tokens', 0);
     }
 
     public function test_distinct_email_threshold_forces_turnstile_independent_of_attempt_counts(): void

@@ -60,9 +60,9 @@
                                     {{ $c->claim_type }}
                                 </span>
                             </td>
-                            <td>{{ $c->claim_date?->format('d M Y') }}</td>
+                            <td>{{ $regionalFormatter->date($c->claim_date, 'human') }}</td>
                             <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
-                                Rp {{ number_format($c->amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($c->amount, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="match($c->status) { 'PAID' => 'success', 'READY_TO_PAY' => 'success', 'NEED_REVISION' => 'error', 'BASIC_VERIFIED' => 'info', default => 'warning' }">

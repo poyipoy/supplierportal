@@ -58,7 +58,6 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},
-            pageLength: 25,
             order: [],
             drawCallback: function() {
                 window.initAdasiTooltips?.(document.getElementById('claimTable'));

@@ -3,10 +3,8 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use App\Notifications\NewDeviceLoginNotification;
 use App\Notifications\SystemNotification;
 use App\Services\Auth\TwoFactorService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -55,19 +53,20 @@ class KnownDeviceSecurityTest extends TestCase
             $data = $notification->toDatabase($user);
 
             return $data['title'] === 'New sign-in detected'
-                && $data['url'] === '/profile#active-sessions'
+                && $data['url'] === '/profile/security#active-sessions'
+                && $data['domain'] === 'global'
                 && $data['icon'] === 'monitor';
         });
         // Office network policy: auth events must not produce outbound mail,
         // so the in-app notification plus the audit row are the whole trail.
-        Notification::assertNotSentTo($user, NewDeviceLoginNotification::class);
+        Notification::assertCount(1);
         $this->assertDatabaseHas('auth_audit_logs', [
             'user_id' => $user->id,
             'event' => 'new_device_login',
         ]);
     }
 
-    public function test_first_device_login_queues_email_only_when_mail_channel_is_enabled(): void
+    public function test_obsolete_mail_setting_cannot_restore_security_email(): void
     {
         config()->set('auth_security.notifications.mail_enabled', true);
         Notification::fake();
@@ -76,11 +75,7 @@ class KnownDeviceSecurityTest extends TestCase
         $this->login($user);
 
         Notification::assertSentTo($user, SystemNotification::class);
-        Notification::assertSentTo($user, NewDeviceLoginNotification::class, function (NewDeviceLoginNotification $notification): bool {
-            $this->assertInstanceOf(ShouldQueue::class, $notification);
-
-            return true;
-        });
+        Notification::assertCount(1);
     }
 
     public function test_second_login_with_same_device_updates_last_seen_without_repeating_alert(): void
@@ -102,7 +97,7 @@ class KnownDeviceSecurityTest extends TestCase
         $this->assertTrue(Carbon::parse(DB::table('auth_known_devices')->value('last_seen_at'))->greaterThan($firstSeen));
         $this->assertSame($token, $second->getCookie($this->cookieName())->getValue());
         Notification::assertNotSentTo($user, SystemNotification::class);
-        Notification::assertNotSentTo($user, NewDeviceLoginNotification::class);
+        Notification::assertNothingSent();
     }
 
     public function test_ip_change_updates_metadata_but_does_not_make_the_device_new(): void
@@ -155,7 +150,7 @@ class KnownDeviceSecurityTest extends TestCase
 
         $this->assertDatabaseCount('auth_known_devices', 2);
         Notification::assertSentTo($user, SystemNotification::class);
-        Notification::assertNotSentTo($user, NewDeviceLoginNotification::class);
+        Notification::assertCount(1);
     }
 
     public function test_same_browser_token_is_registered_separately_for_each_account(): void
@@ -182,7 +177,7 @@ class KnownDeviceSecurityTest extends TestCase
         ]);
         $this->assertDatabaseCount('auth_known_devices', 2);
         Notification::assertSentTo($secondUser, SystemNotification::class);
-        Notification::assertNotSentTo($secondUser, NewDeviceLoginNotification::class);
+        Notification::assertCount(1);
     }
 
     public function test_inactive_account_cannot_register_a_known_device(): void
@@ -217,7 +212,7 @@ class KnownDeviceSecurityTest extends TestCase
         $completed->assertCookie($this->cookieName());
         $this->assertDatabaseHas('auth_known_devices', ['user_id' => $user->id]);
         Notification::assertSentTo($user, SystemNotification::class);
-        Notification::assertNotSentTo($user, NewDeviceLoginNotification::class);
+        Notification::assertCount(1);
     }
 
     public function test_malformed_or_oversized_cookie_is_replaced_without_error(): void
@@ -237,7 +232,7 @@ class KnownDeviceSecurityTest extends TestCase
             'device_hash' => hash('sha256', $replacement),
         ]);
         Notification::assertSentTo($user, SystemNotification::class);
-        Notification::assertNotSentTo($user, NewDeviceLoginNotification::class);
+        Notification::assertCount(1);
     }
 
     public function test_known_device_cookie_has_secure_production_attributes_and_400_day_lifetime(): void

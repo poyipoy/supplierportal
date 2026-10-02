@@ -3,15 +3,42 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use App\Notifications\AdasiResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_automated_password_reset_named_routes_are_absent(): void
+    {
+        foreach (['password.email', 'password.reset', 'password.store'] as $name) {
+            $this->assertFalse(Route::has($name));
+        }
+    }
+
+    public function test_obsolete_recovery_endpoints_cannot_issue_tokens_send_mail_or_change_credentials(): void
+    {
+        Mail::fake();
+        Notification::fake();
+        $user = User::factory()->create();
+        $password = $user->password;
+        $version = $user->auth_session_version;
+        $this->post('/forgot-password', ['email' => $user->email])->assertStatus(405);
+        $this->get('/reset-password/obsolete-token')->assertNotFound();
+        $this->post('/reset-password', [
+            'email' => $user->email, 'token' => 'obsolete-token',
+            'password' => 'Str0ng!Passphrase', 'password_confirmation' => 'Str0ng!Passphrase',
+        ])->assertNotFound();
+        $this->assertSame($password, $user->fresh()->password);
+        $this->assertSame($version, $user->fresh()->auth_session_version);
+        $this->assertDatabaseCount('password_reset_tokens', 0);
+        Mail::assertNothingOutgoing();
+        Notification::assertNothingSent();
+    }
 
     public function test_reset_password_link_screen_can_be_rendered(): void
     {
@@ -19,149 +46,7 @@ class PasswordResetTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('ADASI Supplier Portal')
-            ->assertSee('Forgot your password?')
-            ->assertSee('Send Reset Link');
-    }
-
-    public function test_reset_password_link_can_be_requested(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, AdasiResetPasswordNotification::class, function (AdasiResetPasswordNotification $notification) use ($user): bool {
-            $mail = $notification->toMail($user);
-
-            $this->assertSame('Reset your password | ADASI Supplier Portal', $mail->subject);
-            $this->assertSame([
-                'html' => 'emails.auth.reset-password',
-                'text' => 'emails.auth.reset-password-text',
-            ], $mail->view);
-            $this->assertSame($user->name, $mail->viewData['recipientName']);
-            $this->assertStringContainsString('/reset-password/'.$notification->token, $mail->viewData['resetUrl']);
-
-            return true;
-        });
-    }
-
-    public function test_reset_password_screen_can_be_rendered(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, AdasiResetPasswordNotification::class, function ($notification) {
-            $response = $this->get('/reset-password/'.$notification->token);
-
-            $response->assertStatus(200)
-                ->assertSee('ADASI Supplier Portal')
-                ->assertSee('Create a new password')
-                ->assertSee('at least 12 characters');
-
-            return true;
-        });
-    }
-
-    public function test_password_can_be_reset_with_valid_token(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, AdasiResetPasswordNotification::class, function ($notification) use ($user) {
-            $response = $this->post('/reset-password', [
-                'token' => $notification->token,
-                'email' => $user->email,
-                'password' => 'Str0ng!Passphrase',
-                'password_confirmation' => 'Str0ng!Passphrase',
-            ]);
-
-            $response
-                ->assertSessionHasNoErrors()
-                ->assertRedirect(route('login'));
-
-            return true;
-        });
-    }
-
-    public function test_no_notification_is_sent_for_an_unregistered_email(): void
-    {
-        // Locks in the core requirement as an explicit, tested guarantee
-        // instead of an implicit side effect of Laravel's default password
-        // broker: this must keep holding even if the broker/provider setup
-        // changes later.
-        Notification::fake();
-
-        $this->post('/forgot-password', ['email' => 'not-in-the-database@example.test']);
-
-        Notification::assertNothingSent();
-    }
-
-    public function test_no_notification_is_sent_for_a_deactivated_account(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create(['is_active' => false]);
-
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertNothingSent();
-    }
-
-    public function test_forgot_password_email_is_normalized_before_lookup(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create(['email' => 'normalized@example.test']);
-
-        $this->post('/forgot-password', ['email' => '  NORMALIZED@EXAMPLE.TEST ']);
-
-        Notification::assertSentTo($user, AdasiResetPasswordNotification::class);
-    }
-
-    public function test_deactivated_account_cannot_complete_a_password_reset(): void
-    {
-        $user = User::factory()->create(['is_active' => false]);
-        $originalPasswordHash = $user->password;
-        $token = Password::broker()->createToken($user);
-
-        $response = $this->post('/reset-password', [
-            'token' => $token,
-            'email' => $user->email,
-            'password' => 'Reset!Password123',
-            'password_confirmation' => 'Reset!Password123',
-        ]);
-
-        // Reported identically to an invalid/expired token - the response
-        // must not reveal that the account exists but is deactivated.
-        $response->assertSessionHasErrors('email');
-        $this->assertSame('This password reset link is invalid or has expired.', $response->getSession()->get('errors')->first('email'));
-        $this->assertSame($originalPasswordHash, $user->fresh()->password);
-    }
-
-    public function test_invalid_token_and_unknown_user_return_the_same_generic_error(): void
-    {
-        $user = User::factory()->create();
-        $payload = [
-            'token' => 'invalid-token',
-            'password' => 'Reset!Password123',
-            'password_confirmation' => 'Reset!Password123',
-        ];
-
-        $invalidToken = $this->post('/reset-password', $payload + ['email' => $user->email]);
-        $unknownUser = $this->post('/reset-password', $payload + ['email' => 'unknown@example.test']);
-
-        $invalidToken->assertSessionHasErrors('email');
-        $unknownUser->assertSessionHasErrors('email');
-
-        $message = 'This password reset link is invalid or has expired.';
-        $this->assertSame($message, $invalidToken->getSession()->get('errors')->first('email'));
-        $this->assertSame($message, $unknownUser->getSession()->get('errors')->first('email'));
+            ->assertSee('Password Assistance')
+            ->assertSee('Copy Email Template');
     }
 }

@@ -122,7 +122,7 @@ class NotificationUrlResolver
             return $exportJob !== null && (int) $exportJob->user_id === (int) $user->id;
         }
 
-        if (in_array($name, ['notifications.index', 'profile.edit'], true)) {
+        if (in_array($name, ['notifications.index', 'profile.edit', 'profile.security'], true)) {
             return true;
         }
 

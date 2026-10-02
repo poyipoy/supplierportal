@@ -186,7 +186,6 @@ BLADE;
             'auth.login',
             'auth.forgot-password',
             'auth.confirm-password',
-            'auth.verify-email',
             'auth.rate-limited',
         ];
 
@@ -195,6 +194,7 @@ BLADE;
                 'returnUrl' => '/dashboard',
                 'returnLabel' => 'Return to Dashboard',
                 'turnstileRequired' => false,
+                'supportEmail' => 'support@example.test', 'subject' => 'Assistance', 'template' => 'Template', 'mailto' => 'mailto:support@example.test',
                 'turnstileSiteKey' => null,
                 'errors' => new ViewErrorBag,
             ])->render();

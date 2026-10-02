@@ -53,13 +53,13 @@
                                 @endphp
                                 <x-ui.status-chip :tone="$tone">{{ ucfirst($item['status']) }}</x-ui.status-chip>
                             </td>
-                            <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">{{ $item['created_at'] ? \Carbon\Carbon::parse($item['created_at'])->format('d M Y H:i') : '-' }}</td>
+                            <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">{{ $item['created_at'] ? $regionalFormatter->timestamp(\Carbon\Carbon::parse($item['created_at']), 'datetime') : '-' }}</td>
                             <td class="tw-text-ui-xs tw-text-on-surface-variant">
                                 @if($item['completed_at'])
-                                    <span>Completed: {{ \Carbon\Carbon::parse($item['completed_at'])->format('d M Y H:i') }}</span><br>
+                                    <span>Completed: {{ $regionalFormatter->timestamp(\Carbon\Carbon::parse($item['completed_at']), 'datetime') }}</span><br>
                                 @endif
                                 @if($item['expires_at'])
-                                    <span>Expires: {{ \Carbon\Carbon::parse($item['expires_at'])->format('d M Y H:i') }}</span>
+                                    <span>Expires: {{ $regionalFormatter->timestamp(\Carbon\Carbon::parse($item['expires_at']), 'datetime') }}</span>
                                 @else
                                     -
                                 @endif
@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatDate = (value) => value
         ? new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
         : '-';
+    const regionalTimestamp = (value) => window.AdasiPreferences.displayTimestamp(value, formatDate);
     const badgeClass = (status) => ({
         queued: 'ui-status-chip ui-status-chip--neutral',
         processing: 'ui-status-chip ui-status-chip--info',
@@ -131,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         body.innerHTML = items.map((item) => {
-            const completed = item.completed_at ? `<span>Completed: ${escapeHtml(formatDate(item.completed_at))}</span><br>` : '';
-            const expiry = item.expires_at ? `<span>Expires: ${escapeHtml(formatDate(item.expires_at))}</span>` : '-';
+            const completed = item.completed_at ? `<span>Completed: ${escapeHtml(regionalTimestamp(item.completed_at))}</span><br>` : '';
+            const expiry = item.expires_at ? `<span>Expires: ${escapeHtml(regionalTimestamp(item.expires_at))}</span>` : '-';
             const action = item.download_url
                 ? `<a href="${escapeHtml(item.download_url)}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-success/60 tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-success tw-no-underline hover:tw-bg-success/5"><x-ui.icon name="download" />Download</a>`
                 : '<span class="tw-text-ui-xs tw-text-on-surface-variant">-</span>';
@@ -140,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<tr>
                 <td><div class="tw-font-semibold">${escapeHtml(item.label)}</div><div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">${escapeHtml(item.file_name)}</div></td>
                 <td><span class="${badgeClass(item.status)}">${escapeHtml(statusLabel(item.status))}</span></td>
-                <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">${escapeHtml(formatDate(item.created_at))}</td>
+                <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">${escapeHtml(regionalTimestamp(item.created_at))}</td>
                 <td class="tw-text-ui-xs tw-text-on-surface-variant">${completed}${expiry}</td>
                 <td class="text-end">${action}</td>
             </tr>`;

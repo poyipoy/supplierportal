@@ -1,6 +1,6 @@
 @php
-    $formatRupiah = fn ($value) => $value !== null ? 'Rp ' . number_format($value, 0, ',', '.') : '-';
-    $formatNumber = fn ($value, $decimals = 1) => $value !== null ? \App\Support\NumberFormat::maxDecimals($value, $decimals) : '-';
+    $formatRupiah = fn ($value) => $value !== null ? 'Rp ' . (isset($regionalFormatter) ? $regionalFormatter->number(number_format($value, 0, ',', '.'), 'indonesian') : number_format($value, 0, ',', '.')) : '-';
+    $formatNumber = fn ($value, $decimals = 1) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
 @endphp
 
 {{-- Filter Toolbar --}}

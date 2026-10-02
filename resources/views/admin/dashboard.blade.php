@@ -11,9 +11,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <div class="tw-grid tw-gap-6 xl:tw-grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.75fr)] xl:tw-items-start">
-        <div class="tw-grid tw-gap-6">
-            <x-ui.data-table title="Administrative Attention" description="Current exchange-rate readiness from the configured currency set.">
+    <x-ui.dashboard-layout audience="admin">
+        <x-slot:rates class="lg:tw-col-span-8">
+<x-ui.data-table title="Administrative Attention" description="Current exchange-rate readiness from the configured currency set.">
                 <x-slot:toolbar>
                     <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal"><x-ui.icon name="plus" /> Add Effective Rate</x-ui.button>
                 </x-slot:toolbar>
@@ -24,8 +24,8 @@
                             @php($rate = $latestRates[$currency] ?? null)
                             <tr>
                                 <td class="tw-font-mono tw-font-semibold tw-text-primary">{{ $currency }}</td>
-                                <td class="ui-tabular-nums text-end tw-font-medium">{{ $rate ? 'Rp ' . number_format($rate->rate_to_idr, 2, ',', '.') : '-' }}</td>
-                                <td>{{ $rate?->valid_from?->format('d M Y') ?? '-' }}</td>
+                                <td class="ui-tabular-nums text-end tw-font-medium">{{ $rate ? 'Rp ' . $regionalFormatter->number(number_format($rate->rate_to_idr, 2, ',', '.'), 'indonesian') : '-' }}</td>
+                                <td>{{ $rate?->valid_from ? $regionalFormatter->date($rate->valid_from, 'human') : '-' }}</td>
                                 <td><x-ui.status-chip :tone="$rate ? 'success' : 'warning'">{{ $rate ? 'Available' : 'Rate Required' }}</x-ui.status-chip></td>
                             </tr>
                         @endforeach
@@ -33,13 +33,15 @@
                 </table>
                 <x-slot:pagination>
                     <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ number_format($riwayatKursTotal) }} historical rate records retained.</span>
+                        <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $regionalFormatter->number(number_format($riwayatKursTotal), 'international') }} historical rate records retained.</span>
                         <x-ui.button :href="route('admin.exchange-rates.index')" variant="ghost" size="sm">View Rate History <x-ui.icon name="arrow-right" /></x-ui.button>
                     </div>
                 </x-slot:pagination>
             </x-ui.data-table>
+        </x-slot:rates>
 
-            <x-ui.data-table title="Recent Administrative Activity" description="Latest notifications available to the signed-in administrator.">
+        <x-slot:notifications class="lg:tw-col-span-8">
+<x-ui.data-table title="Recent Administrative Activity" description="Latest notifications available to the signed-in administrator.">
                 <div class="tw-divide-y tw-divide-outline-variant">
                     @forelse($recentActivities as $act)
                         @php($activityUrl = $act->data['url'] ?? null)
@@ -58,8 +60,9 @@
                     @endforelse
                 </div>
             </x-ui.data-table>
-        </div>
+        </x-slot:notifications>
 
+        <x-slot:shortcuts class="lg:tw-col-span-4">
         <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="admin-shortcuts-title">
             <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
                 <h2 id="admin-shortcuts-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Administration Shortcuts</h2>
@@ -81,33 +84,36 @@
                 @endforeach
             </nav>
         </section>
-    </div>
+        </x-slot:shortcuts>
 
+        <x-slot:summary>
     <section class="tw-border-y tw-border-outline tw-bg-surface-container" aria-labelledby="admin-summary-title">
         <h2 id="admin-summary-title" class="tw-sr-only">Operational summary</h2>
         <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-4">
             <div class="tw-border-b tw-border-r tw-border-outline-variant tw-p-4 lg:tw-border-b-0">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Active Accounts</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($totalUsersActive) }}</dd>
-                <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ collect($usersByRole)->map(fn ($count, $role) => ucfirst($role) . ' ' . $count)->implode(' / ') }}</div>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($totalUsersActive), 'international') }}</dd>
+                <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ collect($usersByRole)->map(fn ($count, $role) => ucfirst($role) . ' ' . $regionalFormatter->number((string) $count, 'plain'))->implode(' / ') }}</div>
             </div>
             <div class="tw-border-b tw-border-outline-variant tw-p-4 lg:tw-border-b-0 lg:tw-border-r">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Registered Suppliers</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($supplierCount) }}</dd>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($supplierCount), 'international') }}</dd>
                 <a href="{{ route('admin.users.index') }}" class="ui-focus-ring tw-mt-1 tw-inline-block tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">Review supplier accounts</a>
             </div>
             <div class="tw-border-r tw-border-outline-variant tw-p-4">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">POs Created This Month</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($transaksiBulanIni) }}</dd>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($transaksiBulanIni), 'international') }}</dd>
                 <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Current calendar month</div>
             </div>
             <div class="tw-p-4">
                 <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">Active Claims</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ number_format($klaimAktif) }}</dd>
+                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($klaimAktif), 'international') }}</dd>
                 <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Pending or supplier response recorded</div>
             </div>
         </dl>
     </section>
+        </x-slot:summary>
+    </x-ui.dashboard-layout>
 </div>
 
 <div class="modal fade" id="kursModal" tabindex="-1" aria-labelledby="kursModalTitle" aria-hidden="true">

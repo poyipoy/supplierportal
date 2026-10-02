@@ -12,7 +12,9 @@
         description="Monitor inbound material quality, prioritize pending arrivals, and track inspection outcomes."
     />
 
-    {{-- Operational Action Queue Banner if Waiting Inspections Exist --}}
+    <x-ui.dashboard-layout audience="qc">
+        <x-slot:waiting>
+{{-- Operational Action Queue Banner if Waiting Inspections Exist --}}
     @if($waitingInspections > 0)
         <x-ui.alert tone="warning" title="Inspection queue requires attention">
             <div class="tw-flex tw-flex-col tw-gap-3 sm:tw-flex-row sm:tw-items-center sm:tw-justify-between">
@@ -31,8 +33,10 @@
             </div>
         </x-ui.alert>
     @endif
+        </x-slot:waiting>
 
-    {{-- Operational Queue Table: Recent Inspections --}}
+        <x-slot:queue>
+{{-- Operational Queue Table: Recent Inspections --}}
     <x-ui.data-table
         title="Recent Inspection Activity"
         description="Latest quality evaluations and outcome reports."
@@ -69,7 +73,7 @@
                     <tr>
                         <td class="fw-bold tw-text-on-surface">{{ $insp->purchaseOrder->po_number ?? '-' }}</td>
                         <td class="tw-text-on-surface fw-medium">{{ $insp->purchaseOrder->supplier->name ?? '-' }}</td>
-                        <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $insp->inspected_at ? $insp->inspected_at->format('d M Y, H:i') : '-' }}</td>
+                        <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}</td>
                         <td class="tw-text-on-surface-variant">{{ $insp->inspector->name ?? '-' }}</td>
                         <td class="text-center">
                             <x-status-badge type="qc" :status="$insp->status" />
@@ -85,16 +89,20 @@
             </tbody>
         </table>
     </x-ui.data-table>
+        </x-slot:queue>
 
-    {{-- Restrained operational summary --}}
+        <x-slot:metrics>
+{{-- Restrained operational summary --}}
     <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="Quality control summary">
-        <x-ui.metric-card flat label="Total Inspections" :value="$totalInspections" icon="clipboard-check" tone="neutral" :href="route('qc.inspections.index')" />
-        <x-ui.metric-card flat label="Material OK" :value="$totalOk" icon="circle-check" tone="success" :href="route('qc.inspections.index', ['status' => 'ok'])" />
-        <x-ui.metric-card flat label="Material NG (Defective)" :value="$totalNg" icon="circle-x" :tone="$totalNg > 0 ? 'error' : 'neutral'" :href="route('qc.inspections.index', ['status' => 'ng'])" />
-        <x-ui.metric-card flat label="Waiting for Inspection" :value="$waitingInspections" icon="clock" :tone="$waitingInspections > 0 ? 'warning' : 'neutral'" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card flat label="Total Inspections" :value="$regionalFormatter->number((string) ($totalInspections), 'plain')" icon="clipboard-check" tone="neutral" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card flat label="Material OK" :value="$regionalFormatter->number((string) ($totalOk), 'plain')" icon="circle-check" tone="success" :href="route('qc.inspections.index', ['status' => 'ok'])" />
+        <x-ui.metric-card flat label="Material NG (Defective)" :value="$regionalFormatter->number((string) ($totalNg), 'plain')" icon="circle-x" :tone="$totalNg > 0 ? 'error' : 'neutral'" :href="route('qc.inspections.index', ['status' => 'ng'])" />
+        <x-ui.metric-card flat label="Waiting for Inspection" :value="$regionalFormatter->number((string) ($waitingInspections), 'plain')" icon="clock" :tone="$waitingInspections > 0 ? 'warning' : 'neutral'" :href="route('qc.inspections.index')" />
     </div>
+        </x-slot:metrics>
 
-    {{-- Restrained Quality Charts Grid --}}
+        <x-slot:charts>
+{{-- Restrained Quality Charts Grid --}}
     <div class="tw-grid tw-gap-4 lg:tw-grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         {{-- Quality Ratio Doughnut Chart --}}
         <x-ui.card title="Quality Pass/Fail Ratio" description="Aggregate OK vs NG outcome ratio." class="tw-h-full">
@@ -129,6 +137,8 @@
             </div>
         </x-ui.card>
     </div>
+        </x-slot:charts>
+    </x-ui.dashboard-layout>
 </div>
 @endsection
 
@@ -136,6 +146,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const displayDashboardNumber = (text) => window.AdasiPreferences?.displayNumber
+            ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
         const themeColors = window.AdasiChart ? window.AdasiChart.getColors() : {
             success: '#1E8449',
             error: '#C0392B',
@@ -172,7 +184,7 @@
                             legend: { display: false },
                             tooltip: window.AdasiChart?.getTooltip({
                                 callbacks: {
-                                    label: (ctx) => ' ' + ctx.label + ': ' + Number(ctx.parsed).toLocaleString('id-ID') + ' Inspections',
+                                    label: (ctx) => ' ' + ctx.label + ': ' + displayDashboardNumber(Number(ctx.parsed).toLocaleString('id-ID')) + ' Inspections',
                                 }
                             }) || {},
                         },
@@ -237,14 +249,14 @@
                         },
                         tooltip: window.AdasiChart?.getTooltip({
                             callbacks: {
-                                label: (ctx) => ' ' + ctx.dataset.label + ': ' + Number(ctx.parsed.y).toLocaleString('id-ID'),
+                                label: (ctx) => ' ' + ctx.dataset.label + ': ' + displayDashboardNumber(Number(ctx.parsed.y).toLocaleString('id-ID')),
                             }
                         }) || {},
                     },
                     scales: window.AdasiChart?.getScales({
                         yMaxTicks: 5,
                         yBeginAtZero: true,
-                        yFormat: (val) => Number(val).toLocaleString('id-ID'),
+                        yFormat: (val) => displayDashboardNumber(Number(val).toLocaleString('id-ID')),
                     }) || {},
                 }
             });

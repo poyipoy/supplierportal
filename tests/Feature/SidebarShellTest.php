@@ -12,7 +12,10 @@ class SidebarShellTest extends TestCase
         $sidebar = file_get_contents(resource_path('views/partials/sidebar.blade.php'));
         $navbar = file_get_contents(resource_path('views/partials/navbar.blade.php'));
 
-        $this->assertStringContainsString("localStorage.getItem('sidebarCollapsed')", $layout);
+        $this->assertStringContainsString('localStorage.getItem(storageKey)', $layout);
+        $this->assertStringContainsString("'adasi.sidebar.' + preferences.accountId", $layout);
+        $this->assertStringContainsString('preferences.sidebarRevision', $layout);
+        $this->assertSame(1, substr_count($layout, 'localStorage.getItem('));
         $this->assertStringContainsString('x-on:ui-sidebar-toggle.window', $layout);
         $this->assertStringContainsString('id="sidebarOverlay"', $layout);
         $this->assertStringContainsString('id="mainWrapper"', $layout);
@@ -52,12 +55,22 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('closeMobileSidebar(false)', $sidebar);
     }
 
+    public function test_preference_bootstrap_runs_before_vite_and_keeps_mobile_contracts_separate(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $this->assertLessThan(strpos($layout, "@vite(['resources/css/app.css', 'resources/js/app.js'])"), strpos($layout, 'const preferences = @js($preferenceFrontendPayload)'));
+        $this->assertStringContainsString('root.dataset.bsTheme = effective', $layout);
+        $this->assertStringContainsString('root.dataset.density = previewDensity ?? savedDensity', $layout);
+        $this->assertStringContainsString('id="sidebarOverlay"', $layout);
+    }
+
     public function test_shell_runtime_handles_persistence_responsive_state_and_focus(): void
     {
         $runtime = file_get_contents(resource_path('js/app.js'));
 
         $this->assertStringContainsString("matchMedia('(min-width: 992px)')", $runtime);
-        $this->assertStringContainsString("localStorage.setItem('sidebarCollapsed'", $runtime);
+        $this->assertStringContainsString('AdasiSidebarPreferences?.read()', $runtime);
+        $this->assertStringContainsString('AdasiSidebarPreferences?.write(this.desktopCollapsed)', $runtime);
         $this->assertStringContainsString('syncSidebarTooltips()', $runtime);
         $this->assertStringContainsString('sidebarReturnFocus', $runtime);
         $this->assertStringContainsString('trapSidebarFocus(event)', $runtime);

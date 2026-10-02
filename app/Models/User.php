@@ -3,7 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Notifications\AdasiResetPasswordNotification;
 use App\Traits\HasHashids;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -78,6 +76,11 @@ class User extends Authenticatable
     public function supplier(): HasOne
     {
         return $this->hasOne(Supplier::class);
+    }
+
+    public function preference(): HasOne
+    {
+        return $this->hasOne(UserPreference::class);
     }
 
     public function supplierScopes(): HasMany
@@ -242,47 +245,5 @@ class User extends Authenticatable
     public function hasTwoFactorAuthentication(): bool
     {
         return filled($this->two_factor_secret) && $this->two_factor_confirmed_at !== null;
-    }
-
-    /**
-     * Send the branded reset-password notification while preserving Laravel's
-     * password-broker token and expiration behavior.
-     *
-     * Deactivated accounts are intentionally skipped: the broker still
-     * creates a token (harmless, self-expires), but no email goes out and
-     * NewPasswordController separately refuses to honor a token for an
-     * inactive account, so a stale credential can't be "revived" this way.
-     */
-    public function sendPasswordResetNotification(#[\SensitiveParameter] $token)
-    {
-        if (! $this->is_active || $this->account_status !== self::ACCOUNT_STATUS_ACTIVE) {
-            return;
-        }
-
-        $this->notify(new AdasiResetPasswordNotification($token));
-    }
-
-    /**
-     * Determine whether this user participates in active or historical procurement
-     * records that prevent hard database deletion.
-     */
-    public function hasBlockingProcurementHistory(): bool
-    {
-        return DB::table('local_invoices')->where('supplier_id', $this->id)->exists()
-            || DB::table('local_invoice_status_histories')->where('actor_id', $this->id)->exists()
-            || DB::table('supplier_bank_accounts')->where('supplier_id', $this->id)->exists()
-            || DB::table('supplier_change_requests')->where('supplier_id', $this->id)->exists()
-            || DB::table('quotations')->where('supplier_id', $this->id)->exists()
-            || DB::table('purchase_orders')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('created_by', $this->id))->exists()
-            || DB::table('purchase_requisitions')->where('created_by', $this->id)->exists()
-            || DB::table('purchase_requisition_suppliers')->where('supplier_id', $this->id)->exists()
-            || DB::table('material_claims')->where(fn ($q) => $q->where('supplier_id', $this->id)->orWhere('submitted_by', $this->id))->exists()
-            || DB::table('qc_inspections')->where('inspected_by', $this->id)->exists()
-            || DB::table('announcements')->where('created_by', $this->id)->exists()
-            || DB::table('attachments')->where('uploaded_by', $this->id)->exists()
-            || DB::table('claim_attachments')->where('uploaded_by', $this->id)->exists()
-            || DB::table('periods')->where('created_by', $this->id)->exists()
-            || DB::table('exchange_rates')->where('created_by', $this->id)->exists()
-            || DB::table('supplier_registration_attempts')->where('user_id', $this->id)->exists();
     }
 }

@@ -1,0 +1,292 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use App\Notifications\SystemNotification;
+use App\Services\NotificationPreferenceService;
+use App\Services\NotificationSummaryService;
+use Illuminate\Broadcasting\BroadcastEvent;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+use Tests\TestCase;
+
+class NotificationSilentDeliveryTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const KEY = 'local_invoice_submitted';
+
+    public function test_normalize_stored_accepts_false_and_silent_strings_only(): void
+    {
+        $service = app(NotificationPreferenceService::class);
+
+        $stored = [
+            'local_invoice_submitted' => 'silent',
+            'local_invoice_paid' => false,
+            'claim_created' => true,
+            'export_completed' => 'normal',
+            'invalid_key' => 'silent',
+            'another_invalid' => false,
+            'nested_legacy' => ['mail' => false],
+        ];
+
+        $normalized = $service->normalizeStored($stored);
+
+        $this->assertSame([
+            'local_invoice_submitted' => 'silent',
+            'local_invoice_paid' => false,
+        ], $normalized);
+    }
+
+    public function test_delivery_for_returns_normal_silent_and_off_with_fallback(): void
+    {
+        $service = app(NotificationPreferenceService::class);
+        $user = User::factory()->create(['role' => 'finance']);
+
+        // Default with no overrides stored -> normal
+        $this->assertSame('normal', $service->deliveryFor($user, self::KEY));
+        $this->assertTrue($service->enabled($user, self::KEY));
+
+        // Stored silent -> silent (and still enabled)
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => [self::KEY => 'silent']])->save();
+        $service->forget($user);
+
+        $this->assertSame('silent', $service->deliveryFor($user, self::KEY));
+        $this->assertTrue($service->enabled($user, self::KEY));
+
+        // Stored false -> off (and not enabled)
+        $pref->forceFill(['notification_preferences' => [self::KEY => false]])->save();
+        $service->forget($user);
+
+        $this->assertSame('off', $service->deliveryFor($user, self::KEY));
+        $this->assertFalse($service->enabled($user, self::KEY));
+
+        // Unregistered key -> normal
+        $this->assertSame('normal', $service->deliveryFor($user, 'unregistered_event_key'));
+
+        // Ineligible user -> normal
+        $supplier = User::factory()->create(['role' => 'supplier']);
+        $this->assertSame('normal', $service->deliveryFor($supplier, self::KEY));
+    }
+
+    public function test_merge_overrides_stores_silent_only_when_enabled_and_off_wins(): void
+    {
+        $service = app(NotificationPreferenceService::class);
+        $user = User::factory()->create(['role' => 'finance']);
+
+        // 1. On + silent -> 'silent'
+        $merged = $service->mergeOverrides($user, [], [self::KEY => 1], [self::KEY => 'silent']);
+        $this->assertSame([self::KEY => 'silent'], $merged);
+
+        // 2. On + normal -> key removed
+        $merged = $service->mergeOverrides($user, [self::KEY => 'silent'], [self::KEY => 1], [self::KEY => 'normal']);
+        $this->assertSame([], $merged);
+
+        // 3. On + absent delivery -> key removed
+        $merged = $service->mergeOverrides($user, [self::KEY => 'silent'], [self::KEY => 1], []);
+        $this->assertSame([], $merged);
+
+        // 4. Off + silent -> false (Off wins over silent)
+        $merged = $service->mergeOverrides($user, [], [self::KEY => 0], [self::KEY => 'silent']);
+        $this->assertSame([self::KEY => false], $merged);
+
+        // 5. Partial update retains existing silent state when key not submitted
+        $otherKey = 'local_invoice_paid';
+        $stored = [self::KEY => 'silent', $otherKey => false];
+        $merged = $service->mergeOverrides($user, $stored, [self::KEY => 0], []);
+        $this->assertSame([self::KEY => false, $otherKey => false], $merged);
+    }
+
+    public function test_silent_event_delivers_to_database_with_silent_flag_and_suppresses_broadcast(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => [self::KEY => 'silent']])->save();
+
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $user->notify($notification);
+
+        $this->assertSame(1, $user->notifications()->count());
+        $stored = $user->notifications()->sole();
+        $this->assertTrue($stored->data['silent'] ?? false);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_off_event_suppresses_both_database_and_broadcast(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => [self::KEY => false]])->save();
+
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $user->notify($notification);
+
+        $this->assertSame(0, $user->notifications()->count());
+        Queue::assertNothingPushed();
+    }
+
+    public function test_normal_event_delivers_to_database_and_broadcast_without_silent_key(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $user->notify($notification);
+
+        $this->assertSame(1, $user->notifications()->count());
+        $stored = $user->notifications()->sole();
+        $this->assertArrayNotHasKey('silent', $stored->data);
+        Queue::assertPushed(BroadcastEvent::class, 1);
+    }
+
+    public function test_caller_supplied_silent_flag_is_overridden_by_service(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+
+        // User is Normal; caller attempts to spoof silent => true
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', [
+            'event' => 'local_invoice.submitted',
+            'silent' => true,
+        ]);
+        $user->notify($notification);
+
+        $stored = $user->notifications()->sole();
+        $this->assertArrayNotHasKey('silent', $stored->data);
+    }
+
+    public function test_unregistered_event_delivered_normally_even_if_similar_silent_key_stored(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['unregistered_event_key' => 'silent']])->save();
+
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'unregistered_event']);
+        $user->notify($notification);
+
+        $this->assertSame(1, $user->notifications()->count());
+        $stored = $user->notifications()->sole();
+        $this->assertArrayNotHasKey('silent', $stored->data);
+        Queue::assertPushed(BroadcastEvent::class, 1);
+    }
+
+    public function test_silent_notifications_are_excluded_from_global_unread_and_category_counts(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+        $summaryService = app(NotificationSummaryService::class);
+
+        // 1 normal unread notification
+        $user->notify(new SystemNotification('Normal', 'Normal', '#', 'bell', ['event' => 'local_invoice.submitted']));
+
+        // 1 silent unread notification
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['local_invoice_resubmitted' => 'silent']])->save();
+        app(NotificationPreferenceService::class)->forget($user);
+        $user->notify(new SystemNotification('Silent', 'Silent', '#', 'bell', ['event' => 'local_invoice.resubmitted']));
+
+        $this->assertSame(2, $user->unreadNotifications()->count());
+
+        // countsForUser
+        $counts = $summaryService->countsForUser($user);
+        $this->assertSame(1, $counts['count'], 'Global badge count must exclude silent unread notifications');
+        $this->assertSame(1, $counts['category_counts']['invoice']['unread'], 'Category badge count must exclude silent unread notifications');
+
+        // forUser
+        $summary = $summaryService->forUser($user);
+        $this->assertSame(1, $summary['count'], 'Summary global count must exclude silent unread notifications');
+        $this->assertSame(1, $summary['category_counts']['invoice']['unread']);
+        $this->assertSame(2, $summary['notifications']->count(), 'Inbox list must retain all notifications including silent');
+
+        // unread-count endpoint
+        $response = $this->actingAs($user)->get(route('notifications.unread-count'))->assertOk();
+        $response->assertJsonPath('count', 1);
+
+        // mark-all-read marks all including silent
+        $this->actingAs($user)->postJson(route('notifications.mark-all-read'))->assertOk();
+        $this->assertSame(0, $user->fresh()->unreadNotifications()->count());
+    }
+
+    public function test_update_preferences_request_validates_delivery_mode(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+
+        // Valid silent delivery mode accepted and stored
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => ['local_invoice_submitted' => 'silent'],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('profile.notifications'));
+
+        $this->assertSame(
+            ['local_invoice_submitted' => 'silent'],
+            $user->fresh()->preference->notification_preferences,
+        );
+
+        // Invalid delivery mode (e.g. mute) rejected with 422/session errors
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => ['local_invoice_submitted' => 'mute'],
+        ])->assertSessionHasErrors(['notification_delivery.local_invoice_submitted']);
+
+        // Unsupported event key in delivery rejected
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => ['unsupported_event_key' => 'silent'],
+        ])->assertSessionHasErrors(['notification_delivery']);
+
+        // Non-array delivery rejected
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => 'silent',
+        ])->assertSessionHasErrors(['notification_delivery']);
+    }
+
+    public function test_controller_index_passes_delivery_preferences_to_view(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['local_invoice_resubmitted' => 'silent']])->save();
+
+        $this->actingAs($user)->get(route('profile.notifications'))
+            ->assertOk()
+            ->assertViewHas('deliveryPreferences', function (array $delivery): bool {
+                return ($delivery['local_invoice_resubmitted'] ?? null) === 'silent'
+                    && ($delivery['local_invoice_submitted'] ?? null) === 'normal';
+            });
+    }
+
+    public function test_off_wins_everywhere_when_saving_via_controller(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '0'],
+            'notification_delivery' => ['local_invoice_submitted' => 'silent'],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            ['local_invoice_submitted' => false],
+            $user->fresh()->preference->notification_preferences,
+            'Off switch must win over silent delivery selection',
+        );
+        $this->assertSame('off', app(NotificationPreferenceService::class)->deliveryFor($user, 'local_invoice_submitted'));
+    }
+
+    public function test_backward_compatibility_when_notification_delivery_not_present(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '0'],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('profile.notifications'));
+
+        $this->assertSame(
+            ['local_invoice_submitted' => false],
+            $user->fresh()->preference->notification_preferences,
+        );
+    }
+}

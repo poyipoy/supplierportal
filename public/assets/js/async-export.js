@@ -169,20 +169,40 @@
         ? rowLabel.replace(/\brows$/i, 'row')
         : rowLabel;
 
-    const rowProgressLabel = (processedRows, totalRows, rowLabel) => (
-        `${processedRows.toLocaleString()} of ${totalRows.toLocaleString()} ${rowUnitFor(rowLabel, totalRows)}`
+    const legacyCountText = (count) => count.toLocaleString();
+    const regionalCountText = (count) => {
+        const preferences = window.AdasiPreferences;
+        const numberFormat = preferences?.regional?.number_format;
+
+        if (
+            !Number.isSafeInteger(count)
+            || !['international', 'indonesian'].includes(numberFormat)
+            || typeof preferences?.displayNumber !== 'function'
+        ) {
+            return legacyCountText(count);
+        }
+
+        return preferences.displayNumber(String(count), 'plain');
+    };
+
+    const rowProgressLabel = (processedRows, totalRows, rowLabel, countText = legacyCountText) => (
+        `${countText(processedRows)} of ${countText(totalRows)} ${rowUnitFor(rowLabel, totalRows)}`
     );
 
-    const progressMessageFor = (payload, stage, processedRows, totalRows, rowLabel) => {
+    const progressMessageFor = (payload, stage, processedRows, totalRows, rowLabel, countText = legacyCountText) => {
         if (totalRows > 0 && stage === 'generating') {
-            return `Processed ${rowProgressLabel(processedRows, totalRows, rowLabel)}.`;
+            if (countText === legacyCountText) {
+                return `Processed ${rowProgressLabel(processedRows, totalRows, rowLabel)}.`;
+            }
+
+            return `Processed ${rowProgressLabel(processedRows, totalRows, rowLabel, countText)}.`;
         }
 
         if (totalRows > 0 && stage === 'finalizing') {
             const rowUnit = rowUnitFor(rowLabel, totalRows);
             const verb = totalRows === 1 ? 'is' : 'are';
 
-            return `All ${totalRows.toLocaleString()} ${rowUnit} ${verb} processed. Finalizing the file.`;
+            return `All ${countText(totalRows)} ${rowUnit} ${verb} processed. Finalizing the file.`;
         }
 
         return payload.message || 'The export is continuing in the background.';
@@ -431,9 +451,16 @@
             if (state.isPending && !state.progressDismissed) {
                 updateExportToast(state, {
                     title: state.lastStatus === 'queued' ? 'Export queued' : 'Export in progress',
-                    message: state.lastMessage,
+                    message: progressMessageFor(
+                        { message: state.lastMessage },
+                        state.lastStage,
+                        state.lastProcessedRows,
+                        state.lastTotalRows,
+                        state.rowLabel,
+                        regionalCountText,
+                    ),
                     progressLabel: state.lastTotalRows > 0
-                        ? rowProgressLabel(state.lastProcessedRows, state.lastTotalRows, state.rowLabel)
+                        ? rowProgressLabel(state.lastProcessedRows, state.lastTotalRows, state.rowLabel, regionalCountText)
                         : progressStageLabels[state.lastStage] || 'Processing',
                     actions: progressActionsForState(state),
                     maxActions: 3,
@@ -527,6 +554,7 @@
         const rowLabel = cleanPresentationText(state.rowLabel, 'rows');
         const terminal = ['completed', 'failed', 'cancelled'].includes(payload.status);
         const message = progressMessageFor(payload, stage, processedRows, totalRows, rowLabel);
+        const visibleMessage = progressMessageFor(payload, stage, processedRows, totalRows, rowLabel, regionalCountText);
         const signature = [
             payload.status,
             stage,
@@ -569,9 +597,9 @@
                     : payload.status === 'cancelled'
                         ? 'Export cancelled'
                     : payload.status === 'queued' ? 'Export queued' : 'Export in progress',
-            message,
+            message: visibleMessage,
             progressLabel: totalRows > 0 && ['generating', 'finalizing'].includes(stage)
-                ? rowProgressLabel(processedRows, totalRows, rowLabel)
+                ? rowProgressLabel(processedRows, totalRows, rowLabel, regionalCountText)
                 : progressStageLabels[stage] || 'Processing',
             actions: terminal ? exportActions(state.exportsUrl) : progressActionsForState(state),
             maxActions: terminal ? 2 : 3,
@@ -611,7 +639,7 @@
             : presentation.sourcePlural;
         const scope = sourceCount === null
             ? `Export ${presentation.sourcePlural}${presentation.filtered ? ' matching the current filters' : ''}?`
-            : `Export ${sourceCount.toLocaleString()} ${sourceLabel}${presentation.filtered ? ' matching the current filters' : ''}?`;
+            : `Export ${regionalCountText(sourceCount)} ${sourceLabel}${presentation.filtered ? ' matching the current filters' : ''}?`;
         const explanation = presentation.rowExplanation
             || `Progress will track ${presentation.rowLabel}.`;
         const options = {
@@ -1059,8 +1087,16 @@
                 restoredTotalRows,
                 restoredRowLabel,
             );
+            const restoredVisibleMessage = progressMessageFor(
+                { message: record.message },
+                restoredStage,
+                restoredProcessedRows,
+                restoredTotalRows,
+                restoredRowLabel,
+                regionalCountText,
+            );
             const restoredProgressLabel = restoredTotalRows > 0 && ['generating', 'finalizing'].includes(restoredStage)
-                ? rowProgressLabel(restoredProcessedRows, restoredTotalRows, restoredRowLabel)
+                ? rowProgressLabel(restoredProcessedRows, restoredTotalRows, restoredRowLabel, regionalCountText)
                 : progressStageLabels[restoredStage] || 'Processing';
 
             const state = {
@@ -1099,7 +1135,7 @@
                 state.toastId = showOrQueueProgressToast({
                     id: toastId,
                     title: restoredStatus === 'queued' ? 'Export queued' : 'Export in progress',
-                    message: restoredMessage,
+                    message: restoredVisibleMessage,
                     progress: restoredProgress,
                     progressLabel: restoredProgressLabel,
                     actions: progressActionsForState(state),

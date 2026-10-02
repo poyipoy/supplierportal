@@ -127,7 +127,6 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
             language: {},
-            pageLength: 25,
             order: []
         });
 

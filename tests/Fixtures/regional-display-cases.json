@@ -1,0 +1,92 @@
+[
+  {
+    "text": "1,250,000.50",
+    "profile": "international",
+    "target": "indonesian",
+    "expected": "1.250.000,50"
+  },
+  {
+    "text": "1250000.5",
+    "profile": "decimal",
+    "target": "international",
+    "expected": "1,250,000.5"
+  },
+  {
+    "text": "-1250000.500",
+    "profile": "decimal",
+    "target": "indonesian",
+    "expected": "-1.250.000,500"
+  },
+  {
+    "text": "9007199254740993123456789.5000",
+    "profile": "decimal",
+    "target": "indonesian",
+    "expected": "9.007.199.254.740.993.123.456.789,5000"
+  },
+  {
+    "text": "1.250,00",
+    "profile": "indonesian",
+    "target": "international",
+    "expected": "1,250.00"
+  },
+  {
+    "text": "0",
+    "profile": "plain",
+    "target": "indonesian",
+    "expected": "0"
+  },
+  {
+    "text": " -0.00 ",
+    "profile": "decimal",
+    "target": "system",
+    "expected": " -0.00 "
+  },
+  {
+    "text": "0.5000",
+    "profile": "decimal",
+    "target": "indonesian",
+    "expected": "0,5000"
+  },
+  {
+    "text": "  -1250.50  ",
+    "profile": "decimal",
+    "target": "international",
+    "expected": "  -1,250.50  "
+  },
+  {
+    "text": "—",
+    "profile": "plain",
+    "target": "indonesian",
+    "expected": "—"
+  },
+  {
+    "text": "-",
+    "profile": "plain",
+    "target": "international",
+    "expected": "-"
+  },
+  {
+    "text": "12,34.50",
+    "profile": "international",
+    "target": "indonesian",
+    "expected": "12,34.50"
+  },
+  {
+    "text": "<script>",
+    "profile": "plain",
+    "target": "indonesian",
+    "expected": "<script>"
+  },
+  {
+    "text": "1250",
+    "profile": "plain",
+    "target": "system",
+    "expected": "1250"
+  },
+  {
+    "text": "1250.00",
+    "profile": "decimal",
+    "target": "forged",
+    "expected": "1250.00"
+  }
+]

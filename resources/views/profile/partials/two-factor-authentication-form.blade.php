@@ -16,7 +16,7 @@
         </form>
 
         <div class="tw-border-t tw-border-outline-variant tw-pt-4">
-            <p class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-text-on-surface-variant">To disable two-factor authentication, verify an authenticator or recovery code.</p>
+            <p id="disable_two_factor_help" class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-text-on-surface-variant">To disable two-factor authentication, verify an authenticator or recovery code.</p>
             <form method="POST" action="{{ route('profile.two-factor.destroy') }}">
                 @csrf
                 @method('DELETE')
@@ -25,8 +25,10 @@
                     <label for="disable_two_factor_code" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Authenticator or recovery code</label>
                     <input id="disable_two_factor_code" name="code" type="text"
                         class="tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-font-mono tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('code') ? 'tw-border-error' : 'tw-border-outline-strong' }}"
-                        autocomplete="one-time-code" maxlength="32" required>
-                    @error('code')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
+                        autocomplete="one-time-code" maxlength="32"
+                        aria-describedby="disable_two_factor_help{{ $errors->has('code') ? ' disable_two_factor_code_error' : '' }}"
+                        aria-invalid="{{ $errors->has('code') ? 'true' : 'false' }}" required>
+                    @error('code')<p id="disable_two_factor_code_error" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
                 </div>
                 <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-9 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-error/60 tw-bg-transparent tw-px-3 tw-text-ui-sm tw-font-medium tw-text-error hover:tw-bg-error/5">
                     <x-ui.icon name="shield-x" />Disable Two-Factor Authentication

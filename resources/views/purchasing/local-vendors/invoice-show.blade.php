@@ -25,7 +25,7 @@
 
     @if($invoice->has_po_discrepancy)
         <x-ui.alert tone="warning" title="Peringatan Discrepancy PO!">
-            Nilai tagihan DPP invoice ini (Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}) melebihi sisa nilai PO (Rp {{ number_format($invoice->po_remaining_snapshot ?? 0, 0, ',', '.') }}).
+            Nilai tagihan DPP invoice ini (Rp {{ $regionalFormatter->number(number_format($invoice->invoice_amount, 0, ',', '.'), 'indonesian') }}) melebihi sisa nilai PO (Rp {{ $regionalFormatter->number(number_format($invoice->po_remaining_snapshot ?? 0, 0, ',', '.'), 'indonesian') }}).
         </x-ui.alert>
     @endif
 
@@ -40,7 +40,7 @@
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">Tanggal Invoice:</span>
-                        <strong class="tw-text-ui-sm tw-text-on-surface">{{ $invoice->invoice_date?->format('d M Y') ?? '—' }}</strong>
+                        <strong class="tw-text-ui-sm tw-text-on-surface">{{ $invoice->invoice_date ? $regionalFormatter->date($invoice->invoice_date, 'human') : '—' }}</strong>
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">Status Tagihan:</span>
@@ -72,19 +72,19 @@
                         <div>
                             <span class="tw-text-on-surface-variant tw-block">DPP (Nilai Tagihan):</span>
                             <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-on-surface">
-                                Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($invoice->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                         <div>
                             <span class="tw-text-on-surface-variant tw-block">PPN ({{ $invoice->ppn_scheme ?? '11%' }}):</span>
                             <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-primary">
-                                Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                         <div>
                             <span class="tw-text-on-surface-variant tw-block">Total Tagihan:</span>
                             <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-success">
-                                Rp {{ number_format($invoice->invoice_amount + $invoice->tax_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->number(number_format($invoice->invoice_amount + $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                     </div>
@@ -144,22 +144,22 @@
                         </div>
                         <div class="tw-flex tw-justify-between tw-p-2 tw-rounded tw-bg-surface-container">
                             <span>PPN Terverifikasi:</span>
-                            <strong class="tw-font-mono">Rp {{ number_format($verification->verified_ppn ?? $invoice->tax_amount, 0, ',', '.') }}</strong>
+                            <strong class="tw-font-mono">Rp {{ $regionalFormatter->number(number_format($verification->verified_ppn ?? $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}</strong>
                         </div>
                         <div class="tw-flex tw-justify-between tw-p-2 tw-rounded tw-bg-surface-container">
                             <span>Pemotongan PPh 23:</span>
-                            <strong class="tw-font-mono">{{ $verification->pph_23_applicable ? 'Rp '.number_format($verification->pph_23_amount, 0, ',', '.').' (Tarif '.$verification->pph_23_rate.'%)' : 'Tidak Ada' }}</strong>
+                            <strong class="tw-font-mono">{{ $verification->pph_23_applicable ? 'Rp '.$regionalFormatter->number(number_format($verification->pph_23_amount, 0, ',', '.'), 'indonesian').' (Tarif '.$verification->pph_23_rate.'%)' : 'Tidak Ada' }}</strong>
                         </div>
                         @if($verification->pph_4_2_applicable)
                             <div class="tw-flex tw-justify-between tw-p-2 tw-rounded tw-bg-surface-container">
                                 <span>PPh 4(2):</span>
-                                <strong class="tw-font-mono">Rp {{ number_format($verification->pph_4_2_amount, 0, ',', '.') }}</strong>
+                                <strong class="tw-font-mono">Rp {{ $regionalFormatter->number(number_format($verification->pph_4_2_amount, 0, ',', '.'), 'indonesian') }}</strong>
                             </div>
                         @endif
                         @if($verification->pph_21_applicable)
                             <div class="tw-flex tw-justify-between tw-p-2 tw-rounded tw-bg-surface-container">
                                 <span>PPh 21:</span>
-                                <strong class="tw-font-mono">Rp {{ number_format($verification->pph_21_amount, 0, ',', '.') }}</strong>
+                                <strong class="tw-font-mono">Rp {{ $regionalFormatter->number(number_format($verification->pph_21_amount, 0, ',', '.'), 'indonesian') }}</strong>
                             </div>
                         @endif
                         @if($verification->tax_notes)
@@ -183,7 +183,7 @@
                 <div class="tw-space-y-3 tw-text-ui-xs">
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">Tgl Terima Kasir:</span>
-                        <strong class="tw-text-on-surface">{{ $invoice->cashier_received_at?->format('d M Y H:i') ?? 'Belum Diterima' }}</strong>
+                        <strong class="tw-text-on-surface">{{ $invoice->cashier_received_at ? $regionalFormatter->timestamp($invoice->cashier_received_at, 'datetime') : 'Belum Diterima' }}</strong>
                     </div>
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">Payment Term:</span>
@@ -192,7 +192,7 @@
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">Jatuh Tempo:</span>
                         <strong class="tw-text-on-surface tw-text-ui-sm {{ $invoice->isOverdue() ? 'tw-text-error' : 'tw-text-primary' }}">
-                            {{ $invoice->due_date?->format('d M Y') ?? 'Menunggu Kasir' }}
+                            {{ $invoice->due_date ? $regionalFormatter->date($invoice->due_date, 'human') : 'Menunggu Kasir' }}
                         </strong>
                     </div>
                     @if($invoice->due_date)
@@ -210,7 +210,7 @@
                         <div class="tw-p-2 tw-rounded tw-bg-surface-container">
                             <div class="tw-flex tw-justify-between">
                                 <strong>{{ ucwords(str_replace('_', ' ', $hist->event)) }}</strong>
-                                <span class="tw-text-on-surface-variant">{{ $hist->created_at->format('d M H:i') }}</span>
+                                <span class="tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($hist->created_at, 'short_datetime') }}</span>
                             </div>
                             <div class="tw-text-on-surface-variant">Oleh: {{ $hist->actor?->name ?? 'System' }}</div>
                             @if($hist->notes)
