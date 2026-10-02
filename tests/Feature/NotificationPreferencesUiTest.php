@@ -325,6 +325,88 @@ class NotificationPreferencesUiTest extends TestCase
         $this->assertLessThanOrEqual(1, $queryCount);
     }
 
+    public function test_silent_delivery_select_rendered_with_correct_semantics_and_no_label(): void
+    {
+        $user = $this->localSupplier();
+        $response = $this->actingAs($user)->get(route('profile.notifications'))->assertOk();
+
+        $xpath = $this->xpathFromHtml($response->getContent());
+
+        // Select exists for each event
+        $selects = $xpath->query('//select[starts-with(@name, "notification_delivery[")]');
+        $this->assertCount(13, $selects);
+
+        /** @var \DOMElement $select */
+        foreach ($selects as $select) {
+            $id = $select->getAttribute('id');
+
+            // Outside legend, inside fieldset
+            $fieldset = $xpath->query('ancestor::fieldset', $select)->item(0);
+            $this->assertNotNull($fieldset);
+            $legend = $xpath->query('legend', $fieldset)->item(0);
+            $this->assertNotNull($legend);
+            $this->assertCount(0, $xpath->query('.//select', $legend), 'Select must sit outside legend');
+
+            // No label tag for the select
+            if ($id) {
+                $this->assertCount(0, $xpath->query('//label[@for="'.$id.'"]'), 'Select must have no label tag');
+            }
+            $this->assertNotEmpty($select->getAttribute('aria-label'), 'Select must have aria-label');
+            $this->assertStringContainsString('delivery mode', $select->getAttribute('aria-label'));
+
+            // Options: normal and silent
+            $options = $xpath->query('.//option', $select);
+            $this->assertCount(2, $options);
+            $this->assertSame('normal', $options->item(0)->getAttribute('value'));
+            $this->assertSame('silent', $options->item(1)->getAttribute('value'));
+        }
+
+        // Local supplier still has exactly 13 checkboxes
+        $this->assertCount(13, $xpath->query('//input[@type="checkbox"]'));
+    }
+
+    public function test_silent_filter_button_and_quiet_mode_preset_rendered(): void
+    {
+        $user = $this->localSupplier();
+        $response = $this->actingAs($user)->get(route('profile.notifications'))->assertOk();
+
+        $xpath = $this->xpathFromHtml($response->getContent());
+
+        // Silent filter button in toolbar
+        $filterGroup = $xpath->query('//div[@role="group" and @aria-label="Filter notifications"]')->item(0);
+        $this->assertNotNull($filterGroup);
+        $this->assertCount(1, $xpath->query('.//button[normalize-space(.)="Silent" and @*[name()=":aria-pressed"]="activeFilter === \'silent\' ? \'true\' : \'false\'"]', $filterGroup));
+
+        // Quiet mode preset button
+        $response->assertSeeText('Quiet mode');
+        $this->assertCount(1, $xpath->query('.//button[normalize-space(.)="Quiet mode"]'));
+
+        // Summary chip contains enabled, silent, and off counts
+        $response->assertSeeText('enabled · 0 silent · 0 off');
+    }
+
+    public function test_silent_delivery_reflects_stored_preference_in_selected_option(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['local_invoice_resubmitted' => 'silent']])->save();
+
+        $response = $this->actingAs($user)->get(route('profile.notifications'))->assertOk();
+        $xpath = $this->xpathFromHtml($response->getContent());
+
+        $resubmittedSelect = $xpath->query('//select[@name="notification_delivery[local_invoice_resubmitted]"]')->item(0);
+        $this->assertNotNull($resubmittedSelect);
+        $silentOption = $xpath->query('.//option[@value="silent"]', $resubmittedSelect)->item(0);
+        $this->assertNotNull($silentOption);
+        $this->assertTrue($silentOption->hasAttribute('selected'));
+
+        $submittedSelect = $xpath->query('//select[@name="notification_delivery[local_invoice_submitted]"]')->item(0);
+        $this->assertNotNull($submittedSelect);
+        $normalOption = $xpath->query('.//option[@value="normal"]', $submittedSelect)->item(0);
+        $this->assertNotNull($normalOption);
+        $this->assertTrue($normalOption->hasAttribute('selected'));
+    }
+
     private function localSupplier(array $attributes = []): User
     {
         $user = User::factory()->create(['role' => 'supplier', ...$attributes]);

@@ -33,11 +33,25 @@
             $allOpenInitially = ($totalEventsCount <= 12 || $categoryCount <= 2);
 
             $totalEnabledCount = 0;
+            $totalSilentCount = 0;
+            $initialSwitches = [];
+            $initialDelivery = [];
             foreach ($events as $k => $e) {
-                if ((bool) old('notification_preferences.'.$k, $effectivePreferences[$k])) {
+                $isOn = (bool) old('notification_preferences.'.$k, $effectivePreferences[$k]);
+                $del = (string) old('notification_delivery.'.$k, $deliveryPreferences[$k] ?? 'normal');
+                if ($del !== 'silent') {
+                    $del = 'normal';
+                }
+                $initialSwitches[$k] = $isOn;
+                $initialDelivery[$k] = $del;
+                if ($isOn) {
                     $totalEnabledCount++;
+                    if ($del === 'silent') {
+                        $totalSilentCount++;
+                    }
                 }
             }
+            $offCount = $totalEventsCount - $totalEnabledCount;
 
             $isSupplier = auth()->user()?->isSupplier();
             $userRole = auth()->user()?->role;
@@ -72,8 +86,11 @@
             x-data="notificationPreferencesForm({
                 scopeTab: @js($showScopeTabs ? $defaultScope : 'all'),
                 totalEnabled: {{ $totalEnabledCount }},
+                totalSilent: {{ $totalSilentCount }},
                 totalEvents: {{ $totalEventsCount }},
                 categoryStats: @js($initialCategoryStats),
+                initialSwitches: @js($initialSwitches),
+                initialDelivery: @js($initialDelivery),
             })"
             @change="updateDirty()"
             @submit="isSubmitting = true"
@@ -133,12 +150,12 @@
                         <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">Preferences</span>
                         <div x-show="totalEvents === totalEnabled" @if($totalEnabledCount < $totalEventsCount) style="display: none;" @endif>
                             <x-ui.status-chip tone="success">
-                                <span x-text="totalEnabled + ' of ' + totalEvents + ' enabled'">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled</span>
+                                <span x-text="summaryChipText()">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled · {{ $totalSilentCount }} silent · {{ $offCount }} off</span>
                             </x-ui.status-chip>
                         </div>
                         <div x-show="totalEnabled < totalEvents" @if($totalEnabledCount === $totalEventsCount) style="display: none;" @endif>
                             <x-ui.status-chip tone="warning">
-                                <span x-text="totalEnabled + ' of ' + totalEvents + ' enabled'">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled</span>
+                                <span x-text="summaryChipText()">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled · {{ $totalSilentCount }} silent · {{ $offCount }} off</span>
                             </x-ui.status-chip>
                         </div>
                     </div>
@@ -190,6 +207,15 @@
                                 >
                                     Muted
                                 </button>
+                                <button
+                                    type="button"
+                                    class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
+                                    :class="activeFilter === 'silent' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                    :aria-pressed="activeFilter === 'silent' ? 'true' : 'false'"
+                                    @click="activeFilter = 'silent'; applyFilters()"
+                                >
+                                    Silent
+                                </button>
                             </div>
 
                             <div class="tw-inline-flex tw-items-center tw-gap-1.5 tw-text-ui-xs tw-text-on-surface-variant">
@@ -197,6 +223,8 @@
                                 <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('everything')">Everything</button>
                                 <span class="tw-text-outline" aria-hidden="true">·</span>
                                 <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('action_needed')">Action needed only</button>
+                                <span class="tw-text-outline" aria-hidden="true">·</span>
+                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('quiet')">Quiet mode</button>
                             </div>
                         </div>
                     </x-slot:filters>
@@ -299,6 +327,18 @@
                                                 <span>This notification requires your action. Muting it may cause you to miss pending tasks.</span>
                                             </p>
                                         @endif
+                                        <div class="tw-mt-2 delivery-mode-container" x-show="switches['{{ $key }}']" @if(!$isChecked) style="display: none;" @endif>
+                                            <select
+                                                name="notification_delivery[{{ $key }}]"
+                                                x-model="delivery['{{ $key }}']"
+                                                @change="onDeliveryChange('{{ $key }}', $el)"
+                                                aria-label="{{ $event['label'] }} delivery mode"
+                                                class="ui-input tw-text-ui-xs tw-rounded-ui-xs tw-border tw-border-outline tw-bg-surface tw-text-on-surface tw-py-1 tw-ps-2 tw-pe-6"
+                                            >
+                                                <option value="normal" @selected(($deliveryPreferences[$key] ?? 'normal') === 'normal')>Normal — popup + inbox</option>
+                                                <option value="silent" @selected(($deliveryPreferences[$key] ?? 'normal') === 'silent')>Silent — inbox only</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div class="tw-flex tw-items-center tw-gap-2.5 tw-shrink-0 tw-min-h-11">
                                         <input type="hidden" name="notification_preferences[{{ $key }}]" value="0">
@@ -307,9 +347,11 @@
                                             name="notification_preferences[{{ $key }}]"
                                             value="1"
                                             :checked="$isChecked"
+                                            x-model="switches['{{ $key }}']"
                                             aria-describedby="notification-{{ $key }}-help @if($isActionRequired) notification-{{ $key }}-warning @endif @error($field) {{ $controlId }}-error @enderror"
                                             aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}"
                                             onchange="this.parentElement.querySelector('label span[aria-hidden]').textContent = this.checked ? 'On' : 'Off'; const note = this.closest('fieldset').querySelector('.action-required-note'); if (note) { note.style.display = this.checked ? 'none' : 'inline-flex'; }"
+                                            @change="onSwitchChange('{{ $key }}', $el)"
                                         />
                                         <label for="{{ $controlId }}" class="tw-cursor-pointer tw-select-none tw-text-ui-xs tw-font-medium tw-text-on-surface-variant tw-min-w-[1.75rem]">
                                             <span class="tw-sr-only">{{ $event['label'] }}</span>
@@ -426,9 +468,14 @@ function notificationPreferencesForm(config) {
         activeFilter: 'all',
         scopeTab: config.scopeTab,
         totalEnabled: config.totalEnabled,
+        totalSilent: config.totalSilent,
         totalEvents: config.totalEvents,
         visibleEventCount: config.totalEvents,
         categoryStats: config.categoryStats,
+        switches: Object.assign({}, config.initialSwitches),
+        delivery: Object.assign({}, config.initialDelivery),
+        initialSwitches: Object.assign({}, config.initialSwitches),
+        initialDelivery: Object.assign({}, config.initialDelivery),
         getRoot() {
             return this.$root || this.$el || document.querySelector('form[action$="/profile/notifications"]');
         },
@@ -453,32 +500,65 @@ function notificationPreferencesForm(config) {
                 }
             });
         },
+        summaryChipText() {
+            const off = this.totalEvents - this.totalEnabled;
+            return `${this.totalEnabled} of ${this.totalEvents} enabled · ${this.totalSilent} silent · ${off} off`;
+        },
+        onSwitchChange(key, el) {
+            this.switches[key] = el.checked;
+            const labelSpan = el.parentElement ? el.parentElement.querySelector('label span[aria-hidden]') : null;
+            if (labelSpan) {
+                labelSpan.textContent = el.checked ? 'On' : 'Off';
+            }
+            const note = el.closest('fieldset').querySelector('.action-required-note');
+            if (note) {
+                note.style.display = el.checked ? 'none' : 'inline-flex';
+            }
+            this.updateDirty();
+        },
+        onDeliveryChange(key, el) {
+            this.delivery[key] = el.value;
+            this.updateDirty();
+        },
         updateDirty() {
-            const root = this.getRoot();
-            const checkboxes = root.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
             let count = 0;
-            checkboxes.forEach(cb => {
-                if (cb.checked !== cb.defaultChecked) count++;
-            });
+            for (const key in this.initialSwitches) {
+                if (Boolean(this.switches[key]) !== Boolean(this.initialSwitches[key])) {
+                    count++;
+                }
+                if ((this.delivery[key] || 'normal') !== (this.initialDelivery[key] || 'normal')) {
+                    count++;
+                }
+            }
             this.dirtyCount = count;
             this.updateCategoryStats();
             this.updateOverallStats();
             this.applyFilters();
         },
         updateOverallStats() {
-            const root = this.getRoot();
-            const cbs = root.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
             let enabled = 0;
-            cbs.forEach(cb => { if (cb.checked) enabled++; });
+            let silent = 0;
+            for (const key in this.switches) {
+                if (this.switches[key]) {
+                    enabled++;
+                    if (this.delivery[key] === 'silent') {
+                        silent++;
+                    }
+                }
+            }
             this.totalEnabled = enabled;
+            this.totalSilent = silent;
         },
         updateCategoryStats() {
             const root = this.getRoot();
             root.querySelectorAll('details[data-category]').forEach(detail => {
                 const cat = detail.getAttribute('data-category');
-                const cbs = detail.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+                const fieldsets = detail.querySelectorAll('fieldset[data-event-key]');
                 let on = 0;
-                cbs.forEach(cb => { if (cb.checked) on++; });
+                fieldsets.forEach(fieldset => {
+                    const key = fieldset.getAttribute('data-event-key');
+                    if (this.switches[key]) on++;
+                });
                 if (this.categoryStats[cat]) {
                     this.categoryStats[cat].on = on;
                 }
@@ -498,16 +578,21 @@ function notificationPreferencesForm(config) {
                 ? root.querySelector('details[data-category="' + CSS.escape(target) + '"]')
                 : (target ? target.closest('details') : null);
             if (!detail) return;
-            const cbs = detail.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
-            cbs.forEach(cb => {
-                cb.checked = turnOn;
-                const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
-                if (labelSpan) {
-                    labelSpan.textContent = turnOn ? 'On' : 'Off';
-                }
-                const note = cb.closest('fieldset').querySelector('.action-required-note');
-                if (note) {
-                    note.style.display = turnOn ? 'none' : 'inline-flex';
+            const fieldsets = detail.querySelectorAll('fieldset[data-event-key]');
+            fieldsets.forEach(fieldset => {
+                const key = fieldset.getAttribute('data-event-key');
+                const cb = fieldset.querySelector('input[type=checkbox][name^="notification_preferences"]');
+                if (cb && key) {
+                    cb.checked = turnOn;
+                    this.switches[key] = turnOn;
+                    const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                    if (labelSpan) {
+                        labelSpan.textContent = turnOn ? 'On' : 'Off';
+                    }
+                    const note = fieldset.querySelector('.action-required-note');
+                    if (note) {
+                        note.style.display = turnOn ? 'none' : 'inline-flex';
+                    }
                 }
             });
             this.updateDirty();
@@ -526,11 +611,12 @@ function notificationPreferencesForm(config) {
             let count = 0;
 
             rows.forEach(row => {
+                const key = row.getAttribute('data-event-key');
                 const label = (row.getAttribute('data-event-label') || '').toLowerCase();
                 const desc = (row.getAttribute('data-event-desc') || '').toLowerCase();
                 const scope = row.getAttribute('data-scope') || 'general';
-                const cb = row.querySelector('input[type=checkbox][name^="notification_preferences"]');
-                const isEnabled = cb ? cb.checked : true;
+                const isEnabled = Boolean(this.switches[key]);
+                const isSilent = (this.delivery[key] === 'silent');
 
                 const matchesSearch = !query || label.includes(query) || desc.includes(query);
                 let matchesFilter = true;
@@ -538,6 +624,8 @@ function notificationPreferencesForm(config) {
                     matchesFilter = isEnabled;
                 } else if (this.activeFilter === 'muted') {
                     matchesFilter = !isEnabled;
+                } else if (this.activeFilter === 'silent') {
+                    matchesFilter = isEnabled && isSilent;
                 }
 
                 let matchesScope = true;
@@ -577,36 +665,61 @@ function notificationPreferencesForm(config) {
             const root = this.getRoot();
             const rows = root.querySelectorAll('fieldset[data-event-key]');
             rows.forEach(row => {
+                const key = row.getAttribute('data-event-key');
                 const cb = row.querySelector('input[type=checkbox][name^="notification_preferences"]');
-                if (!cb) return;
+                const select = row.querySelector('select[name^="notification_delivery"]');
+                if (!cb || !key) return;
                 const isActionRequired = row.getAttribute('data-priority') === 'action_required';
-                const shouldCheck = (preset === 'everything') ? true : isActionRequired;
-                cb.checked = shouldCheck;
+
+                if (preset === 'quiet') {
+                    cb.checked = true;
+                    this.switches[key] = true;
+                    const mode = isActionRequired ? 'normal' : 'silent';
+                    this.delivery[key] = mode;
+                    if (select) select.value = mode;
+                } else {
+                    const shouldCheck = (preset === 'everything') ? true : isActionRequired;
+                    cb.checked = shouldCheck;
+                    this.switches[key] = shouldCheck;
+                }
+
                 const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
                 if (labelSpan) {
-                    labelSpan.textContent = shouldCheck ? 'On' : 'Off';
+                    labelSpan.textContent = cb.checked ? 'On' : 'Off';
                 }
                 const note = row.querySelector('.action-required-note');
                 if (note) {
-                    note.style.display = shouldCheck ? 'none' : 'inline-flex';
+                    note.style.display = cb.checked ? 'none' : 'inline-flex';
                 }
             });
             this.updateDirty();
         },
         discard() {
             const root = this.getRoot();
-            const checkboxes = root.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
-            checkboxes.forEach(cb => {
-                cb.checked = cb.defaultChecked;
-                const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
-                if (labelSpan) {
-                    labelSpan.textContent = cb.checked ? 'On' : 'Off';
+            for (const key in this.initialSwitches) {
+                const checked = Boolean(this.initialSwitches[key]);
+                this.switches[key] = checked;
+                const cb = root.querySelector(`input[type=checkbox][name="notification_preferences[${key}]"]`);
+                if (cb) {
+                    cb.checked = checked;
+                    const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                    if (labelSpan) {
+                        labelSpan.textContent = checked ? 'On' : 'Off';
+                    }
+                    const note = cb.closest('fieldset').querySelector('.action-required-note');
+                    if (note) {
+                        note.style.display = checked ? 'none' : 'inline-flex';
+                    }
                 }
-                const note = cb.closest('fieldset').querySelector('.action-required-note');
-                if (note) {
-                    note.style.display = cb.checked ? 'none' : 'inline-flex';
+            }
+            for (const key in this.initialDelivery) {
+                const mode = this.initialDelivery[key] || 'normal';
+                this.delivery[key] = mode;
+                const select = root.querySelector(`select[name="notification_delivery[${key}]"]`);
+                if (select) {
+                    select.value = mode;
                 }
-            });
+            }
             this.updateDirty();
         }
     };
