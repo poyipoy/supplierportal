@@ -418,6 +418,9 @@ function notificationPreferencesForm(config) {
         totalEvents: config.totalEvents,
         visibleEventCount: config.totalEvents,
         categoryStats: config.categoryStats,
+        getRoot() {
+            return this.$root || this.$el || document.querySelector('form[action$="/profile/notifications"]');
+        },
         init() {
             this.updateDirty();
             if (this.scopeTab !== 'all') {
@@ -431,7 +434,8 @@ function notificationPreferencesForm(config) {
             });
         },
         updateDirty() {
-            const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+            const root = this.getRoot();
+            const checkboxes = root.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
             let count = 0;
             checkboxes.forEach(cb => {
                 if (cb.checked !== cb.defaultChecked) count++;
@@ -442,13 +446,15 @@ function notificationPreferencesForm(config) {
             this.applyFilters();
         },
         updateOverallStats() {
-            const cbs = this.$el.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+            const root = this.getRoot();
+            const cbs = root.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
             let enabled = 0;
             cbs.forEach(cb => { if (cb.checked) enabled++; });
             this.totalEnabled = enabled;
         },
         updateCategoryStats() {
-            this.$el.querySelectorAll('details[data-category]').forEach(detail => {
+            const root = this.getRoot();
+            root.querySelectorAll('details[data-category]').forEach(detail => {
                 const cat = detail.getAttribute('data-category');
                 const cbs = detail.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
                 let on = 0;
@@ -459,7 +465,8 @@ function notificationPreferencesForm(config) {
             });
         },
         turnCategoryAll(catName, turnOn) {
-            const detail = this.$el.querySelector('details[data-category="' + catName + '"]');
+            const root = this.getRoot();
+            const detail = root.querySelector('details[data-category="' + catName + '"]');
             if (!detail) return;
             const cbs = detail.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
             cbs.forEach(cb => {
@@ -476,14 +483,16 @@ function notificationPreferencesForm(config) {
             this.updateDirty();
         },
         toggleAllCategories() {
-            const details = Array.from(this.$el.querySelectorAll('details[data-category]'));
+            const root = this.getRoot();
+            const details = Array.from(root.querySelectorAll('details[data-category]'));
             const anyClosed = details.some(d => !d.open);
             details.forEach(d => { d.open = anyClosed; });
             this.allExpanded = anyClosed;
         },
         applyFilters() {
+            const root = this.getRoot();
             const query = this.searchQuery.trim().toLowerCase();
-            const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
+            const rows = root.querySelectorAll('fieldset[data-event-key]');
             let count = 0;
 
             rows.forEach(row => {
@@ -517,7 +526,7 @@ function notificationPreferencesForm(config) {
 
             this.visibleEventCount = count;
 
-            this.$el.querySelectorAll('details[data-category]').forEach(detail => {
+            root.querySelectorAll('details[data-category]').forEach(detail => {
                 const visibleRows = detail.querySelectorAll('fieldset[data-event-key]:not([hidden])');
                 if (visibleRows.length === 0) {
                     detail.setAttribute('hidden', '');
@@ -535,7 +544,8 @@ function notificationPreferencesForm(config) {
             this.applyFilters();
         },
         applyPreset(preset) {
-            const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
+            const root = this.getRoot();
+            const rows = root.querySelectorAll('fieldset[data-event-key]');
             rows.forEach(row => {
                 const cb = row.querySelector('input[type=checkbox][name^="notification_preferences"]');
                 if (!cb) return;
@@ -554,7 +564,8 @@ function notificationPreferencesForm(config) {
             this.updateDirty();
         },
         discard() {
-            const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+            const root = this.getRoot();
+            const checkboxes = root.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
             checkboxes.forEach(cb => {
                 cb.checked = cb.defaultChecked;
                 const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
