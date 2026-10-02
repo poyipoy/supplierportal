@@ -425,7 +425,124 @@
         --md-on-info-container: #D9E9FF;
     }
 
-    :root[data-accent="slate"] .btn-primary {
+    :root[data-accent="indigo"] {
+        --md-primary: #4338CA;
+        --md-primary-rgb: 67, 56, 202;
+        --md-on-primary: #FFFFFF;
+        --md-on-primary-rgb: 255, 255, 255;
+        --md-primary-container: #EEF2FF;
+        --md-on-primary-container: #312E81;
+        --ui-primary-text: #4338CA;
+        --ui-primary-text-rgb: 67, 56, 202;
+        --ui-primary-hover: #3730A3;
+        --ui-input-focus: var(--md-primary);
+        --bs-link-color: var(--ui-primary-text);
+        --bs-link-color-rgb: var(--ui-primary-text-rgb);
+        --bs-link-hover-color: var(--md-on-primary-container);
+        --bs-link-hover-color-rgb: 49, 46, 129;
+        --md-info: #1F5FA6;
+        --md-info-rgb: 31, 95, 166;
+        --md-on-info: #FFFFFF;
+        --md-on-info-rgb: 255, 255, 255;
+        --md-info-container: #EBF3FC;
+        --md-on-info-container: #0E3566;
+    }
+
+    :root[data-theme="dark"][data-accent="indigo"] {
+        --md-primary: #A5B4FC;
+        --md-primary-rgb: 165, 180, 252;
+        --md-on-primary: #1E1B4B;
+        --md-on-primary-rgb: 30, 27, 75;
+        --md-primary-container: #2E2A72;
+        --md-on-primary-container: #E0E7FF;
+        --ui-primary-text: #A5B4FC;
+        --ui-primary-text-rgb: 165, 180, 252;
+        --ui-primary-hover: #C7D2FE;
+        --bs-link-hover-color-rgb: 224, 231, 255;
+        --md-info-container: #1B3654;
+        --md-on-info-container: #D9E9FF;
+    }
+
+    :root[data-accent="teal"] {
+        --md-primary: #0F766E;
+        --md-primary-rgb: 15, 118, 110;
+        --md-on-primary: #FFFFFF;
+        --md-on-primary-rgb: 255, 255, 255;
+        --md-primary-container: #CCFBF1;
+        --md-on-primary-container: #134E4A;
+        --ui-primary-text: #0F766E;
+        --ui-primary-text-rgb: 15, 118, 110;
+        --ui-primary-hover: #115E59;
+        --ui-input-focus: var(--md-primary);
+        --bs-link-color: var(--ui-primary-text);
+        --bs-link-color-rgb: var(--ui-primary-text-rgb);
+        --bs-link-hover-color: var(--md-on-primary-container);
+        --bs-link-hover-color-rgb: 19, 78, 74;
+        --md-info: #1F5FA6;
+        --md-info-rgb: 31, 95, 166;
+        --md-on-info: #FFFFFF;
+        --md-on-info-rgb: 255, 255, 255;
+        --md-info-container: #EBF3FC;
+        --md-on-info-container: #0E3566;
+    }
+
+    :root[data-theme="dark"][data-accent="teal"] {
+        --md-primary: #5EEAD4;
+        --md-primary-rgb: 94, 234, 212;
+        --md-on-primary: #042F2E;
+        --md-on-primary-rgb: 4, 47, 46;
+        --md-primary-container: #134E4A;
+        --md-on-primary-container: #CCFBF1;
+        --ui-primary-text: #5EEAD4;
+        --ui-primary-text-rgb: 94, 234, 212;
+        --ui-primary-hover: #99F6E4;
+        --bs-link-hover-color-rgb: 204, 251, 241;
+        --md-info-container: #1B3654;
+        --md-on-info-container: #D9E9FF;
+    }
+
+    :root[data-accent="violet"] {
+        --md-primary: #6D28D9;
+        --md-primary-rgb: 109, 40, 217;
+        --md-on-primary: #FFFFFF;
+        --md-on-primary-rgb: 255, 255, 255;
+        --md-primary-container: #F5F3FF;
+        --md-on-primary-container: #4C1D95;
+        --ui-primary-text: #6D28D9;
+        --ui-primary-text-rgb: 109, 40, 217;
+        --ui-primary-hover: #5B21B6;
+        --ui-input-focus: var(--md-primary);
+        --bs-link-color: var(--ui-primary-text);
+        --bs-link-color-rgb: var(--ui-primary-text-rgb);
+        --bs-link-hover-color: var(--md-on-primary-container);
+        --bs-link-hover-color-rgb: 76, 29, 149;
+        --md-info: #1F5FA6;
+        --md-info-rgb: 31, 95, 166;
+        --md-on-info: #FFFFFF;
+        --md-on-info-rgb: 255, 255, 255;
+        --md-info-container: #EBF3FC;
+        --md-on-info-container: #0E3566;
+    }
+
+    :root[data-theme="dark"][data-accent="violet"] {
+        --md-primary: #C4B5FD;
+        --md-primary-rgb: 196, 181, 253;
+        --md-on-primary: #2E1065;
+        --md-on-primary-rgb: 46, 16, 101;
+        --md-primary-container: #4C1D95;
+        --md-on-primary-container: #EDE9FE;
+        --ui-primary-text: #C4B5FD;
+        --ui-primary-text-rgb: 196, 181, 253;
+        --ui-primary-hover: #DDD6FE;
+        --bs-link-hover-color-rgb: 237, 233, 254;
+        --md-info-container: #1B3654;
+        --md-on-info-container: #D9E9FF;
+    }
+
+    :root[data-accent="slate"] .btn-primary,
+    :root[data-accent="indigo"] .btn-primary,
+    :root[data-accent="teal"] .btn-primary,
+    :root[data-accent="violet"] .btn-primary {
         --bs-btn-color: var(--md-on-primary);
         --bs-btn-bg: var(--md-primary);
         --bs-btn-border-color: var(--md-primary);
@@ -441,7 +558,10 @@
         --bs-btn-focus-shadow-rgb: var(--md-primary-rgb);
     }
 
-    :root[data-accent="slate"] .btn-outline-primary {
+    :root[data-accent="slate"] .btn-outline-primary,
+    :root[data-accent="indigo"] .btn-outline-primary,
+    :root[data-accent="teal"] .btn-outline-primary,
+    :root[data-accent="violet"] .btn-outline-primary {
         --bs-btn-color: var(--ui-primary-text);
         --bs-btn-border-color: var(--md-primary);
         --bs-btn-hover-color: var(--md-on-primary);
@@ -457,6 +577,9 @@
 
     [data-accent-swatch="brand"] { background-color: #1F5FA6; }
     [data-accent-swatch="slate"] { background-color: #475569; }
+    [data-accent-swatch="indigo"] { background-color: #4338CA; }
+    [data-accent-swatch="teal"] { background-color: #0F766E; }
+    [data-accent-swatch="violet"] { background-color: #6D28D9; }
 
     :root[data-theme="dark"] .tw-text-primary,
     :root[data-theme="dark"] .hover\:tw-text-primary:hover {
@@ -488,6 +611,13 @@
         --bs-btn-hover-color: var(--md-on-primary);
         --bs-btn-hover-bg: #2B70B5;
         --bs-btn-hover-border-color: #2B70B5;
+    }
+
+    :root[data-theme="dark"][data-accent="indigo"] .btn-primary,
+    :root[data-theme="dark"][data-accent="teal"] .btn-primary,
+    :root[data-theme="dark"][data-accent="violet"] .btn-primary {
+        --bs-btn-hover-bg: var(--ui-primary-hover);
+        --bs-btn-hover-border-color: var(--ui-primary-hover);
     }
 
     :root[data-theme="dark"] .sidebar-link.active { color: var(--ui-primary-text); }

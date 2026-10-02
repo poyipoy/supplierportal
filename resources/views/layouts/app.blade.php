@@ -213,7 +213,6 @@
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
 
-
     <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
@@ -410,14 +409,27 @@
     <!-- Custom JS -->
     <script>
         @auth
+            let badgeFetchActive = false;
+
             function updateBadges() {
+                if (badgeFetchActive || (document.visibilityState && document.visibilityState === 'hidden')) {
+                    return;
+                }
+
+                badgeFetchActive = true;
                 const headers = {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 };
 
+                const notifCtrl = new AbortController();
+                const notifTimeout = setTimeout(() => notifCtrl.abort(), 8000);
+
                 // Notification badge
-                fetch("{{ route('notifications.unread-count') }}", { headers })
+                const notifPromise = fetch("{{ route('notifications.unread-count') }}", {
+                    headers,
+                    signal: notifCtrl.signal
+                })
                     .then(r => r.ok ? r.json() : null)
                     .then(data => {
                         if (!data) return;
@@ -434,11 +446,18 @@
                             updateNotificationCategoryBadges(data.category_counts);
                         }
                     })
-                    .catch(() => {});
+                    .catch(() => {})
+                    .finally(() => clearTimeout(notifTimeout));
 
                 // Chat badge
                 @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
-                    fetch("{{ route('conversations.unread-count') }}", { headers })
+                    const chatCtrl = new AbortController();
+                    const chatTimeout = setTimeout(() => chatCtrl.abort(), 8000);
+
+                    const chatPromise = fetch("{{ route('conversations.unread-count') }}", {
+                        headers,
+                        signal: chatCtrl.signal
+                    })
                         .then(r => r.ok ? r.json() : null)
                         .then(data => {
                             if (!data) return;
@@ -461,12 +480,27 @@
                                 }
                             });
                         })
-                        .catch(() => {});
+                        .catch(() => {})
+                        .finally(() => clearTimeout(chatTimeout));
+
+                    Promise.allSettled([notifPromise, chatPromise]).finally(() => {
+                        badgeFetchActive = false;
+                    });
+                @else
+                    notifPromise.finally(() => {
+                        badgeFetchActive = false;
+                    });
                 @endif
             }
 
-            // Run immediately on load
-            updateBadges();
+            // Run after initial page assets have completely finished loading to avoid holding tab spinner
+            if (document.readyState === 'complete') {
+                setTimeout(updateBadges, 1000);
+            } else {
+                window.addEventListener('load', () => {
+                    setTimeout(updateBadges, 1000);
+                });
+            }
 
             // Polling every 30 seconds
             setInterval(updateBadges, 30000);

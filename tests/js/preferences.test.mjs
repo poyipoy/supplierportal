@@ -260,3 +260,130 @@ test('charts initialized by page scripts receive saved-theme chrome when the mod
         }
     }
 });
+
+test('brand default tokens and legacy appearance are strictly locked', async () => {
+    const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+
+    // Light root token assertions for brand
+    assert.match(css, /--md-primary:\s*#1F5FA6;/, 'brand light primary base is #1F5FA6');
+    assert.match(css, /--md-primary-rgb:\s*31,\s*95,\s*166;/, 'brand light primary rgb is 31, 95, 166');
+    assert.match(css, /--md-on-primary:\s*#FFFFFF;/, 'brand light on-primary is #FFFFFF');
+    assert.match(css, /--md-primary-container:\s*#EBF3FC;/, 'brand light container is #EBF3FC');
+    assert.match(css, /--md-on-primary-container:\s*#0E3566;/, 'brand light on-container is #0E3566');
+
+    // Dark root token assertions for brand
+    const darkRootIdx = css.indexOf(':root[data-theme="dark"] {');
+    assert.notEqual(darkRootIdx, -1, 'dark theme root is defined');
+    const darkRoot = css.slice(darkRootIdx, css.indexOf('}', darkRootIdx));
+    assert.match(darkRoot, /--ui-primary-text:\s*#A8C9F0;/, 'brand dark primary text is #A8C9F0');
+    assert.match(darkRoot, /--md-primary-container:\s*#1B3654;/, 'brand dark container is #1B3654');
+    assert.match(darkRoot, /--md-on-primary-container:\s*#D9E9FF;/, 'brand dark on-container is #D9E9FF');
+    assert.match(darkRoot, /--ui-input-focus:\s*#8FB9EA;/, 'brand dark input focus is #8FB9EA');
+
+    // Swatch assertions
+    assert.match(css, /\[data-accent-swatch="brand"\]\s*\{\s*background-color:\s*#1F5FA6;\s*\}/, 'brand swatch is #1F5FA6');
+});
+
+test('early bootstrap defaults to brand and ignores unregistered preview accents', () => {
+    // Missing accent in payload falls back to brand
+    const state = boot({ theme: 'light', density: 'comfortable', sidebarState: 'expanded', pageSize: 25, sidebarRevision: '1:1', accountId: '41' });
+    assert.equal(state.root.dataset.accent, 'brand');
+
+    // previewAccent with unknown key does not alter data-accent
+    state.windowRef.AdasiPreferences.previewAccent('non_existent_color');
+    assert.equal(state.root.dataset.accent, 'brand');
+});
+
+test('all approved preset tokens meet text, hover, and focus contrast in Light and Dark with semantic decoupling', async () => {
+    const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    const body = selector => {
+        const index = css.indexOf(selector + ' {');
+        assert.notEqual(index, -1, 'selector ' + selector + ' exists in app.css');
+        return css.slice(index, css.indexOf('}', index));
+    };
+    const value = (text, token) => text.match(new RegExp(token + ':\\s*(#[0-9a-fA-F]{6})'))?.[1];
+    const luminance = hex => {
+        assert.ok(hex, 'token has an explicit server-owned palette value');
+        return [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255)
+            .map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+            .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+    };
+    const ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+
+    const nonBrandPresets = ['slate', 'indigo', 'teal', 'violet'];
+    for (const preset of nonBrandPresets) {
+        for (const [selector, surface] of [
+            [':root[data-accent="' + preset + '"]', '#FFFFFF'],
+            [':root[data-theme="dark"][data-accent="' + preset + '"]', '#171F2C'],
+        ]) {
+            const tokens = body(selector);
+            const primary = value(tokens, '--md-primary');
+            const onPrimary = value(tokens, '--md-on-primary');
+            const hover = value(tokens, '--ui-primary-hover');
+            const text = value(tokens, '--ui-primary-text');
+
+            // Text contrast on primary button: >= 4.5:1
+            assert.ok(ratio(primary, onPrimary) >= 4.5, preset + ' ' + selector + ' primary button contrast: ' + ratio(primary, onPrimary));
+            // Hover contrast on primary button: >= 4.5:1
+            assert.ok(ratio(hover, onPrimary) >= 4.5, preset + ' ' + selector + ' hover contrast: ' + ratio(hover, onPrimary));
+            // Text contrast on surface: >= 4.5:1
+            assert.ok(ratio(text, surface) >= 4.5, preset + ' ' + selector + ' text on surface: ' + ratio(text, surface));
+            // Non-text contrast against surface: >= 3:1
+            assert.ok(ratio(primary, surface) >= 3.0, preset + ' ' + selector + ' non-text contrast: ' + ratio(primary, surface));
+
+            // Semantic protection: no semantic status tokens may be redefined in accent
+            assert.doesNotMatch(tokens, /--md-(?:error|warning|success):/, preset + ' preserves semantic status tokens');
+        }
+
+        // Info color decoupling: in light mode, info remains bound to ADASI Blue #1F5FA6
+        const lightTokens = body(':root[data-accent="' + preset + '"]');
+        assert.equal(value(lightTokens, '--md-info'), '#1F5FA6', preset + ' preserves decoupled --md-info #1F5FA6');
+    }
+});
+
+test('all five accent swatches are statically defined with exact palette colors', async () => {
+    const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    const expected = {
+        brand: '#1F5FA6',
+        slate: '#475569',
+        indigo: '#4338CA',
+        teal: '#0F766E',
+        violet: '#6D28D9',
+    };
+    for (const [key, color] of Object.entries(expected)) {
+        const pattern = new RegExp('\\[data-accent-swatch="' + key + '"\\]\\s*\\{\\s*background-color:\\s*' + color + ';\\s*\\}');
+        assert.match(css, pattern, 'swatch ' + key + ' is ' + color);
+    }
+});
+
+test('preview layer accepts all five approved accents and rejects unapproved keys or raw styles', () => {
+    const accentKeys = ['brand', 'slate', 'indigo', 'teal', 'violet'];
+    const state = boot({ theme: 'light', density: 'comfortable', accent: 'brand', accentKeys, sidebarState: 'expanded', pageSize: 25, sidebarRevision: '8:2', accountId: '41' });
+
+    assert.equal(state.root.dataset.accent, 'brand');
+
+    for (const key of accentKeys) {
+        state.windowRef.AdasiPreferences.previewAccent(key);
+        assert.equal(state.root.dataset.accent, key, 'previewed accent becomes ' + key);
+    }
+
+    // Rejection of invalid / unapproved candidates
+    const rejected = ['amber', 'yellow', 'rose', 'red', '#123456', 'rgb(0,0,0)', 'color: red', '<script>'];
+    for (const invalid of rejected) {
+        state.windowRef.AdasiPreferences.previewAccent(invalid);
+        assert.equal(state.root.dataset.accent, 'violet', 'rejected candidate ' + invalid + ' did not change accent');
+    }
+
+    // Restore saved resets back to initial persisted accent
+    state.windowRef.AdasiPreferences.restoreSaved();
+    assert.equal(state.root.dataset.accent, 'brand', 'restoreSaved returned to brand');
+});
+
+test('dark button hover rules are explicitly defined for indigo, teal, and violet', async () => {
+    const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    assert.match(
+        css,
+        /:root\[data-theme="dark"\]\[data-accent="indigo"\] \.btn-primary,\s*:root\[data-theme="dark"\]\[data-accent="teal"\] \.btn-primary,\s*:root\[data-theme="dark"\]\[data-accent="violet"\] \.btn-primary/,
+        'dark theme hover overrides are declared for new presets'
+    );
+});

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\UserPreferenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -208,6 +209,92 @@ class UserCustomizationTest extends TestCase
         $this->assertSame($overrides, $user->fresh()->preference->notification_preferences);
         $this->delete(route('profile.customization.reset'))->assertRedirect(route('profile.customization'));
         $this->assertSame($overrides, $user->fresh()->preference->notification_preferences);
+    }
+
+    public function test_accent_brand_and_slate_can_be_saved(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        foreach (['brand', 'slate'] as $accent) {
+            $this->actingAs($user)
+                ->patch(route('profile.customization.update'), $this->validPreferences(['accent' => $accent]))
+                ->assertSessionHasNoErrors();
+            $this->assertSame($accent, $user->fresh()->preference->accent);
+        }
+    }
+
+    public function test_all_five_approved_accents_can_be_saved(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        foreach (['brand', 'slate', 'indigo', 'teal', 'violet'] as $accent) {
+            $this->actingAs($user)
+                ->patch(route('profile.customization.update'), $this->validPreferences(['accent' => $accent]))
+                ->assertSessionHasNoErrors();
+            $this->assertSame($accent, $user->fresh()->preference->accent);
+
+            $effective = app(UserPreferenceService::class)->for($user);
+            $this->assertSame($accent, $effective['accent']);
+        }
+    }
+
+    public function test_invalid_accent_values_raw_hex_and_css_are_rejected(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $invalidAccents = [
+            '#1F5FA6', 'rgb(31, 95, 166)', 'hsl(210, 68%, 39%)',
+            'color: red;', '<script>', 'neon-pink',
+            'amber', 'yellow', 'rose', 'red', 'custom',
+        ];
+
+        foreach ($invalidAccents as $invalid) {
+            $this->actingAs($user)
+                ->patch(route('profile.customization.update'), $this->validPreferences(['accent' => $invalid]))
+                ->assertSessionHasErrors('accent');
+        }
+
+        $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);
+    }
+
+    public function test_invalid_persisted_accent_falls_back_to_brand_on_read(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $preference = $user->preference()->create([
+            'theme' => 'light',
+            'density' => 'comfortable',
+            'sidebar_state' => 'expanded',
+            'page_size' => 25,
+            'quick_access' => [],
+            'accent' => 'corrupted_legacy_val',
+        ]);
+
+        $effective = app(UserPreferenceService::class)->for($user);
+        $this->assertSame('brand', $effective['accent']);
+
+        // Saving unrelated preferences also normalizes the corrupted accent safely to default
+        $this->actingAs($user)
+            ->patch(route('profile.customization.update'), $this->validPreferences(['theme' => 'dark']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('brand', $user->fresh()->preference->accent);
+    }
+
+    public function test_reset_restores_accent_to_brand(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $user->preference()->create([
+            'theme' => 'dark',
+            'density' => 'compact',
+            'sidebar_state' => 'collapsed',
+            'page_size' => 100,
+            'quick_access' => [],
+            'accent' => 'slate',
+        ]);
+
+        $this->actingAs($user)
+            ->delete(route('profile.customization.reset'))
+            ->assertRedirect(route('profile.customization'));
+
+        $this->assertSame('brand', $user->fresh()->preference->accent);
     }
 
     private function validPreferences(array $overrides = []): array
