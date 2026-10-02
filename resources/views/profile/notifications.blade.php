@@ -69,168 +69,12 @@
             method="POST"
             action="{{ route('profile.notifications.update') }}"
             class="tw-grid tw-gap-5"
-            x-data="{
-                dirtyCount: 0,
-                isSubmitting: false,
-                allExpanded: false,
-                searchQuery: '',
-                activeFilter: 'all',
+            x-data="notificationPreferencesForm({
                 scopeTab: @js($showScopeTabs ? $defaultScope : 'all'),
                 totalEnabled: {{ $totalEnabledCount }},
                 totalEvents: {{ $totalEventsCount }},
-                visibleEventCount: {{ $totalEventsCount }},
                 categoryStats: @js($initialCategoryStats),
-                init() {
-                    this.updateDirty();
-                    if (this.scopeTab !== 'all') {
-                        this.applyFilters();
-                    }
-                    window.addEventListener('beforeunload', (e) => {
-                        if (this.dirtyCount > 0 && !this.isSubmitting) {
-                            e.preventDefault();
-                            e.returnValue = '';
-                        }
-                    });
-                },
-                updateDirty() {
-                    const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
-                    let count = 0;
-                    checkboxes.forEach(cb => {
-                        if (cb.checked !== cb.defaultChecked) count++;
-                    });
-                    this.dirtyCount = count;
-                    this.updateCategoryStats();
-                    this.updateOverallStats();
-                    this.applyFilters();
-                },
-                updateOverallStats() {
-                    const cbs = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
-                    let enabled = 0;
-                    cbs.forEach(cb => { if (cb.checked) enabled++; });
-                    this.totalEnabled = enabled;
-                },
-                updateCategoryStats() {
-                    this.$el.querySelectorAll('details[data-category]').forEach(detail => {
-                        const cat = detail.getAttribute('data-category');
-                        const cbs = detail.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
-                        let on = 0;
-                        cbs.forEach(cb => { if (cb.checked) on++; });
-                        if (this.categoryStats[cat]) {
-                            this.categoryStats[cat].on = on;
-                        }
-                    });
-                },
-                turnCategoryAll(catName, turnOn) {
-                    const detail = this.$el.querySelector('details[data-category=\"' + catName + '\"]');
-                    if (!detail) return;
-                    const cbs = detail.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
-                    cbs.forEach(cb => {
-                        cb.checked = turnOn;
-                        const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
-                        if (labelSpan) {
-                            labelSpan.textContent = turnOn ? 'On' : 'Off';
-                        }
-                        const note = cb.closest('fieldset').querySelector('.action-required-note');
-                        if (note) {
-                            note.style.display = turnOn ? 'none' : 'inline-flex';
-                        }
-                    });
-                    this.updateDirty();
-                },
-                toggleAllCategories() {
-                    const details = Array.from(this.$el.querySelectorAll('details[data-category]'));
-                    const anyClosed = details.some(d => !d.open);
-                    details.forEach(d => { d.open = anyClosed; });
-                    this.allExpanded = anyClosed;
-                },
-                applyFilters() {
-                    const query = this.searchQuery.trim().toLowerCase();
-                    const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
-                    let count = 0;
-
-                    rows.forEach(row => {
-                        const label = (row.getAttribute('data-event-label') || '').toLowerCase();
-                        const desc = (row.getAttribute('data-event-desc') || '').toLowerCase();
-                        const scope = row.getAttribute('data-scope') || 'general';
-                        const cb = row.querySelector('input[type=checkbox][name^=\"notification_preferences\"]');
-                        const isEnabled = cb ? cb.checked : true;
-
-                        const matchesSearch = !query || label.includes(query) || desc.includes(query);
-                        let matchesFilter = true;
-                        if (this.activeFilter === 'enabled') {
-                            matchesFilter = isEnabled;
-                        } else if (this.activeFilter === 'muted') {
-                            matchesFilter = !isEnabled;
-                        }
-
-                        let matchesScope = true;
-                        if (this.scopeTab && this.scopeTab !== 'all') {
-                            matchesScope = (scope === this.scopeTab || scope === 'general');
-                        }
-
-                        const isVisible = matchesSearch && matchesFilter && matchesScope;
-                        if (isVisible) {
-                            row.removeAttribute('hidden');
-                            count++;
-                        } else {
-                            row.setAttribute('hidden', '');
-                        }
-                    });
-
-                    this.visibleEventCount = count;
-
-                    this.$el.querySelectorAll('details[data-category]').forEach(detail => {
-                        const visibleRows = detail.querySelectorAll('fieldset[data-event-key]:not([hidden])');
-                        if (visibleRows.length === 0) {
-                            detail.setAttribute('hidden', '');
-                        } else {
-                            detail.removeAttribute('hidden');
-                            if (query || this.activeFilter !== 'all') {
-                                detail.open = true;
-                            }
-                        }
-                    });
-                },
-                clearFilters() {
-                    this.searchQuery = '';
-                    this.activeFilter = 'all';
-                    this.applyFilters();
-                },
-                applyPreset(preset) {
-                    const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
-                    rows.forEach(row => {
-                        const cb = row.querySelector('input[type=checkbox][name^=\"notification_preferences\"]');
-                        if (!cb) return;
-                        const isActionRequired = row.getAttribute('data-priority') === 'action_required';
-                        const shouldCheck = (preset === 'everything') ? true : isActionRequired;
-                        cb.checked = shouldCheck;
-                        const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
-                        if (labelSpan) {
-                            labelSpan.textContent = shouldCheck ? 'On' : 'Off';
-                        }
-                        const note = row.querySelector('.action-required-note');
-                        if (note) {
-                            note.style.display = shouldCheck ? 'none' : 'inline-flex';
-                        }
-                    });
-                    this.updateDirty();
-                },
-                discard() {
-                    const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
-                    checkboxes.forEach(cb => {
-                        cb.checked = cb.defaultChecked;
-                        const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
-                        if (labelSpan) {
-                            labelSpan.textContent = cb.checked ? 'On' : 'Off';
-                        }
-                        const note = cb.closest('fieldset').querySelector('.action-required-note');
-                        if (note) {
-                            note.style.display = cb.checked ? 'none' : 'inline-flex';
-                        }
-                    });
-                    this.updateDirty();
-                }
-            }"
+            })"
             @change="updateDirty()"
             @submit="isSubmitting = true"
         >
@@ -569,4 +413,173 @@
         </x-slot:actions>
     </x-ui.dialog>
 </div>
+
+@push('scripts')
+<script>
+function notificationPreferencesForm(config) {
+    return {
+        dirtyCount: 0,
+        isSubmitting: false,
+        allExpanded: false,
+        searchQuery: '',
+        activeFilter: 'all',
+        scopeTab: config.scopeTab,
+        totalEnabled: config.totalEnabled,
+        totalEvents: config.totalEvents,
+        visibleEventCount: config.totalEvents,
+        categoryStats: config.categoryStats,
+        init() {
+            this.updateDirty();
+            if (this.scopeTab !== 'all') {
+                this.applyFilters();
+            }
+            window.addEventListener('beforeunload', (e) => {
+                if (this.dirtyCount > 0 && !this.isSubmitting) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+        },
+        updateDirty() {
+            const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+            let count = 0;
+            checkboxes.forEach(cb => {
+                if (cb.checked !== cb.defaultChecked) count++;
+            });
+            this.dirtyCount = count;
+            this.updateCategoryStats();
+            this.updateOverallStats();
+            this.applyFilters();
+        },
+        updateOverallStats() {
+            const cbs = this.$el.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+            let enabled = 0;
+            cbs.forEach(cb => { if (cb.checked) enabled++; });
+            this.totalEnabled = enabled;
+        },
+        updateCategoryStats() {
+            this.$el.querySelectorAll('details[data-category]').forEach(detail => {
+                const cat = detail.getAttribute('data-category');
+                const cbs = detail.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+                let on = 0;
+                cbs.forEach(cb => { if (cb.checked) on++; });
+                if (this.categoryStats[cat]) {
+                    this.categoryStats[cat].on = on;
+                }
+            });
+        },
+        turnCategoryAll(catName, turnOn) {
+            const detail = this.$el.querySelector('details[data-category="' + catName + '"]');
+            if (!detail) return;
+            const cbs = detail.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+            cbs.forEach(cb => {
+                cb.checked = turnOn;
+                const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                if (labelSpan) {
+                    labelSpan.textContent = turnOn ? 'On' : 'Off';
+                }
+                const note = cb.closest('fieldset').querySelector('.action-required-note');
+                if (note) {
+                    note.style.display = turnOn ? 'none' : 'inline-flex';
+                }
+            });
+            this.updateDirty();
+        },
+        toggleAllCategories() {
+            const details = Array.from(this.$el.querySelectorAll('details[data-category]'));
+            const anyClosed = details.some(d => !d.open);
+            details.forEach(d => { d.open = anyClosed; });
+            this.allExpanded = anyClosed;
+        },
+        applyFilters() {
+            const query = this.searchQuery.trim().toLowerCase();
+            const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
+            let count = 0;
+
+            rows.forEach(row => {
+                const label = (row.getAttribute('data-event-label') || '').toLowerCase();
+                const desc = (row.getAttribute('data-event-desc') || '').toLowerCase();
+                const scope = row.getAttribute('data-scope') || 'general';
+                const cb = row.querySelector('input[type=checkbox][name^="notification_preferences"]');
+                const isEnabled = cb ? cb.checked : true;
+
+                const matchesSearch = !query || label.includes(query) || desc.includes(query);
+                let matchesFilter = true;
+                if (this.activeFilter === 'enabled') {
+                    matchesFilter = isEnabled;
+                } else if (this.activeFilter === 'muted') {
+                    matchesFilter = !isEnabled;
+                }
+
+                let matchesScope = true;
+                if (this.scopeTab && this.scopeTab !== 'all') {
+                    matchesScope = (scope === this.scopeTab || scope === 'general');
+                }
+
+                const isVisible = matchesSearch && matchesFilter && matchesScope;
+                if (isVisible) {
+                    row.removeAttribute('hidden');
+                    count++;
+                } else {
+                    row.setAttribute('hidden', '');
+                }
+            });
+
+            this.visibleEventCount = count;
+
+            this.$el.querySelectorAll('details[data-category]').forEach(detail => {
+                const visibleRows = detail.querySelectorAll('fieldset[data-event-key]:not([hidden])');
+                if (visibleRows.length === 0) {
+                    detail.setAttribute('hidden', '');
+                } else {
+                    detail.removeAttribute('hidden');
+                    if (query || this.activeFilter !== 'all') {
+                        detail.open = true;
+                    }
+                }
+            });
+        },
+        clearFilters() {
+            this.searchQuery = '';
+            this.activeFilter = 'all';
+            this.applyFilters();
+        },
+        applyPreset(preset) {
+            const rows = this.$el.querySelectorAll('fieldset[data-event-key]');
+            rows.forEach(row => {
+                const cb = row.querySelector('input[type=checkbox][name^="notification_preferences"]');
+                if (!cb) return;
+                const isActionRequired = row.getAttribute('data-priority') === 'action_required';
+                const shouldCheck = (preset === 'everything') ? true : isActionRequired;
+                cb.checked = shouldCheck;
+                const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                if (labelSpan) {
+                    labelSpan.textContent = shouldCheck ? 'On' : 'Off';
+                }
+                const note = row.querySelector('.action-required-note');
+                if (note) {
+                    note.style.display = shouldCheck ? 'none' : 'inline-flex';
+                }
+            });
+            this.updateDirty();
+        },
+        discard() {
+            const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
+            checkboxes.forEach(cb => {
+                cb.checked = cb.defaultChecked;
+                const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                if (labelSpan) {
+                    labelSpan.textContent = cb.checked ? 'On' : 'Off';
+                }
+                const note = cb.closest('fieldset').querySelector('.action-required-note');
+                if (note) {
+                    note.style.display = cb.checked ? 'none' : 'inline-flex';
+                }
+            });
+            this.updateDirty();
+        }
+    };
+}
+</script>
+@endpush
 @endsection
