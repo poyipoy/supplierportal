@@ -31,7 +31,7 @@ class InvoiceNotificationService
             : collect([$invoice->supplier]);
 
         $title = $this->resolveTitle($history->event);
-        $message = $invoice->submission_number.' — '.($history->notes ?: ($internal ? 'Waiting for physical documents.' : $invoice->invoice_number));
+        $message = $invoice->submission_number.' — '.($history->notes ?: ($internal ? 'Menunggu berkas fisik.' : $invoice->invoice_number));
         $url = route(($internal ? 'finance' : 'local-supplier').'.invoices.show', $invoice, absolute: false);
 
         // 1. In-app system notification
