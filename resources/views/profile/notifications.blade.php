@@ -37,28 +37,35 @@
                     </header>
                     <div class="tw-grid tw-gap-5 tw-p-5">
                         @foreach($categoryEvents as $key => $event)
-                            <fieldset class="tw-grid tw-min-w-0 tw-gap-2">
+                            @php
+                                $field = 'notification_preferences.'.$key;
+                                $controlId = 'notification-'.$key;
+                                $isChecked = (bool) old($field, $effectivePreferences[$key]);
+                            @endphp
+                            <fieldset class="tw-grid tw-min-w-0 tw-gap-2 tw-py-3 tw-border-b tw-border-outline-variant last:tw-border-b-0">
                                 <legend class="tw-text-ui-sm tw-font-semibold">{{ $event['label'] }}</legend>
-                                <p id="notification-{{ $key }}-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $event['description'] }}</p>
-                                        @php
-                                            $field = 'notification_preferences.'.$key;
-                                            $controlId = 'notification-'.$key;
-                                        @endphp
+                                <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3">
+                                    <div class="tw-min-w-0 tw-flex-1">
+                                        <p id="notification-{{ $key }}-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $event['description'] }}</p>
+                                    </div>
+                                    <div class="tw-flex tw-items-center tw-gap-2.5 tw-shrink-0 tw-min-h-11">
                                         <input type="hidden" name="notification_preferences[{{ $key }}]" value="0">
-                                        <label for="{{ $controlId }}" class="ui-preference-option ui-focus-ring tw-flex tw-min-h-11 tw-cursor-pointer tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface tw-px-3 tw-text-ui-sm hover:tw-bg-surface-container">
-                                            <input
-                                                id="{{ $controlId }}"
-                                                class="tw-h-4 tw-w-4 tw-accent-primary"
-                                                type="checkbox"
-                                                name="notification_preferences[{{ $key }}]"
-                                                value="1"
-                                                @checked((bool) old($field, $effectivePreferences[$key]))
-                                                aria-describedby="notification-{{ $key }}-help @error($field) {{ $controlId }}-error @enderror"
-                                                aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}"
-                                            >
-                                            <span>{{ $event['label'] }}</span>
+                                        <x-ui.switch
+                                            id="{{ $controlId }}"
+                                            name="notification_preferences[{{ $key }}]"
+                                            value="1"
+                                            :checked="$isChecked"
+                                            aria-describedby="notification-{{ $key }}-help @error($field) {{ $controlId }}-error @enderror"
+                                            aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}"
+                                            onchange="this.parentElement.querySelector('label span[aria-hidden]').textContent = this.checked ? 'On' : 'Off'"
+                                        />
+                                        <label for="{{ $controlId }}" class="tw-cursor-pointer tw-select-none tw-text-ui-xs tw-font-medium tw-text-on-surface-variant tw-min-w-[1.75rem]">
+                                            <span class="tw-sr-only">{{ $event['label'] }}</span>
+                                            <span aria-hidden="true">{{ $isChecked ? 'On' : 'Off' }}</span>
                                         </label>
-                                        @error($field)<p id="{{ $controlId }}-error" class="tw-m-0 tw-text-ui-xs tw-text-error">{{ $message }}</p>@enderror
+                                    </div>
+                                </div>
+                                @error($field)<p id="{{ $controlId }}-error" class="tw-m-0 tw-text-ui-xs tw-text-error">{{ $message }}</p>@enderror
                             </fieldset>
                         @endforeach
                     </div>
