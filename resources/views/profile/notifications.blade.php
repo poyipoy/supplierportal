@@ -26,7 +26,45 @@
             <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">There are no notification settings available for your account.</p>
         </section>
     @else
-        <form method="POST" action="{{ route('profile.notifications.update') }}" class="tw-grid tw-gap-5">
+        <form
+            method="POST"
+            action="{{ route('profile.notifications.update') }}"
+            class="tw-grid tw-gap-5"
+            x-data="{
+                dirtyCount: 0,
+                isSubmitting: false,
+                init() {
+                    this.updateDirty();
+                    window.addEventListener('beforeunload', (e) => {
+                        if (this.dirtyCount > 0 && !this.isSubmitting) {
+                            e.preventDefault();
+                            e.returnValue = '';
+                        }
+                    });
+                },
+                updateDirty() {
+                    const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
+                    let count = 0;
+                    checkboxes.forEach(cb => {
+                        if (cb.checked !== cb.defaultChecked) count++;
+                    });
+                    this.dirtyCount = count;
+                },
+                discard() {
+                    const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
+                    checkboxes.forEach(cb => {
+                        cb.checked = cb.defaultChecked;
+                        const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                        if (labelSpan) {
+                            labelSpan.textContent = cb.checked ? 'On' : 'Off';
+                        }
+                    });
+                    this.updateDirty();
+                }
+            }"
+            @change="updateDirty()"
+            @submit="isSubmitting = true"
+        >
             @csrf
             @method('PATCH')
 
@@ -72,9 +110,34 @@
                 </section>
             @endforeach
 
-            <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-3">
-                <x-ui.button type="submit">Save Changes</x-ui.button>
-            </div>
+            <x-ui.action-bar class="tw-mt-2">
+                <x-slot:left>
+                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-ui-xs">
+                        <span x-show="dirtyCount > 0" x-cloak class="tw-inline-flex tw-items-center tw-gap-1.5 tw-font-medium tw-text-warning">
+                            <span class="tw-h-2 tw-w-2 tw-rounded-full tw-bg-warning" aria-hidden="true"></span>
+                            <span x-text="dirtyCount + (dirtyCount === 1 ? ' unsaved change' : ' unsaved changes')">1 unsaved change</span>
+                        </span>
+                        <span x-show="dirtyCount === 0" class="tw-text-on-surface-variant">No unsaved changes</span>
+                    </div>
+                </x-slot:left>
+                <x-slot:right>
+                    <x-ui.button
+                        type="button"
+                        variant="ghost"
+                        @click="discard()"
+                        x-bind:disabled="dirtyCount === 0"
+                        disabled
+                    >
+                        Discard
+                    </x-ui.button>
+                    <x-ui.button
+                        type="submit"
+                        x-bind:disabled="dirtyCount === 0"
+                    >
+                        Save Changes
+                    </x-ui.button>
+                </x-slot:right>
+            </x-ui.action-bar>
         </form>
     @endif
 
