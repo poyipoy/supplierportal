@@ -126,9 +126,9 @@ class UserPreferenceService
         }, 3);
     }
 
-    public function saveNotificationPreferences(User $user, array $preferences): array
+    public function saveNotificationPreferences(User $user, array $preferences, array $delivery = []): array
     {
-        return DB::transaction(function () use ($user, $preferences): array {
+        return DB::transaction(function () use ($user, $preferences, $delivery): array {
             $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
             $stored = $lockedUser->preference()->first();
             $notifications = app(NotificationPreferenceService::class);
@@ -137,6 +137,7 @@ class UserPreferenceService
                 $lockedUser,
                 is_array($stored?->notification_preferences) ? $stored->notification_preferences : [],
                 $preferences,
+                $delivery,
             );
             $preference = $stored ?? new UserPreference;
             if ($stored === null) {

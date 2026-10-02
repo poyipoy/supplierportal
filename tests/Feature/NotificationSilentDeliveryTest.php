@@ -206,4 +206,83 @@ class NotificationSilentDeliveryTest extends TestCase
         $this->actingAs($user)->postJson(route('notifications.mark-all-read'))->assertOk();
         $this->assertSame(0, $user->fresh()->unreadNotifications()->count());
     }
+
+    public function test_update_preferences_request_validates_delivery_mode(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+
+        // Valid silent delivery mode accepted and stored
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => ['local_invoice_submitted' => 'silent'],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('profile.notifications'));
+
+        $this->assertSame(
+            ['local_invoice_submitted' => 'silent'],
+            $user->fresh()->preference->notification_preferences,
+        );
+
+        // Invalid delivery mode (e.g. mute) rejected with 422/session errors
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => ['local_invoice_submitted' => 'mute'],
+        ])->assertSessionHasErrors(['notification_delivery.local_invoice_submitted']);
+
+        // Unsupported event key in delivery rejected
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => ['unsupported_event_key' => 'silent'],
+        ])->assertSessionHasErrors(['notification_delivery']);
+
+        // Non-array delivery rejected
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '1'],
+            'notification_delivery' => 'silent',
+        ])->assertSessionHasErrors(['notification_delivery']);
+    }
+
+    public function test_controller_index_passes_delivery_preferences_to_view(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['local_invoice_resubmitted' => 'silent']])->save();
+
+        $this->actingAs($user)->get(route('profile.notifications'))
+            ->assertOk()
+            ->assertViewHas('deliveryPreferences', function (array $delivery): bool {
+                return ($delivery['local_invoice_resubmitted'] ?? null) === 'silent'
+                    && ($delivery['local_invoice_submitted'] ?? null) === 'normal';
+            });
+    }
+
+    public function test_off_wins_everywhere_when_saving_via_controller(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '0'],
+            'notification_delivery' => ['local_invoice_submitted' => 'silent'],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            ['local_invoice_submitted' => false],
+            $user->fresh()->preference->notification_preferences,
+            'Off switch must win over silent delivery selection',
+        );
+        $this->assertSame('off', app(\App\Services\NotificationPreferenceService::class)->deliveryFor($user, 'local_invoice_submitted'));
+    }
+
+    public function test_backward_compatibility_when_notification_delivery_not_present(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+
+        $this->actingAs($user)->patch(route('profile.notifications.update'), [
+            'notification_preferences' => ['local_invoice_submitted' => '0'],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('profile.notifications'));
+
+        $this->assertSame(
+            ['local_invoice_submitted' => false],
+            $user->fresh()->preference->notification_preferences,
+        );
+    }
 }

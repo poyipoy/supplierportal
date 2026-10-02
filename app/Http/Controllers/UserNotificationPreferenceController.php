@@ -21,9 +21,15 @@ class UserNotificationPreferenceController extends Controller
         ]);
         uasort($events, fn (array $left, array $right): int => ($categoryOrder[$left['category']] ?? PHP_INT_MAX) <=> ($categoryOrder[$right['category']] ?? PHP_INT_MAX));
 
+        $deliveryPreferences = [];
+        foreach (array_keys($events) as $key) {
+            $deliveryPreferences[$key] = $notifications->deliveryFor($user, $key) === 'silent' ? 'silent' : 'normal';
+        }
+
         return view('profile.notifications', [
             'events' => $events,
             'effectivePreferences' => $notifications->effectivePreferences($user),
+            'deliveryPreferences' => $deliveryPreferences,
         ]);
     }
 
@@ -41,7 +47,8 @@ class UserNotificationPreferenceController extends Controller
     ): RedirectResponse {
         $user = $request->user();
         $normalized = $notifications->normalize($user, $request->validated('notification_preferences'));
-        $preferences->saveNotificationPreferences($user, $normalized);
+        $delivery = (array) $request->validated('notification_delivery', []);
+        $preferences->saveNotificationPreferences($user, $normalized, $delivery);
 
         return redirect()->route('profile.notifications')->with('success', 'Notification preferences saved.');
     }
