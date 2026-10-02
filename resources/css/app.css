@@ -134,6 +134,7 @@
         --md-surface-container-low: #F8FAFC;
         --md-surface-container: #F1F5F9;
         --md-surface-container-high: #E2E8F0;
+        --md-surface-container-highest: #E2E8F0;
         --md-background: #F8FAFC;
         --md-background-rgb: 248, 250, 252;
         --md-outline: #CBD5E1;
@@ -202,6 +203,7 @@
         --ui-easing-sidebar: cubic-bezier(.22, .61, .36, 1);
         --ui-focus-ring-width: 2px;
         --ui-focus-ring-offset: 2px;
+        --md-focus-ring: var(--ui-input-focus, var(--md-primary));
         --ui-z-dropdown: 1000;
         --ui-z-sticky: 1020;
         --ui-z-drawer: 1040;
@@ -703,7 +705,7 @@
     }
 
     .ui-switch:focus-visible {
-        outline: var(--ui-focus-ring-width, 2px) solid var(--ui-input-focus, var(--md-primary));
+        outline: var(--ui-focus-ring-width, 2px) solid var(--md-focus-ring, var(--ui-input-focus, var(--md-primary)));
         outline-offset: var(--ui-focus-ring-offset, 2px);
     }
 
