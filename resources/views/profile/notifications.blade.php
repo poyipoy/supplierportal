@@ -26,6 +26,26 @@
             <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">There are no notification settings available for your account.</p>
         </section>
     @else
+        @php
+            $groupedCategories = collect($events)->groupBy('category', preserveKeys: true);
+            $totalEventsCount = count($events);
+            $categoryCount = $groupedCategories->count();
+            $allOpenInitially = ($totalEventsCount <= 12 || $categoryCount <= 2);
+
+            $initialCategoryStats = [];
+            foreach ($groupedCategories as $catName => $catEvts) {
+                $onCount = 0;
+                foreach ($catEvts as $k => $e) {
+                    if ((bool) old('notification_preferences.'.$k, $effectivePreferences[$k])) {
+                        $onCount++;
+                    }
+                }
+                $initialCategoryStats[$catName] = [
+                    'on' => $onCount,
+                    'total' => count($catEvts),
+                ];
+            }
+        @endphp
         <form
             method="POST"
             action="{{ route('profile.notifications.update') }}"
@@ -33,6 +53,8 @@
             x-data="{
                 dirtyCount: 0,
                 isSubmitting: false,
+                allExpanded: false,
+                categoryStats: @js($initialCategoryStats),
                 init() {
                     this.updateDirty();
                     window.addEventListener('beforeunload', (e) => {
@@ -49,6 +71,37 @@
                         if (cb.checked !== cb.defaultChecked) count++;
                     });
                     this.dirtyCount = count;
+                    this.updateCategoryStats();
+                },
+                updateCategoryStats() {
+                    this.$el.querySelectorAll('details[data-category]').forEach(detail => {
+                        const cat = detail.getAttribute('data-category');
+                        const cbs = detail.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
+                        let on = 0;
+                        cbs.forEach(cb => { if (cb.checked) on++; });
+                        if (this.categoryStats[cat]) {
+                            this.categoryStats[cat].on = on;
+                        }
+                    });
+                },
+                turnCategoryAll(catName, turnOn) {
+                    const detail = this.$el.querySelector('details[data-category=\"' + catName + '\"]');
+                    if (!detail) return;
+                    const cbs = detail.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
+                    cbs.forEach(cb => {
+                        cb.checked = turnOn;
+                        const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
+                        if (labelSpan) {
+                            labelSpan.textContent = turnOn ? 'On' : 'Off';
+                        }
+                    });
+                    this.updateDirty();
+                },
+                toggleAllCategories() {
+                    const details = Array.from(this.$el.querySelectorAll('details[data-category]'));
+                    const anyClosed = details.some(d => !d.open);
+                    details.forEach(d => { d.open = anyClosed; });
+                    this.allExpanded = anyClosed;
                 },
                 discard() {
                     const checkboxes = this.$el.querySelectorAll('input[type=checkbox][name^=\"notification_preferences\"]');
@@ -68,11 +121,67 @@
             @csrf
             @method('PATCH')
 
-            @foreach(collect($events)->groupBy('category', preserveKeys: true) as $category => $categoryEvents)
-                <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="notification-category-{{ $loop->index }}">
-                    <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
-                        <h2 id="notification-category-{{ $loop->index }}" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ $category }}</h2>
-                    </header>
+            @if($categoryCount > 1)
+                <div class="tw-flex tw-justify-end tw-items-center">
+                    <x-ui.button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        @click="toggleAllCategories()"
+                    >
+                        <span x-text="allExpanded ? 'Collapse all' : 'Expand all'">Expand all</span>
+                    </x-ui.button>
+                </div>
+            @endif
+
+            @foreach($groupedCategories as $category => $categoryEvents)
+                @php
+                    $hasMuted = false;
+                    $hasError = false;
+                    foreach ($categoryEvents as $k => $e) {
+                        if (! (bool) old('notification_preferences.'.$k, $effectivePreferences[$k])) {
+                            $hasMuted = true;
+                        }
+                        if ($errors->has('notification_preferences.'.$k)) {
+                            $hasError = true;
+                        }
+                    }
+                    $isOpen = $allOpenInitially || $loop->first || $hasMuted || $hasError;
+                @endphp
+                <details
+                    class="tw-border tw-border-outline tw-bg-surface tw-group tw-rounded-ui-sm tw-overflow-hidden"
+                    aria-labelledby="notification-category-{{ $loop->index }}"
+                    data-category="{{ $category }}"
+                    @if($isOpen) open @endif
+                >
+                    <summary class="ui-focus-ring tw-flex tw-cursor-pointer tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4 tw-select-none list-none [&::-webkit-details-marker]:tw-hidden">
+                        <div class="tw-flex tw-items-center tw-gap-3">
+                            <svg class="tw-h-4 tw-w-4 tw-text-on-surface-variant ui-motion tw-transition-transform tw-duration-150 group-open:tw-rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <h2 id="notification-category-{{ $loop->index }}" class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ $category }}</h2>
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant" x-text="categoryStats['{{ $category }}'] ? (categoryStats['{{ $category }}'].on + ' of ' + categoryStats['{{ $category }}'].total + ' on') : '{{ $initialCategoryStats[$category]['on'] }} of {{ $initialCategoryStats[$category]['total'] }} on'">
+                                {{ $initialCategoryStats[$category]['on'] }} of {{ $initialCategoryStats[$category]['total'] }} on
+                            </span>
+                        </div>
+                        <div class="tw-flex tw-items-center tw-gap-2" @click.stop>
+                            <button
+                                type="button"
+                                class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
+                                @click="turnCategoryAll('{{ $category }}', true)"
+                            >
+                                Turn all on
+                            </button>
+                            <span class="tw-text-outline" aria-hidden="true">·</span>
+                            <button
+                                type="button"
+                                class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-on-surface-variant hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
+                                @click="turnCategoryAll('{{ $category }}', false)"
+                            >
+                                Turn all off
+                            </button>
+                        </div>
+                    </summary>
                     <div class="tw-grid tw-gap-5 tw-p-5">
                         @foreach($categoryEvents as $key => $event)
                             @php
@@ -107,7 +216,7 @@
                             </fieldset>
                         @endforeach
                     </div>
-                </section>
+                </details>
             @endforeach
 
             <x-ui.action-bar class="tw-mt-2">
