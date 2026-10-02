@@ -67,10 +67,30 @@ class NotificationPreferencesUiTest extends TestCase
         // Assert pinned XPath for legend text is strictly unmodified
         $this->assertCount(1, $financeXpath->query('//fieldset/legend[normalize-space(.)="Invoice diajukan"]'));
 
-        // Assert inline note exists
+        // Assert inline note exists with accessibility attributes and is hidden by default when enabled
         $note = $financeXpath->query('.//p[contains(@class, "action-required-note")]', $fieldset)->item(0);
         $this->assertNotNull($note);
         $this->assertStringContainsString('This notification requires your action.', $note->textContent);
+        $this->assertSame('notification-local_invoice_submitted-warning', $note->getAttribute('id'));
+        $this->assertSame('alert', $note->getAttribute('role'));
+        $this->assertTrue($note->hasAttribute('style'));
+        $this->assertStringContainsString('display: none', $note->getAttribute('style'));
+
+        // Switch has warning ID in aria-describedby
+        $switch = $financeXpath->query('.//input[@id="notification-local_invoice_submitted"]', $fieldset)->item(0);
+        $this->assertNotNull($switch);
+        $this->assertStringContainsString('notification-local_invoice_submitted-warning', $switch->getAttribute('aria-describedby'));
+
+        // When action-required event is muted, note is visible without display: none
+        $financeMuted = User::factory()->create(['role' => 'finance']);
+        $pref = $financeMuted->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['local_invoice_submitted' => false]])->save();
+        $mutedResponse = $this->actingAs($financeMuted)->get(route('profile.notifications'))->assertOk();
+        $mutedXpath = $this->xpathFromHtml($mutedResponse->getContent());
+        $mutedFieldset = $mutedXpath->query('//fieldset[@data-event-key="local_invoice_submitted"]')->item(0);
+        $mutedNote = $mutedXpath->query('.//p[contains(@class, "action-required-note")]', $mutedFieldset)->item(0);
+        $this->assertNotNull($mutedNote);
+        $this->assertFalse($mutedNote->hasAttribute('style'));
 
         // Supplier user: local_invoice_submitted priority_roles does not include supplier
         $supplier = $this->localSupplier();
@@ -95,12 +115,17 @@ class NotificationPreferencesUiTest extends TestCase
 
         // Toolbar search and filters
         $response->assertSee('placeholder="Search notifications..."', false);
-        $response->assertSeeText('All');
-        $response->assertSeeText('Enabled');
-        $response->assertSeeText('Muted');
 
-        // Summary chip
-        $response->assertSeeText('enabled');
+        $xpath = $this->xpathFromHtml($response->getContent());
+        $filterGroup = $xpath->query('//div[@role="group" and @aria-label="Filter notifications"]')->item(0);
+        $this->assertNotNull($filterGroup);
+        $this->assertCount(1, $xpath->query('.//button[normalize-space(.)="All" and @*[name()=":aria-pressed"]="activeFilter === \'all\' ? \'true\' : \'false\'"]', $filterGroup));
+        $this->assertCount(1, $xpath->query('.//button[normalize-space(.)="Enabled" and @*[name()=":aria-pressed"]="activeFilter === \'enabled\' ? \'true\' : \'false\'"]', $filterGroup));
+        $this->assertCount(1, $xpath->query('.//button[normalize-space(.)="Muted" and @*[name()=":aria-pressed"]="activeFilter === \'muted\' ? \'true\' : \'false\'"]', $filterGroup));
+
+        // Summary chip with specific format "X of Y enabled"
+        $chips = $xpath->query('//span[contains(text(), " of ") and contains(text(), "enabled")]');
+        $this->assertGreaterThan(0, $chips->length);
 
         // Bulk controls
         $response->assertSeeText('Turn all on');
@@ -133,9 +158,13 @@ class NotificationPreferencesUiTest extends TestCase
         $response = $this->actingAs($dualSupplier)->get(route('profile.notifications'))->assertOk();
 
         $response->assertDontSeeText('All Portals');
-        $response->assertSeeText('Import');
-        $response->assertSeeText('Local');
-        $response->assertSeeText('General');
+        $xpath = $this->xpathFromHtml($response->getContent());
+        $tabNav = $xpath->query('//nav[@aria-label="Supplier portal scope filter"]')->item(0);
+        $this->assertNotNull($tabNav);
+        $this->assertCount(1, $xpath->query('.//button[@role="tab" and normalize-space(.)="Import" and @aria-controls="notification-preferences-panel"]', $tabNav));
+        $this->assertCount(1, $xpath->query('.//button[@role="tab" and normalize-space(.)="Local" and @aria-controls="notification-preferences-panel"]', $tabNav));
+        $this->assertCount(1, $xpath->query('.//button[@role="tab" and normalize-space(.)="General" and @aria-controls="notification-preferences-panel"]', $tabNav));
+        $this->assertCount(1, $xpath->query('//div[@id="notification-preferences-panel" and @role="tabpanel"]'));
         $response->assertSeeText($hintText);
 
         // Single-scope supplier (import only or local only)

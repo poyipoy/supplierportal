@@ -88,6 +88,8 @@
                             type="button"
                             role="tab"
                             :aria-selected="scopeTab === 'import'"
+                            aria-controls="notification-preferences-panel"
+                            :tabindex="scopeTab === 'import' ? 0 : -1"
                             class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
                             :class="scopeTab === 'import' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
                             @click="scopeTab = 'import'; applyFilters()"
@@ -98,6 +100,8 @@
                             type="button"
                             role="tab"
                             :aria-selected="scopeTab === 'local'"
+                            aria-controls="notification-preferences-panel"
+                            :tabindex="scopeTab === 'local' ? 0 : -1"
                             class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
                             :class="scopeTab === 'local' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
                             @click="scopeTab = 'local'; applyFilters()"
@@ -108,6 +112,8 @@
                             type="button"
                             role="tab"
                             :aria-selected="scopeTab === 'general'"
+                            aria-controls="notification-preferences-panel"
+                            :tabindex="scopeTab === 'general' ? 0 : -1"
                             class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
                             :class="scopeTab === 'general' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
                             @click="scopeTab = 'general'; applyFilters()"
@@ -161,6 +167,7 @@
                                     type="button"
                                     class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
                                     :class="activeFilter === 'all' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                    :aria-pressed="activeFilter === 'all' ? 'true' : 'false'"
                                     @click="activeFilter = 'all'; applyFilters()"
                                 >
                                     All
@@ -169,6 +176,7 @@
                                     type="button"
                                     class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
                                     :class="activeFilter === 'enabled' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                    :aria-pressed="activeFilter === 'enabled' ? 'true' : 'false'"
                                     @click="activeFilter = 'enabled'; applyFilters()"
                                 >
                                     Enabled
@@ -177,6 +185,7 @@
                                     type="button"
                                     class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
                                     :class="activeFilter === 'muted' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                    :aria-pressed="activeFilter === 'muted' ? 'true' : 'false'"
                                     @click="activeFilter = 'muted'; applyFilters()"
                                 >
                                     Muted
@@ -207,6 +216,7 @@
                 </x-ui.toolbar>
             @endif
 
+            <div id="notification-preferences-panel" role="tabpanel" aria-label="Notification preferences" class="tw-grid tw-gap-5">
             @foreach($groupedCategories as $category => $categoryEvents)
                 @php
                     $hasMuted = false;
@@ -233,7 +243,7 @@
                                 <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
                             <h2 id="notification-category-{{ $loop->index }}" class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ $category }}</h2>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant" x-text="categoryStats['{{ $category }}'] ? (categoryStats['{{ $category }}'].on + ' of ' + categoryStats['{{ $category }}'].total + ' on') : '{{ $initialCategoryStats[$category]['on'] }} of {{ $initialCategoryStats[$category]['total'] }} on'">
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant" x-text="categorySummaryText($el)">
                                 {{ $initialCategoryStats[$category]['on'] }} of {{ $initialCategoryStats[$category]['total'] }} on
                             </span>
                         </div>
@@ -242,7 +252,7 @@
                                 <button
                                     type="button"
                                     class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
-                                    @click="turnCategoryAll('{{ $category }}', true)"
+                                    @click="turnCategoryAll($el, true)"
                                 >
                                     Turn all on
                                 </button>
@@ -250,7 +260,7 @@
                                 <button
                                     type="button"
                                     class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-on-surface-variant hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
-                                    @click="turnCategoryAll('{{ $category }}', false)"
+                                    @click="turnCategoryAll($el, false)"
                                 >
                                     Turn all off
                                 </button>
@@ -284,7 +294,7 @@
                                         @endif
                                         <p id="notification-{{ $key }}-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $event['description'] }}</p>
                                         @if($isActionRequired)
-                                            <p class="action-required-note tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-warning tw-inline-flex tw-items-center tw-gap-1" @if($isChecked) style="display: none;" @endif>
+                                            <p id="notification-{{ $key }}-warning" role="alert" class="action-required-note tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-warning tw-inline-flex tw-items-center tw-gap-1" @if($isChecked) style="display: none;" @endif>
                                                 <x-ui.icon name="triangle-alert" size="xs" />
                                                 <span>This notification requires your action. Muting it may cause you to miss pending tasks.</span>
                                             </p>
@@ -297,7 +307,7 @@
                                             name="notification_preferences[{{ $key }}]"
                                             value="1"
                                             :checked="$isChecked"
-                                            aria-describedby="notification-{{ $key }}-help @error($field) {{ $controlId }}-error @enderror"
+                                            aria-describedby="notification-{{ $key }}-help @if($isActionRequired) notification-{{ $key }}-warning @endif @error($field) {{ $controlId }}-error @enderror"
                                             aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}"
                                             onchange="this.parentElement.querySelector('label span[aria-hidden]').textContent = this.checked ? 'On' : 'Off'; const note = this.closest('fieldset').querySelector('.action-required-note'); if (note) { note.style.display = this.checked ? 'none' : 'inline-flex'; }"
                                         />
@@ -313,6 +323,7 @@
                     </div>
                 </details>
             @endforeach
+            </div>
 
             <div x-cloak x-show="visibleEventCount === 0" class="tw-border tw-border-outline tw-bg-surface tw-rounded-ui-sm tw-p-6">
                 <x-ui.empty-state
@@ -334,7 +345,7 @@
 
             <x-ui.action-bar class="tw-mt-2">
                 <x-slot:left>
-                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-ui-xs">
+                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-ui-xs" role="status" aria-live="polite">
                         <span x-show="dirtyCount > 0" x-cloak class="tw-inline-flex tw-items-center tw-gap-1.5 tw-font-medium tw-text-warning">
                             <span class="tw-h-2 tw-w-2 tw-rounded-full tw-bg-warning" aria-hidden="true"></span>
                             <span x-text="dirtyCount + (dirtyCount === 1 ? ' unsaved change' : ' unsaved changes')">1 unsaved change</span>
@@ -377,7 +388,7 @@
         name="reset-notification-preferences"
         title="Reset notification preferences"
     >
-        <form method="POST" action="{{ route('profile.notifications.reset') }}" id="reset-preferences-form">
+        <form method="POST" action="{{ route('profile.notifications.reset') }}" id="reset-preferences-form" @submit="isSubmitting = true">
             @csrf
             @method('DELETE')
             <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">
@@ -422,9 +433,18 @@ function notificationPreferencesForm(config) {
             return this.$root || this.$el || document.querySelector('form[action$="/profile/notifications"]');
         },
         init() {
+            const root = this.getRoot();
+            const details = Array.from(root.querySelectorAll('details[data-category]'));
+            this.allExpanded = details.length > 0 && details.every(d => d.open);
             this.updateDirty();
             if (this.scopeTab !== 'all') {
                 this.applyFilters();
+            }
+            const resetForm = document.getElementById('reset-preferences-form');
+            if (resetForm) {
+                resetForm.addEventListener('submit', () => {
+                    this.isSubmitting = true;
+                });
             }
             window.addEventListener('beforeunload', (e) => {
                 if (this.dirtyCount > 0 && !this.isSubmitting) {
@@ -464,9 +484,19 @@ function notificationPreferencesForm(config) {
                 }
             });
         },
-        turnCategoryAll(catName, turnOn) {
+        categorySummaryText(el) {
+            const detail = el ? el.closest('details[data-category]') : null;
+            const cat = detail ? detail.getAttribute('data-category') : null;
+            if (cat && this.categoryStats[cat]) {
+                return this.categoryStats[cat].on + ' of ' + this.categoryStats[cat].total + ' on';
+            }
+            return '';
+        },
+        turnCategoryAll(target, turnOn) {
             const root = this.getRoot();
-            const detail = root.querySelector('details[data-category="' + catName + '"]');
+            const detail = (typeof target === 'string')
+                ? root.querySelector('details[data-category="' + CSS.escape(target) + '"]')
+                : (target ? target.closest('details') : null);
             if (!detail) return;
             const cbs = detail.querySelectorAll('input[type=checkbox][name^="notification_preferences"]');
             cbs.forEach(cb => {

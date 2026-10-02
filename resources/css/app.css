@@ -670,8 +670,8 @@
         cursor: pointer;
         outline: none;
         vertical-align: middle;
-        transition: background-color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease),
-                    border-color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease);
+        transition: background-color var(--ui-motion-standard, 150ms) var(--ui-easing-standard, cubic-bezier(.2, 0, 0, 1)),
+                    border-color var(--ui-motion-standard, 150ms) var(--ui-easing-standard, cubic-bezier(.2, 0, 0, 1));
         flex-shrink: 0;
     }
 
@@ -685,10 +685,10 @@
         height: 1rem;
         border-radius: 9999px;
         background-color: var(--md-on-surface-variant);
-        transition: transform var(--motion-duration-fast, 150ms) var(--motion-easing-emphasized, cubic-bezier(0.2, 0, 0, 1)),
-                    background-color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease),
-                    width var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease),
-                    height var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease);
+        transition: transform var(--ui-motion-standard, 150ms) var(--ui-easing-emphasized, cubic-bezier(.2, 0, 0, 1.2)),
+                    background-color var(--ui-motion-standard, 150ms) var(--ui-easing-standard, cubic-bezier(.2, 0, 0, 1)),
+                    width var(--ui-motion-standard, 150ms) var(--ui-easing-standard, cubic-bezier(.2, 0, 0, 1)),
+                    height var(--ui-motion-standard, 150ms) var(--ui-easing-standard, cubic-bezier(.2, 0, 0, 1));
     }
 
     .ui-switch:checked {
