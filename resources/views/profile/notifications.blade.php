@@ -141,10 +141,44 @@
         </form>
     @endif
 
-    <form method="POST" action="{{ route('profile.notifications.reset') }}">
-        @csrf
-        @method('DELETE')
-        <x-ui.button type="submit" variant="outlined">Reset to defaults</x-ui.button>
-    </form>
+    <div class="tw-flex tw-items-center tw-justify-start">
+        <x-ui.button
+            type="button"
+            variant="outline"
+            x-on:click="$dispatch('open-ui-dialog', 'reset-notification-preferences')"
+        >
+            Reset to defaults
+        </x-ui.button>
+    </div>
+
+    <x-ui.dialog
+        name="reset-notification-preferences"
+        title="Reset notification preferences"
+    >
+        <form method="POST" action="{{ route('profile.notifications.reset') }}" id="reset-preferences-form">
+            @csrf
+            @method('DELETE')
+            <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">
+                All notification settings will return to default, and any unsaved changes on this page will be discarded.
+            </p>
+        </form>
+
+        <x-slot:actions>
+            <x-ui.button
+                type="button"
+                variant="outline"
+                x-on:click="$dispatch('close-ui-dialog', 'reset-notification-preferences')"
+            >
+                Cancel
+            </x-ui.button>
+            <x-ui.button
+                type="submit"
+                form="reset-preferences-form"
+                variant="danger"
+            >
+                Reset to defaults
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.dialog>
 </div>
 @endsection
