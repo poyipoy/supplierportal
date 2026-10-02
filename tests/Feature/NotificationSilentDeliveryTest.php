@@ -170,4 +170,40 @@ class NotificationSilentDeliveryTest extends TestCase
         $this->assertArrayNotHasKey('silent', $stored->data);
         \Illuminate\Support\Facades\Queue::assertPushed(\Illuminate\Broadcasting\BroadcastEvent::class, 1);
     }
+
+    public function test_silent_notifications_are_excluded_from_global_unread_and_category_counts(): void
+    {
+        $user = User::factory()->create(['role' => 'finance']);
+        $summaryService = app(\App\Services\NotificationSummaryService::class);
+
+        // 1 normal unread notification
+        $user->notify(new \App\Notifications\SystemNotification('Normal', 'Normal', '#', 'bell', ['event' => 'local_invoice.submitted']));
+
+        // 1 silent unread notification
+        $pref = $user->preference()->create(config('user_preferences.defaults'));
+        $pref->forceFill(['notification_preferences' => ['local_invoice_resubmitted' => 'silent']])->save();
+        app(\App\Services\NotificationPreferenceService::class)->forget($user);
+        $user->notify(new \App\Notifications\SystemNotification('Silent', 'Silent', '#', 'bell', ['event' => 'local_invoice.resubmitted']));
+
+        $this->assertSame(2, $user->unreadNotifications()->count());
+
+        // countsForUser
+        $counts = $summaryService->countsForUser($user);
+        $this->assertSame(1, $counts['count'], 'Global badge count must exclude silent unread notifications');
+        $this->assertSame(1, $counts['category_counts']['invoice']['unread'], 'Category badge count must exclude silent unread notifications');
+
+        // forUser
+        $summary = $summaryService->forUser($user);
+        $this->assertSame(1, $summary['count'], 'Summary global count must exclude silent unread notifications');
+        $this->assertSame(1, $summary['category_counts']['invoice']['unread']);
+        $this->assertSame(2, $summary['notifications']->count(), 'Inbox list must retain all notifications including silent');
+
+        // unread-count endpoint
+        $response = $this->actingAs($user)->get(route('notifications.unread-count'))->assertOk();
+        $response->assertJsonPath('count', 1);
+
+        // mark-all-read marks all including silent
+        $this->actingAs($user)->postJson(route('notifications.mark-all-read'))->assertOk();
+        $this->assertSame(0, $user->fresh()->unreadNotifications()->count());
+    }
 }
