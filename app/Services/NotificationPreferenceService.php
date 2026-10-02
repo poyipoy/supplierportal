@@ -69,18 +69,55 @@ class NotificationPreferenceService
         return $normalized;
     }
 
-    public function mergeOverrides(User $user, array $stored, array $submitted): array
+    public function mergeOverrides(User $user, array $stored, array $submitted, array $delivery = []): array
     {
         $overrides = $this->normalizeStored($stored);
         foreach ($this->normalize($user, $submitted) as $key => $value) {
             if ($value) {
-                unset($overrides[$key]);
+                if (($delivery[$key] ?? null) === 'silent') {
+                    $overrides[$key] = 'silent';
+                } else {
+                    unset($overrides[$key]);
+                }
             } else {
                 $overrides[$key] = false;
             }
         }
 
         return $overrides;
+    }
+
+    public function deliveryFor(User $user, string $eventKey): string
+    {
+        try {
+            $event = $this->registry()[$eventKey] ?? null;
+            if (! is_array($event) || ! $this->eligible($user, $event)) {
+                return 'normal';
+            }
+
+            $override = $this->overridesFor($user)[$eventKey] ?? null;
+            if ($override === false) {
+                return 'off';
+            }
+            if ($override === 'silent') {
+                return 'silent';
+            }
+
+            return 'normal';
+        } catch (Throwable $exception) {
+            $this->overrides[$user->getKey()] = [];
+            try {
+                Log::warning('Notification preference delivery lookup failed; normal delivery retained.', [
+                    'recipient_id' => $user->getKey(),
+                    'event_key' => $eventKey,
+                    'exception_class' => $exception::class,
+                ]);
+            } catch (Throwable) {
+                // Logging must not make preference failure interrupt the business workflow.
+            }
+
+            return 'normal';
+        }
     }
 
     public function effectivePreferences(User $user): array
@@ -177,12 +214,15 @@ class NotificationPreferenceService
         return $this->overrides[$user->getKey()] = $this->normalizeStored(is_array($stored) ? $stored : []);
     }
 
-    private function normalizeStored(array $stored): array
+    public function normalizeStored(array $stored): array
     {
         $overrides = [];
         foreach ($this->registry() as $key => $event) {
-            if (($stored[$key] ?? null) === false) {
+            $val = $stored[$key] ?? null;
+            if ($val === false) {
                 $overrides[$key] = false;
+            } elseif ($val === 'silent') {
+                $overrides[$key] = 'silent';
             }
         }
 
