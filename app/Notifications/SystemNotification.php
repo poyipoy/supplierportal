@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
+use App\Services\NotificationPreferenceService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
@@ -63,9 +65,9 @@ class SystemNotification extends Notification
             'icon' => $this->icon,
         ], $this->data);
 
-        if ($notifiable instanceof \App\Models\User) {
+        if ($notifiable instanceof User) {
             try {
-                $prefService = app(\App\Services\NotificationPreferenceService::class);
+                $prefService = app(NotificationPreferenceService::class);
                 $key = $prefService->keyFor($this);
                 if ($key !== null && $prefService->deliveryFor($notifiable, $key) === 'silent') {
                     $payload['silent'] = true;

@@ -3,8 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\SystemNotification;
 use App\Services\NotificationPreferenceService;
+use App\Services\NotificationSummaryService;
+use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class NotificationSilentDeliveryTest extends TestCase
@@ -97,55 +101,55 @@ class NotificationSilentDeliveryTest extends TestCase
 
     public function test_silent_event_delivers_to_database_with_silent_flag_and_suppresses_broadcast(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         $user = User::factory()->create(['role' => 'finance']);
         $pref = $user->preference()->create(config('user_preferences.defaults'));
         $pref->forceFill(['notification_preferences' => [self::KEY => 'silent']])->save();
 
-        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
         $user->notify($notification);
 
         $this->assertSame(1, $user->notifications()->count());
         $stored = $user->notifications()->sole();
         $this->assertTrue($stored->data['silent'] ?? false);
-        \Illuminate\Support\Facades\Queue::assertNothingPushed();
+        Queue::assertNothingPushed();
     }
 
     public function test_off_event_suppresses_both_database_and_broadcast(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         $user = User::factory()->create(['role' => 'finance']);
         $pref = $user->preference()->create(config('user_preferences.defaults'));
         $pref->forceFill(['notification_preferences' => [self::KEY => false]])->save();
 
-        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
         $user->notify($notification);
 
         $this->assertSame(0, $user->notifications()->count());
-        \Illuminate\Support\Facades\Queue::assertNothingPushed();
+        Queue::assertNothingPushed();
     }
 
     public function test_normal_event_delivers_to_database_and_broadcast_without_silent_key(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         $user = User::factory()->create(['role' => 'finance']);
 
-        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'local_invoice.submitted']);
         $user->notify($notification);
 
         $this->assertSame(1, $user->notifications()->count());
         $stored = $user->notifications()->sole();
         $this->assertArrayNotHasKey('silent', $stored->data);
-        \Illuminate\Support\Facades\Queue::assertPushed(\Illuminate\Broadcasting\BroadcastEvent::class, 1);
+        Queue::assertPushed(BroadcastEvent::class, 1);
     }
 
     public function test_caller_supplied_silent_flag_is_overridden_by_service(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         $user = User::factory()->create(['role' => 'finance']);
 
         // User is Normal; caller attempts to spoof silent => true
-        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', [
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', [
             'event' => 'local_invoice.submitted',
             'silent' => true,
         ]);
@@ -157,33 +161,33 @@ class NotificationSilentDeliveryTest extends TestCase
 
     public function test_unregistered_event_delivered_normally_even_if_similar_silent_key_stored(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         $user = User::factory()->create(['role' => 'finance']);
         $pref = $user->preference()->create(config('user_preferences.defaults'));
         $pref->forceFill(['notification_preferences' => ['unregistered_event_key' => 'silent']])->save();
 
-        $notification = new \App\Notifications\SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'unregistered_event']);
+        $notification = new SystemNotification('Title', 'Msg', '#', 'bell', ['event' => 'unregistered_event']);
         $user->notify($notification);
 
         $this->assertSame(1, $user->notifications()->count());
         $stored = $user->notifications()->sole();
         $this->assertArrayNotHasKey('silent', $stored->data);
-        \Illuminate\Support\Facades\Queue::assertPushed(\Illuminate\Broadcasting\BroadcastEvent::class, 1);
+        Queue::assertPushed(BroadcastEvent::class, 1);
     }
 
     public function test_silent_notifications_are_excluded_from_global_unread_and_category_counts(): void
     {
         $user = User::factory()->create(['role' => 'finance']);
-        $summaryService = app(\App\Services\NotificationSummaryService::class);
+        $summaryService = app(NotificationSummaryService::class);
 
         // 1 normal unread notification
-        $user->notify(new \App\Notifications\SystemNotification('Normal', 'Normal', '#', 'bell', ['event' => 'local_invoice.submitted']));
+        $user->notify(new SystemNotification('Normal', 'Normal', '#', 'bell', ['event' => 'local_invoice.submitted']));
 
         // 1 silent unread notification
         $pref = $user->preference()->create(config('user_preferences.defaults'));
         $pref->forceFill(['notification_preferences' => ['local_invoice_resubmitted' => 'silent']])->save();
-        app(\App\Services\NotificationPreferenceService::class)->forget($user);
-        $user->notify(new \App\Notifications\SystemNotification('Silent', 'Silent', '#', 'bell', ['event' => 'local_invoice.resubmitted']));
+        app(NotificationPreferenceService::class)->forget($user);
+        $user->notify(new SystemNotification('Silent', 'Silent', '#', 'bell', ['event' => 'local_invoice.resubmitted']));
 
         $this->assertSame(2, $user->unreadNotifications()->count());
 
@@ -269,7 +273,7 @@ class NotificationSilentDeliveryTest extends TestCase
             $user->fresh()->preference->notification_preferences,
             'Off switch must win over silent delivery selection',
         );
-        $this->assertSame('off', app(\App\Services\NotificationPreferenceService::class)->deliveryFor($user, 'local_invoice_submitted'));
+        $this->assertSame('off', app(NotificationPreferenceService::class)->deliveryFor($user, 'local_invoice_submitted'));
     }
 
     public function test_backward_compatibility_when_notification_delivery_not_present(): void
