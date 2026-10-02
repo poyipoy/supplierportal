@@ -125,26 +125,30 @@ class NotificationPreferencesUiTest extends TestCase
 
     public function test_scope_tabs_rendered_for_dual_scope_supplier_and_omitted_for_single_scope(): void
     {
+        $hintText = 'Notification preferences are account-wide and apply to both Import and Local portals.';
+
         // Dual-scope supplier
         $dualSupplier = $this->localSupplier();
         $dualSupplier->supplierScopes()->firstOrCreate(['scope' => 'import']);
         $response = $this->actingAs($dualSupplier)->get(route('profile.notifications'))->assertOk();
 
-        $response->assertSeeText('All Portals');
+        $response->assertDontSeeText('All Portals');
         $response->assertSeeText('Import');
         $response->assertSeeText('Local');
         $response->assertSeeText('General');
-        $response->assertSeeText('Notification preferences are account-wide and apply to both Import and Local portals.');
+        $response->assertSeeText($hintText);
 
-        // Single-scope supplier
+        // Single-scope supplier (import only or local only)
         $singleSupplier = $this->localSupplier();
         $singleResponse = $this->actingAs($singleSupplier)->get(route('profile.notifications'))->assertOk();
         $singleResponse->assertDontSeeText('All Portals');
+        $singleResponse->assertDontSeeText($hintText);
 
         // Non-supplier (purchasing)
         $purchasing = User::factory()->create(['role' => 'purchasing']);
         $purchasingResponse = $this->actingAs($purchasing)->get(route('profile.notifications'))->assertOk();
         $purchasingResponse->assertDontSeeText('All Portals');
+        $purchasingResponse->assertDontSeeText($hintText);
     }
 
     public function test_sticky_action_bar_and_discard_button_present(): void

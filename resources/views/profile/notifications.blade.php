@@ -87,16 +87,6 @@
                         <button
                             type="button"
                             role="tab"
-                            :aria-selected="scopeTab === 'all'"
-                            class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
-                            :class="scopeTab === 'all' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
-                            @click="scopeTab = 'all'; applyFilters()"
-                        >
-                            All Portals
-                        </button>
-                        <button
-                            type="button"
-                            role="tab"
                             :aria-selected="scopeTab === 'import'"
                             class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
                             :class="scopeTab === 'import' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
