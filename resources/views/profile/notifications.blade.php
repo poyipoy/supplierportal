@@ -39,6 +39,17 @@
                 }
             }
 
+            $isSupplier = auth()->user()?->isSupplier();
+            $hasImportScope = false;
+            $hasLocalScope = false;
+            foreach ($events as $e) {
+                $scopes = $e['supplier_scopes'] ?? [];
+                if (in_array('import', $scopes, true)) $hasImportScope = true;
+                if (in_array('local', $scopes, true)) $hasLocalScope = true;
+            }
+            $showScopeTabs = (bool) ($isSupplier && $hasImportScope && $hasLocalScope);
+            $defaultScope = (\App\Support\PortalContext::current() === 'local') ? 'local' : 'import';
+
             $initialCategoryStats = [];
             foreach ($groupedCategories as $catName => $catEvts) {
                 $onCount = 0;
@@ -63,12 +74,16 @@
                 allExpanded: false,
                 searchQuery: '',
                 activeFilter: 'all',
+                scopeTab: @js($showScopeTabs ? $defaultScope : 'all'),
                 totalEnabled: {{ $totalEnabledCount }},
                 totalEvents: {{ $totalEventsCount }},
                 visibleEventCount: {{ $totalEventsCount }},
                 categoryStats: @js($initialCategoryStats),
                 init() {
                     this.updateDirty();
+                    if (this.scopeTab !== 'all') {
+                        this.applyFilters();
+                    }
                     window.addEventListener('beforeunload', (e) => {
                         if (this.dirtyCount > 0 && !this.isSubmitting) {
                             e.preventDefault();
@@ -193,6 +208,56 @@
         >
             @csrf
             @method('PATCH')
+
+            @if($showScopeTabs)
+                <div class="tw-mb-4 tw-grid tw-gap-2">
+                    <x-ui.tabs label="Supplier portal scope filter">
+                        <button
+                            type="button"
+                            role="tab"
+                            :aria-selected="scopeTab === 'all'"
+                            class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
+                            :class="scopeTab === 'all' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
+                            @click="scopeTab = 'all'; applyFilters()"
+                        >
+                            All Portals
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            :aria-selected="scopeTab === 'import'"
+                            class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
+                            :class="scopeTab === 'import' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
+                            @click="scopeTab = 'import'; applyFilters()"
+                        >
+                            Import
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            :aria-selected="scopeTab === 'local'"
+                            class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
+                            :class="scopeTab === 'local' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
+                            @click="scopeTab = 'local'; applyFilters()"
+                        >
+                            Local
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            :aria-selected="scopeTab === 'general'"
+                            class="ui-tab ui-focus-ring tw-flex tw-items-center tw-gap-2 tw-border-b-2 tw-px-3.5 tw-py-2.5 tw-text-ui-sm tw-font-semibold ui-motion"
+                            :class="scopeTab === 'general' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
+                            @click="scopeTab = 'general'; applyFilters()"
+                        >
+                            General
+                        </button>
+                    </x-ui.tabs>
+                    <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">
+                        Notification preferences are account-wide and apply to both Import and Local portals.
+                    </p>
+                </div>
+            @endif
 
             @if($totalEventsCount > 8)
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-mb-1">
