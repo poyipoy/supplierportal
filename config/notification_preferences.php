@@ -86,6 +86,7 @@ return [
         'roles' => ['purchasing', 'supplier'],
         'supplier_scopes' => ['import'],
         'default' => true,
+        'mutable_subject' => 'conversation',
     ],
     'po_issued' => [
         'class' => SystemNotification::class,
