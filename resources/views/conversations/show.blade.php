@@ -72,6 +72,10 @@
         $partnerName = $partner->role === 'supplier'
             ? ($partner->supplier->company_name ?? $partner->name)
             : $partner->name;
+        $isParticipant = $conversation->isMember(auth()->id());
+        $isMuted = $isParticipant && auth()->check()
+            ? app(\App\Services\NotificationPreferenceService::class)->isMuted(auth()->user(), \App\Models\NotificationMute::TYPE_CONVERSATION, $conversation->id)
+            : false;
     @endphp
 
     <div class="chat-fullpage-card">
@@ -85,6 +89,39 @@
                 </div>
             </div>
             <div class="tw-flex tw-items-center tw-gap-2 tw-shrink-0">
+                @if($isParticipant)
+                    @if($isMuted)
+                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded tw-bg-surface-low tw-px-2 tw-py-0.5 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" title="Notifications are muted for this conversation">
+                            <x-ui.icon name="bell-off" size="xs" />
+                            <span>Muted</span>
+                        </span>
+                        <form method="POST" action="{{ route('conversations.unmute', $conversation) }}" class="tw-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low"
+                                aria-pressed="true"
+                                title="Notifications are currently muted. Click to unmute."
+                                aria-label="Unmute conversation notifications">
+                                <x-ui.icon name="bell" />
+                                <span>Unmute</span>
+                            </button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('conversations.mute', $conversation) }}" class="tw-inline">
+                            @csrf
+                            <button type="submit"
+                                class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant hover:tw-bg-surface-low"
+                                aria-pressed="false"
+                                title="Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges."
+                                aria-label="Mute conversation notifications">
+                                <x-ui.icon name="bell-off" />
+                                <span>Mute</span>
+                            </button>
+                        </form>
+                    @endif
+                @endif
+
                 @if($conversation->conversable_type === 'App\Models\PurchaseRequisition')
                     <x-ui.status-chip tone="info" size="sm">PR</x-ui.status-chip>
                 @else
@@ -107,7 +144,7 @@
                             @if($msg->attachments->isNotEmpty())
                                 <div class="chat-attachment-stack tw-mt-1.5">
                                     @foreach($msg->attachments as $attachment)
-                                        <a href="{{ route('attachments.show', $attachment->id) }}" target="_blank" class="chat-attachment-link">
+                                        <a href="{{ route('attachments.show', $attachment) }}" target="_blank" class="chat-attachment-link">
                                             <x-ui.icon name="paperclip" class="tw-mr-1 tw-shrink-0" />
                                             <span class="tw-truncate">{{ $attachment->file_name }}</span>
                                         </a>

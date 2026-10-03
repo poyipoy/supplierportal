@@ -11,7 +11,24 @@
                         <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">Active conversation list</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-1">
+                    <div class="d-none align-items-center gap-1" id="chatDrawerMuteContainer">
+                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded tw-bg-surface-low tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-text-on-surface-variant d-none" id="chatDrawerMutedBadge" title="Notifications are muted for this conversation">
+                            <x-ui.icon name="bell-off" size="xs" />
+                            <span>Muted</span>
+                        </span>
+                        <button type="button"
+                            class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant hover:tw-bg-surface-container"
+                            id="chatDrawerMuteToggle"
+                            aria-pressed="false"
+                            title="Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges."
+                            aria-label="Mute conversation notifications">
+                            <x-ui.icon name="bell-off" id="chatDrawerMuteIcon" />
+                            <span id="chatDrawerMuteLabel">Mute</span>
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
             </div>
 
             <div class="offcanvas-body">
@@ -76,12 +93,18 @@
                         storeUrlTemplate: '{{ route('conversations.messages.store', ['id' => '__ID__']) }}',
                         quickActionUrlTemplate: '{{ route('conversations.quick-action', ['id' => '__ID__']) }}',
                         latestUrlTemplate: '{{ route('conversations.messages.latest', ['id' => '__ID__']) }}',
+                        muteUrlTemplate: '{{ route('conversations.mute', ['id' => '__ID__']) }}',
                     };
 
                     const drawer = new bootstrap.Offcanvas(drawerEl);
                     const backButton = document.getElementById('chatDrawerBack');
                     const titleEl = document.getElementById('chatDrawerTitle');
                     const subtitleEl = document.getElementById('chatDrawerSubtitle');
+                    const muteContainer = document.getElementById('chatDrawerMuteContainer');
+                    const muteToggle = document.getElementById('chatDrawerMuteToggle');
+                    const mutedBadge = document.getElementById('chatDrawerMutedBadge');
+                    const muteLabel = document.getElementById('chatDrawerMuteLabel');
+                    let activeConversationMuted = false;
                     const listPane = document.getElementById('chatDrawerListPane');
                     const conversationPane = document.getElementById('chatDrawerConversationPane');
                     const listEl = document.getElementById('chatDrawerList');
@@ -201,6 +224,23 @@
                         };
                     };
 
+                    const updateMuteUI = (isMuted) => {
+                        activeConversationMuted = isMuted;
+                        if (!muteToggle) return;
+                        muteToggle.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
+                        if (isMuted) {
+                            muteToggle.setAttribute('aria-label', 'Unmute conversation notifications');
+                            muteToggle.setAttribute('title', 'Notifications are currently muted. Click to unmute.');
+                            if (muteLabel) muteLabel.textContent = 'Unmute';
+                            if (mutedBadge) mutedBadge.classList.remove('d-none');
+                        } else {
+                            muteToggle.setAttribute('aria-label', 'Mute conversation notifications');
+                            muteToggle.setAttribute('title', 'Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges.');
+                            if (muteLabel) muteLabel.textContent = 'Mute';
+                            if (mutedBadge) mutedBadge.classList.add('d-none');
+                        }
+                    };
+
                     const setListMode = () => {
                         if (activeConversationId) {
                             saveDraft(activeConversationId, inputEl.value);
@@ -213,6 +253,10 @@
                         backButton.classList.add('d-none');
                         titleEl.textContent = 'Negotiation & Chat';
                         subtitleEl.textContent = 'Active conversation list';
+                        if (muteContainer) {
+                            muteContainer.classList.add('d-none');
+                            muteContainer.classList.remove('d-flex');
+                        }
                         listPane.classList.remove('d-none');
                         conversationPane.classList.add('d-none');
                         contextEl.classList.add('d-none');
@@ -225,6 +269,11 @@
                         backButton.classList.remove('d-none');
                         titleEl.textContent = conversation.partner_name || 'Chat';
                         subtitleEl.textContent = `${conversation.context_label || '-'} · ${conversation.partner_role || ''}`;
+                        if (muteContainer) {
+                            muteContainer.classList.remove('d-none');
+                            muteContainer.classList.add('d-flex');
+                            updateMuteUI(Boolean(conversation.muted));
+                        }
                         listPane.classList.add('d-none');
                         conversationPane.classList.remove('d-none');
                     };
@@ -254,7 +303,10 @@
                         listEl.innerHTML = filtered.map((conversation) => `
                             <button type="button" class="chat-thread-button" data-chat-conversation-id="${conversation.id}">
                                 <div class="d-flex justify-content-between gap-2 mb-1">
-                                    <div class="fw-semibold text-truncate">${escapeHtml(conversation.partner_name)}</div>
+                                    <div class="fw-semibold text-truncate d-flex align-items-center gap-1.5">
+                                        <span>${escapeHtml(conversation.partner_name)}</span>
+                                        ${conversation.muted ? `<span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded tw-bg-surface-low tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-text-on-surface-variant" title="Muted"><x-ui.icon name="bell-off" size="xs" /><span>Muted</span></span>` : ''}
+                                    </div>
                                     ${conversation.unread_count > 0 ? `<span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">${conversation.unread_count}</span>` : ''}
                                 </div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -844,6 +896,36 @@
                         clearTimeout(searchTimer);
                         searchTimer = setTimeout(() => loadConversations(searchEl.value.trim()), 300);
                     });
+                    if (muteToggle) {
+                        muteToggle.addEventListener('click', async () => {
+                            if (!activeConversationId) return;
+                            const nextMuted = !activeConversationMuted;
+                            muteToggle.disabled = true;
+                            try {
+                                const url = config.muteUrlTemplate.replace('__ID__', activeConversationId);
+                                const method = nextMuted ? 'POST' : 'DELETE';
+                                const response = await fetch(url, {
+                                    method: method,
+                                    headers: {
+                                        'X-CSRF-TOKEN': config.csrf,
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                    },
+                                });
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    const isMutedResult = Boolean(data.muted);
+                                    updateMuteUI(isMutedResult);
+                                    const conv = conversations.find(c => String(c.id) === String(activeConversationId));
+                                    if (conv) conv.muted = isMutedResult;
+                                }
+                            } catch (e) {
+                                console.error('Failed to toggle mute state', e);
+                            } finally {
+                                muteToggle.disabled = false;
+                            }
+                        });
+                    }
                     attachmentInput.addEventListener('change', renderAttachmentList);
                     backButton.addEventListener('click', () => {
                         setListMode();

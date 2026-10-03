@@ -407,6 +407,9 @@ class ConversationMessageController extends Controller
             'status_label' => $conversation->statusLabelFor(auth()->user()),
             'status_badge_class' => $conversation->statusBadgeClassFor(auth()->user()),
             'sla' => ConversationPresenter::slaMeta($conversation, auth()->user()),
+            'muted' => auth()->check()
+                ? $this->preferenceService->isMuted(auth()->user(), NotificationMute::TYPE_CONVERSATION, $conversation->id)
+                : false,
         ];
     }
 
