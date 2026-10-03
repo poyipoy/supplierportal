@@ -69,7 +69,7 @@ class SystemNotification extends Notification
             try {
                 $prefService = app(NotificationPreferenceService::class);
                 $key = $prefService->keyFor($this);
-                if ($key !== null && $prefService->deliveryFor($notifiable, $key) === 'silent') {
+                if ($key !== null && $prefService->deliveryFor($notifiable, $key, $this->data()) === 'silent') {
                     $payload['silent'] = true;
                 } else {
                     unset($payload['silent']);
@@ -95,6 +95,11 @@ class SystemNotification extends Notification
             'url' => $this->url,
             'icon' => $this->icon,
         ], $this->data));
+    }
+
+    public function data(): array
+    {
+        return is_array($this->data) ? $this->data : [];
     }
 
     public function event(): ?string

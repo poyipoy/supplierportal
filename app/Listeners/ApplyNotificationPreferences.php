@@ -28,7 +28,11 @@ class ApplyNotificationPreferences
                 return false;
             }
 
-            if ($event->channel === 'broadcast' && $this->preferences->deliveryFor($event->notifiable, $key) === 'silent') {
+            $data = method_exists($event->notification, 'data')
+                ? $event->notification->data()
+                : (property_exists($event->notification, 'data') && is_array($event->notification->data) ? $event->notification->data : []);
+
+            if ($event->channel === 'broadcast' && $this->preferences->deliveryFor($event->notifiable, $key, $data) === 'silent') {
                 return false;
             }
 

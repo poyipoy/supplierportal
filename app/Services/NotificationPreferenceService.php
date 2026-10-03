@@ -90,7 +90,7 @@ class NotificationPreferenceService
         return $overrides;
     }
 
-    public function deliveryFor(User $user, string $eventKey): string
+    public function deliveryFor(User $user, string $eventKey, array $data = []): string
     {
         try {
             $event = $this->registry()[$eventKey] ?? null;
@@ -104,6 +104,14 @@ class NotificationPreferenceService
             }
             if ($override === 'silent') {
                 return 'silent';
+            }
+
+            $mutableSubject = $event['mutable_subject'] ?? null;
+            if (is_string($mutableSubject) && $mutableSubject !== '') {
+                $subjectId = $this->resolveSubjectId($mutableSubject, $data);
+                if ($subjectId !== null && $this->isMuted($user, $mutableSubject, $subjectId)) {
+                    return 'silent';
+                }
             }
 
             return 'normal';
@@ -121,6 +129,16 @@ class NotificationPreferenceService
 
             return 'normal';
         }
+    }
+
+    private function resolveSubjectId(string $subjectType, array $data): ?int
+    {
+        $id = match ($subjectType) {
+            'conversation' => $data['conversation_id'] ?? null,
+            default => null,
+        };
+
+        return is_numeric($id) && (int) $id > 0 ? (int) $id : null;
     }
 
     public function effectivePreferences(User $user): array
