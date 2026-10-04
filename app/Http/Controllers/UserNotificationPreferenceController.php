@@ -15,10 +15,7 @@ class UserNotificationPreferenceController extends Controller
     {
         $user = $request->user();
         $events = $notifications->eventsFor($user);
-        $categoryOrder = array_flip([
-            'Purchase requisitions', 'Quotations', 'Conversations', 'Purchase orders', 'Documents',
-            'Shipments and QC', 'Material claims', 'Local invoices', 'Supplier registration', 'Exports', 'Security',
-        ]);
+        $categoryOrder = array_flip(config('notification_categories.order', []));
         uasort($events, fn (array $left, array $right): int => ($categoryOrder[$left['category']] ?? PHP_INT_MAX) <=> ($categoryOrder[$right['category']] ?? PHP_INT_MAX));
 
         $deliveryPreferences = [];
