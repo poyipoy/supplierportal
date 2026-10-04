@@ -11,8 +11,8 @@
                         <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">Active conversation list</span>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-1">
-                    <div class="d-none align-items-center gap-1" id="chatDrawerMuteContainer">
+                <div class="d-flex align-items-center gap-1.5 tw-shrink-0">
+                    <div class="d-none align-items-center" id="chatDrawerMuteContainer">
                         <button type="button"
                             class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
                             id="chatDrawerMuteToggle"
@@ -28,7 +28,13 @@
                             <span class="tw-sr-only" id="chatDrawerMuteSrLabel">Mute conversation notifications</span>
                         </button>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    <button type="button"
+                        class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
+                        data-bs-dismiss="offcanvas"
+                        title="Close"
+                        aria-label="Close">
+                        <x-ui.icon name="x" />
+                    </button>
                 </div>
             </div>
 
