@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\NotificationMute;
 use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\NotificationPreferenceService;
 use App\Services\NotificationService;
+use App\Support\BusinessTime;
 use App\Support\ConversationPresenter;
 use App\Support\NotificationCategory;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +23,10 @@ use Illuminate\Validation\ValidationException;
 
 class ConversationMessageController extends Controller
 {
-    public function __construct(private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly NotificationPreferenceService $preferenceService,
+    ) {}
 
     /**
      * Conversation list for the chat drawer.
@@ -186,6 +192,50 @@ class ConversationMessageController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function mute(Request $request, $id)
+    {
+        $conversation = Conversation::findOrFail($id);
+        $this->authorize('view', $conversation);
+
+        $this->preferenceService->mute(
+            auth()->user(),
+            NotificationMute::TYPE_CONVERSATION,
+            $conversation->id
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'muted' => true,
+                'conversation_id' => $conversation->getRouteKey(),
+            ]);
+        }
+
+        return back()->with('success', 'Conversation notifications muted.');
+    }
+
+    public function unmute(Request $request, $id)
+    {
+        $conversation = Conversation::findOrFail($id);
+        $this->authorize('view', $conversation);
+
+        $this->preferenceService->unmute(
+            auth()->user(),
+            NotificationMute::TYPE_CONVERSATION,
+            $conversation->id
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'muted' => false,
+                'conversation_id' => $conversation->getRouteKey(),
+            ]);
+        }
+
+        return back()->with('success', 'Conversation notifications unmuted.');
+    }
+
     public function quickAction(Request $request, $id): JsonResponse
     {
         $conversation = Conversation::with(['supplierUser.supplier', 'purchasingUser'])->findOrFail($id);
@@ -322,6 +372,10 @@ class ConversationMessageController extends Controller
      */
     public function unreadCount()
     {
+        if (session()->isStarted()) {
+            session()->save();
+        }
+
         $userId = auth()->id();
         $count = Message::query()
             ->where('sender_id', '!=', $userId)
@@ -353,6 +407,9 @@ class ConversationMessageController extends Controller
             'status_label' => $conversation->statusLabelFor(auth()->user()),
             'status_badge_class' => $conversation->statusBadgeClassFor(auth()->user()),
             'sla' => ConversationPresenter::slaMeta($conversation, auth()->user()),
+            'muted' => auth()->check()
+                ? $this->preferenceService->isMuted(auth()->user(), NotificationMute::TYPE_CONVERSATION, $conversation->id)
+                : false,
         ];
     }
 
@@ -368,16 +425,16 @@ class ConversationMessageController extends Controller
             ],
             'body' => $message->body,
             'created_at' => $message->created_at?->toIso8601String(),
-            'time' => $message->created_at?->format('H:i'),
+            'time' => $message->created_at ? BusinessTime::format($message->created_at, 'H:i', false) : null,
             'is_me' => $message->sender_id === auth()->id(),
             'is_read' => $message->sender_id === auth()->id() && $message->read_at !== null,
             'read_at' => $message->read_at?->toIso8601String(),
-            'read_at_display' => $message->read_at?->format('H:i'),
+            'read_at_display' => $message->read_at ? BusinessTime::format($message->read_at, 'H:i', false) : null,
             'attachments' => $message->attachments->map(fn ($attachment) => [
                 'id' => $attachment->id,
                 'name' => $attachment->file_name,
                 'type' => $attachment->file_type,
-                'url' => route('attachments.show', $attachment->id),
+                'url' => route('attachments.show', $attachment),
             ])->values(),
         ];
     }
@@ -385,7 +442,7 @@ class ConversationMessageController extends Controller
     private function storeAttachments(Message $message, Request $request): void
     {
         foreach ($request->file('attachments', []) as $file) {
-            $path = $file->store('attachments/'.now()->format('Y/m'), 'private');
+            $path = $file->store('attachments/'.now()->format('Y/m'), 'private'); // biz-time:ignore storage path
 
             $message->attachments()->create([
                 'file_path' => $path,

@@ -141,7 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/profile/notifications', [UserNotificationPreferenceController::class, 'update'])->name('profile.notifications.update');
         Route::delete('/profile/notifications', [UserNotificationPreferenceController::class, 'reset'])->name('profile.notifications.reset');
     });
-    Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('attachments.show');
+    Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
 
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
@@ -162,9 +162,21 @@ Route::middleware('auth')->group(function () {
     // Conversations (Shared)
     Route::get('/conversations/drawer', [ConversationMessageController::class, 'drawerIndex'])->name('conversations.drawer.index');
     Route::get('/conversations/{id}/drawer', [ConversationMessageController::class, 'drawerShow'])->name('conversations.drawer.show');
-    Route::post('/conversations/{id}/messages', [ConversationMessageController::class, 'store'])->name('conversations.messages.store');
-    Route::post('/conversations/{id}/quick-action', [ConversationMessageController::class, 'quickAction'])->name('conversations.quick-action');
+    Route::post('/conversations/{id}/messages', [ConversationMessageController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('conversations.messages.store');
+    Route::post('/conversations/{id}/quick-action', [ConversationMessageController::class, 'quickAction'])
+        ->middleware('throttle:60,1')
+        ->name('conversations.quick-action');
     Route::post('/conversations/{id}/read', [ConversationMessageController::class, 'markRead'])->name('conversations.read');
+    Route::post('/conversations/{id}/mute', [ConversationMessageController::class, 'mute'])
+        ->middleware('throttle:60,1')
+        ->name('conversations.mute');
+    Route::delete('/conversations/{id}/mute', [ConversationMessageController::class, 'unmute'])
+        ->middleware('throttle:60,1')
+        ->name('conversations.unmute');
+    Route::post('/conversations/{id}/unmute', [ConversationMessageController::class, 'unmute'])
+        ->middleware('throttle:60,1');
     Route::get('/conversations/{id}/messages/latest', [ConversationMessageController::class, 'latest'])->name('conversations.messages.latest');
     Route::get('/conversations/unread-count', [ConversationMessageController::class, 'unreadCount'])->name('conversations.unread-count');
 });
@@ -221,7 +233,9 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
         ->name('material-calculations.preview');
 
     Route::get('/requisitions/import-template', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importTemplate'])->name('requisitions.import-template');
-    Route::post('/requisitions/import-preview', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importPreview'])->name('requisitions.import-preview');
+    Route::post('/requisitions/import-preview', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importPreview'])
+        ->middleware('throttle:15,1')
+        ->name('requisitions.import-preview');
     Route::put('/requisitions/{id}/submit', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'submitDraft'])->name('requisitions.submit');
     Route::resource('requisitions', App\Http\Controllers\Purchasing\PurchaseRequisitionController::class);
     Route::resource('pr-items', PrItemController::class)->only(['store', 'update', 'destroy']);
@@ -288,14 +302,14 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'store')->name('store');
         Route::get('/import/po/template', 'poTemplate')->name('import.po.template');
-        Route::post('/import/po/preview', 'poPreview')->name('import.po.preview');
-        Route::post('/import/po/confirm', 'poConfirm')->name('import.po.confirm');
+        Route::post('/import/po/preview', 'poPreview')->middleware('throttle:15,1')->name('import.po.preview');
+        Route::post('/import/po/confirm', 'poConfirm')->middleware('throttle:15,1')->name('import.po.confirm');
         Route::get('/import/gr/template', 'grTemplate')->name('import.gr.template');
-        Route::post('/import/gr/preview', 'grPreview')->name('import.gr.preview');
-        Route::post('/import/gr/confirm', 'grConfirm')->name('import.gr.confirm');
+        Route::post('/import/gr/preview', 'grPreview')->middleware('throttle:15,1')->name('import.gr.preview');
+        Route::post('/import/gr/confirm', 'grConfirm')->middleware('throttle:15,1')->name('import.gr.confirm');
         Route::get('/import/template', 'template')->name('import.template');
-        Route::post('/import/preview', 'preview')->name('import.preview');
-        Route::post('/import/confirm', 'confirm')->name('import.confirm');
+        Route::post('/import/preview', 'preview')->middleware('throttle:15,1')->name('import.preview');
+        Route::post('/import/confirm', 'confirm')->middleware('throttle:15,1')->name('import.confirm');
         Route::post('/upload-po', 'uploadPo')->name('upload-po');
         Route::get('/{purchaseOrder}', 'show')->name('show');
         Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
@@ -345,7 +359,9 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('s
     Route::get('/export/purchase-orders/{purchaseOrder}', [SupplierExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
     Route::get('/quotations/period/{period_id}', [QuotationController::class, 'period'])->name('quotations.period');
     Route::get('/quotations/{pr_id}/import-template', [QuotationController::class, 'importTemplate'])->name('quotations.import-template');
-    Route::post('/quotations/{pr_id}/import-preview', [QuotationController::class, 'importPreview'])->name('quotations.import-preview');
+    Route::post('/quotations/{pr_id}/import-preview', [QuotationController::class, 'importPreview'])
+        ->middleware('throttle:15,1')
+        ->name('quotations.import-preview');
     Route::get('/quotations/{pr_id}/create', [QuotationController::class, 'create'])->name('quotations.create');
     Route::post('/quotations/{pr_id}', [QuotationController::class, 'store'])->name('quotations.store');
     Route::resource('quotations', QuotationController::class)->only(['index', 'show']);

@@ -1,17 +1,41 @@
 @auth
     @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
         <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
-            <div class="offcanvas-header tw-border-b tw-border-outline-variant tw-bg-surface tw-py-3">
-                <div class="d-flex align-items-center gap-2 tw-min-w-0">
-                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="Back to Chat List" aria-label="Back to chat list">
+            <div class="offcanvas-header tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface tw-px-4 tw-py-3">
+                <div class="tw-flex tw-flex-1 tw-min-w-0 tw-items-center tw-gap-2.5">
+                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="Back to Chat List" aria-label="Back to chat list">
                         <x-ui.icon name="arrow-left" />
                     </button>
-                    <div class="tw-min-w-0">
-                        <h6 class="offcanvas-title tw-m-0 tw-text-ui-sm tw-font-semibold tw-truncate" id="chatDrawerTitle">Negotiation & Chat</h6>
+                    <div class="tw-flex-1 tw-min-w-0 tw-overflow-hidden">
+                        <h6 class="offcanvas-title tw-m-0 tw-truncate tw-text-ui-sm tw-font-semibold" id="chatDrawerTitle">Negotiation & Chat</h6>
                         <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">Active conversation list</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <div class="tw-flex tw-shrink-0 tw-items-center tw-gap-2 ms-auto">
+                    <div class="d-none align-items-center tw-shrink-0" id="chatDrawerMuteContainer">
+                        <button type="button"
+                            class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
+                            id="chatDrawerMuteToggle"
+                            aria-pressed="false"
+                            title="Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges."
+                            aria-label="Mute conversation notifications">
+                            <span class="chat-drawer-mute-icon-unmuted d-inline-flex">
+                                <x-ui.icon name="bell" />
+                            </span>
+                            <span class="chat-drawer-mute-icon-muted d-none">
+                                <x-ui.icon name="bell-off" />
+                            </span>
+                            <span class="tw-sr-only" id="chatDrawerMuteSrLabel">Mute conversation notifications</span>
+                        </button>
+                    </div>
+                    <button type="button"
+                        class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
+                        data-bs-dismiss="offcanvas"
+                        title="Close"
+                        aria-label="Close">
+                        <x-ui.icon name="x" />
+                    </button>
+                </div>
             </div>
 
             <div class="offcanvas-body">
@@ -76,12 +100,19 @@
                         storeUrlTemplate: '{{ route('conversations.messages.store', ['id' => '__ID__']) }}',
                         quickActionUrlTemplate: '{{ route('conversations.quick-action', ['id' => '__ID__']) }}',
                         latestUrlTemplate: '{{ route('conversations.messages.latest', ['id' => '__ID__']) }}',
+                        muteUrlTemplate: '{{ route('conversations.mute', ['id' => '__ID__']) }}',
                     };
 
                     const drawer = new bootstrap.Offcanvas(drawerEl);
                     const backButton = document.getElementById('chatDrawerBack');
                     const titleEl = document.getElementById('chatDrawerTitle');
                     const subtitleEl = document.getElementById('chatDrawerSubtitle');
+                    const muteContainer = document.getElementById('chatDrawerMuteContainer');
+                    const muteToggle = document.getElementById('chatDrawerMuteToggle');
+                    const muteIconUnmuted = muteToggle ? muteToggle.querySelector('.chat-drawer-mute-icon-unmuted') : null;
+                    const muteIconMuted = muteToggle ? muteToggle.querySelector('.chat-drawer-mute-icon-muted') : null;
+                    const muteSrLabel = document.getElementById('chatDrawerMuteSrLabel');
+                    let activeConversationMuted = false;
                     const listPane = document.getElementById('chatDrawerListPane');
                     const conversationPane = document.getElementById('chatDrawerConversationPane');
                     const listEl = document.getElementById('chatDrawerList');
@@ -201,6 +232,41 @@
                         };
                     };
 
+                    const updateMuteUI = (isMuted) => {
+                        activeConversationMuted = isMuted;
+                        if (!muteToggle) return;
+                        muteToggle.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
+                        if (isMuted) {
+                            muteToggle.setAttribute('aria-label', 'Unmute conversation notifications');
+                            muteToggle.setAttribute('title', 'Notifications are currently muted. Click to unmute.');
+                            if (muteSrLabel) muteSrLabel.textContent = 'Unmute conversation notifications';
+                            if (muteIconUnmuted) {
+                                muteIconUnmuted.classList.add('d-none');
+                                muteIconUnmuted.classList.remove('d-inline-flex');
+                            }
+                            if (muteIconMuted) {
+                                muteIconMuted.classList.remove('d-none');
+                                muteIconMuted.classList.add('d-inline-flex');
+                            }
+                            muteToggle.classList.add('tw-bg-surface-container', 'tw-text-on-surface');
+                            muteToggle.classList.remove('tw-bg-transparent', 'tw-text-on-surface-variant');
+                        } else {
+                            muteToggle.setAttribute('aria-label', 'Mute conversation notifications');
+                            muteToggle.setAttribute('title', 'Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges.');
+                            if (muteSrLabel) muteSrLabel.textContent = 'Mute conversation notifications';
+                            if (muteIconUnmuted) {
+                                muteIconUnmuted.classList.remove('d-none');
+                                muteIconUnmuted.classList.add('d-inline-flex');
+                            }
+                            if (muteIconMuted) {
+                                muteIconMuted.classList.add('d-none');
+                                muteIconMuted.classList.remove('d-inline-flex');
+                            }
+                            muteToggle.classList.remove('tw-bg-surface-container', 'tw-text-on-surface');
+                            muteToggle.classList.add('tw-bg-transparent', 'tw-text-on-surface-variant');
+                        }
+                    };
+
                     const setListMode = () => {
                         if (activeConversationId) {
                             saveDraft(activeConversationId, inputEl.value);
@@ -213,6 +279,10 @@
                         backButton.classList.add('d-none');
                         titleEl.textContent = 'Negotiation & Chat';
                         subtitleEl.textContent = 'Active conversation list';
+                        if (muteContainer) {
+                            muteContainer.classList.add('d-none');
+                            muteContainer.classList.remove('d-flex');
+                        }
                         listPane.classList.remove('d-none');
                         conversationPane.classList.add('d-none');
                         contextEl.classList.add('d-none');
@@ -225,6 +295,11 @@
                         backButton.classList.remove('d-none');
                         titleEl.textContent = conversation.partner_name || 'Chat';
                         subtitleEl.textContent = `${conversation.context_label || '-'} · ${conversation.partner_role || ''}`;
+                        if (muteContainer) {
+                            muteContainer.classList.remove('d-none');
+                            muteContainer.classList.add('d-flex');
+                            updateMuteUI(Boolean(conversation.muted));
+                        }
                         listPane.classList.add('d-none');
                         conversationPane.classList.remove('d-none');
                     };
@@ -254,7 +329,10 @@
                         listEl.innerHTML = filtered.map((conversation) => `
                             <button type="button" class="chat-thread-button" data-chat-conversation-id="${conversation.id}">
                                 <div class="d-flex justify-content-between gap-2 mb-1">
-                                    <div class="fw-semibold text-truncate">${escapeHtml(conversation.partner_name)}</div>
+                                    <div class="fw-semibold text-truncate d-flex align-items-center gap-1.5">
+                                        <span>${escapeHtml(conversation.partner_name)}</span>
+                                        ${conversation.muted ? `<span class="tw-inline-flex tw-items-center tw-text-on-surface-variant" title="Notifications are muted for this conversation"><x-ui.icon name="bell-off" size="xs" /></span>` : ''}
+                                    </div>
                                     ${conversation.unread_count > 0 ? `<span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">${conversation.unread_count}</span>` : ''}
                                 </div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -844,6 +922,36 @@
                         clearTimeout(searchTimer);
                         searchTimer = setTimeout(() => loadConversations(searchEl.value.trim()), 300);
                     });
+                    if (muteToggle) {
+                        muteToggle.addEventListener('click', async () => {
+                            if (!activeConversationId) return;
+                            const nextMuted = !activeConversationMuted;
+                            muteToggle.disabled = true;
+                            try {
+                                const url = config.muteUrlTemplate.replace('__ID__', activeConversationId);
+                                const method = nextMuted ? 'POST' : 'DELETE';
+                                const response = await fetch(url, {
+                                    method: method,
+                                    headers: {
+                                        'X-CSRF-TOKEN': config.csrf,
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                    },
+                                });
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    const isMutedResult = Boolean(data.muted);
+                                    updateMuteUI(isMutedResult);
+                                    const conv = conversations.find(c => String(c.id) === String(activeConversationId));
+                                    if (conv) conv.muted = isMutedResult;
+                                }
+                            } catch (e) {
+                                console.error('Failed to toggle mute state', e);
+                            } finally {
+                                muteToggle.disabled = false;
+                            }
+                        });
+                    }
                     attachmentInput.addEventListener('change', renderAttachmentList);
                     backButton.addEventListener('click', () => {
                         setListMode();

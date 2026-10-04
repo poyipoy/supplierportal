@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ExportJob;
+use App\Models\NotificationMute;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Models\UserPreference;
@@ -21,6 +22,8 @@ class NotificationPreferenceService
     private array $poCreators = [];
 
     private array $exportOwners = [];
+
+    private array $mutes = [];
 
     public function __construct(private readonly UserPreferenceService $preferences) {}
 
@@ -87,7 +90,7 @@ class NotificationPreferenceService
         return $overrides;
     }
 
-    public function deliveryFor(User $user, string $eventKey): string
+    public function deliveryFor(User $user, string $eventKey, array $data = []): string
     {
         try {
             $event = $this->registry()[$eventKey] ?? null;
@@ -101,6 +104,14 @@ class NotificationPreferenceService
             }
             if ($override === 'silent') {
                 return 'silent';
+            }
+
+            $mutableSubject = $event['mutable_subject'] ?? null;
+            if (is_string($mutableSubject) && $mutableSubject !== '') {
+                $subjectId = $this->resolveSubjectId($mutableSubject, $data);
+                if ($subjectId !== null && $this->isMuted($user, $mutableSubject, $subjectId)) {
+                    return 'silent';
+                }
             }
 
             return 'normal';
@@ -118,6 +129,16 @@ class NotificationPreferenceService
 
             return 'normal';
         }
+    }
+
+    private function resolveSubjectId(string $subjectType, array $data): ?int
+    {
+        $id = match ($subjectType) {
+            'conversation' => $data['conversation_id'] ?? null,
+            default => null,
+        };
+
+        return is_numeric($id) && (int) $id > 0 ? (int) $id : null;
     }
 
     public function effectivePreferences(User $user): array
@@ -158,8 +179,78 @@ class NotificationPreferenceService
     public function forget(User $user): void
     {
         $id = $user->getKey();
-        unset($this->overrides[$id], $this->supplierScopes[$id], $this->poCreators[$id], $this->exportOwners[$id]);
+        unset($this->overrides[$id], $this->supplierScopes[$id], $this->poCreators[$id], $this->exportOwners[$id], $this->mutes[$id]);
         request()->attributes->remove(UserPreferenceService::class.'.'.$id);
+    }
+
+    public function mute(User $user, string $subjectType, int $subjectId): bool
+    {
+        NotificationMute::query()->firstOrCreate([
+            'user_id' => $user->getKey(),
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+        ]);
+
+        if (isset($this->mutes[$user->getKey()][$subjectType])) {
+            if (! in_array($subjectId, $this->mutes[$user->getKey()][$subjectType], true)) {
+                $this->mutes[$user->getKey()][$subjectType][] = $subjectId;
+            }
+        } else {
+            $this->mutes[$user->getKey()][$subjectType] = [$subjectId];
+        }
+
+        return true;
+    }
+
+    public function unmute(User $user, string $subjectType, int $subjectId): bool
+    {
+        NotificationMute::query()
+            ->where('user_id', $user->getKey())
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->delete();
+
+        if (isset($this->mutes[$user->getKey()][$subjectType])) {
+            $this->mutes[$user->getKey()][$subjectType] = array_values(
+                array_filter($this->mutes[$user->getKey()][$subjectType], fn ($id) => (int) $id !== (int) $subjectId)
+            );
+        }
+
+        return true;
+    }
+
+    public function mutedSubjectIds(User $user, string $subjectType): array
+    {
+        if (isset($this->mutes[$user->getKey()][$subjectType])) {
+            return $this->mutes[$user->getKey()][$subjectType];
+        }
+
+        try {
+            $ids = NotificationMute::query()
+                ->where('user_id', $user->getKey())
+                ->where('subject_type', $subjectType)
+                ->pluck('subject_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            return $this->mutes[$user->getKey()][$subjectType] = $ids;
+        } catch (Throwable $exception) {
+            try {
+                Log::warning('Notification mute lookup failed; fail open with empty mutes.', [
+                    'recipient_id' => $user->getKey(),
+                    'subject_type' => $subjectType,
+                    'exception_class' => $exception::class,
+                ]);
+            } catch (Throwable) {
+            }
+
+            return [];
+        }
+    }
+
+    public function isMuted(User $user, string $subjectType, int $subjectId): bool
+    {
+        return in_array($subjectId, $this->mutedSubjectIds($user, $subjectType), true);
     }
 
     private function eligible(User $user, array $event): bool
