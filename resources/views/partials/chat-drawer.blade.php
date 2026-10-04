@@ -1,18 +1,18 @@
 @auth
     @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
         <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
-            <div class="offcanvas-header tw-border-b tw-border-outline-variant tw-bg-surface tw-py-3">
-                <div class="d-flex align-items-center gap-2 tw-min-w-0">
-                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="Back to Chat List" aria-label="Back to chat list">
+            <div class="offcanvas-header tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface tw-px-4 tw-py-3">
+                <div class="tw-flex tw-flex-1 tw-min-w-0 tw-items-center tw-gap-2.5">
+                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="Back to Chat List" aria-label="Back to chat list">
                         <x-ui.icon name="arrow-left" />
                     </button>
-                    <div class="tw-min-w-0">
-                        <h6 class="offcanvas-title tw-m-0 tw-text-ui-sm tw-font-semibold tw-truncate" id="chatDrawerTitle">Negotiation & Chat</h6>
+                    <div class="tw-flex-1 tw-min-w-0 tw-overflow-hidden">
+                        <h6 class="offcanvas-title tw-m-0 tw-truncate tw-text-ui-sm tw-font-semibold" id="chatDrawerTitle">Negotiation & Chat</h6>
                         <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">Active conversation list</span>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-1.5 tw-shrink-0">
-                    <div class="d-none align-items-center" id="chatDrawerMuteContainer">
+                <div class="tw-flex tw-shrink-0 tw-items-center tw-gap-2 ms-auto">
+                    <div class="d-none align-items-center tw-shrink-0" id="chatDrawerMuteContainer">
                         <button type="button"
                             class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
                             id="chatDrawerMuteToggle"
