@@ -526,8 +526,8 @@ class NotificationConversationMuteTest extends TestCase
         // 1. Unmuted view for participant
         $response = $this->actingAs($purchasing)->get(route('purchasing.conversations.show', $conversation));
         $response->assertOk();
-        $response->assertSee('<span>Mute</span>', false);
-        $response->assertDontSee('<span>Unmute</span>', false);
+        $response->assertSee('aria-label="Mute conversation notifications"', false);
+        $response->assertDontSee('aria-label="Unmute conversation notifications"', false);
         $response->assertDontSee('value="DELETE"', false);
         $response->assertDontSee('title="Notifications are currently muted. Click to unmute."', false);
 
@@ -535,10 +535,9 @@ class NotificationConversationMuteTest extends TestCase
         app(NotificationPreferenceService::class)->mute($purchasing, 'conversation', $conversation->id);
         $responseMuted = $this->actingAs($purchasing)->get(route('purchasing.conversations.show', $conversation));
         $responseMuted->assertOk();
-        $responseMuted->assertSee('<span>Unmute</span>', false);
-        $responseMuted->assertDontSee('<span>Mute</span>', false);
+        $responseMuted->assertSee('aria-label="Unmute conversation notifications"', false);
+        $responseMuted->assertSee('aria-pressed="true"', false);
         $responseMuted->assertSee('value="DELETE"', false);
         $responseMuted->assertSee('title="Notifications are currently muted. Click to unmute."', false);
-        $responseMuted->assertSee('Muted');
     }
 }

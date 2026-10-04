@@ -13,18 +13,19 @@
                 </div>
                 <div class="d-flex align-items-center gap-1">
                     <div class="d-none align-items-center gap-1" id="chatDrawerMuteContainer">
-                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded tw-bg-surface-low tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-text-on-surface-variant d-none" id="chatDrawerMutedBadge" title="Notifications are muted for this conversation">
-                            <x-ui.icon name="bell-off" size="xs" />
-                            <span>Muted</span>
-                        </span>
                         <button type="button"
-                            class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant hover:tw-bg-surface-container"
+                            class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
                             id="chatDrawerMuteToggle"
                             aria-pressed="false"
                             title="Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges."
                             aria-label="Mute conversation notifications">
-                            <x-ui.icon name="bell-off" id="chatDrawerMuteIcon" />
-                            <span id="chatDrawerMuteLabel">Mute</span>
+                            <span class="chat-drawer-mute-icon-unmuted d-inline-flex">
+                                <x-ui.icon name="bell" />
+                            </span>
+                            <span class="chat-drawer-mute-icon-muted d-none">
+                                <x-ui.icon name="bell-off" />
+                            </span>
+                            <span class="tw-sr-only" id="chatDrawerMuteSrLabel">Mute conversation notifications</span>
                         </button>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -102,8 +103,9 @@
                     const subtitleEl = document.getElementById('chatDrawerSubtitle');
                     const muteContainer = document.getElementById('chatDrawerMuteContainer');
                     const muteToggle = document.getElementById('chatDrawerMuteToggle');
-                    const mutedBadge = document.getElementById('chatDrawerMutedBadge');
-                    const muteLabel = document.getElementById('chatDrawerMuteLabel');
+                    const muteIconUnmuted = muteToggle ? muteToggle.querySelector('.chat-drawer-mute-icon-unmuted') : null;
+                    const muteIconMuted = muteToggle ? muteToggle.querySelector('.chat-drawer-mute-icon-muted') : null;
+                    const muteSrLabel = document.getElementById('chatDrawerMuteSrLabel');
                     let activeConversationMuted = false;
                     const listPane = document.getElementById('chatDrawerListPane');
                     const conversationPane = document.getElementById('chatDrawerConversationPane');
@@ -231,13 +233,31 @@
                         if (isMuted) {
                             muteToggle.setAttribute('aria-label', 'Unmute conversation notifications');
                             muteToggle.setAttribute('title', 'Notifications are currently muted. Click to unmute.');
-                            if (muteLabel) muteLabel.textContent = 'Unmute';
-                            if (mutedBadge) mutedBadge.classList.remove('d-none');
+                            if (muteSrLabel) muteSrLabel.textContent = 'Unmute conversation notifications';
+                            if (muteIconUnmuted) {
+                                muteIconUnmuted.classList.add('d-none');
+                                muteIconUnmuted.classList.remove('d-inline-flex');
+                            }
+                            if (muteIconMuted) {
+                                muteIconMuted.classList.remove('d-none');
+                                muteIconMuted.classList.add('d-inline-flex');
+                            }
+                            muteToggle.classList.add('tw-bg-surface-container', 'tw-text-on-surface');
+                            muteToggle.classList.remove('tw-bg-transparent', 'tw-text-on-surface-variant');
                         } else {
                             muteToggle.setAttribute('aria-label', 'Mute conversation notifications');
                             muteToggle.setAttribute('title', 'Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges.');
-                            if (muteLabel) muteLabel.textContent = 'Mute';
-                            if (mutedBadge) mutedBadge.classList.add('d-none');
+                            if (muteSrLabel) muteSrLabel.textContent = 'Mute conversation notifications';
+                            if (muteIconUnmuted) {
+                                muteIconUnmuted.classList.remove('d-none');
+                                muteIconUnmuted.classList.add('d-inline-flex');
+                            }
+                            if (muteIconMuted) {
+                                muteIconMuted.classList.add('d-none');
+                                muteIconMuted.classList.remove('d-inline-flex');
+                            }
+                            muteToggle.classList.remove('tw-bg-surface-container', 'tw-text-on-surface');
+                            muteToggle.classList.add('tw-bg-transparent', 'tw-text-on-surface-variant');
                         }
                     };
 
@@ -305,7 +325,7 @@
                                 <div class="d-flex justify-content-between gap-2 mb-1">
                                     <div class="fw-semibold text-truncate d-flex align-items-center gap-1.5">
                                         <span>${escapeHtml(conversation.partner_name)}</span>
-                                        ${conversation.muted ? `<span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded tw-bg-surface-low tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-text-on-surface-variant" title="Muted"><x-ui.icon name="bell-off" size="xs" /><span>Muted</span></span>` : ''}
+                                        ${conversation.muted ? `<span class="tw-inline-flex tw-items-center tw-text-on-surface-variant" title="Notifications are muted for this conversation"><x-ui.icon name="bell-off" size="xs" /></span>` : ''}
                                     </div>
                                     ${conversation.unread_count > 0 ? `<span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">${conversation.unread_count}</span>` : ''}
                                 </div>

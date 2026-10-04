@@ -91,32 +91,28 @@
             <div class="tw-flex tw-items-center tw-gap-2 tw-shrink-0">
                 @if($isParticipant)
                     @if($isMuted)
-                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded tw-bg-surface-low tw-px-2 tw-py-0.5 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" title="Notifications are muted for this conversation">
-                            <x-ui.icon name="bell-off" size="xs" />
-                            <span>Muted</span>
-                        </span>
                         <form method="POST" action="{{ route('conversations.unmute', $conversation) }}" class="tw-inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit"
-                                class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low"
+                                class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-text-on-surface hover:tw-bg-surface-container-high"
                                 aria-pressed="true"
                                 title="Notifications are currently muted. Click to unmute."
                                 aria-label="Unmute conversation notifications">
-                                <x-ui.icon name="bell" />
-                                <span>Unmute</span>
+                                <x-ui.icon name="bell-off" />
+                                <span class="tw-sr-only">Unmute conversation notifications</span>
                             </button>
                         </form>
                     @else
                         <form method="POST" action="{{ route('conversations.mute', $conversation) }}" class="tw-inline">
                             @csrf
                             <button type="submit"
-                                class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface-variant hover:tw-bg-surface-low"
+                                class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
                                 aria-pressed="false"
                                 title="Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges."
                                 aria-label="Mute conversation notifications">
-                                <x-ui.icon name="bell-off" />
-                                <span>Mute</span>
+                                <x-ui.icon name="bell" />
+                                <span class="tw-sr-only">Mute conversation notifications</span>
                             </button>
                         </form>
                     @endif
