@@ -90,6 +90,7 @@ class NotificationCategoryOrderTest extends TestCase
             'eligibility',
             'priority',
             'priority_roles',
+            'mutable_subject',
         ];
 
         foreach ($registry as $eventKey => $config) {
