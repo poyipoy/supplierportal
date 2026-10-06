@@ -20,8 +20,11 @@ class DecodeHashids
      *       Route::resource('claims')        → {claim}
      *       Route::resource('users')         → {user}
      *
-     * Models WITHOUT HasHashids (Attachment, Period, Notification, Announcement, ExchangeRate)
+     * Models WITHOUT HasHashids (Period, Notification, Announcement, ExchangeRate)
      * are intentionally excluded — their URLs stay as plain integers.
+     * Attachment used to be in this list too, but now uses HasHashids with
+     * native implicit route-model binding (see routes/web.php + AttachmentController),
+     * so it's decoded directly by Laravel and no longer needs this middleware.
      */
     protected const HASHED_PARAM_KEYS = [
         'invoice',
@@ -60,7 +63,6 @@ class DecodeHashids
      * These use Attachment, Period, Notification, or Announcement — no HasHashids.
      */
     protected const PLAIN_ROUTE_PREFIXES = [
-        'attachments.',
         'notifications.',
         'admin.announcements.',
         'supplier.announcements.',

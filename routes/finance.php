@@ -11,6 +11,10 @@ use App\Http\Controllers\Finance\LocalProcurementController;
 use App\Http\Controllers\LocalInvoiceReceiptController;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware(['auth', 'role:finance,admin,purchasing'])->prefix('finance')->name('finance.')->group(function () {
+    Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+});
+
 Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('finance.')->group(function () {
     // Dashboard & Forecast
     Route::get('/dashboard', [FinanceDashboardController::class, 'dashboard'])->name('dashboard');
@@ -19,7 +23,6 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
     // Invoice Register & Verification
     Route::get('/invoices', [FinanceInvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{invoice}', [FinanceInvoiceController::class, 'show'])->name('invoices.show');
-    Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
 
     // Cashier Physical Receipt
     Route::post('/invoices/{invoice}/receive-physical', [FinanceInvoiceController::class, 'receivePhysical'])->name('invoices.receive-physical');
@@ -66,14 +69,14 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
         Route::get('/create', [LocalProcurementController::class, 'create'])->name('create');
         Route::post('/', [LocalProcurementController::class, 'store'])->name('store');
         Route::get('/import/po/template', [LocalProcurementController::class, 'poTemplate'])->name('import.po.template');
-        Route::post('/import/po/preview', [LocalProcurementController::class, 'poPreview'])->name('import.po.preview');
-        Route::post('/import/po/confirm', [LocalProcurementController::class, 'poConfirm'])->name('import.po.confirm');
+        Route::post('/import/po/preview', [LocalProcurementController::class, 'poPreview'])->middleware('throttle:15,1')->name('import.po.preview');
+        Route::post('/import/po/confirm', [LocalProcurementController::class, 'poConfirm'])->middleware('throttle:15,1')->name('import.po.confirm');
         Route::get('/import/gr/template', [LocalProcurementController::class, 'grTemplate'])->name('import.gr.template');
-        Route::post('/import/gr/preview', [LocalProcurementController::class, 'grPreview'])->name('import.gr.preview');
-        Route::post('/import/gr/confirm', [LocalProcurementController::class, 'grConfirm'])->name('import.gr.confirm');
+        Route::post('/import/gr/preview', [LocalProcurementController::class, 'grPreview'])->middleware('throttle:15,1')->name('import.gr.preview');
+        Route::post('/import/gr/confirm', [LocalProcurementController::class, 'grConfirm'])->middleware('throttle:15,1')->name('import.gr.confirm');
         Route::get('/import/template', [LocalProcurementController::class, 'template'])->name('import.template');
-        Route::post('/import/preview', [LocalProcurementController::class, 'preview'])->name('import.preview');
-        Route::post('/import/confirm', [LocalProcurementController::class, 'confirm'])->name('import.confirm');
+        Route::post('/import/preview', [LocalProcurementController::class, 'preview'])->middleware('throttle:15,1')->name('import.preview');
+        Route::post('/import/confirm', [LocalProcurementController::class, 'confirm'])->middleware('throttle:15,1')->name('import.confirm');
         Route::post('/upload-po', [LocalProcurementController::class, 'uploadPo'])->name('upload-po');
         Route::get('/{purchaseOrder}', [LocalProcurementController::class, 'show'])->name('show');
         Route::get('/{purchaseOrder}/edit', [LocalProcurementController::class, 'edit'])->name('edit');

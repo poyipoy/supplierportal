@@ -63,9 +63,26 @@ class AuthSecurityServiceProvider extends ServiceProvider
 
     private function limit(string $scope, string $identity, string $policy, string $variant = 'subject'): Limit
     {
-        $config = config("auth_security.rate_limits.{$policy}.{$variant}");
+        $defaults = [
+            'credentials' => [
+                'subject' => ['attempts' => 5, 'decay_seconds' => 60],
+                'ip' => ['attempts' => 20, 'decay_seconds' => 60],
+            ],
+            'mfa_code' => [
+                'subject' => ['attempts' => 5, 'decay_seconds' => 300],
+                'ip' => ['attempts' => 20, 'decay_seconds' => 300],
+            ],
+            'security_action' => [
+                'subject' => ['attempts' => 10, 'decay_seconds' => 60],
+                'ip' => ['attempts' => 30, 'decay_seconds' => 60],
+            ],
+        ];
 
-        return Limit::perSecond((int) $config['attempts'], (int) $config['decay_seconds'])
+        $config = config("auth_security.rate_limits.{$policy}.{$variant}");
+        $attempts = (int) ($config['attempts'] ?? ($defaults[$policy][$variant]['attempts'] ?? 5));
+        $decaySeconds = (int) ($config['decay_seconds'] ?? ($defaults[$policy][$variant]['decay_seconds'] ?? 60));
+
+        return Limit::perSecond($attempts, $decaySeconds)
             ->by("{$scope}:".hash('sha256', $identity))
             ->response(static fn (Request $request, array $headers) => RateLimitResponse::forNamedLimiter($request, $headers));
     }

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\LocalInvoice;
 use App\Services\LocalInvoice\InvoiceNotificationService;
+use App\Support\BusinessTime;
 use Illuminate\Console\Command;
 
 class SendLocalInvoiceDeliveryReminders extends Command
@@ -15,8 +16,8 @@ class SendLocalInvoiceDeliveryReminders extends Command
     public function handle(InvoiceNotificationService $notificationService): int
     {
         // Find invoices waiting for physical documents with delivery date scheduled within next 3 days
-        $targetDateStart = today();
-        $targetDateEnd = today()->addDays(3);
+        $targetDateStart = BusinessTime::today();
+        $targetDateEnd = $targetDateStart->addDays(3);
 
         $invoices = LocalInvoice::where('status', LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT)
             ->whereNotNull('scheduled_physical_delivery_date')

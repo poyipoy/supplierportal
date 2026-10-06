@@ -43,7 +43,7 @@ class LocalPoImportTemplateExport implements FromArray, WithHeadings, WithTitle
                 'PT SURYA UTAMA TEKNOLOGI',
                 '0000',
                 'FAJAR BAGASKARA',
-                now()->format('Y-m-d H:i'),
+                now()->format('Y-m-d H:i'), // biz-time:ignore sample data for import template
                 633000,
                 'IDR',
                 'Closed',

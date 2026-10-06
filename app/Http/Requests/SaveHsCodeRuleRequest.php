@@ -15,7 +15,7 @@ class SaveHsCodeRuleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user() && $this->user()->isAdmin();
     }
 
     protected function prepareForValidation(): void
@@ -51,7 +51,8 @@ class SaveHsCodeRuleRequest extends FormRequest
             'conditions_json' => ['nullable', 'string'],
             'priority' => ['required', 'integer', 'min:1', 'max:65535'],
             'status' => ['required', Rule::in(HsCodeRule::STATUSES)],
-            'source_refs' => ['nullable', 'array'],
+            'source_refs' => ['nullable', 'array', 'max:20'],
+            'source_refs.*' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
     }

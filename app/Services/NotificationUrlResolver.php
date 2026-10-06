@@ -39,8 +39,20 @@ class NotificationUrlResolver
         if (isset($notification->data['local_invoice_id'])) {
             $invoice = LocalInvoice::find($notification->data['local_invoice_id']);
 
-            return $invoice && $user->can('view', $invoice)
-                ? route(($user->isSupplier() ? 'local-supplier' : 'finance').'.invoices.show', $invoice, absolute: false)
+            if (! $invoice || ! $user->can('view', $invoice)) {
+                return PortalContext::dashboard($user);
+            }
+
+            $route = match (true) {
+                $user->isSupplier() => 'local-supplier.invoices.show',
+                $user->isPurchasing() => 'purchasing.local-invoices.show',
+                $user->role === 'accounting' => 'accounting.invoices.show',
+                $user->isFinance(), $user->isAdmin() => 'finance.invoices.show',
+                default => null,
+            };
+
+            return $route && Route::has($route)
+                ? route($route, $invoice, absolute: false)
                 : PortalContext::dashboard($user);
         }
 
@@ -280,6 +292,7 @@ class NotificationUrlResolver
             'admin.users.show',
             'admin.users.edit' => ['user', User::class],
 
+            'purchasing.local-invoices.show',
             'accounting.invoices.show',
             'accounting.invoices.receipt',
             'finance.invoices.show',
@@ -288,7 +301,8 @@ class NotificationUrlResolver
             'local-supplier.invoices.revision',
             'local-supplier.invoices.receipt' => ['invoice', LocalInvoice::class],
             'ga.claims.show',
-            'ga.claims.receipt' => ['claim', GaClaim::class],
+            'ga.claims.receipt',
+            'finance.ga-claims.show' => ['claim', GaClaim::class],
             default => null,
         };
     }

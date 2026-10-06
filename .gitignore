@@ -9,6 +9,7 @@ Revise Portal/
 .env.backup
 .env.production
 !.env.example
+!.env.testing.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet

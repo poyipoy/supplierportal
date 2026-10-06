@@ -497,3 +497,15 @@ Before proposing or implementing any changes in this repository, software engine
    php artisan test --filter=SupplierDataIsolationTest
    php artisan test --filter=LocalInvoiceTest
    ```
+8. **Supplier Data Isolation:**
+   Every supplier-facing query on models with a `supplier_id` column must include `->where('supplier_id', auth()->id())`. Ownership checks on already-loaded models compare `(int) $model->supplier_id === (int) auth()->id()`. Covered by `SupplierDataIsolationTest`.
+9. **Document Numbering Atomicity:**
+   Use only `PurchaseRequisition::generatePrNumber()` and `PurchaseOrder::generatePoNumber()`. Never derive a sequence number from `count() + 1` — that produces duplicates under concurrent submission. The `document_sequences` table uses `lockForUpdate()` inside a transaction.
+10. **Exchange Rate Snapshot Integrity:**
+    Historical comparisons (Price Comparison, Price History) must join the `exchange_rate_id` snapshot stored on the quotation or PO — never re-query `latestRate()`. Overwriting an existing rate is forbidden; always `INSERT` a new row.
+11. **Business Time Invariant:**
+    - The database and `app.timezone` are always **UTC**. Do not change either.
+    - All calendar logic (today's date, start/end of month/week, document-number year/month, date urgency, overdue checks) **must** use `App\Support\BusinessTime` (zone from `app.business_timezone`, default `Asia/Jakarta`).
+    - Columns of type `date` are **never** timezone-converted. Columns of type `datetime`/`timestamp` are displayed only via `BusinessTime::format()` / `@bizdt`, with the zone label from `BusinessTime::label()`.
+    - Carbon instances bound to queries on `timestamp` columns must pass through `BusinessTime::toStorage()` to convert to UTC.
+    - **Forbidden** in `app/` (enforced by `BusinessTimeGuardTest`): bare `today()`, `Carbon::today()`, `now()->year|month|toDateString|format` without the `BusinessTime::` prefix. Annotate legitimate instant usages (export filenames, storage paths, UTC cache keys) with `// biz-time:ignore <reason>`.

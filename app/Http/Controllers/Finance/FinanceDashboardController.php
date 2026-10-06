@@ -7,6 +7,7 @@ use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\Payment\PaymentForecastService;
+use App\Support\BusinessTime;
 use Illuminate\Http\Request;
 
 class FinanceDashboardController extends Controller
@@ -25,7 +26,7 @@ class FinanceDashboardController extends Controller
             'overdue' => $dashboardData['overdue'] ?? 0,
         ];
 
-        $selectedMonth = $request->query('month', now()->format('Y-m'));
+        $selectedMonth = $request->query('month', BusinessTime::now()->format('Y-m'));
         $availableMonths = $forecastService->getAvailableMonths();
         $weeklyForecast = $forecastService->getWeeklyForecast($selectedMonth);
         $monthlyForecast = $forecastService->getMonthlyForecast();
@@ -48,7 +49,7 @@ class FinanceDashboardController extends Controller
 
     public function forecast(Request $request, PaymentForecastService $forecastService)
     {
-        $selectedMonth = $request->query('month', now()->format('Y-m'));
+        $selectedMonth = $request->query('month', BusinessTime::now()->format('Y-m'));
 
         return response()->json([
             'selected_month' => $selectedMonth,

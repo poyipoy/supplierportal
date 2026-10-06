@@ -11,7 +11,7 @@ class MaterialCalculationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user() && in_array($this->user()->role, ['purchasing', 'admin'], true);
     }
 
     protected function prepareForValidation(): void

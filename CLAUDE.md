@@ -204,6 +204,26 @@ Beyond Breeze: 2FA (google2fa + recovery codes), Cloudflare Turnstile, per-ident
 
 Run [tests/Feature/Auth/](tests/Feature/Auth/) after any change in the auth path. Deployment notes: [docs/guides/AUTH-SECURITY-DEPLOYMENT.md](docs/guides/AUTH-SECURITY-DEPLOYMENT.md).
 
+## Business Time Invariant (Invariant #11)
+
+`app.timezone` and the database are always **UTC** — do not change either. All calendar logic must use `App\Support\BusinessTime`:
+
+| Usage | Correct |
+|---|---|
+| Today's date | `BusinessTime::today()` |
+| Current moment | `BusinessTime::now()` |
+| Parse date string | `BusinessTime::parseDate('Y-m-d')` |
+| Convert UTC timestamp → business tz | `BusinessTime::toBusiness($carbon)` |
+| Convert business moment → UTC for storage | `BusinessTime::toStorage($carbon)` |
+| Timezone label for display | `BusinessTime::label()` |
+| Format timestamp in view | `@bizdt($model->created_at)` or `bizdt()` helper |
+
+**Date vs Datetime columns:**
+- `date` columns (`due_date`, `scheduled_physical_delivery_date`, etc.) represent calendar dates with no timezone — compare them directly as strings, never convert.
+- `datetime`/`timestamp` columns are stored UTC. Display only via `BusinessTime::format()` / `@bizdt`, always with the timezone label.
+
+**Guard:** `BusinessTimeGuardTest` enforces these rules in CI. Annotate legitimate instant-UTC usages (export filenames, storage paths, cache keys) with `// biz-time:ignore <reason>` — never suppress a genuine business-calendar violation.
+
 ## Database safety
 
 Schema changes are high-impact here: 76 migrations, historical data, a table rename already applied, a role-enum rewrite, soft deletes on legal documents, and reporting queries that join snapshot rows.

@@ -8,6 +8,7 @@ use App\Models\Period;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
+use App\Support\BusinessTime;
 use Illuminate\Support\Facades\Cache;
 
 class SupplierController extends Controller
@@ -26,8 +27,10 @@ class SupplierController extends Controller
                     ->visibleToSupplier($sid)
                     ->whereHas('period', fn ($q) => $q->where('status', 'open'))
                     ->whereDoesntHave('quotations', fn ($q) => $q->where('supplier_id', $sid))->count();
+                $monthStart = BusinessTime::toStorage(BusinessTime::now()->startOfMonth());
+                $monthEnd = BusinessTime::toStorage(BusinessTime::now()->endOfMonth());
                 $penawaranTerkirim = Quotation::where('supplier_id', $sid)->where('status', 'submitted')
-                    ->whereMonth('submitted_at', now()->month)->whereYear('submitted_at', now()->year)->count();
+                    ->whereBetween('submitted_at', [$monthStart, $monthEnd])->count();
                 $poDiterima = PurchaseOrder::where('supplier_id', $sid)->count();
 
                 return compact('periodeAktif', 'belumDirespons', 'penawaranTerkirim', 'poDiterima');

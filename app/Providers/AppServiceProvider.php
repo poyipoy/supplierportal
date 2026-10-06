@@ -11,12 +11,13 @@ use App\Services\NotificationPreferenceService;
 use App\Services\QuickAccessService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\UserPreferenceService;
-use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Broadcasting\BroadcastEvent;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -49,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Blade::directive('bizdt', fn ($expr) => "<?php echo e(\\App\\Support\\BusinessTime::format($expr)); ?>");
+
         Event::listen(NotificationSending::class, ApplyNotificationPreferences::class);
 
         // Enforce safety: testing environment (--env=testing or APP_ENV=testing) MUST NEVER touch adasi_portal
@@ -101,11 +104,31 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer([
             'local-invoices.detail', 'finance.invoices.show', 'purchasing.local-vendors.invoice-show',
+            'supplier-registrations.index', 'supplier-registrations.show',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
 
         View::composer('exports.index', function ($view): void {
+            $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
+        View::composer([
+            'admin.announcements.edit', 'admin.announcements.index', 'admin.exchange-rates.index',
+            'admin.requisitions.show', 'admin.users.edit',
+            'finance.drp._paid_table_content', 'finance.drp.ga', 'finance.drp.show', 'finance.drp.supplier',
+            'finance.local-procurement.index', 'finance.local-procurement.show', 'finance.overpayments.index',
+            'finance.vouchers.print', 'finance.vouchers.show', 'finance.vendors.index', 'finance.vendors.show',
+            'ga.claims.receipt', 'ga.drp.draft',
+            'local-supplier.purchase-orders.index',
+            'local-supplier.purchase-orders.show', 'local-supplier.vendor-profile.show',
+            'purchasing.comparison._historical_content',
+            'purchasing.comparison._inter_supplier_content', 'purchasing.comparison._vs_best_content',
+            'purchasing.drp._paid_table_content', 'purchasing.drp.ga', 'purchasing.drp.show', 'purchasing.drp.supplier',
+            'purchasing.local-vendors.index', 'purchasing.local-vendors.show', 'purchasing.pr.show',
+            'qc.inspections.create', 'qc.inspections.show',
+            'supplier.announcements.index', 'supplier.announcements.show', 'supplier.claims.show',
+        ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
 

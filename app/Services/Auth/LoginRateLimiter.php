@@ -215,12 +215,20 @@ class LoginRateLimiter
 
     private function definition(string $scope, string $identity): array
     {
+        $defaults = match ($scope) {
+            'combination' => ['attempts' => 5, 'decay_seconds' => 60],
+            'email' => ['attempts' => 5, 'decay_seconds' => 900],
+            'ip' => ['attempts' => 30, 'decay_seconds' => 300],
+            'subnet' => ['attempts' => 50, 'decay_seconds' => 300],
+            default => ['attempts' => 5, 'decay_seconds' => 60],
+        };
+
         $config = config("auth_security.login.{$scope}");
 
         return [
             'key' => "auth-login:{$scope}:".hash('sha256', $identity),
-            'attempts' => (int) $config['attempts'],
-            'decay_seconds' => (int) $config['decay_seconds'],
+            'attempts' => (int) ($config['attempts'] ?? $defaults['attempts']),
+            'decay_seconds' => (int) ($config['decay_seconds'] ?? $defaults['decay_seconds']),
         ];
     }
 
@@ -230,8 +238,8 @@ class LoginRateLimiter
 
         return [
             'key' => 'auth-login:global-failures',
-            'attempts' => (int) $config['attempts'],
-            'decay_seconds' => (int) $config['decay_seconds'],
+            'attempts' => (int) ($config['attempts'] ?? 200),
+            'decay_seconds' => (int) ($config['decay_seconds'] ?? 300),
         ];
     }
 }

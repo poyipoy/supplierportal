@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,8 +32,9 @@ class PurchaseRequisition extends Model
     public static function generatePrNumber(): string
     {
         return DB::transaction(function () {
-            $year = (int) now()->year;
-            $month = (int) now()->month;
+            $bizNow = BusinessTime::now();
+            $year = (int) $bizNow->year;
+            $month = (int) $bizNow->month;
 
             $seq = DB::table('document_sequences')
                 ->where('type', 'PR')
@@ -58,7 +60,7 @@ class PurchaseRequisition extends Model
                 ]);
             }
 
-            return 'REQ/'.now()->format('m/Y').'/'.str_pad($next, 3, '0', STR_PAD_LEFT);
+            return 'REQ/'.$bizNow->format('m/Y').'/'.str_pad((string) $next, 3, '0', STR_PAD_LEFT);
         });
     }
 

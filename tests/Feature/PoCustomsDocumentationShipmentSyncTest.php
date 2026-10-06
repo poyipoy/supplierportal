@@ -143,7 +143,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         // Must see link to shipment detail
         $response->assertSee(route('supplier.shipments.show', $shipment), false);
         // Must see link to view attachment
-        $response->assertSee(route('attachments.show', $attachment->id), false);
+        $response->assertSee(route('attachments.show', $attachment), false);
     }
 
     public function test_purchasing_po_detail_view_renders_shipment_link_and_file_view_link(): void
@@ -171,7 +171,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         // Must see link to shipment detail
         $response->assertSee(route('purchasing.shipments.show', $shipment), false);
         // Must see link to view attachment
-        $response->assertSee(route('attachments.show', $attachment->id), false);
+        $response->assertSee(route('attachments.show', $attachment), false);
     }
 
     public function test_partial_shipments_renders_all_uploaded_files_per_document_type_on_po_detail(): void
@@ -244,7 +244,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
 
         // Other supplier attempts to view this attachment via attachments.show
         $response = $this->actingAs($this->otherSupplier)
-            ->get(route('attachments.show', $att->id));
+            ->get(route('attachments.show', $att));
 
         $response->assertForbidden();
     }

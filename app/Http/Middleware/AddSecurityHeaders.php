@@ -15,6 +15,12 @@ class AddSecurityHeaders
         // Headers applicable to all response classes (HTML, JSON, binary streams)
         $response->headers->set('X-Content-Type-Options', 'nosniff');
 
+        // Explicitly prevent CDN, proxy, and browser storage of dynamic responses unless marked public
+        if (! $response->headers->hasCacheControlDirective('public')) {
+            $response->headers->set('Cache-Control', 'no-store, private');
+            $response->headers->set('Pragma', 'no-cache');
+        }
+
         if (config('app.env') === 'production' && $request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000');
         }

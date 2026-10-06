@@ -68,4 +68,15 @@ class SecurityHeadersTest extends TestCase
             ->assertHeaderMissing('Content-Security-Policy-Report-Only')
             ->assertHeaderMissing('Content-Security-Policy');
     }
+
+    public function test_authenticated_and_json_responses_prevent_public_and_cdn_caching(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($user)->getJson(route('notifications.unread-count'));
+        $response->assertOk();
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));
+        $this->assertSame('no-cache', $response->headers->get('Pragma'));
+    }
 }

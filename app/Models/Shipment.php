@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -116,8 +117,9 @@ class Shipment extends Model
     public static function generateShipmentNumber(): string
     {
         return DB::transaction(function () {
-            $year = (int) now()->year;
-            $month = (int) now()->month;
+            $bizNow = BusinessTime::now();
+            $year = (int) $bizNow->year;
+            $month = (int) $bizNow->month;
 
             $seq = DB::table('document_sequences')
                 ->where('type', 'SHP')
@@ -143,7 +145,7 @@ class Shipment extends Model
                 ]);
             }
 
-            return 'SHP/'.now()->format('m/Y').'/'.str_pad((string) $next, 3, '0', STR_PAD_LEFT);
+            return 'SHP/'.$bizNow->format('m/Y').'/'.str_pad((string) $next, 3, '0', STR_PAD_LEFT);
         });
     }
 }
