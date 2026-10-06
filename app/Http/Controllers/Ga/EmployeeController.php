@@ -41,7 +41,7 @@ class EmployeeController extends Controller
 
         Employee::create(array_merge($validated, ['is_active' => true]));
 
-        return back()->with('success', "Karyawan [{$validated['name']}] berhasil ditambahkan ke Employee Master.");
+        return back()->with('success', __('ga.feedback.employee_added', ['name' => $validated['name']]));
     }
 
     public function update(Request $request, Employee $employee)
@@ -57,14 +57,12 @@ class EmployeeController extends Controller
 
         $employee->update($validated);
 
-        return back()->with('success', "Data karyawan [{$employee->name}] berhasil diperbarui.");
+        return back()->with('success', __('ga.feedback.employee_updated', ['name' => $employee->name]));
     }
 
     public function toggleStatus(Employee $employee)
     {
         $employee->update(['is_active' => ! $employee->is_active]);
-        $statusStr = $employee->is_active ? 'diaktifkan' : 'dinonaktifkan';
-
-        return back()->with('success', "Status karyawan [{$employee->name}] berhasil {$statusStr}.");
+        return back()->with('success', __($employee->is_active ? 'ga.feedback.employee_activated' : 'ga.feedback.employee_deactivated', ['name' => $employee->name]));
     }
 }

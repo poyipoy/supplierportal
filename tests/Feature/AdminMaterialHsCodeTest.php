@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\HsCodeRule;
 use App\Models\MaterialMaster;
+use App\Models\PrItem;
 use App\Models\User;
 use App\Services\Materials\MaterialResolver;
 use Database\Seeders\MaterialHsCodeMasterSeeder;
@@ -43,13 +44,13 @@ class AdminMaterialHsCodeTest extends TestCase
         $materialTable = $this->actingAs($this->admin)
             ->getJson(route('admin.material-masters.data'))
             ->assertOk()
-            ->assertJsonStructure(['data'])
+            ->assertJsonStructure(['data' => [['hs_category_label', 'density_profile_label', 'manufacturer_scope_label']]])
             ->json('data');
         $this->assertStringNotContainsString('aliases_display', json_encode($materialTable, JSON_THROW_ON_ERROR));
         $this->actingAs($this->admin)
             ->getJson(route('admin.hs-code-rules.data'))
             ->assertOk()
-            ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data' => [['material_category_label', 'shape_label']]]);
 
         $qualityResponse = $this->actingAs($this->admin)
             ->getJson(route('admin.master-data-quality.index'))
@@ -67,6 +68,82 @@ class AdminMaterialHsCodeTest extends TestCase
         $reportJson = json_encode($report, JSON_THROW_ON_ERROR);
         $this->assertStringNotContainsString('"rule_key"', $reportJson);
         $this->assertStringNotContainsString('"type"', $reportJson);
+    }
+
+    public function test_material_hs_category_density_manufacturer_and_shape_labels_follow_locale(): void
+    {
+        $material = MaterialMaster::create([
+            'material_code' => '0000-PH7-LOCALIZATION',
+            'normalized_code' => '0000-PH7-LOCALIZATION',
+            'raw_category' => 'QA fixture',
+            'hs_category' => 'alloy_steel',
+            'density_profile' => 'steel',
+            'manufacturer_scope' => 'non_daido',
+            'is_active' => true,
+            'source_sheet' => 'localized-sheet',
+            'source_row' => 14,
+        ]);
+
+        $rule = HsCodeRule::create([
+            'rule_key' => 'phase7-localization-rule',
+            'hs_code' => '9998.88.88',
+            'material_category' => 'honed_tube_steel',
+            'shape' => 'Hollow',
+            'conditions' => ['d_outer' => [
+                'min' => 1,
+                'min_inclusive' => true,
+                'max' => 9,
+                'max_inclusive' => true,
+            ]],
+            'priority' => 65535,
+            'status' => HsCodeRule::STATUS_INACTIVE,
+            'source_refs' => [],
+            'notes' => null,
+        ]);
+
+        foreach ([
+            'en' => ['Alloy Steel', 'Honed Tube Steel', 'Steel', 'Non-Daido', 'Hollow', 'Strip Steel', 'localized-sheet, row 14', 'Outer D. ≥ 1 and ≤ 9'],
+            'id' => ['Baja Paduan', 'Baja untuk Pipa Honed', 'Baja', 'Non-Daido', 'Berongga', 'Strip Baja', 'localized-sheet, baris 14', 'Diameter Luar ≥ 1 dan ≤ 9'],
+        ] as $locale => $labels) {
+            $this->admin->preference()->updateOrCreate([], [...config('user_preferences.defaults'), 'locale' => $locale]);
+            app()->forgetScopedInstances();
+
+            $page = $this->actingAs($this->admin)->get(route('admin.material-hs-code.index'))->assertOk()
+                ->assertSeeText($labels[0])->assertSeeText($labels[1])->assertSeeText($labels[2])
+                ->assertSeeText($labels[3])->assertSeeText($labels[4]);
+
+            foreach (PrItem::DIMENSION_FIELDS as $dimension) {
+                foreach (['min', 'min-inclusive', 'max', 'max-inclusive'] as $bound) {
+                    $page->assertSee('id="condition-'.$dimension.'-'.$bound.'"', false);
+                }
+            }
+
+            $materialRow = collect($this->getJson(route('admin.material-masters.data', ['length' => 1000]))
+                ->assertOk()->json('data'))->firstWhere('material_code', $material->material_code);
+            $this->assertSame('alloy_steel', $materialRow['hs_category']);
+            $this->assertSame('steel', $materialRow['density_profile']);
+            $this->assertSame('non_daido', $materialRow['manufacturer_scope']);
+            $this->assertSame($labels[0], $materialRow['hs_category_label']);
+            $this->assertSame($labels[2], $materialRow['density_profile_label']);
+            $this->assertSame($labels[3], $materialRow['manufacturer_scope_label']);
+            $this->assertSame($labels[6], $materialRow['source_display']);
+
+            $ruleRow = collect($this->getJson(route('admin.hs-code-rules.data', ['length' => 1000]))
+                ->assertOk()->json('data'))->firstWhere('hs_code', $rule->hs_code);
+            $this->assertSame('honed_tube_steel', $ruleRow['material_category']);
+            $this->assertSame('Hollow', $ruleRow['shape']);
+            $this->assertSame($labels[1], $ruleRow['material_category_label']);
+            $this->assertSame($labels[4], $ruleRow['shape_label']);
+            $this->assertSame($labels[7], $ruleRow['conditions_display']);
+
+            $this->actingAs($this->admin)->getJson(route('admin.master-data-quality.index'))->assertOk()
+                ->assertJsonFragment(['rule_categories_not_used_by_materials' => [$labels[5]]])
+                ->assertJsonFragment(['note' => trans('materials.copy.inactive_alternative_retained_for_audit', ['selected' => '7304.31.90'], $locale)]);
+        }
+
+        app()->setLocale('en');
+        $this->assertSame('alloy_steel', $material->fresh()->hs_category);
+        $this->assertSame('Hollow', $rule->fresh()->shape);
     }
 
     public function test_admin_material_crud_keeps_legacy_aliases_read_only(): void

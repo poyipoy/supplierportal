@@ -100,17 +100,22 @@ class PaymentBatchDrpSheetRenderer
     {
         // 1. Headers
         $sheet->setCellValue('D1', '  PT ASTRA DAIDO STEEL INDONESIA ');
-        $sheet->setCellValue('D2', '  REKAP PEMBAYARAN SUPPLIER');
+        $sheet->setCellValue('D2', '  '.__('exports.drp.title'));
+        foreach (['A7' => 'number', 'B7' => 'code', 'C7' => 'reference', 'D7' => 'supplier', 'E7' => 'invoice', 'F7' => 'bank', 'G7' => 'account', 'H7' => 'payee', 'I7' => 'amount', 'J7' => 'check', 'K7' => 'input', 'L7' => 'approve'] as $cell => $key) {
+            $sheet->setCellValue($cell, __('exports.drp.'.$key));
+        }
 
-        $createdDate = $batch->created_at ?? now();
+        $createdDate = \App\Support\BusinessTime::toBusiness($batch->created_at ?? now());
         $monthNum = (int) $createdDate->format('n');
-        $monthName = self::INDONESIAN_MONTHS[$monthNum] ?? strtoupper($createdDate->format('F'));
+        $monthName = app()->getLocale() === 'id'
+            ? (self::INDONESIAN_MONTHS[$monthNum] ?? strtoupper($createdDate->format('F')))
+            : strtoupper($createdDate->format('F'));
         $sheet->setCellValue('D3', $monthName);
 
         $day = (int) $createdDate->format('j');
         $week = (int) ceil($day / 7);
         $dateStr = $createdDate->format('d/m/Y');
-        $weekLine = "MINGGU KE -{$week}  ({$dateStr} )";
+        $weekLine = __('exports.drp.week', ['week' => $week, 'date' => $dateStr]);
         $sheet->setCellValue('D5', $weekLine);
 
         // 2. Prepare Data Rows
@@ -203,7 +208,9 @@ class PaymentBatchDrpSheetRenderer
         $totalRow = 8 + $rowCount;
         $lastDataRow = 8 + $rowCount - 1;
 
-        $sheet->setCellValue("E{$totalRow}", 'TOTAL PEMBAYARAN ');
+        $sheet->setCellValue("E{$totalRow}", __('exports.drp.total'));
+        $sheet->setCellValue('A'.($totalRow + 2), __('exports.drp.prepared_by'));
+        $sheet->setCellValue('F'.($totalRow + 2), __('exports.drp.acknowledged_by'));
         $sheet->setCellValue("I{$totalRow}", "=SUM(I8:I{$lastDataRow})");
         $sheet->getStyle("I{$totalRow}")->getNumberFormat()->setFormatCode(self::NOMINAL_FORMAT);
     }

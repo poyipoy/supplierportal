@@ -1,36 +1,36 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Authentication Audit - ADASI Portal')
-@section('page-title', 'Authentication Audit')
+@section('title', __('admin.copy.authentication_audit_adasi_portal'))
+@section('page-title', __('admin.copy.authentication_audit'))
 
 @section('content')
 <div class="tw-grid tw-gap-6">
-    <x-ui.page-header title="Authentication Audit" description="Review account and authentication events retained for {{ config('auth_security.audit.retention_days', 180) }} days." eyebrow="Admin Security" />
+    <x-ui.page-header :title="__('admin.copy.authentication_audit')" :description="__('admin.page.retention', ['days' => config('auth_security.audit.retention_days', 180)])" :eyebrow="__('admin.copy.admin_security')" />
 
-    <x-ui.toolbar aria-label="Authentication audit filters">
+    <x-ui.toolbar aria-label="{{ __('admin.copy.authentication_audit_filters') }}">
         <x-slot:search>
-            <x-ui.input name="audit_email" id="auditEmail" type="search" label="Attempted Email" placeholder="Search attempted email" maxlength="255" autocomplete="off" />
+            <x-ui.input name="audit_email" id="auditEmail" type="search" :label="__('admin.copy.attempted_email')" :placeholder="__('admin.copy.search_attempted_email')" maxlength="255" autocomplete="off" />
         </x-slot:search>
         <x-slot:filters>
-            <x-ui.select name="audit_event" id="auditEvent" label="Event" placeholder="All events" class="tw-min-w-48">
+            <x-ui.select name="audit_event" id="auditEvent" :label="__('admin.copy.event')" :placeholder="__('admin.copy.all_events')" class="tw-min-w-48">
                 @foreach ($events as $event)
-                    <option value="{{ $event }}">{{ str($event)->replace('_', ' ')->title() }}</option>
+                    <option value="{{ $event }}">{{ __('security.audit_events.'.$event) }}</option>
                 @endforeach
             </x-ui.select>
             <x-ui.button variant="outline" size="sm" class="tw-self-end" type="button" data-bs-toggle="collapse" data-bs-target="#auditMoreFilters" aria-expanded="false" aria-controls="auditMoreFilters">
-                <x-ui.icon name="sliders-horizontal" /> More Filters
+                <x-ui.icon name="sliders-horizontal" /> {{ __('admin.copy.more_filters') }}
             </x-ui.button>
         </x-slot:filters>
         <x-slot:actions>
-            <x-ui.button type="button" variant="ghost" size="sm" id="resetAuditFilters"><x-ui.icon name="rotate-ccw" /> Reset</x-ui.button>
+            <x-ui.button type="button" variant="ghost" size="sm" id="resetAuditFilters"><x-ui.icon name="rotate-ccw" /> {{ __('admin.copy.reset') }}</x-ui.button>
         </x-slot:actions>
     </x-ui.toolbar>
 
     <div class="collapse" id="auditMoreFilters">
         <div class="tw-mb-4 tw-border tw-border-outline tw-bg-surface-container tw-p-4">
             <div class="tw-grid tw-gap-3 md:tw-grid-cols-3" id="auditFilters">
-                <x-ui.select name="audit_user" id="auditUser" label="Actor" placeholder="All users">
+                <x-ui.select name="audit_user" id="auditUser" :label="__('admin.copy.actor')" :placeholder="__('admin.copy.all_users')">
                     @foreach ($users as $user)
                         <option value="{{ $user->getRouteKey() }}">{{ $user->name }} - {{ $user->email }}</option>
                     @endforeach
@@ -39,27 +39,27 @@
                     id="auditDateRange"
                     start-name="audit_date_from"
                     start-id="auditDateFrom"
-                    start-label="From Date"
+                    :start-label="__('admin.copy.from_date')"
                     end-name="audit_date_to"
                     end-id="auditDateTo"
-                    end-label="To Date"
+                    :end-label="__('admin.copy.to_date')"
                 />
             </div>
         </div>
     </div>
 
-    <x-ui.data-table title="Security Event Log" description="Events are shown with actor, time, network context, and retained metadata.">
+    <x-ui.data-table :title="__('admin.copy.security_event_log')" :description="__('admin.copy.events_are_shown_with_actor_time_network_context_and_retained_metadata')">
         <div class="ui-data-table__scroll tw-overflow-x-auto">
             <table id="authAuditTable" class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">Date & Time</th>
-                        <th scope="col">Event</th>
-                        <th scope="col">Actor</th>
-                        <th scope="col">Attempted Email</th>
-                        <th scope="col">IP Address</th>
-                        <th scope="col">User Agent</th>
-                        <th scope="col">Context</th>
+                        <th scope="col">{{ __('admin.copy.date_time') }}</th>
+                        <th scope="col">{{ __('admin.copy.event') }}</th>
+                        <th scope="col">{{ __('admin.copy.actor') }}</th>
+                        <th scope="col">{{ __('admin.copy.attempted_email') }}</th>
+                        <th scope="col">{{ __('admin.copy.ip_address') }}</th>
+                        <th scope="col">{{ __('admin.copy.user_agent') }}</th>
+                        <th scope="col">{{ __('admin.copy.context') }}</th>
                     </tr>
                 </thead>
             </table>
@@ -76,6 +76,7 @@ $(function () {
         serverSide: true,
         dom: 'rtip',
         order: [],
+
         ajax: {
             url: @json(route('admin.auth-audit-logs.data')),
             data: function (data) {
@@ -88,7 +89,7 @@ $(function () {
         },
         columns: [
             {data: 'created_at', name: 'created_at', className: 'text-nowrap'},
-            {data: 'event', name: 'event', className: 'text-nowrap fw-medium'},
+            {data: 'event_display', name: 'event', className: 'text-nowrap fw-medium'},
             {data: 'user_display', name: 'user.name', orderable: false},
             {data: 'email_attempted', name: 'email_attempted'},
             {data: 'ip_address', name: 'ip_address', orderable: false, className: 'font-monospace text-nowrap'},

@@ -360,7 +360,8 @@ class NotificationPreferenceDeliveryTest extends TestCase
             );
         }
 
-        $this->assertSame(['user_preferences' => 1, 'supplier_scopes' => 1], $reads);
+        // Each of ten sends takes one fresh locale/override snapshot; eligibility stays cached.
+        $this->assertSame(['user_preferences' => 10, 'supplier_scopes' => 1], $reads);
         $this->assertCount(0, $this->mailTransport()->messages());
     }
 

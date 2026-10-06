@@ -75,6 +75,7 @@ class RegionalExportHistoryTest extends TestCase
 
     public function test_polling_keeps_raw_iso_contract_and_owner_only_lifecycle_values(): void
     {
+        $this->travelTo(CarbonImmutable::parse('2026-09-30T12:00:00Z'));
         Storage::fake('private');
         $owner = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
         $foreign = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);

@@ -1,6 +1,6 @@
 @props([
     'icon' => 'inbox',
-    'title' => 'No data available',
+    'title' => __('common.states.empty'),
     'description' => null,
     'actionUrl' => null,
     'actionText' => null,

@@ -4,6 +4,8 @@ namespace App\Notifications;
 
 use App\Models\User;
 use App\Services\NotificationPreferenceService;
+use App\Services\UserPreferenceService;
+use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
@@ -25,10 +27,18 @@ class SystemNotification extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct($title, $message, $url = '#', $icon = 'bell', array $data = [], array $replace = [])
+    public function __construct($title, $message, $url = '#', $icon = 'bell', array $data = [], array $replace = [], string $locale = 'en', array $localizedReplace = [])
     {
-        $this->title = __($title, $replace);
-        $this->message = __($message, $replace);
+        $locale = UserPreferenceService::normalizeLocale($locale);
+        $translator = app('translator');
+        foreach ($localizedReplace as $name => $key) {
+            if (is_string($name) && is_string($key)) {
+                $replace[$name] = self::localizedReplacement($key, $locale, $translator);
+            }
+        }
+        // Freeze recipient copy before database/broadcast delivery; no global locale mutation.
+        $this->title = $translator->get($title, $replace, $locale);
+        $this->message = $translator->get($message, $replace, $locale);
         $this->icon = $icon;
         $this->data = $data;
 
@@ -39,6 +49,20 @@ class SystemNotification extends Notification
         } else {
             $this->url = $url;
         }
+    }
+
+    private static function localizedReplacement(string $key, string $locale, object $translator): string
+    {
+        if (str_starts_with($key, '@date:')) {
+            $value = substr($key, 6);
+            $date = CarbonImmutable::createFromFormat('!Y-m-d', $value, 'UTC');
+
+            return $date && $date->format('Y-m-d') === $value
+                ? $date->locale($locale)->translatedFormat('d M Y')
+                : $value;
+        }
+
+        return (string) $translator->get($key, [], $locale);
     }
 
     /**

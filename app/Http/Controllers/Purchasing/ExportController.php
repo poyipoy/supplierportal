@@ -35,14 +35,14 @@ class ExportController extends Controller
         }
 
         $exportJob = ExportDispatcher::dispatch(
-            'Rekap Purchase Requisition',
+            __('exports.job_labels.pr_summary'),
             RequisitionsExport::class,
             [
                 $filters['period_id'] ?? null,
                 $filters['status'] ?? null,
                 $filters['search'] ?? null,
             ],
-            'rekap_requisitions_'.now()->format('Ymd_His').'.xlsx',
+            'rekap_requisitions_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -68,12 +68,12 @@ class ExportController extends Controller
 
         if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
             throw ValidationException::withMessages([
-                'end_date' => 'End date cannot be before start date.',
+                'end_date' => __('purchasing.copy.end_date_cannot_be_before_start_date'),
             ]);
         }
 
         $exportJob = ExportDispatcher::dispatch(
-            'Rekap Purchase Order',
+            __('exports.job_labels.po_summary'),
             PurchaseOrdersExport::class,
             [
                 $filters['supplier_id'] ?? null,
@@ -83,7 +83,7 @@ class ExportController extends Controller
                 $filters['status'] ?? null,
                 $filters['search'] ?? null,
             ],
-            'rekap_po_'.now()->format('Ymd_His').'.xlsx',
+            'rekap_po_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -104,12 +104,12 @@ class ExportController extends Controller
 
         if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
             throw ValidationException::withMessages([
-                'end_date' => 'End date cannot be before start date.',
+                'end_date' => __('purchasing.copy.end_date_cannot_be_before_start_date'),
             ]);
         }
 
         $exportJob = ExportDispatcher::dispatch(
-            'Rekap Shipments & Logistics',
+            __('exports.job_labels.shipment_summary'),
             ShipmentsExport::class,
             [
                 $filters['supplier_id'] ?? null,
@@ -118,7 +118,7 @@ class ExportController extends Controller
                 $filters['start_date'] ?? null,
                 $filters['end_date'] ?? null,
             ],
-            'rekap_shipments_'.now()->format('Ymd_His').'.xlsx',
+            'rekap_shipments_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -127,10 +127,10 @@ class ExportController extends Controller
     public function requisitionDetail(Request $request, PurchaseRequisition $purchaseRequisition)
     {
         $exportJob = ExportDispatcher::dispatch(
-            'Detail Purchase Requisition',
+            __('purchasing.copy.detail_purchase_requisition'),
             PurchaseRequisitionDetailExport::class,
             [(int) $purchaseRequisition->getKey()],
-            'detail_pr_'.$purchaseRequisition->getKey().'_'.now()->format('Ymd_His').'.xlsx',
+            'detail_pr_'.$purchaseRequisition->getKey().'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -162,15 +162,15 @@ class ExportController extends Controller
 
         if (! empty($filters['date_from']) && ! empty($filters['date_to']) && $filters['date_to'] < $filters['date_from']) {
             throw ValidationException::withMessages([
-                'date_to' => 'End date cannot be before start date.',
+                'date_to' => __('purchasing.copy.end_date_cannot_be_before_start_date'),
             ]);
         }
 
         $exportJob = ExportDispatcher::dispatch(
-            'Rekap Quotation',
+            __('exports.job_labels.quotation_summary'),
             QuotationsExport::class,
             [$filters],
-            'rekap_quotations_'.now()->format('Ymd_His').'.xlsx',
+            'rekap_quotations_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -179,10 +179,10 @@ class ExportController extends Controller
     public function quotationDetail(Request $request, Quotation $quotation)
     {
         $exportJob = ExportDispatcher::dispatch(
-            'Detail Quotation',
+            __('purchasing.copy.detail_quotation'),
             QuotationDetailExport::class,
             [(int) $quotation->getKey()],
-            'detail_quotation_'.$quotation->getKey().'_'.now()->format('Ymd_His').'.xlsx',
+            'detail_quotation_'.$quotation->getKey().'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -191,10 +191,10 @@ class ExportController extends Controller
     public function purchaseOrderDetail(Request $request, PurchaseOrder $purchaseOrder)
     {
         $exportJob = ExportDispatcher::dispatch(
-            'Detail Purchase Order',
+            __('purchasing.copy.detail_purchase_order'),
             PurchaseOrderDetailExport::class,
             [(int) $purchaseOrder->getKey()],
-            'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx',
+            'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -216,7 +216,7 @@ class ExportController extends Controller
 
     private function dispatchResponse(Request $request, ExportJob $exportJob)
     {
-        $message = 'The export request was accepted. The file will download automatically when ready.';
+        $message = __('purchasing.copy.the_export_request_was_accepted_the_file_will_download_automatically_when_ready');
 
         if ($request->wantsJson()) {
             return response()->json([

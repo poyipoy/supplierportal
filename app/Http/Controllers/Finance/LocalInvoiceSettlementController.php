@@ -22,7 +22,7 @@ class LocalInvoiceSettlementController extends Controller
         $data = $request->validate(['voucher_date' => ['required', 'date_format:Y-m-d'], 'payment_method' => ['required', Rule::in(['BANK', 'KAS'])], 'remarks' => ['nullable', 'string', 'max:1000']]);
         $voucher = $service->finalize($item, $data, $request->user());
 
-        return redirect()->route('finance.vouchers.show', $voucher)->with('success', 'Voucher Bayar finalized.');
+        return redirect()->route('finance.vouchers.show', $voucher)->with('success', __('finance.feedback.voucher_finalized'));
     }
 
     public function generateVoucher(Request $request, PaymentItem $item, LocalInvoiceVoucherService $service)
@@ -34,7 +34,7 @@ class LocalInvoiceSettlementController extends Controller
         ]);
         $voucher = $service->finalize($item, $data, $request->user());
 
-        return redirect()->route('finance.vouchers.show', $voucher)->with('success', 'Voucher Bayar berhasil dibuat (Generated).');
+        return redirect()->route('finance.vouchers.show', $voucher)->with('success', __('finance.feedback.voucher_created'));
     }
 
     public function showVoucher(LocalInvoiceVoucher $voucher)
@@ -58,14 +58,14 @@ class LocalInvoiceSettlementController extends Controller
 
     public function primaryPayment(Request $request, LocalInvoiceVoucher $voucher, LocalInvoicePaymentService $service)
     {
-        abort(403, 'Pencatatan transfer primer tidak tersedia di halaman ini. Pelunasan primer wajib dilakukan secara terpusat melalui menu DRP Paid.');
+        abort(403, __('finance.feedback.primary_disabled'));
     }
 
     public function correction(Request $request, LocalInvoicePayment $payment, LocalInvoicePaymentService $service)
     {
         $service->recordCorrection($payment, $this->paymentData($request, true), $request->user());
 
-        return back()->with('success', 'Corrective transfer recorded.');
+        return back()->with('success', __('finance.feedback.correction_recorded'));
     }
 
     public function overpayments(Request $request)
@@ -114,7 +114,7 @@ class LocalInvoiceSettlementController extends Controller
         $data = $request->validate(['refund_amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'], 'refund_reference' => ['required', 'string', 'max:100'], 'refund_date' => ['required', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:1000'], 'proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240']]);
         $service->settle($refund, $data, $request->file('proof'), $request->user());
 
-        return back()->with('success', 'Full supplier refund settled.');
+        return back()->with('success', __('finance.feedback.refund_settled'));
     }
 
     private function paymentData(Request $request, bool $correction = false): array

@@ -34,7 +34,7 @@ class UserNotificationPreferenceController extends Controller
     {
         $preferences->resetNotificationPreferences($request->user());
 
-        return redirect()->route('profile.notifications')->with('success', 'Notification preferences reset to defaults.');
+        return redirect()->route('profile.notifications')->with('success', __('notifications.feedback.reset'));
     }
 
     public function update(
@@ -47,6 +47,6 @@ class UserNotificationPreferenceController extends Controller
         $delivery = (array) $request->validated('notification_delivery', []);
         $preferences->saveNotificationPreferences($user, $normalized, $delivery);
 
-        return redirect()->route('profile.notifications')->with('success', 'Notification preferences saved.');
+        return redirect()->route('profile.notifications')->with('success', __('notifications.feedback.saved'));
     }
 }

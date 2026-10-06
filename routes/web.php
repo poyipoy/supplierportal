@@ -74,6 +74,10 @@ Route::get('/verify-receipt/ga/{receipt}', [ReceiptVerificationController::class
     ->middleware('throttle:60,1')
     ->name('receipts.verify-ga');
 
+// Application Locale Switcher (Guest & Authenticated)
+Route::match(['get', 'post'], '/locale/{locale?}', [\App\Http\Controllers\LocaleController::class, 'switch'])
+    ->name('locale.switch');
+
 // Supplier Public Registration & Status Tracking
 Route::get('/supplier/register', [SupplierRegistrationController::class, 'create'])->name('supplier.register');
 Route::post('/supplier/register', [SupplierRegistrationController::class, 'store'])

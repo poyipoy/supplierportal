@@ -6,12 +6,12 @@
     'error' => null,
     'value' => [],
     'options' => [],
-    'placeholder' => 'Pilih opsi...',
-    'disabledPlaceholder' => 'Pilih PO terlebih dahulu...',
-    'searchPlaceholder' => 'Ketik nomor atau nominal...',
+    'placeholder' => __('common.select.placeholder'),
+    'disabledPlaceholder' => __('common.select.choose_po'),
+    'searchPlaceholder' => __('common.select.search_number'),
     'required' => false,
     'disabled' => false,
-    'emptyMessage' => 'Tidak ada data yang cocok',
+    'emptyMessage' => __('common.select.empty'),
     'eventName' => null,
 ])
 
@@ -48,7 +48,7 @@
                 'value' => $val,
                 'label' => $lbl,
                 'description' => $desc,
-                'sublabel' => $sub ?? ($date ? ('Tanggal: ' . ($dateFormatted ?? $date)) : null),
+                'sublabel' => $sub ?? ($date ? __('js.select.date', ['date' => $dateFormatted ?? $date]) : null),
                 'amount' => $amt,
                 'qty' => $qty,
                 'date' => $date,
@@ -129,7 +129,7 @@
                 const lbl = first ? first.label : '1 GR';
                 return { count: 1, badgeText: '1 GR', text: lbl, totalFormatted: totalStr };
             }
-            return { count: count, badgeText: `${count} GR`, text: 'Terpilih', totalFormatted: totalStr };
+            return { count: count, badgeText: `${count} GR`, text: @js(__('common.select.selected_state')), totalFormatted: totalStr };
         },
 
         isSelected(val) {
@@ -184,7 +184,7 @@
                 value: String(opt.id ?? opt.value),
                 label: String(opt.number ?? opt.label ?? ''),
                 description: opt.description ?? null,
-                sublabel: opt.sublabel ?? (opt.date ? ('Tanggal: ' + (opt.dateFormatted ?? opt.date)) : null),
+                sublabel: opt.sublabel ?? (opt.date ? window.AdasiI18n.t('js.select.date', { date: opt.dateFormatted ?? opt.date }) : null),
                 amount: parseFloat(opt.amount ?? 0),
                 qty: opt.qty !== undefined ? parseFloat(opt.qty) : null,
                 date: opt.date ?? null,
@@ -245,7 +245,7 @@
     @if($label)
         <label for="{{ $resolvedId }}" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
             {{ $label }}
-            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> required</span>@endif
+            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> {{ __('common.required') }}</span>@endif
         </label>
     @endif
 
@@ -310,8 +310,8 @@
                 <span
                     @click.stop="clearAll()"
                     class="tw-p-1 tw-rounded-full tw-text-on-surface-variant hover:tw-text-error hover:tw-bg-surface-container tw-cursor-pointer ui-motion"
-                    title="Hapus semua pilihan GR"
-                    aria-label="Hapus semua pilihan"
+                    title="{{ __('common.select.clear_gr') }}"
+                    aria-label="{{ __('common.select.clear_all') }}"
                 >
                     <x-ui.icon name="x" size="sm" class="tw-w-3.5 tw-h-3.5" />
                 </span>
@@ -360,7 +360,7 @@
                     @click="search = ''; $refs.searchInput.focus()"
                     style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; padding: 0; cursor: pointer; z-index: 2;"
                     class="tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface-container tw-rounded-full ui-motion"
-                    aria-label="Bersihkan pencarian"
+                    aria-label="{{ __('common.select.clear_search') }}"
                 >
                     <x-ui.icon name="x" size="sm" class="tw-w-3.5 tw-h-3.5" />
                 </button>
@@ -370,7 +370,7 @@
         {{-- Header Shortcut Actions --}}
         <div class="tw-flex tw-items-center tw-justify-between tw-px-3 tw-py-2 tw-bg-surface-container-low tw-border-b tw-border-outline-variant/40 tw-text-ui-xs">
             <span class="tw-text-on-surface-variant">
-                Terpilih: <strong class="tw-text-on-surface" x-text="selectedValues.length"></strong> dari <span x-text="options.length"></span>
+                {{ __('common.select.selected') }} <strong class="tw-text-on-surface" x-text="selectedValues.length"></strong> {{ __('common.select.of') }} <span x-text="options.length"></span>
             </span>
             <div class="tw-flex tw-items-center tw-gap-2">
                 <button
@@ -378,7 +378,7 @@
                     @click="selectAll()"
                     class="tw-text-primary hover:tw-underline tw-font-medium tw-bg-transparent tw-border-0 tw-p-0"
                 >
-                    Pilih Semua
+                    {{ __('common.actions.all') }}
                 </button>
                 <span class="tw-text-outline-variant">·</span>
                 <button
@@ -386,7 +386,7 @@
                     @click="clearAll()"
                     class="tw-text-on-surface-variant hover:tw-text-error hover:tw-underline tw-font-medium tw-bg-transparent tw-border-0 tw-p-0"
                 >
-                    Batal Semua
+                    {{ __('common.actions.cancel') }}
                 </button>
             </div>
         </div>
@@ -412,7 +412,7 @@
                         <div
                             class="tw-w-4 tw-h-4 tw-rounded tw-border tw-flex tw-items-center tw-justify-center tw-shrink-0 ui-motion"
                             :class="{
-                                'tw-bg-primary tw-border-primary tw-text-white': isSelected(opt.value),
+                                'tw-bg-primary tw-border-primary tw-text-on-primary': isSelected(opt.value),
                                 'tw-border-outline-strong tw-bg-surface': !isSelected(opt.value)
                             }"
                         >
@@ -425,7 +425,7 @@
                             <span class="tw-font-mono tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-truncate" x-text="opt.label"></span>
                             <template x-if="opt.description">
                                 <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" :title="opt.description">
-                                    <span class="tw-font-semibold tw-text-on-surface">Deskripsi:</span>
+                                    <span class="tw-font-semibold tw-text-on-surface">{{ __('common.fields.description') }}</span>
                                     <span x-text="' ' + opt.description"></span>
                                 </span>
                             </template>
@@ -459,12 +459,12 @@
             <div class="tw-text-ui-xs tw-text-on-surface">
                 <template x-if="totalAmount > 0">
                     <div>
-                        <span class="tw-text-on-surface-variant">Total: </span>
+                        <span class="tw-text-on-surface-variant">{{ __('common.fields.total') }} </span>
                         <strong class="tw-font-mono tw-text-primary" x-text="formatRupiah(totalAmount)"></strong>
                     </div>
                 </template>
                 <template x-if="!totalAmount || totalAmount === 0">
-                    <span class="tw-text-on-surface-variant" x-text="selectedValues.length + ' berkas GR terpilih'"></span>
+                    <span class="tw-text-on-surface-variant" x-text="@js(__('common.select.gr_selected')).replace(':count', selectedValues.length)"></span>
                 </template>
             </div>
             <button
@@ -472,7 +472,7 @@
                 @click="close()"
                 class="btn btn-sm btn-primary tw-py-1 tw-px-3 tw-text-ui-xs tw-font-medium"
             >
-                <x-ui.icon name="check" size="sm" class="tw-me-1" /> Selesai
+                <x-ui.icon name="check" size="sm" class="tw-me-1" /> {{ __('common.review.done') }}
             </button>
         </div>
     </div>

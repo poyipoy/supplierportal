@@ -9,7 +9,7 @@
 @endphp
 
 @if($normalizedItems->isNotEmpty())
-    <nav aria-label="Breadcrumb" {{ $attributes }}>
+    <nav aria-label="{{ __('common.navigation.breadcrumb') }}" {{ $attributes }}>
         <ol class="tw-m-0 tw-flex tw-list-none tw-flex-wrap tw-items-center tw-gap-1 tw-p-0 tw-text-ui-xs tw-text-on-surface-variant">
             @foreach($normalizedItems as $item)
                 <li class="tw-flex tw-min-w-0 tw-items-center tw-gap-1">

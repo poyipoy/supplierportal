@@ -11,7 +11,7 @@ class ErrorPagesTest extends TestCase
     {
         $response = $this->get('/non-existent-page-adasi-404');
         $response->assertStatus(404)
-            ->assertSee('Halaman Tidak Ditemukan')
+            ->assertSee(__('common.review.not_found_title', [], 'en'))
             ->assertSee('Error 404');
     }
 
@@ -29,7 +29,7 @@ class ErrorPagesTest extends TestCase
     {
         $view = $this->view('errors.419');
 
-        $view->assertSee('Sesi Telah Kedaluwarsa')
+        $view->assertSee(__('common.review.expired_title', [], 'en'))
             ->assertSee('Error 419');
     }
 
@@ -37,7 +37,7 @@ class ErrorPagesTest extends TestCase
     {
         $view = $this->view('errors.500');
 
-        $view->assertSee('Terjadi Kesalahan Server')
+        $view->assertSee(__('common.review.server_title', [], 'en'))
             ->assertSee('Error 500');
     }
 }

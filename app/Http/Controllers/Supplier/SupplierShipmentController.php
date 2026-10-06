@@ -84,7 +84,7 @@ class SupplierShipmentController extends Controller
 
                     return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
-                ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.$shp->shipment_date->format('d M Y').'</span>' : '-')
+                ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($shp->shipment_date->format('d M Y')).'</span>' : '-')
                 ->addColumn('shipment_date_display', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->shipment_date, 'human')).'</span>' : '-')
                 ->addColumn('estimated_arrival', fn ($shp) => $shp->estimated_arrival_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->estimated_arrival_date, 'human')).'</span>' : '-')
                 ->addColumn('status_badge', function ($shp) {
@@ -102,14 +102,14 @@ class SupplierShipmentController extends Controller
                     if ($isOwner && $shp->status === 'draft') {
                         $primaryAction = '<form action="'.route('supplier.shipments.submit', $shp).'" method="POST" class="draft-submit-form tw-m-0">'
                             .csrf_field()
-                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="Submit draft '.e($shp->shipment_number).'">'
-                            .'Submit'
+                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="'.e(__('purchasing.action_names.submit_draft', ['name' => $shp->shipment_number])).'">'
+                            .__('shipments.copy.submit')
                             .'</button></form>';
-                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">View details</a></li>';
-                        $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">Edit draft</a></li>';
-                        $secondaryActions[] = '<li><form action="'.route('supplier.shipments.cancel', $shp).'" method="POST" class="cancel-form">'.csrf_field().'<button type="button" class="dropdown-item text-danger btn-cancel-shipment btn-delete">Cancel shipment</button></form></li>';
+                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">'.e(__('shipments.copy.view_details')).'</a></li>';
+                        $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">'.e(__('shipments.copy.edit_draft')).'</a></li>';
+                        $secondaryActions[] = '<li><form action="'.route('supplier.shipments.cancel', $shp).'" method="POST" class="cancel-form">'.csrf_field().'<button type="button" class="dropdown-item text-danger btn-cancel-shipment btn-delete">'.e(__('shipments.copy.cancel_shipment')).'</button></form></li>';
                     } else {
-                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="View '.e($shp->shipment_number).'">Details</a>';
+                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.view', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.details')).'</a>';
                     }
 
                     if ($secondaryActions === []) {
@@ -117,7 +117,7 @@ class SupplierShipmentController extends Controller
                     }
 
                     return '<div class="d-inline-flex align-items-center justify-content-end gap-1">'.$primaryAction
-                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($shp->shipment_number).'">More</button>'
+                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.more')).'</button>'
                         .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
                 ->rawColumns(['shipment_number_display', 'po_references', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'status_badge', 'action'])
@@ -188,11 +188,11 @@ class SupplierShipmentController extends Controller
     {
         $shipment = Shipment::with('items')->findOrFail($id);
         if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, 'You do not have access to this Shipment.');
+            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
         }
         if ($shipment->status !== Shipment::STATUS_DRAFT) {
             return redirect()->route('supplier.shipments.show', $shipment)
-                ->with('error', 'Only draft shipments can be edited.');
+                ->with('error', __('shipments.copy.only_draft_shipments_can_be_edited'));
         }
 
         $currentQuantities = $shipment->items->keyBy(fn ($item) => $item->purchase_order_id.':'.$item->quotation_item_id);
@@ -265,13 +265,17 @@ class SupplierShipmentController extends Controller
                 ]);
 
                 return redirect()->route('supplier.shipments.show', $shipment)
-                    ->with('success', "Shipment {$shipment->shipment_number} submitted successfully.");
+                    ->with('success', __('shipments.feedback.submitted', ['shipment' => $shipment->shipment_number]));
             }
 
             return redirect()->route('supplier.shipments.show', $shipment)
-                ->with('success', "Draft shipment {$shipment->shipment_number} created successfully.");
-        } catch (\Throwable $e) {
+                ->with('success', __('shipments.feedback.created', ['shipment' => $shipment->shipment_number]));
+        } catch (\InvalidArgumentException|\DomainException $e) {
             return back()->withInput()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_saving_the_shipment_please_try_again'));
         }
     }
 
@@ -282,7 +286,7 @@ class SupplierShipmentController extends Controller
     {
         $shipment = Shipment::findOrFail($id);
         if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, 'You do not have access to this Shipment.');
+            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
         }
 
         $this->validateShipmentPayload($request, false);
@@ -296,9 +300,13 @@ class SupplierShipmentController extends Controller
             ]);
 
             return redirect()->route('supplier.shipments.show', $shipment)
-                ->with('success', "Draft shipment {$shipment->shipment_number} updated successfully.");
-        } catch (\Throwable $exception) {
+                ->with('success', __('shipments.feedback.updated', ['shipment' => $shipment->shipment_number]));
+        } catch (\InvalidArgumentException|\DomainException $exception) {
             return back()->withInput()->with('error', $exception->getMessage());
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->withInput()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_updating_the_shipment_please_try_again'));
         }
     }
 
@@ -318,7 +326,7 @@ class SupplierShipmentController extends Controller
             ->findOrFail($id);
 
         if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, 'You do not have access to this Shipment.');
+            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
         }
 
         return view('supplier.shipments.show', compact('shipment'));
@@ -332,7 +340,7 @@ class SupplierShipmentController extends Controller
         $shipment = Shipment::findOrFail($id);
 
         if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, 'You do not have access to this Shipment.');
+            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
         }
 
         $validated = $this->validateShipmentPayload($request, false, false);
@@ -341,9 +349,13 @@ class SupplierShipmentController extends Controller
             $submitted = $this->shipmentService->submitShipment($shipment, $validated);
 
             return redirect()->route('supplier.shipments.show', $submitted)
-                ->with('success', "Shipment {$submitted->shipment_number} submitted successfully.");
-        } catch (\Throwable $e) {
+                ->with('success', __('shipments.feedback.submitted', ['shipment' => $submitted->shipment_number]));
+        } catch (\InvalidArgumentException|\DomainException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_submitting_the_shipment_please_try_again'));
         }
     }
 
@@ -355,16 +367,20 @@ class SupplierShipmentController extends Controller
         $shipment = Shipment::findOrFail($id);
 
         if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, 'You do not have access to this Shipment.');
+            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
         }
 
         try {
             $cancelled = $this->shipmentService->cancelShipment($shipment, auth()->user());
 
             return redirect()->route('supplier.shipments.show', $cancelled)
-                ->with('success', "Shipment {$cancelled->shipment_number} cancelled and reservations released.");
-        } catch (\Throwable $e) {
+                ->with('success', __('shipments.feedback.cancelled', ['shipment' => $cancelled->shipment_number]));
+        } catch (\InvalidArgumentException|\DomainException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_cancelling_the_shipment_please_try_again'));
         }
     }
 
@@ -381,7 +397,7 @@ class SupplierShipmentController extends Controller
         $shipment = Shipment::findOrFail($id);
 
         if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, 'You do not have access to this Shipment.');
+            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
         }
 
         $document = ShipmentDocument::where('shipment_id', $shipment->id)->findOrFail($document_id);
@@ -394,9 +410,13 @@ class SupplierShipmentController extends Controller
                 $request->input('document_number')
             );
 
-            return back()->with('success', 'Document uploaded successfully.');
+            return back()->with('success', __('shipments.copy.document_uploaded_successfully'));
+        } catch (\InvalidArgumentException|\DomainException|\RuntimeException $e) {
+            return back()->with('error', __('shipments.errors.upload_with_reason', ['message' => $e->getMessage()]));
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to upload document: '.$e->getMessage());
+            report($e);
+
+            return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'));
         }
     }
 
@@ -433,7 +453,7 @@ class SupplierShipmentController extends Controller
 
                 $key = (int) $item['purchase_order_id'].':'.(int) $item['quotation_item_id'];
                 if (isset($seen[$key])) {
-                    $validator->errors()->add("items.{$index}", 'Duplicate item allocation for the same Purchase Order item is not allowed.');
+                    $validator->errors()->add("items.{$index}", __('shipments.copy.duplicate_item_allocation_for_the_same_purchase_order_item_is_not_allowed'));
                 }
                 $seen[$key] = true;
             }

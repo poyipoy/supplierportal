@@ -16,7 +16,7 @@ final readonly class HsCodeConditionSet
 
         foreach ($conditions as $dimension => $bounds) {
             if (! in_array($dimension, self::DIMENSIONS, true) || ! is_array($bounds)) {
-                throw new InvalidArgumentException("Invalid HS Code dimension: {$dimension}.");
+                throw new InvalidArgumentException(__('materials.errors.invalid_dimension', ['dimension' => $dimension]));
             }
 
             $min = array_key_exists('min', $bounds) && $bounds['min'] !== null && $bounds['min'] !== ''
@@ -27,11 +27,11 @@ final readonly class HsCodeConditionSet
                 : null;
 
             if ($min === null && $max === null) {
-                throw new InvalidArgumentException("{$dimension} must have a min or max bound.");
+                throw new InvalidArgumentException(__('materials.errors.dimension_bound', ['dimension' => \App\Models\PrItem::dimensionLabel($dimension)]));
             }
 
             if ($min !== null && $max !== null && $min > $max) {
-                throw new InvalidArgumentException("{$dimension}.min cannot exceed {$dimension}.max.");
+                throw new InvalidArgumentException(__('materials.errors.dimension_range', ['dimension' => $dimension]));
             }
 
             $normalized[$dimension] = [
@@ -99,7 +99,7 @@ final readonly class HsCodeConditionSet
     private static function numericBound(mixed $value, string $field): float
     {
         if (! is_numeric($value)) {
-            throw new InvalidArgumentException("{$field} must be numeric.");
+            throw new InvalidArgumentException(__('materials.errors.numeric_bound', ['field' => $field]));
         }
 
         return (float) $value;

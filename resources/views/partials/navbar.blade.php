@@ -3,7 +3,7 @@
     <div class="d-flex align-items-center tw-gap-2.5 tw-min-w-0">
         <x-ui.icon-button
             icon="panel-left"
-            label="Toggle sidebar"
+            :label="__('navigation.toggle_sidebar')"
             size="lg"
             class="sidebar-toggle sidebar-toggle--mobile tw-text-on-surface-variant"
             x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
@@ -24,7 +24,7 @@
             </x-slot:visual>
         </x-ui.icon-button>
         <div class="vr mx-1 my-2 tw-text-outline d-none d-sm-block d-lg-none" style="height: 18px;"></div>
-        <p class="topbar-page-title text-truncate">@yield('page-title', 'Dashboard')</p>
+        <p class="topbar-page-title text-truncate">@yield('page-title', __('navigation.dashboard'))</p>
     </div>
 
     {{-- Right: User info + Notifications + Chat --}}
@@ -34,7 +34,7 @@
             <x-ui.icon-button
                 :href="route(auth()->user()->role . '.conversations.index')"
                 icon="message-circle-more"
-                label="Chat and Negotiation"
+                :label="__('navigation.chat')"
                 size="sm"
                 data-chat-drawer
             >
@@ -52,14 +52,14 @@
         >
             <x-ui.icon-button
                 icon="bell"
-                label="Notifications"
+                :label="$initNotifCount === 1 ? __('js.notification.unread_one', ['count' => $initNotifCount]) : ($initNotifCount > 1 ? __('js.notification.unread_many', ['count' => $initNotifCount]) : __('js.notification.button_label'))"
                 size="sm"
                 data-bs-toggle="dropdown"
                 data-bs-auto-close="outside"
                 aria-expanded="false"
             >
                 <x-slot:badge>
-                    <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}">{{ $initNotifCount }}</span>
+                    <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}" aria-hidden="true">{{ $initNotifCount }}</span>
                 </x-slot:badge>
             </x-ui.icon-button>
             <div class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
@@ -69,20 +69,20 @@
                     data-notification-summary-state="idle"
                     aria-live="polite"
                 >
-                    Open notifications to load the latest activity.
+                    {{ __('navigation.notification_open') }}
                 </div>
             </div>
         </div>
 
         {{-- Role Badge --}}
         <span class="role-badge role-badge-{{ auth()->user()->role }}">
-            {{ ucfirst(auth()->user()->role) }}
+            {{ __('navigation.roles.'.auth()->user()->role) }}
         </span>
 
         {{-- User Dropdown --}}
         <div class="dropdown">
             <button class="topbar-user-trigger dropdown-toggle" type="button"
-                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open user menu">
+                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('navigation.open_user') }}">
                 <x-ui.user-chip :name="auth()->user()->name" :meta="auth()->user()->email" class="topbar-user-chip" />
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
@@ -96,22 +96,22 @@
                 </li>
                 <li>
                     <a href="{{ route('profile.edit') }}" class="dropdown-item tw-py-1.5 small">
-                        <x-ui.icon name="user-cog" class="me-2" />My Profile
+                        <x-ui.icon name="user-cog" class="me-2" />{{ __('navigation.profile') }}
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('profile.security') }}" class="dropdown-item tw-py-1.5 small">
-                        <x-ui.icon name="shield-check" class="me-2" />Security
+                        <x-ui.icon name="shield-check" class="me-2" />{{ __('navigation.security') }}
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('profile.notifications') }}" class="dropdown-item tw-py-1.5 small">
-                        <x-ui.icon name="bell" class="me-2" />Notifications
+                        <x-ui.icon name="bell" class="me-2" />{{ __('common.notification.title') }}
                     </a>
                 </li>
                 <li>
                     <a href="{{ route('profile.customization') }}" class="dropdown-item tw-py-1.5 small">
-                        <x-ui.icon name="sliders-horizontal" class="me-2" />Customization
+                        <x-ui.icon name="sliders-horizontal" class="me-2" />{{ __('navigation.customization') }}
                     </a>
                 </li>
                 <li>
@@ -121,7 +121,7 @@
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="dropdown-item text-danger tw-py-1.5 small">
-                            <x-ui.icon name="log-out" class="me-2" />Logout
+                            <x-ui.icon name="log-out" class="me-2" />{{ __('navigation.logout') }}
                         </button>
                     </form>
                 </li>
@@ -142,7 +142,7 @@
                 }
 
                 container.dataset.notificationSummaryState = 'loading';
-                container.textContent = 'Loading notifications...';
+                container.textContent = @js(__('js.notification.loading'));
 
                 try {
                     const response = await fetch(dropdown.dataset.notificationSummaryUrl, {
@@ -153,7 +153,7 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to load notifications.');
+                        throw new Error(@js(__('common.review.failed_notifications')));
                     }
 
                     const documentFragment = new DOMParser().parseFromString(
@@ -163,7 +163,7 @@
                     const panel = documentFragment.body.firstElementChild;
 
                     if (!panel) {
-                        throw new Error('Notification response was empty.');
+                        throw new Error(@js(__('common.review.empty_response')));
                     }
 
                     container.className = '';
@@ -181,7 +181,7 @@
                 } catch (error) {
                     console.error(error);
                     container.dataset.notificationSummaryState = 'error';
-                    container.textContent = 'Notifications could not be loaded. Close and reopen to retry.';
+                    container.textContent = @js(__('js.notification.failed'));
                 }
             }
 
@@ -210,6 +210,10 @@
             }
 
             function updateNotificationUnreadBadge(count) {
+                const label = count > 0
+                    ? window.AdasiI18n.choice('js.notification.unread_count', Number(count), { count })
+                    : window.AdasiI18n.t('js.notification.button_label');
+
                 document.querySelectorAll('.notif-badge').forEach((badge) => {
                     if (count > 0) {
                         badge.textContent = count;
@@ -218,6 +222,8 @@
                         badge.textContent = '0';
                         badge.classList.add('d-none');
                     }
+
+                    badge.closest('button[data-bs-toggle="dropdown"]')?.setAttribute('aria-label', label);
                 });
             }
 
@@ -272,7 +278,7 @@
                 }
 
                 if (markButton) {
-                    markButton.textContent = tab.dataset.notificationMarkLabel || 'Mark All as Read';
+                    markButton.textContent = tab.dataset.notificationMarkLabel || @js(__('common.notification.mark_all'));
                 }
             });
 
@@ -291,7 +297,7 @@
                     const scrollTop = scrollPane?.scrollTop || 0;
                     const category = activeTab?.dataset.notificationCategory || categoryInput?.value || 'all';
                     const button = form.querySelector('[data-notification-mark-button]');
-                const originalLabel = button?.textContent || 'Mark All as Read';
+                const originalLabel = button?.textContent || @js(__('common.notification.mark_all'));
                 const formData = new FormData(form);
                 formData.set('category', category);
 
@@ -301,10 +307,10 @@
 
                 if (button) {
                     if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
-                        window.AdasiButton.startLoading(button, { text: 'Processing...' });
+                        window.AdasiButton.startLoading(button, { text: @js(__('datatables.processing')) });
                     } else {
                         button.disabled = true;
-                        button.textContent = 'Processing...';
+                        button.textContent = @js(__('datatables.processing'));
                     }
                 }
 
@@ -319,7 +325,7 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to mark notification.');
+                        throw new Error(@js(__('common.review.failed_mark_notification')));
                     }
 
                     const data = await response.json();

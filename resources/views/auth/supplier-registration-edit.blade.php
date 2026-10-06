@@ -1,6 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Revise Supplier Registration - ADASI Supplier Portal')
+@section('title', __('registration.revise_title'))
 
 @section('content')
 <style>
@@ -21,15 +21,15 @@
 <header class="tw-mb-4">
     <div class="tw-flex tw-items-center tw-justify-between">
         <div>
-            <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">Supplier Onboarding</p>
-            <h2 class="tw-m-0 tw-mt-1 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">Revise Registration</h2>
+            <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">{{ __('registration.onboarding') }}</p>
+            <h2 class="tw-m-0 tw-mt-1 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">{{ __('registration.revise') }}</h2>
         </div>
         <a href="{{ route('supplier.registration.status') }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-container tw-no-underline">
             <x-ui.icon name="arrow-left" size="xs" />
-            <span>Back to Status</span>
+            <span>{{ __('registration.back_status') }}</span>
         </a>
     </div>
-    <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">Update the requested information and documents below, then resubmit for review.</p>
+    <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ __('registration.revise_help') }}</p>
 </header>
 
 {{-- REVIEWER REVISION REASON ALERT --}}
@@ -37,8 +37,8 @@
     <div class="tw-flex tw-items-start tw-gap-3">
         <x-ui.icon name="alert-circle" size="md" class="tw-text-info tw-shrink-0 tw-mt-0.5" />
         <div>
-            <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">Reviewer Revision Request</h3>
-            <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface tw-whitespace-pre-line">{{ $attempt->reviewer_notes ?: 'Please update your details as requested.' }}</p>
+            <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('registration.reviewer_request') }}</h3>
+            <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface tw-whitespace-pre-line">{{ $attempt->reviewer_notes ?: __('auth.feedback.registration_update') }}</p>
         </div>
     </div>
 </div>
@@ -47,7 +47,7 @@
     <div class="tw-rounded-ui-sm tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-4" role="alert">
         <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm tw-mb-1">
             <x-ui.icon name="alert-triangle" size="sm" />
-            <span>Please correct the errors below:</span>
+            <span>{{ __('registration.correct_errors') }}</span>
         </div>
         <ul class="tw-m-0 tw-pl-5 tw-text-ui-xs tw-space-y-0.5">
             @foreach ($errors->all() as $error)
@@ -64,47 +64,47 @@
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
         <div class="form-section-title">
             <x-ui.icon name="building-2" size="sm" />
-            <span>1. Company Profile</span>
+            <span>{{ __('registration.steps.company_edit') }}</span>
         </div>
 
         <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
             <div class="tw-grid tw-gap-1.5">
-                <label for="company_title_select" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Entity Legal Form <span class="tw-text-error">*</span></label>
+                <label for="company_title_select" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.legal_form') }} <span class="tw-text-error">*</span></label>
                 <select
                     id="company_title_select"
                     x-model="companyTitle"
                     @change="isOtherTitle = (companyTitle === 'Other')"
                     class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
                 >
-                    <option value="PT">PT (Perseroan Terbatas)</option>
-                    <option value="CV">CV (Commanditaire Vennootschap)</option>
-                    <option value="UD">UD (Usaha Dagang)</option>
-                    <option value="PD">PD (Perusahaan Daerah)</option>
+                    <option value="PT">{{ __('registration.legal.pt') }}</option>
+                    <option value="CV">{{ __('registration.legal.cv') }}</option>
+                    <option value="UD">{{ __('registration.legal.ud') }}</option>
+                    <option value="PD">{{ __('registration.legal.pd') }}</option>
                     <option value="VPD">VPD</option>
-                    <option value="Firma">Firma</option>
-                    <option value="Koperasi">Koperasi</option>
-                    <option value="Yayasan">Yayasan</option>
-                    <option value="Company">Company (Foreign/Corp)</option>
-                    <option value="Other">Other (Custom Title)</option>
+                    <option value="Firma">{{ __('registration.legal.firma') }}</option>
+                    <option value="Koperasi">{{ __('registration.legal.koperasi') }}</option>
+                    <option value="Yayasan">{{ __('registration.legal.yayasan') }}</option>
+                    <option value="Company">{{ __('registration.legal.company_edit') }}</option>
+                    <option value="Other">{{ __('registration.legal.other_edit') }}</option>
                 </select>
                 <input type="hidden" name="company_title" :value="companyTitle">
             </div>
 
             <div class="tw-grid tw-gap-1.5" x-show="isOtherTitle" style="display: none;">
-                <label for="custom_company_title" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Specify Legal Entity Title</label>
+                <label for="custom_company_title" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.entity_title') }}</label>
                 <input
                     id="custom_company_title"
                     type="text"
                     name="custom_company_title"
                     class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
-                    placeholder="e.g. Inc, LLC, Berhad"
+                    placeholder="{{ __('registration.legal_example_edit') }}"
                     x-on:input="companyTitle = $el.value"
                     value="{{ old('custom_company_title', $supplier?->company_title) }}"
                 >
             </div>
 
             <div class="tw-grid tw-gap-1.5" :class="isOtherTitle ? 'md:tw-col-span-2' : ''">
-                <label for="company_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Company Registered Name <span class="tw-text-error">*</span></label>
+                <label for="company_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.company') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="company_name"
                     type="text"
@@ -117,7 +117,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
-                <label for="address" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Official Company Address <span class="tw-text-error">*</span></label>
+                <label for="address" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.address') }} <span class="tw-text-error">*</span></label>
                 <textarea
                     id="address"
                     name="address"
@@ -129,7 +129,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5">
-                <label for="phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Company Phone / Telephone <span class="tw-text-error">*</span></label>
+                <label for="phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.phone') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="phone"
                     type="text"
@@ -142,7 +142,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5">
-                <label for="category" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Business Category / Sector</label>
+                <label for="category" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.category') }}</label>
                 <input
                     id="category"
                     type="text"
@@ -155,7 +155,7 @@
             <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
                 <label class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer" for="is_pkp">
                     <input type="checkbox" name="is_pkp" id="is_pkp" value="1" class="form-check-input tw-mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
-                    <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Company is a Registered Taxable Enterprise (Pengusaha Kena Pajak / PKP)</span>
+                    <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pkp_edit') }}</span>
                 </label>
             </div>
         </div>
@@ -165,12 +165,12 @@
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
         <div class="form-section-title">
             <x-ui.icon name="file-badge" size="sm" />
-            <span>2. Legal & Tax Identification</span>
+            <span>{{ __('registration.steps.tax_edit') }}</span>
         </div>
 
         <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
             <div class="tw-grid tw-gap-1.5">
-                <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Nomor Induk Berusaha (NIB) <span class="tw-text-error">*</span></label>
+                <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.nib') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="nib"
                     type="text"
@@ -183,7 +183,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5">
-                <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">NPWP / NIK <span class="tw-text-error">*</span></label>
+                <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.npwp') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="npwp"
                     type="text"
@@ -201,12 +201,12 @@
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
         <div class="form-section-title">
             <x-ui.icon name="user" size="sm" />
-            <span>3. Person In Charge (PIC)</span>
+            <span>{{ __('registration.steps.pic_edit') }}</span>
         </div>
 
         <div class="tw-grid tw-gap-4 md:tw-grid-cols-3">
             <div class="tw-grid tw-gap-1.5">
-                <label for="pic_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">PIC Full Name <span class="tw-text-error">*</span></label>
+                <label for="pic_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="pic_name"
                     type="text"
@@ -219,7 +219,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5">
-                <label for="pic_email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">PIC Email Address <span class="tw-text-error">*</span></label>
+                <label for="pic_email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic_email') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="pic_email"
                     type="email"
@@ -232,7 +232,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5">
-                <label for="pic_phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">PIC Phone / WhatsApp <span class="tw-text-error">*</span></label>
+                <label for="pic_phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic_phone') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="pic_phone"
                     type="text"
@@ -260,9 +260,9 @@
         $bankOptions = \App\Support\BankList::options($isStandardBank ? $currentBank : null);
         $bankOptions[] = [
             'value' => 'OTHER',
-            'label' => 'Bank Lainnya / Other Bank...',
-            'sublabel' => 'Pilih untuk mengetik nama bank manual (bank asing/swasta)',
-            'badge' => 'Manual',
+            'label' => __('registration.bank_other'),
+            'sublabel' => __('registration.bank_other_help'),
+            'badge' => __('registration.manual_entry'),
             'badgeTone' => 'neutral',
             'searchKeywords' => 'lainnya other asing luar negeri manual',
         ];
@@ -270,7 +270,7 @@
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
         <div class="form-section-title">
             <x-ui.icon name="credit-card" size="sm" />
-            <span>4. Official Bank Account</span>
+            <span>{{ __('registration.steps.bank_edit') }}</span>
         </div>
 
         <div
@@ -297,9 +297,9 @@
                 <x-ui.searchable-select
                     name="bank_select"
                     id="bank_select"
-                    label="Bank Name"
-                    placeholder="Pilih atau cari bank..."
-                    search-placeholder="Ketik nama bank (e.g. BCA, Mandiri, BRI)..."
+                    :label="__('registration.bank')"
+                    :placeholder="__('registration.choose_bank')"
+                    search-placeholder="{{ __('registration.search_bank_edit') }}"
                     :options="$bankOptions"
                     :value="old('bank_select', $initialBankSelect)"
                     :error="$errors->first('bank_name')"
@@ -309,7 +309,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5">
-                <label for="account_number" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Account Number <span class="tw-text-error">*</span></label>
+                <label for="account_number" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.account_number') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="account_number"
                     type="text"
@@ -322,7 +322,7 @@
             </div>
 
             <div class="tw-grid tw-gap-1.5">
-                <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Account Holder Name <span class="tw-text-error">*</span></label>
+                <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.account_holder') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="account_holder_name"
                     type="text"
@@ -348,7 +348,7 @@
             >
                 <label for="other_bank_name" class="tw-text-ui-xs tw-font-semibold tw-text-primary tw-flex tw-items-center tw-gap-1.5">
                     <x-ui.icon name="landmark" size="xs" />
-                    <span>Nama Bank Lainnya / Other Bank Name <span class="tw-text-error">*</span></span>
+                    <span>{{ __('registration.other_bank_edit') }} <span class="tw-text-error">*</span></span>
                 </label>
                 <input
                     id="other_bank_name"
@@ -357,11 +357,11 @@
                     type="text"
                     x-model="otherBankName"
                     class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('bank_name') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
-                    placeholder="Contoh: MUFG Bank, Sumitomo Mitsui, Bank of China, dll."
+                    placeholder="{{ __('registration.bank_example_edit') }}"
                     :required="bankSelect === 'OTHER'"
                 >
                 <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">
-                    Sebutkan nama lengkap bank yang menerbitkan rekening Anda jika tidak terdapat pada daftar di atas.
+                    {{ __('registration.other_bank_edit_help') }}
                 </p>
             </div>
         </div>
@@ -371,19 +371,19 @@
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
         <div class="form-section-title">
             <x-ui.icon name="file-text" size="sm" />
-            <span>5. Verification Documents (Replace or Keep Existing)</span>
+            <span>{{ __('registration.steps.doc_edit') }}</span>
         </div>
         <p class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-text-on-surface-variant">
-            Upload new files to replace existing documents (PDF, JPG, PNG, Max 5MB). If left blank, previously uploaded documents will be preserved.
+            {{ __('registration.new_files_help') }}
         </p>
 
         <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
             {{-- NIB File --}}
             <div class="tw-grid tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="nib_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">NIB Document</label>
+                    <label for="nib_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.nib_file') }}</label>
                     @if (isset($documents['NIB']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">Current: {{ $documents['NIB']->original_filename }}</span>
+                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['NIB']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="nib_file" type="file" name="nib_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-primary/10 file:tw-text-primary hover:file:tw-bg-primary/20">
@@ -393,9 +393,9 @@
             {{-- NPWP File --}}
             <div class="tw-grid tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="npwp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">NPWP Document</label>
+                    <label for="npwp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.npwp_file') }}</label>
                     @if (isset($documents['NPWP']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">Current: {{ $documents['NPWP']->original_filename }}</span>
+                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['NPWP']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="npwp_file" type="file" name="npwp_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-primary/10 file:tw-text-primary hover:file:tw-bg-primary/20">
@@ -405,9 +405,9 @@
             {{-- SKNR File --}}
             <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="sknr_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Surat Pernyataan Rekening (SKNR)</label>
+                    <label for="sknr_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sknr_file') }}</label>
                     @if (isset($documents['SURAT_PERNYATAAN_REKENING']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">Current: {{ $documents['SURAT_PERNYATAAN_REKENING']->original_filename }}</span>
+                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['SURAT_PERNYATAAN_REKENING']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="sknr_file" type="file" name="sknr_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-primary/10 file:tw-text-primary hover:file:tw-bg-primary/20">
@@ -417,9 +417,9 @@
             {{-- SPPKP File --}}
             <div class="tw-grid tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="sppkp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">SPPKP (Optional)</label>
+                    <label for="sppkp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sppkp_optional') }}</label>
                     @if (isset($documents['SPPKP']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">Current: {{ $documents['SPPKP']->original_filename }}</span>
+                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['SPPKP']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="sppkp_file" type="file" name="sppkp_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
@@ -429,9 +429,9 @@
             {{-- SKD File --}}
             <div class="tw-grid tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="skd_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">SKD (Optional)</label>
+                    <label for="skd_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.skd_optional') }}</label>
                     @if (isset($documents['SKD']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">Current: {{ $documents['SKD']->original_filename }}</span>
+                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['SKD']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="skd_file" type="file" name="skd_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
@@ -444,21 +444,21 @@
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
         <div class="form-section-title">
             <x-ui.icon name="message-square" size="sm" />
-            <span>6. Notes for Reviewer (Optional)</span>
+            <span>{{ __('registration.steps.notes_edit') }}</span>
         </div>
         <textarea
             id="revision_notes"
             name="revision_notes"
             rows="2"
             class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-p-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
-            placeholder="Describe the revisions made or provide additional context for reviewers..."
+            placeholder="{{ __('registration.revision_notes') }}"
         >{{ old('revision_notes') }}</textarea>
     </div>
 
     {{-- SUBMIT REVISED APPLICATION --}}
     <button type="submit" class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90">
         <x-ui.icon name="send" size="sm" />
-        <span>Resubmit Revised Registration</span>
+        <span>{{ __('registration.resubmit') }}</span>
     </button>
 </form>
 @endsection

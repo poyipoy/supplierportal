@@ -1,7 +1,7 @@
 <div class="notification-panel">
-    <div class="notification-menu nav nav-pills" role="tablist" aria-label="Notification categories">
+    <div class="notification-menu nav nav-pills" role="tablist" aria-label="{{ __('common.notification.categories') }}">
         <div class="notification-menu-heading">
-            <x-ui.icon name="layers" class="me-1" />Categories
+            <x-ui.icon name="layers" class="me-1" />{{ __('common.fields.category') }}
         </div>
         @foreach($notificationCategories as $key => $category)
             <button class="nav-link {{ $loop->first ? 'active' : '' }}"
@@ -9,7 +9,7 @@
                 data-bs-toggle="pill"
                 data-bs-target="#notif-pane-{{ $key }}"
                 data-notification-category="{{ $key }}"
-                data-notification-mark-label="{{ $key === \App\Support\NotificationCategory::ALL ? 'Mark All as Read' : 'Mark All ' . $category['short_label'] . ' Read' }}"
+                data-notification-mark-label="{{ $key === \App\Support\NotificationCategory::ALL ? __('common.notification.mark_all') : __('common.notification.mark_category', ['category' => $category['short_label']]) }}"
                 type="button"
                 role="tab"
                 aria-controls="notif-pane-{{ $key }}"
@@ -29,10 +29,10 @@
     <div class="notification-list-pane">
         <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2">
             <div>
-                <div class="fw-bold small">Notifications</div>
-                <div class="tw-text-ui-xs tw-text-on-surface-variant">Grouped by activity type</div>
+                <div class="fw-bold small">{{ __('common.notification.title') }}</div>
+                <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('common.notification.grouped') }}</div>
             </div>
-            <span class="text-muted small">{{ $navbarNotifications->count() }} {{ \Illuminate\Support\Str::plural('notification', $navbarNotifications->count()) }}</span>
+            <span class="text-muted small">{{ trans_choice('common.notification.count', $navbarNotifications->count(), ['count' => $navbarNotifications->count()]) }}</span>
         </div>
         <div class="tab-content notification-list">
             @foreach($notificationCategories as $key => $category)
@@ -57,9 +57,9 @@
                                 <x-ui.icon :name="$notif->data['icon'] ?? $notifCategory['icon']" size="lg" class="text-primary flex-shrink-0 mt-1" />
                                 <div class="tw-min-w-0 flex-grow-1">
                                     <div class="d-flex justify-content-between gap-2">
-                                        <div class="fw-semibold small text-truncate">{{ $notif->data['title'] ?? 'Notifications' }}</div>
+                                        <div class="fw-semibold small text-truncate">{{ $notif->data['title'] ?? __('common.notification.title') }}</div>
                                         @if(!$notif->read_at)
-                                            <span class="tw-shrink-0 tw-rounded-ui-xs tw-bg-error-container tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-font-semibold tw-text-error-container-foreground" data-notification-new-badge>New</span>
+                                            <span class="tw-shrink-0 tw-rounded-ui-xs tw-bg-error-container tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-font-semibold tw-text-error-container-foreground" data-notification-new-badge>{{ __('common.states.new') }}</span>
                                         @endif
                                     </div>
                                     <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ \Illuminate\Support\Str::limit($notif->data['message'] ?? '-', 92) }}</div>
@@ -67,7 +67,7 @@
                                         <span class="tw-inline-flex tw-items-center tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-px-2 tw-py-0.5 tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">
                                             <x-ui.icon :name="$notifCategory['icon']" class="me-1" />{{ $notifCategory['label'] }}
                                         </span>
-                                        <span><x-ui.icon name="clock" class="me-1" />{{ $notif->created_at->diffForHumans() }}</span>
+                                        <span><x-ui.icon name="clock" class="me-1" />{{ $notif->created_at->locale(app()->getLocale())->diffForHumans() }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -75,7 +75,7 @@
                     @empty
                         <div class="text-center text-muted py-5 px-3">
                             <x-ui.icon :name="$category['icon']" size="lg" class="tw-opacity-60" />
-                            <div class="fw-semibold mt-2">No {{ strtolower($category['label']) }}</div>
+                            <div class="fw-semibold mt-2">{{ __('common.notification.empty_category', ['category' => mb_strtolower($category['label'])]) }}</div>
                             <div class="tw-text-ui-xs">{{ $category['description'] }}</div>
                         </div>
                     @endforelse
@@ -86,7 +86,7 @@
             <form action="{{ route('notifications.mark-all-read') }}" method="POST" class="flex-fill" data-notification-mark-form data-managed-submit>
                 @csrf
                 <input type="hidden" name="category" value="{{ \App\Support\NotificationCategory::ALL }}" data-notification-category-input>
-                <x-ui.button type="submit" size="sm" class="tw-w-full" data-notification-mark-button>Mark All as Read</x-ui.button>
+                <x-ui.button type="submit" size="sm" class="tw-w-full" data-notification-mark-button>{{ __('common.notification.mark_all') }}</x-ui.button>
             </form>
         </div>
     </div>

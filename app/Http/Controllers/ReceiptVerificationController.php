@@ -11,7 +11,7 @@ class ReceiptVerificationController extends Controller
     public function verifySupplier(Request $request, string $receiptNumber)
     {
         if (! $request->hasValidSignature()) {
-            abort(403, 'Tautan verifikasi tanda terima tidak valid atau telah kedaluwarsa.');
+            abort(403, __('local_invoice.feedback.invalid_receipt'));
         }
 
         $receipt = LocalInvoiceReceipt::where('receipt_number', $receiptNumber)
@@ -26,7 +26,7 @@ class ReceiptVerificationController extends Controller
     public function verifyGa(Request $request, string $receiptNumber)
     {
         if (! $request->hasValidSignature()) {
-            abort(403, 'Tautan verifikasi tanda terima tidak valid atau telah kedaluwarsa.');
+            abort(403, __('local_invoice.feedback.invalid_receipt'));
         }
 
         $receipt = GaClaimReceipt::where('receipt_number', $receiptNumber)

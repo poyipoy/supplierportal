@@ -1,6 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Pendaftaran Rekanan Baru (Supplier Registration) - ADASI')
+@section('title', __('registration.title'))
 
 @php
     $currentBank = old('bank_name', '');
@@ -12,9 +12,9 @@
     $bankOptions = \App\Support\BankList::options($isStandardBank ? $currentBank : null);
     $bankOptions[] = [
         'value' => 'OTHER',
-        'label' => 'Bank Lainnya / Other Bank...',
-        'sublabel' => 'Pilih untuk mengetik nama bank manual (bank asing/swasta)',
-        'badge' => 'Manual',
+        'label' => __('registration.bank_other'),
+        'sublabel' => __('registration.bank_other_help'),
+        'badge' => __('registration.manual_entry'),
         'badgeTone' => 'neutral',
         'searchKeywords' => 'lainnya other asing luar negeri manual',
     ];
@@ -43,11 +43,11 @@
     x-data="supplierRegistrationWizard({{ $initialStep }})"
 @endsection
 
-{{-- ════════════════════════════════════════════════════════════════════════════
+{{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      LEFT PANEL: ACTIVE ONBOARDING COMPANION (Desktop Sticky)
-     ════════════════════════════════════════════════════════════════════════════ --}}
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @section('brand-panel')
-<aside class="auth-brand-panel tw-relative tw-flex tw-flex-col tw-justify-between tw-overflow-y-auto tw-bg-[#0B1528] tw-text-white tw-p-8 lg:tw-p-10 xl:tw-p-12 tw-sticky tw-top-0 tw-h-screen tw-z-10" aria-label="Panduan & Progres Pendaftaran">
+<aside class="auth-brand-panel tw-relative tw-flex tw-flex-col tw-justify-between tw-overflow-y-auto tw-bg-[#0B1528] tw-text-white tw-p-8 lg:tw-p-10 xl:tw-p-12 tw-sticky tw-top-0 tw-h-screen tw-z-10" aria-label="{{ __('registration.guide') }}">
     {{-- Subtle industrial ambient background overlay --}}
     <div class="tw-absolute tw-inset-0 tw-z-0 tw-opacity-15 tw-pointer-events-none">
         <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" class="tw-w-full tw-h-full tw-object-cover" draggable="false">
@@ -57,28 +57,28 @@
     {{-- Brand & Header Section --}}
     <div class="tw-relative tw-z-10">
         <div class="tw-flex tw-items-center tw-gap-3">
-            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo" class="tw-h-9 tw-w-auto tw-shrink-0" draggable="false">
+            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" class="tw-h-9 tw-w-auto tw-shrink-0" draggable="false">
             <div>
                 <div class="tw-text-ui-xs tw-font-bold tw-tracking-wider tw-text-white/90 tw-uppercase">PT Astra Daido Steel Indonesia</div>
-                <div class="tw-text-[11px] tw-font-medium tw-text-white/60">Supplier Onboarding Portal</div>
+                <div class="tw-text-[11px] tw-font-medium tw-text-white/60">{{ __('registration.portal') }}</div>
             </div>
         </div>
 
         <div class="tw-mt-8">
             <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-primary/20 tw-text-primary-200 tw-border tw-border-primary/30">
                 <x-ui.icon name="shield-check" size="xs" />
-                <span>Pendaftaran Vendor Resmi</span>
+                <span>{{ __('registration.official') }}</span>
             </span>
             <h1 class="tw-text-ui-xl xl:tw-text-ui-2xl tw-font-bold tw-text-white tw-mt-2 tw-leading-tight">
-                Bergabung dalam Jaringan Rantai Pasok ADASI
+                {{ __('registration.join') }}
             </h1>
             <p class="tw-text-ui-xs tw-text-white/70 tw-mt-2 tw-leading-relaxed tw-max-w-md">
-                Daftarkan legalitas entitas perusahaan Anda untuk bermitra dalam pengadaan material baja impor & lokal berstandar Astra.
+                {{ __('registration.join_help') }}
             </p>
         </div>
 
         {{-- Vertical Stepper Tracker --}}
-        <div class="tw-mt-8 tw-space-y-4" role="navigation" aria-label="Tahapan Pendaftaran">
+        <div class="tw-mt-8 tw-space-y-4" role="navigation" aria-label="{{ __('registration.steps') }}">
             {{-- Step 1 Item --}}
             <div
                 class="tw-flex tw-items-start tw-gap-3.5 tw-cursor-pointer tw-group"
@@ -104,9 +104,9 @@
                 </div>
                 <div class="tw-pt-1">
                     <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 1 ? 'tw-text-white tw-font-bold' : (step > 1 ? 'tw-text-white/90' : 'tw-text-white/50')">
-                        1. Akun & Profil Perusahaan
+                        {{ __('registration.steps.account') }}
                     </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">Kredensial login, legalitas entitas & kontak</div>
+                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step1_help') }}</div>
                 </div>
             </div>
 
@@ -135,9 +135,9 @@
                 </div>
                 <div class="tw-pt-1">
                     <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 2 ? 'tw-text-white tw-font-bold' : (step > 2 ? 'tw-text-white/90' : 'tw-text-white/50')">
-                        2. Identitas Legal, PIC & Bank
+                        {{ __('registration.steps.legal') }}
                     </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">NIB, NPWP, kontak narahubung & rekening bank</div>
+                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step2_help') }}</div>
                 </div>
             </div>
 
@@ -166,9 +166,9 @@
                 </div>
                 <div class="tw-pt-1">
                     <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 3 ? 'tw-text-white tw-font-bold' : (step > 3 ? 'tw-text-white/90' : 'tw-text-white/50')">
-                        3. Berkas Dokumen Verifikasi
+                        {{ __('registration.steps.documents') }}
                     </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">Unggah salinan NIB, NPWP, SKNR, SPPKP & SKD</div>
+                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step3_help') }}</div>
                 </div>
             </div>
 
@@ -190,9 +190,9 @@
                 </div>
                 <div class="tw-pt-1">
                     <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 4 ? 'tw-text-white tw-font-bold' : 'tw-text-white/50'">
-                        4. Tinjau & Kirim Pendaftaran
+                        {{ __('registration.steps.review') }}
                     </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">Pemeriksaan pra-kirim & konfirmasi legalitas</div>
+                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step4_help') }}</div>
                 </div>
             </div>
         </div>
@@ -205,44 +205,44 @@
             <div x-show="step === 1" x-cloak class="tw-transition-opacity tw-duration-200">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
                     <x-ui.icon name="info" size="xs" />
-                    <span>Panduan Kredensial & Profil</span>
+                    <span>{{ __('registration.guide_credentials') }}</span>
                 </div>
                 <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                    Email yang Anda daftarkan akan menjadi <strong>username resmi</strong> untuk mengakses sistem setelah disetujui. Pastikan nama perusahaan sesuai persis dengan akta resmi atau NIB terbaru.
-                </p>
+                {{ __('registration.guide_email') }}
+            </p>
             </div>
 
             {{-- Step 2 Tip --}}
             <div x-show="step === 2" x-cloak class="tw-transition-opacity tw-duration-200">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
                     <x-ui.icon name="credit-card" size="xs" />
-                    <span>Ketentuan Rekening & Identitas</span>
+                    <span>{{ __('registration.guide_bank') }}</span>
                 </div>
                 <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                    NIB harus berupa <strong>13 digit angka</strong>. Nama pemilik rekening bank <strong>wajib sesuai</strong> dengan nama entitas legal perusahaan Anda demi kepatuhan perpajakan dan transaksi keuangan ADASI.
-                </p>
+                {{ __('registration.guide_nib') }}
+            </p>
             </div>
 
             {{-- Step 3 Tip --}}
             <div x-show="step === 3" x-cloak class="tw-transition-opacity tw-duration-200">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
                     <x-ui.icon name="file-text" size="xs" />
-                    <span>Ketentuan Dokumen Legalitas</span>
+                    <span>{{ __('registration.guide_documents') }}</span>
                 </div>
                 <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                    <strong>SKNR</strong> adalah surat pernyataan/referensi rekening resmi bertanda tangan & stempel perusahaan atau dari pihak bank. Berkas berformat <strong>PDF, JPG, atau PNG</strong> dengan ukuran maks. <strong>5 MB</strong> per berkas.
-                </p>
+                {{ __('registration.guide_sknr') }}
+            </p>
             </div>
 
             {{-- Step 4 Tip --}}
             <div x-show="step === 4" x-cloak class="tw-transition-opacity tw-duration-200">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
                     <x-ui.icon name="shield-check" size="xs" />
-                    <span>Proses Verifikasi Internal</span>
+                    <span>{{ __('registration.guide_review') }}</span>
                 </div>
                 <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                    Setelah dikirim, pendaftaran akan diverifikasi oleh tim Pengadaan dan Keuangan ADASI. Anda akan diberikan <strong>Nomor Registrasi</strong> & <strong>Kode Akses</strong> untuk memantau status secara mandiri.
-                </p>
+                {{ __('registration.guide_after') }}
+            </p>
             </div>
         </div>
     </div>
@@ -251,23 +251,23 @@
     <div class="tw-relative tw-z-10 tw-pt-4 tw-border-t tw-border-white/10 tw-text-ui-xs tw-text-white/60">
         <div class="tw-flex tw-items-center tw-justify-between">
             <div>
-                <div class="tw-text-[11px] tw-font-medium tw-text-white/40">Bantuan Registrasi:</div>
+                <div class="tw-text-[11px] tw-font-medium tw-text-white/40">{{ __('registration.support') }}</div>
                 <div class="tw-text-white/90 tw-font-semibold tw-mt-0.5">procurement@astra-daido.co.id</div>
             </div>
             <a href="{{ route('login') }}" class="tw-text-primary-300 hover:tw-text-primary-200 tw-text-ui-xs tw-font-semibold tw-underline">
-                Portal Sign In
+                {{ __('registration.portal_sign_in') }}
             </a>
         </div>
         <div class="tw-mt-3 tw-text-[10px] tw-text-white/40">
-            &copy; {{ now()->year }} PT Astra Daido Steel Indonesia. Hak Cipta Dilindungi.
+            &copy; {{ now()->year }} PT Astra Daido Steel Indonesia. {{ __('registration.rights') }}
         </div>
     </div>
 </aside>
 @endsection
 
-{{-- ════════════════════════════════════════════════════════════════════════════
+{{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      RIGHT PANEL: PROGRESSIVE WIZARD FORM
-     ════════════════════════════════════════════════════════════════════════════ --}}
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @section('content')
 <style>
     @media (min-width: 1024px) {
@@ -299,7 +299,17 @@
             max-width: 60rem !important;
         }
     }
-    .auth-form-surface { max-width: 54rem; width: 100%; }
+    .auth-form-panel {
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        padding: 1.5rem 1rem !important;
+    }
+    @media (min-width: 640px) {
+        .auth-form-panel {
+            padding: 2rem 1.5rem !important;
+        }
+    }
+    .auth-form-surface { max-width: 54rem !important; width: 100% !important; margin: 0 auto !important; }
     .form-step-badge {
         display: inline-flex;
         align-items: center;
@@ -319,7 +329,7 @@
 <div class="lg:tw-hidden tw-mb-5 tw-pb-4 tw-border-b tw-border-outline-variant">
     <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
         <span class="tw-text-ui-xs tw-font-bold tw-uppercase tw-tracking-wider tw-text-primary">
-            Langkah <span x-text="step"></span> dari 4
+            {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_four') }}
         </span>
         <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" x-text="stepTitles[step]"></span>
     </div>
@@ -336,20 +346,46 @@
 {{-- Main Form Header --}}
 <header class="tw-mb-6">
     <div class="tw-flex tw-items-center tw-justify-between tw-gap-3">
-        <div class="form-step-badge">
-            <x-ui.icon name="layers" size="xs" />
-            <span>Langkah <span x-text="step"></span> / 4</span>
+        <div class="tw-flex tw-items-center tw-gap-2.5">
+            <div class="form-step-badge">
+                <x-ui.icon name="layers" size="xs" />
+                <span>{{ __('registration.step') }} <span x-text="step"></span> / 4</span>
+            </div>
+            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-hidden sm:tw-inline">
+                {{ __('registration.fields_marked') }} <span class="tw-text-error tw-font-bold">*</span> {{ __('registration.required_text') }}
+            </span>
         </div>
-        <span class="tw-text-ui-xs tw-text-on-surface-variant">
-            Kolom bertanda <span class="tw-text-error tw-font-bold">*</span> wajib diisi
-        </span>
+
+        {{-- Language Switcher Toggle --}}
+        <div class="tw-inline-flex tw-items-center tw-p-1 tw-rounded-ui-full tw-bg-surface-container-high tw-border tw-border-outline-variant/60 tw-shadow-xs" role="group" aria-label="{{ __('registration.language_selector') }}">
+            <button
+                type="button"
+                @click="switchLanguage('id')"
+                class="ui-motion ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold tw-transition-all"
+                :class="currentLocale === 'id' ? 'tw-bg-surface tw-text-primary tw-shadow-sm tw-scale-100' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50'"
+                aria-label="Bahasa Indonesia"
+            >
+                <span class="tw-text-xs">ðŸ‡®ðŸ‡©</span>
+                <span>ID</span>
+            </button>
+            <button
+                type="button"
+                @click="switchLanguage('en')"
+                class="ui-motion ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold tw-transition-all"
+                :class="currentLocale === 'en' ? 'tw-bg-surface tw-text-primary tw-shadow-sm tw-scale-100' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50'"
+                aria-label="English"
+            >
+                <span class="tw-text-xs">ðŸ‡¬ðŸ‡§</span>
+                <span>EN</span>
+            </button>
+        </div>
     </div>
 
     <h2 class="tw-m-0 tw-mt-2 tw-text-ui-xl lg:tw-text-ui-2xl tw-font-bold tw-tracking-tight tw-text-on-surface" x-text="stepHeadings[step]">
-        Akun Portal & Profil Perusahaan
+        {{ __('registration.account_profile') }}
     </h2>
     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant" x-text="stepSubheadings[step]">
-        Lengkapi kredensial akses dan profil legal perusahaan Anda untuk memulai proses onboarding rekanan ADASI.
+        {{ __('registration.start_help') }}
     </p>
 </header>
 
@@ -362,9 +398,9 @@
     <div class="tw-flex tw-items-start tw-gap-2.5">
         <x-ui.icon name="history" size="sm" class="tw-text-primary tw-shrink-0 tw-mt-0.5" />
         <div>
-            <div class="tw-text-ui-xs tw-font-bold tw-text-on-surface">Draf Pengisian Ditemukan</div>
+            <div class="tw-text-ui-xs tw-font-bold tw-text-on-surface">{{ __('registration.draft') }}</div>
             <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5">
-                Tersimpan draf data teks dari sesi sebelumnya pada perangkat ini. Ingin memulihkan data tersebut?
+                {{ __('registration.draft_help') }}
             </div>
         </div>
     </div>
@@ -374,14 +410,14 @@
             class="ui-motion ui-focus-ring tw-px-3 tw-py-1.5 tw-rounded-ui-xs tw-bg-primary tw-text-white tw-text-ui-xs tw-font-semibold hover:tw-brightness-95 active:tw-scale-95"
             @click="restoreDraft()"
         >
-            Pulihkan Draf
+            {{ __('registration.restore') }}
         </button>
         <button
             type="button"
             class="ui-motion ui-focus-ring tw-px-2.5 tw-py-1.5 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant tw-text-ui-xs hover:tw-bg-surface-container"
             @click="discardDraft()"
         >
-            Abaikan
+            {{ __('registration.ignore') }}
         </button>
     </div>
 </div>
@@ -391,7 +427,7 @@
     <div class="tw-rounded-ui-sm tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-5" role="alert">
         <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm tw-mb-1">
             <x-ui.icon name="alert-triangle" size="sm" />
-            <span>Terdapat beberapa kesalahan input yang perlu diperbaiki:</span>
+            <span>{{ __('registration.errors') }}</span>
         </div>
         <ul class="tw-m-0 tw-pl-5 tw-text-ui-xs tw-space-y-0.5">
             @foreach ($errors->all() as $error)
@@ -426,25 +462,25 @@
 >
     @csrf
 
-    {{-- ════════════════════════════════════════════════════════════════════════
+    {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 1: ACCOUNT CREDENTIALS & COMPANY PROFILE
-         ════════════════════════════════════════════════════════════════════════ --}}
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <div x-show="step === 1" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
         {{-- Section 1.1: Portal Account Credentials --}}
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
                 <x-ui.icon name="key" size="sm" />
-                <span>1. Kredensial Akun Portal (Login)</span>
+                <span>{{ __('registration.credentials') }}</span>
             </div>
             <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
-                Email dan kata sandi ini akan menjadi identitas akses resmi Anda ke portal rekanan ADASI.
+                {{ __('registration.credentials_help') }}
             </p>
 
             <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
                 {{-- Official Company Email --}}
                 <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
                     <label for="email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Alamat Email Resmi Perusahaan <span class="tw-text-error">*</span>
+                        {{ __('registration.email') }} <span class="tw-text-error">*</span>
                     </label>
                     <div class="tw-relative">
                         <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
@@ -454,11 +490,12 @@
                             id="email"
                             type="email"
                             name="email"
+                            autocomplete="email"
                             x-model="formData.email"
                             @blur="validateField('email')"
                             class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                             :class="errors.email ? 'tw-border-error' : 'tw-border-outline-variant'"
-                            placeholder="contoh: procurement@perusahaan.co.id"
+                            placeholder="{{ __('registration.email_example') }}"
                             required
                         >
                     </div>
@@ -469,7 +506,7 @@
                 {{-- Password with dynamic validation checklist --}}
                 <div class="tw-grid tw-gap-1.5">
                     <label for="password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Kata Sandi (Password) <span class="tw-text-error">*</span>
+                        {{ __('registration.password') }} <span class="tw-text-error">*</span>
                     </label>
                     <div class="tw-relative">
                         <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
@@ -479,11 +516,12 @@
                             id="password"
                             :type="showPass ? 'text' : 'password'"
                             name="password"
+                            autocomplete="new-password"
                             x-model="formData.password"
                             @input="validateField('password'); if (formData.password_confirmation) validateField('password_confirmation');"
                             class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-11 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                             :class="errors.password ? 'tw-border-error' : 'tw-border-outline-variant'"
-                            placeholder="Minimal 8 karakter"
+                            placeholder="{{ __('registration.password_min') }}"
                             required
                         >
                         <button
@@ -491,7 +529,7 @@
                             class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-1 tw-my-auto tw-inline-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container"
                             @click="showPass = !showPass"
                             tabindex="-1"
-                            :aria-label="showPass ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                            :aria-label="showPass ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))"
                         >
                             <x-ui.icon name="eye" size="sm" x-show="!showPass" />
                             <x-ui.icon name="eye-off" size="sm" x-show="showPass" />
@@ -503,17 +541,17 @@
                         <span class="tw-flex tw-items-center tw-gap-1" :class="passwordValidLength ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
                             <x-ui.icon name="check-circle" size="xs" x-show="passwordValidLength" />
                             <x-ui.icon name="circle" size="xs" x-show="!passwordValidLength" />
-                            <span>Min. 8 karakter</span>
+                            <span>{{ __('registration.password_min_short') }}</span>
                         </span>
                         <span class="tw-flex tw-items-center tw-gap-1" :class="passwordHasLetter ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
                             <x-ui.icon name="check-circle" size="xs" x-show="passwordHasLetter" />
                             <x-ui.icon name="circle" size="xs" x-show="!passwordHasLetter" />
-                            <span>Mengandung huruf</span>
+                            <span>{{ __('registration.password_letters') }}</span>
                         </span>
                         <span class="tw-flex tw-items-center tw-gap-1" :class="passwordHasNumber ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
                             <x-ui.icon name="check-circle" size="xs" x-show="passwordHasNumber" />
                             <x-ui.icon name="circle" size="xs" x-show="!passwordHasNumber" />
-                            <span>Mengandung angka</span>
+                            <span>{{ __('registration.password_numbers') }}</span>
                         </span>
                     </div>
 
@@ -524,7 +562,7 @@
                 {{-- Password Confirmation --}}
                 <div class="tw-grid tw-gap-1.5">
                     <label for="password_confirmation" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Konfirmasi Kata Sandi <span class="tw-text-error">*</span>
+                        {{ __('registration.password_confirm') }} <span class="tw-text-error">*</span>
                     </label>
                     <div class="tw-relative">
                         <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
@@ -534,11 +572,12 @@
                             id="password_confirmation"
                             :type="showConfirmPass ? 'text' : 'password'"
                             name="password_confirmation"
+                            autocomplete="new-password"
                             x-model="formData.password_confirmation"
                             @input="validateField('password_confirmation')"
                             class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-11 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                             :class="errors.password_confirmation ? 'tw-border-error' : 'tw-border-outline-variant'"
-                            placeholder="Ketik ulang kata sandi"
+                            placeholder="{{ __('registration.repeat_password') }}"
                             required
                         >
                         <button
@@ -546,7 +585,7 @@
                             class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-1 tw-my-auto tw-inline-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container"
                             @click="showConfirmPass = !showConfirmPass"
                             tabindex="-1"
-                            :aria-label="showConfirmPass ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                            :aria-label="showConfirmPass ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))"
                         >
                             <x-ui.icon name="eye" size="sm" x-show="!showConfirmPass" />
                             <x-ui.icon name="eye-off" size="sm" x-show="showConfirmPass" />
@@ -561,33 +600,33 @@
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
                 <x-ui.icon name="building-2" size="sm" />
-                <span>2. Profil & Identitas Perusahaan</span>
+                <span>{{ __('registration.legal_profile') }}</span>
             </div>
             <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
-                Informasi legalitas entitas sesuai Akta Pendirian Perusahaan dan perizinan berusaha aktif.
+                {{ __('registration.legal_help') }}
             </p>
 
             <div class="tw-grid tw-gap-4 md:tw-grid-cols-3">
                 {{-- Entity Legal Form --}}
                 <div class="tw-grid tw-gap-1.5 md:tw-col-span-1">
                     <label for="company_title_select" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Bentuk Badan Hukum <span class="tw-text-error">*</span>
+                        {{ __('registration.legal_form') }} <span class="tw-text-error">*</span>
                     </label>
                     <select
                         id="company_title_select"
                         x-model="formData.company_title"
                         class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                     >
-                        <option value="PT">PT (Perseroan Terbatas)</option>
-                        <option value="CV">CV (Commanditaire Vennootschap)</option>
-                        <option value="UD">UD (Usaha Dagang)</option>
-                        <option value="PD">PD (Perusahaan Daerah)</option>
+                        <option value="PT">{{ __('registration.legal.pt') }}</option>
+                        <option value="CV">{{ __('registration.legal.cv') }}</option>
+                        <option value="UD">{{ __('registration.legal.ud') }}</option>
+                        <option value="PD">{{ __('registration.legal.pd') }}</option>
                         <option value="VPD">VPD</option>
-                        <option value="Firma">Firma</option>
-                        <option value="Koperasi">Koperasi</option>
-                        <option value="Yayasan">Yayasan</option>
-                        <option value="Company">Company (Foreign / Corp)</option>
-                        <option value="Other">Lainnya / Other Title...</option>
+                        <option value="Firma">{{ __('registration.legal.firma') }}</option>
+                        <option value="Koperasi">{{ __('registration.legal.koperasi') }}</option>
+                        <option value="Yayasan">{{ __('registration.legal.yayasan') }}</option>
+                        <option value="Company">{{ __('registration.legal.company') }}</option>
+                        <option value="Other">{{ __('registration.legal.other') }}</option>
                     </select>
                     <input type="hidden" name="company_title" :value="formData.company_title">
                 </div>
@@ -599,7 +638,7 @@
                     x-cloak
                 >
                     <label for="custom_company_title" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Sebutkan Bentuk Badan Hukum Khusus <span class="tw-text-error">*</span>
+                        {{ __('registration.special_legal_form') }} <span class="tw-text-error">*</span>
                     </label>
                     <input
                         id="custom_company_title"
@@ -607,24 +646,25 @@
                         name="custom_company_title"
                         x-model="formData.custom_company_title"
                         class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        placeholder="contoh: LLC, Inc, Berhad, Pte Ltd"
+                        placeholder="{{ __('registration.legal_example') }}"
                     >
                 </div>
 
                 {{-- Registered Company Name --}}
                 <div class="tw-grid tw-gap-1.5" :class="formData.company_title === 'Other' ? 'md:tw-col-span-3' : 'md:tw-col-span-2'">
                     <label for="company_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Nama Resmi Perusahaan <span class="tw-text-error">*</span>
+                        {{ __('registration.company') }} <span class="tw-text-error">*</span>
                     </label>
                     <input
                         id="company_name"
                         type="text"
                         name="company_name"
+                        autocomplete="organization"
                         x-model="formData.company_name"
                         @blur="validateField('company_name')"
                         class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                         :class="errors.company_name ? 'tw-border-error' : 'tw-border-outline-variant'"
-                        placeholder="contoh: Astra Daido Steel Indonesia"
+                        placeholder="{{ __('registration.company_example') }}"
                         required
                     >
                     <p x-show="errors.company_name" x-text="errors.company_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
@@ -634,17 +674,18 @@
                 {{-- Official Company Address --}}
                 <div class="tw-grid tw-gap-1.5 md:tw-col-span-3">
                     <label for="address" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Alamat Domisili Legal Perusahaan <span class="tw-text-error">*</span>
+                        {{ __('registration.address') }} <span class="tw-text-error">*</span>
                     </label>
                     <textarea
                         id="address"
                         name="address"
+                        autocomplete="street-address"
                         rows="3"
                         x-model="formData.address"
                         @blur="validateField('address')"
                         class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-p-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                         :class="errors.address ? 'tw-border-error' : 'tw-border-outline-variant'"
-                        placeholder="Alamat lengkap sesuai NIB / NPWP perusahaan (Jalan, Kawasan Industri, Gedung, Kota, Kode Pos)"
+                        placeholder="{{ __('registration.address_example') }}"
                         required
                     ></textarea>
                     <p x-show="errors.address" x-text="errors.address" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
@@ -654,7 +695,7 @@
                 {{-- Company Phone / Telephone --}}
                 <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
                     <label for="phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Nomor Telepon Kantor / Perusahaan <span class="tw-text-error">*</span>
+                        {{ __('registration.company_phone') }} <span class="tw-text-error">*</span>
                     </label>
                     <div class="tw-relative">
                         <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
@@ -664,11 +705,12 @@
                             id="phone"
                             type="text"
                             name="phone"
+                            autocomplete="tel"
                             x-model="formData.phone"
                             @blur="validateField('phone')"
                             class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                             :class="errors.phone ? 'tw-border-error' : 'tw-border-outline-variant'"
-                            placeholder="021-xxxxxxxx atau +6221xxxx"
+                            placeholder="{{ __('registration.phone_example') }}"
                             required
                         >
                     </div>
@@ -679,7 +721,7 @@
                 {{-- Business Category / Sector --}}
                 <div class="tw-grid tw-gap-1.5 md:tw-col-span-1">
                     <label for="category" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Sektor / Kategori Usaha
+                        {{ __('registration.business_sector') }}
                     </label>
                     <input
                         id="category"
@@ -687,7 +729,7 @@
                         name="category"
                         x-model="formData.category"
                         class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        placeholder="contoh: Special Steel, Machining, General"
+                        placeholder="{{ __('registration.sector_example') }}"
                     >
                 </div>
 
@@ -707,10 +749,10 @@
                         >
                         <div>
                             <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">
-                                Perusahaan Terdaftar sebagai Pengusaha Kena Pajak (PKP)
+                                {{ __('registration.pkp') }}
                             </span>
                             <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5">
-                                Centang jika perusahaan menerbitkan Faktur Pajak resmi (SPPKP akan diunggah pada tahap dokumen).
+                                {{ __('registration.pkp_help') }}
                             </p>
                         </div>
                     </label>
@@ -719,18 +761,18 @@
         </div>
     </div>
 
-    {{-- ════════════════════════════════════════════════════════════════════════
+    {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 2: LEGAL & TAX IDENTIFICATION, PIC & OFFICIAL BANK
-         ════════════════════════════════════════════════════════════════════════ --}}
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <div x-show="step === 2" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
         {{-- Section 2.1: Legal & Tax Identification --}}
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
                 <x-ui.icon name="file-badge" size="sm" />
-                <span>3. Identitas Legalitas & Perpajakan</span>
+                <span>{{ __('registration.legal_identification') }}</span>
             </div>
             <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
-                Nomor identitas perpajakan dan izin berusaha resmi yang terdaftar di sistem pemerintah Republik Indonesia.
+                {{ __('registration.legal_identifiers_help') }}
             </p>
 
             <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
@@ -738,12 +780,12 @@
                 <div class="tw-grid tw-gap-1.5">
                     <div class="tw-flex tw-items-center tw-justify-between">
                         <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                            Nomor Induk Berusaha (NIB) <span class="tw-text-error">*</span>
+                            {{ __('registration.nib') }} <span class="tw-text-error">*</span>
                         </label>
                         <span
                             class="tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
                             :class="formData.nib.replace(/\D/g, '').length === 13 ? 'tw-text-success' : 'tw-text-on-surface-variant'"
-                            x-text="formData.nib.replace(/\D/g, '').length + '/13 digit'"
+                            x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.nib.replace(/\D/g, '').length, max: 13 })"
                         ></span>
                     </div>
                     <div class="tw-relative">
@@ -759,7 +801,7 @@
                             @input="formData.nib = formData.nib.replace(/\D/g, '').slice(0, 13); validateField('nib');"
                             class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-font-mono tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                             :class="errors.nib ? 'tw-border-error' : 'tw-border-outline-variant'"
-                            placeholder="13 digit angka NIB OSS"
+                            placeholder="{{ __('registration.nib_number') }}"
                             maxlength="13"
                             required
                         >
@@ -772,12 +814,12 @@
                 <div class="tw-grid tw-gap-1.5">
                     <div class="tw-flex tw-items-center tw-justify-between">
                         <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                            NPWP / NIK (Nomor Pokok Wajib Pajak) <span class="tw-text-error">*</span>
+                            {{ __('registration.tax_number') }} <span class="tw-text-error">*</span>
                         </label>
                         <span
                             class="tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
                             :class="[15, 16].includes(formData.npwp.replace(/\D/g, '').length) ? 'tw-text-success' : 'tw-text-on-surface-variant'"
-                            x-text="formData.npwp.replace(/\D/g, '').length + '/16 digit'"
+                            x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.npwp.replace(/\D/g, '').length, max: 16 })"
                         ></span>
                     </div>
                     <div class="tw-relative">
@@ -793,7 +835,7 @@
                             @input="formData.npwp = formData.npwp.replace(/\D/g, '').slice(0, 16); validateField('npwp');"
                             class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-font-mono tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
                             :class="errors.npwp ? 'tw-border-error' : 'tw-border-outline-variant'"
-                            placeholder="15 atau 16 digit NPWP"
+                            placeholder="{{ __('registration.npwp_number') }}"
                             maxlength="16"
                             required
                         >
@@ -808,29 +850,35 @@
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
                 <x-ui.icon name="user" size="sm" />
-                <span>4. Narahubung Resmi / Person In Charge (PIC)</span>
+                <span>{{ __('registration.contact_section') }}</span>
             </div>
             <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
-                Petugas resmi perusahaan yang berwenang dalam korespondensi penawaran, purchase order, dan penagihan.
+                {{ __('registration.contact_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-3">
-                {{-- PIC Full Name --}}
-                <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+                {{-- PIC Full Name (Span 2 / Full Width) --}}
+                <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
                     <label for="pic_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Nama Lengkap PIC <span class="tw-text-error">*</span>
+                        {{ __('registration.pic') }} <span class="tw-text-error">*</span>
                     </label>
-                    <input
-                        id="pic_name"
-                        type="text"
-                        name="pic_name"
-                        x-model="formData.pic_name"
-                        @blur="validateField('pic_name')"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        :class="errors.pic_name ? 'tw-border-error' : 'tw-border-outline-variant'"
-                        placeholder="Nama penanggung jawab"
-                        required
-                    >
+                    <div class="tw-relative">
+                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                            <x-ui.icon name="user" size="sm" />
+                        </div>
+                        <input
+                            id="pic_name"
+                            type="text"
+                            name="pic_name"
+                            autocomplete="name"
+                            x-model="formData.pic_name"
+                            @blur="validateField('pic_name')"
+                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                            :class="errors.pic_name ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            placeholder="{{ __('registration.pic_name_example') }}"
+                            required
+                        >
+                    </div>
                     <p x-show="errors.pic_name" x-text="errors.pic_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('pic_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
@@ -838,19 +886,25 @@
                 {{-- PIC Email Address --}}
                 <div class="tw-grid tw-gap-1.5">
                     <label for="pic_email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Alamat Email PIC <span class="tw-text-error">*</span>
+                        {{ __('registration.pic_email') }} <span class="tw-text-error">*</span>
                     </label>
-                    <input
-                        id="pic_email"
-                        type="email"
-                        name="pic_email"
-                        x-model="formData.pic_email"
-                        @blur="validateField('pic_email')"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        :class="errors.pic_email ? 'tw-border-error' : 'tw-border-outline-variant'"
-                        placeholder="pic@perusahaan.co.id"
-                        required
-                    >
+                    <div class="tw-relative">
+                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                            <x-ui.icon name="mail" size="sm" />
+                        </div>
+                        <input
+                            id="pic_email"
+                            type="email"
+                            name="pic_email"
+                            autocomplete="email"
+                            x-model="formData.pic_email"
+                            @blur="validateField('pic_email')"
+                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                            :class="errors.pic_email ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            placeholder="pic@perusahaan.co.id"
+                            required
+                        >
+                    </div>
                     <p x-show="errors.pic_email" x-text="errors.pic_email" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('pic_email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
@@ -858,19 +912,25 @@
                 {{-- PIC Phone / WhatsApp --}}
                 <div class="tw-grid tw-gap-1.5">
                     <label for="pic_phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        No. HP / WhatsApp PIC <span class="tw-text-error">*</span>
+                        {{ __('registration.pic_phone') }} <span class="tw-text-error">*</span>
                     </label>
-                    <input
-                        id="pic_phone"
-                        type="text"
-                        name="pic_phone"
-                        x-model="formData.pic_phone"
-                        @blur="validateField('pic_phone')"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        :class="errors.pic_phone ? 'tw-border-error' : 'tw-border-outline-variant'"
-                        placeholder="08xxxxxxxxxx"
-                        required
-                    >
+                    <div class="tw-relative">
+                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                            <x-ui.icon name="phone" size="sm" />
+                        </div>
+                        <input
+                            id="pic_phone"
+                            type="text"
+                            name="pic_phone"
+                            autocomplete="tel"
+                            x-model="formData.pic_phone"
+                            @blur="validateField('pic_phone')"
+                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                            :class="errors.pic_phone ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            placeholder="08xxxxxxxxxx"
+                            required
+                        >
+                    </div>
                     <p x-show="errors.pic_phone" x-text="errors.pic_phone" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('pic_phone')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
@@ -881,67 +941,78 @@
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
                 <x-ui.icon name="credit-card" size="sm" />
-                <span>5. Rekening Bank Resmi Perusahaan</span>
+                <span>{{ __('registration.bank_section') }}</span>
             </div>
             <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
-                Rekening bank operasional yang akan digunakan untuk proses pembayaran. Nama pemilik rekening <strong>wajib sesuai</strong> dengan Surat Keterangan Nomor Rekening (SKNR).
+                {{ __('registration.bank_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-3">
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
                 <input type="hidden" name="bank_name" :value="finalBankName">
 
                 {{-- Bank Select --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-1">
+                <div class="tw-grid tw-gap-1.5">
                     <x-ui.searchable-select
                         name="bank_select"
                         id="bank_select"
-                        label="Nama Bank"
-                        placeholder="Pilih atau cari bank..."
-                        search-placeholder="Ketik nama bank (contoh: BCA, Mandiri, BRI)..."
+                        :label="__('registration.bank')"
+                        :placeholder="__('registration.choose_bank')"
+                        search-placeholder="{{ __('registration.search_bank') }}"
                         :options="$bankOptions"
                         :value="old('bank_select', $initialBankSelect)"
                         :error="$errors->first('bank_name')"
                         required
                         x-on:change="onBankChange($event)"
                     />
+                    <p x-show="errors.bank_name" x-text="errors.bank_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                 </div>
 
                 {{-- Account Number --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-1">
+                <div class="tw-grid tw-gap-1.5">
                     <label for="account_number" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Nomor Rekening Bank <span class="tw-text-error">*</span>
+                        {{ __('registration.bank_number') }} <span class="tw-text-error">*</span>
                     </label>
-                    <input
-                        id="account_number"
-                        type="text"
-                        name="account_number"
-                        x-model="formData.account_number"
-                        @blur="validateField('account_number')"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-font-mono tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        :class="errors.account_number ? 'tw-border-error' : 'tw-border-outline-variant'"
-                        placeholder="Nomor rekening tanpa spasi"
-                        required
-                    >
+                    <div class="tw-relative">
+                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                            <x-ui.icon name="credit-card" size="sm" />
+                        </div>
+                        <input
+                            id="account_number"
+                            type="text"
+                            name="account_number"
+                            x-model="formData.account_number"
+                            @blur="validateField('account_number')"
+                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-font-mono tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                            :class="errors.account_number ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            placeholder="{{ __('registration.account_number_help') }}"
+                            required
+                        >
+                    </div>
                     <p x-show="errors.account_number" x-text="errors.account_number" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('account_number')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
 
-                {{-- Beneficiary Name --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-1">
+                {{-- Beneficiary Name (Span 2 / Full Width) --}}
+                <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
                     <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        Nama Pemilik Rekening (Atas Nama) <span class="tw-text-error">*</span>
+                        {{ __('registration.account_holder') }} <span class="tw-text-error">*</span>
                     </label>
-                    <input
-                        id="account_holder_name"
-                        type="text"
-                        name="account_holder_name"
-                        x-model="formData.account_holder_name"
-                        @blur="validateField('account_holder_name')"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        :class="errors.account_holder_name ? 'tw-border-error' : 'tw-border-outline-variant'"
-                        placeholder="Sesuai buku tabungan / SKNR"
-                        required
-                    >
+                    <div class="tw-relative">
+                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                            <x-ui.icon name="building-2" size="sm" />
+                        </div>
+                        <input
+                            id="account_holder_name"
+                            type="text"
+                            name="account_holder_name"
+                            x-model="formData.account_holder_name"
+                            @blur="validateField('account_holder_name')"
+                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                            :class="errors.account_holder_name ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            placeholder="{{ __('registration.account_holder_help') }}"
+                            required
+                        >
+                    </div>
                     <p x-show="errors.account_holder_name" x-text="errors.account_holder_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('account_holder_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
@@ -953,11 +1024,11 @@
                     x-transition:enter="ui-motion tw-transition-all tw-ease-out tw-duration-200"
                     x-transition:enter-start="tw-opacity-0 tw--translate-y-2"
                     x-transition:enter-end="tw-opacity-100 tw-translate-y-0"
-                    class="md:tw-col-span-3 tw-grid tw-gap-1.5 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-primary/25 tw-bg-primary/5"
+                    class="md:tw-col-span-2 tw-grid tw-gap-1.5 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-primary/25 tw-bg-primary/5"
                 >
                     <label for="other_bank_name" class="tw-text-ui-xs tw-font-semibold tw-text-primary tw-flex tw-items-center tw-gap-1.5">
                         <x-ui.icon name="landmark" size="xs" />
-                        <span>Sebutkan Nama Bank Lainnya <span class="tw-text-error">*</span></span>
+                        <span>{{ __('registration.other_bank') }} <span class="tw-text-error">*</span></span>
                     </label>
                     <input
                         id="other_bank_name"
@@ -965,44 +1036,45 @@
                         x-ref="otherBankInput"
                         type="text"
                         x-model="formData.other_bank_name"
+                        @input="validateField('bank_name')"
                         class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        placeholder="contoh: MUFG Bank, Sumitomo Mitsui, Bank of China, dsb."
+                        placeholder="{{ __('registration.bank_example') }}"
                         :required="formData.bank_select === 'OTHER'"
                     >
                     <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">
-                        Ketik nama lengkap bank yang menerbitkan rekening jika tidak tertera pada opsi pencarian di atas.
+                        {{ __('registration.other_bank_help') }}
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- ════════════════════════════════════════════════════════════════════════
+    {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 3: VERIFICATION DOCUMENTS (DRAG & DROP ZONES)
-         ════════════════════════════════════════════════════════════════════════ --}}
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <div x-show="step === 3" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm">
                     <x-ui.icon name="file-text" size="sm" />
-                    <span>6. Berkas Dokumen Verifikasi Rekanan</span>
+                    <span>{{ __('registration.document_section') }}</span>
                 </div>
                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
                     <x-ui.icon name="lock" size="xs" />
-                    <span>Private Storage Terenkripsi</span>
+                    <span>{{ __('registration.private_storage') }}</span>
                 </span>
             </div>
             <p class="tw-m-0 tw-mb-5 tw-text-ui-xs tw-text-on-surface-variant">
-                Unggah salinan digital resmi dokumen legalitas perusahaan Anda dalam format <strong>PDF, JPG, atau PNG</strong> (maksimal <strong>5 MB</strong> per berkas).
+                {{ __('registration.document_help') }}
             </p>
 
             {{-- 3.1 Mandatory Documents --}}
             <div class="tw-mb-5">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3">
                     <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-bold tw-bg-error/10 tw-text-error">
-                        Dokumen Wajib (Mandatory)
+                        {{ __('registration.required_documents') }}
                     </span>
-                    <span class="tw-text-[11px] tw-text-on-surface-variant">3 dokumen wajib dilampirkan sebelum mengirim pendaftaran</span>
+                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.required_documents_help') }}</span>
                 </div>
 
                 <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
@@ -1010,8 +1082,8 @@
                     <x-ui.file-upload
                         name="nib_file"
                         id="nib_file"
-                        label="1. Dokumen NIB (Nomor Induk Berusaha)"
-                        helper="Salinan digital NIB resmi 13 digit yang diterbitkan oleh sistem OSS."
+                        :label="__('registration.nib_document')"
+                        :helper="__('registration.nib_help')"
                         accept=".pdf,.jpg,.jpeg,.png"
                         :max-size-mb="5"
                         :required="true"
@@ -1021,8 +1093,8 @@
                     <x-ui.file-upload
                         name="npwp_file"
                         id="npwp_file"
-                        label="2. Dokumen NPWP Perusahaan"
-                        helper="Salinan kartu NPWP atau Surat Keterangan Terdaftar (SKT) Pajak."
+                        :label="__('registration.npwp_document')"
+                        :helper="__('registration.npwp_help')"
                         accept=".pdf,.jpg,.jpeg,.png"
                         :max-size-mb="5"
                         :required="true"
@@ -1033,8 +1105,8 @@
                         <x-ui.file-upload
                             name="sknr_file"
                             id="sknr_file"
-                            label="3. Surat Keterangan / Pernyataan Nomor Rekening (SKNR)"
-                            helper="Surat resmi berkop surat perusahaan bermeterai atau surat referensi bank yang menerangkan kepemilikan rekening resmi."
+                            :label="__('registration.sknr_document')"
+                            :helper="__('registration.sknr_help')"
                             accept=".pdf,.jpg,.jpeg,.png"
                             :max-size-mb="5"
                             :required="true"
@@ -1047,9 +1119,9 @@
             <div class="tw-pt-4 tw-border-t tw-border-outline-variant">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3">
                     <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-bold tw-bg-surface-high tw-text-on-surface-variant">
-                        Dokumen Tambahan (Opsional)
+                        {{ __('registration.optional_documents') }}
                     </span>
-                    <span class="tw-text-[11px] tw-text-on-surface-variant">Lampirkan bila relevan dengan status pajak atau domisili perusahaan</span>
+                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.optional_help') }}</span>
                 </div>
 
                 <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
@@ -1057,8 +1129,8 @@
                     <x-ui.file-upload
                         name="sppkp_file"
                         id="sppkp_file"
-                        label="Surat Pengukuhan PKP (SPPKP)"
-                        helper="Wajib dilampirkan apabila perusahaan Anda berstatus Pengusaha Kena Pajak."
+                        :label="__('registration.sppkp')"
+                        :helper="__('registration.sppkp_help')"
                         accept=".pdf,.jpg,.jpeg,.png"
                         :max-size-mb="5"
                         :required="false"
@@ -1068,8 +1140,8 @@
                     <x-ui.file-upload
                         name="skd_file"
                         id="skd_file"
-                        label="Surat Keterangan Domisili (SKD)"
-                        helper="Lampirkan jika domisili operasional pabrik/kantor berbeda dengan NIB."
+                        :label="__('registration.skd')"
+                        :helper="__('registration.skd_help')"
                         accept=".pdf,.jpg,.jpeg,.png"
                         :max-size-mb="5"
                         :required="false"
@@ -1079,17 +1151,17 @@
         </div>
     </div>
 
-    {{-- ════════════════════════════════════════════════════════════════════════
+    {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 4: PRE-FLIGHT REVIEW & CONFIRMATION
-         ════════════════════════════════════════════════════════════════════════ --}}
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <div x-show="step === 4" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
         {{-- Section 4 Header --}}
         <div class="tw-p-4 tw-rounded-ui-md tw-bg-primary/10 tw-border tw-border-primary/20 tw-flex tw-items-start tw-gap-3">
             <x-ui.icon name="check-circle" size="md" class="tw-text-primary tw-shrink-0 tw-mt-0.5" />
             <div>
-                <div class="tw-text-ui-sm tw-font-bold tw-text-primary">Tinjau Ringkasan Pendaftaran (Pre-flight Review)</div>
+                <div class="tw-text-ui-sm tw-font-bold tw-text-primary">{{ __('registration.review_heading') }}</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-0.5">
-                    Harap periksa kembali seluruh data berikut. Menghindari kesalahan data akan mempercepat proses review dan aktivasi vendor master.
+                    {{ __('registration.review_help') }}
                 </div>
             </div>
         </div>
@@ -1099,7 +1171,7 @@
             <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
                     <x-ui.icon name="building-2" size="sm" class="tw-text-primary" />
-                    <span>Profil Perusahaan & Akun</span>
+                    <span>{{ __('registration.company_account') }}</span>
                 </div>
                 <button
                     type="button"
@@ -1107,30 +1179,30 @@
                     @click="goToStep(1)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
-                    <span>Ubah Data</span>
+                    <span>{{ __('registration.edit_data') }}</span>
                 </button>
             </div>
 
             <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 tw-text-ui-xs">
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Nama Lengkap Perusahaan:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.company') }}</span>
                     <span class="tw-font-bold tw-text-on-surface" x-text="(formData.company_title === 'Other' ? formData.custom_company_title : formData.company_title) + ' ' + formData.company_name"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Email Akun Portal:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.email') }}</span>
                     <span class="tw-font-mono tw-font-semibold tw-text-on-surface" x-text="formData.email"></span>
                 </div>
                 <div class="sm:tw-col-span-2">
-                    <span class="tw-text-on-surface-variant tw-block">Alamat Domisili Legal:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.address') }}</span>
                     <span class="tw-text-on-surface" x-text="formData.address"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">No. Telepon Kantor:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.phone') }}</span>
                     <span class="tw-font-mono tw-text-on-surface" x-text="formData.phone"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Sektor Usaha & Pajak:</span>
-                    <span class="tw-text-on-surface" x-text="(formData.category || 'Umum') + ' · ' + (formData.is_pkp ? 'Status PKP' : 'Non-PKP')"></span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.sector') }}</span>
+                    <span class="tw-text-on-surface" x-text="(formData.category || summaryLabels.categoryGeneral) + ' Â· ' + (formData.is_pkp ? summaryLabels.pkp : summaryLabels.nonPkp)"></span>
                 </div>
             </div>
         </div>
@@ -1140,7 +1212,7 @@
             <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
                     <x-ui.icon name="credit-card" size="sm" class="tw-text-primary" />
-                    <span>Identitas Legal, PIC & Rekening Bank</span>
+                    <span>{{ __('registration.legal_pic_bank') }}</span>
                 </div>
                 <button
                     type="button"
@@ -1148,41 +1220,41 @@
                     @click="goToStep(2)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
-                    <span>Ubah Data</span>
+                    <span>{{ __('registration.edit_data') }}</span>
                 </button>
             </div>
 
             <div class="tw-grid tw-gap-3 sm:tw-grid-cols-3 tw-text-ui-xs">
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Nomor Induk Berusaha (NIB):</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.nib') }}</span>
                     <span class="tw-font-mono tw-font-bold tw-text-on-surface" x-text="formData.nib"></span>
                 </div>
                 <div class="sm:tw-col-span-2">
-                    <span class="tw-text-on-surface-variant tw-block">NPWP / NIK Perusahaan:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.npwp') }}</span>
                     <span class="tw-font-mono tw-font-bold tw-text-on-surface" x-text="formData.npwp"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Narahubung (PIC):</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.pic') }}</span>
                     <span class="tw-font-semibold tw-text-on-surface" x-text="formData.pic_name"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Email PIC:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.pic_email') }}</span>
                     <span class="tw-font-mono tw-text-on-surface" x-text="formData.pic_email"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">HP / WhatsApp PIC:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.pic_phone') }}</span>
                     <span class="tw-font-mono tw-text-on-surface" x-text="formData.pic_phone"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Bank Operasional:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.bank') }}</span>
                     <span class="tw-font-semibold tw-text-on-surface" x-text="finalBankName"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Nomor Rekening:</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.account') }}</span>
                     <span class="tw-font-mono tw-font-bold tw-text-on-surface" x-text="formData.account_number"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">Atas Nama (Beneficiary):</span>
+                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.holder') }}</span>
                     <span class="tw-font-semibold tw-text-on-surface" x-text="formData.account_holder_name"></span>
                 </div>
             </div>
@@ -1193,7 +1265,7 @@
             <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
                     <x-ui.icon name="file-text" size="sm" class="tw-text-primary" />
-                    <span>Daftar Berkas Dokumen Terlampir</span>
+                    <span>{{ __('registration.attached_documents') }}</span>
                 </div>
                 <button
                     type="button"
@@ -1201,30 +1273,30 @@
                     @click="goToStep(3)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
-                    <span>Ubah Dokumen</span>
+                    <span>{{ __('registration.edit_documents') }}</span>
                 </button>
             </div>
 
             <div class="tw-space-y-2 tw-text-ui-xs">
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">1. Dokumen NIB</span>
-                    <span class="tw-font-mono tw-text-primary" x-text="docs.nib ? (docs.nib.name + ' (' + docs.nib.size + ')') : '✓ Siap diunggah'"></span>
+                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.nib_document') }}</span>
+                    <span class="tw-font-mono tw-text-primary" x-text="docs.nib ? (docs.nib.name + ' (' + docs.nib.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">2. Dokumen NPWP</span>
-                    <span class="tw-font-mono tw-text-primary" x-text="docs.npwp ? (docs.npwp.name + ' (' + docs.npwp.size + ')') : '✓ Siap diunggah'"></span>
+                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.npwp_document') }}</span>
+                    <span class="tw-font-mono tw-text-primary" x-text="docs.npwp ? (docs.npwp.name + ' (' + docs.npwp.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">3. Surat Pernyataan Rekening (SKNR)</span>
-                    <span class="tw-font-mono tw-text-primary" x-text="docs.sknr ? (docs.sknr.name + ' (' + docs.sknr.size + ')') : '✓ Siap diunggah'"></span>
+                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.sknr_document') }}</span>
+                    <span class="tw-font-mono tw-text-primary" x-text="docs.sknr ? (docs.sknr.name + ' (' + docs.sknr.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">4. Surat Pengukuhan PKP (SPPKP)</span>
-                    <span class="tw-text-on-surface-variant" x-text="docs.sppkp ? (docs.sppkp.name + ' (' + docs.sppkp.size + ')') : 'Tidak dilampirkan'"></span>
+                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.sppkp_document') }}</span>
+                    <span class="tw-text-on-surface-variant" x-text="docs.sppkp ? (docs.sppkp.name + ' (' + docs.sppkp.size + ')') : @js(__('registration.js.not_attached'))"></span>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">5. Surat Keterangan Domisili (SKD)</span>
-                    <span class="tw-text-on-surface-variant" x-text="docs.skd ? (docs.skd.name + ' (' + docs.skd.size + ')') : 'Tidak dilampirkan'"></span>
+                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.skd_document') }}</span>
+                    <span class="tw-text-on-surface-variant" x-text="docs.skd ? (docs.skd.name + ' (' + docs.skd.size + ')') : @js(__('registration.js.not_attached'))"></span>
                 </div>
             </div>
         </div>
@@ -1240,8 +1312,8 @@
                     required
                 >
                 <div class="tw-text-ui-xs tw-text-on-surface tw-leading-relaxed">
-                    <strong>Pernyataan Kebenaran Data:</strong>
-                    Saya menyatakan dengan sesungguhnya bahwa seluruh data, identitas legalitas, rekening bank, dan salinan dokumen yang disampaikan di atas adalah benar, sah, dan dapat dipertanggungjawabkan secara hukum di wilayah Republik Indonesia.
+                    <strong>{{ __('registration.declaration_title') }}</strong>
+                    {{ __('registration.declaration') }}
                 </div>
             </label>
         </div>
@@ -1255,9 +1327,9 @@
         @endif
     </div>
 
-    {{-- ════════════════════════════════════════════════════════════════════════
+    {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          BOTTOM WIZARD ACTION NAVIGATION BAR
-         ════════════════════════════════════════════════════════════════════════ --}}
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <div class="tw-mt-8 tw-pt-5 tw-border-t tw-border-outline-variant tw-flex tw-items-center tw-justify-between tw-gap-4">
         {{-- Previous Button --}}
         <div>
@@ -1268,13 +1340,13 @@
                 class="ui-motion ui-focus-ring tw-inline-flex tw-h-11 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-5 tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container active:tw-scale-95"
             >
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Kembali</span>
+                <span>{{ __('common.actions.back') }}</span>
             </button>
         </div>
 
         {{-- Step Indicator Center --}}
         <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">
-            Langkah <span x-text="step"></span> dari 4
+            {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_four') }}
         </div>
 
         {{-- Next or Submit Button --}}
@@ -1286,7 +1358,7 @@
                 @click="nextStep()"
                 class="ui-motion ui-focus-ring tw-inline-flex tw-h-11 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-6 tw-text-ui-sm tw-font-semibold tw-text-white hover:tw-brightness-95 active:tw-scale-95"
             >
-                <span>Lanjutkan</span>
+                <span>{{ __('common.actions.continue') }}</span>
                 <x-ui.icon name="arrow-right" size="sm" />
             </button>
 
@@ -1300,13 +1372,13 @@
                 <template x-if="isSubmitting">
                     <div class="tw-flex tw-items-center tw-gap-2">
                         <div class="spinner-border spinner-border-sm" role="status"></div>
-                        <span>Mengirimkan Pendaftaran...</span>
+                        <span>{{ __('registration.submitting') }}</span>
                     </div>
                 </template>
                 <template x-if="!isSubmitting">
                     <div class="tw-flex tw-items-center tw-gap-2">
                         <x-ui.icon name="send" size="sm" />
-                        <span>Kirim Pendaftaran Supplier</span>
+                        <span>{{ __('registration.submit') }}</span>
                     </div>
                 </template>
             </button>
@@ -1316,14 +1388,14 @@
 
 <div class="tw-mt-6 tw-pt-4 tw-border-t tw-border-outline-variant tw-text-center tw-text-ui-xs tw-text-on-surface-variant">
     <p class="tw-m-0">
-        Sudah pernah mendaftar?
+        {{ __('registration.already_registered') }}
         <a href="{{ route('supplier.registration.access-form') }}" class="tw-font-semibold tw-text-primary hover:tw-underline">
-            Cek status pendaftaran Anda
+            {{ __('registration.check_registration') }}
         </a>
     </p>
     <p class="tw-m-0 tw-mt-1.5">
         <a href="{{ route('login') }}" class="tw-text-on-surface-variant hover:tw-text-primary hover:tw-underline">
-            Kembali ke Portal Sign In
+            {{ __('registration.back_login') }}
         </a>
     </p>
 </div>
@@ -1343,26 +1415,35 @@ document.addEventListener('alpine:init', () => {
         legalDeclaration: false,
         hasDraft: false,
         clientStepError: '',
+        currentLocale: @js(app()->getLocale()),
+        lastWarningToast: '',
+        lastWarningToastTime: 0,
 
         stepTitles: {
-            1: 'Akun & Profil',
-            2: 'Legal, PIC & Bank',
-            3: 'Dokumen Verifikasi',
-            4: 'Tinjau & Kirim'
+            1: @js(__('registration.js.step1')),
+            2: @js(__('registration.js.step2')),
+            3: @js(__('registration.js.step3')),
+            4: @js(__('registration.js.step4'))
         },
 
         stepHeadings: {
-            1: 'Akun Portal & Profil Perusahaan',
-            2: 'Identitas Legal, PIC & Rekening Bank',
-            3: 'Dokumen Verifikasi Legalitas',
-            4: 'Tinjau Ringkasan & Konfirmasi Pendaftaran'
+            1: @js(__('registration.account_profile')),
+            2: @js(__('registration.legal_pic_bank')),
+            3: @js(__('registration.js.heading3')),
+            4: @js(__('registration.js.heading4'))
         },
 
         stepSubheadings: {
-            1: 'Lengkapi kredensial akses dan profil legal perusahaan Anda untuk memulai proses onboarding.',
-            2: 'Masukkan nomor identitas perpajakan resmi, kontak narahubung operasional, dan rekening bank.',
-            3: 'Unggah salinan dokumen resmi untuk verifikasi kepatuhan dan pencatatan master data vendor.',
-            4: 'Periksa kembali seluruh data dan kelengkapan berkas sebelum dikirimkan ke tim pengadaan ADASI.'
+            1: @js(__('registration.js.help1')),
+            2: @js(__('registration.js.help2')),
+            3: @js(__('registration.js.help3')),
+            4: @js(__('registration.js.help4'))
+        },
+
+        summaryLabels: {
+            categoryGeneral: @js(__('registration.js.category_general')),
+            pkp: @js(__('registration.js.pkp_status')),
+            nonPkp: @js(__('registration.js.non_pkp_status')),
         },
 
         formData: {
@@ -1426,8 +1507,50 @@ document.addEventListener('alpine:init', () => {
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         },
 
+        showWarningToast(msg) {
+            const now = Date.now();
+            if (this.lastWarningToast === msg && (now - this.lastWarningToastTime) < 2000) {
+                return;
+            }
+            this.lastWarningToast = msg;
+            this.lastWarningToastTime = now;
+            if (window.AdasiToast) {
+                window.AdasiToast.warning(msg);
+            }
+        },
+
+        focusField(fieldId) {
+            this.$nextTick(() => {
+                const el = document.getElementById(fieldId) || document.querySelector(`[name="${fieldId}"]`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (typeof el.focus === 'function') {
+                        el.focus({ preventScroll: true });
+                    }
+                }
+            });
+        },
+
+        switchLanguage(targetLocale) {
+            if (targetLocale === this.currentLocale) return;
+            try {
+                this.persistDraft();
+                sessionStorage.setItem('adasi_supplier_reg_autorestore', '1');
+                sessionStorage.setItem('adasi_supplier_reg_step', String(this.step));
+            } catch (e) {}
+            window.location.href = @js(url('/locale')) + '/' + targetLocale + '?return_to=' + encodeURIComponent(window.location.pathname + window.location.search);
+        },
+
         onBankChange(event) {
-            this.formData.bank_select = event.target.value;
+            let val = '';
+            if (event?.detail !== undefined && event.detail !== null) {
+                val = typeof event.detail === 'object' ? (event.detail.value ?? '') : String(event.detail);
+            } else if (event?.target?.value !== undefined) {
+                val = event.target.value;
+            } else {
+                val = document.getElementById('bank_select')?.value || '';
+            }
+            this.formData.bank_select = val;
             if (this.formData.bank_select === 'OTHER') {
                 this.$nextTick(() => {
                     this.$refs.otherBankInput?.focus();
@@ -1438,8 +1561,23 @@ document.addEventListener('alpine:init', () => {
         },
 
         init() {
-            // Check local storage draft
-            this.checkStoredDraft();
+            let autoRestored = false;
+            try {
+                if (sessionStorage.getItem('adasi_supplier_reg_autorestore') === '1') {
+                    sessionStorage.removeItem('adasi_supplier_reg_autorestore');
+                    const savedStep = parseInt(sessionStorage.getItem('adasi_supplier_reg_step') || '1', 10);
+                    sessionStorage.removeItem('adasi_supplier_reg_step');
+                    this.restoreDraft(false);
+                    if (savedStep && savedStep >= 1 && savedStep <= this.maxStep) {
+                        this.step = savedStep;
+                    }
+                    autoRestored = true;
+                }
+            } catch (e) {}
+
+            if (!autoRestored) {
+                this.checkStoredDraft();
+            }
 
             // Set up document change tracking for review summary
             const docMap = {
@@ -1484,7 +1622,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        restoreDraft() {
+        restoreDraft(showToast = true) {
             try {
                 const stored = localStorage.getItem('adasi_supplier_reg_draft');
                 if (stored) {
@@ -1495,8 +1633,8 @@ document.addEventListener('alpine:init', () => {
                         }
                     });
                     this.hasDraft = false;
-                    if (window.AdasiToast) {
-                        window.AdasiToast.success('Draf formulir berhasil dipulihkan.');
+                    if (showToast && window.AdasiToast) {
+                        window.AdasiToast.success(@js(__('registration.js.draft_restored')));
                     }
                 }
             } catch (e) {
@@ -1509,7 +1647,7 @@ document.addEventListener('alpine:init', () => {
                 localStorage.removeItem('adasi_supplier_reg_draft');
                 this.hasDraft = false;
                 if (window.AdasiToast) {
-                    window.AdasiToast.info('Draf formulir telah dihapus.');
+                    window.AdasiToast.info(@js(__('registration.js.draft_deleted')));
                 }
             } catch (e) {
                 this.hasDraft = false;
@@ -1549,102 +1687,108 @@ document.addEventListener('alpine:init', () => {
             if (field === 'email') {
                 const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!this.formData.email || !this.formData.email.trim()) {
-                    this.errors.email = 'Alamat email resmi perusahaan wajib diisi.';
+                    this.errors.email = @js(__('registration.js.email_required'));
                 } else if (!re.test(this.formData.email.trim())) {
-                    this.errors.email = 'Format alamat email tidak valid.';
+                    this.errors.email = @js(__('registration.js.email_invalid'));
                 }
             }
 
             if (field === 'password') {
                 if (!this.formData.password) {
-                    this.errors.password = 'Kata sandi wajib diisi.';
+                    this.errors.password = @js(__('registration.js.password_required'));
                 } else if (this.formData.password.length < 8) {
-                    this.errors.password = 'Kata sandi minimal 8 karakter.';
+                    this.errors.password = @js(__('registration.js.password_min'));
                 } else if (!this.passwordHasLetter || !this.passwordHasNumber) {
-                    this.errors.password = 'Kata sandi harus mengandung kombinasi huruf dan angka.';
+                    this.errors.password = @js(__('registration.js.password_content'));
                 }
             }
 
             if (field === 'password_confirmation') {
                 if (!this.formData.password_confirmation) {
-                    this.errors.password_confirmation = 'Konfirmasi kata sandi wajib diisi.';
+                    this.errors.password_confirmation = @js(__('registration.js.password_confirm_required'));
                 } else if (this.formData.password !== this.formData.password_confirmation) {
-                    this.errors.password_confirmation = 'Konfirmasi kata sandi tidak cocok.';
+                    this.errors.password_confirmation = @js(__('registration.js.password_confirm_invalid'));
                 }
             }
 
             if (field === 'company_name') {
                 if (!this.formData.company_name || !this.formData.company_name.trim()) {
-                    this.errors.company_name = 'Nama resmi perusahaan wajib diisi.';
+                    this.errors.company_name = @js(__('registration.js.company_required'));
                 }
             }
 
             if (field === 'address') {
                 if (!this.formData.address || !this.formData.address.trim()) {
-                    this.errors.address = 'Alamat legal perusahaan wajib diisi.';
+                    this.errors.address = @js(__('registration.js.address_required'));
                 }
             }
 
             if (field === 'phone') {
                 if (!this.formData.phone || !this.formData.phone.trim()) {
-                    this.errors.phone = 'Nomor telepon kantor wajib diisi.';
+                    this.errors.phone = @js(__('registration.js.phone_required'));
                 }
             }
 
             if (field === 'nib') {
                 const digits = this.formData.nib.replace(/\D/g, '');
                 if (!digits) {
-                    this.errors.nib = 'NIB wajib diisi.';
+                    this.errors.nib = @js(__('registration.js.nib_required'));
                 } else if (digits.length !== 13) {
-                    this.errors.nib = 'NIB harus tepat 13 digit angka (saat ini ' + digits.length + ' digit).';
+                    this.errors.nib = @js(__('registration.js.nib_digits')).replace(':count', digits.length);
                 }
             }
 
             if (field === 'npwp') {
                 const digits = this.formData.npwp.replace(/\D/g, '');
                 if (!digits) {
-                    this.errors.npwp = 'NPWP / NIK wajib diisi.';
+                    this.errors.npwp = @js(__('registration.js.npwp_required'));
                 } else if (![15, 16].includes(digits.length)) {
-                    this.errors.npwp = 'NPWP harus terdiri dari 15 atau 16 digit angka (saat ini ' + digits.length + ' digit).';
+                    this.errors.npwp = @js(__('registration.js.npwp_digits')).replace(':count', digits.length);
                 }
             }
 
             if (field === 'pic_name') {
                 if (!this.formData.pic_name || !this.formData.pic_name.trim()) {
-                    this.errors.pic_name = 'Nama lengkap PIC wajib diisi.';
+                    this.errors.pic_name = @js(__('registration.js.pic_required'));
                 }
             }
 
             if (field === 'pic_email') {
                 const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!this.formData.pic_email || !this.formData.pic_email.trim()) {
-                    this.errors.pic_email = 'Email PIC wajib diisi.';
+                    this.errors.pic_email = @js(__('registration.js.pic_email_required'));
                 } else if (!re.test(this.formData.pic_email.trim())) {
-                    this.errors.pic_email = 'Format email PIC tidak valid.';
+                    this.errors.pic_email = @js(__('registration.js.pic_email_invalid'));
                 }
             }
 
             if (field === 'pic_phone') {
                 if (!this.formData.pic_phone || !this.formData.pic_phone.trim()) {
-                    this.errors.pic_phone = 'No. HP/WhatsApp PIC wajib diisi.';
+                    this.errors.pic_phone = @js(__('registration.js.pic_phone_required'));
                 }
             }
 
             if (field === 'bank_name') {
+                if (!this.formData.bank_select) {
+                    const domVal = document.getElementById('bank_select')?.value;
+                    if (domVal) {
+                        this.formData.bank_select = domVal;
+                    }
+                }
                 if (!this.finalBankName || !this.finalBankName.trim()) {
-                    this.errors.bank_name = 'Nama bank wajib dipilih atau diisi.';
+                    this.errors.bank_name = @js(__('registration.js.bank_required'));
                 }
             }
 
             if (field === 'account_number') {
                 if (!this.formData.account_number || !this.formData.account_number.trim()) {
-                    this.errors.account_number = 'Nomor rekening bank wajib diisi.';
+                    this.errors.account_number = @js(__('registration.js.account_required'));
                 }
             }
 
             if (field === 'account_holder_name') {
                 if (!this.formData.account_holder_name || !this.formData.account_holder_name.trim()) {
-                    this.errors.account_holder_name = 'Nama pemilik rekening wajib diisi.';
+                    this.errors.account_holder_name = @js(__('registration.js.holder_required'));
                 }
             }
         },
@@ -1653,38 +1797,49 @@ document.addEventListener('alpine:init', () => {
             this.clientStepError = '';
 
             if (stepNumber === 1) {
-                this.validateField('email');
-                this.validateField('password');
-                this.validateField('password_confirmation');
-                this.validateField('company_name');
-                this.validateField('address');
-                this.validateField('phone');
+                const step1Fields = [
+                    { key: 'email', id: 'email' },
+                    { key: 'password', id: 'password' },
+                    { key: 'password_confirmation', id: 'password_confirmation' },
+                    { key: 'company_name', id: 'company_name' },
+                    { key: 'address', id: 'address' },
+                    { key: 'phone', id: 'phone' }
+                ];
+                step1Fields.forEach(f => this.validateField(f.key));
+                const firstInvalid1 = step1Fields.find(f => this.errors[f.key]);
 
-                const hasError = ['email', 'password', 'password_confirmation', 'company_name', 'address', 'phone']
-                    .some(k => this.errors[k]);
-
-                if (hasError) {
-                    this.clientStepError = 'Harap periksa dan lengkapi kolom yang wajib diisi pada langkah ini.';
+                if (firstInvalid1) {
+                    this.clientStepError = @js(__('registration.js.complete_step'));
+                    this.focusField(firstInvalid1.id);
                     return false;
                 }
                 return true;
             }
 
             if (stepNumber === 2) {
-                this.validateField('nib');
-                this.validateField('npwp');
-                this.validateField('pic_name');
-                this.validateField('pic_email');
-                this.validateField('pic_phone');
-                this.validateField('bank_name');
-                this.validateField('account_number');
-                this.validateField('account_holder_name');
+                if (!this.formData.bank_select) {
+                    const domVal = document.getElementById('bank_select')?.value;
+                    if (domVal) {
+                        this.formData.bank_select = domVal;
+                    }
+                }
 
-                const hasError = ['nib', 'npwp', 'pic_name', 'pic_email', 'pic_phone', 'bank_name', 'account_number', 'account_holder_name']
-                    .some(k => this.errors[k]);
+                const step2Fields = [
+                    { key: 'nib', id: 'nib' },
+                    { key: 'npwp', id: 'npwp' },
+                    { key: 'pic_name', id: 'pic_name' },
+                    { key: 'pic_email', id: 'pic_email' },
+                    { key: 'pic_phone', id: 'pic_phone' },
+                    { key: 'bank_name', id: (this.formData.bank_select === 'OTHER' ? 'other_bank_name' : 'bank_select') },
+                    { key: 'account_number', id: 'account_number' },
+                    { key: 'account_holder_name', id: 'account_holder_name' }
+                ];
+                step2Fields.forEach(f => this.validateField(f.key));
+                const firstInvalid2 = step2Fields.find(f => this.errors[f.key]);
 
-                if (hasError) {
-                    this.clientStepError = 'Harap lengkapi nomor legalitas, PIC, dan rekening bank dengan benar.';
+                if (firstInvalid2) {
+                    this.clientStepError = @js(__('registration.js.complete_identity'));
+                    this.focusField(firstInvalid2.id);
                     return false;
                 }
                 return true;
@@ -1697,18 +1852,25 @@ document.addEventListener('alpine:init', () => {
                 const sknrInput = document.getElementById('sknr_file');
 
                 const missingDocs = [];
+                let firstMissingId = null;
                 if (!nibInput || !nibInput.files || nibInput.files.length === 0) {
                     missingDocs.push('NIB');
+                    if (!firstMissingId) firstMissingId = 'nib_file';
                 }
                 if (!npwpInput || !npwpInput.files || npwpInput.files.length === 0) {
                     missingDocs.push('NPWP');
+                    if (!firstMissingId) firstMissingId = 'npwp_file';
                 }
                 if (!sknrInput || !sknrInput.files || sknrInput.files.length === 0) {
                     missingDocs.push('SKNR');
+                    if (!firstMissingId) firstMissingId = 'sknr_file';
                 }
 
                 if (missingDocs.length > 0) {
-                    this.clientStepError = 'Dokumen wajib belum lengkap: ' + missingDocs.join(', ') + '. Silakan unggah dokumen tersebut untuk melanjutkan.';
+                    this.clientStepError = @js(__('registration.js.documents_missing')).replace(':documents', missingDocs.join(', '));
+                    if (firstMissingId) {
+                        this.focusField(firstMissingId);
+                    }
                     return false;
                 }
                 return true;
@@ -1748,9 +1910,7 @@ document.addEventListener('alpine:init', () => {
             // Validate intermediate steps before jumping forward
             for (let s = this.step; s < targetStep; s++) {
                 if (!this.validateStep(s)) {
-                    if (window.AdasiToast) {
-                        window.AdasiToast.warning(this.clientStepError || 'Harap lengkapi langkah ini sebelum berpindah.');
-                    }
+                    this.showWarningToast(this.clientStepError || @js(__('registration.js.before_move')));
                     return;
                 }
             }
@@ -1773,9 +1933,7 @@ document.addEventListener('alpine:init', () => {
                     this.scrollToTop();
                 }
             } else {
-                if (window.AdasiToast) {
-                    window.AdasiToast.warning(this.clientStepError || 'Lengkapi kolom yang wajib diisi untuk melanjutkan.');
-                }
+                this.showWarningToast(this.clientStepError || @js(__('registration.js.required_continue')));
             }
         },
 
@@ -1795,7 +1953,7 @@ document.addEventListener('alpine:init', () => {
                 event.preventDefault();
                 this.goToStep(1);
                 if (window.AdasiToast) {
-                    window.AdasiToast.error(this.clientStepError || 'Lengkapi data pada Langkah 1 terlebih dahulu.');
+                    window.AdasiToast.error(this.clientStepError || @js(__('registration.js.step1_first')));
                 }
                 return;
             }
@@ -1804,7 +1962,7 @@ document.addEventListener('alpine:init', () => {
                 event.preventDefault();
                 this.goToStep(2);
                 if (window.AdasiToast) {
-                    window.AdasiToast.error(this.clientStepError || 'Lengkapi data pada Langkah 2 terlebih dahulu.');
+                    window.AdasiToast.error(this.clientStepError || @js(__('registration.js.step2_first')));
                 }
                 return;
             }
@@ -1813,17 +1971,15 @@ document.addEventListener('alpine:init', () => {
                 event.preventDefault();
                 this.goToStep(3);
                 if (window.AdasiToast) {
-                    window.AdasiToast.error(this.clientStepError || 'Lengkapi dokumen wajib pada Langkah 3.');
+                    window.AdasiToast.error(this.clientStepError || @js(__('registration.js.step3_first')));
                 }
                 return;
             }
 
             if (!this.legalDeclaration) {
                 event.preventDefault();
-                this.clientStepError = 'Anda wajib menyetujui pernyataan kebenaran data sebelum mengirim pendaftaran.';
-                if (window.AdasiToast) {
-                    window.AdasiToast.warning(this.clientStepError);
-                }
+                this.clientStepError = @js(__('registration.js.declaration_required'));
+                this.showWarningToast(this.clientStepError);
                 return;
             }
 

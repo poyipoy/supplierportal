@@ -35,14 +35,15 @@ $(function () {
             { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
             { data: 'material_code', name: 'material_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
             { data: 'raw_category', name: 'raw_category', defaultContent: '-' },
-            { data: 'hs_category', name: 'hs_category', defaultContent: '-' },
-            { data: 'density_profile', name: 'density_profile' },
-            { data: 'manufacturer_scope', name: 'manufacturer_scope' },
+            { data: 'hs_category_label', name: 'hs_category', defaultContent: '-' },
+            { data: 'density_profile_label', name: 'density_profile' },
+            { data: 'manufacturer_scope_label', name: 'manufacturer_scope' },
             { data: 'status_badge', name: 'is_active', searchable: false },
             { data: 'source_display', name: 'source_sheet', searchable: false },
             { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
             { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
         ],
+
         order: []
     });
 
@@ -61,8 +62,8 @@ $(function () {
         columns: [
             { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
             { data: 'hs_code', name: 'hs_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
-            { data: 'material_category', name: 'material_category' },
-            { data: 'shape', name: 'shape' },
+            { data: 'material_category_label', name: 'material_category' },
+            { data: 'shape_label', name: 'shape' },
             { data: 'conditions_display', orderable: false, searchable: false },
             { data: 'priority', name: 'priority', className: 'text-center' },
             { data: 'status_badge', name: 'status', searchable: false },
@@ -70,6 +71,7 @@ $(function () {
             { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
             { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
         ],
+
         order: []
     });
 
@@ -110,7 +112,7 @@ $(function () {
         $('#materialForm').attr('action', materialStoreUrl);
         setMethod($('#materialFormMethod'), null);
         $('#materialRecordId').val('');
-        $('#materialModalTitle').text('Add Material');
+        $('#materialModalTitle').text(@json(__('admin.copy.add_material')));
         $('#materialActive').prop('checked', true);
         $('#materialDensity').val('steel');
         $('#materialManufacturer').val('unknown');
@@ -121,7 +123,7 @@ $(function () {
         $('#materialForm').attr('action', materialUpdateUrl.replace('/0', `/${material.id}`));
         setMethod($('#materialFormMethod'), 'PUT');
         $('#materialRecordId').val(material.id);
-        $('#materialModalTitle').text('Edit Material');
+        $('#materialModalTitle').text(@json(__('admin.copy.edit_material')));
         $('#materialCode').val(material.material_code || '');
         $('#materialRawCategory').val(material.raw_category || '');
         $('#materialHsCategory').val(material.hs_category || '');
@@ -150,7 +152,7 @@ $(function () {
         }).done(() => {
             materialsTable.ajax.reload(null, false);
             refreshQuality();
-            AdasiToast.success('Material status updated.');
+            AdasiToast.success(@json(__('admin.copy.material_status_updated')));
         })
           .fail(showAjaxError);
     });
@@ -189,7 +191,7 @@ $(function () {
         $('#ruleForm').attr('action', ruleStoreUrl);
         setMethod($('#ruleFormMethod'), null);
         $('#ruleRecordId').val('');
-        $('#ruleModalTitle').text('Add HS Code Rule');
+        $('#ruleModalTitle').text(@json(__('admin.copy.add_hs_code_rule')));
         $('#rulePriority').val(100);
         $('#ruleStatus').val('active');
         resetRuleConditions();
@@ -201,7 +203,7 @@ $(function () {
         $('#ruleForm').attr('action', ruleUpdateUrl.replace('/0', `/${rule.id}`));
         setMethod($('#ruleFormMethod'), 'PUT');
         $('#ruleRecordId').val(rule.id);
-        $('#ruleModalTitle').text('Edit HS Code Rule');
+        $('#ruleModalTitle').text(@json(__('admin.copy.edit_hs_code_rule')));
         $('#ruleHsCode').val(rule.hs_code || '');
         $('#ruleCategory').val(rule.material_category);
         $('#ruleShape').val(rule.shape);
@@ -253,7 +255,7 @@ $(function () {
         }).done(() => {
             rulesTable.ajax.reload(null, false);
             refreshQuality();
-            AdasiToast.success('HS Code rule status updated.');
+            AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated')));
         })
           .fail(showAjaxError);
     });
@@ -261,7 +263,7 @@ $(function () {
     function showAjaxError(xhr) {
         const errors = xhr.responseJSON?.errors || {};
         const first = Object.values(errors)[0];
-        AdasiToast.error(Array.isArray(first) ? first[0] : (first || xhr.responseJSON?.message || 'Request failed.'));
+        AdasiToast.error(Array.isArray(first) ? first[0] : (first || xhr.responseJSON?.message || @json(__('admin.copy.request_failed'))));
     }
 
     function loadQuality() {
@@ -276,14 +278,14 @@ $(function () {
             $('#qualityNeedsMapping').text(summary.materials_needing_hs_mapping ?? 0);
             $('#qualityActiveRules').text(summary.active_hs_rules ?? 0);
             $('#qualityNeedsReview').text(summary.rules_needing_review ?? 0);
-            renderTagList('#unmappedMaterials', attention.materials_without_hs_mapping, 'All materials have an HS mapping.');
-            renderTagList('#categoriesWithoutRules', attention.categories_without_active_hs_rules, 'Every mapped category has an active HS rule.');
+            renderTagList('#unmappedMaterials', attention.materials_without_hs_mapping, @json(__('admin.copy.all_materials_have_an_hs_mapping')));
+            renderTagList('#categoriesWithoutRules', attention.categories_without_active_hs_rules, @json(__('admin.copy.every_mapped_category_has_an_active_hs_rule')));
             renderRulesNeedingReview(attention.rules_needing_review || []);
 
             const duplicateCoverage = referenceNotes.duplicate_rule_coverage || {};
-            $('#duplicateRuleCoverage').text(duplicateCoverage.message || 'No duplicate rule coverage was found.');
+            $('#duplicateRuleCoverage').text(duplicateCoverage.message || @json(__('admin.copy.no_duplicate_rule_coverage_was_found')));
             renderInactiveRulesForReference(referenceNotes.inactive_rules_kept_for_reference || []);
-            renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, 'All active rule categories are used by current materials.');
+            renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, @json(__('admin.copy.all_active_rule_categories_are_used_by_current_materials')));
             renderTagList('#referenceOnlyMaterials', referenceNotes.reference_only_materials, 'None.');
             $('#qualityLoading').addClass('d-none');
             $('#qualityError').addClass('d-none');
@@ -311,7 +313,7 @@ $(function () {
     function renderRulesNeedingReview(items) {
         const $container = $('#rulesNeedingReview').empty();
         if (!items.length) {
-            $('<div class="text-muted">').text('No active rules need review.').appendTo($container);
+            $('<div class="text-muted">').text(@json(__('admin.copy.no_active_rules_need_review'))).appendTo($container);
             return;
         }
 
@@ -319,7 +321,7 @@ $(function () {
             const $item = $('<div class="border-top pt-3 mt-3">');
             $('<div class="fw-semibold">').text(`${item.category} / ${item.shape}`).appendTo($item);
             $('<div class="text-muted mt-1">').text(item.message).appendTo($item);
-            $('<div class="mt-2">').append($('<span class="small fw-semibold me-2">').text('HS Codes:'), document.createTextNode((item.hs_codes || []).join(', '))).appendTo($item);
+            $('<div class="mt-2">').append($('<span class="small fw-semibold me-2">').text(@json(__('admin.copy.hs_codes'))), document.createTextNode((item.hs_codes || []).join(', '))).appendTo($item);
             $item.appendTo($container);
         });
     }
@@ -327,13 +329,13 @@ $(function () {
     function renderInactiveRulesForReference(items) {
         const $container = $('#inactiveRulesForReference').empty();
         if (!items.length) {
-            $('<span class="text-muted">').text('None.').appendTo($container);
+            $('<span class="text-muted">').text(@json(__('admin.copy.none'))).appendTo($container);
             return;
         }
 
         const $list = $('<ul class="list-unstyled mb-0">');
         items.forEach((item) => $('<li class="mb-2">')
-            .append($('<span class="font-monospace me-1">').text(item.hs_code), document.createTextNode(item.note ? `— ${item.note}` : '— Kept inactive for reference.'))
+            .append($('<span class="font-monospace me-1">').text(item.hs_code), document.createTextNode(item.note ? `— ${item.note}` : '— ' + @js(__('common.final_review.inactive_reference'))))
             .appendTo($list));
         $list.appendTo($container);
     }
@@ -350,7 +352,7 @@ $(function () {
         if (oldInput.record_id) {
             $('#materialForm').attr('action', materialUpdateUrl.replace('/0', `/${oldInput.record_id}`));
             setMethod($('#materialFormMethod'), 'PUT');
-            $('#materialModalTitle').text('Edit Material');
+            $('#materialModalTitle').text(@json(__('admin.copy.edit_material')));
         }
         $('#materialHsCategory').val(oldInput.hs_category || '');
         $('#materialDensity').val(oldInput.density_profile || 'steel');
@@ -361,7 +363,7 @@ $(function () {
         if (oldInput.record_id) {
             $('#ruleForm').attr('action', ruleUpdateUrl.replace('/0', `/${oldInput.record_id}`));
             setMethod($('#ruleFormMethod'), 'PUT');
-            $('#ruleModalTitle').text('Edit HS Code Rule');
+            $('#ruleModalTitle').text(@json(__('admin.copy.edit_hs_code_rule')));
         }
         $('#ruleCategory').val(oldInput.material_category);
         $('#ruleShape').val(oldInput.shape);

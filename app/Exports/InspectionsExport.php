@@ -16,7 +16,7 @@ use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class InspectionsExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class InspectionsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
 
@@ -86,7 +86,7 @@ class InspectionsExport implements FromQuery, TracksExportProgress, WithColumnWi
             $actualDimensions,
             strtoupper((string) $item->status),
             strtoupper((string) $inspection?->status),
-            $inspection?->inspected_at?->format('d/m/Y H:i') ?? '-',
+            $inspection?->inspected_at ? \App\Support\BusinessTime::format($inspection->inspected_at, 'd/m/Y H:i', false) : '-',
         ];
     }
 
@@ -107,7 +107,7 @@ class InspectionsExport implements FromQuery, TracksExportProgress, WithColumnWi
 
     public function headings(): array
     {
-        return ['PO Number', 'Supplier', 'Material', 'Requested Specification', 'Actual Dimensions', 'Item Status', 'Inspection Status', 'Inspection Date'];
+        return [__('exports.headings.po_number'), __('exports.headings.supplier'), __('exports.headings.material'), __('exports.headings.requested_specification'), __('exports.headings.actual_dimensions'), __('exports.headings.item_status'), __('exports.headings.inspection_status'), __('exports.headings.inspection_date').' ('.\App\Support\BusinessTime::label().')'];
     }
 
     public function columnWidths(): array

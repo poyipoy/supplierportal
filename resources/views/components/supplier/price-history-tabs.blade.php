@@ -1,6 +1,6 @@
 @props(['active'])
 
-<nav {{ $attributes->class(['tw-flex tw-gap-1.5 tw-overflow-x-auto tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-p-1.5']) }} aria-label="Supplier price history views">
+<nav {{ $attributes->class(['tw-flex tw-gap-1.5 tw-overflow-x-auto tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface tw-p-1.5']) }} aria-label="{{ __('supplier.copy.supplier_price_history_views') }}">
     <a
         href="{{ route('supplier.price-history.index') }}"
         @if($active === 'overview') aria-current="page" @endif
@@ -11,7 +11,7 @@
         ])
     >
         <x-ui.icon name="list" size="sm" />
-        <span>Material Overview</span>
+        <span>{{ __('supplier.copy.material_overview') }}</span>
     </a>
     <a
         href="{{ route('supplier.price-history.historical') }}"
@@ -23,6 +23,6 @@
         ])
     >
         <x-ui.icon name="trending-up" size="sm" />
-        <span>Price Trends</span>
+        <span>{{ __('supplier.copy.price_trends') }}</span>
     </a>
 </nav>

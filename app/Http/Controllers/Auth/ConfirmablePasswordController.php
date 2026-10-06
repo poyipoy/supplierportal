@@ -34,7 +34,7 @@ class ConfirmablePasswordController extends Controller
             'password' => $request->password,
         ])) {
             throw ValidationException::withMessages([
-                'password' => 'The entered password is incorrect.',
+                'password' => __('auth.confirmation.incorrect'),
             ]);
         }
 

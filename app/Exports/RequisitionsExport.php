@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class RequisitionsExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class RequisitionsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
 
@@ -72,7 +72,7 @@ class RequisitionsExport implements FromQuery, TracksExportProgress, WithColumnW
         ])->filter()->implode(' | ');
 
         return [
-            SpreadsheetCellSanitizer::text($pr?->pr_number, 'DRAFT'),
+            SpreadsheetCellSanitizer::text($pr?->pr_number, __('status.pr.draft')),
             SpreadsheetCellSanitizer::text($pr?->period?->display_label ?? $pr?->period?->name),
             SpreadsheetCellSanitizer::text($item->material_name),
             SpreadsheetCellSanitizer::text($spec),
@@ -81,8 +81,8 @@ class RequisitionsExport implements FromQuery, TracksExportProgress, WithColumnW
             (float) $item->total_weight,
             (float) $prTotalKg,
             SpreadsheetCellSanitizer::text($item->remark),
-            SpreadsheetCellSanitizer::text(strtoupper((string) $pr?->status)),
-            $pr?->created_at?->format('Y-m-d H:i:s') ?? '-',
+            SpreadsheetCellSanitizer::text(\App\Support\StatusHelper::prLabel((string) $pr?->status)),
+            $pr?->created_at ? \App\Support\BusinessTime::format($pr->created_at, 'Y-m-d H:i:s', false) : '-',
         ];
     }
 
@@ -103,7 +103,7 @@ class RequisitionsExport implements FromQuery, TracksExportProgress, WithColumnW
 
     public function headings(): array
     {
-        return ['PR Number', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark', 'Status', 'Date Created'];
+        return [__('exports.headings.pr_number'), __('exports.headings.period'), __('exports.headings.material_name'), __('exports.headings.specification'), __('exports.headings.qty'), __('exports.headings.weight_unit'), __('exports.headings.total_weight'), __('exports.headings.pr_total_kg'), __('exports.headings.remark'), __('exports.headings.status'), __('exports.headings.date_created').' ('.\App\Support\BusinessTime::label().')'];
     }
 
     public function columnWidths(): array

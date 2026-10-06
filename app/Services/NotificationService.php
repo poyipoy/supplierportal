@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\UserPreference;
 use App\Notifications\SystemNotification;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
@@ -27,6 +28,7 @@ class NotificationService
         string $icon = 'bell',
         array $data = [],
         array $replace = [],
+        array $localizedReplace = [],
     ): void {
         $recipientList = $recipients instanceof User
             ? collect([$recipients])
@@ -35,12 +37,36 @@ class NotificationService
         // Resolve notification domain
         $domain = $data['domain'] ?? NotificationDomain::resolveDomain($event, $data);
 
-        $deliver = function () use ($recipientList, $event, $eventKey, $title, $message, $url, $icon, $data, $replace, $domain): void {
-            $recipientList
+        $deliver = function () use ($recipientList, $event, $eventKey, $title, $message, $url, $icon, $data, $replace, $localizedReplace, $domain): void {
+            $eligible = $recipientList
                 ->filter(fn ($recipient) => $recipient instanceof User && (bool) $recipient->is_active)
                 ->filter(fn (User $recipient) => NotificationDomain::isUserEligibleForDeliveryDomain($recipient, $domain))
-                ->unique('id')
-                ->each(function (User $recipient) use ($event, $eventKey, $title, $message, $url, $icon, $data, $replace, $domain): void {
+                ->unique('id');
+
+            // Delivery-local snapshots stay fresh in long-running workers.
+            foreach ($eligible->chunk(500) as $batch) {
+                try {
+                    $snapshots = UserPreference::query()->whereIn('user_id', $batch->pluck('id'))
+                        ->get(['user_id', 'locale', 'notification_preferences'])->keyBy('user_id');
+                } catch (Throwable $exception) {
+                    // Preference failure must not interrupt the existing business workflow.
+                    $snapshots = collect();
+                    try {
+                        Log::warning('Notification locale preference lookup failed; English and normal delivery retained.', [
+                            'event_key' => $eventKey,
+                            'exception_class' => $exception::class,
+                        ]);
+                    } catch (Throwable) {
+                        // Logging cannot make delivery failure escape into the business action.
+                    }
+                }
+                $batch->each(function (User $recipient) use ($event, $eventKey, $title, $message, $url, $icon, $data, $replace, $localizedReplace, $domain, $snapshots): void {
+                    $snapshot = $snapshots->get($recipient->getKey());
+                    try {
+                        app(NotificationPreferenceService::class)->primeStoredOverrides($recipient, is_array($snapshot?->notification_preferences) ? $snapshot->notification_preferences : []);
+                    } catch (Throwable) {
+                        // The existing delivery listener retains its fail-open behavior.
+                    }
                     $notificationId = Uuid::uuid5(
                         Uuid::NAMESPACE_URL,
                         User::class.':'.$recipient->getKey().':'.$eventKey,
@@ -63,6 +89,8 @@ class NotificationService
                             'domain' => $domain,
                         ]),
                         $replace,
+                        UserPreferenceService::normalizeLocale($snapshot?->locale),
+                        $localizedReplace,
                     );
                     $notification->id = $notificationId;
 
@@ -86,6 +114,7 @@ class NotificationService
                         $this->logFailure($eventKey, $recipient, $exception);
                     }
                 });
+            }
         };
 
         if (DB::transactionLevel() > 0) {

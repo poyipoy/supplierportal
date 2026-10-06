@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 export async function copyAssistanceText(text, environment = globalThis) {
     if (environment.isSecureContext && environment.navigator?.clipboard?.writeText) {
         try {
@@ -33,8 +34,8 @@ export function bootPasswordAssistance(root = document, environment = globalThis
             button.addEventListener('click', async () => {
                 const text = root.getElementById(button.dataset.passwordAssistanceCopy)?.textContent ?? '';
                 const copied = await copyAssistanceText(text, environment);
-                status.textContent = copied ? `${button.dataset.copyLabel} copied.`
-                    : 'Could not copy. Please select the text and copy it manually.';
+                status.textContent = copied ? t('js.copy.success', { label: button.dataset.copyLabel })
+                    : t('js.copy.failed');
             });
         });
     });

@@ -101,6 +101,46 @@ class AuthAuditSecurityTest extends TestCase
         $this->assertStringNotContainsString('<img', $encoded);
     }
 
+    public function test_audit_event_codes_render_localized_labels_without_changing_machine_values(): void
+    {
+        foreach (['en', 'id'] as $locale) {
+            $admin = User::factory()->create(['role' => 'admin']);
+            $admin->preference()->create(array_replace(config('user_preferences.defaults'), ['locale' => $locale]));
+
+            $events = [...AuthAuditLog::EVENTS, 'unknown_legacy_event'];
+            foreach ($events as $event) {
+                AuthAuditLog::query()->create([
+                    'user_id' => $admin->id,
+                    'event' => $event,
+                ]);
+            }
+
+            $page = $this->actingAs($admin)->get(route('admin.auth-audit-logs.index'));
+            $page->assertOk();
+
+            foreach (AuthAuditLog::EVENTS as $event) {
+                $page->assertSee('value="'.$event.'"', false)
+                    ->assertSee(__("security.audit_events.{$event}", [], $locale));
+            }
+
+            $response = $this->getJson(route('admin.auth-audit-logs.data', [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 50,
+            ]));
+
+            $response->assertOk();
+            $rows = collect($response->json('data'))->keyBy('event');
+            foreach ($events as $event) {
+                $this->assertSame($event, $rows[$event]['event']);
+                $translationKey = in_array($event, AuthAuditLog::EVENTS, true)
+                    ? "security.audit_events.{$event}"
+                    : 'security.audit_events.unknown';
+                $this->assertSame(__($translationKey, [], $locale), $rows[$event]['event_display']);
+            }
+        }
+    }
+
     public function test_logs_older_than_180_days_are_prunable_but_boundary_is_retained(): void
     {
         $this->travelTo(now()->startOfSecond());

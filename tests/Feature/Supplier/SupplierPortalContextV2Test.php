@@ -152,7 +152,7 @@ class SupplierPortalContextV2Test extends TestCase
         $this->actingAs($zeroScopeSupplier)
             ->get(route('supplier-context.index'))
             ->assertOk()
-            ->assertSee('Akses supplier belum dikonfigurasi');
+            ->assertSee(__('navigation.context.unconfigured', [], 'en'));
 
         // Trying to switch fails with 403
         $this->actingAs($zeroScopeSupplier)
@@ -307,7 +307,7 @@ class SupplierPortalContextV2Test extends TestCase
 
         $response->assertOk();
         $response->assertSee('portalContextSwitcherDropdown');
-        $response->assertSee('PILIH PORTAL');
+        $response->assertSee(__('navigation.choose_portal', [], 'en'));
         $response->assertSee('Dual Scope');
         $response->assertSee('Local Supplier');
         $response->assertSee('Material Procurement');
@@ -345,7 +345,7 @@ class SupplierPortalContextV2Test extends TestCase
         $response->assertSee('Local Supplier');
         $response->assertSee('Quotation, PO, Shipment');
         $response->assertSee('Invoice, Vendor Profile');
-        $response->assertSee('Aktif');
+        $response->assertSee(__('local_invoice.labels.active', [], 'en'));
         $response->assertDontSee('Pengadaan Impor');
         $response->assertDontSee('Invoice Lokal');
     }
@@ -361,7 +361,7 @@ class SupplierPortalContextV2Test extends TestCase
 
         $response->assertOk();
         // Should show neutral guidance in sidebar
-        $response->assertSee('Silakan pilih portal terlebih dahulu.');
+        $response->assertSee(__('navigation.choose_first', [], 'en'));
         // Should NOT render portal module navigation items in sidebar
         $response->assertDontSee('Quotation Period');
         $response->assertDontSee('Daftar Invoice');

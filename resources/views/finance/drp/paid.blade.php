@@ -1,22 +1,22 @@
 @extends('layouts.app')
-@section('title', 'DRP Paid - Finance AP')
-@section('page-title', 'DRP Paid (Monitoring & Eksekusi Pelunasan)')
+@section('title', __('finance.closure.paid_title', ['audience' => 'Finance AP']))
+@section('page-title', __('finance.drp.paid_monitor_title'))
 
 @section('content')
 <div id="drpPaidContainer" class="tw-grid tw-gap-6 tw-pb-16" data-server-tabs-container>
     <x-ui.page-header
-        title="DRP Paid (Monitoring & Pelunasan)"
-        description="Pantau status pelunasan seluruh batch DRP Supplier & GA, telusuri bukti transfer, dan tandai batch lunas (Mark Paid) secara terpadu."
-        eyebrow="Finance & Accounts Payable"
+        :title="__('finance.drp.paid_title')"
+        :description="__('common.final_review.paid_help')"
+        :eyebrow="__('finance.labels.finance_ap')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('finance.dashboard')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Dashboard</span>
+                <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('finance.drp.supplier')" variant="outline" size="sm">
                 <x-ui.icon name="wallet" size="sm" />
-                <span>DRP Supplier</span>
+                <span>{{ __('navigation.drp_supplier') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('finance.drp.ga')" variant="outline" size="sm">
                 <x-ui.icon name="credit-card" size="sm" />
@@ -24,7 +24,7 @@
             </x-ui.button>
             <x-ui.button :href="route('finance.overpayments.index')" variant="outline" size="sm" class="tw-relative">
                 <x-ui.icon name="alert-circle" size="sm" class="{{ ($openOverpaymentsCount ?? 0) > 0 ? 'tw-text-amber-500' : '' }}" />
-                <span>Refund Overpayment</span>
+                <span>{{ __('finance.refund.title') }}</span>
                 @if(($openOverpaymentsCount ?? 0) > 0)
                     <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-amber-500 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.2" data-overpayment-count>
                         {{ $openOverpaymentsCount }}
@@ -37,20 +37,20 @@
     {{-- KPI Metric Cards Grid --}}
     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-4">
         <x-ui.metric-card
-            label="Total Batch DRP"
+            :label="__('finance.labels.total_batches')"
             :value="number_format($metrics['total_batches'])"
             icon="layers"
             tone="neutral"
-            meta="Seluruh batch terdaftar"
+            :meta="__('finance.drp_ui.all_registered_batches')"
             value-metric="total_batches"
         />
 
         <x-ui.metric-card
-            label="Belum Paid (Pending)"
+            :label="__('finance.drp.unpaid_pending')"
             :value="'Rp ' . number_format($metrics['unpaid_amount'], 0, ',', '.')"
             icon="clock"
             tone="warning"
-            :meta="number_format($metrics['unpaid_count']) . ' Batch belum lunas'"
+            :meta="trans_choice('finance.drp_ui.unpaid_batches', $metrics['unpaid_count'], ['count' => number_format($metrics['unpaid_count'])])"
             :href="route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid']))"
             data-server-tab
             data-server-tab-card
@@ -61,11 +61,11 @@
         />
 
         <x-ui.metric-card
-            label="Sudah Paid (Lunas)"
+            :label="__('finance.drp.paid_complete')"
             :value="'Rp ' . number_format($metrics['paid_amount'], 0, ',', '.')"
             icon="badge-check"
             tone="success"
-            :meta="number_format($metrics['paid_count']) . ' Batch selesai dibayar'"
+            :meta="trans_choice('finance.drp_ui.paid_batches', $metrics['paid_count'], ['count' => number_format($metrics['paid_count'])])"
             :href="route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid']))"
             data-server-tab
             data-server-tab-card
@@ -78,7 +78,7 @@
 
     {{-- Status Tabs Navigation (Segmented Pill Bar) --}}
     <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
-        <nav class="tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-1.5 tw-shadow-none" aria-label="Tab status pelunasan batch DRP">
+        <nav class="tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-1.5 tw-shadow-none" aria-label="{{ __('finance.drp_surface.settlement_tabs') }}">
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
                 class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'unpaid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
@@ -86,8 +86,8 @@
                 data-tab-name="unpaid"
             >
                 <x-ui.icon name="clock" size="sm" />
-                <span>Belum Paid</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
+                <span>{{ __('finance.drp.unpaid') }}</span>
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
                     {{ $metrics['unpaid_count'] }}
                 </span>
             </a>
@@ -98,8 +98,8 @@
                 data-tab-name="paid"
             >
                 <x-ui.icon name="badge-check" size="sm" />
-                <span>Sudah Paid</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
+                <span>{{ __('finance.drp.paid') }}</span>
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
                     {{ $metrics['paid_count'] }}
                 </span>
             </a>
@@ -110,8 +110,8 @@
                 data-tab-name="all"
             >
                 <x-ui.icon name="layers" size="sm" />
-                <span>Semua Batch</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-white/20 tw-text-white' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
+                <span>{{ __('finance.drp.all_batches') }}</span>
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
                     {{ $metrics['total_batches'] }}
                 </span>
             </a>
@@ -122,7 +122,7 @@
     <form method="GET" action="{{ route('finance.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0" data-server-tabs-form>
         <input type="hidden" name="tab" value="{{ $tab }}">
 
-        <x-ui.toolbar aria-label="Kontrol filter batch DRP">
+        <x-ui.toolbar aria-label="{{ __('finance.drp_surface.batch_filters') }}">
             <x-slot:search>
                 <div class="tw-relative tw-w-full">
                     <input
@@ -130,7 +130,7 @@
                         name="q"
                         id="drp-paid-search"
                         value="{{ $q }}"
-                        placeholder="Cari nomor batch, supplier, atau karyawan..."
+                        placeholder="{{ __('finance.drp.filter_placeholder') }}"
                         class="form-control form-control-sm tw-text-ui-xs"
                         maxlength="100"
                         autocomplete="off"
@@ -141,21 +141,21 @@
             <x-slot:filters>
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2.5">
                     <div class="tw-w-36">
-                        <label for="drp-type" class="visually-hidden">Tipe DRP</label>
+                        <label for="drp-type" class="visually-hidden">{{ __('finance.drp.type') }}</label>
                         <select id="drp-type" name="type" class="form-select form-select-sm tw-text-ui-xs">
-                            <option value="">Semua Tipe</option>
-                            <option value="SUPPLIER" @selected($type === 'SUPPLIER')>Supplier</option>
-                            <option value="GA" @selected($type === 'GA')>General Affairs</option>
+                            <option value="">{{ __('local_invoice.labels.all_types') }}</option>
+                            <option value="SUPPLIER" @selected($type === 'SUPPLIER')>{{ __('local_invoice.labels.supplier') }}</option>
+                            <option value="GA" @selected($type === 'GA')>{{ __('navigation.general_affairs') }}</option>
                         </select>
                     </div>
 
                     <div class="tw-w-44">
-                        <label for="drp-overpayment-status" class="visually-hidden">Status Overpayment</label>
+                        <label for="drp-overpayment-status" class="visually-hidden">{{ __('finance.drp_surface.overpayment_status') }}</label>
                         <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw-text-ui-xs">
-                            <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>Semua Overpayment</option>
-                            <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>Ada Kelebihan Bayar</option>
-                            <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>Perlu Refund (Open)</option>
-                            <option value="settled" @selected(($overpaymentStatus ?? '') === 'settled')>Refund Selesai (Settled)</option>
+                            <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>{{ __('finance.refund.all') }}</option>
+                            <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>{{ __('local_invoice.labels.overpayment') }}</option>
+                            <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>{{ __('local_invoice.filters.refund_open') }}</option>
+                            <option value="settled" @selected(($overpaymentStatus ?? '') === 'settled')>{{ __('finance.refund.completed_status') }}</option>
                         </select>
                     </div>
 
@@ -164,8 +164,8 @@
                             id="paid-date-range"
                             start-name="date_from"
                             end-name="date_to"
-                            start-label="Dari Tanggal"
-                            end-label="Sampai Tanggal"
+                            :start-label="__('local_invoice.labels.from_date')"
+                            :end-label="__('local_invoice.labels.to_date')"
                             :start-value="$dateFrom"
                             :end-value="$dateTo"
                             :compact="true"
@@ -177,12 +177,12 @@
             <x-slot:actions>
                 <x-ui.button type="submit" size="sm" variant="primary">
                     <x-ui.icon name="filter" size="sm" />
-                    <span>Filter</span>
+                    <span>{{ __('finance.drp_ui.filter') }}</span>
                 </x-ui.button>
                 @if($q || $type || $dateFrom || $dateTo || ($overpaymentStatus && $overpaymentStatus !== 'all') || $tab !== 'unpaid')
                     <x-ui.button :href="route('finance.drp.paid.index', ['tab' => $tab])" size="sm" variant="ghost">
                         <x-ui.icon name="rotate-ccw" size="sm" />
-                        <span>Reset</span>
+                        <span>{{ __('common.actions.reset') }}</span>
                     </x-ui.button>
                 @endif
             </x-slot:actions>
@@ -232,35 +232,35 @@
                             <div class="modal-header">
                                 <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-2">
                                     <x-ui.icon name="badge-check" size="sm" class="tw-text-success" />
-                                    <span>Tandai Lunas: {{ $batch->batch_number }}</span>
+                                    <span>{{ __('finance.drp_ui.mark_paid_title', ['number' => $batch->batch_number]) }}</span>
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                             </div>
                             <div class="modal-body tw-space-y-3">
                                 <div class="tw-rounded-lg tw-bg-surface-container tw-p-3 tw-text-ui-xs tw-space-y-1">
                                     <div class="tw-flex tw-justify-between">
-                                        <span class="tw-text-on-surface-variant">Tipe Batch:</span>
-                                        <span class="tw-font-semibold">{{ $batch->batch_type }}</span>
+                                        <span class="tw-text-on-surface-variant">{{ __('finance.drp.batch_type') }}:</span>
+                                        <span class="tw-font-semibold">{{ __('finance.closure.batch_type_'.strtolower($batch->batch_type)) }}</span>
                                     </div>
                                     <div class="tw-flex tw-justify-between">
-                                        <span class="tw-text-on-surface-variant">Jumlah Rekening Tujuan:</span>
-                                        <span class="tw-font-semibold">{{ $batch->groups_count }} Rekening</span>
+                                        <span class="tw-text-on-surface-variant">{{ __('finance.drp_ui.account_count_label') }}</span>
+                                        <span class="tw-font-semibold">{{ trans_choice('finance.drp_ui.account_count', $batch->groups_count) }}</span>
                                     </div>
                                     <div class="tw-flex tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1">
-                                        <span class="tw-text-on-surface-variant">Total Net DRP:</span>
+                                        <span class="tw-text-on-surface-variant">{{ __('finance.drp.total_net') }}:</span>
                                         <span class="tw-font-bold tw-font-mono tw-text-on-surface">
                                             Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
                                         </span>
                                     </div>
                                     @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                         <div class="tw-flex tw-justify-between">
-                                            <span class="tw-text-on-surface-variant">Sudah Terbayar:</span>
+                                            <span class="tw-text-on-surface-variant">{{ __('local_invoice.labels.paid') }}:</span>
                                             <span class="tw-font-bold tw-font-mono tw-text-success">
                                                 Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}
                                             </span>
                                         </div>
                                         <div class="tw-flex tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1">
-                                            <span class="tw-text-warning-container-foreground tw-font-semibold">Sisa Belum Lunas:</span>
+                                            <span class="tw-text-warning-container-foreground tw-font-semibold">{{ __('local_invoice.labels.remaining') }}:</span>
                                             <span class="tw-font-bold tw-font-mono tw-text-warning-container-foreground">
                                                 Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
                                             </span>
@@ -269,7 +269,7 @@
                                 </div>
 
                                 <p class="tw-text-ui-xs tw-text-on-surface-variant">
-                                    Setelah dikonfirmasi, seluruh tagihan/klaim dalam batch ini akan otomatis ditandai <strong>PAID (Lunas)</strong> dan bukti pelunasan akan tercatat.
+                                    {{ __('finance.drp_ui.confirm_payment_help') }}
                                 </p>
 
                                 <div class="tw-space-y-3">
@@ -278,20 +278,20 @@
                                             id="transfer_date_{{ $batch->id }}"
                                             name="transfer_date"
                                             :value="now()->format('Y-m-d')"
-                                            label="Tanggal Transfer Bank"
+                                            :label="__('finance.payment.bank_date')"
                                             required="true"
                                         />
                                     </div>
 
                                     <div>
                                         <label class="form-label tw-text-ui-xs tw-font-semibold">
-                                            Nomor Referensi Transfer Bank <span class="text-danger">*</span>
+                                            {{ __('finance.drp_ui.reference_label') }} <span class="text-danger">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             name="transfer_reference"
                                             class="form-control form-control-sm"
-                                            placeholder="Contoh: TRF-BCA-20260916-001"
+                                            placeholder="{{ __('finance.drp_ui.reference_example') }}"
                                             required
                                             maxlength="100"
                                         >
@@ -299,13 +299,13 @@
 
                                     <div>
                                         <label class="form-label tw-text-ui-xs tw-font-semibold">
-                                            Catatan Pelunasan (Opsional)
+                                            {{ __('finance.payment.settlement_notes') }}
                                         </label>
                                         <textarea
                                             name="payment_notes"
                                             class="form-control form-control-sm"
                                             rows="2"
-                                            placeholder="Contoh: Transfer kliring via Internet Banking Corporate..."
+                                            placeholder="{{ __('finance.drp_ui.notes_example') }}"
                                             maxlength="1000"
                                         ></textarea>
                                     </div>
@@ -319,7 +319,7 @@
                                                        x-model="hasAdjustment"
                                                 >
                                                 <label class="form-check-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="has_adjustment_{{ $batch->id }}">
-                                                    Ada penyesuaian nominal transfer bank (Overpayment / Selisih Transfer Riil)
+                                                    {{ __('finance.payment.actual_adjustment') }}
                                                 </label>
                                             </div>
 
@@ -328,21 +328,20 @@
                                                  style="display: none;"
                                                  class="tw-space-y-3 tw-bg-surface-container/50 tw-p-3 tw-rounded-lg tw-border tw-border-outline-variant">
                                                 <p class="tw-text-[11px] tw-text-on-surface-variant tw-m-0">
-                                                    Ubah nominal transfer jika uang yang dikirimkan ke rekening supplier berbeda dari nilai voucher tagihan.
-                                                    Kelebihan bayar akan otomatis dicatat sebagai <strong>Supplier Overpayment</strong>.
+                                                    {{ __('finance.drp_ui.adjustment_help') }}
                                                 </p>
 
                                                 <template x-if="hasAdjustment && totalOverpayment > 0.009">
                                                     <div class="tw-rounded-lg tw-border tw-border-amber-300 tw-bg-amber-50 dark:tw-bg-amber-950/40 dark:tw-border-amber-700 tw-p-3 tw-text-ui-xs">
                                                         <div class="tw-flex tw-items-center tw-gap-2 tw-text-amber-800 dark:tw-text-amber-300 tw-font-bold">
                                                             <x-ui.icon name="alert-circle" size="sm" />
-                                                            <span>Perhatian: Terdeteksi Kelebihan Bayar (Overpayment)</span>
+                                                            <span>{{ __('finance.drp_ui.overpayment_warning') }}</span>
                                                         </div>
                                                         <div class="tw-mt-1 tw-text-on-surface">
-                                                            Total kelebihan bayar: <span class="tw-font-mono tw-font-bold tw-text-amber-700 dark:tw-text-amber-400">+Rp <span x-text="totalOverpayment.toLocaleString('id-ID')"></span></span> pada <span x-text="overpaidCount"></span> tagihan.
+                                                            <span x-text="{{ json_encode(__('finance.drp_ui.overpayment_summary'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}.replace(':amount', () => totalOverpayment.toLocaleString('id-ID')).replace(':count', () => String(overpaidCount))"></span>
                                                         </div>
                                                         <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1 tw-mb-0">
-                                                            Kelebihan dana akan otomatis dicatat sebagai <strong>Supplier Overpayment (OPEN)</strong> pada modul Refund Overpayment. Supplier akan menerima notifikasi pengembalian dana ke rekening resmi ADASI.
+                                                            {{ __('finance.drp_ui.overpayment_notice') }}
                                                         </p>
                                                     </div>
                                                 </template>
@@ -369,12 +368,12 @@
                                                                             <div>
                                                                                 <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface">{{ $group->payee_name }}</span>
                                                                                 <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">
-                                                                                    Inv: {{ $item->payable?->invoice_number ?? $item->item_reference }} · PO: {{ $item->payable?->po_number ?? '-' }}
+                                                                                    {{ __('finance.drp_ui.invoice_reference', ['invoice' => $item->payable?->invoice_number ?? $item->item_reference, 'po' => $item->payable?->po_number ?? '-']) }}
                                                                                 </span>
                                                                             </div>
                                                                             <div class="tw-text-end">
                                                                                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-success/10 tw-text-success">
-                                                                                    <x-ui.icon name="check-circle" size="sm" /> Sudah Lunas (Rp {{ number_format($alreadyPaid, 0, ',', '.') }})
+                                                                                    <x-ui.icon name="check-circle" size="sm" /> {{ __('finance.drp_ui.settled_amount', ['amount' => number_format($alreadyPaid, 0, ',', '.')]) }}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -398,33 +397,33 @@
                                                                                     <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface">{{ $group->payee_name }}</span>
                                                                                     @if($isCorrectionRequired)
                                                                                         <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.2 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-warning/10 tw-text-warning-container-foreground">
-                                                                                            Kurang Bayar
+                                                                                            {{ __('finance.drp_ui.underpaid') }}
                                                                                         </span>
                                                                                     @endif
                                                                                 </div>
                                                                                 <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">
-                                                                                    Inv: {{ $item->payable?->invoice_number ?? $item->item_reference }} · PO: {{ $item->payable?->po_number ?? '-' }}
+                                                                                    {{ __('finance.drp_ui.invoice_reference', ['invoice' => $item->payable?->invoice_number ?? $item->item_reference, 'po' => $item->payable?->po_number ?? '-']) }}
                                                                                 </span>
                                                                             </div>
                                                                             <div class="tw-text-end">
                                                                                 @if($isCorrectionRequired)
                                                                                     <div class="tw-text-[11px] tw-text-on-surface-variant">
-                                                                                        Voucher: <span class="tw-font-mono tw-font-semibold tw-text-on-surface">Rp {{ number_format($expectedAmount, 0, ',', '.') }}</span>
+                                                                                        {{ __('common.labels_review.voucher_label') }} <span class="tw-font-mono tw-font-semibold tw-text-on-surface">Rp {{ number_format($expectedAmount, 0, ',', '.') }}</span>
                                                                                     </div>
                                                                                     <div class="tw-text-[11px] tw-font-mono">
-                                                                                        <span class="tw-text-success tw-font-medium">Terbayar: Rp {{ number_format($alreadyPaid, 0, ',', '.') }}</span>
+                                                                                        <span class="tw-text-success tw-font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => number_format($alreadyPaid, 0, ',', '.')]) }}</span>
                                                                                         <span class="tw-text-on-surface-variant">·</span>
-                                                                                        <span class="tw-text-warning-container-foreground tw-font-bold">Sisa: Rp {{ number_format($itemRemaining, 0, ',', '.') }}</span>
+                                                                                        <span class="tw-text-warning-container-foreground tw-font-bold">{{ __('finance.paid_ui.remaining', ['amount' => number_format($itemRemaining, 0, ',', '.')]) }}</span>
                                                                                     </div>
                                                                                 @else
-                                                                                    <span class="tw-text-[11px] tw-text-on-surface-variant">Voucher:</span>
+                                                                                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('common.labels_review.voucher_label') }}</span>
                                                                                     @if($voucher)
                                                                                         <span class="tw-font-mono tw-text-ui-xs tw-font-bold tw-text-primary">
                                                                                             Rp {{ number_format($expectedAmount, 0, ',', '.') }}
                                                                                         </span>
                                                                                     @else
-                                                                                        <span class="tw-font-mono tw-text-ui-xs tw-font-bold tw-text-warning" title="Voucher belum digenerate, menggunakan nominal item">
-                                                                                            Rp {{ number_format($expectedAmount, 0, ',', '.') }} (Estimasi)
+                                                                                        <span class="tw-font-mono tw-text-ui-xs tw-font-bold tw-text-warning" title="{{ __('finance.voucher.no_voucher') }}">
+                                                                                            {{ __('finance.drp_ui.estimated_amount', ['amount' => number_format($expectedAmount, 0, ',', '.')]) }}
                                                                                         </span>
                                                                                     @endif
                                                                                 @endif
@@ -434,7 +433,7 @@
                                                                         <div class="row g-2 align-items-end">
                                                                             <div class="col-12 col-md-6">
                                                                                 <label class="form-label tw-text-[11px] tw-font-semibold mb-1">
-                                                                                    {{ $isCorrectionRequired ? 'Nominal Pelunasan Sisa (Rp)' : 'Nominal Transfer Riil (Rp)' }}
+                                                                                    {{ $isCorrectionRequired ? __('finance.drp_ui.remaining_transfer') : __('finance.drp_ui.actual_transfer') }}
                                                                                 </label>
                                                                                 <input
                                                                                     type="number"
@@ -450,18 +449,18 @@
                                                                             <div class="col-12 col-md-6">
                                                                                 <template x-if="diff > 0.009">
                                                                                     <div class="tw-text-[11px] tw-font-semibold tw-text-primary tw-py-1">
-                                                                                        <x-ui.icon name="arrow-up-right" size="sm" /> Overpayment: +Rp <span x-text="Math.abs(diff).toLocaleString('id-ID')"></span>
+                                                                                        <x-ui.icon name="arrow-up-right" size="sm" /> <span x-text="{{ json_encode(__('finance.drp_ui.overpayment_diff'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}.replace(':amount', () => Math.abs(diff).toLocaleString('id-ID'))"></span>
                                                                                     </div>
                                                                                 </template>
                                                                                 <template x-if="diff < -0.009">
                                                                                     <div>
                                                                                         <div class="tw-text-[11px] tw-font-semibold tw-text-warning tw-py-1">
-                                                                                            <x-ui.icon name="arrow-down-right" size="sm" /> Kurang Bayar: -Rp <span x-text="Math.abs(diff).toLocaleString('id-ID')"></span>
+                                                                                            <x-ui.icon name="arrow-down-right" size="sm" /> <span x-text="{{ json_encode(__('finance.drp_ui.underpayment_diff'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}.replace(':amount', () => Math.abs(diff).toLocaleString('id-ID'))"></span>
                                                                                         </div>
                                                                                         <input
                                                                                             type="text"
                                                                                             name="correction_reasons[{{ $item->id }}]"
-                                                                                            placeholder="Alasan kurang bayar (mis: potong admin)"
+                                                                                            placeholder="{{ __('finance.payment.underpayment_reason') }}"
                                                                                             class="form-control form-control-sm tw-text-[11px] mt-1"
                                                                                             :disabled="!hasAdjustment"
                                                                                         >
@@ -469,7 +468,7 @@
                                                                                 </template>
                                                                                 <template x-if="Math.abs(diff) <= 0.009">
                                                                                     <div class="tw-text-[11px] tw-text-success tw-py-1">
-                                                                                        <x-ui.icon name="check" size="sm" /> {{ $isCorrectionRequired ? 'Sesuai sisa pelunasan' : 'Sesuai nilai voucher' }}
+                                                                                        <x-ui.icon name="check" size="sm" /> {{ __($isCorrectionRequired ? 'finance.closure.remaining_settlement' : 'finance.closure.matches_voucher') }}
                                                                                     </div>
                                                                                 </template>
                                                                             </div>
@@ -482,7 +481,7 @@
 
                                                     @if(! $hasActiveItem)
                                                         <div class="tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant tw-text-ui-xs tw-text-on-surface-variant text-center">
-                                                            Belum ada item tagihan aktif pada batch ini.
+                                                            {{ __('finance.drp.empty_items') }}
                                                         </div>
                                                     @endif
                                                 </div>
@@ -492,10 +491,10 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
+                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                 <x-ui.button type="submit" variant="primary" size="sm">
                                     <x-ui.icon name="badge-check" size="sm" />
-                                    <span>Konfirmasi</span>
+                                    <span>{{ __('local_invoice.interaction.confirm') }}</span>
                                 </x-ui.button>
                             </div>
                         </div>
@@ -565,21 +564,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const batchIds = Array.from(selected).map(cb => cb.value);
 
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                title: 'Export Transfer DRP',
-                html: `Anda akan mengekspor <strong>${batchIds.length}</strong> batch DRP menjadi satu file TARIKAN TRANSFER.<br><br>Lanjutkan?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Export',
-                cancelButtonText: 'Batal',
-            }).then(result => {
-                if (result.isConfirmed) {
+        const confirmMsg = @js(__('finance.async_copy.export_confirm')).replace(':count', String(batchIds.length));
+        if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
+            AdasiAlert.confirm({
+                title: @js(__('finance.async_copy.export_title')),
+                message: confirmMsg,
+                confirmText: @js(__('finance.async_copy.export_yes')),
+                cancelText: @js(__('finance.async_copy.cancel')),
+            }).then(confirmed => {
+                if (confirmed) {
                     dispatchExport(batchIds);
                 }
             });
         } else {
-            if (confirm('Export ' + batchIds.length + ' batch DRP menjadi satu file transfer?')) {
+            if (confirm(confirmMsg)) {
                 dispatchExport(batchIds);
             }
         }
@@ -605,12 +603,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return response.json();
         })
         .then(data => {
-            if (typeof AdasiToast !== 'undefined') {
-                AdasiToast.success(data.message || 'Export transfer berhasil didispatch.');
-            } else if (typeof Swal !== 'undefined') {
-                Swal.fire('Berhasil', data.message || 'Export transfer berhasil didispatch.', 'success');
+            if (window.AdasiToast && typeof window.AdasiToast.success === 'function') {
+                AdasiToast.success(data.message || @js(__('finance.async_copy.dispatched_transfer')));
             } else {
-                alert(data.message || 'Export berhasil didispatch.');
+                alert(data.message || @js(__('finance.async_copy.dispatched')));
             }
 
             try {
@@ -638,11 +634,9 @@ document.addEventListener('DOMContentLoaded', function () {
             initBatchSelection();
         })
         .catch(err => {
-            const msg = err.message || err.error || 'Terjadi kesalahan saat export transfer.';
-            if (typeof AdasiToast !== 'undefined') {
+            const msg = err.message || err.error || @js(__('finance.async_copy.export_error'));
+            if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
                 AdasiToast.error(msg);
-            } else if (typeof Swal !== 'undefined') {
-                Swal.fire('Gagal', msg, 'error');
             } else {
                 alert(msg);
             }
@@ -665,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(job => {
                 if (job.status === 'completed' && job.download_url) {
                     if (typeof AdasiToast !== 'undefined') {
-                        AdasiToast.success('Export transfer selesai. Mengunduh file...');
+                        AdasiToast.success(@js(__('finance.async_copy.export_complete')));
                     }
                     const a = document.createElement('a');
                     a.href = job.download_url;
@@ -674,7 +668,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     a.click();
                     a.remove();
                 } else if (job.status === 'failed') {
-                    const failMsg = job.message || 'Export transfer gagal diproses.';
+                    const failMsg = job.message || @js(__('finance.async_copy.export_failed'));
                     if (typeof AdasiToast !== 'undefined') {
                         AdasiToast.error(failMsg);
                     }
@@ -702,4 +696,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
-

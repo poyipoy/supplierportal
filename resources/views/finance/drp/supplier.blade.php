@@ -1,34 +1,34 @@
 @extends('layouts.app')
-@section('title', 'DRP Supplier - Finance AP')
-@section('page-title', 'Daftar Rencana Pembayaran (DRP) Supplier')
+@section('title', __('finance.closure.supplier_title', ['audience' => 'Finance AP']))
+@section('page-title', __('finance.drp.supplier_heading'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="DRP Supplier (Daftar Rencana Pembayaran)"
-        description="Kelola batch rencana pembayaran supplier, pengelompokan rekening tujuan, penyesuaian biaya transfer bank, dan penerbitan voucher bayar."
-        eyebrow="Finance & Accounts Payable"
+        :title="__('finance.drp.supplier_title')"
+        :description="__('finance.drp_surface.supplier_help')"
+        :eyebrow="__('finance.labels.finance_ap')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('finance.dashboard')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Dashboard</span>
+                <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('finance.drp.ga')" variant="outline" size="sm">
                 <x-ui.icon name="credit-card" size="sm" />
-                <span>Buka DRP GA</span>
+                <span>{{ __('finance.drp.open_ga') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
     {{-- Form Buat Batch DRP Baru dari Tagihan Ready to Pay --}}
     <x-ui.card
-        title="Buat Batch DRP Supplier Baru"
-        description="Pilih tagihan invoice berstatus Ready to Pay yang belum masuk dalam batch aktif (Draft/Finalized)."
+        :title="__('finance.drp.create_supplier')"
+        :description="__('common.final_review.ready_invoice_help')"
     >
         <form method="GET" action="{{ route('finance.drp.supplier') }}" class="tw-mb-4 tw-flex tw-flex-wrap tw-items-end tw-gap-3">
-            <div><label class="form-label tw-text-ui-xs">Supplier filter</label><select name="supplier_id" class="form-select form-select-sm"><option value="">All Local Suppliers</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
-            <x-ui.button type="submit" size="sm" variant="outline">Filter</x-ui.button>
+            <div><label class="form-label tw-text-ui-xs">{{ __('finance.drp_surface.supplier_filter') }}</label><select name="supplier_id" class="form-select form-select-sm"><option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
+            <x-ui.button type="submit" size="sm" variant="outline">{{ __('common.labels_review.filter') }}</x-ui.button>
         </form>
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
@@ -37,13 +37,13 @@
                     <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" style="width: 40px;">Pilih</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">Supplier / Rekening</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">Nomor Invoice / PO</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">Jatuh Tempo</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">DPP (Rp)</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">PPN (Rp)</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Total Bayar (Rp)</th>
+                                <th scope="col" style="width: 40px;">{{ __('common.actions.choose') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp.payee_account') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp_surface.invoice_po') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.due_date') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp.total_payment') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -59,16 +59,16 @@
                                     <td>
                                         <strong class="tw-text-on-surface">{{ $inv->supplier->supplier?->company_name ?: $inv->supplier->name }}</strong>
                                         <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">
-                                            {{ $bank ? "{$bank->bank_name} - {$bank->account_number} a.n {$bank->account_holder_name}" : 'Belum ada rekening aktif' }}
+                                            {{ $bank ? __('finance.drp_ui.bank_details', ['bank' => $bank->bank_name, 'account' => $bank->account_number, 'holder' => $bank->account_holder_name]) : __('finance.drp_ui.no_active_bank_account') }}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="tw-font-medium">{{ $inv->invoice_number }}</span>
-                                        <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">PO: {{ $inv->po_number }}</span>
+                                        <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ __('finance.drp_ui.po_reference', ['number' => $inv->po_number]) }}</span>
                                     </td>
                                     <td>
                                         <span class="tw-text-ui-xs {{ $inv->isOverdue() ? 'tw-text-error tw-font-bold' : '' }}">
-                                            {{ $inv->due_date?->format('d M Y') ?? '—' }}
+                                            {{ $regionalFormatter->date($inv->due_date, 'human') ?? '—' }}
                                         </span>
                                     </td>
                                     <td class="text-end tw-font-mono">Rp {{ number_format($inv->invoice_amount, 0, ',', '.') }}</td>
@@ -80,7 +80,7 @@
                             @empty
                                 <tr>
                                     <td colspan="7" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
-                                        Tidak ada tagihan supplier Ready to Pay yang tersedia saat ini.
+                                        {{ __('finance.drp.empty_supplier_candidates') }}
                                     </td>
                                 </tr>
                             @endforelse
@@ -91,11 +91,11 @@
                 @if($eligibleInvoices->isNotEmpty())
                     <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3">
                         <div class="tw-flex-1">
-                            <input type="text" name="notes" class="form-control form-control-sm" placeholder="Catatan batch DRP (opsional)...">
+                            <input type="text" name="notes" class="form-control form-control-sm" placeholder="{{ __('common.final_review.batch_notes') }}">
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="plus" size="sm" />
-                            <span>Buat Batch DRP Draft</span>
+                            <span>{{ __('finance.drp.create_draft') }}</span>
                         </x-ui.button>
                     </div>
                 @endif
@@ -105,8 +105,8 @@
 
     {{-- Daftar Batch DRP Supplier --}}
     <x-ui.data-table
-        title="Daftar Batch DRP Supplier"
-        description="Riwayat dan status seluruh batch DRP Supplier yang terdaftar. Pilih satu atau lebih batch untuk export transfer."
+        :title="__('finance.drp.supplier_list')"
+        :description="__('finance.drp_surface.supplier_history')"
     >
         <x-slot:toolbar>
             <x-ui.button
@@ -115,10 +115,10 @@
                 size="sm"
                 id="btnExportTransfer"
                 disabled
-                title="Pilih minimal satu batch DRP untuk melakukan export transfer"
+                :title="__('finance.drp_surface.choose_batch')"
             >
                 <x-ui.icon name="download" size="sm" />
-                <span>Export Transfer</span>
+                <span>{{ __('exports.actions.transfer') }}</span>
                 <span id="exportTransferCount" class="tw-hidden tw-ml-1.5 tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-white/20 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.5"></span>
             </x-ui.button>
         </x-slot:toolbar>
@@ -128,15 +128,15 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col" style="width: 40px;">
-                            <input type="checkbox" class="form-check-input" id="selectAllBatches" title="Pilih semua batch">
+                            <input type="checkbox" class="form-check-input" id="selectAllBatches" title="{{ __('finance.drp_surface.all_batches') }}">
                         </th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Batch Number</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Grup Penerima</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Total Nominal (Rp)</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Total Fee Bank (Rp)</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Status</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Aksi</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.date') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp.group_payee') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp.total_fee_rp') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,8 +150,8 @@
                             <td>
                                 <strong class="tw-font-mono tw-text-on-surface">{{ $batch->batch_number }}</strong>
                             </td>
-                            <td>{{ $batch->created_at?->format('d M Y') }}</td>
-                            <td>{{ $batch->groups_count }} rekening tujuan</td>
+                            <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
+                            <td>{{ trans_choice('finance.copy_review.accounts_count', $batch->groups_count, ['count' => $batch->groups_count]) }}</td>
                             <td class="text-end tw-font-mono tw-font-semibold">
                                 Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
                             </td>
@@ -160,20 +160,20 @@
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
-                                    {{ $batch->status }}
+                                    {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
                                     <x-ui.icon name="eye" size="sm" />
-                                    <span>Buka Batch</span>
+                                    <span>{{ __('finance.drp.open_batch') }}</span>
                                 </x-ui.button>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
-                                Belum ada batch DRP Supplier.
+                                {{ __('finance.drp.empty_supplier') }}
                             </td>
                         </tr>
                     @endforelse
@@ -240,21 +240,20 @@ document.addEventListener('DOMContentLoaded', function () {
             const batchIds = Array.from(selected).map(cb => cb.value);
 
             // Confirm action
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: 'Export Transfer DRP',
-                    html: `Anda akan mengexport <strong>${batchIds.length}</strong> batch DRP menjadi satu file TARIKAN TRANSFER.<br><br>Lanjutkan?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, Export',
-                    cancelButtonText: 'Batal',
-                }).then(result => {
-                    if (result.isConfirmed) {
+            const confirmMsg = @js(__('finance.async_copy.export_confirm')).replace(':count', String(batchIds.length));
+            if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
+                AdasiAlert.confirm({
+                    title: @js(__('finance.async_copy.export_title')),
+                    message: confirmMsg,
+                    confirmText: @js(__('finance.async_copy.export_yes')),
+                    cancelText: @js(__('finance.async_copy.cancel')),
+                }).then(confirmed => {
+                    if (confirmed) {
                         dispatchExport(batchIds);
                     }
                 });
             } else {
-                if (confirm('Export ' + batchIds.length + ' batch DRP menjadi satu file transfer?')) {
+                if (confirm(confirmMsg)) {
                     dispatchExport(batchIds);
                 }
             }
@@ -280,12 +279,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return response.json();
         })
         .then(data => {
-            if (typeof AdasiToast !== 'undefined') {
-                AdasiToast.success(data.message || 'Export transfer berhasil didispatch.');
-            } else if (typeof Swal !== 'undefined') {
-                Swal.fire('Berhasil', data.message || 'Export transfer berhasil didispatch.', 'success');
+            if (window.AdasiToast && typeof window.AdasiToast.success === 'function') {
+                AdasiToast.success(data.message || @js(__('finance.async_copy.dispatched_transfer')));
             } else {
-                alert(data.message || 'Export berhasil didispatch.');
+                alert(data.message || @js(__('finance.async_copy.dispatched')));
             }
 
             // Persist to pending export storage
@@ -317,11 +314,9 @@ document.addEventListener('DOMContentLoaded', function () {
             updateExportButton();
         })
         .catch(err => {
-            const msg = err.message || err.error || 'Terjadi kesalahan saat export transfer.';
-            if (typeof AdasiToast !== 'undefined') {
+            const msg = err.message || err.error || @js(__('finance.async_copy.export_error'));
+            if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
                 AdasiToast.error(msg);
-            } else if (typeof Swal !== 'undefined') {
-                Swal.fire('Gagal', msg, 'error');
             } else {
                 alert(msg);
             }
@@ -344,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(job => {
                 if (job.status === 'completed' && job.download_url) {
                     if (typeof AdasiToast !== 'undefined') {
-                        AdasiToast.success('Export transfer selesai. Mengunduh file...');
+                        AdasiToast.success(@js(__('finance.async_copy.export_complete')));
                     }
                     const a = document.createElement('a');
                     a.href = job.download_url;
@@ -353,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     a.click();
                     a.remove();
                 } else if (job.status === 'failed') {
-                    const failMsg = job.message || 'Export transfer gagal diproses.';
+                    const failMsg = job.message || @js(__('finance.async_copy.export_failed'));
                     if (typeof AdasiToast !== 'undefined') {
                         AdasiToast.error(failMsg);
                     }

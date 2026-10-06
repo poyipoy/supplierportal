@@ -24,6 +24,9 @@ class RegionalGaClaimDisplayTest extends TestCase
         parent::setUp();
         $this->ga = User::factory()->create(['role' => 'ga']);
         $this->finance = User::factory()->create(['role' => 'finance']);
+        foreach ([$this->ga, $this->finance] as $user) {
+            $user->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);
+        }
         $employee = Employee::create([
             'name' => 'Regional Employee', 'department' => 'GA', 'bank_name' => 'BCA',
             'account_number' => '1234567890', 'account_holder_name' => 'Regional Employee', 'is_active' => true,
@@ -147,7 +150,7 @@ class RegionalGaClaimDisplayTest extends TestCase
             $this->assertSame($attributes, $this->claim->fresh()->getAttributes());
             $user->preference()->update(['time_format' => '12h']);
             $twelveHour = $this->request($user, $name, [$this->claim]);
-            $this->assertSame(['29/09/2026 6:35 AM WIB', '29/09/2026 5:15 AM WIB', '29/09/2026 7:05 AM WIB'], $this->historyTimes($twelveHour));
+            $this->assertSame(['29/09/2026 6:35 pagi WIB', '29/09/2026 5:15 pagi WIB', '29/09/2026 7:05 pagi WIB'], $this->historyTimes($twelveHour));
             $this->assertSame($this->forms($system), $this->forms($twelveHour));
         }
     }
@@ -264,7 +267,7 @@ class RegionalGaClaimDisplayTest extends TestCase
     {
         $defaults = config('user_preferences.defaults');
         unset($defaults['sidebar_revision']);
-        $user->preference()->updateOrCreate([], [...$defaults, 'timezone' => 'Asia/Jakarta', 'date_format' => $date, 'number_format' => $number]);
+        $user->preference()->updateOrCreate([], [...$defaults, 'locale' => 'id', 'timezone' => 'Asia/Jakarta', 'date_format' => $date, 'number_format' => $number]);
     }
 
     private function surfaces(): array

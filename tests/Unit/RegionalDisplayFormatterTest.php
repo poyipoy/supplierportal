@@ -85,6 +85,33 @@ class RegionalDisplayFormatterTest extends TestCase
         $this->assertSame('23:35', $formatter->time($instant));
     }
 
+    public function test_textual_months_follow_application_language_without_changing_regional_patterns(): void
+    {
+        $previousLocale = app()->getLocale();
+        $formatter = new RegionalDisplayFormatter(['date_format' => 'human', 'timezone' => 'Asia/Jakarta']);
+
+        try {
+            app()->setLocale('en');
+            $this->assertSame('05 Oct 2026', $formatter->date('2026-10-05'));
+            $this->assertSame('05 Oct 2026', (new RegionalDisplayFormatter(['date_format' => 'iso']))->fixedDate('2026-10-05'));
+            $this->assertSame('Oct 2026', $formatter->monthYear(new DateTimeImmutable('2026-10-01')));
+            $this->assertSame('05 Oct 2026 19:00', $formatter->businessTime(new DateTimeImmutable('2026-10-05T12:00:00Z')));
+            $this->assertSame('05/10/2026', (new RegionalDisplayFormatter(['date_format' => 'dmy']))->date('2026-10-05'));
+            $this->assertSame('2026-10-05', (new RegionalDisplayFormatter(['date_format' => 'iso']))->date('2026-10-05'));
+
+            app()->setLocale('id');
+            $this->assertSame('05 Okt 2026', $formatter->date('2026-10-05'));
+            $this->assertSame('05 Okt 2026', (new RegionalDisplayFormatter(['date_format' => 'iso']))->fixedDate('2026-10-05'));
+            $this->assertSame('Okt 2026', $formatter->monthYear(new DateTimeImmutable('2026-10-01')));
+            $this->assertSame('05 Okt 2026 19:00', $formatter->businessTime(new DateTimeImmutable('2026-10-05T12:00:00Z')));
+            $this->assertSame('05 Oktober 2026', (new RegionalDisplayFormatter([]))->date('2026-10-05', 'full_human'));
+            $this->assertSame('05/10/2026', (new RegionalDisplayFormatter(['date_format' => 'dmy']))->date('2026-10-05'));
+            $this->assertSame('2026-10-05', (new RegionalDisplayFormatter(['date_format' => 'iso']))->date('2026-10-05'));
+        } finally {
+            app()->setLocale($previousLocale);
+        }
+    }
+
     public function test_jakarta_converts_an_instant_without_mutating_its_source(): void
     {
         $formatter = new RegionalDisplayFormatter(['timezone' => 'Asia/Jakarta', 'time_format' => '12h']);

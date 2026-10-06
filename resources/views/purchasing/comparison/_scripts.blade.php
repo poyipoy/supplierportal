@@ -92,7 +92,7 @@
             if (matches.length === 0) {
                 const empty = document.createElement('div');
                 empty.className = 'list-group-item small text-muted';
-                empty.textContent = 'No matching PR was found.';
+                empty.textContent = @json(__('purchasing.copy.no_matching_pr_was_found'));
                 comparisonPrSuggestions.appendChild(empty);
                 comparisonPrSuggestions.classList.remove('d-none');
                 return;
@@ -110,7 +110,7 @@
                 const meta = document.createElement('div');
                 meta.className = 'text-muted';
                 meta.style.fontSize = '.75rem';
-                meta.textContent = `${option.period} - ${option.quotationCount} quotation(s)`;
+                meta.textContent = `${option.period} - ${option.quotationCountLabel}`;
 
                 const preview = document.createElement('div');
                 preview.className = 'text-secondary mt-1';
@@ -291,8 +291,8 @@
             };
 
             if (radios.length === 0) {
-                previewContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', 'No items selected yet. Select supplier offers above.'));
-                groupContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', '1 PO will be created per selected supplier group upon confirmation.'));
+                previewContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', @json(__('purchasing.copy.no_items_selected_yet_select_supplier_offers_above'))));
+                groupContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', @json(__('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation'))));
                 return;
             }
 
@@ -328,7 +328,7 @@
                 const group = textElement('div', 'tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant', '');
                 group.append(
                     textElement('div', 'fw-bold tw-text-ui-xs text-primary', `PO #${poCount} • ${supplier.name}`),
-                    textElement('div', 'tw-text-on-surface-variant tw-text-ui-xs', `${supplier.items.length} item(s): ${supplier.items.join(', ')}`),
+                    textElement('div', 'tw-text-on-surface-variant tw-text-ui-xs', `${window.AdasiI18n.choice('purchasing.js.item_count', supplier.items.length, { count: supplier.items.length })}: ${supplier.items.join(', ')}`),
                 );
                 groups.append(group);
             }
@@ -475,8 +475,10 @@
 
         function renderMaterialOptions(materials, selectedValue = '') {
             const placeholder = !supplierSelect.value
-                ? 'Select Supplier first'
-                : (materials.length > 0 ? 'Select Material' : 'No historical material');
+                ? window.AdasiI18n.t('purchasing.js.history_select_supplier_first')
+                : (materials.length > 0
+                    ? window.AdasiI18n.t('purchasing.js.history_select_material')
+                    : window.AdasiI18n.t('purchasing.js.history_no_material'));
 
             materialSelect.innerHTML = [
                 `<option value="">${escapeOptionText(placeholder)}</option>`,
@@ -509,13 +511,13 @@
             renderMaterialOptions([], '');
 
             if (!supplierId) {
-                clearHistorycalResults('Select a supplier and material above to view the historical price trend.');
+                clearHistorycalResults(@json(__('purchasing.copy.comparison_select_supplier_and_material')));
                 return;
             }
 
-            materialSelect.innerHTML = '<option value="">Loading materials...</option>';
+            materialSelect.innerHTML = '<option value="">' + @json(__('purchasing.copy.comparison_loading_materials')) + '</option>';
             materialSelect.disabled = true;
-            clearHistorycalResults('Select a material from the selected supplier to view the historical price trend.');
+            clearHistorycalResults(@json(__('purchasing.copy.comparison_select_material_from_supplier')));
             resultsContainer?.setAttribute('aria-busy', 'true');
 
             try {
@@ -530,7 +532,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to load material');
+                    throw new Error();
                 }
 
                 const data = await response.json();
@@ -545,7 +547,7 @@
                 }
             } catch (error) {
                 renderMaterialOptions([], '');
-                clearHistorycalResults('Failed to load material list. Try selecting a supplier again.');
+                clearHistorycalResults(@json(__('purchasing.copy.comparison_failed_material_list')));
             } finally {
                 resultsContainer?.setAttribute('aria-busy', 'false');
             }
@@ -569,7 +571,7 @@
                     data: {
                         labels: chartData.labels || [],
                         datasets: [{
-                            label: 'Average Price/Kg (IDR)',
+                            label: window.AdasiI18n.t('purchasing.js.average_price_kg_idr'),
                             data: chartData.pricesIdr || [],
                             borderColor: primaryColor,
                             backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, primaryColor, 0.18, 0.01) || 'transparent',
@@ -628,7 +630,7 @@
                     labels: chartData.labels || [],
                     datasets: [
                         {
-                            label: 'Price/Kg (Original)',
+                            label: window.AdasiI18n.t('purchasing.js.price_kg_original'),
                             data: chartData.prices || [],
                             borderColor: primaryColor,
                             backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, primaryColor, 0.16, 0.01) || 'transparent',
@@ -643,7 +645,7 @@
                             yAxisID: 'y',
                         },
                         {
-                            label: 'Price/Kg (IDR)',
+                            label: window.AdasiI18n.t('purchasing.js.price_kg_idr'),
                             data: chartData.pricesIdr || [],
                             borderColor: errorColor,
                             backgroundColor: 'transparent',
@@ -780,12 +782,12 @@
 
             head.innerHTML = `
                 <tr>
-                    <th scope="col">PR Number</th>
-                    <th scope="col">Supplier</th>
-                    <th scope="col">Price/Kg</th>
-                    <th scope="col">Total Price IDR</th>
-                    <th scope="col">PO Date</th>
-                    <th scope="col">Change</th>
+                    <th scope="col">${window.AdasiI18n.t('purchasing.js.pr_number')}</th>
+                    <th scope="col">${window.AdasiI18n.t('purchasing.js.supplier')}</th>
+                    <th scope="col">${window.AdasiI18n.t('purchasing.js.price_kg')}</th>
+                    <th scope="col">${window.AdasiI18n.t('purchasing.js.total_price_idr')}</th>
+                    <th scope="col">${window.AdasiI18n.t('purchasing.js.po_date')}</th>
+                    <th scope="col">${window.AdasiI18n.t('purchasing.js.change')}</th>
                 </tr>
             `;
             body.innerHTML = rows.map((row) => `
@@ -798,7 +800,7 @@
                     <td class="text-center">${escapeOptionText(row.supplier || '-')}</td>
                     <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">${escapeOptionText(row.currency)}</span></td>
                     <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
-                    <td class="text-center">${row.purchase_order_at_display ? escapeOptionText(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">Draft</span>'}</td>
+                    <td class="text-center">${row.purchase_order_at_display ? escapeOptionText(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">' + escapeOptionText(@json(__('purchasing.copy.draft'))) + '</span>'}</td>
                     <td class="text-center">${changeHtml(row.change_pct)}</td>
                 </tr>
             `).join('');
@@ -822,8 +824,8 @@
 
             const currentPage = Number(pagination.current_page || 1);
             const lastPage = Number(pagination.last_page || 1);
-            summary.textContent = `Showing ${pagination.from || 0}-${pagination.to || 0} of ${pagination.total} records`;
-            pageLabel.textContent = `Page ${currentPage} of ${lastPage}`;
+            summary.textContent = window.AdasiI18n.t('purchasing.js.pagination_summary', { from: pagination.from || 0, to: pagination.to || 0, total: pagination.total });
+            pageLabel.textContent = window.AdasiI18n.t('purchasing.js.pagination_page', { current: currentPage, last: lastPage });
             previous.disabled = currentPage <= 1;
             previous.dataset.historyPage = String(Math.max(1, currentPage - 1));
             next.disabled = currentPage >= lastPage;
@@ -838,17 +840,17 @@
                         <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold tw-text-on-surface" id="historicalChartTitle"></h2>
                     </header>
                     <div class="tw-h-72 tw-p-4">
-                        <canvas id="historicalChart" role="img" aria-label="Historical material price trend">Historical material price trend chart.</canvas>
+                        <canvas id="historicalChart" role="img" aria-label="${escapeOptionText(@js(__('common.accessibility.history_trend')))}">${escapeOptionText(@js(__('common.accessibility.history_chart')))}</canvas>
                     </div>
                 </section>
 
-                <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="Historical price summary">
+                <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="${escapeOptionText(@js(__('common.accessibility.history_summary')))}">
                     <div class="tw-p-4">
-                        <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change per Period</div>
+                        <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">${escapeOptionText(@js(__('common.accessibility.average_change')))}</div>
                         <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold tw-text-on-surface-variant" id="averageChangeValue">-</div>
                     </div>
                     <div class="tw-border-t tw-border-outline-variant tw-p-4 sm:tw-border-t-0">
-                        <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Total Change, Initial to Latest</div>
+                        <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">${escapeOptionText(@js(__('common.accessibility.initial_latest')))}</div>
                         <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold tw-text-on-surface-variant" id="totalChangeValue">-</div>
                     </div>
                 </section>
@@ -867,9 +869,9 @@
                     <div id="historicalPagination" class="d-none tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-4 tw-py-3">
                         <span id="historicalPaginationSummary" class="tw-text-ui-xs tw-text-on-surface-variant"></span>
                         <div class="tw-flex tw-items-center tw-gap-2">
-                            <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">Previous</button>
+                            <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">${escapeOptionText(@js(__('pagination.previous')))}</button>
                             <span id="historicalPaginationPage" class="tw-min-w-20 tw-text-center tw-text-ui-xs tw-font-semibold tw-text-on-surface"></span>
-                            <button type="button" id="historicalNextPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">Next</button>
+                            <button type="button" id="historicalNextPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">${escapeOptionText(@js(__('pagination.next')))}</button>
                         </div>
                     </div>
                 </section>
@@ -890,8 +892,8 @@
                                 <span class="tw-text-on-surface-variant" style="font-size: 2rem;">&#128200;</span>
                                 <p class="tw-m-0 tw-mt-3 tw-text-ui-sm tw-text-on-surface-variant">
                                     ${escapeOptionText(payload.materialName
-                                        ? 'No quotation data found for this supplier and material combination.'
-                                        : 'Select a supplier and material above to view the historical price trend.')}
+                                        ? @json(__('purchasing.copy.comparison_no_quotation_data'))
+                                        : @json(__('purchasing.copy.comparison_select_supplier_and_material')))}
                                 </p>
                             </div>
                         </div>
@@ -910,7 +912,10 @@
             renderPagination(payload.pagination || null);
             const titleEl = document.getElementById('historicalChartTitle');
             if (titleEl) {
-                titleEl.innerHTML = `<span class="tw-text-primary me-1">&#128200;</span><span>Price Trend: ${escapeOptionText(payload.materialName)} — ${escapeOptionText(payload.supplierName)}</span>`;
+                const title = @json(__('purchasing.copy.comparison_price_trend_title', ['material' => ':material', 'supplier' => ':supplier']))
+                    .replace(':material', escapeOptionText(payload.materialName))
+                    .replace(':supplier', escapeOptionText(payload.supplierName));
+                titleEl.innerHTML = `<span class="tw-text-primary me-1">&#128200;</span><span>${title}</span>`;
             }
         }
 
@@ -946,7 +951,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to load historical data');
+                    throw new Error();
                 }
 
                 const payload = await response.json();
@@ -964,7 +969,7 @@
                 if (resultsContainer) {
                     resultsContainer.innerHTML = `
                         <div class="tw-flex tw-items-start tw-gap-3 tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-p-4 tw-text-warning-container-foreground" role="status">
-                            <div class="tw-text-ui-sm">Failed to load historical data. Try selecting filters again.</div>
+                            <div class="tw-text-ui-sm">${escapeOptionText(@json(__('purchasing.copy.comparison_failed_historical_data')))}</div>
                         </div>
                     `;
                 }
@@ -993,7 +998,7 @@
             if (materialSelect.value) {
                 window.loadHistorycalPayloadFromFilters();
             } else {
-                clearHistorycalResults('Select a material from the selected supplier to view the historical price trend.');
+                clearHistorycalResults(@json(__('purchasing.copy.comparison_select_material_from_supplier')));
             }
         });
 

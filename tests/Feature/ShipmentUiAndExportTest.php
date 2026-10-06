@@ -143,6 +143,26 @@ class ShipmentUiAndExportTest extends TestCase
         ]);
     }
 
+    public function test_supplier_draft_actions_localize_without_changing_submission_destinations(): void
+    {
+        $draft = $this->shipmentService->createDraft($this->supplierA);
+        $this->supplierA->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);
+
+        $response = $this->actingAs($this->supplierA)->getJson(route('supplier.shipments.index'), [
+            'X-Requested-With' => 'XMLHttpRequest',
+        ])->assertOk();
+
+        $actions = $response->json('data.0.action');
+        $this->assertStringContainsString('Ajukan', $actions);
+        $this->assertStringContainsString('Lihat detail', $actions);
+        $this->assertStringContainsString('Ubah draf', $actions);
+        $this->assertStringContainsString('Batalkan pengiriman', $actions);
+        $this->assertStringContainsString(route('supplier.shipments.submit', $draft), $actions);
+        $this->assertStringContainsString(route('supplier.shipments.cancel', $draft), $actions);
+        $this->assertStringContainsString('btn-submit-draft', $actions);
+        $this->assertSame('draft', $draft->fresh()->status);
+    }
+
     public function test_shipments_export_produces_mapped_rows(): void
     {
         $shipment = $this->shipmentService->createDraft($this->supplierA, [
@@ -255,17 +275,19 @@ class ShipmentUiAndExportTest extends TestCase
         $createBlade = file_get_contents(resource_path('views/supplier/shipments/create.blade.php'));
         $this->assertStringContainsString('id="btnSubmitShipment"', $createBlade);
         $this->assertStringContainsString('window.AdasiAlert.confirm', $createBlade);
-        $this->assertStringContainsString('Submit Shipment Delivery?', $createBlade);
+        $this->assertStringContainsString('shipments.confirmations.submit.title', $createBlade);
         $this->assertStringContainsString("actionInput.value = 'submit'", $createBlade);
 
         $showBlade = file_get_contents(resource_path('views/supplier/shipments/show.blade.php'));
         $this->assertStringContainsString('id="btnConfirmSubmit"', $showBlade);
         $this->assertStringContainsString('window.AdasiAlert.confirm', $showBlade);
-        $this->assertStringContainsString('Submit Shipment Delivery?', $showBlade);
+        $this->assertStringContainsString('shipments.confirmations.submit.title', $showBlade);
 
         $indexBlade = file_get_contents(resource_path('views/supplier/shipments/index.blade.php'));
         $this->assertStringContainsString('btn-submit-draft', $indexBlade);
         $this->assertStringContainsString('AdasiAlert.confirm', $indexBlade);
-        $this->assertStringContainsString('Submit Shipment Delivery?', $indexBlade);
+        $this->assertStringContainsString('shipments.confirmations.submit.title', $indexBlade);
+        $this->assertSame('Submit Shipment Delivery?', __('shipments.confirmations.submit.title', [], 'en'));
+        $this->assertSame('Ajukan Pengiriman Barang?', __('shipments.confirmations.submit.title', [], 'id'));
     }
 }

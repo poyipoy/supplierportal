@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\ApplyUserLocale;
 use App\Http\Middleware\DecodeHashids;
 use App\Http\Middleware\EnforceAuthSessionSecurity;
 use App\Http\Middleware\EnforceSupplierDomain;
@@ -55,11 +56,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->authenticateSessions();
 
         $middleware->web(append: [
+            ApplyUserLocale::class,
             DecodeHashids::class,
             EnforceAuthSessionSecurity::class,
             AddSecurityHeaders::class,
             EnforceSupplierDomain::class,
         ]);
+        $middleware->appendToPriorityList(\Illuminate\Session\Middleware\StartSession::class, ApplyUserLocale::class);
 
         $middleware->alias([
             'role' => RoleMiddleware::class,

@@ -80,7 +80,7 @@
                             @if($description)<p id="{{ $descriptionId }}" class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ $description }}</p>@endif
                         @endisset
                     </div>
-                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-11 tw-w-11 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface" @click="closeDialog()" aria-label="Close dialog">
+                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-11 tw-w-11 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface" @click="closeDialog()" aria-label="{{ __('common.dialog.close') }}">
                         <x-ui.icon name="x" size="sm" />
                     </button>
                 </header>

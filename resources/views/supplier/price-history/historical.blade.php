@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Price Trends - ADASI Portal')
-@section('page-title', 'Material Price Trends')
+@section('title', __('supplier.copy.price_trends_adasi_portal'))
+@section('page-title', __('supplier.copy.material_price_trends'))
 
 @section('content')
 @php
@@ -30,22 +30,22 @@
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Price History' => route('supplier.price-history.index'),
-        'Price Trends' => null,
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.price_history') => route('supplier.price-history.index'),
+        __('purchasing.breadcrumbs.price_trends') => null,
     ]" />
 
     <x-ui.page-header
-        title="Material Price Trends"
-        eyebrow="Commercial Intelligence"
-        description="Analyze historical pricing trajectories across procurement periods for materials quoted by your company."
+        :title="__('supplier.copy.material_price_trends')"
+        :eyebrow="__('supplier.copy.commercial_intelligence')"
+        :description="__('supplier.copy.analyze_historical_pricing_trajectories_across_procurement_periods_for_materials_quoted_by_your_comp')"
     />
 
     {{-- Tabs --}}
     <x-supplier.price-history-tabs active="historical" />
 
     {{-- Search & Dimension Filters Card --}}
-        <x-ui.card title="Analytics and Material Selection">
+        <x-ui.card :title="__('supplier.copy.analytics_and_material_selection')">
         <x-slot:actions>
             @if($selectedMaterialName && $selectedCurrency)
                 <x-ui.button
@@ -53,30 +53,30 @@
                     variant="outline"
                     size="sm"
                     data-async-export
-                    data-export-source-singular="price history entry"
-                    data-export-source-plural="price history entries"
+                    data-export-source-singular="{{ __('exports.sources.price_history_entry') }}"
+                    data-export-source-plural="{{ __('exports.sources.price_history_entries') }}"
                     :data-export-source-count="count($tableData)"
-                    data-export-row-label="price history rows"
-                    data-export-row-explanation="Each history entry will be written as one Excel row."
+                    data-export-row-label="{{ __('supplier.copy.price_history_rows') }}"
+                    data-export-row-explanation="{{ __('supplier.copy.each_history_entry_will_be_written_as_one_excel_row') }}"
                 >
                     <x-ui.icon name="file-spreadsheet" size="sm" />
-                    <span>Export Analysis</span>
+                    <span>{{ __('supplier.copy.export_analysis') }}</span>
                 </x-ui.button>
             @endif
         </x-slot:actions>
 
         <form method="GET" action="{{ route('supplier.price-history.historical') }}" class="row g-3 align-items-end" id="historicalFilterForm">
             <div class="col-md-6 col-lg-4">
-                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalMaterialSelect">Select Material Specification</label>
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalMaterialSelect">{{ __('supplier.copy.select_material_specification') }}</label>
                 <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required>
-                    <option value="">Choose Material...</option>
+                    <option value="">{{ __('supplier.copy.choose_material') }}</option>
                     @foreach($materials as $material)
                         <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" {{ $selectedMaterialName === $material['name'] ? 'selected' : '' }}>{{ $material['name'] }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="col-md-3 col-lg-3">
-                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalRangeSelect">Time Horizon</label>
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalRangeSelect">{{ __('supplier.copy.time_horizon') }}</label>
                 <select name="range" class="form-select form-select-sm" id="historicalRangeSelect">
                     @foreach($rangeOptions as $value => $label)
                         <option value="{{ $value }}" {{ $range === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -84,10 +84,10 @@
                 </select>
             </div>
             <div class="col-md-3 col-lg-2">
-                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalCurrencySelect">Currency</label>
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="historicalCurrencySelect">{{ __('supplier.copy.currency') }}</label>
                 <select name="currency" class="form-select form-select-sm" id="historicalCurrencySelect" {{ $currencyOptions->isEmpty() ? 'disabled' : 'required' }}>
                     @if($currencyOptions->isEmpty())
-                        <option value="">Select material first</option>
+                        <option value="">{{ __('supplier.copy.select_material_first') }}</option>
                     @else
                         @foreach($currencyOptions as $currency)
                             <option value="{{ $currency }}" @selected($selectedCurrency === $currency)>{{ $currency }}</option>
@@ -96,20 +96,20 @@
                 </select>
             </div>
             <div class="col-md-12 col-lg-3">
-                <label class="form-label small fw-semibold tw-text-on-surface mb-1">Aggregation Interval</label>
+                <label class="form-label small fw-semibold tw-text-on-surface mb-1">{{ __('supplier.copy.aggregation_interval') }}</label>
                 <div class="btn-group btn-group-sm w-100" role="group">
                     <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
-                    <label class="btn btn-outline-primary" for="periodViewMonthly">Monthly</label>
+                    <label class="btn btn-outline-primary" for="periodViewMonthly">{{ __('supplier.copy.monthly') }}</label>
 
                     <input type="radio" class="btn-check" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
-                    <label class="btn btn-outline-primary" for="periodViewYearly">Yearly</label>
+                    <label class="btn btn-outline-primary" for="periodViewYearly">{{ __('supplier.copy.yearly') }}</label>
                 </div>
             </div>
 
             <div class="col-12 mt-2 mb-0">
                 <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 tw-text-on-surface-variant hover:tw-text-primary">
                             <x-ui.icon name="sliders-horizontal" size="sm" />
-                    <span>Filter by Target Dimensions (Optional)</span>
+                    <span>{{ __('supplier.copy.filter_by_target_dimensions_optional') }}</span>
                             <x-ui.icon name="chevron-down" size="sm" />
                 </a>
             </div>
@@ -117,29 +117,29 @@
             <div class="collapse col-12 {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
                 <div class="row g-2 p-3 tw-bg-surface-low border rounded mt-1">
                     <div class="col-6 col-md-2 dimension-field" data-dim="thickness">
-                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-thickness">Thickness (mm)</label>
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-thickness">{{ __('supplier.copy.thickness_mm') }}</label>
                         <input type="number" step="0.01" name="thickness" id="supplier-history-thickness" class="form-control form-control-sm historical-filter-input" value="{{ request('thickness') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="d_inner">
-                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-d-inner">D-Inner (mm)</label>
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-d-inner">{{ __('supplier.copy.d_inner_mm') }}</label>
                         <input type="number" step="0.01" name="d_inner" id="supplier-history-d-inner" class="form-control form-control-sm historical-filter-input" value="{{ request('d_inner') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="d_outer">
-                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-d-outer">D-Outer (mm)</label>
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-d-outer">{{ __('supplier.copy.d_outer_mm') }}</label>
                         <input type="number" step="0.01" name="d_outer" id="supplier-history-d-outer" class="form-control form-control-sm historical-filter-input" value="{{ request('d_outer') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="width">
-                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-width">Width (mm)</label>
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-width">{{ __('supplier.copy.width_mm') }}</label>
                         <input type="number" step="0.01" name="width" id="supplier-history-width" class="form-control form-control-sm historical-filter-input" value="{{ request('width') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="length">
-                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-length">Length (mm)</label>
+                        <label class="form-label tw-text-ui-xs tw-text-on-surface-variant fw-semibold tw-uppercase" for="supplier-history-length">{{ __('supplier.copy.length_mm') }}</label>
                         <input type="number" step="0.01" name="length" id="supplier-history-length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
                     </div>
                     <div class="col-12 col-md-2 d-flex align-items-end">
                         <x-ui.button type="submit" size="sm" class="tw-w-full">
                             <x-ui.icon name="search" size="sm" />
-                            <span>Apply Filters</span>
+                            <span>{{ __('supplier.copy.apply_filters') }}</span>
                         </x-ui.button>
                     </div>
                 </div>
@@ -156,31 +156,31 @@
                     <div class="w-100">
                         <h6 class="mb-0 fw-bold tw-text-ui-sm tw-text-on-surface" id="historicalChartTitle">
                             <x-ui.icon name="trending-up" size="sm" class="tw-me-1.5 text-primary" />
-                            Price Trend Analysis: <span class="text-primary">{{ $selectedMaterialName }}</span> · {{ $selectedCurrency }}
+                            {{ __('supplier.copy.price_trend_analysis') }} <span class="text-primary">{{ $selectedMaterialName }}</span> · {{ $selectedCurrency }}
                         </h6>
                         <p class="tw-mb-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant" id="historicalChartDescription">
-                            Original quoted price per kilogram in {{ $selectedCurrency }}. Values are not converted to another currency.
+                            {{ __('supplier.page.price_currency', ['currency' => $selectedCurrency]) }}
                         </p>
                     </div>
                 </x-slot:header>
                 <div id="historicalChartContainer" class="tw-relative tw-h-64 tw-w-full md:tw-h-[320px]">
-                    <canvas id="historicalChart" role="img" aria-label="Original material price history in {{ $selectedCurrency }} per kilogram" aria-describedby="historicalChartDescription">Original material price history chart.</canvas>
+                    <canvas id="historicalChart" role="img" aria-label="{{ __('supplier.page.price_history', ['currency' => $selectedCurrency]) }}" aria-describedby="historicalChartDescription">{{ __('supplier.copy.original_material_price_history_chart') }}</canvas>
                     <div id="historicalChartFallback" class="d-none tw-flex tw-h-full tw-items-center tw-justify-center tw-p-4 tw-text-center tw-text-ui-sm tw-text-on-surface-variant" role="status">
-                        Price chart is temporarily unavailable. The historical breakdown remains available below.
+                        {{ __('supplier.copy.price_chart_is_temporarily_unavailable_the_historical_breakdown_remains_available_below') }}
                     </div>
                 </div>
             </x-ui.card>
 
             {{-- 2 Metrics Summary --}}
-            <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant mb-4" id="historicalSummary" aria-label="Historical price summary">
+            <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant mb-4" id="historicalSummary" aria-label="{{ __('supplier.copy.historical_price_summary') }}">
                 <div class="tw-p-3.5">
-                    <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Average Change Per Period</div>
+                    <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">{{ __('supplier.copy.average_change_per_period') }}</div>
                     <div class="fs-4 fw-bold ui-tabular-nums mt-1 {{ ($summary['average_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['average_change_pct'] ?? null) < 0) ? 'text-success' : 'tw-text-on-surface-variant') }}" id="averageChangeValue">
                         {{ $formatPct($summary['average_change_pct'] ?? null) }}
                     </div>
                 </div>
                 <div class="tw-border-t tw-border-outline-variant tw-p-3.5 sm:tw-border-t-0">
-                    <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Cumulative Trajectory, Initial to Latest</div>
+                    <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">{{ __('supplier.copy.cumulative_trajectory_initial_to_latest') }}</div>
                     <div class="fs-4 fw-bold ui-tabular-nums mt-1 {{ ($summary['total_change_pct'] ?? null) > 0 ? 'text-danger' : ((($summary['total_change_pct'] ?? null) < 0) ? 'text-success' : 'tw-text-on-surface-variant') }}" id="totalChangeValue">
                         {{ $formatPct($summary['total_change_pct'] ?? null) }}
                     </div>
@@ -189,27 +189,27 @@
 
             {{-- Supporting Breakdown Table --}}
             <x-ui.data-table
-                title="Historical Quotation Breakdown"
-                description="Audited original prices in the selected transaction currency."
+                :title="__('supplier.copy.historical_quotation_breakdown')"
+                :description="__('supplier.copy.audited_original_prices_in_the_selected_transaction_currency')"
             >
                 <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                     <thead class="table-light text-center" id="historicalTableHead">
                         @if($periodView === 'yearly')
                             <tr>
-                                <th scope="col">Year</th>
-                                <th scope="col" class="text-end">Average Price/Kg ({{ $selectedCurrency }})</th>
-                                <th scope="col" class="text-end">Lowest Price/Kg</th>
-                                <th scope="col" class="text-end">Highest Price/Kg</th>
-                                <th scope="col" class="text-center">Period Variance</th>
+                                <th scope="col">{{ __('supplier.copy.year') }}</th>
+                                <th scope="col" class="text-end">{{ __('supplier.js.average_price', ['currency' => $selectedCurrency]) }}</th>
+                                <th scope="col" class="text-end">{{ __('supplier.copy.lowest_price_kg') }}</th>
+                                <th scope="col" class="text-end">{{ __('supplier.copy.highest_price_kg') }}</th>
+                                <th scope="col" class="text-center">{{ __('supplier.copy.period_variance') }}</th>
                             </tr>
                         @else
                             <tr>
-                                <th scope="col">PR Reference</th>
-                                <th scope="col">PO Date</th>
-                                <th scope="col" class="text-center">Status</th>
-                                <th scope="col" class="text-end">Quoted Price/Kg</th>
-                                <th scope="col" class="text-center">Currency</th>
-                                <th scope="col" class="text-center">% Variance</th>
+                                <th scope="col">{{ __('supplier.copy.pr_reference') }}</th>
+                                <th scope="col">{{ __('supplier.copy.po_date') }}</th>
+                                <th scope="col" class="text-center">{{ __('supplier.copy.status') }}</th>
+                                <th scope="col" class="text-end">{{ __('supplier.copy.quoted_price_kg') }}</th>
+                                <th scope="col" class="text-center">{{ __('supplier.copy.currency') }}</th>
+                                <th scope="col" class="text-center">{{ __('supplier.copy.variance') }}</th>
                             </tr>
                         @endif
                     </thead>
@@ -236,7 +236,7 @@
                                         @if(!empty($row['purchase_order_at_display']))
                                             {{ $row['purchase_order_at_display'] }}
                                         @else
-                                            <span class="ui-status-chip ui-status-chip--neutral">Draft</span>
+                                            <span class="ui-status-chip ui-status-chip--neutral">{{ __('supplier.copy.draft') }}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">{!! $row['status_badge'] ?? '-' !!}</td>
@@ -252,14 +252,14 @@
                 </table>
             </x-ui.data-table>
         @elseif($selectedMaterialName)
-            <x-ui.alert tone="warning" title="No matching price history">
+            <x-ui.alert tone="warning" :title="__('supplier.copy.no_matching_price_history')">
                 {{ $selectedCurrency
-                    ? 'No historical pricing in the selected currency matches the material, period, and dimension criteria.'
-                    : 'No purchase-backed pricing is available for the selected material and dimension criteria.' }}
+                    ? __('supplier.copy.no_historical_pricing_in_the_selected_currency_matches_the_material_period_and_dimension_criteria')
+                    : __('supplier.copy.no_purchase_backed_pricing_is_available_for_the_selected_material_and_dimension_criteria') }}
             </x-ui.alert>
         @else
             <div class="tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface">
-                <x-ui.empty-state icon="trending-up" title="Select a material specification" description="Choose a material above to review its price trajectory." />
+                <x-ui.empty-state icon="trending-up" :title="__('supplier.copy.select_a_material_specification')" :description="__('supplier.copy.choose_a_material_above_to_review_its_price_trajectory')" />
             </div>
         @endif
     </div>
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 filterForm.submit();
             }
         } else {
-            clearHistorycalResults('Select a material specification above to render price trajectory analytics.');
+            clearHistorycalResults(@js(__('supplier.copy.choose_a_material_above_to_review_its_price_trajectory')));
         }
     });
 
@@ -428,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
             maximumFractionDigits: 2,
         });
         const datasets = [{
-            label: historicalChartData.type === 'yearly' ? `Average Price / Kg (${chartCurrency})` : `Price / Kg (${chartCurrency})`,
+            label: historicalChartData.type === 'yearly' ? window.AdasiI18n.t('supplier.js.average_price', { currency: chartCurrency }) : window.AdasiI18n.t('supplier.js.price_kg', { currency: chartCurrency }),
             data: historicalChartData.prices || [],
             borderColor: colors.primary,
             backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, colors.primary, 0.16, 0.01) || 'transparent',

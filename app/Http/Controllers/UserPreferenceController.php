@@ -22,7 +22,7 @@ class UserPreferenceController extends Controller
 
         return view('profile.customization', [
             'preferences' => $effective,
-            'accentChoices' => config('user_preferences.accents'),
+            'accentChoices' => collect(config('user_preferences.accents'))->map(fn ($label, $key) => __('customization.accents.'.$key))->all(),
             'regionalChoices' => array_intersect_key(config('regional_display'), array_flip(['timezones', 'date_formats', 'time_formats', 'number_formats'])),
             'dashboardAudience' => $dashboardWidgets->audienceFor($user),
             'dashboardWidgets' => $dashboardWidgets->layoutFor($user, $effective['dashboard_preferences']),
@@ -37,11 +37,11 @@ class UserPreferenceController extends Controller
         UpdateUserPreferenceRequest $request,
         UserPreferenceService $preferences,
     ): RedirectResponse {
-        $preferences->save($request->user(), $request->safe()->only([
-            'theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format',
+        $saved = $preferences->save($request->user(), $request->safe()->only([
+            'theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format', 'locale',
         ]));
 
-        return redirect()->route('profile.customization')->with('success', 'Customization saved.');
+        return redirect()->route('profile.customization')->with('success', __('customization.saved', [], $saved['locale']));
     }
 
     public function reset(
@@ -70,11 +70,11 @@ class UserPreferenceController extends Controller
                 ]);
             }
 
-            return redirect()->route('profile.customization')->with('success', 'Dashboard layout reset to defaults.');
+            return redirect()->route('profile.customization')->with('success', __('customization.dashboard_reset'));
         }
 
         $preferences->reset($user);
 
-        return redirect()->route('profile.customization')->with('success', 'Customization reset to defaults.');
+        return redirect()->route('profile.customization')->with('success', __('customization.reset', [], 'en'));
     }
 }

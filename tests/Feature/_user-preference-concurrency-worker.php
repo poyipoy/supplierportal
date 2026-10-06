@@ -48,6 +48,7 @@ try {
             'page_size' => 25,
             'quick_access' => [],
             'accent' => $argv[4] ?? 'brand',
+            ...isset($argv[6]) ? ['locale' => $argv[6]] : [],
             'dashboard' => ['hidden' => ['admin.notifications'], 'order' => ['admin.summary']],
         ]);
     }

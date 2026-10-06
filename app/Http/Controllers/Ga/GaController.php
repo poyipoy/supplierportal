@@ -42,7 +42,11 @@ class GaController extends Controller
     {
         $employees = Employee::active()->orderBy('name')->get();
         $employeeOptions = $employees->map(function (Employee $emp) {
-            $accountDetail = $emp->bank_name.' ('.$emp->account_number.($emp->account_holder_name ? ' a.n '.$emp->account_holder_name : '').')';
+            $accountDetail = __('finance.drp_ui.bank_details', [
+                'bank' => $emp->bank_name,
+                'account' => $emp->account_number,
+                'holder' => $emp->account_holder_name,
+            ]);
 
             return [
                 'value' => (string) $emp->id,
@@ -78,7 +82,7 @@ class GaController extends Controller
         $files = $request->allFiles();
         $claim = $service->submitClaim($request->user(), $data, $files);
 
-        return redirect()->route('ga.claims.show', $claim)->with('success', "GA Claim [{$claim->claim_number}] submitted with Tanda Terima.");
+        return redirect()->route('ga.claims.show', $claim)->with('success', __('ga.feedback.submitted', ['number' => $claim->claim_number]));
     }
 
     public function show(GaClaim $claim)
@@ -99,14 +103,23 @@ class GaController extends Controller
             'scale' => 4,
         ]))->render($signedUrl);
 
-        return view('ga.claims.receipt', compact('claim', 'qrCode', 'signedUrl'));
+        $user = auth()->user();
+        $isFinance = $user && $user->isFinance();
+        $detailUrl = $isFinance
+            ? route('finance.ga-claims.show', $claim)
+            : route('ga.claims.show', $claim);
+        $indexUrl = $isFinance
+            ? route('finance.ga-claims.index')
+            : route('ga.claims.index');
+
+        return view('ga.claims.receipt', compact('claim', 'qrCode', 'signedUrl', 'detailUrl', 'indexUrl'));
     }
 
     public function basicVerify(GaClaim $claim, Request $request, GaClaimService $service)
     {
         $service->basicVerify($claim, $request->user(), $request->input('notes'));
 
-        return back()->with('success', 'GA Basic Verification recorded.');
+        return back()->with('success', __('ga.feedback.verified'));
     }
 
     public function drpDraft()
@@ -135,7 +148,7 @@ class GaController extends Controller
 
         $batch = $service->createGaBatch($request->user(), $request->input('claim_ids'), $request->input('notes'));
 
-        return redirect()->route('ga.claims.index')->with('success', "DRP GA Draft [{$batch->batch_number}] prepared for Finance review.");
+        return redirect()->route('ga.claims.index')->with('success', __('ga.feedback.drp_prepared', ['number' => $batch->batch_number]));
     }
 
     public function revision(GaClaim $claim)
@@ -159,6 +172,6 @@ class GaController extends Controller
         $files = $request->allFiles();
         $service->resubmitClaim($request->user(), $claim, $data, $files);
 
-        return redirect()->route('ga.claims.show', $claim)->with('success', "GA Claim [{$claim->claim_number}] telah direvisi dan diajukan ulang.");
+        return redirect()->route('ga.claims.show', $claim)->with('success', __('ga.feedback.resubmitted', ['number' => $claim->claim_number]));
     }
 }

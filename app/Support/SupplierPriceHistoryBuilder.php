@@ -17,20 +17,20 @@ class SupplierPriceHistoryBuilder
     {
         if ($periodView === 'yearly') {
             return [
-                'all' => 'All Years',
-                '1y' => 'Last 1 Year',
-                '2y' => 'Last 2 Years',
-                '3y' => 'Last 3 Years',
-                '5y' => 'Last 5 Years',
+                'all' => __('supplier.copy.all_years'),
+                '1y' => __('supplier.copy.last_1_year'),
+                '2y' => __('supplier.copy.last_2_years'),
+                '3y' => __('supplier.copy.last_3_years'),
+                '5y' => __('supplier.copy.last_5_years'),
             ];
         }
 
         return [
-            '3m' => 'Last 3 Months',
-            '6m' => 'Last 6 Months',
-            '12m' => 'Last 12 Months',
-            '24m' => 'Last 24 Months',
-            'all' => 'All Months',
+            '3m' => __('supplier.copy.last_3_months'),
+            '6m' => __('supplier.copy.last_6_months'),
+            '12m' => __('supplier.copy.last_12_months'),
+            '24m' => __('supplier.ranges.last_24_months'),
+            'all' => __('supplier.copy.all_months'),
         ];
     }
 
@@ -142,9 +142,9 @@ class SupplierPriceHistoryBuilder
     public function statusLabel(string $status): string
     {
         return match ($status) {
-            'submitted' => 'Submitted',
-            'accepted' => 'Accepted',
-            'rejected' => 'Rejected',
+            'submitted' => __('supplier.copy.submitted'),
+            'accepted' => __('supplier.copy.accepted'),
+            'rejected' => __('supplier.copy.rejected'),
             default => ucfirst($status),
         };
     }
@@ -185,7 +185,7 @@ class SupplierPriceHistoryBuilder
             $periodSort = $purchaseAt
                 ? $purchaseAt->format('Y-m-d H:i:s').'-'.str_pad((string) $item->id, 10, '0', STR_PAD_LEFT)
                 : sprintf('9999-99-99 99:99:99-%010d', (int) $item->id);
-            $periodLabel = $purchaseAt?->format('M Y') ?? ($period->display_label ?? $period->name ?? 'Unknown');
+            $periodLabel = $purchaseAt?->format('M Y') ?? ($period->display_label ?? $period->name ?? __('common.unknown'));
 
             return [
                 'period' => $periodLabel,

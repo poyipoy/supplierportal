@@ -44,6 +44,7 @@ class GaClaimWorkflowTest extends TestCase
 
     public function test_ga_submits_claim_and_tt_ga_is_generated(): void
     {
+        app()->setLocale('id');
         $gaUser = User::factory()->create(['role' => 'ga']);
         $employee = $this->createEmployee();
 
@@ -65,6 +66,11 @@ class GaClaimWorkflowTest extends TestCase
         $this->assertSame(GaClaim::STATUS_SUBMITTED, $claim->status);
         $this->assertStringStartsWith('CLM-', $claim->claim_number);
         $this->assertSame('1500000.00', $claim->amount);
+        $this->assertSame(
+            __('ga.history.submitted', ['employee' => $employee->name], 'id'),
+            $claim->statusHistories()->where('event', 'submitted')->firstOrFail()->notes,
+        );
+        $this->assertSame('Dinner with client PT Krakatau', $claim->description);
 
         // TT-GA generated
         $this->assertNotNull($claim->receipt);
@@ -147,7 +153,7 @@ class GaClaimWorkflowTest extends TestCase
         );
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('claim must be in BASIC_VERIFIED status before Finance verification');
+        $this->expectExceptionMessage(__('ga.validation.basic_required'));
         $this->verificationService->financeVerify($claim, $financeUser, approve: true);
     }
 
@@ -272,6 +278,26 @@ class GaClaimWorkflowTest extends TestCase
         $this->assertFalse($employee->fresh()->is_active);
     }
 
+    public function test_employee_status_and_action_labels_follow_the_account_locale(): void
+    {
+        $activeEmployee = $this->createEmployee(['name' => 'Active Employee']);
+        $inactiveEmployee = $this->createEmployee(['name' => 'Inactive Employee', 'is_active' => false]);
+
+        foreach (['en', 'id'] as $locale) {
+            $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
+            $ga->preference()->create([...config('user_preferences.defaults'), 'locale' => $locale]);
+
+            $response = $this->actingAs($ga)->get(route('ga.employees.index'))->assertOk();
+            $response->assertSeeText(__('ga.labels.employee_status', [], $locale));
+            $response->assertSeeText(__('ga.employee_status.active', [], $locale));
+            $response->assertSeeText(__('ga.employee_status.inactive', [], $locale));
+            $response->assertSeeText(__('ga.employee_action.activate', [], $locale));
+            $response->assertSeeText(__('ga.employee_action.deactivate', [], $locale));
+            $response->assertSeeText($activeEmployee->name);
+            $response->assertSeeText($inactiveEmployee->name);
+        }
+    }
+
     public function test_unsupported_employee_resource_routes_are_not_exposed_and_role_protection_is_enforced(): void
     {
         $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
@@ -372,7 +398,7 @@ class GaClaimWorkflowTest extends TestCase
         $response->assertSee('HRGA');
         $response->assertSee('5220804200');
         $response->assertSee('employee_id');
-        $response->assertSee('Karyawan Penerima Reimbursement / Klaim');
+        $response->assertSee(__('ga.labels.employee_receiver'));
     }
 
     public function test_ga_submits_claim_via_http_form_with_selected_employee(): void

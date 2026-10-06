@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Material Claims - ADASI Portal')
-@section('page-title', 'Material Claims')
+@section('title', __('claims.copy.material_claims_adasi_portal'))
+@section('page-title', __('claims.copy.material_claims'))
 
 @push('styles')
 <style>
@@ -33,9 +33,9 @@
 <div class="tw-grid tw-gap-4">
     {{-- 1. Compact Page Header --}}
     <x-ui.page-header
-        title="Material Claims"
-        eyebrow="Purchasing"
-        description="Submit claims for NG quality inspections and monitor supplier resolution progress."
+        :title="__('claims.copy.material_claims')"
+        :eyebrow="__('claims.copy.purchasing')"
+        :description="__('claims.copy.submit_claims_for_ng_quality_inspections_and_monitor_supplier_resolution_progress')"
     />
 
     {{-- 2. Tabbed Data Card --}}
@@ -44,7 +44,7 @@
             <ul class="nav claim-nav-tabs" id="claimTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active d-inline-flex align-items-center gap-2" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab" aria-controls="action" aria-selected="true">
-                        <span>Action Required</span>
+                        <span>{{ __('claims.copy.action_required') }}</span>
                         @if($actionCount > 0)
                             <span class="ui-status-chip ui-status-chip--error ui-tabular-nums">{{ $actionCount }}</span>
                         @else
@@ -54,7 +54,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
-                        <span>Claim History</span>
+                        <span>{{ __('claims.copy.claim_history') }}</span>
                     </button>
                 </li>
             </ul>
@@ -64,17 +64,17 @@
             <div class="tab-content" id="claimTabsContent">
                 {{-- Tab 1: Action Required --}}
                 <div class="tab-pane fade show active" id="action" role="tabpanel" aria-labelledby="action-tab" tabindex="0">
-                    <x-ui.alert tone="warning" title="Claim initiation required" class="tw-mb-3">The purchase orders below failed QC inspection with an NG result. Submit a formal claim to initiate replacement or compensation.</x-ui.alert>
+                    <x-ui.alert tone="warning" :title="__('claims.copy.claim_initiation_required')" class="tw-mb-3">{{ __('claims.copy.the_purchase_orders_below_failed_qc_inspection_with_an_ng_result_submit_a_formal_claim_to_initiate_r') }}</x-ui.alert>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="actionTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th scope="col">PO Number</th>
-                                    <th scope="col">Supplier</th>
-                                    <th scope="col">Inspection Date</th>
-                                    <th scope="col" class="text-center">PO Status</th>
-                                    <th scope="col" class="text-end" style="width: 130px;">Action</th>
+                                    <th scope="col">{{ __('claims.copy.po_number') }}</th>
+                                    <th scope="col">{{ __('claims.copy.supplier') }}</th>
+                                    <th scope="col">{{ __('claims.copy.inspection_date') }}</th>
+                                    <th scope="col" class="text-center">{{ __('claims.copy.po_status') }}</th>
+                                    <th scope="col" class="text-end" style="width: 130px;">{{ __('claims.copy.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -88,16 +88,16 @@
                         <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="historyTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th scope="col">Claim ID</th>
-                                    <th scope="col">PO Number</th>
-                                    <th scope="col">Supplier</th>
-                                    <th scope="col">Date Submitted</th>
+                                    <th scope="col">{{ __('claims.copy.claim_id') }}</th>
+                                    <th scope="col">{{ __('claims.copy.po_number') }}</th>
+                                    <th scope="col">{{ __('claims.copy.supplier') }}</th>
+                                    <th scope="col">{{ __('claims.copy.date_submitted') }}</th>
                                     <th scope="col">
-                                        Response Deadline
-                                        <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Deadline for supplier to formally respond to material claims." />
+                                        {{ __('claims.copy.response_deadline') }}
+                                        <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
                                     </th>
-                                    <th scope="col" class="text-center">Claim Status</th>
-                                    <th scope="col" class="text-end" style="width: 80px;">Action</th>
+                                    <th scope="col" class="text-center">{{ __('claims.copy.claim_status') }}</th>
+                                    <th scope="col" class="text-end" style="width: 80px;">{{ __('claims.copy.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>

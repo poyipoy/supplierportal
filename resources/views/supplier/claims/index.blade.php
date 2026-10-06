@@ -1,39 +1,39 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Material Claims - ADASI Portal')
-@section('page-title', 'Material Claims')
+@section('title', __('claims.copy.material_claims_adasi_portal'))
+@section('page-title', __('claims.copy.material_claims'))
 
 @section('content')
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Material Claims' => null,
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.material_claims') => null,
     ]" />
 
     <x-ui.page-header
-        title="Material Claims"
-        eyebrow="Quality Management"
-        description="Review and respond to NG quality discrepancy claims assigned to your supplier purchase orders."
+        :title="__('claims.copy.material_claims')"
+        :eyebrow="__('claims.copy.quality_management')"
+        :description="__('claims.copy.review_and_respond_to_ng_quality_discrepancy_claims_assigned_to_your_supplier_purchase_orders')"
     />
 
-    <x-ui.alert tone="warning" title="Response required">Claims marked as <strong>Pending</strong> require your official response and proposed resolution before the stated deadline.</x-ui.alert>
+    <x-ui.alert tone="warning" :title="__('claims.copy.response_required')">{{ __('claims.copy.claims_marked_as') }} <strong>{{ __('claims.copy.pending') }}</strong> {{ __('claims.copy.require_your_official_response_and_proposed_resolution_before_the_stated_deadline') }}</x-ui.alert>
 
     {{-- Claims DataTable --}}
     <x-ui.data-table
-        title="Discrepancy Claims from ADASI"
-        description="The list is scoped strictly to purchase orders issued to your company."
+        :title="__('claims.copy.discrepancy_claims_from_adasi')"
+        :description="__('claims.copy.the_list_is_scoped_strictly_to_purchase_orders_issued_to_your_company')"
     >
         <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" id="claimTable">
             <thead class="table-light">
                 <tr>
-                    <th scope="col">Claim ID</th>
-                    <th scope="col">PO Number</th>
-                    <th scope="col">Date Submitted</th>
-                    <th scope="col">Response Deadline</th>
-                    <th scope="col" class="text-center">Status</th>
-                    <th scope="col" class="text-end" style="width: 120px;">Action</th>
+                    <th scope="col">{{ __('claims.copy.claim_id') }}</th>
+                    <th scope="col">{{ __('claims.copy.po_number') }}</th>
+                    <th scope="col">{{ __('claims.copy.date_submitted') }}</th>
+                    <th scope="col">{{ __('claims.copy.response_deadline') }}</th>
+                    <th scope="col" class="text-center">{{ __('claims.copy.status') }}</th>
+                    <th scope="col" class="text-end" style="width: 120px;">{{ __('claims.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -58,6 +58,7 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},
+
             order: [],
             drawCallback: function() {
                 window.initAdasiTooltips?.(document.getElementById('claimTable'));

@@ -74,11 +74,11 @@ class VendorMasterService
     public function verifyBankAccount(SupplierBankAccount $bankAccount, User $reviewer): SupplierBankAccount
     {
         if ($bankAccount->supplier_id === $reviewer->id) {
-            throw new InvalidArgumentException('Supplier cannot verify their own bank account.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.self_bank'));
         }
 
         if (! $reviewer->isFinance() && ! $reviewer->isPurchasing() && ! $reviewer->isAdmin()) {
-            throw new InvalidArgumentException('Unauthorized to verify bank account.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.bank_role'));
         }
 
         return DB::transaction(function () use ($bankAccount, $reviewer) {
@@ -111,7 +111,7 @@ class VendorMasterService
     public function updateMaster(User $supplierUser, array $data, User $actor): Supplier
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Unauthorized to directly update vendor master.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.master_role'));
         }
 
         return DB::transaction(function () use ($supplierUser, $data, $actor) {

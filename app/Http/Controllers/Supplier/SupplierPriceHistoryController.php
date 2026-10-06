@@ -159,10 +159,10 @@ class SupplierPriceHistoryController extends Controller
             $validated['currency'] ?? null,
         );
         $currencySuffix = $currency ? '_'.$currency : '';
-        $fileName = 'Price_History_'.str_replace([' ', '/'], '_', $materialName).$currencySuffix.'_'.now()->format('YmdHis').'.xlsx';
+        $fileName = 'Price_History_'.str_replace([' ', '/'], '_', $materialName).$currencySuffix.'_'.now()->format('YmdHis').'.xlsx'; // biz-time:ignore instant filename
 
         $exportJob = ExportDispatcher::dispatch(
-            'Supplier Price History',
+            __('supplier.copy.supplier_price_history'),
             SupplierPriceHistoryExport::class,
             [
                 $supplierId,
@@ -325,7 +325,7 @@ class SupplierPriceHistoryController extends Controller
 
     private function dispatchResponse(Request $request, ExportJob $exportJob)
     {
-        $message = 'The export request was accepted. The file will download automatically when ready.';
+        $message = __('supplier.copy.the_export_request_was_accepted_the_file_will_download_automatically_when_ready');
 
         if ($request->wantsJson()) {
             return response()->json([

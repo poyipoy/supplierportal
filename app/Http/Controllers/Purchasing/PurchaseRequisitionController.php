@@ -83,7 +83,7 @@ class PurchaseRequisitionController extends Controller
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
                 ->addColumn('period_name', fn ($pr) => $pr->period->display_label ?? '-')
                 ->addColumn('creator_name', fn ($pr) => $pr->creator->name ?? '-')
-                ->addColumn('item_count', fn ($pr) => $pr->items_count.' Item')
+                ->addColumn('item_count', fn ($pr) => trans_choice('purchasing.copy.item_count', (int) $pr->items_count, ['count' => (int) $pr->items_count]))
                 ->addColumn('total_kg', fn ($pr) => NumberFormat::maxDecimals($pr->total_kg).' kg')
                 ->addColumn('supplier_count', fn ($pr) => $pr->invited_suppliers_count)
                 ->addColumn('status_badge', function ($pr) {
@@ -96,23 +96,23 @@ class PurchaseRequisitionController extends Controller
                         default => 'neutral'
                     };
                     $statusLabel = match ($pr->status) {
-                        'draft' => 'Draft',
-                        'submitted' => 'Submitted',
-                        'rejected' => 'Rejected',
-                        'bidding' => 'Bidding',
-                        'completed' => 'Completed',
-                        default => ucwords(str_replace('_', ' ', $pr->status)),
+                        'draft' => __('purchasing.copy.draft'),
+                        'submitted' => __('purchasing.copy.submitted'),
+                        'rejected' => __('purchasing.copy.rejected'),
+                        'bidding' => __('purchasing.copy.bidding'),
+                        'completed' => __('purchasing.copy.completed'),
+                        default => __('purchasing.copy.unknown_status'),
                     };
 
                     $responseChip = '';
                     if ($pr->status === 'bidding') {
                         $count = (int) ($pr->submitted_supplier_count ?? 0);
-                        $responseChip = ' <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums ms-1" title="'.e($count.' supplier quotations submitted').'" aria-label="'.e($count.' supplier quotations submitted').'">'.$count.'</span>';
+                        $responseChip = ' <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums ms-1" title="'.e(__('purchasing.a11y.quotation_count', ['count' => $count])).'" aria-label="'.e(__('purchasing.a11y.quotation_count', ['count' => $count])).'">'.$count.'</span>';
                     }
 
                     return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>'.$responseChip;
                 })
-                ->addColumn('created_date', fn ($pr) => $pr->created_at->format('d M Y, H:i'))
+                ->addColumn('created_date', fn ($pr) => \App\Support\BusinessTime::format($pr->created_at, 'd M Y, H:i'))
                 ->addColumn('action', function ($pr) {
                     $viewUrl = PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr);
                     $editUrl = PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr);
@@ -123,20 +123,20 @@ class PurchaseRequisitionController extends Controller
                         $primaryAction = '<form action="'.route('purchasing.requisitions.submit', $pr).'" method="POST" class="draft-submit-form tw-m-0">'
                             .csrf_field()
                             .method_field('PUT')
-                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="Submit draft '.e($pr->pr_number).'">'
-                            .'Submit'
+                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="'.e(__('purchasing.action_names.submit_draft', ['name' => $pr->pr_number])).'">'
+                            .__('purchasing.copy.submit')
                             .'</button></form>';
-                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">View details</a></li>';
-                        $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">Edit draft</a></li>';
+                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">'.e(__('purchasing.copy.view_details')).'</a></li>';
+                        $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">'.e(__('purchasing.copy.edit_draft')).'</a></li>';
                     } elseif ($canEdit) {
-                        $primaryAction = '<a href="'.$editUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="Edit '.e($pr->pr_number).'">Edit</a>';
-                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">View details</a></li>';
+                        $primaryAction = '<a href="'.$editUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.edit', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.edit')).'</a>';
+                        $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">'.e(__('purchasing.copy.view_details')).'</a></li>';
                     } else {
-                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="View '.e($pr->pr_number).'">View</a>';
+                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.view', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.view')).'</a>';
                     }
 
                     if ($canEdit) {
-                        $secondaryActions[] = '<li><form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">Delete requisition</button></form></li>';
+                        $secondaryActions[] = '<li><form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">'.e(__('purchasing.copy.delete_requisition')).'</button></form></li>';
                     }
 
                     if ($secondaryActions === []) {
@@ -144,7 +144,7 @@ class PurchaseRequisitionController extends Controller
                     }
 
                     return '<div class="d-inline-flex align-items-center justify-content-end gap-1">'.$primaryAction
-                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($pr->pr_number).'">More</button>'
+                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.more')).'</button>'
                         .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
                 ->rawColumns(['status_badge', 'action'])
@@ -182,7 +182,7 @@ class PurchaseRequisitionController extends Controller
 
         if ($periods->isEmpty()) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', 'No active open period. Please contact Admin to open a period.');
+                ->with('error', __('purchasing.copy.no_active_open_period_please_contact_admin_to_open_a_period'));
         }
 
         return view('purchasing.pr.create', compact('periods', 'suppliers'));
@@ -218,7 +218,7 @@ class PurchaseRequisitionController extends Controller
             report($exception);
 
             return response()->json(
-                $this->importFailurePayload(['The spreadsheet could not be read. Verify the file and try again.']),
+                $this->importFailurePayload([__('purchasing.copy.the_spreadsheet_could_not_be_read_verify_the_file_and_try_again')]),
                 422
             );
         }
@@ -238,7 +238,7 @@ class PurchaseRequisitionController extends Controller
 
         if ($pr->created_by !== auth()->id() || $pr->status !== 'draft') {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', 'Only your draft requisitions can be submitted from this list.');
+                ->with('error', __('purchasing.copy.only_your_draft_requisitions_can_be_submitted_from_this_list'));
         }
 
         try {
@@ -253,16 +253,16 @@ class PurchaseRequisitionController extends Controller
             $this->notifyAdminsOfSubmission($pr);
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('success', 'Purchase Requisition successfully submitted!');
+                ->with('success', __('purchasing.copy.purchase_requisition_successfully_submitted'));
         } catch (ValidationException $exception) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
                 ->withErrors($exception->errors())
-                ->with('error', 'Complete every material before submitting this requisition.');
+                ->with('error', __('purchasing.copy.complete_every_material_before_submitting_this_requisition'));
         } catch (Throwable $exception) {
             report($exception);
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', 'A system error occurred while submitting the purchase requisition.');
+                ->with('error', __('purchasing.copy.a_system_error_occurred_while_submitting_the_purchase_requisition'));
         }
     }
 
@@ -299,8 +299,8 @@ class PurchaseRequisitionController extends Controller
             }
 
             $message = $validated['action'] === 'submitted'
-                ? 'Purchase Requisition successfully submitted!'
-                : 'Purchase Requisition successfully saved as draft.';
+                ? __('purchasing.copy.purchase_requisition_successfully_submitted')
+                : __('purchasing.copy.purchase_requisition_successfully_saved_as_draft');
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))->with('success', $message);
 
@@ -309,7 +309,7 @@ class PurchaseRequisitionController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->withInput()->with('error', 'A system error occurred while saving the requisition.');
+            return back()->withInput()->with('error', __('purchasing.copy.a_system_error_occurred_while_saving_the_requisition'));
         }
     }
 
@@ -363,7 +363,7 @@ class PurchaseRequisitionController extends Controller
 
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', 'You cannot edit this requisition.');
+                ->with('error', __('purchasing.copy.you_cannot_edit_this_requisition'));
         }
 
         $resolver = app(MaterialResolver::class);
@@ -408,7 +408,7 @@ class PurchaseRequisitionController extends Controller
 
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', 'You cannot edit this requisition.');
+                ->with('error', __('purchasing.copy.you_cannot_edit_this_requisition'));
         }
 
         $validated = $request->validated();
@@ -441,8 +441,8 @@ class PurchaseRequisitionController extends Controller
             }
 
             $message = $validated['action'] === 'submitted'
-                ? 'Purchase Requisition successfully submitted!'
-                : 'Draft purchase requisition successfully updated.';
+                ? __('purchasing.copy.purchase_requisition_successfully_submitted')
+                : __('purchasing.copy.draft_purchase_requisition_successfully_updated');
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))->with('success', $message);
 
@@ -451,7 +451,7 @@ class PurchaseRequisitionController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->withInput()->with('error', 'A system error occurred while saving the requisition.');
+            return back()->withInput()->with('error', __('purchasing.copy.a_system_error_occurred_while_saving_the_requisition'));
         }
     }
 
@@ -488,8 +488,8 @@ class PurchaseRequisitionController extends Controller
             $admins,
             'pr.submitted',
             'pr.submitted:'.$pr->id.':'.($pr->updated_at?->format('YmdHis.u') ?? 'initial'),
-            'New Purchase Requisition',
-            'New PR :pr_number has been submitted by :name',
+            'purchasing.copy.new_purchase_requisition',
+            'purchasing.notify.pr_submitted_body',
             route('admin.requisitions.show', $pr, absolute: false),
             'clipboard-plus text-primary',
             [
@@ -535,7 +535,7 @@ class PurchaseRequisitionController extends Controller
 
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', 'Purchase Requisition cannot be deleted because it has been processed.');
+                ->with('error', __('purchasing.copy.purchase_requisition_cannot_be_deleted_because_it_has_been_processed'));
         }
 
         $hasReferencedItems = $pr->items()
@@ -545,7 +545,7 @@ class PurchaseRequisitionController extends Controller
             ->exists();
         if ($hasReferencedItems) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('error', 'This requisition contains material referenced by a quotation or QC record and cannot be deleted.');
+                ->with('error', __('purchasing.copy.this_requisition_contains_material_referenced_by_a_quotation_or_qc_record_and_cannot_be_deleted'));
         }
 
         try {
@@ -555,11 +555,11 @@ class PurchaseRequisitionController extends Controller
             DB::commit();
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
-                ->with('success', 'Purchase Requisition successfully deleted.');
+                ->with('success', __('purchasing.copy.purchase_requisition_successfully_deleted'));
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'An error occurred while deleting data.');
+            return back()->with('error', __('purchasing.copy.an_error_occurred_while_deleting_data'));
         }
     }
 }

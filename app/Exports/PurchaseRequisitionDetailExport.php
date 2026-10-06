@@ -10,7 +10,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PurchaseRequisitionDetailExport implements FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings
+class PurchaseRequisitionDetailExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings
 {
     use InteractsWithExportProgress;
 
@@ -28,7 +28,7 @@ class PurchaseRequisitionDetailExport implements FromCollection, TracksExportPro
             ])->filter()->implode(' | ');
 
             return [
-                SpreadsheetCellSanitizer::text($pr->pr_number, 'DRAFT'),
+                SpreadsheetCellSanitizer::text($pr->pr_number, __('status.pr.draft')),
                 SpreadsheetCellSanitizer::text($item->hs_code),
                 SpreadsheetCellSanitizer::text($item->material_name),
                 SpreadsheetCellSanitizer::text($specification),
@@ -43,7 +43,7 @@ class PurchaseRequisitionDetailExport implements FromCollection, TracksExportPro
 
     public function headings(): array
     {
-        return ['PR Number', 'HS Code', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark'];
+        return [__('exports.headings.pr_number'), __('exports.headings.hs_code'), __('exports.headings.material_name'), __('exports.headings.specification'), __('exports.headings.qty'), __('exports.headings.weight_unit'), __('exports.headings.total_weight'), __('exports.headings.pr_total_kg'), __('exports.headings.remark')];
     }
 
     public function progressTotalRows(): int

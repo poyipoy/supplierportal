@@ -38,7 +38,7 @@ class UpdateNotificationPreferenceRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             foreach (array_keys($this->all()) as $key) {
                 if (! in_array($key, ['_token', '_method', 'notification_preferences', 'notification_delivery'], true)) {
-                    $validator->errors()->add($key, 'This field is not supported by notification preferences.');
+                    $validator->errors()->add($key, __('notifications.validation.unsupported_field'));
                 }
             }
         });

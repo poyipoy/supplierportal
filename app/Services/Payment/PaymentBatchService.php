@@ -8,6 +8,7 @@ use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\User;
+use App\Support\BusinessTime;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -21,15 +22,15 @@ class PaymentBatchService
     public function createSupplierBatch(User $actor, array $invoiceIds, ?string $notes = null): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only Finance or Admin can create Supplier DRP batches.');
+            throw new InvalidArgumentException(__('finance.batch_validation.supplier_role'));
         }
 
         if (empty($invoiceIds)) {
-            throw new InvalidArgumentException('At least one Ready to Pay invoice must be selected.');
+            throw new InvalidArgumentException(__('finance.batch_validation.invoice_select'));
         }
 
         return DB::transaction(function () use ($actor, $invoiceIds, $notes) {
-            $year = now()->year;
+            $year = BusinessTime::now()->year;
             DB::table('local_invoice_sequences')->insertOrIgnore(['year' => $year, 'last_number' => 0]);
             $seq = DB::table('local_invoice_sequences')->where('year', $year)->lockForUpdate()->first();
             $num = $seq->last_number + 1;
@@ -48,7 +49,7 @@ class PaymentBatchService
             $invoices = LocalInvoice::whereIn('id', $invoiceIds)->lockForUpdate()->get();
 
             if ($invoices->count() !== count($invoiceIds)) {
-                throw new InvalidArgumentException('One or more selected invoices do not exist.');
+                throw new InvalidArgumentException(__('finance.batch_validation.invoice_missing'));
             }
 
             // Check if any invoice is already in an active (non-cancelled, non-paid) payment item
@@ -61,21 +62,21 @@ class PaymentBatchService
                 ->exists();
 
             if ($alreadyBatched) {
-                throw new RuntimeException('One or more invoices are already reserved in an active DRP batch.');
+                throw new RuntimeException(__('finance.batch_validation.invoice_reserved'));
             }
 
             // Group by Supplier + Active Bank Account
             $grouped = [];
             foreach ($invoices as $invoice) {
                 if (! $invoice->isReadyToPay()) {
-                    throw new RuntimeException("Invoice [{$invoice->invoice_number}] is not Ready to Pay (status: {$invoice->status}).");
+                    throw new RuntimeException(__('finance.batch_validation.invoice_status', ['number' => $invoice->invoice_number, 'status' => $invoice->status]));
                 }
 
                 $supplierUser = $invoice->supplier;
                 $activeBank = $supplierUser->activeSupplierBankAccount;
 
                 if (! $activeBank) {
-                    throw new RuntimeException("Supplier [{$supplierUser->name}] does not have a verified bank account.");
+                    throw new RuntimeException(__('finance.batch_validation.supplier_bank', ['name' => $supplierUser->name]));
                 }
 
                 $groupKey = $supplierUser->id.'_'.$activeBank->id;
@@ -161,15 +162,15 @@ class PaymentBatchService
     public function createGaBatch(User $actor, array $claimIds, ?string $notes = null): PaymentBatch
     {
         if (! $actor->isGa() && ! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only GA, Finance, or Admin can create GA DRP batches.');
+            throw new InvalidArgumentException(__('finance.batch_validation.ga_role'));
         }
 
         if (empty($claimIds)) {
-            throw new InvalidArgumentException('At least one Ready to Pay GA claim must be selected.');
+            throw new InvalidArgumentException(__('finance.batch_validation.claim_select'));
         }
 
         return DB::transaction(function () use ($actor, $claimIds, $notes) {
-            $year = now()->year;
+            $year = BusinessTime::now()->year;
             DB::table('local_invoice_sequences')->insertOrIgnore(['year' => $year, 'last_number' => 0]);
             $seq = DB::table('local_invoice_sequences')->where('year', $year)->lockForUpdate()->first();
             $num = $seq->last_number + 1;
@@ -187,7 +188,7 @@ class PaymentBatchService
             $claims = GaClaim::whereIn('id', $claimIds)->lockForUpdate()->get();
 
             if ($claims->count() !== count($claimIds)) {
-                throw new InvalidArgumentException('One or more selected claims do not exist.');
+                throw new InvalidArgumentException(__('finance.batch_validation.claim_missing'));
             }
 
             $alreadyBatched = PaymentItem::where('payable_type', GaClaim::class)
@@ -199,14 +200,14 @@ class PaymentBatchService
                 ->exists();
 
             if ($alreadyBatched) {
-                throw new RuntimeException('One or more claims are already reserved in an active DRP batch.');
+                throw new RuntimeException(__('finance.batch_validation.claim_reserved'));
             }
 
             // Group by Employee + Bank details
             $grouped = [];
             foreach ($claims as $claim) {
                 if ($claim->status !== GaClaim::STATUS_READY_TO_PAY) {
-                    throw new RuntimeException("Claim [{$claim->claim_number}] is not Ready to Pay (status: {$claim->status}).");
+                    throw new RuntimeException(__('finance.batch_validation.claim_status', ['number' => $claim->claim_number, 'status' => $claim->status]));
                 }
 
                 $employee = $claim->employee;
@@ -281,7 +282,7 @@ class PaymentBatchService
     public function removeItem(PaymentItem $item, User $actor, string $reason): void
     {
         if (trim($reason) === '') {
-            throw new InvalidArgumentException('Removal reason is mandatory.');
+            throw new InvalidArgumentException(__('finance.batch_validation.removal_reason'));
         }
 
         DB::transaction(function () use ($item, $actor, $reason) {
@@ -291,7 +292,7 @@ class PaymentBatchService
             $batch = $group->batch()->lockForUpdate()->firstOrFail();
 
             if ($batch->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException("Items can only be removed while DRP is in DRAFT status (current: {$batch->status}).");
+                throw new RuntimeException(__('finance.batch_validation.removal_draft', ['status' => $batch->status]));
             }
 
             if ($it->status !== PaymentItem::STATUS_ACTIVE) {
@@ -338,11 +339,11 @@ class PaymentBatchService
     public function cancelBatch(PaymentBatch $batch, User $actor, string $reason): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only Finance or Admin can cancel a DRP batch.');
+            throw new InvalidArgumentException(__('finance.batch_validation.cancel_role'));
         }
 
         if (trim($reason) === '') {
-            throw new InvalidArgumentException('Cancellation reason is mandatory.');
+            throw new InvalidArgumentException(__('finance.batch_validation.cancel_reason'));
         }
 
         return DB::transaction(function () use ($batch, $actor, $reason) {
@@ -350,7 +351,7 @@ class PaymentBatchService
             $b = PaymentBatch::where('id', $batch->id)->lockForUpdate()->firstOrFail();
 
             if ($b->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException("DRP batch can only be cancelled while in DRAFT status (current: {$b->status}).");
+                throw new RuntimeException(__('finance.batch_validation.cancel_draft', ['status' => $b->status]));
             }
 
             // Lock and cancel all active items in all groups
@@ -387,7 +388,7 @@ class PaymentBatchService
     public function overrideGroupFee(PaymentGroup $group, float $newFee, string $reason, User $actor): PaymentGroup
     {
         if (trim($reason) === '') {
-            throw new InvalidArgumentException('Reason is mandatory when overriding bank fee.');
+            throw new InvalidArgumentException(__('finance.batch_validation.fee_reason'));
         }
 
         return DB::transaction(function () use ($group, $newFee, $reason, $actor) {
@@ -396,7 +397,7 @@ class PaymentBatchService
             $batch = $grp->batch()->lockForUpdate()->firstOrFail();
 
             if ($batch->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException('Fee override is only permitted while DRP is in DRAFT status.');
+                throw new RuntimeException(__('finance.batch_validation.fee_draft'));
             }
 
             $fee = Money::normalize($newFee);
@@ -424,7 +425,7 @@ class PaymentBatchService
     public function finalizeBatch(PaymentBatch $batch, User $actor): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only Finance or Admin can finalize a DRP batch.');
+            throw new InvalidArgumentException(__('finance.batch_validation.finalize_role'));
         }
 
         return DB::transaction(function () use ($batch, $actor) {
@@ -432,7 +433,7 @@ class PaymentBatchService
             $b = PaymentBatch::where('id', $batch->id)->lockForUpdate()->firstOrFail();
 
             if ($b->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException("Cannot finalize: DRP batch is in [{$b->status}] status, expected DRAFT.");
+                throw new RuntimeException(__('finance.batch_validation.finalize_draft', ['status' => $b->status]));
             }
 
             // P5-07 revalidation:
@@ -442,7 +443,7 @@ class PaymentBatchService
                 ->get();
 
             if ($activeItems->isEmpty()) {
-                throw new RuntimeException('Cannot finalize DRP: batch contains no active items.');
+                throw new RuntimeException(__('finance.batch_validation.finalize_empty'));
             }
 
             // 2. Each payable must still be in READY_TO_PAY status
@@ -450,12 +451,12 @@ class PaymentBatchService
                 if ($item->payable_type === LocalInvoice::class) {
                     $inv = LocalInvoice::find($item->payable_id);
                     if (! $inv || ! $inv->isReadyToPay()) {
-                        throw new RuntimeException('Cannot finalize DRP: invoice ['.($inv?->invoice_number ?? $item->payable_id).'] is no longer Ready to Pay.');
+                        throw new RuntimeException(__('finance.batch_validation.finalize_invoice', ['number' => $inv?->invoice_number ?? $item->payable_id]));
                     }
                 } elseif ($item->payable_type === GaClaim::class) {
                     $clm = GaClaim::find($item->payable_id);
                     if (! $clm || $clm->status !== GaClaim::STATUS_READY_TO_PAY) {
-                        throw new RuntimeException('Cannot finalize DRP: claim ['.($clm?->claim_number ?? $item->payable_id).'] is no longer Ready to Pay.');
+                        throw new RuntimeException(__('finance.batch_validation.finalize_claim', ['number' => $clm?->claim_number ?? $item->payable_id]));
                     }
                 }
             }

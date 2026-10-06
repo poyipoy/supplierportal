@@ -86,7 +86,7 @@ class InvoiceController extends Controller
     {
         $invoice = $service->submit($request->user(), $request->validated(), $request->allFiles());
 
-        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', 'Invoice berhasil disubmit. Silakan cetak tanda terima dan serahkan dokumen fisik ke loket Kasir.');
+        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', __('local_invoice.feedback.submitted'));
     }
 
     public function show(LocalInvoice $invoice)
@@ -121,14 +121,14 @@ class InvoiceController extends Controller
     {
         $service->resubmit($request->user(), $invoice, $request->validated(), $request->allFiles());
 
-        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', 'Revisi invoice berhasil dikirim. Dokumen fisik terbaru wajib diverifikasi kembali.');
+        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', __('local_invoice.feedback.resubmitted'));
     }
 
     public function cancel(Request $request, LocalInvoice $invoice, InvoiceSubmissionService $service)
     {
         $service->cancel($request->user(), $invoice);
 
-        return redirect()->route('local-supplier.invoices.index')->with('success', 'Invoice berhasil dibatalkan dan reservasi GR telah dilepas kembali.');
+        return redirect()->route('local-supplier.invoices.index')->with('success', __('local_invoice.feedback.cancelled'));
     }
 
     private function eligiblePurchaseOrders(?LocalInvoice $invoice = null)

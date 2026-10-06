@@ -51,7 +51,7 @@ class MaterialClaimController extends Controller
         return DataTables::eloquent($query)
             ->addColumn('po_number_display', fn ($po) => $po->po_number)
             ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
-            ->addColumn('inspection_date', fn ($po) => $po->qcInspections->first()?->inspected_at?->format('d M Y') ?? '-')
+            ->addColumn('inspection_date', fn ($po) => $po->qcInspections->first()?->inspected_at ? \App\Support\BusinessTime::format($po->qcInspections->first()->inspected_at, 'd M Y', false) : '-')
             ->addColumn('status_badge', fn ($po) => StatusHelper::badge(
                 StatusHelper::poBadge($po->status),
                 StatusHelper::poLabel($po->status)
@@ -77,7 +77,7 @@ class MaterialClaimController extends Controller
             ->addColumn('claim_id', fn ($c) => $c->claim_number)
             ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn ($c) => $c->purchaseOrder->supplier->name ?? '-')
-            ->addColumn('created_date', fn ($c) => $c->created_at->format('d M Y'))
+            ->addColumn('created_date', fn ($c) => \App\Support\BusinessTime::format($c->created_at, 'd M Y', false))
             ->addColumn('deadline_display', function ($c) use ($regionalFormatter) {
                 $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
                 $date = $c->deadline ? $regionalFormatter->date($c->deadline, 'human') : '-';
@@ -93,7 +93,7 @@ class MaterialClaimController extends Controller
                     StatusHelper::claimLabel($c->status)
                 );
             })
-            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>')
+            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('claims.copy.details')).'</a>')
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
             ->make(true);
     }
@@ -104,12 +104,12 @@ class MaterialClaimController extends Controller
             ->findOrFail($inspection_id);
 
         if ($inspection->status !== 'ng') {
-            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'This inspection is not NG and does not require a claim.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', __('claims.copy.this_inspection_is_not_ng_and_does_not_require_a_claim'));
         }
 
         // One inspection has one claim lifecycle, including resolved history.
         if (MaterialClaim::withTrashed()->where('inspection_id', $inspection_id)->exists()) {
-            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', 'A claim has already been created for this inspection.');
+            return redirect(PurchasingNavigation::backUrl('purchasing.claims.index'))->with('error', __('claims.copy.a_claim_has_already_been_created_for_this_inspection'));
         }
 
         return view('purchasing.claims.create', compact('inspection'));
@@ -133,20 +133,20 @@ class MaterialClaimController extends Controller
 
             if ($inspection->status !== 'ng') {
                 throw ValidationException::withMessages([
-                    'inspection_id' => 'Only NG inspections can be claimed.',
+                    'inspection_id' => __('claims.copy.only_ng_inspections_can_be_claimed'),
                 ]);
             }
 
             if (! $inspection->purchaseOrder) {
                 throw ValidationException::withMessages([
-                    'inspection_id' => 'Inspection PO was not found.',
+                    'inspection_id' => __('claims.copy.inspection_po_was_not_found'),
                 ]);
             }
 
             if (MaterialClaim::withTrashed()->where('inspection_id', $inspection->id)
                 ->orderBy('id')->lockForUpdate()->get()->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'inspection_id' => 'A claim already exists for this inspection, including resolved history.',
+                    'inspection_id' => __('claims.copy.a_claim_already_exists_for_this_inspection_including_resolved_history'),
                 ]);
             }
 
@@ -173,8 +173,8 @@ class MaterialClaimController extends Controller
                 $supplierUser,
                 'claim.created',
                 "claim.created:{$claim->id}",
-                'New Material Claim',
-                'You received a new claim for PO '.$inspection->purchaseOrder->po_number.'. Please respond before '.Carbon::parse($claim->deadline)->format('d M Y').'.',
+                'claims.copy.new_material_claim',
+                'claims.notify.created_body',
                 route('supplier.claims.show', $claim, absolute: false),
                 'octagon-alert text-danger',
                 [
@@ -184,6 +184,8 @@ class MaterialClaimController extends Controller
                     'po_id' => $claim->po_id,
                     'po_number' => $inspection->purchaseOrder->po_number,
                 ],
+                replace: ['po' => $inspection->purchaseOrder->po_number],
+                localizedReplace: ['deadline' => '@date:'.Carbon::parse($claim->deadline)->toDateString()],
             );
         }
 
@@ -192,7 +194,7 @@ class MaterialClaimController extends Controller
             $showParameters['return_url'] = $request->input('return_url');
         }
 
-        return redirect()->route('purchasing.claims.show', $showParameters)->with('success', 'Claim successfully sent to the supplier.');
+        return redirect()->route('purchasing.claims.show', $showParameters)->with('success', __('claims.copy.claim_successfully_sent_to_the_supplier'));
     }
 
     public function show($id)
@@ -220,7 +222,7 @@ class MaterialClaimController extends Controller
                 $claim = MaterialClaim::whereKey($claimReference->id)->lockForUpdate()->firstOrFail();
 
                 if ($claim->status !== 'responded') {
-                    throw new \RuntimeException('Only responded claims can be resolved.');
+                    throw new \RuntimeException(__('claims.copy.only_responded_claims_can_be_resolved'));
                 }
 
                 $claim->update(['status' => 'resolved']);
@@ -240,8 +242,8 @@ class MaterialClaimController extends Controller
                 $supplierUser,
                 'claim.resolved',
                 "claim.resolved:{$claim->id}",
-                'Material Claim Completed',
-                'Claim for PO '.($claim->purchaseOrder->po_number ?? '-').' has been marked completed by Purchasing.',
+                'claims.copy.material_claim_completed',
+                'claims.notify.resolved_body',
                 route('supplier.claims.show', $claim, absolute: false),
                 'check-circle text-success',
                 [
@@ -251,9 +253,10 @@ class MaterialClaimController extends Controller
                     'po_id' => $claim->po_id,
                     'po_number' => $claim->purchaseOrder->po_number ?? null,
                 ],
+                ['po' => $claim->purchaseOrder->po_number ?? '-'],
             );
         }
 
-        return back()->with('success', 'Claim has been marked completed.');
+        return back()->with('success', __('claims.copy.claim_has_been_marked_completed'));
     }
 }

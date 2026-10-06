@@ -39,21 +39,46 @@ class StatusHelper
 
     public static function localInvoiceLabel(string $status): string
     {
-        return match ($status) {
-            'WAITING_PHYSICAL_DOCUMENT' => 'Menunggu Dokumen Fisik',
-            'UNDER_VERIFICATION', 'UNDER_REVIEW' => 'Dalam Verifikasi',
-            'NEED_REVISION' => 'Perlu Revisi',
-            'READY_TO_PAY' => 'Siap Dibayar',
-            'PAID' => 'Lunas',
-            'EXPIRED' => 'Kadaluarsa',
-            'REJECTED' => 'Ditolak',
-            'CANCELLED' => 'Dibatalkan',
-            'SUBMITTED' => 'Diajukan',
-            'APPROVED' => 'Disetujui',
-            'COMPLETED' => 'Selesai',
-            'PAYMENT_SCHEDULED' => 'Jadwal Bayar Ditentukan',
-            default => ucwords(strtolower(str_replace('_', ' ', $status))),
+        return self::label('local_invoice', strtolower($status), $status);
+    }
+
+    public static function gaClaimLabel(string $status): string
+    {
+        return self::label('ga', strtolower($status), $status);
+    }
+
+    public static function registrationLabel(string $status): string
+    {
+        return self::label('registration', strtolower($status), $status);
+    }
+
+    public static function vendorCategoryLabel(?string $category): string
+    {
+        $key = match (strtolower(trim((string) $category))) {
+            'barang' => 'goods',
+            'jasa' => 'services',
+            'lainnya' => 'other',
+            default => null,
         };
+
+        return $key === null ? (string) $category : __('local_procurement.vendor_ui.'.$key);
+    }
+
+    public static function localFinanceLabel(string $status): string
+    {
+        return self::label('finance', strtolower($status), $status);
+    }
+
+    private static function label(string $domain, string $status, ?string $unknownValue = null): string
+    {
+        $key = 'status.'.$domain.'.'.$status;
+        if (app('translator')->has($key)) {
+            return __($key);
+        }
+
+        $unknownValue ??= $status;
+
+        return $unknownValue === '' ? '' : __('status.meta.unknown_value', ['value' => $unknownValue]);
     }
 
     public static function localInvoiceTone(string $status): string
@@ -84,13 +109,6 @@ class StatusHelper
         'completed' => 'bg-success',
     ];
 
-    private static array $prLabels = [
-        'draft' => 'Draft',
-        'submitted' => 'Submitted',
-        'bidding' => 'Bidding',
-        'completed' => 'Completed',
-    ];
-
     public static function prBadge(string $status): string
     {
         return self::$prBadges[$status] ?? 'bg-secondary';
@@ -98,7 +116,7 @@ class StatusHelper
 
     public static function prLabel(string $status): string
     {
-        return self::$prLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('pr', $status);
     }
 
     // ─── Quotation ───
@@ -112,15 +130,6 @@ class StatusHelper
         'all_unavailable' => 'bg-secondary',
     ];
 
-    private static array $quotationLabels = [
-        'draft' => 'Draft',
-        'submitted' => 'Submitted',
-        'accepted' => 'Accepted',
-        'rejected' => 'Rejected',
-        'revision_requested' => 'Revision Requested',
-        'all_unavailable' => 'All Unavailable',
-    ];
-
     public static function quotationBadge(string $status): string
     {
         return self::$quotationBadges[$status] ?? 'bg-secondary';
@@ -128,16 +137,16 @@ class StatusHelper
 
     public static function quotationLabel(string $status): string
     {
-        return self::$quotationLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('quotation', $status);
     }
 
     public static function quotationValidityMeta(mixed $validityPeriod, ?string $status = null): array
     {
         if ($status === Quotation::STATUS_ALL_UNAVAILABLE) {
             return [
-                'label' => 'N/A',
+                'label' => __('status.meta.not_applicable'),
                 'class' => 'bg-secondary',
-                'description' => 'The quotation contains no available items; validity duration is not applicable.',
+                'description' => __('status.meta.no_available_items'),
             ];
         }
 
@@ -145,35 +154,35 @@ class StatusHelper
 
         if (! $date) {
             return [
-                'label' => 'Valid Until Missing',
+                'label' => __('status.meta.valid_until_missing'),
                 'class' => 'bg-warning text-dark',
-                'description' => 'The supplier has not filled in the quotation validity date.',
+                'description' => __('status.meta.validity_missing'),
             ];
         }
 
-        $today = today();
+        $today = BusinessTime::today();
         $days = (int) $today->diffInDays($date, false);
 
         if ($date->lt($today)) {
             return [
-                'label' => 'Expired',
+                'label' => __('status.local_invoice.expired'),
                 'class' => 'bg-danger',
-                'description' => 'The quotation has expired and cannot be used to create a PO until the supplier submits a revision.',
+                'description' => __('status.meta.quotation_expired'),
             ];
         }
 
         if ($days <= 7) {
             return [
-                'label' => 'Expiring Soon',
+                'label' => __('status.meta.expiring_soon'),
                 'class' => 'bg-warning text-dark',
-                'description' => "The quotation validity expires in {$days} days.",
+                'description' => trans_choice('status.meta.validity_days', $days, ['count' => $days]),
             ];
         }
 
         return [
-            'label' => 'Valid',
+            'label' => __('status.meta.valid'),
             'class' => 'bg-success',
-            'description' => 'The quotation is still valid.',
+            'description' => __('status.meta.quotation_valid'),
         ];
     }
 
@@ -186,15 +195,6 @@ class StatusHelper
         'overdue' => 'bg-danger',
         'claim_needed' => 'bg-danger',
         'cancelled' => 'bg-secondary',
-    ];
-
-    private static array $poLabels = [
-        'active' => 'Active',
-        'waiting_qc' => 'Waiting QC',
-        'completed' => 'Completed',
-        'overdue' => 'Overdue',
-        'claim_needed' => 'Claim Needed',
-        'cancelled' => 'Cancelled',
     ];
 
     /**
@@ -215,63 +215,63 @@ class StatusHelper
     public static function poLabel(string $status, bool $isOverdue = false): string
     {
         if ($isOverdue) {
-            return 'Overdue';
+            return self::label('po', 'overdue');
         }
 
-        return self::$poLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('po', $status);
     }
 
     public static function poArrivalMeta(mixed $estimatedArrival, bool $isOverdue = false, ?string $status = null, mixed $actualArrival = null): array
     {
         if ($isOverdue) {
             return [
-                'label' => 'Overdue',
+                'label' => __('status.po.overdue'),
                 'class' => 'bg-danger',
-                'description' => 'The estimated arrival date has passed and the material has not been confirmed as arrived.',
+                'description' => __('status.meta.arrival_overdue'),
             ];
         }
 
         $actualDate = self::asDate($actualArrival);
         if ($status === 'waiting_qc' && $actualDate) {
-            $daysWaiting = (int) $actualDate->diffInDays(today(), false);
+            $daysWaiting = (int) $actualDate->diffInDays(BusinessTime::today(), false);
 
             if ($daysWaiting > 2) {
                 return [
-                    'label' => 'Waiting QC > 2 days',
+                    'label' => __('status.meta.waiting_qc_days'),
                     'class' => 'bg-warning text-dark',
-                    'description' => "The material arrived {$daysWaiting} days ago and is still waiting for QC.",
+                    'description' => trans_choice('status.meta.qc_wait', $daysWaiting, ['count' => $daysWaiting]),
                 ];
             }
 
             return [
-                'label' => 'Waiting QC',
+                'label' => __('status.po.waiting_qc'),
                 'class' => 'bg-info text-dark',
-                'description' => 'The material has arrived and is waiting for QC inspection.',
+                'description' => __('status.meta.waiting_inspection'),
             ];
         }
 
         $date = self::asDate($estimatedArrival);
         if (! $date) {
             return [
-                'label' => 'Estimated Date Missing',
+                'label' => __('status.meta.estimated_missing'),
                 'class' => 'bg-secondary',
-                'description' => 'Estimated arrival is not available yet.',
+                'description' => __('status.meta.arrival_missing'),
             ];
         }
 
-        $days = (int) today()->diffInDays($date, false);
+        $days = (int) BusinessTime::today()->diffInDays($date, false);
         if ($status === 'active' && $days >= 0 && $days <= 7) {
             return [
-                'label' => 'Arrives <= 7 days',
+                'label' => __('status.meta.arrives_soon'),
                 'class' => 'bg-info text-dark',
-                'description' => "The material is estimated to arrive in {$days} days.",
+                'description' => trans_choice('status.meta.arrival_days', $days, ['count' => $days]),
             ];
         }
 
         return [
-            'label' => 'On Schedule',
+            'label' => __('status.meta.on_schedule'),
             'class' => 'bg-light text-muted border',
-            'description' => 'The estimated arrival is still on schedule.',
+            'description' => __('status.meta.arrival_on_schedule'),
         ];
     }
 
@@ -287,16 +287,6 @@ class StatusHelper
         'closed' => 'bg-secondary',
     ];
 
-    private static array $claimLabels = [
-        'pending' => 'Pending',
-        'in_progress' => 'In Progress',
-        'responded' => 'Responded',
-        'resolved' => 'Resolved',
-        'escalated' => 'Escalated',
-        'rejected' => 'Rejected',
-        'closed' => 'Closed',
-    ];
-
     public static function claimBadge(string $status): string
     {
         return self::$claimBadges[$status] ?? 'bg-secondary';
@@ -304,7 +294,7 @@ class StatusHelper
 
     public static function claimLabel(string $status): string
     {
-        return self::$claimLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('claim', $status);
     }
 
     public static function claimDeadlineMeta(mixed $deadline, ?string $status = null): array
@@ -313,42 +303,42 @@ class StatusHelper
 
         if (! $date) {
             return [
-                'label' => 'Deadline Missing',
+                'label' => __('status.meta.deadline_missing'),
                 'class' => 'bg-secondary',
-                'description' => 'Deadline response claim is not available yet.',
+                'description' => __('status.meta.claim_deadline_missing'),
             ];
         }
 
         if ($status !== 'pending') {
             return [
-                'label' => 'Processed',
+                'label' => __('status.meta.processed'),
                 'class' => 'bg-light text-muted border',
-                'description' => 'The claim is no longer waiting for a supplier response.',
+                'description' => __('status.meta.claim_processed'),
             ];
         }
 
-        $days = (int) today()->diffInDays($date, false);
+        $days = (int) BusinessTime::today()->diffInDays($date, false);
 
-        if ($date->lt(today())) {
+        if ($date->lt(BusinessTime::today())) {
             return [
-                'label' => 'Past Deadline',
+                'label' => __('status.meta.past_deadline'),
                 'class' => 'bg-danger',
-                'description' => 'The supplier has passed the claim response deadline.',
+                'description' => __('status.meta.claim_overdue'),
             ];
         }
 
         if ($days <= 3) {
             return [
-                'label' => 'Deadline <= 3 days',
+                'label' => __('status.meta.deadline_soon'),
                 'class' => 'bg-warning text-dark',
-                'description' => "The response deadline is in {$days} days.",
+                'description' => trans_choice('status.meta.deadline_days', $days, ['count' => $days]),
             ];
         }
 
         return [
-            'label' => 'Safe',
+            'label' => __('status.meta.safe'),
             'class' => 'bg-success',
-            'description' => 'The claim response deadline is still safe.',
+            'description' => __('status.meta.claim_safe'),
         ];
     }
 
@@ -363,15 +353,6 @@ class StatusHelper
         'rejected' => 'bg-danger',
     ];
 
-    private static array $docLabels = [
-        'pending' => 'Not Uploaded',
-        'uploaded' => 'Uploaded',
-        'received' => 'Accepted',
-        'done' => 'Completed',
-        'verified' => 'Verified',
-        'rejected' => 'Rejected',
-    ];
-
     public static function docBadge(string $status): string
     {
         return self::$docBadges[$status] ?? 'bg-secondary';
@@ -379,7 +360,7 @@ class StatusHelper
 
     public static function docLabel(string $status): string
     {
-        return self::$docLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('document', $status);
     }
 
     public static function documentProgressMeta(int $completed, int $total = 4): array
@@ -388,11 +369,11 @@ class StatusHelper
         $isComplete = $completed >= $total;
 
         return [
-            'label' => "{$completed}/{$total} complete",
+            'label' => __('status.meta.document_progress', ['completed' => $completed, 'total' => $total]),
             'class' => $isComplete ? 'bg-success' : 'bg-warning text-dark',
             'description' => $isComplete
-                ? 'All import documents are complete.'
-                : 'Some import documents still need to be completed or verified.',
+                ? __('status.meta.documents_complete')
+                : __('status.meta.documents_incomplete'),
             'complete' => $isComplete,
         ];
     }
@@ -405,12 +386,6 @@ class StatusHelper
         'pending' => 'bg-warning text-dark',
     ];
 
-    private static array $qcLabels = [
-        'ok' => 'OK',
-        'ng' => 'NG',
-        'pending' => 'Pending',
-    ];
-
     public static function qcBadge(string $status): string
     {
         return self::$qcBadges[$status] ?? 'bg-secondary';
@@ -418,7 +393,7 @@ class StatusHelper
 
     public static function qcLabel(string $status): string
     {
-        return self::$qcLabels[$status] ?? strtoupper($status);
+        return in_array($status, ['ok', 'ng'], true) ? strtoupper($status) : self::label('qc', $status);
     }
 
     // ─── Shipment ───
@@ -430,13 +405,6 @@ class StatusHelper
         'cancelled' => 'bg-danger',
     ];
 
-    private static array $shipmentLabels = [
-        'draft' => 'Draft',
-        'submitted' => 'In Transit',
-        'arrived' => 'Arrived',
-        'cancelled' => 'Cancelled',
-    ];
-
     public static function shipmentBadge(string $status): string
     {
         return self::$shipmentBadges[$status] ?? 'bg-secondary';
@@ -444,7 +412,7 @@ class StatusHelper
 
     public static function shipmentLabel(string $status): string
     {
-        return self::$shipmentLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('shipment', $status);
     }
 
     public static function shipmentTone(string $status): string
@@ -482,14 +450,6 @@ class StatusHelper
         'ready_to_ship' => 'bg-success',
     ];
 
-    private static array $materialProgressLabels = [
-        'awaiting_confirmation' => 'Awaiting Confirmation',
-        'order_confirmed' => 'Order Confirmed',
-        'material_preparation' => 'Material Preparation',
-        'on_production' => 'On Production',
-        'ready_to_ship' => 'Ready to Ship',
-    ];
-
     public static function materialProgressBadge(string $status): string
     {
         return self::$materialProgressBadges[$status] ?? 'bg-secondary';
@@ -497,7 +457,7 @@ class StatusHelper
 
     public static function materialProgressLabel(string $status): string
     {
-        return self::$materialProgressLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('material_progress', $status);
     }
 
     public static function materialProgressTone(string $status): string
@@ -522,15 +482,6 @@ class StatusHelper
         'done' => 'bg-success',
     ];
 
-    private static array $shipmentDocLabels = [
-        'pending' => 'Pending',
-        'received' => 'Received',
-        'processing' => 'Processing',
-        'issued' => 'Issued',
-        'verified' => 'Verified',
-        'done' => 'Done',
-    ];
-
     public static function shipmentDocBadge(string $status): string
     {
         return self::$shipmentDocBadges[$status] ?? 'bg-secondary';
@@ -538,7 +489,7 @@ class StatusHelper
 
     public static function shipmentDocLabel(string $status): string
     {
-        return self::$shipmentDocLabels[$status] ?? ucwords(str_replace('_', ' ', $status));
+        return self::label('shipment_document', $status);
     }
 
     public static function shipmentDocTone(string $status): string

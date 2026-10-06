@@ -279,4 +279,22 @@ class LocalPoReferenceService
 
         throw new InvalidArgumentException("Invalid PO source [{$poSource}]. Must be INTERNAL or MANUAL.");
     }
+
+    /** Translate the display boundary without changing legacy exception classification. */
+    public function messageForDisplay(InvalidArgumentException $exception, ?string $reference = null, ?string $source = null): string
+    {
+        $message = $exception->getMessage();
+        $key = match (true) {
+            $message === 'Internal PO reference is required.' => 'internal_required',
+            $message === 'Manual PO number is required.' => 'manual_required',
+            $message === 'Manual Goods Receipt (GR) reference is required.' => 'manual_gr_required',
+            str_starts_with($message, 'Internal PO [') => 'not_found',
+            str_starts_with($message, 'PO [') => 'not_open',
+            str_starts_with($message, 'Goods Receipt (GR) is not yet available for PO [') => 'gr_unavailable',
+            str_starts_with($message, 'Invalid PO source [') => 'invalid_source',
+            default => null,
+        };
+
+        return $key === null ? $message : __('local_procurement.reference.'.$key, ['reference' => $reference ?? '', 'source' => $source ?? '']);
+    }
 }

@@ -47,7 +47,7 @@ class DashboardWidgetService
         $result = [];
         foreach ($layout['order'] as $key) {
             $metadata = $definition['widgets'][$key];
-            $result[] = ['key' => $key, ...$metadata, 'visible' => ! in_array($key, $layout['hidden'], true)];
+            $result[] = ['key' => $key, ...$metadata, 'label' => __($metadata['label']), 'visible' => ! in_array($key, $layout['hidden'], true)];
         }
 
         return $result;

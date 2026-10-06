@@ -11,16 +11,7 @@ use App\Support\NotificationDomain;
 
 class InvoiceNotificationService
 {
-    private const UNREGISTERED_EVENT_TITLES = [
-        'delivery_missed' => 'Batas pengiriman berkas terlewat',
-        'expired' => 'Invoice kedaluwarsa',
-        'rescheduled' => 'Jadwal pengiriman berkas diubah',
-        'physical_verified' => 'Dokumen fisik terverifikasi',
-        'payment_scheduled' => 'Jadwal bayar ditentukan',
-        'completed' => 'Pembayaran selesai',
-    ];
-
-    public function send(LocalInvoice $invoice, LocalInvoiceStatusHistory $history): void
+    public function send(LocalInvoice $invoice, LocalInvoiceStatusHistory $history, array $copyData = []): void
     {
         if ($history->event === 'review_started') {
             return;
@@ -32,7 +23,18 @@ class InvoiceNotificationService
             : collect([$invoice->supplier]);
 
         $title = $this->resolveTitle($history->event);
-        $message = $invoice->submission_number.' — '.($history->notes ?: ($internal ? 'Menunggu berkas fisik.' : $invoice->invoice_number));
+        $message = 'notifications.invoice.events.'.$history->event.'.message';
+        if (! app('translator')->has($message, 'en')) {
+            $message = 'notifications.invoice.updated.message';
+        }
+        $replace = array_merge([
+            'submission' => $invoice->submission_number,
+            'invoice' => $invoice->invoice_number,
+            'amount' => '', 'actual' => '', 'expected' => '', 'remaining' => '',
+            'reference' => '', 'reason' => '', 'raw_notes' => '',
+            'due_date' => $invoice->due_date?->format('Y-m-d') ?? '',
+            'payment_term' => $invoice->payment_term_days_snapshot ?? '',
+        ], $copyData);
         $url = route(($internal ? 'finance' : 'local-supplier').'.invoices.show', $invoice, absolute: false);
 
         // 1. In-app system notification
@@ -44,7 +46,8 @@ class InvoiceNotificationService
             $message,
             $url,
             'receipt',
-            ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL]
+            ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL],
+            $replace,
         );
 
         if ($internal && $invoice->supplier) {
@@ -53,10 +56,11 @@ class InvoiceNotificationService
                 'local_invoice.'.$history->event,
                 'local-invoice:'.$history->id,
                 $title,
-                $invoice->submission_number.' — '.$invoice->invoice_number,
+                'notifications.invoice.confirmation.message',
                 route('local-supplier.invoices.show', $invoice, absolute: false),
                 'receipt',
-                ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL]
+                ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL],
+                $replace,
             );
         }
     }
@@ -79,23 +83,18 @@ class InvoiceNotificationService
             $recipient,
             'local_invoice.physical_delivery_reminder',
             $key,
-            'Pengingat pengiriman berkas fisik',
-            $invoice->submission_number.' — Jadwal penyerahan berkas fisik invoice Anda sudah dekat.',
+            'notifications.invoice.events.physical_delivery_reminder.title',
+            'notifications.invoice.events.physical_delivery_reminder.message',
             route('local-supplier.invoices.show', $invoice, absolute: false),
             'receipt',
-            ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL]
+            ['local_invoice_id' => $invoice->id, 'category' => NotificationCategory::INVOICE, 'domain' => NotificationDomain::LOCAL],
+            ['submission' => $invoice->submission_number, 'invoice' => $invoice->invoice_number],
         );
     }
 
     private function resolveTitle(string $event): string
     {
-        $registryLabel = config('notification_preferences.local_invoice_'.$event.'.label');
-
-        if (is_string($registryLabel) && $registryLabel !== '') {
-            return $registryLabel;
-        }
-
-        return self::UNREGISTERED_EVENT_TITLES[$event]
-            ?? ('Local invoice: '.ucwords(str_replace('_', ' ', $event)));
+        $key = 'notifications.invoice.events.'.$event.'.title';
+        return app('translator')->has($key, 'en') ? $key : 'notifications.invoice.updated.title';
     }
 }

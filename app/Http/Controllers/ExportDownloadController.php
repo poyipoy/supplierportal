@@ -53,15 +53,20 @@ class ExportDownloadController extends Controller
         abort_unless((int) $exportJob->user_id === (int) $request->user()->getKey(), 403);
 
         if (! $exportJob->isDownloadable()) {
-            abort(404, 'The export file was not found or has not finished processing.');
+            abort(404, __('exports.feedback.not_ready'));
         }
 
         $disk = Storage::disk($exportJob->disk);
 
-        return response()->download(
-            $disk->path($exportJob->file_path),
+        return $disk->download(
+            $exportJob->file_path,
             $exportJob->file_name,
-            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'no-store, private',
+                'Pragma' => 'no-cache',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
         );
     }
 
@@ -77,11 +82,11 @@ class ExportDownloadController extends Controller
         $message = match ($exportJob->status) {
             ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING => $exportJob->progressMessage(),
             ExportJob::STATUS_COMPLETED => $downloadUrl
-                ? 'The export is complete and ready to download.'
-                : 'The export file is unavailable or has expired.',
-            ExportJob::STATUS_FAILED => 'The export could not be processed. Please try again.',
-            ExportJob::STATUS_CANCELLED => 'The export was cancelled. No file was generated.',
-            default => 'The export status is not recognized.',
+                ? __('exports.progress.completed')
+                : __('exports.feedback.unavailable'),
+            ExportJob::STATUS_FAILED => __('exports.progress.failed'),
+            ExportJob::STATUS_CANCELLED => __('exports.progress.cancelled'),
+            default => __('exports.feedback.unknown_status'),
         };
 
         return response()->json([
@@ -111,7 +116,7 @@ class ExportDownloadController extends Controller
         if (in_array($cancelled->status, [ExportJob::STATUS_COMPLETED, ExportJob::STATUS_FAILED], true)) {
             return response()->json([
                 'status' => $cancelled->status,
-                'message' => 'The export has already finished and cannot be cancelled.',
+                'message' => __('exports.feedback.already_finished'),
             ], 409);
         }
 

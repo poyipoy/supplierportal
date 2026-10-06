@@ -1,19 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Notifications - ADASI Supplier Portal')
-@section('page-title', 'Notifications')
+@section('title', __('notifications.preferences.title'))
+@section('page-title', __('common.notification.title'))
 
 @section('content')
-<div class="tw-grid tw-gap-5">
+<div class="tw-grid tw-grid-cols-1 tw-gap-5">
     <x-ui.page-header
-        title="Notifications"
-        description="Choose which in-app notifications you want to receive."
-        eyebrow="Account"
+        :title="__('common.notification.title')"
+        :description="__('notifications.preferences.description')"
+        :eyebrow="__('common.fields.account')"
         style="--md-on-surface-variant: var(--md-on-surface);"
     />
 
     @if($errors->any())
-        <x-ui.alert tone="error" title="Review your notification preferences">
+        <x-ui.alert tone="error" :title="__('notifications.preferences.review')">
             <ul class="tw-m-0 tw-list-disc tw-pl-5">
                 @foreach($errors->all() as $message)<li>{{ $message }}</li>@endforeach
             </ul>
@@ -22,8 +22,8 @@
 
     @if($events === [])
         <section class="tw-border tw-border-outline tw-bg-surface tw-p-5" aria-labelledby="notification-options-title">
-            <h2 id="notification-options-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">Notification settings</h2>
-            <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">There are no notification settings available for your account.</p>
+            <h2 id="notification-options-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('notifications.preferences.settings') }}</h2>
+            <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant">{{ __('notifications.preferences.no_settings') }}</p>
         </section>
     @else
         @php
@@ -82,7 +82,7 @@
         <form
             method="POST"
             action="{{ route('profile.notifications.update') }}"
-            class="tw-grid tw-gap-5"
+            class="tw-grid tw-grid-cols-1 tw-gap-5"
             x-data="notificationPreferencesForm({
                 scopeTab: @js($showScopeTabs ? $defaultScope : 'all'),
                 totalEnabled: {{ $totalEnabledCount }},
@@ -100,7 +100,7 @@
 
             @if($showScopeTabs)
                 <div class="tw-mb-4 tw-grid tw-gap-2">
-                    <x-ui.tabs label="Supplier portal scope filter">
+                    <x-ui.tabs :label="__('common.scope_filter')">
                         <button
                             type="button"
                             role="tab"
@@ -111,7 +111,7 @@
                             :class="scopeTab === 'import' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
                             @click="scopeTab = 'import'; applyFilters()"
                         >
-                            Import
+                            {{ __('common.review.scope_import') }}
                         </button>
                         <button
                             type="button"
@@ -123,7 +123,7 @@
                             :class="scopeTab === 'local' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
                             @click="scopeTab = 'local'; applyFilters()"
                         >
-                            Local
+                            {{ __('common.review.scope_local') }}
                         </button>
                         <button
                             type="button"
@@ -135,27 +135,27 @@
                             :class="scopeTab === 'general' ? 'tw-border-primary tw-text-primary' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-border-outline hover:tw-text-on-surface'"
                             @click="scopeTab = 'general'; applyFilters()"
                         >
-                            General
+                            {{ __('common.review.scope_general') }}
                         </button>
                     </x-ui.tabs>
                     <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">
-                        Notification preferences are account-wide and apply to both Import and Local portals.
+                        {{ __('common.review.scope_help') }}
                     </p>
                 </div>
             @endif
 
             @if($totalEventsCount > 8)
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-mb-1">
-                    <div class="tw-flex tw-items-center tw-gap-2">
-                        <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">Preferences</span>
+                    <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                        <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ __('notifications.preferences.heading') }}</span>
                         <div x-show="totalEvents === totalEnabled" @if($totalEnabledCount < $totalEventsCount) style="display: none;" @endif>
                             <x-ui.status-chip tone="success">
-                                <span x-text="summaryChipText()">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled · {{ $totalSilentCount }} silent · {{ $offCount }} off</span>
+                                <span x-text="summaryChipText()">{{ __('notifications.preferences.summary', ['enabled' => $totalEnabledCount, 'total' => $totalEventsCount, 'silent' => $totalSilentCount, 'off' => $offCount]) }}</span>
                             </x-ui.status-chip>
                         </div>
                         <div x-show="totalEnabled < totalEvents" @if($totalEnabledCount === $totalEventsCount) style="display: none;" @endif>
                             <x-ui.status-chip tone="warning">
-                                <span x-text="summaryChipText()">{{ $totalEnabledCount }} of {{ $totalEventsCount }} enabled · {{ $totalSilentCount }} silent · {{ $offCount }} off</span>
+                                <span x-text="summaryChipText()">{{ __('notifications.preferences.summary', ['enabled' => $totalEnabledCount, 'total' => $totalEventsCount, 'silent' => $totalSilentCount, 'off' => $offCount]) }}</span>
                             </x-ui.status-chip>
                         </div>
                     </div>
@@ -167,7 +167,7 @@
                             <input
                                 type="search"
                                 class="ui-input tw-w-full tw-ps-9 tw-pe-3 tw-py-1.5 tw-text-ui-sm tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface tw-text-on-surface"
-                                placeholder="Search notifications..."
+                                placeholder="{{ __('notifications.preferences.search') }}"
                                 x-model="searchQuery"
                                 @input="applyFilters()"
                             >
@@ -179,7 +179,7 @@
 
                     <x-slot:filters>
                         <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-3">
-                            <div class="tw-inline-flex tw-rounded-ui-sm tw-border tw-border-outline tw-p-0.5 tw-bg-surface" role="group" aria-label="Filter notifications">
+                            <div class="tw-inline-flex tw-flex-wrap tw-rounded-ui-sm tw-border tw-border-outline tw-p-0.5 tw-bg-surface" role="group" aria-label="{{ __('notifications.preferences.filter') }}">
                                 <button
                                     type="button"
                                     class="tw-px-3 tw-py-1 tw-text-ui-xs tw-font-medium tw-rounded-ui-xs ui-motion"
@@ -187,7 +187,7 @@
                                     :aria-pressed="activeFilter === 'all' ? 'true' : 'false'"
                                     @click="activeFilter = 'all'; applyFilters()"
                                 >
-                                    All
+                                    {{ __('notifications.preferences.all') }}
                                 </button>
                                 <button
                                     type="button"
@@ -196,7 +196,7 @@
                                     :aria-pressed="activeFilter === 'enabled' ? 'true' : 'false'"
                                     @click="activeFilter = 'enabled'; applyFilters()"
                                 >
-                                    Enabled
+                                    {{ __('notifications.preferences.enabled') }}
                                 </button>
                                 <button
                                     type="button"
@@ -205,7 +205,7 @@
                                     :aria-pressed="activeFilter === 'muted' ? 'true' : 'false'"
                                     @click="activeFilter = 'muted'; applyFilters()"
                                 >
-                                    Muted
+                                    {{ __('notifications.preferences.muted') }}
                                 </button>
                                 <button
                                     type="button"
@@ -214,17 +214,17 @@
                                     :aria-pressed="activeFilter === 'silent' ? 'true' : 'false'"
                                     @click="activeFilter = 'silent'; applyFilters()"
                                 >
-                                    Silent
+                                    {{ __('notifications.preferences.silent') }}
                                 </button>
                             </div>
 
-                            <div class="tw-inline-flex tw-items-center tw-gap-1.5 tw-text-ui-xs tw-text-on-surface-variant">
-                                <span class="tw-font-medium">Presets:</span>
-                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('everything')">Everything</button>
+                            <div class="tw-inline-flex tw-flex-wrap tw-items-center tw-gap-1.5 tw-text-ui-xs tw-text-on-surface-variant">
+                                <span class="tw-font-medium">{{ __('notifications.preferences.presets') }}</span>
+                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('everything')">{{ __('notifications.preferences.everything') }}</button>
                                 <span class="tw-text-outline" aria-hidden="true">·</span>
-                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('action_needed')">Action needed only</button>
+                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('action_needed')">{{ __('notifications.preferences.action_only') }}</button>
                                 <span class="tw-text-outline" aria-hidden="true">·</span>
-                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('quiet')">Quiet mode</button>
+                                <button type="button" class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-1.5 tw-py-0.5 tw-rounded" @click="applyPreset('quiet')">{{ __('notifications.preferences.quiet') }}</button>
                             </div>
                         </div>
                     </x-slot:filters>
@@ -237,14 +237,14 @@
                                 size="sm"
                                 @click="toggleAllCategories()"
                             >
-                                <span x-text="allExpanded ? 'Collapse all' : 'Expand all'">Expand all</span>
+                                <span x-text="allExpanded ? copy.collapse : copy.expand">{{ __('notifications.preferences.expand_all') }}</span>
                             </x-ui.button>
                         @endif
                     </x-slot:actions>
                 </x-ui.toolbar>
             @endif
 
-            <div id="notification-preferences-panel" role="tabpanel" aria-label="Notification preferences" class="tw-grid tw-gap-5">
+            <div id="notification-preferences-panel" role="tabpanel" aria-label="{{ __('notifications.preferences.panel') }}" class="tw-grid tw-grid-cols-1 tw-gap-5">
             @foreach($groupedCategories as $category => $categoryEvents)
                 @php
                     $hasMuted = false;
@@ -262,7 +262,7 @@
                 <details
                     class="tw-border tw-border-outline tw-bg-surface tw-group tw-rounded-ui-sm tw-overflow-hidden"
                     aria-labelledby="notification-category-{{ $loop->index }}"
-                    data-category="{{ $category }}"
+                    data-category="{{ __($category) }}"
                     @if($isOpen) open @endif
                 >
                     <summary class="ui-focus-ring tw-flex tw-cursor-pointer tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4 tw-select-none list-none [&::-webkit-details-marker]:tw-hidden">
@@ -270,19 +270,19 @@
                             <svg class="tw-h-4 tw-w-4 tw-text-on-surface-variant ui-motion tw-transition-transform tw-duration-150 group-open:tw-rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
-                            <h2 id="notification-category-{{ $loop->index }}" class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ $category }}</h2>
+                            <h2 id="notification-category-{{ $loop->index }}" class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ __($category) }}</h2>
                             <span class="tw-text-ui-xs tw-text-on-surface-variant" x-text="categorySummaryText($el)">
-                                {{ $initialCategoryStats[$category]['on'] }} of {{ $initialCategoryStats[$category]['total'] }} on
+                                {{ __('notifications.preferences.category_summary', ['on' => $initialCategoryStats[$category]['on'], 'total' => $initialCategoryStats[$category]['total']]) }}
                             </span>
                         </div>
                         @if($totalEventsCount > 8)
-                            <div class="tw-flex tw-items-center tw-gap-2" @click.stop>
+                            <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2" @click.stop>
                                 <button
                                     type="button"
                                     class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-primary hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
                                     @click="turnCategoryAll($el, true)"
                                 >
-                                    Turn all on
+                                    {{ __('notifications.preferences.all_on') }}
                                 </button>
                                 <span class="tw-text-outline" aria-hidden="true">·</span>
                                 <button
@@ -290,7 +290,7 @@
                                     class="ui-button ui-button--ghost ui-focus-ring tw-text-ui-xs tw-text-on-surface-variant hover:tw-underline tw-px-2 tw-py-1 tw-rounded"
                                     @click="turnCategoryAll($el, false)"
                                 >
-                                    Turn all off
+                                    {{ __('notifications.preferences.all_off') }}
                                 </button>
                             </div>
                         @endif
@@ -307,24 +307,24 @@
                             <fieldset
                                 class="tw-grid tw-min-w-0 tw-gap-2 tw-py-3 tw-border-b tw-border-outline-variant last:tw-border-b-0"
                                 data-event-key="{{ $key }}"
-                                data-event-label="{{ $event['label'] }}"
-                                data-event-desc="{{ $event['description'] }}"
+                                data-event-label="{{ __($event['label']) }}"
+                                data-event-desc="{{ __($event['description']) }}"
                                 data-scope="{{ !empty($event['supplier_scopes']) ? (in_array('import', $event['supplier_scopes']) ? 'import' : 'local') : 'general' }}"
                                 data-priority="{{ $isActionRequired ? 'action_required' : 'info' }}"
                             >
-                                <legend class="tw-text-ui-sm tw-font-semibold">{{ $event['label'] }}</legend>
+                                <legend class="tw-text-ui-sm tw-font-semibold">{{ __($event['label']) }}</legend>
                                 <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3">
                                     <div class="tw-min-w-0 tw-flex-1">
                                         @if($isActionRequired)
                                             <div class="tw-mb-1 tw-inline-flex tw-items-center">
-                                                <x-ui.status-chip tone="warning">Action needed</x-ui.status-chip>
+                                                <x-ui.status-chip tone="warning">{{ __('notifications.preferences.action') }}</x-ui.status-chip>
                                             </div>
                                         @endif
-                                        <p id="notification-{{ $key }}-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $event['description'] }}</p>
+                                        <p id="notification-{{ $key }}-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __($event['description']) }}</p>
                                         @if($isActionRequired)
                                             <p id="notification-{{ $key }}-warning" role="alert" class="action-required-note tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-warning tw-inline-flex tw-items-center tw-gap-1" @if($isChecked) style="display: none;" @endif>
                                                 <x-ui.icon name="triangle-alert" size="xs" />
-                                                <span>This notification requires your action. Muting it may cause you to miss pending tasks.</span>
+                                                <span>{{ __('notifications.preferences.warning') }}</span>
                                             </p>
                                         @endif
                                         <div class="tw-mt-2 delivery-mode-container" x-show="switches['{{ $key }}']" @if(!$isChecked) style="display: none;" @endif>
@@ -332,11 +332,11 @@
                                                 name="notification_delivery[{{ $key }}]"
                                                 x-model="delivery['{{ $key }}']"
                                                 @change="onDeliveryChange('{{ $key }}', $el)"
-                                                aria-label="{{ $event['label'] }} delivery mode"
+                                                aria-label="{{ __('notifications.preferences.delivery', ['label' => __($event['label'])]) }}"
                                                 class="ui-input tw-text-ui-xs tw-rounded-ui-xs tw-border tw-border-outline tw-bg-surface tw-text-on-surface tw-py-1 tw-ps-2 tw-pe-6"
                                             >
-                                                <option value="normal" @selected(($deliveryPreferences[$key] ?? 'normal') === 'normal')>Normal — popup + inbox</option>
-                                                <option value="silent" @selected(($deliveryPreferences[$key] ?? 'normal') === 'silent')>Silent — inbox only</option>
+                                                <option value="normal" @selected(($deliveryPreferences[$key] ?? 'normal') === 'normal')>{{ __('notifications.preferences.normal') }}</option>
+                                                <option value="silent" @selected(($deliveryPreferences[$key] ?? 'normal') === 'silent')>{{ __('notifications.preferences.inbox_only') }}</option>
                                             </select>
                                         </div>
                                     </div>
@@ -350,12 +350,12 @@
                                             x-model="switches['{{ $key }}']"
                                             aria-describedby="notification-{{ $key }}-help @if($isActionRequired) notification-{{ $key }}-warning @endif @error($field) {{ $controlId }}-error @enderror"
                                             aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}"
-                                            onchange="this.parentElement.querySelector('label span[aria-hidden]').textContent = this.checked ? 'On' : 'Off'; const note = this.closest('fieldset').querySelector('.action-required-note'); if (note) { note.style.display = this.checked ? 'none' : 'inline-flex'; }"
+                                            onchange="this.parentElement.querySelector('label span[aria-hidden]').textContent = this.checked ? @js(__('notifications.preferences.on')) : @js(__('notifications.preferences.off')); const note = this.closest('fieldset').querySelector('.action-required-note'); if (note) { note.style.display = this.checked ? 'none' : 'inline-flex'; }"
                                             @change="onSwitchChange('{{ $key }}', $el)"
                                         />
                                         <label for="{{ $controlId }}" class="tw-cursor-pointer tw-select-none tw-text-ui-xs tw-font-medium tw-text-on-surface-variant tw-min-w-[1.75rem]">
-                                            <span class="tw-sr-only">{{ $event['label'] }}</span>
-                                            <span aria-hidden="true">{{ $isChecked ? 'On' : 'Off' }}</span>
+                                            <span class="tw-sr-only">{{ __($event['label']) }}</span>
+                                            <span aria-hidden="true">{{ $isChecked ? __('notifications.preferences.on') : __('notifications.preferences.off') }}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -370,8 +370,8 @@
             <div x-cloak x-show="visibleEventCount === 0" class="tw-border tw-border-outline tw-bg-surface tw-rounded-ui-sm tw-p-6">
                 <x-ui.empty-state
                     icon="search-x"
-                    title="No notification preferences found"
-                    description="No notification settings match your current search and filter criteria."
+                    :title="__('notifications.preferences.empty')"
+                    :description="__('notifications.preferences.empty_help')"
                 >
                     <x-ui.button
                         type="button"
@@ -380,7 +380,7 @@
                         class="tw-mt-4"
                         @click="clearFilters()"
                     >
-                        Clear filters
+                        {{ __('notifications.preferences.clear_filters') }}
                     </x-ui.button>
                 </x-ui.empty-state>
             </div>
@@ -390,9 +390,9 @@
                     <div class="tw-flex tw-items-center tw-gap-2 tw-text-ui-xs" role="status" aria-live="polite">
                         <span x-show="dirtyCount > 0" x-cloak class="tw-inline-flex tw-items-center tw-gap-1.5 tw-font-medium tw-text-warning">
                             <span class="tw-h-2 tw-w-2 tw-rounded-full tw-bg-warning" aria-hidden="true"></span>
-                            <span x-text="dirtyCount + (dirtyCount === 1 ? ' unsaved change' : ' unsaved changes')">1 unsaved change</span>
+                            <span x-text="copy.unsaved.replace(':count', dirtyCount)">{{ __('notifications.preferences.unsaved', ['count' => 1]) }}</span>
                         </span>
-                        <span x-show="dirtyCount === 0" class="tw-text-on-surface-variant">No unsaved changes</span>
+                        <span x-show="dirtyCount === 0" class="tw-text-on-surface-variant">{{ __('notifications.preferences.no_changes') }}</span>
                     </div>
                 </x-slot:left>
                 <x-slot:right>
@@ -403,13 +403,13 @@
                         x-bind:disabled="dirtyCount === 0"
                         disabled
                     >
-                        Discard
+                        {{ __('notifications.preferences.discard') }}
                     </x-ui.button>
                     <x-ui.button
                         type="submit"
                         x-bind:disabled="dirtyCount === 0"
                     >
-                        Save Changes
+                        {{ __('common.actions.save') }}
                     </x-ui.button>
                 </x-slot:right>
             </x-ui.action-bar>
@@ -422,19 +422,19 @@
             variant="outline"
             x-on:click="$dispatch('open-ui-dialog', 'reset-notification-preferences')"
         >
-            Reset to defaults
+            {{ __('notifications.preferences.reset') }}
         </x-ui.button>
     </div>
 
     <x-ui.dialog
         name="reset-notification-preferences"
-        title="Reset notification preferences"
+        :title="__('notifications.preferences.reset_title')"
     >
         <form method="POST" action="{{ route('profile.notifications.reset') }}" id="reset-preferences-form" @submit="isSubmitting = true">
             @csrf
             @method('DELETE')
             <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">
-                All notification settings will return to default, and any unsaved changes on this page will be discarded.
+                {{ __('notifications.preferences.reset_help') }}
             </p>
         </form>
 
@@ -444,14 +444,14 @@
                 variant="outline"
                 x-on:click="$dispatch('close-ui-dialog', 'reset-notification-preferences')"
             >
-                Cancel
+                {{ __('common.actions.cancel') }}
             </x-ui.button>
             <x-ui.button
                 type="submit"
                 form="reset-preferences-form"
                 variant="danger"
             >
-                Reset to defaults
+                {{ __('notifications.preferences.reset') }}
             </x-ui.button>
         </x-slot:actions>
     </x-ui.dialog>
@@ -461,6 +461,12 @@
 <script>
 function notificationPreferencesForm(config) {
     return {
+        copy: {
+            on: @js(__('notifications.preferences.on')), off: @js(__('notifications.preferences.off')),
+            collapse: @js(__('notifications.preferences.collapse_all')), expand: @js(__('notifications.preferences.expand_all')),
+            unsaved: @js(__('notifications.preferences.unsaved')), summary: @js(__('notifications.preferences.summary')),
+            categorySummary: @js(__('notifications.preferences.category_summary')),
+        },
         dirtyCount: 0,
         isSubmitting: false,
         allExpanded: false,
@@ -502,13 +508,13 @@ function notificationPreferencesForm(config) {
         },
         summaryChipText() {
             const off = this.totalEvents - this.totalEnabled;
-            return `${this.totalEnabled} of ${this.totalEvents} enabled · ${this.totalSilent} silent · ${off} off`;
+            return this.copy.summary.replace(':enabled', this.totalEnabled).replace(':total', this.totalEvents).replace(':silent', this.totalSilent).replace(':off', off);
         },
         onSwitchChange(key, el) {
             this.switches[key] = el.checked;
             const labelSpan = el.parentElement ? el.parentElement.querySelector('label span[aria-hidden]') : null;
             if (labelSpan) {
-                labelSpan.textContent = el.checked ? 'On' : 'Off';
+                labelSpan.textContent = el.checked ? this.copy.on : this.copy.off;
             }
             const note = el.closest('fieldset').querySelector('.action-required-note');
             if (note) {
@@ -568,7 +574,7 @@ function notificationPreferencesForm(config) {
             const detail = el ? el.closest('details[data-category]') : null;
             const cat = detail ? detail.getAttribute('data-category') : null;
             if (cat && this.categoryStats[cat]) {
-                return this.categoryStats[cat].on + ' of ' + this.categoryStats[cat].total + ' on';
+                return this.copy.categorySummary.replace(':on', this.categoryStats[cat].on).replace(':total', this.categoryStats[cat].total);
             }
             return '';
         },
@@ -587,7 +593,7 @@ function notificationPreferencesForm(config) {
                     this.switches[key] = turnOn;
                     const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
                     if (labelSpan) {
-                        labelSpan.textContent = turnOn ? 'On' : 'Off';
+                        labelSpan.textContent = turnOn ? this.copy.on : this.copy.off;
                     }
                     const note = fieldset.querySelector('.action-required-note');
                     if (note) {
@@ -685,7 +691,7 @@ function notificationPreferencesForm(config) {
 
                 const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
                 if (labelSpan) {
-                    labelSpan.textContent = cb.checked ? 'On' : 'Off';
+                    labelSpan.textContent = cb.checked ? this.copy.on : this.copy.off;
                 }
                 const note = row.querySelector('.action-required-note');
                 if (note) {
@@ -704,7 +710,7 @@ function notificationPreferencesForm(config) {
                     cb.checked = checked;
                     const labelSpan = cb.parentElement ? cb.parentElement.querySelector('label span[aria-hidden]') : null;
                     if (labelSpan) {
-                        labelSpan.textContent = checked ? 'On' : 'Off';
+                        labelSpan.textContent = checked ? this.copy.on : this.copy.off;
                     }
                     const note = cb.closest('fieldset').querySelector('.action-required-note');
                     if (note) {

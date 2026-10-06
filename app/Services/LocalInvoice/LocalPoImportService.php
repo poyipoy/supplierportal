@@ -42,12 +42,12 @@ class LocalPoImportService
             $rowErrors = [];
 
             foreach ($row['_formula_columns'] ?? [] as $column) {
-                $rowErrors[] = [$column, 'Excel formulas are not allowed.'];
+                $rowErrors[] = [$column, __('local_procurement.import.formula')];
             }
 
             foreach (['po_number', 'supplier_name', 'po_date', 'po_amount'] as $field) {
                 if (! isset($row[$field]) || $row[$field] === null || $row[$field] === '') {
-                    $rowErrors[] = [$field, 'This field is required.'];
+                    $rowErrors[] = [$field, __('local_procurement.import.field_required')];
                 }
             }
 
@@ -59,20 +59,20 @@ class LocalPoImportService
                     $rowErrors[] = [
                         'supplier_name',
                         $supplierMatches->isEmpty()
-                            ? "No exact active Local Supplier match was found for '{$row['supplier_name']}'."
-                            : "Supplier name '{$row['supplier_name']}' is ambiguous.",
+                            ? __('local_procurement.import.supplier_exact', ['name' => $row['supplier_name']])
+                            : __('local_procurement.import.supplier_ambiguous', ['name' => $row['supplier_name']]),
                     ];
                 }
             }
 
             $poDate = $this->date($row['po_date'] ?? null);
             if (! empty($row['po_date']) && ! $poDate) {
-                $rowErrors[] = ['po_date', 'Use a valid date format (YYYY-MM-DD or Excel date).'];
+                $rowErrors[] = ['po_date', __('local_procurement.import.date_invalid')];
             }
 
             $poAmount = $this->money($row['po_amount'] ?? null);
             if (! empty($row['po_amount']) && ($poAmount === null || bccomp($poAmount, '0', 2) <= 0)) {
-                $rowErrors[] = ['po_amount', 'PO amount must be a positive number with up to two decimal places.'];
+                $rowErrors[] = ['po_amount', __('local_procurement.import.po_amount_positive')];
             }
 
             $poKey = mb_strtolower(trim((string) ($row['po_number'] ?? '')));
@@ -83,7 +83,7 @@ class LocalPoImportService
                     $poAmount ?? '0.00',
                 ];
                 if (isset($seenHeaders[$poKey]) && $seenHeaders[$poKey] !== $header) {
-                    $rowErrors[] = ['po_number', 'Repeated PO rows have conflicting header values.'];
+                    $rowErrors[] = ['po_number', __('local_procurement.import.po_header_conflict')];
                 }
                 $seenHeaders[$poKey] ??= $header;
             }
@@ -122,7 +122,7 @@ class LocalPoImportService
 
             if (! $result['success']) {
                 throw ValidationException::withMessages([
-                    'import_file' => collect($result['errors'])->map(fn ($e) => "Row {$e['row']} {$e['column']}: {$e['message']}")->all(),
+                    'import_file' => collect($result['errors'])->map(fn ($e) => __('local_procurement.import.row_error', ['row' => $e['row'], 'column' => $e['column'], 'message' => $e['message']]))->all(),
                 ]);
             }
 
@@ -196,7 +196,7 @@ class LocalPoImportService
                 $errors[] = [
                     'row' => $row['_row'],
                     'column' => 'po_number',
-                    'message' => "PO '{$row['po_number']}' already exists with conflicting values (Supplier, Date, or Amount differs).",
+                    'message' => __('local_procurement.import.po_existing_conflict', ['po' => $row['po_number']]),
                 ];
                 $row['action'] = 'CONFLICT';
             }

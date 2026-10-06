@@ -52,6 +52,33 @@ class SupplierRegistrationTest extends TestCase
         ], $overrides);
     }
 
+    public function test_registration_notifications_render_each_reviewer_locale_and_preserve_scope_values(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $english = User::factory()->create(['role' => 'admin']);
+        $indonesian = User::factory()->create(['role' => 'finance']);
+        $indonesian->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);
+        $payload = $this->validRegistrationPayload();
+        app()->setLocale('id');
+        $service = app(SupplierRegistrationService::class);
+        $result = $service->submitInitialRegistration($payload, [
+            'nib_file' => $payload['nib_file'], 'npwp_file' => $payload['npwp_file'], 'sknr_file' => $payload['sknr_file'],
+        ]);
+        $submitted = $english->notifications()->where('data->event', 'supplier_registration.submitted')->sole();
+        $this->assertSame('New Supplier Registration', $submitted->data['title']);
+        $this->assertSame('Pendaftaran Pemasok Baru', $indonesian->notifications()->where('data->event', 'supplier_registration.submitted')->sole()->data['title']);
+        $this->assertStringContainsString($payload['company_name'], $submitted->data['message']);
+        $this->assertStringContainsString($result['reference'], $submitted->data['message']);
+        $this->assertSame('id', app()->getLocale());
+        $service->approveRegistration($result['attempt'], $english, ['import', 'local']);
+        $en = $english->notifications()->where('data->event', 'supplier_registration.approved')->sole();
+        $id = $indonesian->notifications()->where('data->event', 'supplier_registration.approved')->sole();
+        $this->assertStringContainsString('Material Procurement, Local Supplier', $en->data['message']);
+        $this->assertStringContainsString('Pengadaan Material, Pemasok Lokal', $id->data['message']);
+        $this->assertEqualsCanonicalizing(['import', 'local'], $result['attempt']->user->supplierScopes()->pluck('scope')->all());
+        $this->assertSame('New Supplier Registration', $submitted->fresh()->data['title']);
+    }
+
     public function test_public_supplier_can_submit_registration_successfully(): void
     {
         $payload = $this->validRegistrationPayload();
@@ -175,7 +202,8 @@ class SupplierRegistrationTest extends TestCase
         $statusResponse = $this->get(route('supplier.registration.status'));
         $statusResponse->assertOk();
         $statusResponse->assertSee('PT Baja Bersama Abadi');
-        $statusResponse->assertSee('PENDING');
+        $statusResponse->assertSee(__('status.registration.pending', [], 'en'));
+        $this->assertDatabaseHas('supplier_registration_attempts', ['id' => $result['attempt']->id, 'status' => 'PENDING']);
         $statusResponse->assertSee($reference);
     }
 
@@ -280,11 +308,11 @@ class SupplierRegistrationTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('supplierRegistrationWizard');
-        $response->assertSee('Akun Portal & Profil Perusahaan', false);
-        $response->assertSee('Identitas Legalitas & Perpajakan', false);
-        $response->assertSee('Berkas Dokumen Verifikasi Rekanan', false);
-        $response->assertSee('Tinjau Ringkasan Pendaftaran (Pre-flight Review)', false);
-        $response->assertSee('Pernyataan Kebenaran Data');
+        $response->assertSee(__('registration.account_profile', [], 'en'));
+        $response->assertSee(__('registration.legal_identification', [], 'en'));
+        $response->assertSee(__('registration.js.heading3', [], 'en'));
+        $response->assertSee(__('registration.review_heading', [], 'en'));
+        $response->assertSee(__('registration.declaration_title', [], 'en'));
         $response->assertSee('bank_select');
         $response->assertSee('other_bank_name');
         $response->assertSee('nib_file');

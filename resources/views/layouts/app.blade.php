@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="js">
+<html lang="{{ app()->getLocale() }}" class="js">
 
 <head>
     <meta charset="UTF-8">
@@ -63,6 +63,16 @@
                 // Regional display is explicit and in-memory; raw values remain business inputs.
                 const regional = Object.freeze({ ...(preferences.regional || {}) });
                 const regionalRegistry = preferences.regionalRegistry || {};
+                const displayLocale = root.lang === 'id' ? 'id-ID' : 'en-GB';
+                const displayMonthName = (month) => {
+                    if (root.lang !== 'id' && typeof regionalRegistry.months?.[month - 1] === 'string') {
+                        return regionalRegistry.months[month - 1];
+                    }
+                    return new Intl.DateTimeFormat(displayLocale, {
+                        month: 'short',
+                        timeZone: 'UTC',
+                    }).format(new Date(Date.UTC(2000, month - 1, 1)));
+                };
                 const displayNumber = (text, profile = 'international') => {
                     const target = regional.number_format;
                     if (typeof text !== 'string' || !['international', 'indonesian'].includes(target)) return text;
@@ -91,7 +101,7 @@
                     const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
                     if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1]) return value;
                     const choice = regional.date_format === 'system' || !regionalRegistry.date_formats?.includes(regional.date_format) ? profile : regional.date_format;
-                    if (choice === 'human' && regionalRegistry.months?.[month - 1]) return parts[3] + ' ' + regionalRegistry.months[month - 1] + ' ' + parts[1];
+                    if (choice === 'human') return parts[3] + ' ' + displayMonthName(month) + ' ' + parts[1];
                     if (choice === 'dmy') return parts[3] + '/' + parts[2] + '/' + parts[1];
                     return value;
                 };
@@ -146,13 +156,11 @@
                     const year = String(parts.year).padStart(4, '0');
                     const month = String(parts.month).padStart(2, '0');
                     const day = String(parts.day).padStart(2, '0');
-                    const months = regionalRegistry.months;
                     let dateText;
                     if (dateFormat === 'iso') dateText = year + '-' + month + '-' + day;
                     else if (dateFormat === 'dmy') dateText = day + '/' + month + '/' + year;
                     else {
-                        const monthName = Array.isArray(months) ? months[parts.month - 1] : null;
-                        if (typeof monthName !== 'string') return '-';
+                        const monthName = displayMonthName(parts.month);
                         dateText = day + ' ' + monthName + ' ' + year;
                     }
 
@@ -214,6 +222,7 @@
 
 
     <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
+    @include('partials.i18n-bootstrap')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
@@ -225,7 +234,7 @@
     x-on:keydown.tab.window="trapSidebarFocus($event)"
     x-effect="document.body.classList.toggle('ui-nav-open', mobileOpen)"
 >
-    <a href="#main-content" class="ui-skip-link">Skip to main content</a>
+    <a href="#main-content" class="ui-skip-link">{{ __('navigation.skip') }}</a>
     @php
         $initNotifCount = 0;
         $initChatCount = 0;
@@ -294,10 +303,36 @@
     @endif
     <script>
         window.AdasiDataTable = Object.freeze({
-            defaults: () => ({ pageLength: window.AdasiPreferences?.pageSize || 25, lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]] }),
+            defaults: () => ({ pageLength: window.AdasiPreferences?.pageSize || 25, lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]], language: @js(__('datatables')) }),
         });
         if (window.jQuery?.fn?.dataTable) {
             window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, window.AdasiDataTable.defaults());
+            let generatedSearchId = 0;
+            const labelDataTableSearch = (node) => {
+                if (!(node instanceof Element)) return;
+
+                const wrappers = [
+                    ...(node.matches('.dataTables_filter') ? [node] : []),
+                    ...node.querySelectorAll('.dataTables_filter'),
+                ];
+
+                wrappers.forEach((wrapper) => {
+                    const searchInput = wrapper.querySelector('input[type="search"]');
+                    if (!searchInput) return;
+
+                    const tableId = wrapper.id?.replace(/_filter$/, '') || `adasi-data-table-${++generatedSearchId}`;
+                    if (!searchInput.id) searchInput.id = `${tableId}-search`;
+                    if (!searchInput.name) searchInput.name = `${tableId}_search`;
+                    if (!searchInput.hasAttribute('aria-label')) {
+                        searchInput.setAttribute('aria-label', window.AdasiI18n.t('datatables.search'));
+                    }
+                });
+            };
+
+            document.querySelectorAll('.dataTables_filter').forEach(labelDataTableSearch);
+            new MutationObserver((records) => {
+                records.forEach((record) => record.addedNodes.forEach(labelDataTableSearch));
+            }).observe(document.documentElement, { childList: true, subtree: true });
         }
     </script>
     <script>
@@ -326,12 +361,13 @@
                 '<div class="adasi-loader-ring">' +
                 '<div class="adasi-loader-logo"></div>' +
                 '</div>' +
-                '<span class="adasi-loader-text">Loading...</span>' +
+                '<span class="adasi-loader-text"></span>' +
                 '</div>' +
                 '</div>'
             );
 
             // Show when an AJAX request starts, including DataTables requests.
+            document.querySelector('.adasi-loader-text').textContent = @js(__('common.loading'));
             $(document).ajaxStart(function () {
                 $('#adasiLoader').addClass('active');
             });
@@ -434,12 +470,16 @@
                     .then(data => {
                         if (!data) return;
                         document.querySelectorAll('.notif-badge').forEach(badge => {
+                            const label = data.count > 0
+                                ? window.AdasiI18n.choice('js.notification.unread_count', Number(data.count), { count: data.count })
+                                : window.AdasiI18n.t('js.notification.button_label');
                             if (data.count > 0) {
                                 badge.textContent = data.count;
                                 badge.classList.remove('d-none');
                             } else {
                                 badge.classList.add('d-none');
                             }
+                            badge.closest('button[data-bs-toggle="dropdown"]')?.setAttribute('aria-label', label);
                         });
 
                         if (typeof updateNotificationCategoryBadges === 'function') {
@@ -462,14 +502,12 @@
                         .then(data => {
                             if (!data) return;
                             document.querySelectorAll('.chat-badge').forEach(badge => {
-                                badge.setAttribute('aria-label', `Unread conversations: ${data.count}`);
+                                badge.setAttribute('aria-label', window.AdasiI18n.t('js.shell.unread_chats', { count: data.count }));
                                 const sidebarLink = badge.closest('.sidebar-link');
                                 if (sidebarLink) {
                                     sidebarLink.setAttribute(
                                         'aria-label',
-                                        data.count > 0
-                                            ? `Negotiation and Chat, ${data.count} unread conversations`
-                                            : 'Negotiation and Chat'
+                                        window.AdasiI18n.choice('js.shell.chat_link', Number(data.count), { count: data.count })
                                     );
                                 }
                                 if (data.count > 0) {
@@ -668,10 +706,10 @@
             window.pdfConfirmationOpen = true;
 
             AdasiAlert.confirm({
-                title: 'Download PDF Document?',
-                text: 'The PDF document will be downloaded. Do you want to continue?',
-                confirmText: 'Yes, Download',
-                cancelText: 'Cancel'
+                title: @js(__('navigation.pdf_confirm')),
+                text: @js(__('navigation.pdf_help')),
+                confirmText: @js(__('js.actions.yes_download')),
+                cancelText: @js(__('common.actions.cancel'))
             }).then((result) => {
                 window.pdfConfirmationOpen = false;
 
@@ -714,10 +752,10 @@
             let recordsTotal = 'all';
 
             AdasiAlert.confirm({
-                title: 'Export Data to Excel?',
-                text: 'The data will be exported based on current filters. Do you want to continue?',
-                confirmText: 'Yes, Export',
-                cancelText: 'Cancel'
+                title: @js(__('navigation.excel_confirm')),
+                text: @js(__('navigation.excel_help')),
+                confirmText: @js(__('js.actions.yes_export')),
+                cancelText: @js(__('common.actions.cancel'))
             }).then((result) => {
                 window.exportConfirmationOpen = false;
 
@@ -750,22 +788,22 @@
             if (e.key === '?') {
                 e.preventDefault();
                 AdasiAlert.info({
-                    title: 'Keyboard Shortcuts',
+                    title: @js(__('navigation.keyboard_shortcuts')),
                     html: `
                         <div class="text-start">
                             <table class="table table-borderless table-sm mb-0">
                                 <tr>
                                     <td width="40%"><kbd>Alt + D</kbd></td>
-                                    <td>Back to Dashboard</td>
+                                    <td>{{ __('navigation.back_dashboard') }}</td>
                                 </tr>
                                 <tr>
                                     <td><kbd>?</kbd></td>
-                                    <td>Open This Help</td>
+                                    <td>{{ __('navigation.open_help') }}</td>
                                 </tr>
                             </table>
                         </div>
                     `,
-                    confirmText: 'Close'
+                    confirmText: @js(__('common.actions.close'))
                 });
             }
         });
@@ -890,7 +928,7 @@
                     title.textContent =
                         String(
                             notification.title ||
-                            'Notification'
+                            @js(__('common.notification.single'))
                         );
 
                     const newBadge =
@@ -899,7 +937,7 @@
                     newBadge.className =
                         'ui-status-chip ui-status-chip--error flex-shrink-0';
                     newBadge.dataset.notificationNewBadge = '';
-                    newBadge.textContent = 'New';
+                    newBadge.textContent = @js(__('common.states.new'));
 
                     heading.append(title, newBadge);
 
@@ -918,7 +956,7 @@
 
                     time.className =
                         'text-muted mt-2 small';
-                    time.textContent = 'Just now';
+                    time.textContent = @js(__('navigation.just_now'));
 
                     content.append(
                         heading,
@@ -1024,21 +1062,21 @@
                         type: 'message',
                         title:
                             notification.title ||
-                            'New Notification',
+                            @js(__('common.notification.new')),
                         message:
                             notification.message ||
                             '',
-                        timestamp: 'Just now',
+                        timestamp: @js(__('navigation.just_now')),
                         icon:
                             notification.icon ||
                             'bell',
                         actions: [
                             {
-                                label: 'Dismiss',
+                                label: @js(__('common.notification.dismiss_action')),
                                 variant: 'secondary',
                             },
                             {
-                                label: 'View',
+                                label: @js(__('common.actions.view')),
                                 variant: 'primary',
                                 onClick: () =>
                                     markReadAndRedirect(

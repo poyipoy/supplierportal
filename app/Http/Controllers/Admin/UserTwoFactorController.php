@@ -14,11 +14,11 @@ class UserTwoFactorController extends Controller
     public function destroy(Request $request, User $user, TwoFactorService $twoFactor): RedirectResponse
     {
         if ($request->user()->is($user)) {
-            return back()->with('error', 'Use your Profile & Security page to disable your own two-factor authentication.');
+            return back()->with('error', __('admin.copy.use_your_profile_security_page_to_disable_your_own_two_factor_authentication'));
         }
 
         if (! $user->hasTwoFactorAuthentication()) {
-            return back()->with('status', 'Two-factor authentication is already disabled for this user.');
+            return back()->with('status', __('admin.copy.two_factor_authentication_is_already_disabled_for_this_user'));
         }
 
         $twoFactor->resetByAdmin($user);
@@ -27,6 +27,6 @@ class UserTwoFactorController extends Controller
             'target_user_id' => $user->getKey(),
         ]));
 
-        return back()->with('success', 'Two-factor authentication has been reset for this user.');
+        return back()->with('success', __('admin.copy.two_factor_authentication_has_been_reset_for_this_user'));
     }
 }

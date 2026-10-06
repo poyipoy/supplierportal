@@ -38,7 +38,7 @@
         ];
     }
     $hasExisting = !empty($normalizedExistingFiles);
-    $formatText = $accept ? strtoupper(str_replace(['.', ','], ['', ', '], $accept)) . " · Maks. {$maxSizeMb} MB/berkas" : "Maksimal {$maxSizeMb} MB per berkas";
+    $formatText = __('common.upload.format', ['formats' => $accept ? strtoupper(str_replace(['.', ','], ['', ', '], $accept)) : '', 'size' => $maxSizeMb]);
     $inputName = $multiple && !str_ends_with($name, '[]') ? $name . '[]' : $name;
     $isHorizontal = ($layout === 'horizontal');
 @endphp
@@ -77,23 +77,23 @@
                         @if($multiple)
                             <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
                                 <x-ui.icon name="files" size="sm" />
-                                <span><span x-text="totalFilesCount"></span>/{{ $maxFiles }} Berkas</span>
+                                <span><span x-text="totalFilesCount"></span>/{{ $maxFiles }} {{ __('common.upload.files') }}</span>
                             </span>
                         @else
                             <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-success/15 tw-text-success">
                                 <x-ui.icon name="check" size="sm" />
-                                <span x-text="isExisting ? 'Tersimpan' : 'Siap Diunggah'"></span>
+                                <span x-text="isExisting ? @js(__('common.upload.saved')) : @js(__('common.upload.ready'))"></span>
                             </span>
                         @endif
                     </template>
                     <template x-if="!hasFiles">
                         @if($required)
                             <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-error/10 tw-text-error">
-                                Wajib
+                                {{ __('common.upload.required') }}
                             </span>
                         @else
                             <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-surface-high tw-text-on-surface-variant">
-                                Opsional
+                                {{ __('common.fields.optional') }}
                             </span>
                         @endif
                     </template>
@@ -125,17 +125,17 @@
                     'tw-border-error tw-bg-error-container/20': {{ $message ? 'true' : 'false' }} || clientError
                 }"
                 role="button"
-                aria-label="Upload {{ $label ?: 'berkas' }}"
+                aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
             >
                 <div class="tw-w-9 tw-h-9 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-mb-1.5 group-hover:tw-bg-primary group-hover:tw-text-primary-foreground tw-transition-colors">
                     <x-ui.icon name="upload-cloud" size="sm" />
                 </div>
 
                 <div class="tw-text-ui-xs tw-font-semibold tw-text-primary group-hover:tw-underline">
-                    Pilih berkas <span class="tw-text-on-surface-variant tw-font-normal">atau seret ke sini</span>
+                    {{ __('common.upload.choose') }} <span class="tw-text-on-surface-variant tw-font-normal">{{ __('common.upload.drag') }}</span>
                 </div>
                 <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
-                    {{ $formatText }} @if($multiple) · Maks. {{ $maxFiles }} berkas @endif
+                    {{ $formatText }} @if($multiple) · {{ __('common.review.upload_maximum', ['count' => $maxFiles]) }} @endif
                 </div>
             </div>
 
@@ -167,11 +167,11 @@
                                             </template>
                                             <span class="tw-text-success tw-font-medium tw-inline-flex tw-items-center tw-gap-0.5">
                                                 <x-ui.icon name="check" size="sm" />
-                                                <span>Tersimpan</span>
+                                                <span>{{ __('common.upload.saved') }}</span>
                                             </span>
                                             <template x-if="file.url">
                                                 <a :href="file.url" target="_blank" class="tw-text-primary tw-underline tw-font-semibold tw-ms-1" @click.stop>
-                                                    Lihat
+                                                    {{ __('common.actions.view') }}
                                                 </a>
                                             </template>
                                         </div>
@@ -181,8 +181,8 @@
                                     type="button"
                                     class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-transparent tw-bg-error-container/30 tw-text-error tw-p-1 tw-text-[10px] tw-font-semibold hover:tw-bg-error-container hover:tw-text-on-error-container"
                                     @click.stop="removeExistingFile(idx)"
-                                    title="Hapus berkas tersimpan"
-                                    aria-label="Hapus berkas tersimpan"
+                                    title="{{ __('common.upload.remove_saved') }}"
+                                    aria-label="{{ __('common.upload.remove_saved') }}"
                                 >
                                     <x-ui.icon name="trash-2" size="sm" />
                                 </button>
@@ -203,7 +203,7 @@
                                             <span>·</span>
                                             <span class="tw-text-primary tw-font-medium tw-inline-flex tw-items-center tw-gap-0.5">
                                                 <x-ui.icon name="upload-cloud" size="sm" />
-                                                <span>Siap diunggah</span>
+                                                <span>{{ __('common.upload.ready') }}</span>
                                             </span>
                                         </div>
                                     </div>
@@ -212,8 +212,8 @@
                                     type="button"
                                     class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-transparent tw-bg-error-container/30 tw-text-error tw-p-1 tw-text-[10px] tw-font-semibold hover:tw-bg-error-container hover:tw-text-on-error-container"
                                     @click.stop="removeStagedFile(idx)"
-                                    title="Batalkan berkas"
-                                    aria-label="Batalkan berkas"
+                                    title="{{ __('common.upload.cancel_file') }}"
+                                    aria-label="{{ __('common.upload.cancel_file') }}"
                                 >
                                     <x-ui.icon name="trash-2" size="sm" />
                                 </button>
@@ -237,7 +237,7 @@
                                 :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
                             >
                                 <x-ui.icon name="plus" size="sm" />
-                                <span>Tambah Berkas (<span x-text="totalFilesCount"></span>/{{ $maxFiles }})</span>
+                                <span>{{ __('common.upload.add') }} (<span x-text="totalFilesCount"></span>/{{ $maxFiles }})</span>
                             </div>
 
                             {{-- Multi-upload: Max files limit reached notice --}}
@@ -246,7 +246,7 @@
                                 class="tw-text-center tw-py-1.5 tw-px-2.5 tw-rounded-ui-sm tw-bg-surface-container-high/60 tw-border tw-border-outline-variant/60 tw-text-[11px] tw-font-medium tw-text-on-surface-variant"
                             >
                                 <x-ui.icon name="check-circle" size="sm" class="tw-inline tw-text-success tw-me-1" />
-                                <span>Batas maksimal {{ $maxFiles }} berkas tercapai</span>
+                                <span>{{ __('common.review.upload_limit_reached', ['count' => $maxFiles]) }}</span>
                             </div>
                         @else
                             {{-- Single-upload: Replace file action --}}
@@ -259,10 +259,10 @@
                                 @keydown.enter.prevent="$refs.fileInput.click()"
                                 class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
                                 :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
-                                title="Pilih berkas baru untuk mengganti berkas saat ini"
+                                title="{{ __('common.upload.replace_title') }}"
                             >
                                 <x-ui.icon name="refresh-cw" size="sm" />
-                                <span>Ganti Berkas</span>
+                                <span>{{ __('common.upload.replace') }}</span>
                             </div>
                         @endif
                     </div>

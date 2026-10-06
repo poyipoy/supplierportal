@@ -86,21 +86,22 @@ class ExportJob extends Model
         ], true);
     }
 
-    public function progressMessage(): string
+    public function progressMessage(?string $locale = null): string
     {
+        $locale = \App\Services\UserPreferenceService::normalizeLocale($locale ?? app()->getLocale());
         return match ($this->progress_stage) {
-            self::STAGE_QUEUED => 'Waiting for an export worker.',
-            self::STAGE_PREPARING => 'Preparing the export data.',
+            self::STAGE_QUEUED => __('exports.progress.queued', [], $locale),
+            self::STAGE_PREPARING => __('exports.progress.preparing', [], $locale),
             self::STAGE_GENERATING => $this->total_rows > 0
-                ? 'Processed '.number_format($this->processed_rows).' of '.number_format($this->total_rows).' rows.'
-                : 'Generating the Excel workbook.',
+                ? __('exports.progress.rows', ['processed' => number_format($this->processed_rows), 'total' => number_format($this->total_rows)], $locale)
+                : __('exports.progress.generating', [], $locale),
             self::STAGE_FINALIZING => $this->total_rows > 0
-                ? 'All '.number_format($this->total_rows).' rows are processed. Finalizing the file.'
-                : 'Finalizing and verifying the export file.',
-            self::STAGE_COMPLETED => 'The export is complete and ready to download.',
-            self::STAGE_FAILED => 'The export could not be processed. Please try again.',
-            self::STAGE_CANCELLED => 'The export was cancelled. No file was generated.',
-            default => 'The export is being processed.',
+                ? __('exports.progress.finalizing_rows', ['total' => number_format($this->total_rows)], $locale)
+                : __('exports.progress.finalizing', [], $locale),
+            self::STAGE_COMPLETED => __('exports.progress.completed', [], $locale),
+            self::STAGE_FAILED => __('exports.progress.failed', [], $locale),
+            self::STAGE_CANCELLED => __('exports.progress.cancelled', [], $locale),
+            default => __('exports.progress.processing', [], $locale),
         };
     }
 

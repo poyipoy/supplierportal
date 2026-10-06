@@ -39,51 +39,51 @@ class LocalPoGrImportService
             $number = (int) $row['_row'];
             $rowErrors = [];
             foreach ($row['_formula_columns'] as $column) {
-                $rowErrors[] = [$column, 'Excel formulas are not allowed.'];
+                $rowErrors[] = [$column, __('local_procurement.import.formula')];
             }
             foreach (['po_number', 'supplier_name', 'po_date', 'po_amount'] as $field) {
                 if ($row[$field] === null || $row[$field] === '') {
-                    $rowErrors[] = [$field, 'This field is required.'];
+                    $rowErrors[] = [$field, __('local_procurement.import.field_required')];
                 }
             }
             $supplierMatches = $suppliers->get(mb_strtolower(trim((string) $row['supplier_name'])), collect());
             if ($supplierMatches->count() !== 1) {
-                $rowErrors[] = ['supplier_name', $supplierMatches->isEmpty() ? 'No exact active Local Supplier match was found.' : 'Supplier name is ambiguous.'];
+                $rowErrors[] = ['supplier_name', $supplierMatches->isEmpty() ? __('local_procurement.import.supplier_missing') : __('local_procurement.import.supplier_multiple')];
             }
             $poDate = $this->date($row['po_date']);
             if (! $poDate) {
-                $rowErrors[] = ['po_date', 'Use a valid date.'];
+                $rowErrors[] = ['po_date', __('local_procurement.import.date_required')];
             }
             $poAmount = $this->money($row['po_amount']);
             if ($poAmount === null || bccomp($poAmount, '0', 2) <= 0) {
-                $rowErrors[] = ['po_amount', 'PO amount must be a positive number with up to two decimal places.'];
+                $rowErrors[] = ['po_amount', __('local_procurement.import.po_amount_positive')];
             }
 
             $grFields = [$row['gr_number'], $row['gr_date'], $row['gr_amount']];
             $hasAnyGr = collect($grFields)->contains(fn ($v) => $v !== null && $v !== '');
             $hasAllGr = collect($grFields)->every(fn ($v) => $v !== null && $v !== '');
             if ($hasAnyGr && ! $hasAllGr) {
-                $rowErrors[] = ['gr_number', 'GR Number, GR Date, and GR Amount must be supplied together.'];
+                $rowErrors[] = ['gr_number', __('local_procurement.import.gr_fields_together')];
             }
             $grDate = $hasAllGr ? $this->date($row['gr_date']) : null;
             if ($hasAllGr && ! $grDate) {
-                $rowErrors[] = ['gr_date', 'Use a valid date.'];
+                $rowErrors[] = ['gr_date', __('local_procurement.import.date_required')];
             }
             $grAmount = $hasAllGr ? $this->money($row['gr_amount']) : null;
             if ($hasAllGr && ($grAmount === null || bccomp($grAmount, '0', 2) <= 0)) {
-                $rowErrors[] = ['gr_amount', 'GR amount must be a positive number with up to two decimal places.'];
+                $rowErrors[] = ['gr_amount', __('local_procurement.import.gr_amount_positive')];
             }
 
             $poKey = mb_strtolower(trim((string) $row['po_number']));
             $header = [$supplierMatches->first()?->id, $poDate, $poAmount ?? '0.00', trim((string) $row['po_remarks'])];
             if (isset($headers[$poKey]) && $headers[$poKey] !== $header) {
-                $rowErrors[] = ['po_number', 'Repeated PO rows have conflicting header values.'];
+                $rowErrors[] = ['po_number', __('local_procurement.import.po_header_conflict')];
             }
             $headers[$poKey] ??= $header;
             if ($hasAllGr) {
                 $grKey = mb_strtolower(trim((string) $row['gr_number']));
                 if (isset($seenGr[$grKey])) {
-                    $rowErrors[] = ['gr_number', 'Duplicate GR Number in workbook.'];
+                    $rowErrors[] = ['gr_number', __('local_procurement.import.gr_duplicate_workbook')];
                 }
                 $seenGr[$grKey] = true;
             }
@@ -107,7 +107,7 @@ class LocalPoGrImportService
         return DB::transaction(function () use ($actor, $rows, $metadata) {
             $result = $this->validate($rows);
             if (! $result['success']) {
-                throw ValidationException::withMessages(['import_file' => collect($result['errors'])->map(fn ($e) => "Row {$e['row']} {$e['column']}: {$e['message']}")->all()]);
+                throw ValidationException::withMessages(['import_file' => collect($result['errors'])->map(fn ($e) => __('local_procurement.import.row_error', ['row' => $e['row'], 'column' => $e['column'], 'message' => $e['message']]))->all()]);
             }
             $poCache = [];
             $newPo = $newGr = 0;
@@ -151,16 +151,16 @@ class LocalPoGrImportService
             $existing = LocalPurchaseOrder::whereRaw('LOWER(po_number) = ?', [mb_strtolower($first['po_number'])])->first();
             if ($existing) {
                 if ((int) $existing->supplier_id !== (int) $first['supplier_id'] || $existing->po_date?->format('Y-m-d') !== $first['po_date'] || bccomp((string) $existing->total_amount, $first['po_amount'], 2) !== 0 || trim((string) $existing->description) !== trim((string) $first['po_remarks'])) {
-                    $errors[] = ['row' => $first['_row'], 'column' => 'po_number', 'message' => 'Existing PO header differs; import cannot update master values.'];
+                    $errors[] = ['row' => $first['_row'], 'column' => 'po_number', 'message' => __('local_procurement.import.po_master_conflict')];
                 }
                 if ($existing->status !== LocalPurchaseOrder::STATUS_OPEN && $group->contains(fn ($r) => $r['gr_number'])) {
-                    $errors[] = ['row' => $first['_row'], 'column' => 'po_number', 'message' => 'New GR cannot be added to a closed or cancelled PO.'];
+                    $errors[] = ['row' => $first['_row'], 'column' => 'po_number', 'message' => __('local_procurement.import.closed_po')];
                 }
             }
         }
         foreach ($rows as $row) {
             if ($row['gr_number'] && LocalGoodsReceipt::whereRaw('LOWER(gr_number) = ?', [mb_strtolower($row['gr_number'])])->exists()) {
-                $errors[] = ['row' => $row['_row'], 'column' => 'gr_number', 'message' => 'GR Number already exists.'];
+                $errors[] = ['row' => $row['_row'], 'column' => 'gr_number', 'message' => __('local_procurement.import.gr_exists')];
             }
         }
 

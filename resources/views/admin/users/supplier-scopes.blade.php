@@ -1,6 +1,6 @@
 <x-ui.form-section
-    title="Supplier Business Access"
-    description="Operational scopes and payment conditions for supplier accounts."
+    :title="__('admin.copy.supplier_business_access')"
+    :description="__('admin.copy.operational_scopes_and_payment_conditions_for_supplier_accounts')"
 >
     <input type="hidden" name="supplier_scopes_present" value="1">
 
@@ -20,7 +20,7 @@
     <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
         <div>
             <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-scope-preset">
-                Business Operations Scope <span class="text-danger">*</span>
+                {{ __('admin.copy.business_operations_scope') }} <span class="text-danger">*</span>
             </label>
             <select
                 name="supplier_scope_preset"
@@ -28,9 +28,9 @@
                 class="form-select @error('supplier_scope_preset') is-invalid @enderror @error('supplier_scopes') is-invalid @enderror"
                 required
             >
-                <option value="import" @selected($initialPreset === 'import')>Import Procurement Only</option>
-                <option value="local" @selected($initialPreset === 'local')>Local Invoices Only</option>
-                <option value="both" @selected($initialPreset === 'both')>Dual Access (Import Procurement & Local Invoices)</option>
+                <option value="import" @selected($initialPreset === 'import')>{{ __('admin.copy.import_procurement_only') }}</option>
+                <option value="local" @selected($initialPreset === 'local')>{{ __('admin.copy.local_invoices_only') }}</option>
+                <option value="both" @selected($initialPreset === 'both')>{{ __('admin.copy.dual_access_import_procurement_local_invoices') }}</option>
             </select>
 
             {{-- Dynamic Scope Access Summary --}}
@@ -40,11 +40,11 @@
                     <div class="tw-min-w-0">
                         <p id="scope-description" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant tw-leading-relaxed">
                             @if($initialPreset === 'both')
-                                Full Access: Both Import Material Procurement and Local Invoice Processing.
+                                {{ __('admin.audit_ui.scope_both') }}
                             @elseif($initialPreset === 'local')
-                                Access: Local Invoice Submissions, Physical Document Verification, and Payment Processing.
+                                {{ __('admin.audit_ui.scope_local') }}
                             @else
-                                Access: Material Requisitions (PR), Quotations, Purchase Orders (PO), and QC Inspections.
+                                {{ __('admin.audit_ui.scope_import') }}
                             @endif
                         </p>
                     </div>
@@ -73,7 +73,7 @@
 
         <div id="payment-term-container" class="{{ $isPaymentTermRequired ? '' : 'd-none' }}">
             <label for="payment-term-days" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">
-                Payment Term (Days) <span class="text-danger">*</span>
+                {{ __('admin.copy.payment_term_days') }} <span class="text-danger">*</span>
             </label>
             <input
                 type="number"
@@ -82,12 +82,12 @@
                 class="form-control @error('payment_term_days') is-invalid @enderror"
                 min="1"
                 max="365"
-                placeholder="e.g. 30"
+                placeholder="{{ __('admin.copy.e_g_30') }}"
                 value="{{ old('payment_term_days', isset($user) ? $user->supplier?->payment_term_days : '') }}"
                 {{ $isPaymentTermRequired ? 'required' : '' }}
             >
             <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1 tw-block">
-                Default payment terms (1–365 days) required for local invoice processing.
+                {{ __('admin.copy.default_payment_terms_1_365_days_required_for_local_invoice_processing') }}
             </small>
             @error('payment_term_days')
                 <div class="invalid-feedback">{{ $message }}</div>

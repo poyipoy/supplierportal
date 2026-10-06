@@ -63,7 +63,7 @@ class SupplierRegistrationController extends Controller
     {
         if (! session()->has('registration_reference') || ! session()->has('registration_access_key')) {
             return redirect()->route('supplier.registration.access-form')
-                ->with('info', __('If you have already submitted your registration, please check your status here.'));
+                ->with('info', __('registration.feedback.check_status'));
         }
 
         return view('auth.supplier-register-success', [
@@ -97,7 +97,7 @@ class SupplierRegistrationController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
 
-            return back()->withInput()->with('error', __("Too many attempts. Please try again in {$seconds} seconds."));
+            return back()->withInput()->with('error', __('registration.feedback.too_many', ['seconds' => $seconds]));
         }
 
         $access = $this->registrationService->authenticateAccess(
@@ -108,7 +108,7 @@ class SupplierRegistrationController extends Controller
         if (! $access) {
             RateLimiter::hit($throttleKey, 60);
 
-            return back()->withInput()->with('error', __('Invalid registration reference or access key.'));
+            return back()->withInput()->with('error', __('registration.feedback.invalid_access'));
         }
 
         RateLimiter::clear($throttleKey);
@@ -158,7 +158,7 @@ class SupplierRegistrationController extends Controller
 
         if (! $latestAttempt || $latestAttempt->status !== SupplierRegistrationAttempt::STATUS_REVISION) {
             return redirect()->route('supplier.registration.status')
-                ->with('info', __('Your registration is not currently open for revision.'));
+                ->with('info', __('registration.feedback.not_revision'));
         }
 
         return view('auth.supplier-registration-edit', [
@@ -192,7 +192,7 @@ class SupplierRegistrationController extends Controller
         );
 
         return redirect()->route('supplier.registration.status')
-            ->with('success', __('Your revised registration has been submitted successfully for review.'));
+            ->with('success', __('registration.feedback.resubmitted'));
     }
 
     /**
@@ -204,14 +204,22 @@ class SupplierRegistrationController extends Controller
         $access = $request->attributes->get('registrationAccess');
 
         if ((int) $document->supplier_id !== (int) $access->user_id) {
-            abort(403, 'Unauthorized access to document.');
+            abort(403, __('registration.feedback.document_unauthorized'));
         }
 
         if (! Storage::disk('private')->exists($document->file_path)) {
-            abort(404, 'Document file not found.');
+            abort(404, __('registration.feedback.document_missing'));
         }
 
-        return Storage::disk('private')->download($document->file_path, $document->original_filename);
+        return Storage::disk('private')->download(
+            $document->file_path,
+            $document->original_filename,
+            [
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'no-store, private',
+                'Pragma' => 'no-cache',
+            ]
+        );
     }
 
     /**
@@ -222,6 +230,6 @@ class SupplierRegistrationController extends Controller
         $request->session()->forget(['registration_access_id', 'registration_user_id']);
 
         return redirect()->route('supplier.registration.access-form')
-            ->with('info', __('You have exited your registration session.'));
+            ->with('info', __('registration.feedback.exited'));
     }
 }

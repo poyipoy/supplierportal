@@ -13,7 +13,7 @@ use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class LocalInvoicesExport implements FromQuery, TracksExportProgress, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class LocalInvoicesExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
 
@@ -29,7 +29,7 @@ class LocalInvoicesExport implements FromQuery, TracksExportProgress, WithCustom
 
     public function headings(): array
     {
-        return ['Submission', 'Receipt', 'Invoice', 'Nomor Faktur Pajak', 'PO Reference', 'Supplier', 'Currency', 'Invoice Amount', 'PPN', 'Status', 'Submitted', 'Approved', 'Payment Term Days', 'Due Date', 'Scheduled Payment', 'Completed'];
+        return [__('exports.headings.submission'), __('exports.headings.receipt'), __('exports.headings.invoice'), __('exports.headings.nomor_faktur_pajak'), __('exports.headings.po_reference'), __('exports.headings.supplier'), __('exports.headings.currency'), __('exports.headings.invoice_amount'), __('exports.headings.ppn'), __('exports.headings.status'), __('exports.headings.submitted').' ('.\App\Support\BusinessTime::label().')', __('exports.headings.approved').' ('.\App\Support\BusinessTime::label().')', __('exports.headings.payment_term_days'), __('exports.headings.due_date'), __('exports.headings.scheduled_payment'), __('exports.headings.completed').' ('.\App\Support\BusinessTime::label().')'];
     }
 
     public function map($invoice): array
@@ -37,9 +37,9 @@ class LocalInvoicesExport implements FromQuery, TracksExportProgress, WithCustom
         return array_map(fn ($value) => SpreadsheetCellSanitizer::text((string) $value), [
             $invoice->submission_number, $invoice->receipt?->receipt_number, $invoice->invoice_number, $invoice->tax_invoice_number, $invoice->po_number,
             $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name, $invoice->currency,
-            $invoice->invoice_amount, $invoice->tax_amount, $invoice->status, $invoice->submitted_at?->format('Y-m-d'),
-            $invoice->approved_at?->format('Y-m-d'), $invoice->payment_term_days_snapshot, $invoice->due_date?->format('Y-m-d'),
-            $invoice->scheduled_payment_date?->format('Y-m-d'), $invoice->completed_at?->format('Y-m-d'),
+            $invoice->invoice_amount, $invoice->tax_amount, \App\Support\StatusHelper::localInvoiceLabel($invoice->status), $invoice->submitted_at ? \App\Support\BusinessTime::format($invoice->submitted_at, 'Y-m-d', false) : null,
+            $invoice->approved_at ? \App\Support\BusinessTime::format($invoice->approved_at, 'Y-m-d', false) : null, $invoice->payment_term_days_snapshot, $invoice->due_date?->format('Y-m-d'),
+            $invoice->scheduled_payment_date?->format('Y-m-d'), $invoice->completed_at ? \App\Support\BusinessTime::format($invoice->completed_at, 'Y-m-d', false) : null,
         ]);
     }
 

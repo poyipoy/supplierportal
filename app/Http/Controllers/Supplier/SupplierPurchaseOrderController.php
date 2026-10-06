@@ -7,6 +7,7 @@ use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Services\MaterialProgressService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
@@ -92,12 +93,12 @@ class SupplierPurchaseOrderController extends Controller
                         default => 'neutral'
                     };
                     $statusLabel = match (true) {
-                        $po->is_overdue => 'Overdue',
-                        $po->status === 'active' => 'Active',
-                        $po->status === 'waiting_qc' => 'Waiting QC',
-                        $po->status === 'claim_needed' => 'Claim Needed',
-                        $po->status === 'completed' => 'Completed',
-                        default => ucwords(str_replace('_', ' ', $po->status)),
+                        $po->is_overdue => __('supplier.copy.overdue'),
+                        $po->status === 'active' => __('supplier.copy.active'),
+                        $po->status === 'waiting_qc' => __('supplier.copy.waiting_qc'),
+                        $po->status === 'claim_needed' => __('supplier.copy.claim_needed'),
+                        $po->status === 'completed' => __('supplier.copy.completed'),
+                        default => StatusHelper::poLabel($po->status, $po->is_overdue),
                     };
 
                     return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>';
@@ -110,7 +111,7 @@ class SupplierPurchaseOrderController extends Controller
                     } elseif ($po->latest_claim_id) {
                         $html .= '<a href="'.route('supplier.claims.show', Hashids::encode((int) $po->latest_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">View Claim</a>';
                     }
-                    $html .= '<a href="'.route('supplier.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>';
+                    $html .= '<a href="'.route('supplier.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.details')).'</a>';
                     $html .= '</div>';
 
                     return $html;
@@ -165,7 +166,7 @@ class SupplierPurchaseOrderController extends Controller
 
         // STRICT: only allow if this PO belongs to the logged-in supplier
         if ($po->supplier_id !== $supplierId) {
-            abort(403, 'You do not have access to this Purchase Order.');
+            abort(403, __('supplier.copy.you_do_not_have_access_to_this_purchase_order_03db80'));
         }
 
         $quotationRates = $po->quotations->mapWithKeys(function ($q) {

@@ -23,10 +23,13 @@ function boot(overrides = {}) {
     const start = layout.lastIndexOf('<script>', index) + 8;
     const end = layout.indexOf('</script>', index);
     const store = new Map();
+    const locale = overrides.locale === 'id' ? 'id' : 'en';
+    const regionalOverrides = {...overrides};
+    delete regionalOverrides.locale;
     const payload = {
         theme:'system',density:'comfortable',accent:'brand',accountId:'42',
         sidebarState:'expanded',sidebarRevision:'sidebar-v2:1',pageSize:25,
-        regional:{timezone:'system',date_format:'system',time_format:'system',number_format:'system',...overrides},
+        regional:{timezone:'system',date_format:'system',time_format:'system',number_format:'system',...regionalOverrides},
         regionalRegistry:registry,
     };
     const windowRef = {
@@ -35,7 +38,7 @@ function boot(overrides = {}) {
         localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)},
     };
     vm.runInNewContext(layout.slice(start,end).replace('@js($preferenceFrontendPayload)', JSON.stringify(payload)), {
-        window:windowRef,document:{documentElement:{dataset:{}}},CustomEvent:class{},
+        window:windowRef,document:{documentElement:{dataset:{},lang:locale}},CustomEvent:class{},
     });
     return {preferences:windowRef.AdasiPreferences,store,windowRef};
 }
@@ -65,6 +68,15 @@ test('date-only helpers use ISO components and ignore Jakarta/browser instant co
     assert.equal(boot().preferences.displayDate('2026-09-28','human'),'28 Sep 2026');
     assert.equal(boot({date_format:'human'}).preferences.displayDate('2026-02-30','iso'),'2026-02-30');
     assert.equal(boot({date_format:'human'}).preferences.displayDate('2024-02-29','iso'),'29 Feb 2024');
+});
+
+test('human date month abbreviations follow the account language', () => {
+    assert.equal(boot({date_format:'human',locale:'en'}).preferences.displayDate('2026-10-28','iso'),'28 Oct 2026');
+    assert.equal(boot({date_format:'human',locale:'id'}).preferences.displayDate('2026-10-28','iso'),'28 Okt 2026');
+    assert.equal(
+        boot({date_format:'human',locale:'id',timezone:'Asia/Jakarta',time_format:'24h'}).preferences.displayTimestamp('2026-10-28T23:35:00Z'),
+        '29 Okt 2026 06:35 WIB',
+    );
 });
 
 test('formatting never writes regional state to LocalStorage or changes raw data', () => {

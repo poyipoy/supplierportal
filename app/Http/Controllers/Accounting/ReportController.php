@@ -21,8 +21,8 @@ class ReportController extends Controller
     public function export(InvoiceFilterRequest $request)
     {
         $request->validate(['report' => 'required|in:register,payments']);
-        ExportDispatcher::dispatch('Local Invoice '.ucfirst($request->report), LocalInvoicesExport::class, [$request->user()->id, $request->validated(), $request->report === 'payments'], 'local-invoices-'.now()->format('Ymd-His').'.xlsx');
+        ExportDispatcher::dispatch(__($request->report === 'payments' ? 'exports.job_labels.invoice_payments' : 'exports.job_labels.invoice_register'), LocalInvoicesExport::class, [$request->user()->id, $request->validated(), $request->report === 'payments'], 'local-invoices-'.now()->format('Ymd-His').'.xlsx'); // biz-time:ignore instant filename
 
-        return redirect()->route('exports.index')->with('success', 'Local invoice export queued.');
+        return redirect()->route('exports.index')->with('success', __('accounting.feedback.export_queued'));
     }
 }

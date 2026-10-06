@@ -107,12 +107,13 @@ class LogAuthenticationEvent
         $this->notifications->send(
             $admins,
             'repeated_lockouts_detected',
-            'auth:repeated-lockout:'.hash('sha256', $normalized).':'.now()->format('YmdH'),
-            'Repeated sign-in lockouts detected',
-            'The account "'.$normalized.'" was rate-limited '.$count.' times in the last hour.',
+            'auth:repeated-lockout:'.hash('sha256', $normalized).':'.now()->format('YmdH'), // biz-time:ignore UTC hourly cache key
+            'notifications.security.lockouts.title',
+            'notifications.security.lockouts.message',
             route('admin.auth-audit-logs.index', absolute: false),
             'alert-triangle',
             ['domain' => NotificationDomain::GLOBAL],
+            ['account' => $normalized, 'count' => $count],
         );
     }
 

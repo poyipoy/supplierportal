@@ -68,7 +68,7 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             foreach ($this->formulaColumns($raw, self::HEADINGS) as $formulaColumn) {
                 $rowErrors[] = [
                     'column' => $formulaColumn,
-                    'message' => 'Excel formulas are not allowed in imported data.',
+                    'message' => __('purchasing.copy.excel_formulas_are_not_allowed_in_imported_data'),
                 ];
             }
 
@@ -97,7 +97,7 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             if ($material === null && ! $validator->errors()->has('material_name')) {
                 $rowErrors[] = [
                     'column' => 'material_name',
-                    'message' => 'Material was not found by exact master code or alias.',
+                    'message' => __('purchasing.copy.material_was_not_found_by_exact_master_code_or_alias'),
                 ];
             }
 
@@ -134,7 +134,12 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
                     $this->addWarning(
                         $rowNumber,
                         $field,
-                        "The {$field} value was ignored because it is not relevant to shape {$result->data['shape']}."
+                        __('materials.copy.ignored_irrelevant_dimension', [
+                            'dimension' => __('materials.dimensions.'.$field),
+                            'shape' => $result->data['shape']
+                                ? __('materials.shape.'.strtolower((string) $result->data['shape']))
+                                : __('materials.copy.not_specified'),
+                        ])
                     );
                 }
             }
@@ -161,8 +166,10 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
                 $this->addWarning(
                     $row,
                     'hs_code',
-                    "Supplied HS Code '{$input['legacy_hs_code']}' was ignored; server result is '"
-                    .($calculated['hs_code'] ?? 'unresolved')."'."
+                    __('materials.copy.supplied_hs_code_ignored', [
+                        'supplied' => $input['legacy_hs_code'],
+                        'result' => $calculated['hs_code'] ?? __('materials.copy.not_available'),
+                    ])
                 );
             }
         }
@@ -174,7 +181,7 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
                 $this->addWarning(
                     $row,
                     'weight_needed',
-                    "Supplied weight '{$supplied}' was ignored; server result is '{$server}'."
+                    __('materials.copy.supplied_weight_ignored', ['supplied' => $supplied, 'server' => $server])
                 );
             }
         }

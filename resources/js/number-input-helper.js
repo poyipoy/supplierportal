@@ -5,6 +5,7 @@
  */
 (function (window, document) {
     'use strict';
+    const t = (key, replacements) => window.AdasiI18n.t(key, replacements);
 
     let activeBadge = null;
     let activeInput = null;
@@ -13,19 +14,19 @@
         const abs = Math.abs(num);
         if (abs >= 1e12) {
             const val = (num / 1e12).toFixed(2).replace(/\.?0+$/, '');
-            return `${val} Trillion`;
+            return t('js.number.trillion', { value: val });
         }
         if (abs >= 1e9) {
             const val = (num / 1e9).toFixed(2).replace(/\.?0+$/, '');
-            return `${val} Billion`;
+            return t('js.number.billion', { value: val });
         }
         if (abs >= 1e6) {
             const val = (num / 1e6).toFixed(2).replace(/\.?0+$/, '');
-            return `${val} Million`;
+            return t('js.number.million', { value: val });
         }
         if (abs >= 1e3) {
             const val = (num / 1e3).toFixed(2).replace(/\.?0+$/, '');
-            return `${val} Thousand`;
+            return t('js.number.thousand', { value: val });
         }
         return '';
     }

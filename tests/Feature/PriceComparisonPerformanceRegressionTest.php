@@ -123,9 +123,9 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
         $this->assertNotNull($option);
         $this->assertSame($requisition->getRouteKey(), $option['id']);
         $this->assertSame(2, $option['quotationCount']);
-        $this->assertStringContainsString('(2 quotation(s))', $option['label']);
+        $this->assertStringContainsString('('.trans_choice('purchasing.copy.comparison_quotation_count', 2, ['count' => 2], 'en').')', $option['label']);
         $this->assertSame(
-            'Inter Supplier Material 1, Inter Supplier Material 2, Inter Supplier Material 3 (+1 lainnya)',
+            'Inter Supplier Material 1, Inter Supplier Material 2, Inter Supplier Material 3 ('.__('purchasing.copy.more_materials_count', ['count' => 1], 'en').')',
             $option['previewMaterials'],
         );
 

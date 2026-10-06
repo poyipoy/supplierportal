@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 
-class PaymentBatchDrpExport implements GeneratesWorkbook, TracksExportProgress
+class PaymentBatchDrpExport implements \Illuminate\Contracts\Translation\HasLocalePreference, GeneratesWorkbook, TracksExportProgress
 {
     use InteractsWithExportProgress;
 

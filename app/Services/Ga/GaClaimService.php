@@ -5,6 +5,7 @@ namespace App\Services\Ga;
 use App\Models\Employee;
 use App\Models\GaClaim;
 use App\Models\User;
+use App\Support\BusinessTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -20,12 +21,12 @@ class GaClaimService
     public function submitClaim(User $actor, array $data, array $files = []): GaClaim
     {
         if (! $actor->isGa() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only GA or Admin can submit GA claims.');
+            throw new InvalidArgumentException(__('ga.validation.submit_role'));
         }
 
         $employee = Employee::where('id', $data['employee_id'] ?? null)->where('is_active', true)->first();
         if (! $employee) {
-            throw new InvalidArgumentException('A valid active employee must be selected from Employee Master.');
+            throw new InvalidArgumentException(__('ga.validation.employee_active'));
         }
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
@@ -38,7 +39,7 @@ class GaClaimService
 
         try {
             return DB::transaction(function () use ($actor, $employee, $data, $supportingFile, &$written) {
-                $year = now()->year;
+                $year = BusinessTime::now()->year;
                 DB::table('local_invoice_sequences')->insertOrIgnore(['year' => $year, 'last_number' => 0]);
                 $seq = DB::table('local_invoice_sequences')->where('year', $year)->lockForUpdate()->first();
                 $num = $seq->last_number + 1;
@@ -68,11 +69,11 @@ class GaClaimService
 
                     $stream = fopen($supportingFile->getPathname(), 'r');
                     if ($stream === false) {
-                        throw new RuntimeException('Unable to read uploaded file.');
+                        throw new RuntimeException(__('ga.validation.file_read'));
                     }
                     try {
                         if (! Storage::disk('private')->put($path, $stream)) {
-                            throw new RuntimeException('Unable to store GA document.');
+                            throw new RuntimeException(__('ga.validation.file_store'));
                         }
                     } finally {
                         fclose($stream);
@@ -101,7 +102,7 @@ class GaClaimService
                     'to_status' => GaClaim::STATUS_SUBMITTED,
                     'actor_id' => $actor->id,
                     'event' => 'submitted',
-                    'notes' => 'GA Claim submitted on behalf of '.$employee->name,
+                    'notes' => __('ga.history.submitted', ['employee' => $employee->name]),
                     'created_at' => now(),
                 ]);
 
@@ -121,7 +122,7 @@ class GaClaimService
     public function resubmitClaim(User $actor, GaClaim $claim, array $data, array $files = []): GaClaim
     {
         if (! $actor->isGa() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only GA or Admin can resubmit GA claims.');
+            throw new InvalidArgumentException(__('ga.validation.resubmit_role'));
         }
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
@@ -138,7 +139,7 @@ class GaClaimService
                 $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
                 if ($clm->status !== GaClaim::STATUS_NEED_REVISION) {
-                    throw new RuntimeException("Cannot resubmit claim: claim is in [{$clm->status}] status, expected NEED_REVISION.");
+                    throw new RuntimeException(__('ga.validation.resubmit_status', ['status' => $clm->status]));
                 }
 
                 $newRev = $clm->revision_number + 1;
@@ -163,11 +164,11 @@ class GaClaimService
 
                     $stream = fopen($supportingFile->getPathname(), 'r');
                     if ($stream === false) {
-                        throw new RuntimeException('Unable to read uploaded file.');
+                        throw new RuntimeException(__('ga.validation.file_read'));
                     }
                     try {
                         if (! Storage::disk('private')->put($path, $stream)) {
-                            throw new RuntimeException('Unable to store GA document.');
+                            throw new RuntimeException(__('ga.validation.file_store'));
                         }
                     } finally {
                         fclose($stream);
@@ -189,7 +190,7 @@ class GaClaimService
                     'to_status' => GaClaim::STATUS_SUBMITTED,
                     'actor_id' => $actor->id,
                     'event' => 'resubmitted',
-                    'notes' => 'GA Claim revised and resubmitted (Rev '.$newRev.').',
+                    'notes' => __('ga.history.resubmitted', ['revision' => $newRev]),
                     'created_at' => now(),
                 ]);
 
@@ -209,7 +210,7 @@ class GaClaimService
     public function basicVerify(GaClaim $claim, User $gaActor, ?string $notes = null): GaClaim
     {
         if (! $gaActor->isGa() && ! $gaActor->isAdmin()) {
-            throw new InvalidArgumentException('Only GA or Admin can perform basic verification.');
+            throw new InvalidArgumentException(__('ga.validation.basic_role'));
         }
 
         return DB::transaction(function () use ($claim, $gaActor, $notes) {
@@ -217,7 +218,7 @@ class GaClaimService
             $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
             if ($clm->status !== GaClaim::STATUS_SUBMITTED) {
-                throw new RuntimeException("Cannot perform basic verification: claim is in [{$clm->status}] status.");
+                throw new RuntimeException(__('ga.validation.basic_status', ['status' => $clm->status]));
             }
 
             $clm->update([
@@ -231,7 +232,7 @@ class GaClaimService
                 'to_status' => GaClaim::STATUS_BASIC_VERIFIED,
                 'actor_id' => $gaActor->id,
                 'event' => 'basic_verified',
-                'notes' => $notes ?: 'GA basic information verified.',
+                'notes' => $notes ?: __('ga.history.basic_verified'),
                 'created_at' => now(),
             ]);
 

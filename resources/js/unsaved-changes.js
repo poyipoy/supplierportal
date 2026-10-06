@@ -5,7 +5,7 @@
  *
  * Employs Baseline Snapshotting & Dynamic Differential Checking:
  * Untouched forms or forms reverted back to original values never trigger false-positive alerts.
- * Supports dual-language alerts: English for Material Procurement ('import') and Indonesian for Local Supplier ('local').
+ * Alert copy follows the account language independently of the active portal.
  */
 (function (window, document) {
     'use strict';
@@ -17,44 +17,18 @@
 
     const formSnapshots = new WeakMap();
 
-    const I18N = {
-        local: {
-            leaveTitle: 'Tinggalkan halaman ini?',
-            leaveText: 'Perubahan yang Anda buat belum disimpan. Yakin ingin meninggalkan halaman ini?',
-            stayButton: 'Tetap di Sini',
-            leaveButton: 'Tinggalkan Halaman',
-            reloadTitle: 'Muat ulang halaman?',
-            reloadText: 'Perubahan yang Anda buat belum disimpan. Yakin ingin memuat ulang?',
-            reloadButton: 'Muat Ulang',
-            cancelButton: 'Batal',
-        },
-        import: {
-            leaveTitle: 'Leave this page?',
-            leaveText: 'Changes you made may not be saved if you leave this page. Do you want to proceed?',
-            stayButton: 'Stay on Page',
-            leaveButton: 'Leave Page',
-            reloadTitle: 'Reload page?',
-            reloadText: 'Changes you made may not be saved. Are you sure you want to reload?',
-            reloadButton: 'Reload',
-            cancelButton: 'Cancel',
-        }
-    };
-
-    function getPortalScope() {
-        const meta = document.querySelector('meta[name="portal-scope"]');
-        if (meta && meta.content) {
-            return meta.content.toLowerCase();
-        }
-        const path = window.location.pathname.toLowerCase();
-        if (path.startsWith('/local-supplier') || path.startsWith('/finance') || path.startsWith('/accounting') || path.startsWith('/ga')) {
-            return 'local';
-        }
-        return 'import';
-    }
-
     function getCopy() {
-        const scope = getPortalScope();
-        return I18N[scope] || I18N.import;
+        const t = window.AdasiI18n.t;
+        return {
+            leaveTitle: t('js.navigation.leave_title'),
+            leaveText: t('js.navigation.leave_text'),
+            stayButton: t('js.navigation.stay'),
+            leaveButton: t('js.navigation.leave'),
+            reloadTitle: t('js.navigation.reload_title'),
+            reloadText: t('js.navigation.reload_text'),
+            reloadButton: t('js.navigation.reload'),
+            cancelButton: t('js.actions.cancel'),
+        };
     }
 
     function pushDirtyHistoryState() {

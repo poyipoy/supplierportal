@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
 
@@ -127,8 +127,8 @@ class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWid
             $offerAmount === null ? null : $offerAmount * $rate,
             SpreadsheetCellSanitizer::text($item->notes),
             SpreadsheetCellSanitizer::text($quotation?->statusLabel()),
-            $quotation?->submitted_at?->format('Y-m-d H:i:s') ?? '-',
-            $item->is_available ? 'Available' : 'Not Available',
+            $quotation?->submitted_at ? \App\Support\BusinessTime::format($quotation->submitted_at, 'Y-m-d H:i:s', false) : '-',
+            $item->is_available ? __('status.availability.available') : __('status.availability.not_available'),
             $item->available_length_display !== '-' ? $item->available_length_display : null,
             $item->offered_weight_per_unit === null ? null : (float) $item->offered_weight_per_unit,
             SpreadsheetCellSanitizer::text($item->offered_weight_source),
@@ -156,30 +156,30 @@ class QuotationsExport implements FromQuery, TracksExportProgress, WithColumnWid
     public function headings(): array
     {
         return [
-            'PR Number',
-            'Period',
-            'Supplier',
-            'Currency',
-            'Material',
-            'HS Code',
-            'Requested Quantity',
-            'Requested Dimensions',
-            'Offered Quantity',
-            'Offered Dimensions',
-            'Price per Kg',
-            'Amount',
-            'Exchange Rate',
-            'Total IDR',
-            'Item Notes',
-            'Status',
-            'Submitted At',
-            'Availability',
-            'Offered Length',
-            'Offer Weight/Unit',
-            'Offer Weight Source',
-            'Offer Total Weight',
-            'Requested Amount',
-            'Offer Amount',
+            __('exports.headings.pr_number'),
+            __('exports.headings.period'),
+            __('exports.headings.supplier'),
+            __('exports.headings.currency'),
+            __('exports.headings.material'),
+            __('exports.headings.hs_code'),
+            __('exports.headings.requested_quantity'),
+            __('exports.headings.requested_dimensions'),
+            __('exports.headings.offered_quantity'),
+            __('exports.headings.offered_dimensions'),
+            __('exports.headings.price_per_kg'),
+            __('exports.headings.amount'),
+            __('exports.headings.exchange_rate'),
+            __('exports.headings.total_idr'),
+            __('exports.headings.item_notes'),
+            __('exports.headings.status'),
+            __('exports.headings.submitted_at').' ('.\App\Support\BusinessTime::label().')',
+            __('exports.headings.availability'),
+            __('exports.headings.offered_length'),
+            __('exports.headings.offer_weight_unit'),
+            __('exports.headings.offer_weight_source'),
+            __('exports.headings.offer_total_weight'),
+            __('exports.headings.requested_amount'),
+            __('exports.headings.offer_amount'),
         ];
     }
 

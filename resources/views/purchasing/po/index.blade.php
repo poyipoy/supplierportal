@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Purchase Order List - ADASI Portal')
-@section('page-title', 'Purchase Orders')
+@section('title', __('purchasing.copy.purchase_order_list_adasi_portal'))
+@section('page-title', __('purchasing.copy.purchase_orders'))
 
 @push('styles')
 <style>
@@ -17,12 +17,12 @@
 <div class="tw-grid tw-gap-4">
     {{-- 1. Compact Page Header --}}
     <x-ui.page-header
-        title="Purchase Orders"
-        eyebrow="Purchasing"
-        description="Track supplier orders, reference requisitions, arrival targets, and workflow statuses."
+        :title="__('purchasing.copy.purchase_orders')"
+        :eyebrow="__('purchasing.copy.purchasing')"
+        :description="__('purchasing.copy.track_supplier_orders_reference_requisitions_arrival_targets_and_workflow_statuses')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('purchasing.purchase-orders.consolidate-awards')" size="sm">Consolidate Selected Items</x-ui.button>
+            <x-ui.button :href="route('purchasing.purchase-orders.consolidate-awards')" size="sm">{{ __('purchasing.copy.consolidate_selected_items') }}</x-ui.button>
             <x-ui.button
                 :href="route('purchasing.export.purchase-orders')"
                 variant="outline"
@@ -30,14 +30,14 @@
                 data-async-export
                 id="exportPurchaseOrdersBtn"
                 :data-export-url="route('purchasing.export.purchase-orders')"
-                data-export-source-singular="purchase order"
-                data-export-source-plural="purchase orders"
+                data-export-source-singular="{{ __('exports.sources.purchase_order') }}"
+                data-export-source-plural="{{ __('exports.sources.purchase_orders') }}"
                 data-export-count-table="#poTable"
-                data-export-row-label="purchase order rows"
-                data-export-row-explanation="Each purchase order will be written as one Excel row."
+                data-export-row-label="{{ __('purchasing.copy.purchase_order_rows') }}"
+                data-export-row-explanation="{{ __('purchasing.copy.each_purchase_order_will_be_written_as_one_excel_row') }}"
             >
                 <x-ui.icon name="file-spreadsheet" />
-                <span>Export Excel</span>
+                <span>{{ __('purchasing.copy.export_excel') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -53,12 +53,12 @@
                     type="text"
                     id="filter_po_number"
                     class="form-control border-start-0 ps-0"
-                    placeholder="e.g. PO/05/2026/001 or supplier name..."
+                    placeholder="{{ __('purchasing.copy.e_g_po_05_2026_001_or_supplier_name') }}"
                     autocomplete="off"
-                    aria-label="Search purchase order number"
+                    aria-label="{{ __('purchasing.copy.search_purchase_order_number') }}"
                 >
-                <x-ui.button type="button" size="sm" id="searchPoBtn" aria-label="Search PO number">
-                    Search
+                <x-ui.button type="button" size="sm" id="searchPoBtn" aria-label="{{ __('purchasing.copy.search_po_number') }}">
+                    {{ __('purchasing.copy.search') }}
                 </x-ui.button>
             </div>
         </x-slot:search>
@@ -66,20 +66,20 @@
         <x-slot:filters>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <div style="min-width: 150px;">
-                    <select id="filter_status" class="form-select form-select-sm" aria-label="Filter by Status">
-                        <option value="">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="waiting_qc">Waiting QC</option>
-                        <option value="claim_needed">Claim Needed</option>
-                        <option value="overdue">Overdue</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                    <select id="filter_status" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+                        <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
+                        <option value="active">{{ __('purchasing.copy.active') }}</option>
+                        <option value="waiting_qc">{{ __('purchasing.copy.waiting_qc') }}</option>
+                        <option value="claim_needed">{{ __('purchasing.copy.claim_needed') }}</option>
+                        <option value="overdue">{{ __('purchasing.copy.overdue') }}</option>
+                        <option value="completed">{{ __('purchasing.copy.completed') }}</option>
+                        <option value="cancelled">{{ __('purchasing.copy.cancelled') }}</option>
                     </select>
                 </div>
 
                 <div style="min-width: 180px;">
-                    <select id="filter_supplier" class="form-select form-select-sm" aria-label="Filter by Supplier">
-                        <option value="">All Suppliers</option>
+                    <select id="filter_supplier" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
+                        <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
                         @foreach($suppliers as $supplier)
                             <option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>
                         @endforeach
@@ -88,7 +88,7 @@
 
                 <x-ui.button type="button" variant="ghost" size="sm" id="resetFilter" class="po-filter-reset">
                     <x-ui.icon name="rotate-ccw" />
-                    <span>Reset</span>
+                    <span>{{ __('purchasing.copy.reset') }}</span>
                 </x-ui.button>
             </div>
             <div id="filterChips" class="d-none flex-wrap tw-gap-1.5 align-items-center ms-2" aria-live="polite"></div>
@@ -100,15 +100,15 @@
         <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="poTable">
             <thead class="table-light">
                 <tr>
-                    <th scope="col">PO Number</th>
-                    <th scope="col">Supplier</th>
-                    <th scope="col">Period</th>
-                    <th scope="col">Reference PR</th>
-                    <th scope="col">Remark</th>
-                    <th scope="col" class="text-end">Total IDR</th>
-                    <th scope="col" class="text-center">Status</th>
-                    <th scope="col">Estimated Arrival</th>
-                    <th scope="col" class="text-end" style="width: 80px;">Action</th>
+                    <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.period') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.reference_pr') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.remark') }}</th>
+                    <th scope="col" class="text-end">{{ __('purchasing.copy.total_idr') }}</th>
+                    <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.estimated_arrival') }}</th>
+                    <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -143,6 +143,7 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},
+
             order: []
         });
 
@@ -184,7 +185,7 @@
                 const $remove = $('<button>', {
                     type: 'button',
                     class: 'ui-focus-ring tw-inline-flex tw-h-5 tw-w-5 tw-items-center tw-justify-center tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-p-0 tw-text-primary hover:tw-bg-primary/10',
-                    'aria-label': `Remove ${label} filter`,
+                    'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
                     text: '×'
                 });
 
@@ -203,14 +204,14 @@
                 }));
             }
             if (statusText) {
-                chips.push(createChip(`Status: ${statusText}`, () => {
+                chips.push(createChip(@js(__('common.final_copy.status')) + ' ' + statusText, () => {
                     $('#filter_status').val('');
                     updateFilterChips();
                     table.draw();
                 }));
             }
             if (supplierText) {
-                chips.push(createChip(`Supplier: ${supplierText}`, () => {
+                chips.push(createChip(window.AdasiI18n.t('js.filters.supplier', { supplier: supplierText }), () => {
                     $('#filter_supplier').val('');
                     updateFilterChips();
                     table.draw();

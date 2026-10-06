@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'defaults' => ['theme' => 'system', 'density' => 'comfortable', 'sidebar_state' => 'expanded', 'page_size' => 25, 'quick_access' => [], 'accent' => 'brand', 'dashboard_preferences' => [], 'sidebar_revision' => 1, 'timezone' => 'system', 'date_format' => 'system', 'time_format' => 'system', 'number_format' => 'system'],
+    'defaults' => ['theme' => 'system', 'density' => 'comfortable', 'sidebar_state' => 'expanded', 'page_size' => 25, 'quick_access' => [], 'accent' => 'brand', 'dashboard_preferences' => [], 'sidebar_revision' => 1, 'timezone' => 'system', 'date_format' => 'system', 'time_format' => 'system', 'number_format' => 'system', 'locale' => 'en'],
+    'locales' => ['en' => 'English', 'id' => 'Bahasa Indonesia'],
     'accents' => [
         'brand' => 'ADASI Blue',
         'slate' => 'Slate',

@@ -3,8 +3,8 @@
 @php
     $isEditing = isset($shipment) && $shipment;
 @endphp
-@section('title', ($isEditing ? 'Edit Shipment' : 'Create New Shipment') . ' - ADASI Portal')
-@section('page-title', $isEditing ? 'Edit Shipment' : 'Create Shipment')
+@section('title', ($isEditing ? __('shipments.copy.edit_shipment') : __('shipments.copy.create_new_shipment')) . ' - ADASI Portal')
+@section('page-title', $isEditing ? __('shipments.copy.edit_shipment') : __('shipments.copy.create_shipment'))
 
 @push('styles')
 <style>
@@ -41,20 +41,20 @@
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Shipments' => route('supplier.shipments.index'),
-        ($isEditing ? 'Edit' : 'Create') => null,
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.shipments') => route('supplier.shipments.index'),
+        ($isEditing ? __('purchasing.breadcrumbs.edit') : __('purchasing.breadcrumbs.create')) => null,
     ]" />
 
     <x-ui.page-header
-        :title="$isEditing ? 'Edit Draft Shipment' : 'Create New Shipment'"
-        eyebrow="Logistics & Fulfillment"
-        description="Consolidate and allocate deliveries across your active Purchase Orders. You may ship full or partial quantities."
+        :title="$isEditing ? __('shipments.audit_ui.edit_draft') : __('shipments.copy.create_new_shipment')"
+        :eyebrow="__('shipments.copy.logistics_fulfillment')"
+        :description="__('shipments.copy.consolidate_and_allocate_deliveries_across_your_active_purchase_orders_you_may_ship_full_or_partial')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('supplier.shipments.index')" variant="ghost" size="sm">
                 <x-slot:leading><x-ui.icon name="arrow-left" size="sm" /></x-slot:leading>
-                <span>Back to Shipments</span>
+                <span>{{ __('shipments.copy.back_to_shipments') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -63,8 +63,8 @@
         <x-ui.card padding="none">
             <x-ui.empty-state
                 icon="package-check"
-                title="No Pending Deliveries"
-                description="All your active Purchase Orders have been fully delivered, or no active POs are currently awaiting delivery."
+                :title="__('shipments.copy.no_pending_deliveries')"
+                :description="__('shipments.copy.all_your_active_purchase_orders_have_been_fully_delivered_or_no_active_pos_are_currently_awaiting_de')"
             />
         </x-ui.card>
     @else
@@ -74,13 +74,13 @@
             <input type="hidden" name="action" id="shipmentFormAction" value="draft">
 
             {{-- 1. General Logistics Information --}}
-            <x-ui.card title="Shipment Logistics Information" description="Set key dispatch details and container or forwarding notes for this consignment.">
+            <x-ui.card :title="__('shipments.copy.shipment_logistics_information')" :description="__('shipments.copy.set_key_dispatch_details_and_container_or_forwarding_notes_for_this_consignment')">
                 <div class="tw-grid tw-gap-3 sm:tw-grid-cols-3">
                     <div>
                         <x-ui.date-picker
                             name="shipment_date"
                             id="shipmentDate"
-                            label="Planned Dispatch Date"
+                            :label="__('shipments.copy.planned_dispatch_date')"
                             value="{{ old('shipment_date', $shipment?->shipment_date?->format('Y-m-d') ?? now()->format('Y-m-d')) }}"
                             required
                         />
@@ -90,7 +90,7 @@
                         <x-ui.date-picker
                             name="estimated_arrival_date"
                             id="estimatedArrivalDate"
-                            label="Shipment ETA"
+                            :label="__('shipments.copy.shipment_eta')"
                             value="{{ old('estimated_arrival_date', $shipment?->estimated_arrival_date?->format('Y-m-d') ?? now()->addDays(14)->format('Y-m-d')) }}"
                             required
                         />
@@ -98,7 +98,7 @@
 
                     <div>
                         <label for="shipmentNotes" class="form-label tw-text-ui-xs fw-semibold">
-                            Logistics Notes / Remarks
+                            {{ __('shipments.copy.logistics_notes_remarks') }}
                         </label>
                         <input
                             type="text"
@@ -106,7 +106,7 @@
                             id="shipmentNotes"
                             class="form-control form-control-sm @error('notes') is-invalid @enderror"
                             value="{{ old('notes', $shipment?->notes) }}"
-                            placeholder="e.g. Container No, Vessel Name, Forwarder..."
+                            placeholder="{{ __('shipments.copy.e_g_container_no_vessel_name_forwarder') }}"
                         >
                         @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
@@ -121,9 +121,9 @@
 
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold tw-text-ui-sm tw-text-on-surface">Material Allocation</span>
+                    <span class="fw-bold tw-text-ui-sm tw-text-on-surface">{{ __('shipments.copy.material_allocation') }}</span>
                     <span class="ui-status-chip ui-status-chip--info ui-tabular-nums">
-                        {{ $groupedByPo->count() }} Active PO(s) · {{ $poItems->count() }} Total Item(s)
+                        {{ __('shipments.page.allocation_counts', ['pos' => $groupedByPo->count(), 'items' => $poItems->count()]) }}
                     </span>
                 </div>
 
@@ -136,7 +136,7 @@
                             type="text"
                             id="quickSearchItems"
                             class="form-control form-control-sm border-start-0 ps-0"
-                            placeholder="Filter PO or material name..."
+                            placeholder="{{ __('shipments.copy.filter_po_or_material_name') }}"
                             autocomplete="off"
                         >
                     </div>
@@ -157,21 +157,21 @@
                                 <span class="fw-bold tw-text-ui-sm text-primary">{{ $po->po_number }}</span>
                                 @if($po->pr_reference)
                                     <span class="ui-status-chip ui-status-chip--neutral tw-text-ui-xs">
-                                        PR: {{ $po->pr_reference }}
+                                        {{ __('purchasing.copy.pr_no') }}: {{ $po->pr_reference }}
                                     </span>
                                 @endif
                                 <span class="tw-text-on-surface-variant tw-text-ui-xs">
-                                    ({{ $itemsInPo->count() }} item(s) pending delivery)
+                                    ({{ trans_choice('shipments.audit_ui.pending_items', $itemsInPo->count(), ['count' => $itemsInPo->count()]) }})
                                 </span>
                             </div>
 
                             <div class="d-flex align-items-center gap-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 tw-text-ui-xs po-select-all-btn">
                                     <x-ui.icon name="check-check" size="sm" />
-                                    <span>Select All in PO</span>
+                                    <span>{{ __('shipments.copy.select_all_in_po') }}</span>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 tw-text-ui-xs po-clear-btn">
-                                    <span>Clear</span>
+                                    <span>{{ __('shipments.copy.clear') }}</span>
                                 </button>
                             </div>
                         </div>
@@ -180,13 +180,13 @@
                             <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                                 <thead class="table-light">
                                     <tr>
-                                        <th scope="col" style="width: 44px;" class="text-center">Select</th>
-                                        <th scope="col">Material & Specifications</th>
-                                        <th scope="col" class="text-end">Ordered Qty</th>
-                                        <th scope="col" class="text-end">Already Shipped</th>
-                                        <th scope="col" class="text-end">Remaining Qty</th>
-                                        <th scope="col" class="text-end" style="width: 170px;">This Shipment Qty</th>
-                                        <th scope="col" class="text-end" style="width: 150px;">Actual Kg</th>
+                                        <th scope="col" style="width: 44px;" class="text-center">{{ __('shipments.copy.select') }}</th>
+                                        <th scope="col">{{ __('shipments.copy.material_specifications') }}</th>
+                                        <th scope="col" class="text-end">{{ __('shipments.copy.ordered_qty') }}</th>
+                                        <th scope="col" class="text-end">{{ __('shipments.copy.already_shipped') }}</th>
+                                        <th scope="col" class="text-end">{{ __('shipments.copy.remaining_qty') }}</th>
+                                        <th scope="col" class="text-end" style="width: 170px;">{{ __('shipments.copy.this_shipment_qty') }}</th>
+                                        <th scope="col" class="text-end" style="width: 150px;">{{ __('shipments.copy.actual_kg') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -205,7 +205,7 @@
                                                     class="form-check-input alloc-toggle"
                                                     id="toggle_{{ $currentIndex }}"
                                                     {{ $isPreselected ? 'checked' : '' }}
-                                                    aria-label="Select {{ $prItem->material_name }}"
+                                                    aria-label="{{ __('shipments.a11y.select_item', ['material' => $prItem->material_name]) }}"
                                                 >
                                             </td>
                                             <td>
@@ -213,7 +213,7 @@
                                                     {{ $prItem->material_name }}
                                                 </div>
                                                 <div class="tw-text-on-surface-variant tw-text-ui-xs">
-                                                    Shape: {{ $prItem->shape ?? '-' }}
+                                                    {{ __('purchasing.copy.shape') }}: {{ $prItem->shape ?? '-' }}
                                                     @if($prItem?->thickness) | T: {{ $prItem->thickness }}mm @endif
                                                     @if($prItem?->width) | W: {{ $prItem->width }}mm @endif
                                                     @if($prItem?->length) | L: {{ $prItem->length }}mm @endif
@@ -243,10 +243,10 @@
                                                         class="form-control form-control-sm text-end shipped-qty-input"
                                                         placeholder="0"
                                                         data-remaining="{{ $itemData['remaining_qty'] ?? $itemData['remaining'] }}"
-                                                        aria-label="Quantity to ship for {{ $prItem->material_name }}"
+                                                        aria-label="{{ __('shipments.a11y.ship_quantity', ['material' => $prItem->material_name]) }}"
                                                     >
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm fill-all-btn" title="Ship all remaining quantity">
-                                                        All
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm fill-all-btn" title="{{ __('shipments.copy.ship_all_remaining_quantity') }}">
+                                                        {{ __('shipments.copy.all') }}
                                                     </button>
                                                 </div>
                                             </td>
@@ -259,7 +259,7 @@
                                                     value="{{ old("items.{$currentIndex}.actual_weight_kg", $currentActualWeightKg ?? '') }}"
                                                     class="form-control form-control-sm text-end actual-weight-input"
                                                     placeholder="0.0000"
-                                                    aria-label="Actual weight in Kg for {{ $prItem->material_name }}"
+                                                    aria-label="{{ __('shipments.a11y.actual_weight', ['material' => $prItem->material_name]) }}"
                                                 >
                                             </td>
                                         </tr>
@@ -279,10 +279,10 @@
                     </div>
                     <div>
                         <div class="fw-bold tw-text-ui-sm tw-text-on-surface" id="shipmentSummaryTitle">
-                            Consignment Allocation Summary
+                            {{ __('shipments.copy.consignment_allocation_summary') }}
                         </div>
                         <div class="tw-text-ui-xs tw-text-on-surface-variant" id="shipmentSummaryText">
-                            0 item(s) allocated for delivery.
+                            {{ __('shipments.copy.0_item_s_allocated_for_delivery') }}
                         </div>
                     </div>
                 </div>
@@ -290,13 +290,13 @@
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <x-ui.button type="submit" name="action" value="draft" variant="outline" size="sm" id="btnSaveDraft">
                         <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
-                        {{ $isEditing ? 'Save Draft Changes' : 'Save as Draft' }}
+                        {{ $isEditing ? __('shipments.copy.save_draft_changes') : __('shipments.copy.save_as_draft') }}
                     </x-ui.button>
 
                     @unless($isEditing)
                         <x-ui.button type="button" variant="primary" size="sm" id="btnSubmitShipment">
                             <x-slot:leading><x-ui.icon name="send" size="sm" /></x-slot:leading>
-                            Submit Shipment Delivery
+                            {{ __('shipments.copy.submit_shipment_delivery') }}
                         </x-ui.button>
                     @endunless
                 </div>
@@ -346,9 +346,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (summaryText) {
             if (hasOverAllocation) {
-                summaryText.innerHTML = `<span class="text-danger fw-semibold">Warning: Some items exceed the remaining ordered balance!</span>`;
+                const warning = document.createElement('span');
+                warning.className = 'text-danger fw-semibold';
+                warning.textContent = window.AdasiI18n.t('js.shipments.remaining_balance_warning');
+                summaryText.replaceChildren(warning);
             } else {
-                summaryText.textContent = `${activeCount} item(s) selected · Total Qty: ${totalQty.toLocaleString('id-ID')} pcs · Actual Weight: ${totalWeight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 })} Kg`;
+                summaryText.textContent = window.AdasiI18n.t('shipments.js.allocation_summary', { count: activeCount, qty: totalQty.toLocaleString('id-ID'), weight: totalWeight.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 }) });
             }
         }
 
@@ -496,8 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const summary = updateSummary();
 
         if (summary.hasOverAllocation) {
-            const warningTitle = @json('Allocation Exceeds Balance');
-            const warningText = @json('Some allocated quantities exceed the remaining ordered balance on the PO. Please adjust the quantities before submitting.');
+            const warningTitle = @json(__('shipments.copy.allocation_exceeds_balance'));
+            const warningText = @json(__('shipments.copy.some_allocated_quantities_exceed_the_remaining_ordered_balance_on_the_po_please_adjust_the_quantitie'));
             if (window.AdasiAlert) {
                 window.AdasiAlert.warning({
                     title: warningTitle,
@@ -510,8 +513,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (summary.activeCount === 0) {
-            const warningTitle = @json('No Items Allocated');
-            const warningText = @json('Please select and allocate at least one PO item for delivery before submitting.');
+            const warningTitle = @json(__('shipments.copy.no_items_allocated'));
+            const warningText = @json(__('shipments.copy.please_select_and_allocate_at_least_one_po_item_for_delivery_before_submitting'));
             if (window.AdasiAlert) {
                 window.AdasiAlert.warning({
                     title: warningTitle,
@@ -523,8 +526,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const title = @json('Submit Shipment Delivery?');
-        const text = @json('Submitting this shipment locks the allocated quantities and notifies Purchasing and QC that the goods are in transit.');
+        const title = @js(__('shipments.confirmations.submit.title'));
+        const text = @js(__('shipments.confirmations.submit.body'));
 
         const doSubmit = () => {
             let actionInput = document.getElementById('shipmentFormAction');
@@ -545,8 +548,8 @@ document.addEventListener('DOMContentLoaded', () => {
             window.AdasiAlert.confirm({
                 title: title,
                 text: text,
-                confirmText: @json('Yes, Submit Delivery'),
-                cancelText: @json('Cancel'),
+                confirmText: @json(__('shipments.copy.yes_submit_delivery')),
+                cancelText: @json(__('shipments.copy.cancel')),
                 confirmTone: 'primary'
             }).then(result => {
                 if (result.isConfirmed) {

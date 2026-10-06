@@ -43,7 +43,7 @@ class ProfileTwoFactorController extends Controller
         $codes = $twoFactor->confirmSetup($request, $request->user(), $validated['code']);
 
         if ($codes === null) {
-            throw ValidationException::withMessages(['code' => 'The authentication code is invalid.']);
+            throw ValidationException::withMessages(['code' => __('auth.feedback.invalid_code')]);
         }
 
         event(new AuthSecurityEvent('mfa_enabled', $request->user()));
@@ -65,7 +65,7 @@ class ProfileTwoFactorController extends Controller
         $validated = $request->validate(['code' => ['required', 'string', 'max:32']]);
 
         if ($twoFactor->verifyUserCode($request->user(), $validated['code']) === null) {
-            throw ValidationException::withMessages(['code' => 'The authentication code is invalid or has already been used.']);
+            throw ValidationException::withMessages(['code' => __('auth.feedback.used_code')]);
         }
 
         $twoFactor->disable($request, $request->user());

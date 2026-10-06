@@ -24,13 +24,19 @@ class MaterialMasterController extends Controller
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
+            ->addColumn('hs_category_label', fn (MaterialMaster $material) => $material->hs_category
+                ? MaterialMaster::hsCategoryLabel($material->hs_category)
+                : '-')
+            ->addColumn('density_profile_label', fn (MaterialMaster $material) => MaterialMaster::densityProfileLabel($material->density_profile))
+            ->addColumn('manufacturer_scope_label', fn (MaterialMaster $material) => MaterialMaster::manufacturerScopeLabel($material->manufacturer_scope))
             ->addColumn('status_badge', fn (MaterialMaster $material) => $material->is_active
-                ? '<span class="ui-status-chip ui-status-chip--success">Active</span>'
-                : '<span class="ui-status-chip ui-status-chip--neutral">Inactive</span>')
-            ->addColumn('source_display', fn (MaterialMaster $material) => e(
-                ($material->source_sheet ?? 'Admin').' row '.($material->source_row ?? '-')
-            ))
-            ->addColumn('updated_date', fn (MaterialMaster $material) => $material->updated_at?->format('d M Y') ?? '-')
+                ? '<span class="ui-status-chip ui-status-chip--success">'.e(__('admin.copy.active')).'</span>'
+                : '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.inactive')).'</span>')
+            ->addColumn('source_display', fn (MaterialMaster $material) => e(__('admin.copy.source_sheet_row', [
+                'sheet' => $material->source_sheet ?? __('admin.copy.admin'),
+                'row' => $material->source_row ?? '-',
+            ])))
+            ->addColumn('updated_date', fn (MaterialMaster $material) => $material->updated_at ? \App\Support\BusinessTime::format($material->updated_at, 'd M Y', false) : '-')
             ->addColumn('action', function (MaterialMaster $material) {
                 $payload = e(json_encode([
                     'id' => $material->id,
@@ -42,11 +48,11 @@ class MaterialMasterController extends Controller
                     'is_active' => $material->is_active,
                 ], JSON_THROW_ON_ERROR));
 
-                $stateLabel = $material->is_active ? 'Deactivate material' : 'Activate material';
+                $stateLabel = $material->is_active ? __('admin.copy.deactivate_material') : __('admin.copy.activate_material');
 
                 return '<div class="d-inline-flex align-items-center gap-1">'
-                    .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-material" data-material="'.$payload.'" aria-label="Edit material '.e($material->material_code).'">Edit</button>'
-                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($material->material_code).'">More</button>'
+                    .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-material" data-material="'.$payload.'" aria-label="'.e(__('purchasing.action_names.edit_material', ['name' => $material->material_code])).'">'.e(__('admin.copy.edit')).'</button>'
+                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $material->material_code])).'">'.e(__('admin.copy.more')).'</button>'
                     .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-material" data-id="'.$material->id.'" data-active="'.($material->is_active ? '0' : '1').'">'.$stateLabel.'</button></li></ul></div>'
                     .'</div>';
             })
@@ -66,7 +72,7 @@ class MaterialMasterController extends Controller
         ]);
 
         return redirect()->to(route('admin.material-hs-code.index').'#materials')
-            ->with('success', 'Material master successfully created.');
+            ->with('success', __('admin.copy.material_master_successfully_created'));
     }
 
     public function update(
@@ -82,7 +88,7 @@ class MaterialMasterController extends Controller
         ]);
 
         return redirect()->to(route('admin.material-hs-code.index').'#materials')
-            ->with('success', 'Material master successfully updated.');
+            ->with('success', __('admin.copy.material_master_successfully_updated'));
     }
 
     public function status(Request $request, MaterialMaster $materialMaster): JsonResponse
@@ -100,7 +106,7 @@ class MaterialMasterController extends Controller
     {
         if (MaterialAlias::where('normalized_alias', $normalizedCode)->exists()) {
             throw ValidationException::withMessages([
-                'material_code' => 'This material code is already used as an alias.',
+                'material_code' => __('admin.copy.this_material_code_is_already_used_as_an_alias'),
             ]);
         }
     }

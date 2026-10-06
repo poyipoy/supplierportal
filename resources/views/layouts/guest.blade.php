@@ -20,6 +20,7 @@
         <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
         <!-- Scripts -->
+        @include('partials.i18n-bootstrap')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="tw-font-sans tw-text-on-surface tw-antialiased">

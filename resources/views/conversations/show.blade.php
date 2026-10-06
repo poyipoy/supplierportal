@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Chat: ' . $conversation->context_label . ' - ADASI Portal')
-@section('page-title', 'Negotiation: ' . $conversation->context_label)
+@section('title', __('common.chat.title', ['context' => $conversation->context_label]))
+@section('page-title', __('common.chat.page_title', ['context' => $conversation->context_label]))
 
 @section('content')
     <div class="chat-fullpage-shell">
@@ -11,7 +11,7 @@
                 : route('supplier.conversations.index');
         @endphp
         <a href="{{ $backRoute }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-text-ui-sm tw-font-medium tw-text-on-surface-variant tw-no-underline hover:tw-text-on-surface">
-            <x-ui.icon name="arrow-left" /> Back to Chat List
+            <x-ui.icon name="arrow-left" /> {{ __('purchasing.copy.back_to_chat_list') }}
         </a>
     </div>
 
@@ -27,13 +27,13 @@
                 </div>
                 @if($chatContext['url'])
                     <a href="{{ $chatContext['url'] }}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-primary tw-no-underline hover:tw-bg-surface-low">
-                        <x-ui.icon name="external-link" /> Open Details
+                        <x-ui.icon name="external-link" /> {{ __('purchasing.copy.open_details') }}
                     </a>
                 @endif
             </div>
             @if(!empty($chatContext['fields']))
                 <details class="tw-border-t tw-border-outline-variant">
-                    <summary class="tw-cursor-pointer tw-px-4 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-surface-low">Context Details</summary>
+                    <summary class="tw-cursor-pointer tw-px-4 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-surface-low">{{ __('purchasing.copy.context_details') }}</summary>
                     <div class="chat-context-grid tw-px-4 tw-pb-3 tw-pt-1">
                         @foreach($chatContext['fields'] as $field)
                             <div class="chat-context-field">
@@ -97,10 +97,10 @@
                             <button type="submit"
                                 class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-text-on-surface hover:tw-bg-surface-container-high"
                                 aria-pressed="true"
-                                title="Notifications are currently muted. Click to unmute."
-                                aria-label="Unmute conversation notifications">
+                                title="{{ __('purchasing.copy.notifications_are_currently_muted_click_to_unmute') }}"
+                                aria-label="{{ __('purchasing.copy.unmute_conversation_notifications') }}">
                                 <x-ui.icon name="bell-off" />
-                                <span class="tw-sr-only">Unmute conversation notifications</span>
+                                <span class="tw-sr-only">{{ __('purchasing.copy.unmute_conversation_notifications') }}</span>
                             </button>
                         </form>
                     @else
@@ -109,10 +109,10 @@
                             <button type="submit"
                                 class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
                                 aria-pressed="false"
-                                title="Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges."
-                                aria-label="Mute conversation notifications">
+                                title="{{ __('purchasing.copy.muting_silences_notification_popups_and_unread_badges_for_this_conversation_you_will_still_see_messa') }}"
+                                aria-label="{{ __('purchasing.copy.mute_conversation_notifications') }}">
                                 <x-ui.icon name="bell" />
-                                <span class="tw-sr-only">Mute conversation notifications</span>
+                                <span class="tw-sr-only">{{ __('purchasing.copy.mute_conversation_notifications') }}</span>
                             </button>
                         </form>
                     @endif
@@ -156,7 +156,7 @@
                             @if($isMe)
                                 <span class="chat-read-receipt {{ $msg->read_at ? 'is-read' : '' }}"
                                       data-read-receipt-id="{{ $msg->id }}"
-                                      title="{{ $msg->read_at ? 'Read ' . $msg->read_at->format('H:i') : 'Sent, unread' }}">
+                                      title="{{ $msg->read_at ? __('js.chat.read_at', ['time' => $msg->read_at->format('H:i')]) : __('js.chat.sent_unread') }}">
                                     <x-ui.icon name="check-check" />
                                 </span>
                             @endif
@@ -166,7 +166,7 @@
             @empty
                 <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-12 tw-text-center" id="empty-state">
                     <x-ui.icon name="message-circle-more" class="tw-text-on-surface-variant tw-mb-2" />
-                    <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">Start a conversation with {{ $partnerName }}</p>
+                    <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">{{ __('common.final_review.start_conversation', ['name' => $partnerName]) }}</p>
                 </div>
             @endforelse
         </div>
@@ -177,7 +177,7 @@
                 @if(!empty($messageTemplates))
                     <div class="dropdown tw-mb-2">
                         <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <x-ui.icon name="zap" />Template
+                            <x-ui.icon name="zap" />{{ __('purchasing.copy.template') }}
                         </button>
                         <div class="dropdown-menu p-2 chat-template-menu">
                             @foreach($messageTemplates as $template)
@@ -190,12 +190,12 @@
                 @endif
                 <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-1.5 d-none" id="message-attachments-preview"></div>
                 <div class="tw-flex tw-gap-2 tw-items-end">
-                    <textarea id="message-body" class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-strong tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" rows="2" placeholder="Type a message... (Enter to send, Shift+Enter for new line)" aria-label="Message"></textarea>
-                    <label for="message-attachments" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="Attach files" aria-label="Attach files">
+                    <textarea id="message-body" class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-strong tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" rows="2" placeholder="{{ __('purchasing.copy.type_a_message_enter_to_send_shift_enter_for_new_line') }}" aria-label="{{ __('purchasing.copy.message') }}"></textarea>
+                    <label for="message-attachments" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="{{ __('purchasing.copy.attach_files') }}" aria-label="{{ __('purchasing.copy.attach_files') }}">
                         <x-ui.icon name="paperclip" />
                     </label>
                     <input type="file" id="message-attachments" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
-                    <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="btn-send" aria-label="Send message">
+                    <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="btn-send" aria-label="{{ __('purchasing.copy.send_message') }}">
                         <x-ui.icon name="send" />
                     </button>
                 </div>
@@ -225,7 +225,7 @@
 
         if (loading) {
             sendButton.setAttribute('aria-busy', 'true');
-            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">Sending message</span>';
+            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">' + @json(__('common.chat.sending')) + '</span>';
             return;
         }
 
@@ -265,8 +265,8 @@
 
         const read = Boolean(msg.is_read || msg.read_at);
         const title = read
-            ? `Read${msg.read_at_display ? ' ' + msg.read_at_display : ''}`
-            : 'Sent, unread';
+            ? window.AdasiI18n.t('js.chat.read_at', { time: msg.read_at_display || '' })
+            : window.AdasiI18n.t('js.chat.sent_unread');
 
         return `<span class="chat-read-receipt ${read ? 'is-read' : ''}" data-read-receipt-id="${msg.id}" title="${escapeHtml(title)}">
             <x-ui.icon name="check-check" />
@@ -291,7 +291,7 @@
             if (!receiptEl) return;
 
             receiptEl.classList.add('is-read');
-            receiptEl.setAttribute('title', `Read${receipt.read_at_display ? ' ' + receipt.read_at_display : ''}`);
+            receiptEl.setAttribute('title', window.AdasiI18n.t('js.chat.read_at', { time: receipt.read_at_display || '' }));
         });
     }
 
@@ -355,8 +355,9 @@
 
     // Append single message to DOM
     function appendMessage(msg, isMe) {
-        const time = new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const name = isMe ? 'You' : (msg.sender_name || msg.sender?.name || 'User');
+        const timeLocale = window.AdasiI18n.locale === 'id' ? 'id-ID' : 'en-GB';
+        const time = new Date(msg.created_at).toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit' });
+        const name = isMe ? '' : (msg.sender_name || msg.sender?.name || window.AdasiI18n.t('js.chat.unknown_sender'));
         const alignClass = isMe ? 'justify-content-end' : 'justify-content-start';
         const colAlignClass = isMe ? 'align-items-end' : 'align-items-start';
         const bubbleClass = isMe ? 'is-me' : 'is-partner';
@@ -404,7 +405,7 @@
             const execute = (note = '') => {
                 const originalHtml = button.innerHTML;
                 button.disabled = true;
-                button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Processing`;
+                button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${window.AdasiI18n.t('js.processing')}`;
 
                 fetch(quickActionUrl, {
                     method: 'POST',
@@ -420,7 +421,7 @@
                             return response.json().then((payload) => {
                                 const messages = payload.errors
                                     ? Object.values(payload.errors).flat().join('\n')
-                                    : (payload.message || 'The action cannot be processed yet.');
+                                    : (payload.message || window.AdasiI18n.t('js.chat.action_failed_message'));
                                 throw new Error(messages);
                             });
                         }
@@ -435,15 +436,15 @@
 
                         AdasiToast.show({
                             type: 'success',
-                            title: 'Success',
-                            message: `${label} processed successfully.`,
+                            title: window.AdasiI18n.t('js.toast.success'),
+                            message: window.AdasiI18n.t('js.chat.action_completed', { action: label }),
                             autoClose: 1400
                         });
                     })
                     .catch((error) => AdasiToast.show({
                         type: 'error',
-                        title: 'Action Failed',
-                        message: error.message || 'The action cannot be processed yet.',
+                        title: @js(__('js.chat.action_failed_title')),
+                        message: error.message || @js(__('js.chat.action_failed_message')),
                         autoClose: 4000
                     }))
                     .finally(() => {
@@ -455,13 +456,13 @@
             if (requiresNote || actionType === 'prompt') {
                 AdasiAlert.prompt({
                     title: label,
-                    inputLabel: requiresNote ? 'Notes are required' : 'Additional notes',
-                    placeholder: 'Write a note for the supplier...',
+                    inputLabel: requiresNote ? @js(__('js.chat.notes_required')) : @js(__('js.chat.additional_notes')),
+                    placeholder: @js(__('js.chat.note_placeholder')),
                     maxLength: 1000,
                     required: requiresNote,
-                    requiredMessage: 'Notes are required.',
-                    confirmText: 'Send',
-                    cancelText: 'Cancel'
+                    requiredMessage: @js(__('js.chat.notes_required')),
+                    confirmText: @js(__('js.actions.send')),
+                    cancelText: @json(__('purchasing.copy.cancel'))
                 }).then((result) => {
                     if (result.isConfirmed) {
                         execute(String(result.value || '').trim());
@@ -472,9 +473,9 @@
 
             AdasiAlert.confirm({
                 title: label,
-                text: 'Continue with this action?',
-                confirmText: 'Yes, continue',
-                cancelText: 'Cancel'
+                text: @js(__('js.chat.confirm_continue')),
+                confirmText: @js(__('js.chat.continue')),
+                cancelText: @json(__('purchasing.copy.cancel'))
             }).then((result) => {
                 if (result.isConfirmed) execute();
             });

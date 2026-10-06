@@ -39,15 +39,15 @@ class PaymentExecutionService
     public function markGroupPaid(PaymentGroup $group, array $data, User $actor): PaymentGroup
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only Finance or Admin can confirm payment.');
+            throw new InvalidArgumentException(__('finance.execution_validation.role'));
         }
 
         if (empty($data['transfer_reference'])) {
-            throw new InvalidArgumentException('Bank transfer reference is required.');
+            throw new InvalidArgumentException(__('finance.execution_validation.reference'));
         }
 
         if (empty($data['transfer_date'])) {
-            throw new InvalidArgumentException('Transfer date is required.');
+            throw new InvalidArgumentException(__('finance.execution_validation.date'));
         }
 
         return DB::transaction(function () use ($group, $data, $actor) {
@@ -74,16 +74,16 @@ class PaymentExecutionService
                 });
 
                 if ($hasAuthoritativeInvoice) {
-                    throw new RuntimeException('Supplier payments must be recorded per invoice through its Voucher Bayar settlement.');
+                    throw new RuntimeException(__('finance.execution_validation.invoice_settlement'));
                 }
             }
 
             if (! in_array($batch->status, [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID], true)) {
-                throw new RuntimeException("Cannot record payment: batch is in [{$batch->status}] status, expected FINALIZED or PARTIALLY_PAID.");
+                throw new RuntimeException(__('finance.execution_validation.batch_status', ['status' => $batch->status]));
             }
 
             if ($grp->status === PaymentGroup::STATUS_PAID) {
-                throw new RuntimeException('Payment group has already been marked as PAID.');
+                throw new RuntimeException(__('finance.execution_validation.group_paid'));
             }
 
             $now = now();
@@ -104,7 +104,7 @@ class PaymentExecutionService
                     $inv = LocalInvoice::where('id', $item->payable_id)->lockForUpdate()->first();
                     if ($inv && $inv->status !== LocalInvoice::STATUS_PAID) {
                         if (! $inv->isReadyToPay()) {
-                            throw new RuntimeException("Invoice [{$inv->invoice_number}] is not in READY_TO_PAY status (current: {$inv->status}).");
+                            throw new RuntimeException(__('finance.execution_validation.invoice_status', ['number' => $inv->invoice_number, 'status' => $inv->status]));
                         }
 
                         $originalStatus = $inv->status;
@@ -120,18 +120,18 @@ class PaymentExecutionService
                             'to_status' => LocalInvoice::STATUS_PAID,
                             'actor_id' => $actor->id,
                             'event' => 'paid',
-                            'notes' => "Payment confirmed via transfer ref: {$data['transfer_reference']}",
+                            'notes' => __('finance.history.payment_confirmed', ['reference' => $data['transfer_reference']]),
                             'created_at' => $now,
                         ]);
 
-                        $this->notifications->send($inv, $history);
+                        $this->notifications->send($inv, $history, ['reference' => (string) $data['transfer_reference'], 'amount' => (string) $item->amount]);
                     }
                 } elseif ($item->payable_type === GaClaim::class) {
                     /** @var GaClaim $clm */
                     $clm = GaClaim::where('id', $item->payable_id)->lockForUpdate()->first();
                     if ($clm && $clm->status !== GaClaim::STATUS_PAID) {
                         if ($clm->status !== GaClaim::STATUS_READY_TO_PAY) {
-                            throw new RuntimeException("Claim [{$clm->claim_number}] is not in READY_TO_PAY status (current: {$clm->status}).");
+                            throw new RuntimeException(__('finance.execution_validation.claim_status', ['number' => $clm->claim_number, 'status' => $clm->status]));
                         }
 
                         $originalStatus = $clm->status;
@@ -146,7 +146,7 @@ class PaymentExecutionService
                             'to_status' => GaClaim::STATUS_PAID,
                             'actor_id' => $actor->id,
                             'event' => 'paid',
-                            'notes' => "Payment confirmed via transfer ref: {$data['transfer_reference']}",
+                            'notes' => __('finance.history.payment_confirmed', ['reference' => $data['transfer_reference']]),
                             'created_at' => $now,
                         ]);
                     }
@@ -181,17 +181,17 @@ class PaymentExecutionService
     public function markEntireBatchPaid(PaymentBatch $batch, array $data, User $actor): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only Finance or Admin can confirm payment.');
+            throw new InvalidArgumentException(__('finance.execution_validation.role'));
         }
 
         $transferRef = trim((string) ($data['transfer_reference'] ?? ''));
         if ($transferRef === '') {
-            throw new InvalidArgumentException('Bank transfer reference is required.');
+            throw new InvalidArgumentException(__('finance.execution_validation.reference'));
         }
 
         $transferDate = $data['transfer_date'] ?? null;
         if (empty($transferDate)) {
-            throw new InvalidArgumentException('Transfer date is required.');
+            throw new InvalidArgumentException(__('finance.execution_validation.date'));
         }
 
         return DB::transaction(function () use ($batch, $data, $actor) {
@@ -199,11 +199,11 @@ class PaymentExecutionService
             $lockedBatch = PaymentBatch::where('id', $batch->id)->lockForUpdate()->firstOrFail();
 
             if ($lockedBatch->status === PaymentBatch::STATUS_PAID) {
-                throw new RuntimeException("DRP Batch [{$lockedBatch->batch_number}] has already been marked as PAID.");
+                throw new RuntimeException(__('finance.execution_validation.batch_paid', ['number' => $lockedBatch->batch_number]));
             }
 
             if (! in_array($lockedBatch->status, [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID], true)) {
-                throw new RuntimeException("Cannot mark batch as paid: batch is in [{$lockedBatch->status}] status, expected FINALIZED or PARTIALLY_PAID.");
+                throw new RuntimeException(__('finance.execution_validation.paid_status', ['status' => $lockedBatch->status]));
             }
 
             if ($lockedBatch->batch_type === PaymentBatch::TYPE_GA) {
@@ -233,7 +233,7 @@ class PaymentExecutionService
 
                 if ($unvoucheredCount > 0) {
                     throw ValidationException::withMessages([
-                        'batch' => "Terdapat {$unvoucheredCount} tagihan supplier yang belum diterbitkan Voucher Bayar. Harap generate seluruh Voucher Bayar pada Detail DRP sebelum menandai DRP ini lunas.",
+                        'batch' => __('finance.execution_validation.vouchers_missing', ['count' => $unvoucheredCount]),
                     ]);
                 }
 

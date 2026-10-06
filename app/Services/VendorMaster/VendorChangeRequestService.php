@@ -59,11 +59,11 @@ class VendorChangeRequestService
     public function approve(SupplierChangeRequest $changeRequest, User $reviewer, ?string $notes = null): SupplierChangeRequest
     {
         if ($changeRequest->supplier_id === $reviewer->id) {
-            throw new InvalidArgumentException('Supplier cannot approve their own change request.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.self_approve'));
         }
 
         if (! $reviewer->isFinance() && ! $reviewer->isPurchasing() && ! $reviewer->isAdmin()) {
-            throw new InvalidArgumentException('Unauthorized to approve vendor master changes.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.approve_role'));
         }
 
         return DB::transaction(function () use ($changeRequest, $reviewer, $notes) {
@@ -73,14 +73,14 @@ class VendorChangeRequestService
                 ->firstOrFail();
 
             if ($req->status !== SupplierChangeRequest::STATUS_PENDING) {
-                throw new RuntimeException('Change request is not in PENDING status.');
+                throw new RuntimeException(__('local_procurement.vendor_validation.pending'));
             }
 
             $proposed = $req->proposed_data;
             $supplierUser = $req->supplier;
 
             if (! $supplierUser instanceof User || ! $supplierUser->isLocalEligible()) {
-                throw new InvalidArgumentException('Change request must belong to an active local supplier.');
+                throw new InvalidArgumentException(__('local_procurement.vendor_validation.active_supplier'));
             }
 
             // Apply profile updates
@@ -136,15 +136,15 @@ class VendorChangeRequestService
     public function reject(SupplierChangeRequest $changeRequest, User $reviewer, string $notes): SupplierChangeRequest
     {
         if ($changeRequest->supplier_id === $reviewer->id) {
-            throw new InvalidArgumentException('Supplier cannot reject their own change request.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.self_reject'));
         }
 
         if (! $reviewer->isFinance() && ! $reviewer->isPurchasing() && ! $reviewer->isAdmin()) {
-            throw new InvalidArgumentException('Unauthorized to reject vendor master changes.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.reject_role'));
         }
 
         if (trim($notes) === '') {
-            throw new InvalidArgumentException('Rejection notes are mandatory.');
+            throw new InvalidArgumentException(__('local_procurement.vendor_validation.rejection_notes'));
         }
 
         return DB::transaction(function () use ($changeRequest, $reviewer, $notes) {
@@ -154,12 +154,12 @@ class VendorChangeRequestService
                 ->firstOrFail();
 
             if ($req->status !== SupplierChangeRequest::STATUS_PENDING) {
-                throw new RuntimeException('Change request is not in PENDING status.');
+                throw new RuntimeException(__('local_procurement.vendor_validation.pending'));
             }
 
             $supplierUser = $req->supplier;
             if (! $supplierUser instanceof User || ! $supplierUser->isLocalEligible()) {
-                throw new InvalidArgumentException('Change request must belong to an active local supplier.');
+                throw new InvalidArgumentException(__('local_procurement.vendor_validation.active_supplier'));
             }
 
             $req->update([

@@ -456,28 +456,28 @@ class QuotationItem extends Model
     {
         $prItem = $this->prItem;
         if (! $this->isAvailable()) {
-            $notAvailable = self::status('not_available', 'Not Available');
+            $notAvailable = self::status('not_available', __('materials.copy.not_available'));
 
             return ['quantity' => $notAvailable, 'specification' => $notAvailable];
         }
 
         if (! $prItem) {
             return [
-                'quantity' => self::status('not_specified', 'Quantity Not Specified'),
-                'specification' => self::status('not_specified', 'Not Specified'),
+                'quantity' => self::status('not_specified', __('materials.copy.quantity_not_specified')),
+                'specification' => self::status('not_specified', __('materials.copy.not_specified')),
             ];
         }
 
         $quantity = match (true) {
-            $this->available_qty === null => self::status('not_specified', 'Quantity Not Specified'),
-            $this->available_qty < $prItem->quantity_value => self::status('shortage', 'Quantity Shortage'),
-            $this->available_qty > $prItem->quantity_value => self::status('surplus', 'Quantity Surplus'),
-            default => self::status('match', 'Quantity Match'),
+            $this->available_qty === null => self::status('not_specified', __('materials.copy.quantity_not_specified')),
+            $this->available_qty < $prItem->quantity_value => self::status('shortage', __('materials.copy.quantity_shortage')),
+            $this->available_qty > $prItem->quantity_value => self::status('surplus', __('materials.copy.quantity_surplus')),
+            default => self::status('match', __('materials.copy.quantity_match')),
         };
 
         $fields = PrItem::relevantDimensionFields($prItem->shape);
         if ($fields === []) {
-            return compact('quantity') + ['specification' => self::status('not_specified', 'Not Specified')];
+            return compact('quantity') + ['specification' => self::status('not_specified', __('materials.copy.not_specified'))];
         }
 
         $hasAny = false;
@@ -516,13 +516,13 @@ class QuotationItem extends Model
         }
 
         if (! $hasAny) {
-            $specification = self::status('not_specified', 'Not Specified');
+            $specification = self::status('not_specified', __('materials.copy.not_specified'));
         } elseif (! $allSpecified || ! $allMatch) {
-            $specification = self::status('different', 'Different Specification');
+            $specification = self::status('different', __('materials.copy.different_specification'));
         } elseif ($rangeMatched) {
-            $specification = self::status('within_range', 'Requested Within Offered Range');
+            $specification = self::status('within_range', __('materials.copy.requested_within_offered_range'));
         } else {
-            $specification = self::status('exact', 'Exact Match');
+            $specification = self::status('exact', __('materials.copy.exact_match'));
         }
 
         return compact('quantity', 'specification');

@@ -11,6 +11,7 @@ final readonly class WeightCalculationResult
         public ?string $formulaKey,
         public ?float $factor,
         public string $message,
+        public ?string $messageKey = null,
     ) {}
 
     public function isCalculated(): bool

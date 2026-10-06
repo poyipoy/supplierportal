@@ -23,7 +23,7 @@ class UploadLocalPoDocumentRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     $supplierUser = User::find($value);
                     if (! $supplierUser || ! $supplierUser->is_active || ! $supplierUser->isLocalEligible()) {
-                        $fail('Rekanan supplier yang dipilih tidak aktif atau tidak terdaftar dalam pengadaan lokal.');
+                        $fail(__('local_procurement.validation.supplier_ineligible'));
                     }
                 },
             ],
@@ -39,11 +39,11 @@ class UploadLocalPoDocumentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'supplier_id.required' => 'Pilih rekanan supplier terlebih dahulu.',
-            'supplier_id.exists' => 'Rekanan supplier tidak ditemukan.',
-            'file.required' => 'Berkas dokumen PO (.pdf atau .zip) wajib diunggah.',
-            'file.mimes' => 'Format berkas harus berupa dokumen PDF (.pdf) atau arsip ZIP (.zip).',
-            'file.max' => 'Ukuran berkas tidak boleh melebihi 50 MB.',
+            'supplier_id.required' => __('local_procurement.validation.supplier_select'),
+            'supplier_id.exists' => __('local_procurement.validation.supplier_missing'),
+            'file.required' => __('local_procurement.validation.po_file_required'),
+            'file.mimes' => __('local_procurement.validation.po_file_type'),
+            'file.max' => __('local_procurement.validation.po_file_size'),
         ];
     }
 }

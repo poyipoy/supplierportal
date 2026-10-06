@@ -149,7 +149,7 @@ class QuotationController extends Controller
             return DataTables::eloquent($query->orderByDesc('updated_at'))
                 ->addIndexColumn()
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
-                ->addColumn('updated_date', fn ($pr) => $pr->updated_at->format('d M Y, H:i'))
+                ->addColumn('updated_date', fn ($pr) => \App\Support\BusinessTime::format($pr->updated_at, 'd M Y, H:i'))
                 ->addColumn('item_count', fn ($pr) => $pr->items->count().' Item')
                 ->addColumn('status_badge', function ($pr) {
                     $quotation = $pr->quotations->first();
@@ -157,12 +157,12 @@ class QuotationController extends Controller
 
                     return match ($status) {
                         'unresponded' => '<span class="ui-status-chip ui-status-chip--error">Not Responded</span>',
-                        'draft' => '<span class="ui-status-chip ui-status-chip--neutral">Draft</span>',
-                        'revision_requested' => '<span class="ui-status-chip ui-status-chip--warning">Revision Requested</span>',
-                        'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at?->format('d M Y H:i') ?? '-').')</span>',
-                        'all_unavailable' => '<span class="ui-status-chip ui-status-chip--neutral">All Unavailable</span>',
-                        'accepted' => '<span class="ui-status-chip ui-status-chip--info">Accepted</span>',
-                        'rejected' => '<span class="ui-status-chip ui-status-chip--error">Rejected</span>',
+                        'draft' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('supplier.copy.draft')).'</span>',
+                        'revision_requested' => '<span class="ui-status-chip ui-status-chip--warning">'.e(__('supplier.copy.revision_requested')).'</span>',
+                        'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at ? \App\Support\BusinessTime::format($quotation->submitted_at, 'd M Y H:i') : '-').')</span>',
+                        'all_unavailable' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('supplier.copy.all_unavailable')).'</span>',
+                        'accepted' => '<span class="ui-status-chip ui-status-chip--info">'.e(__('supplier.copy.accepted')).'</span>',
+                        'rejected' => '<span class="ui-status-chip ui-status-chip--error">'.e(__('supplier.copy.rejected')).'</span>',
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e(ucwords($status)).'</span>',
                     };
                 })
@@ -171,10 +171,10 @@ class QuotationController extends Controller
                     $status = $quotation ? $quotation->status : 'unresponded';
 
                     $action = match ($status) {
-                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Create Quotation</a>',
+                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.create_quotation')).'</a>',
                         'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Continue</a>',
-                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--warning ui-focus-ring">Revise Quotation</a>',
-                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="ui-data-action ui-data-action--primary ui-focus-ring">View</a>' : '-',
+                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--warning ui-focus-ring">'.e(__('supplier.copy.revise_quotation')).'</a>',
+                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.view')).'</a>' : '-',
                     };
 
                     return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';
@@ -194,11 +194,11 @@ class QuotationController extends Controller
         $pr = PurchaseRequisition::with(['items', 'invitedSuppliers'])->findOrFail($pr_id);
 
         if (! in_array($pr->status, ['submitted', 'bidding'])) {
-            return redirect()->route('supplier.quotations.index')->with('error', 'This requisition is not available for quotation.');
+            return redirect()->route('supplier.quotations.index')->with('error', __('supplier.copy.this_requisition_is_not_available_for_quotation'));
         }
 
         if (! $pr->isVisibleToSupplier(auth()->id())) {
-            abort(403, 'You are not invited to submit a quotation for this requisition.');
+            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
         }
 
         // Find an existing quotation.
@@ -210,7 +210,7 @@ class QuotationController extends Controller
         // Final quotations are read-only; drafts and revision_requested quotations can be edited.
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation)
-                ->with('info', 'You have already submitted a quotation for this requisition.');
+                ->with('info', __('supplier.copy.you_have_already_submitted_a_quotation_for_this_requisition'));
         }
 
         $currencyOptions = ExchangeRate::CURRENCIES;
@@ -269,7 +269,7 @@ class QuotationController extends Controller
             report($exception);
 
             return response()->json(
-                $this->importFailurePayload(['The spreadsheet could not be read. Verify the file and try again.']),
+                $this->importFailurePayload([__('supplier.copy.the_spreadsheet_could_not_be_read_verify_the_file_and_try_again')]),
                 422
             );
         }
@@ -288,11 +288,11 @@ class QuotationController extends Controller
         $pr = PurchaseRequisition::with('invitedSuppliers', 'items.materialMaster')->findOrFail($pr_id);
 
         if (! in_array($pr->status, ['submitted', 'bidding'])) {
-            return redirect()->route('supplier.quotations.index')->with('error', 'This requisition is not available for quotation.');
+            return redirect()->route('supplier.quotations.index')->with('error', __('supplier.copy.this_requisition_is_not_available_for_quotation'));
         }
 
         if (! $pr->isVisibleToSupplier(auth()->id())) {
-            abort(403, 'You are not invited to submit a quotation for this requisition.');
+            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
         }
 
         $rawItems = $request->input('items', []);
@@ -353,13 +353,13 @@ class QuotationController extends Controller
             'items.*.copy_from_attachment_id' => 'nullable|integer',
             'items.*.keep_existing_attachment' => ['sometimes', 'boolean'],
         ], [
-            'currency.required' => 'Currency is required.',
-            'currency.in' => 'Currency is invalid.',
-            'payment_terms.required' => 'Payment terms are required.',
-            'validity_period.required' => 'Quotation validity is required when submitting the final quotation.',
-            'validity_period.after_or_equal' => 'Quotation validity cannot be earlier than today.',
-            'items.*.mtc_file.mimes' => 'The MTC file must be PDF, JPG, JPEG, or PNG.',
-            'items.*.mtc_file.max' => 'The MTC file size must not exceed 5MB.',
+            'currency.required' => __('supplier.copy.currency_is_required'),
+            'currency.in' => __('supplier.copy.currency_is_invalid'),
+            'payment_terms.required' => __('supplier.copy.payment_terms_are_required'),
+            'validity_period.required' => __('supplier.copy.quotation_validity_is_required_when_submitting_the_final_quotation'),
+            'validity_period.after_or_equal' => __('supplier.copy.quotation_validity_cannot_be_earlier_than_today'),
+            'items.*.mtc_file.mimes' => __('supplier.copy.the_mtc_file_must_be_pdf_jpg_jpeg_or_png'),
+            'items.*.mtc_file.max' => __('supplier.copy.the_mtc_file_size_must_not_exceed_5mb'),
         ]);
         $validator->after(function ($validator) use ($request, $pr): void {
             $prItems = $pr->items->keyBy(fn (PrItem $item) => (int) $item->id);
@@ -395,7 +395,7 @@ class QuotationController extends Controller
                     ], true)) {
                     $validator->errors()->add(
                         "items.{$index}.availability",
-                        'Availability must be Available or Not Available.'
+                        __('supplier.copy.availability_must_be_available_or_not_available')
                     );
                 }
                 $price = $rawItem['price_per_kg'] ?? null;
@@ -408,8 +408,8 @@ class QuotationController extends Controller
                     $validator->errors()->add(
                         "items.{$index}.price_per_kg",
                         $legacyPayload
-                            ? 'The price per kg field is required.'
-                            : 'The price per kg field must be greater than zero for an available item.'
+                            ? __('supplier.copy.the_price_per_kg_field_is_required')
+                            : __('supplier.copy.the_price_per_kg_field_must_be_greater_than_zero_for_an_available_item')
                     );
                 }
 
@@ -419,7 +419,7 @@ class QuotationController extends Controller
                 if ($offeredQty !== null && $offeredQty < 1) {
                     $validator->errors()->add(
                         "items.{$index}.available_qty",
-                        'The offered quantity must be at least 1 for an available item.'
+                        __('supplier.copy.the_offered_quantity_must_be_at_least_1_for_an_available_item')
                     );
                 }
 
@@ -429,7 +429,7 @@ class QuotationController extends Controller
                 if ($offeredQty !== null && $offeredQty > $prItem->quantity_value) {
                     $validator->errors()->add(
                         "items.{$index}.available_qty",
-                        'The offered quantity cannot exceed the requested quantity of '.$prItem->quantity_value.'. If you can supply more, enter the requested quantity and describe the additional capacity in Notes.'
+                        __('supplier.errors.quantity_ceiling', ['quantity' => $prItem->quantity_value])
                     );
                 }
 
@@ -438,7 +438,7 @@ class QuotationController extends Controller
                     if ($rawWeight !== null && $rawWeight !== '' && (! is_numeric($rawWeight) || (float) $rawWeight <= 0)) {
                         $validator->errors()->add(
                             "items.{$index}.offered_weight_per_unit",
-                            'Offer KG/Unit must be greater than zero for an available item.'
+                            __('supplier.copy.offer_kg_unit_must_be_greater_than_zero_for_an_available_item')
                         );
                     }
                     foreach (PrItem::relevantDimensionFields($prItem->shape) as $field) {
@@ -446,7 +446,7 @@ class QuotationController extends Controller
                         if ($value !== null && $value !== '' && is_numeric($value) && (float) $value <= 0) {
                             $validator->errors()->add(
                                 "items.{$index}.available_{$field}",
-                                'Offered dimensions must be greater than zero for an available item.'
+                                __('supplier.copy.offered_dimensions_must_be_greater_than_zero_for_an_available_item')
                             );
                         }
                     }
@@ -454,7 +454,7 @@ class QuotationController extends Controller
                         && ! MaterialDimensionRules::hasValidHollowDiameterPair($rawItem['available_d_inner'] ?? null, $rawItem['available_d_outer'] ?? null)) {
                         $validator->errors()->add(
                             "items.{$index}.available_d_inner",
-                            'Inner diameter must be smaller than outer diameter for a Hollow item.'
+                            __('supplier.copy.inner_diameter_must_be_smaller_than_outer_diameter_for_a_hollow_item')
                         );
                     }
                 }
@@ -467,7 +467,7 @@ class QuotationController extends Controller
                     if ($value !== null && $value !== '' && is_numeric($value) && (float) $value < 0) {
                         $validator->errors()->add(
                             "items.{$index}.available_{$field}",
-                            'Offered dimensions cannot be negative.'
+                            __('supplier.copy.offered_dimensions_cannot_be_negative')
                         );
                     }
                 }
@@ -485,7 +485,7 @@ class QuotationController extends Controller
                 if ($hasLengthInput && $length === null) {
                     $validator->errors()->add(
                         "items.{$index}.available_length_input",
-                        'Length must be a positive number or a valid range such as 2300-2500.'
+                        __('supplier.copy.length_must_be_a_positive_number_or_a_valid_range_such_as_2300_2500')
                     );
                 }
 
@@ -494,19 +494,19 @@ class QuotationController extends Controller
                     if ($offeredQty === null) {
                         $validator->errors()->add(
                             "items.{$index}.available_qty",
-                            'The offered quantity is required for an available item when submitting the final quotation.'
+                            __('supplier.copy.the_offered_quantity_is_required_for_an_available_item_when_submitting_the_final_quotation')
                         );
                     }
                     if ($offer['weight'] === null) {
                         $validator->errors()->add(
                             "items.{$index}.offered_weight_per_unit",
-                            $offer['error'] ?? 'Offer KG/Unit is required for an available item when submitting the final quotation.'
+                            $offer['error'] ?? __('supplier.copy.offer_kg_unit_is_required_for_an_available_item_when_submitting_the_final_quotation')
                         );
                     }
                     if ($price === null || $price === '') {
                         $validator->errors()->add(
                             "items.{$index}.price_per_kg",
-                            'The price per kg field is required for an available item when submitting the final quotation.'
+                            __('supplier.copy.the_price_per_kg_field_is_required_for_an_available_item_when_submitting_the_final_quotation')
                         );
                     }
                 }
@@ -528,7 +528,7 @@ class QuotationController extends Controller
 
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation)
-                ->with('error', 'This quotation has already been submitted and cannot be changed.');
+                ->with('error', __('supplier.copy.this_quotation_has_already_been_submitted_and_cannot_be_changed'));
         }
 
         $newlyCreatedFiles = [];
@@ -538,7 +538,7 @@ class QuotationController extends Controller
 
             $pr = PurchaseRequisition::whereKey($pr->id)->lockForUpdate()->firstOrFail();
             if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
-                throw new \RuntimeException('This requisition is no longer available for quotation.');
+                throw new \RuntimeException(__('supplier.copy.this_requisition_is_no_longer_available_for_quotation'));
             }
             $lockedPrItems = PrItem::where('pr_id', $pr->id)
                 ->orderBy('id')->lockForUpdate()->get();
@@ -548,7 +548,7 @@ class QuotationController extends Controller
                 || $quotation->purchaseOrders()->withTrashed()->exists()
                 || PrItemAward::where('quotation_id', $quotation->id)
                     ->orWhereIn('quotation_item_id', $quotation->items()->select('id'))->exists())) {
-                throw new \RuntimeException('This quotation is locked or used by an award or Purchase Order and cannot be changed.');
+                throw new \RuntimeException(__('supplier.copy.this_quotation_is_locked_or_used_by_an_award_or_purchase_order_and_cannot_be_changed'));
             }
             $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
 
@@ -568,7 +568,7 @@ class QuotationController extends Controller
 
                         return back()
                             ->withInput()
-                            ->with('error', 'Exchange rate for '.$supplierCurrency.' is not available yet. Contact Admin before submitting the final quotation.');
+                            ->with('error', __('supplier.errors.rate_missing', ['currency' => $supplierCurrency]));
                     }
                     $exchangeRateId = null;
                 } else {
@@ -592,7 +592,7 @@ class QuotationController extends Controller
                 ->values()
                 ->all();
             if ($currentPrItemIds !== $validatedPrItemIds) {
-                throw new \RuntimeException('The requisition items changed while the quotation was being saved. Please reload and try again.');
+                throw new \RuntimeException(__('supplier.copy.the_requisition_items_changed_while_the_quotation_was_being_saved_please_reload_and_try_again'));
             }
 
             $paymentTerms = $allUnavailable ? null : ($validated['payment_terms'] ?? null);
@@ -687,13 +687,13 @@ class QuotationController extends Controller
                     ? $this->resolveOfferedWeight($prItem, $rawItem, $length, $legacyPayload)
                     : ['weight' => null, 'source' => null, 'error' => null];
                 if ($isAvailable && $offeredQty !== null && $offeredQty > $prItem->quantity_value) {
-                    throw new \RuntimeException('The offered quantity no longer fits the current requested quantity. Please reload the requisition and try again.');
+                    throw new \RuntimeException(__('supplier.copy.the_offered_quantity_no_longer_fits_the_current_requested_quantity_please_reload_the_requisition_and'));
                 }
                 if ($request->action === 'submitted'
                     && $isAvailable
                     && ! $legacyPayload
                     && ($offeredQty === null || $offer['weight'] === null || $priceValue === null)) {
-                    throw new \RuntimeException('The available offer changed while it was being saved. Please reload the requisition and complete the offer again.');
+                    throw new \RuntimeException(__('supplier.copy.the_available_offer_changed_while_it_was_being_saved_please_reload_the_requisition_and_complete_the'));
                 }
                 $availability['offered_weight_per_unit'] = $offer['weight'];
                 $availability['offered_weight_source'] = $offer['source'];
@@ -784,10 +784,10 @@ class QuotationController extends Controller
             // Notify purchasing when quotation submitted
             if ($request->action === 'submitted') {
                 $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
-                $title = $wasRevisionRequested ? 'Revised Quotation Received' : 'New Quotation Received';
+                $title = $wasRevisionRequested ? 'supplier.notify.revised_title' : 'supplier.copy.new_quotation_received';
                 $message = $wasRevisionRequested
-                    ? 'Supplier :name resubmitted a revised quotation for PR :pr_number'
-                    : 'Supplier :name submitted a quotation for PR :pr_number';
+                    ? 'supplier.notify.revised_body'
+                    : 'supplier.notify.submitted_body';
 
                 $event = $wasRevisionRequested ? 'quotation.revised' : 'quotation.submitted';
                 $submittedKey = $quotation->submitted_at?->format('YmdHis.u') ?? $quotation->updated_at?->format('YmdHis.u');
@@ -810,12 +810,12 @@ class QuotationController extends Controller
             }
 
             $msg = $request->action === 'submitted'
-                ? ($wasRevisionRequested ? 'Revised quotation has been resubmitted.' : 'Quotation successfully sent.')
-                : ($wasRevisionRequested ? 'Revised quotation draft successfully saved.' : 'Draft quotation successfully saved.');
+                ? ($wasRevisionRequested ? 'Revised quotation has been resubmitted.' : __('supplier.copy.quotation_successfully_sent'))
+                : ($wasRevisionRequested ? __('supplier.copy.revised_quotation_draft_successfully_saved') : __('supplier.copy.draft_quotation_successfully_saved'));
 
             return redirect()->route('supplier.quotations.period', $pr->period_id)->with('success', $msg);
 
-        } catch (\Exception $e) {
+        } catch (\DomainException|\InvalidArgumentException $e) {
             DB::rollBack();
 
             foreach ($newlyCreatedFiles as $newFile) {
@@ -824,7 +824,18 @@ class QuotationController extends Controller
                 }
             }
 
-            return back()->withInput()->with('error', 'Failed to save quotation: '.$e->getMessage());
+            return back()->withInput()->with('error', __('supplier.errors.save_with_reason', ['message' => $e->getMessage()]));
+        } catch (Throwable $e) {
+            DB::rollBack();
+            report($e);
+
+            foreach ($newlyCreatedFiles as $newFile) {
+                if ($newFile && Storage::disk('private')->exists($newFile)) {
+                    Storage::disk('private')->delete($newFile);
+                }
+            }
+
+            return back()->withInput()->with('error', __('supplier.copy.failed_to_save_quotation_an_unexpected_error_occurred_please_try_again'));
         }
     }
 
@@ -875,7 +886,7 @@ class QuotationController extends Controller
             return [
                 'weight' => $legacyPayload ? (float) $prItem->weight_needed : null,
                 'source' => null,
-                'error' => 'A length range requires a supplier-provided Offer KG/Unit marked as estimated.',
+                'error' => __('supplier.copy.a_length_range_requires_a_supplier_provided_offer_kg_unit_marked_as_estimated'),
             ];
         }
 
@@ -901,7 +912,7 @@ class QuotationController extends Controller
             return [
                 'weight' => null,
                 'source' => null,
-                'error' => 'Offer KG/Unit must be greater than zero when manual override is selected.',
+                'error' => __('supplier.copy.offer_kg_unit_must_be_greater_than_zero_when_manual_override_is_selected'),
             ];
         }
 
@@ -953,7 +964,7 @@ class QuotationController extends Controller
         return [
             'weight' => null,
             'source' => null,
-            'error' => 'Complete the offered dimensions or provide Offer KG/Unit before saving this available item.',
+            'error' => __('supplier.copy.complete_the_offered_dimensions_or_provide_offer_kg_unit_before_saving_this_available_item'),
         ];
     }
 
@@ -974,11 +985,11 @@ class QuotationController extends Controller
     {
         // Use getPathname() to avoid getRealPath() returning false on Windows.
         $fileName = $file->hashName();
-        $path = 'attachments/'.now()->format('Y/m').'/'.$fileName;
+        $path = 'attachments/'.now()->format('Y/m').'/'.$fileName; // biz-time:ignore storage path
 
         $stream = fopen($file->getPathname(), 'r');
         if (! $stream) {
-            throw new \RuntimeException('File cannot be read. Please upload the file again.');
+            throw new \RuntimeException(__('supplier.copy.file_cannot_be_read_please_upload_the_file_again'));
         }
 
         try {
@@ -1044,7 +1055,7 @@ class QuotationController extends Controller
         }
 
         // 5. Generate fresh unique file path on disk (Absolute file isolation)
-        $targetDirectory = 'attachments/'.now()->format('Y/m');
+        $targetDirectory = 'attachments/'.now()->format('Y/m'); // biz-time:ignore storage path
         $targetFileName = Str::random(40).'.'.$ext;
         $targetPath = $targetDirectory.'/'.$targetFileName;
 
@@ -1066,7 +1077,7 @@ class QuotationController extends Controller
         $supplier = auth()->user();
 
         if (! $supplier || ! $supplier->is_active) {
-            abort(403, 'This supplier account is not active.');
+            abort(403, __('supplier.copy.this_supplier_account_is_not_active'));
         }
 
         $supplierId = (int) $supplier->id;
@@ -1077,7 +1088,7 @@ class QuotationController extends Controller
         ])->findOrFail($prId);
 
         if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
-            abort(403, 'This requisition is not available for quotation import.');
+            abort(403, __('supplier.copy.this_requisition_is_not_available_for_quotation_import'));
         }
 
         $isVisible = PurchaseRequisition::query()
@@ -1086,13 +1097,13 @@ class QuotationController extends Controller
             ->exists();
 
         if (! $isVisible) {
-            abort(403, 'You are not invited to submit a quotation for this requisition.');
+            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
         }
 
         $quotation = $pr->quotations->first();
 
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
-            abort(403, 'This quotation can no longer be imported or changed.');
+            abort(403, __('supplier.copy.this_quotation_can_no_longer_be_imported_or_changed'));
         }
 
         return $pr;

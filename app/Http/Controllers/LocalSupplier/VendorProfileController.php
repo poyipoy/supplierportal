@@ -50,7 +50,7 @@ class VendorProfileController extends Controller
 
         $service->submitChangeRequest($request->user(), array_filter($validated, fn ($v) => $v !== null));
 
-        return back()->with('success', 'Perubahan profil vendor telah diajukan dan menunggu verifikasi.');
+        return back()->with('success', __('local_procurement.vendor_ui.change_submitted'));
     }
 
     public function uploadDocument(Request $request)
@@ -66,12 +66,12 @@ class VendorProfileController extends Controller
 
         $stream = fopen($file->getPathname(), 'r');
         if ($stream === false) {
-            throw new RuntimeException('Unable to read uploaded document.');
+            throw new RuntimeException(__('local_invoice.validation.document_read'));
         }
 
         try {
             if (! Storage::disk('private')->put($path, $stream)) {
-                throw new RuntimeException('Unable to store document to private storage.');
+                throw new RuntimeException(__('local_procurement.vendor_ui.document_private_failed'));
             }
         } finally {
             fclose($stream);
@@ -87,6 +87,6 @@ class VendorProfileController extends Controller
             'uploaded_by' => $user->id,
         ]);
 
-        return back()->with('success', 'Dokumen legalitas berhasil diunggah.');
+        return back()->with('success', __('local_procurement.vendor_ui.document_uploaded'));
     }
 }

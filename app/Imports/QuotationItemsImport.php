@@ -103,14 +103,14 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
             foreach ($this->formulaColumns($raw, self::HEADINGS) as $formulaColumn) {
                 $rowErrors[] = [
                     'column' => $formulaColumn,
-                    'message' => 'Excel formulas are not allowed in imported data.',
+                    'message' => __('purchasing.copy.excel_formulas_are_not_allowed_in_imported_data'),
                 ];
             }
 
             if ($availabilityProvided && $availabilityState === null) {
                 $rowErrors[] = [
                     'column' => 'availability',
-                    'message' => 'Availability must be Available or Not Available.',
+                    'message' => __('purchasing.copy.availability_must_be_available_or_not_available'),
                 ];
             }
 
@@ -128,7 +128,7 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                 'offered_weight_per_unit' => ['nullable', 'numeric'],
                 'notes' => ['nullable', 'string'],
             ], [
-                'pr_item_id.in' => 'The pr_item_id does not belong to the current PR.',
+                'pr_item_id.in' => __('purchasing.copy.the_pr_item_id_does_not_belong_to_the_current_pr'),
             ]);
 
             foreach ($validator->errors()->messages() as $column => $messages) {
@@ -141,7 +141,7 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
             if ($prItemId !== false && isset($this->seenPrItemIds[$prItemId])) {
                 $rowErrors[] = [
                     'column' => 'pr_item_id',
-                    'message' => 'The pr_item_id is duplicate within this spreadsheet.',
+                    'message' => __('purchasing.copy.the_pr_item_id_is_duplicate_within_this_spreadsheet'),
                 ];
             }
 
@@ -155,7 +155,7 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                 if ($length === null) {
                     $rowErrors[] = [
                         'column' => 'available_length',
-                        'message' => 'Length must be a positive number or a valid range such as 2300-2500.',
+                        'message' => __('purchasing.copy.length_must_be_a_positive_number_or_a_valid_range_such_as_2300_2500'),
                     ];
                 }
             }
@@ -166,13 +166,13 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                 if (! $explicitAvailability && ($data['price_per_kg'] === null || $data['price_per_kg'] === '')) {
                     $rowErrors[] = [
                         'column' => 'price_per_kg',
-                        'message' => 'The price per kg field is required for a legacy Available row.',
+                        'message' => __('purchasing.copy.the_price_per_kg_field_is_required_for_a_legacy_available_row'),
                     ];
                 }
                 if ($data['price_per_kg'] !== null && (float) $data['price_per_kg'] <= 0) {
                     $rowErrors[] = [
                         'column' => 'price_per_kg',
-                        'message' => 'The price per kg field must be greater than zero for an Available row.',
+                        'message' => __('purchasing.copy.the_price_per_kg_field_must_be_greater_than_zero_for_an_available_row'),
                     ];
                 }
                 // Every newly imported offer uses the persisted PR quantity
@@ -181,32 +181,32 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                 if ($offeredQty !== null && (int) $offeredQty > $prItem->quantity_value) {
                     $rowErrors[] = [
                         'column' => 'available_qty',
-                        'message' => 'The offered quantity cannot exceed the requested quantity of '.$prItem->quantity_value.'.',
+                        'message' => __('purchasing.imports.quantity_ceiling', ['quantity' => $prItem->quantity_value]),
                     ];
                 }
                 if ($offeredQty !== null && (int) $offeredQty < 1) {
                     $rowErrors[] = [
                         'column' => 'available_qty',
-                        'message' => 'The offered quantity must be at least 1 for an Available row.',
+                        'message' => __('purchasing.copy.the_offered_quantity_must_be_at_least_1_for_an_available_row'),
                     ];
                 }
                 if ($data['offered_weight_per_unit'] !== null && (float) $data['offered_weight_per_unit'] <= 0) {
                     $rowErrors[] = [
                         'column' => 'offered_weight_per_unit',
-                        'message' => 'Offer KG/Unit must be greater than zero for an Available row.',
+                        'message' => __('purchasing.copy.offer_kg_unit_must_be_greater_than_zero_for_an_available_row'),
                     ];
                 }
                 if ($prItem->shape === PrItem::SHAPE_HOLLOW
                     && ! MaterialDimensionRules::hasValidHollowDiameterPair($data['available_d_inner'] ?? null, $data['available_d_outer'] ?? null)) {
                     $rowErrors[] = [
                         'column' => 'available_d_inner',
-                        'message' => 'Inner diameter must be smaller than outer diameter for a Hollow item.',
+                        'message' => __('purchasing.copy.inner_diameter_must_be_smaller_than_outer_diameter_for_a_hollow_item'),
                     ];
                 }
                 if ($explicitAvailability && ($data['price_per_kg'] === null || $data['price_per_kg'] === '')) {
                     $rowErrors[] = [
                         'column' => 'price_per_kg',
-                        'message' => 'The price per kg field is required for an Available row.',
+                        'message' => __('purchasing.copy.the_price_per_kg_field_is_required_for_an_available_row'),
                     ];
                 }
             }
@@ -223,7 +223,7 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                     'offered_weight_per_unit',
                 ] as $column) {
                     if (($raw[$column] ?? null) !== null && ($raw[$column] ?? '') !== '') {
-                        $this->addWarning($rowNumber, $column, 'The value was ignored because this item is Not Available.');
+                        $this->addWarning($rowNumber, $column, __('purchasing.copy.the_value_was_ignored_because_this_item_is_not_available'));
                     }
                 }
             }
@@ -257,7 +257,7 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                     $this->addWarning(
                         $rowNumber,
                         $availabilityField,
-                        "The {$availabilityField} value was ignored because it is not relevant to the requested shape {$prItem->shape}."
+                        __('purchasing.imports.irrelevant_field', ['field' => $availabilityField, 'shape' => $prItem->shape])
                     );
                 }
             }

@@ -221,6 +221,29 @@ test('slate semantic tokens meet text and focus contrast in Light and Dark', asy
     }
 });
 
+test('on-surface variant copy meets normal-text contrast on light and dark work surfaces', async () => {
+    const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    const body = selector => {
+        const index = css.indexOf(selector + ' {');
+        assert.notEqual(index, -1, 'selector ' + selector + ' exists');
+        return css.slice(index, css.indexOf('}', index));
+    };
+    const value = (text, token) => text.match(new RegExp(token + ':\\s*(#[0-9a-fA-F]{6})'))?.[1];
+    const luminance = hex => [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255)
+        .map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+        .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+    const ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+
+    const light = body(':root');
+    const onVariant = value(light, '--md-on-surface-variant');
+    assert.ok(ratio(onVariant, value(light, '--md-background')) >= 4.5, 'muted text on the workspace background');
+    assert.ok(ratio(onVariant, value(light, '--md-surface-container')) >= 4.5, 'muted text on container surfaces');
+
+    const dark = body(':root[data-theme="dark"]');
+    assert.ok(ratio(value(dark, '--md-on-surface-variant'), value(dark, '--md-background')) >= 4.5, 'dark muted text on the workspace background');
+    assert.ok(ratio(value(dark, '--md-on-surface-variant'), value(dark, '--md-surface-container')) >= 4.5, 'dark muted text on container surfaces');
+});
+
 test('history restoration synchronizes appearance radios with saved preference values', async () => {
     const { bindBackForwardRestoration } = await import('../../resources/js/preferences.js');
     const groups = {

@@ -1,3 +1,4 @@
+import { installI18n } from './i18n-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -81,6 +82,7 @@ function boot(numberFormat, records = []) {
         querySelector() { return null; },
         createElement() { return { click() {}, remove() {} }; },
     };
+    installI18n(window);
     const context = vm.createContext({
         window, document, URL, FormData: FormDataStub,
         HTMLFormElement: Form, HTMLButtonElement: class {}, HTMLInputElement: class {},

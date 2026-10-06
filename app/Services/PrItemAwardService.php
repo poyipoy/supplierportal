@@ -30,7 +30,7 @@ class PrItemAwardService
         // Resolve only the parent identity before starting the transaction.
         $prId = PrItem::whereKey($prItemId)->value('pr_id');
         if (! $prId) {
-            throw new InvalidArgumentException("PR item #{$prItemId} not found.");
+            throw new InvalidArgumentException(__('purchasing.errors.item_not_found', ['id' => $prItemId]));
         }
 
         return DB::transaction(function () use ($prId, $prItemId, $quotationItemId, $user) {
@@ -45,7 +45,7 @@ class PrItemAwardService
                 ->first();
 
             if (! $lockedPrItem) {
-                throw new InvalidArgumentException("PR item #{$prItemId} not found.");
+                throw new InvalidArgumentException(__('purchasing.errors.item_not_found', ['id' => $prItemId]));
             }
 
             $quotationId = QuotationItem::whereKey($quotationItemId)->value('quotation_id');
@@ -59,38 +59,38 @@ class PrItemAwardService
                 ->first();
 
             if (! $lockedQuotationItem) {
-                throw new InvalidArgumentException("Quotation item #{$quotationItemId} not found.");
+                throw new InvalidArgumentException(__('purchasing.errors.quotation_item_missing', ['id' => $quotationItemId]));
             }
 
             if (! $quotation || (int) $lockedQuotationItem->quotation_id !== (int) $quotation->id) {
-                throw new InvalidArgumentException("Quotation item #{$quotationItemId} has no associated quotation.");
+                throw new InvalidArgumentException(__('purchasing.errors.missing_quotation', ['id' => $quotationItemId]));
             }
 
             // Invariant & validation checks
             if ((int) $lockedQuotationItem->pr_item_id !== (int) $lockedPrItem->id) {
-                throw new InvalidArgumentException('Quotation item does not match the requested PR item.');
+                throw new InvalidArgumentException(__('purchasing.copy.quotation_item_does_not_match_the_requested_pr_item'));
             }
 
             if ((int) $quotation->pr_id !== (int) $lockedPrItem->pr_id) {
-                throw new InvalidArgumentException('Quotation does not belong to the same Purchase Requisition.');
+                throw new InvalidArgumentException(__('purchasing.copy.quotation_does_not_belong_to_the_same_purchase_requisition'));
             }
 
             if (! $lockedQuotationItem->is_available) {
-                throw new InvalidArgumentException('Cannot award an item that is marked as unavailable by the supplier.');
+                throw new InvalidArgumentException(__('purchasing.copy.cannot_award_an_item_that_is_marked_as_unavailable_by_the_supplier'));
             }
 
             if ($quotation->status === Quotation::STATUS_ALL_UNAVAILABLE) {
-                throw new InvalidArgumentException("Cannot award an item from a quotation marked as all unavailable. Only 'submitted' or 'accepted' quotations are eligible.");
+                throw new InvalidArgumentException(__('purchasing.copy.cannot_award_an_item_from_a_quotation_marked_as_all_unavailable_only_submitted_or_accepted_quotation'));
             }
 
             if (! in_array($quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
-                throw new InvalidArgumentException("Cannot award an item from a quotation with status '{$quotation->status}'. Only 'submitted' or 'accepted' quotations are eligible.");
+                throw new InvalidArgumentException(__('purchasing.guard_copy.award_status', ['status' => $quotation->status]));
             }
 
             // Check existing award for this PR item
             $existingAward = PrItemAward::where('pr_item_id', $lockedPrItem->id)->lockForUpdate()->first();
             if ($existingAward && $existingAward->purchase_order_id !== null) {
-                throw new InvalidArgumentException("PR item #{$lockedPrItem->id} has already been assigned to Purchase Order #{$existingAward->purchase_order_id}.");
+                throw new InvalidArgumentException(__('purchasing.guard_copy.item_assigned', ['item' => $lockedPrItem->id, 'po' => $existingAward->purchase_order_id]));
             }
 
             // Create or update award
@@ -165,7 +165,7 @@ class PrItemAwardService
                 ->keyBy('id');
 
             if ($lockedPrItems->count() !== count($prItemIds)) {
-                throw new InvalidArgumentException("One or more PR items do not belong to PR #{$pr->id}.");
+                throw new InvalidArgumentException(__('purchasing.guard_copy.items_pr', ['pr' => $pr->id]));
             }
 
             $quotationIds = QuotationItem::whereIn('id', $quotationItemIds)
@@ -182,7 +182,7 @@ class PrItemAwardService
                 ->keyBy('id');
 
             if ($lockedQuotationItems->count() !== count(array_unique($quotationItemIds))) {
-                throw new InvalidArgumentException('One or more quotation items could not be found.');
+                throw new InvalidArgumentException(__('purchasing.copy.one_or_more_quotation_items_could_not_be_found'));
             }
 
             // Lock existing awards for these PR items
@@ -199,37 +199,37 @@ class PrItemAwardService
                 $quotationItem = $lockedQuotationItems->get($quotationItemId);
 
                 if (! $prItem || ! $quotationItem) {
-                    throw new InvalidArgumentException("Invalid item selection for PR item #{$prItemId}.");
+                    throw new InvalidArgumentException(__('purchasing.errors.invalid_item_selection', ['id' => $prItemId]));
                 }
 
                 $quotation = $lockedQuotations->get($quotationItem->quotation_id);
                 if (! $quotation) {
-                    throw new InvalidArgumentException("Quotation for item #{$quotationItemId} changed or could not be found.");
+                    throw new InvalidArgumentException(__('purchasing.errors.quotation_changed', ['id' => $quotationItemId]));
                 }
 
                 if ((int) $quotationItem->pr_item_id !== (int) $prItem->id) {
-                    throw new InvalidArgumentException("Quotation item #{$quotationItemId} does not match PR item #{$prItemId}.");
+                    throw new InvalidArgumentException(__('purchasing.errors.item_mismatch', ['quotation_item' => $quotationItemId, 'pr_item' => $prItemId]));
                 }
 
                 if ((int) $quotation->pr_id !== (int) $pr->id) {
-                    throw new InvalidArgumentException("Quotation #{$quotation->id} does not belong to PR #{$pr->id}.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.quotation_pr', ['quotation' => $quotation->id, 'pr' => $pr->id]));
                 }
 
                 if (! $quotationItem->is_available) {
-                    throw new InvalidArgumentException("Item #{$quotationItemId} is marked as unavailable by supplier.");
+                    throw new InvalidArgumentException(__('purchasing.errors.unavailable_item', ['id' => $quotationItemId]));
                 }
 
                 if ($quotation->status === Quotation::STATUS_ALL_UNAVAILABLE) {
-                    throw new InvalidArgumentException("Quotation #{$quotation->id} is marked as all unavailable. Only 'submitted' or 'accepted' quotations are eligible.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.quotation_unavailable', ['quotation' => $quotation->id]));
                 }
 
                 if (! in_array($quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
-                    throw new InvalidArgumentException("Quotation #{$quotation->id} with status '{$quotation->status}' is not eligible for award. Only 'submitted' or 'accepted' quotations are eligible.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.quotation_award', ['quotation' => $quotation->id, 'status' => $quotation->status]));
                 }
 
                 $existingAward = $existingAwards->get($prItemId);
                 if ($existingAward && $existingAward->purchase_order_id !== null) {
-                    throw new InvalidArgumentException("PR item #{$prItemId} has already been assigned to Purchase Order #{$existingAward->purchase_order_id}.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.item_assigned', ['item' => $prItemId, 'po' => $existingAward->purchase_order_id]));
                 }
 
                 if ($existingAward) {

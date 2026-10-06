@@ -18,7 +18,7 @@ use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ShipmentsExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class ShipmentsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
 
@@ -107,17 +107,17 @@ class ShipmentsExport implements FromQuery, TracksExportProgress, WithColumnWidt
     public function headings(): array
     {
         return [
-            'Shipment Number',
-            'Supplier',
-            'Consolidated POs',
-            'Items Count',
-            'Total Qty',
-            'Actual Weight (Kg)',
-            'Shipment Date',
-            'Est. Arrival Date',
-            'Actual Arrival Date',
-            'Status',
-            'Notes / Remarks',
+            __('exports.headings.shipment_number'),
+            __('exports.headings.supplier'),
+            __('exports.headings.consolidated_pos'),
+            __('exports.headings.items_count'),
+            __('exports.headings.total_qty'),
+            __('exports.headings.actual_weight_kg'),
+            __('exports.headings.shipment_date'),
+            __('exports.headings.est_arrival_date'),
+            __('exports.headings.actual_arrival_date'),
+            __('exports.headings.status'),
+            __('exports.headings.notes_remarks'),
         ];
     }
 

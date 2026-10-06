@@ -24,6 +24,9 @@ class RegionalSettingsUiTest extends TestCase
             $response->assertSee('regional-'.$field.'-help', false);
         }
         $response->assertDontSee('Asia/Makassar')->assertDontSee('Asia/Jayapura');
+        $response->assertDontSee('aria-invalid=" false "', false);
+        $response->assertDontSee('aria-invalid=" true "', false);
+        $response->assertSee('aria-invalid="false"', false);
     }
 
     public function test_old_regional_values_are_restored_using_only_trusted_option_labels(): void

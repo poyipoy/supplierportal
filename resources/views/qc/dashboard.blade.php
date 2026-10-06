@@ -1,32 +1,32 @@
 @extends('layouts.app')
 
-@section('title', 'QC Dashboard - ADASI Portal')
-@section('page-title', 'Quality Control Dashboard')
+@section('title', __('qc.copy.qc_dashboard_adasi_portal'))
+@section('page-title', __('qc.copy.quality_control_dashboard'))
 
 @section('content')
 <div class="tw-grid tw-gap-4">
     {{-- Page Header --}}
     <x-ui.page-header
-        title="Quality Control Dashboard"
-        eyebrow="Quality Control"
-        description="Monitor inbound material quality, prioritize pending arrivals, and track inspection outcomes."
+        :title="__('qc.copy.quality_control_dashboard')"
+        :eyebrow="__('qc.copy.quality_control')"
+        :description="__('qc.copy.monitor_inbound_material_quality_prioritize_pending_arrivals_and_track_inspection_outcomes')"
     />
 
     <x-ui.dashboard-layout audience="qc">
         <x-slot:waiting>
 {{-- Operational Action Queue Banner if Waiting Inspections Exist --}}
     @if($waitingInspections > 0)
-        <x-ui.alert tone="warning" title="Inspection queue requires attention">
+        <x-ui.alert tone="warning" :title="__('qc.copy.inspection_queue_requires_attention')">
             <div class="tw-flex tw-flex-col tw-gap-3 sm:tw-flex-row sm:tw-items-center sm:tw-justify-between">
-                <span>You have <strong>{{ $waitingInspections }} shipment(s)</strong> awaiting QC inspection. Conduct inspections promptly upon material arrival.</span>
+                <span>{{ trans_choice('qc.summary.waiting_shipments', $waitingInspections, ['count' => $waitingInspections]) }}</span>
                 @if($firstWaitingPo)
                     <x-ui.button :href="route('qc.inspections.create', $firstWaitingPo)" size="sm">
-                        Inspect Next Arrival ({{ $firstWaitingPo->po_number }})
+                        {{ __('qc.summary.inspect_next', ['po' => $firstWaitingPo->po_number]) }}
                         <x-slot:trailing><x-ui.icon name="arrow-right" /></x-slot:trailing>
                     </x-ui.button>
                 @else
                     <x-ui.button :href="route('qc.inspections.index')" size="sm">
-                        View Inspection Queue
+                        {{ __('qc.copy.view_inspection_queue') }}
                         <x-slot:trailing><x-ui.icon name="arrow-right" /></x-slot:trailing>
                     </x-ui.button>
                 @endif
@@ -38,13 +38,13 @@
         <x-slot:queue>
 {{-- Operational Queue Table: Recent Inspections --}}
     <x-ui.data-table
-        title="Recent Inspection Activity"
-        description="Latest quality evaluations and outcome reports."
+        :title="__('qc.copy.recent_inspection_activity')"
+        :description="__('qc.copy.latest_quality_evaluations_and_outcome_reports')"
         :empty="$recentInspections->isEmpty()"
     >
         <x-slot:toolbar>
             <x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm">
-                <span>View Full History</span>
+                <span>{{ __('qc.copy.view_full_history') }}</span>
                 <x-ui.icon name="arrow-right" size="sm" />
             </x-ui.button>
         </x-slot:toolbar>
@@ -52,20 +52,20 @@
         <x-slot:emptyState>
             <x-ui.empty-state
                 icon="clipboard-check"
-                title="No inspections recorded yet"
-                description="Completed quality inspections will appear here."
+                :title="__('qc.copy.no_inspections_recorded_yet')"
+                :description="__('qc.copy.completed_quality_inspections_will_appear_here')"
             />
         </x-slot:emptyState>
 
         <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
             <thead class="table-light">
                 <tr>
-                    <th scope="col">PO Number</th>
-                    <th scope="col">Supplier</th>
-                    <th scope="col">Inspection Date</th>
-                    <th scope="col">Inspector</th>
-                    <th scope="col" class="text-center">Status</th>
-                    <th scope="col" class="text-end" style="width: 110px;">Action</th>
+                    <th scope="col">{{ __('qc.copy.po_number') }}</th>
+                    <th scope="col">{{ __('qc.copy.supplier') }}</th>
+                    <th scope="col">{{ __('qc.copy.inspection_date') }}</th>
+                    <th scope="col">{{ __('qc.copy.inspector') }}</th>
+                    <th scope="col" class="text-center">{{ __('qc.copy.status') }}</th>
+                    <th scope="col" class="text-end" style="width: 110px;">{{ __('qc.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -81,7 +81,7 @@
                         <td class="text-end">
                             <x-ui.button :href="route('qc.inspections.show', $insp)" variant="outline" size="sm">
                                             <x-ui.icon name="eye" size="sm" />
-                                <span>Details</span>
+                                <span>{{ __('qc.copy.details') }}</span>
                             </x-ui.button>
                         </td>
                     </tr>
@@ -93,25 +93,25 @@
 
         <x-slot:metrics>
 {{-- Restrained operational summary --}}
-    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="Quality control summary">
-        <x-ui.metric-card flat label="Total Inspections" :value="$regionalFormatter->number((string) ($totalInspections), 'plain')" icon="clipboard-check" tone="neutral" :href="route('qc.inspections.index')" />
-        <x-ui.metric-card flat label="Material OK" :value="$regionalFormatter->number((string) ($totalOk), 'plain')" icon="circle-check" tone="success" :href="route('qc.inspections.index', ['status' => 'ok'])" />
-        <x-ui.metric-card flat label="Material NG (Defective)" :value="$regionalFormatter->number((string) ($totalNg), 'plain')" icon="circle-x" :tone="$totalNg > 0 ? 'error' : 'neutral'" :href="route('qc.inspections.index', ['status' => 'ng'])" />
-        <x-ui.metric-card flat label="Waiting for Inspection" :value="$regionalFormatter->number((string) ($waitingInspections), 'plain')" icon="clock" :tone="$waitingInspections > 0 ? 'warning' : 'neutral'" :href="route('qc.inspections.index')" />
+    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="{{ __('qc.copy.quality_control_summary') }}">
+        <x-ui.metric-card flat :label="__('qc.copy.total_inspections')" :value="$regionalFormatter->number((string) ($totalInspections), 'plain')" icon="clipboard-check" tone="neutral" :href="route('qc.inspections.index')" />
+        <x-ui.metric-card flat :label="__('qc.copy.material_ok')" :value="$regionalFormatter->number((string) ($totalOk), 'plain')" icon="circle-check" tone="success" :href="route('qc.inspections.index', ['status' => 'ok'])" />
+        <x-ui.metric-card flat :label="__('qc.copy.material_ng_defective')" :value="$regionalFormatter->number((string) ($totalNg), 'plain')" icon="circle-x" :tone="$totalNg > 0 ? 'error' : 'neutral'" :href="route('qc.inspections.index', ['status' => 'ng'])" />
+        <x-ui.metric-card flat :label="__('qc.copy.waiting_for_inspection')" :value="$regionalFormatter->number((string) ($waitingInspections), 'plain')" icon="clock" :tone="$waitingInspections > 0 ? 'warning' : 'neutral'" :href="route('qc.inspections.index')" />
     </div>
         </x-slot:metrics>
 
         <x-slot:charts>
 {{-- Restrained Quality Charts Grid --}}
-    <div class="tw-grid tw-gap-4 lg:tw-grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+    <div class="tw-grid tw-grid-cols-1 tw-gap-4 lg:tw-grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         {{-- Quality Ratio Doughnut Chart --}}
-        <x-ui.card title="Quality Pass/Fail Ratio" description="Aggregate OK vs NG outcome ratio." class="tw-h-full">
+        <x-ui.card :title="__('qc.copy.quality_pass_fail_ratio')" :description="__('qc.copy.aggregate_ok_vs_ng_outcome_ratio')" class="tw-h-full">
             <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-2">
                 @if($totalInspections > 0)
                     <div class="tw-h-[220px] tw-w-[220px] position-relative">
-                        <canvas id="qualityChart" role="img" aria-label="QC OK and NG distribution">QC OK and NG distribution chart.</canvas>
+                        <canvas id="qualityChart" role="img" aria-label="{{ __('qc.copy.qc_ok_and_ng_distribution') }}">{{ __('qc.copy.qc_ok_and_ng_distribution_chart') }}</canvas>
                     </div>
-                    <div class="d-flex justify-content-center gap-4 mt-3 tw-text-ui-xs">
+                    <div class="d-flex flex-wrap justify-content-center gap-4 mt-3 tw-text-ui-xs">
                         <div class="d-flex align-items-center tw-gap-1.5">
                             <span class="d-inline-block rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
                             <span class="tw-text-on-surface fw-semibold">OK: {{ $totalOk }} ({{ $totalInspections > 0 ? round(($totalOk / $totalInspections) * 100) : 0 }}%)</span>
@@ -124,16 +124,16 @@
                 @else
                     <div class="tw-text-outline text-center py-5 tw-text-ui-xs">
                         <x-ui.icon name="chart-pie" size="lg" class="mb-2 tw-text-outline" />
-                        <p class="mb-0">No inspection records available.</p>
+                        <p class="mb-0">{{ __('qc.copy.no_inspection_records_available') }}</p>
                     </div>
                 @endif
             </div>
         </x-ui.card>
 
         {{-- OK vs NG 6-Month Trend Chart --}}
-        <x-ui.card title="Inspection Outcomes Trend (6-Month)" description="Monthly distribution of inspected material quality." class="tw-h-full">
+        <x-ui.card :title="__('qc.copy.inspection_outcomes_trend_6_month')" :description="__('qc.copy.monthly_distribution_of_inspected_material_quality')" class="tw-h-full">
             <div class="tw-h-[260px] w-100">
-                <canvas id="trendChart" role="img" aria-label="QC OK and NG trend by period">QC OK and NG trend chart by period.</canvas>
+                <canvas id="trendChart" role="img" aria-label="{{ __('qc.copy.qc_ok_and_ng_trend_by_period') }}">{{ __('qc.copy.qc_ok_and_ng_trend_chart_by_period') }}</canvas>
             </div>
         </x-ui.card>
     </div>
@@ -184,7 +184,10 @@
                             legend: { display: false },
                             tooltip: window.AdasiChart?.getTooltip({
                                 callbacks: {
-                                    label: (ctx) => ' ' + ctx.label + ': ' + displayDashboardNumber(Number(ctx.parsed).toLocaleString('id-ID')) + ' Inspections',
+                                    label: (ctx) => ' ' + window.AdasiI18n.choice('js.qc.inspection_count', Number(ctx.parsed), {
+                                        label: ctx.label,
+                                        count: displayDashboardNumber(Number(ctx.parsed).toLocaleString('id-ID')),
+                                    }),
                                 }
                             }) || {},
                         },
@@ -201,7 +204,7 @@
                     labels: {!! json_encode(array_column($trendData, 'label')) !!},
                     datasets: [
                         {
-                            label: 'Material OK',
+                            label: @json(__('qc.copy.material_ok')),
                             data: {!! json_encode(array_column($trendData, 'ok')) !!},
                             borderColor: okColor,
                             backgroundColor: (context) => window.AdasiChart?.createAreaGradient(context, okColor, 0.16, 0.01) || 'transparent',
@@ -215,7 +218,7 @@
                             pointBorderWidth: 2,
                         },
                         {
-                            label: 'Material NG',
+                            label: @json(__('qc.copy.material_ng')),
                             data: {!! json_encode(array_column($trendData, 'ng')) !!},
                             borderColor: ngColor,
                             backgroundColor: (context) => window.AdasiChart?.createAreaGradient(context, ngColor, 0.12, 0.01) || 'transparent',

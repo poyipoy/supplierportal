@@ -24,40 +24,40 @@ class NotificationCategory
     {
         return [
             self::ALL => [
-                'label' => 'All',
-                'short_label' => 'All',
+                'label' => __('notifications.center.all'),
+                'short_label' => __('notifications.center.all'),
                 'icon' => 'bell',
-                'description' => 'All notifications',
+                'description' => __('notifications.center.all_description'),
             ],
             self::CHAT => [
-                'label' => 'Chat',
-                'short_label' => 'Chat',
+                'label' => __('notifications.center.chat'),
+                'short_label' => __('notifications.center.chat'),
                 'icon' => 'message-circle-more',
-                'description' => 'Negotiation messages',
+                'description' => __('notifications.center.chat_description'),
             ],
             self::QUOTATION => [
-                'label' => 'Quotation',
-                'short_label' => 'Quotation',
+                'label' => __('notifications.center.quotation'),
+                'short_label' => __('notifications.center.quotation'),
                 'icon' => 'tags',
-                'description' => 'PR and quotations',
+                'description' => __('notifications.center.quotation_description'),
             ],
             self::DOCUMENT => [
-                'label' => 'PO Documents',
-                'short_label' => 'Document',
+                'label' => __('notifications.center.documents'),
+                'short_label' => __('notifications.center.document'),
                 'icon' => 'file-check',
-                'description' => 'Import document status',
+                'description' => __('notifications.center.document_description'),
             ],
             self::INVOICE => [
-                'label' => 'Invoice',
-                'short_label' => 'Invoice',
+                'label' => __('notifications.center.invoice'),
+                'short_label' => __('notifications.center.invoice'),
                 'icon' => 'receipt',
-                'description' => 'Local invoice updates',
+                'description' => __('notifications.center.invoice_description'),
             ],
             self::OTHER => [
-                'label' => 'Other',
-                'short_label' => 'Other',
+                'label' => __('notifications.center.other'),
+                'short_label' => __('notifications.center.other'),
                 'icon' => 'layout-grid',
-                'description' => 'Other system information',
+                'description' => __('notifications.center.other_description'),
             ],
         ];
     }

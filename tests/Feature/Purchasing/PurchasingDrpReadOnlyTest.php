@@ -61,7 +61,7 @@ class PurchasingDrpReadOnlyTest extends TestCase
         $response = $this->actingAs($this->purchasing)->get(route('purchasing.drp.supplier'));
 
         $response->assertOk();
-        $response->assertSee('DRP Supplier (Daftar Rencana Pembayaran)');
+        $response->assertSee(__('finance.drp.supplier_title'));
         $response->assertSee('DRP-SUPP-TEST-01');
         // Read-only: Should NOT render form to create batch
         $response->assertDontSee('Buat Batch DRP Supplier Baru');
@@ -84,9 +84,9 @@ class PurchasingDrpReadOnlyTest extends TestCase
         $response = $this->actingAs($this->purchasing)->get(route('purchasing.drp.ga'));
 
         $response->assertOk();
-        $response->assertSee('DRP General Affairs (GA)');
+        $response->assertSee(__('finance.drp.general_affairs'));
         $response->assertSee('DRP-GA-TEST-01');
-        $response->assertSee('Detail Batch');
+        $response->assertSee(__('finance.drp.batch_detail'));
     }
 
     public function test_purchasing_can_access_drp_paid_page_in_read_only_mode(): void
@@ -116,7 +116,7 @@ class PurchasingDrpReadOnlyTest extends TestCase
         // Default tab: unpaid
         $response = $this->actingAs($this->purchasing)->get(route('purchasing.drp.paid.index'));
         $response->assertOk();
-        $response->assertSee('DRP Paid (Monitoring Pelunasan)');
+        $response->assertSee(__('finance.drp.paid_monitoring'));
         $response->assertSee('DRP-UNPAID-TEST-01');
         $response->assertDontSee('DRP-PAID-TEST-01');
         // Read-only: MUST NOT contain "Tandai Paid" or mark paid modals
@@ -169,7 +169,7 @@ class PurchasingDrpReadOnlyTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $group->items()->create([
+        $paymentItem = $group->items()->create([
             'payable_type' => LocalInvoice::class,
             'payable_id' => $invoice->id,
             'amount' => 10000000,
@@ -192,9 +192,25 @@ class PurchasingDrpReadOnlyTest extends TestCase
         $response->assertDontSee('Batalkan Batch');
         $response->assertDontSee('Ubah Fee');
         $response->assertDontSee('Generate Voucher');
-        $response->assertDontSee('Remove');
         $response->assertDontSee(route('finance.drp.finalize', $batch));
         $response->assertDontSee(route('finance.drp.cancel', $batch));
+        $response->assertDontSee(route('finance.drp.remove-item', $paymentItem));
+
+        // The page-head JS dictionary legitimately contains the word "Remove";
+        // read-only behavior is proved against actionable DOM and mutation routes.
+        $dom = new \DOMDocument;
+        $previousErrorMode = libxml_use_internal_errors(true);
+        $dom->loadHTML($response->getContent());
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousErrorMode);
+        $xpath = new \DOMXPath($dom);
+        $removeControls = $xpath->query('//button[normalize-space(string(.))="Remove" or @aria-label="Remove"]');
+        $removeForms = $xpath->query('//form[contains(@action, "/drp-items/")]');
+
+        $this->assertNotFalse($removeControls);
+        $this->assertNotFalse($removeForms);
+        $this->assertSame(0, $removeControls->length);
+        $this->assertSame(0, $removeForms->length);
     }
 
     public function test_purchasing_can_print_voucher(): void

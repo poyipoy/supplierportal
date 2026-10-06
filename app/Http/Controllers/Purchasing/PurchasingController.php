@@ -7,6 +7,8 @@ use App\Models\ExchangeRate;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
+use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -15,13 +17,13 @@ use Illuminate\Validation\Rule;
 
 class PurchasingController extends Controller
 {
-    public function dashboard()
+    public function dashboard(RegionalDisplayFormatter $regionalFormatter)
     {
         // ─── Cached dashboard widgets (10 menit) ───
         $dashboardData = Cache::remember(
-            'purchasing_dashboard_widgets',
+            'purchasing_dashboard_widgets:'.app()->getLocale(),
             now()->addMinutes(10),
-            function () {
+            function () use ($regionalFormatter) {
                 $prAktif = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])->count();
                 $menungguPenawaran = PurchaseRequisition::where('status', 'submitted')
                     ->whereDoesntHave('quotations')->count();
@@ -42,7 +44,7 @@ class PurchasingController extends Controller
                     $d = Carbon::now()->subMonths($i);
                     $key = $d->year.'-'.$d->month;
                     $prPerBulan[] = [
-                        'label' => $d->format('M Y'),
+                        'label' => $regionalFormatter->monthYear($d),
                         'count' => (int) ($prCounts->get($key)?->total ?? 0),
                     ];
                 }
@@ -76,11 +78,11 @@ class PurchasingController extends Controller
 
                 $waitingQcLong = PurchaseOrder::where('status', 'waiting_qc')
                     ->whereNotNull('actual_arrival')
-                    ->whereDate('actual_arrival', '<', today()->subDays(2))
+                    ->whereDate('actual_arrival', '<', BusinessTime::today()->subDays(2)->toDateString())
                     ->count();
 
                 $claimsPastDeadline = MaterialClaim::where('status', 'pending')
-                    ->whereDate('deadline', '<', today())
+                    ->whereDate('deadline', '<', BusinessTime::today()->toDateString())
                     ->count();
 
                 return compact(
@@ -96,36 +98,36 @@ class PurchasingController extends Controller
 
         $operationalChecks = [
             [
-                'label' => 'Completed PR Without PO',
+                'label' => __('purchasing.copy.completed_pr_without_po'),
                 'count' => $completedPrWithoutPo,
                 'icon' => 'clipboard-x',
                 'class' => 'danger',
                 'url' => route('purchasing.requisitions.index', ['status' => 'completed']),
-                'description' => 'Completed PR records that are not linked to any PO yet.',
+                'description' => __('purchasing.copy.completed_pr_records_that_are_not_linked_to_any_po_yet'),
             ],
             [
-                'label' => 'Incomplete PO Documents',
+                'label' => __('purchasing.copy.incomplete_po_documents'),
                 'count' => $poDocumentsIncomplete,
                 'icon' => 'file-spreadsheet',
                 'class' => 'warning',
                 'url' => route('purchasing.purchase-orders.index'),
-                'description' => 'PO records that do not have all 4 completed import documents yet.',
+                'description' => __('purchasing.copy.po_records_that_do_not_have_all_4_completed_import_documents_yet'),
             ],
             [
-                'label' => 'Waiting QC > 2 Days',
+                'label' => __('purchasing.copy.waiting_qc_2_days'),
                 'count' => $waitingQcLong,
                 'icon' => 'clipboard-check',
                 'class' => 'info',
                 'url' => route('purchasing.purchase-orders.index', ['status' => 'waiting_qc']),
-                'description' => 'PO records that have arrived but have not completed QC inspection for more than 2 days.',
+                'description' => __('purchasing.copy.po_records_that_have_arrived_but_have_not_completed_qc_inspection_for_more_than_2_days'),
             ],
             [
-                'label' => 'Claims Past Deadline',
+                'label' => __('purchasing.copy.claims_past_deadline'),
                 'count' => $claimsPastDeadline,
                 'icon' => 'octagon-alert',
                 'class' => 'danger',
                 'url' => route('purchasing.claims.index'),
-                'description' => 'Pending claims that have passed the supplier response deadline.',
+                'description' => __('purchasing.copy.pending_claims_that_have_passed_the_supplier_response_deadline'),
             ],
         ];
 
@@ -159,6 +161,6 @@ class PurchasingController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return back()->with('success', $request->currency.' exchange rate successfully updated.');
+        return back()->with('success', __('purchasing.feedback.rate_updated', ['currency' => $request->currency]));
     }
 }

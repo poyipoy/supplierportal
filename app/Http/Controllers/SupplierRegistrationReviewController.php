@@ -55,19 +55,19 @@ class SupplierRegistrationReviewController extends Controller
                 })
                 ->addColumn('status_badge', function ($attempt) {
                     return match ($attempt->status) {
-                        SupplierRegistrationAttempt::STATUS_PENDING => '<span class="ui-status-chip ui-status-chip--warning">Pending</span>',
-                        SupplierRegistrationAttempt::STATUS_REVISION => '<span class="ui-status-chip ui-status-chip--info">Revision</span>',
-                        SupplierRegistrationAttempt::STATUS_APPROVED => '<span class="ui-status-chip ui-status-chip--success">Approved</span>',
-                        SupplierRegistrationAttempt::STATUS_REJECTED => '<span class="ui-status-chip ui-status-chip--danger">Rejected</span>',
+                        SupplierRegistrationAttempt::STATUS_PENDING => '<span class="ui-status-chip ui-status-chip--warning">'.e(__('local_procurement.registration.pending')).'</span>',
+                        SupplierRegistrationAttempt::STATUS_REVISION => '<span class="ui-status-chip ui-status-chip--info">'.e(__('local_procurement.registration.revision')).'</span>',
+                        SupplierRegistrationAttempt::STATUS_APPROVED => '<span class="ui-status-chip ui-status-chip--success">'.e(__('local_procurement.registration.approved')).'</span>',
+                        SupplierRegistrationAttempt::STATUS_REJECTED => '<span class="ui-status-chip ui-status-chip--danger">'.e(__('local_procurement.registration.rejected')).'</span>',
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e($attempt->status).'</span>',
                     };
                 })
-                ->addColumn('submitted_date', fn ($attempt) => $attempt->submitted_at?->format('d M Y H:i') ?? '-')
+                ->addColumn('submitted_date', fn ($attempt) => $attempt->submitted_at ? \App\Support\BusinessTime::format($attempt->submitted_at, 'd M Y H:i') : '-')
                 ->addColumn('reviewer_name', fn ($attempt) => e($attempt->reviewer?->name ?? '-'))
                 ->addColumn('action', function ($attempt) {
                     $url = route('supplier-registrations.show', $attempt->hash);
 
-                    return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">Review</a>';
+                    return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('local_procurement.registration.review')).'</a>';
                 })
                 ->rawColumns(['pic', 'status_badge', 'action'])
                 ->make(true);
@@ -167,9 +167,13 @@ class SupplierRegistrationReviewController extends Controller
             );
 
             return redirect()->route('supplier-registrations.show', $attempt->hash)
-                ->with('success', __('Revision requested successfully.'));
+                ->with('success', __('local_procurement.registration.revision_requested'));
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('local_procurement.registration.unexpected'));
         }
     }
 
@@ -186,9 +190,13 @@ class SupplierRegistrationReviewController extends Controller
             );
 
             return redirect()->route('supplier-registrations.show', $attempt->hash)
-                ->with('success', __('Supplier registration has been rejected.'));
+                ->with('success', __('local_procurement.registration.rejected_feedback'));
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('local_procurement.registration.unexpected'));
         }
     }
 
@@ -206,9 +214,13 @@ class SupplierRegistrationReviewController extends Controller
             );
 
             return redirect()->route('supplier-registrations.show', $attempt->hash)
-                ->with('success', __('Supplier registration has been approved, activated, and assigned scope successfully.'));
+                ->with('success', __('local_procurement.registration.approved_feedback'));
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('local_procurement.registration.unexpected'));
         }
     }
 
@@ -218,13 +230,21 @@ class SupplierRegistrationReviewController extends Controller
     public function downloadDocument(SupplierRegistrationAttempt $attempt, SupplierMasterDocument $document)
     {
         if ((int) $document->supplier_id !== (int) $attempt->user_id) {
-            abort(403, 'Unauthorized access to document.');
+            abort(403, __('local_procurement.registration.document_unauthorized'));
         }
 
         if (! Storage::disk('private')->exists($document->file_path)) {
-            abort(404, 'Document file not found.');
+            abort(404, __('local_procurement.registration.document_missing'));
         }
 
-        return Storage::disk('private')->download($document->file_path, $document->original_filename);
+        return Storage::disk('private')->download(
+            $document->file_path,
+            $document->original_filename,
+            [
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'no-store, private',
+                'Pragma' => 'no-cache',
+            ]
+        );
     }
 }

@@ -12,6 +12,32 @@ class UserPreferenceConcurrencyTest extends TestCase
 {
     use DatabaseTruncation;
 
+    public function test_concurrent_locale_and_notification_first_saves_preserve_both_scopes(): void
+    {
+        $user = User::factory()->create(['role' => 'supplier']);
+        $user->supplierScopes()->create(['scope' => 'local']);
+        $start = microtime(true) + 2;
+        $worker = base_path('tests/Feature/_user-preference-concurrency-worker.php');
+        $processes = [
+            new Process([PHP_BINARY, $worker, (string) $user->id, 'false', (string) $start, 'brand', 'notifications'], base_path(), ['APP_ENV' => 'testing']),
+            new Process([PHP_BINARY, $worker, (string) $user->id, 'dark', (string) $start, 'teal', 'customization', 'id'], base_path(), ['APP_ENV' => 'testing']),
+        ];
+        foreach ($processes as $process) {
+            $process->start();
+        }
+        foreach ($processes as $process) {
+            $process->wait();
+            $this->assertTrue($process->isSuccessful(), $process->getErrorOutput());
+            $this->assertSame('saved', trim($process->getOutput()));
+        }
+        $this->assertSame(1, $user->preference()->count());
+        $saved = $user->fresh()->preference;
+        $this->assertSame('id', $saved->locale);
+        $this->assertSame('teal', $saved->accent);
+        $this->assertSame(['local_invoice_submitted' => false], $saved->notification_preferences);
+        $this->assertSame(2, $saved->revision);
+    }
+
     protected function beforeTruncatingDatabase(): void
     {
         $this->assertSame('adasi_portal_test', config('database.connections.mysql.database'));
@@ -154,5 +180,43 @@ class UserPreferenceConcurrencyTest extends TestCase
         $this->assertSame('indonesian', $preference->number_format);
         $this->assertSame(9, $preference->revision);
         $this->assertSame(4, $preference->sidebar_revision);
+    }
+
+    public function test_concurrent_accent_customization_and_notification_save_preserve_both(): void
+    {
+        $user = User::factory()->create(['role' => 'supplier']);
+        $user->supplierScopes()->create(['scope' => 'local']);
+        $preference = $user->preference()->create([
+            ...config('user_preferences.defaults'),
+            'theme' => 'light',
+            'accent' => 'brand',
+        ]);
+        $preference->forceFill([
+            'revision' => 2,
+            'sidebar_revision' => 1,
+        ])->save();
+
+        $start = microtime(true) + 2;
+        $workerPath = base_path('tests/Feature/_user-preference-concurrency-worker.php');
+        $processes = [
+            new Process([PHP_BINARY, $workerPath, (string) $user->id, 'false', (string) $start, 'brand', 'notifications'], base_path(), ['APP_ENV' => 'testing']),
+            new Process([PHP_BINARY, $workerPath, (string) $user->id, 'dark', (string) $start, 'indigo'], base_path(), ['APP_ENV' => 'testing']),
+        ];
+
+        foreach ($processes as $process) {
+            $process->start();
+        }
+        foreach ($processes as $process) {
+            $process->wait();
+            $this->assertTrue($process->isSuccessful(), $process->getErrorOutput());
+            $this->assertSame('saved', trim($process->getOutput()));
+        }
+
+        $fresh = $preference->fresh();
+        $this->assertSame(1, $user->preference()->count());
+        $this->assertSame('indigo', $fresh->accent);
+        $this->assertSame('dark', $fresh->theme);
+        $this->assertSame(['local_invoice_submitted' => false], $fresh->notification_preferences);
+        $this->assertSame(4, $fresh->revision);
     }
 }

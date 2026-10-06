@@ -1,55 +1,55 @@
 @extends('layouts.app')
 
-@section('title', 'Create Purchase Order - ADASI Portal')
-@section('page-title', 'Create Purchase Order')
+@section('title', __('purchasing.copy.create_purchase_order_adasi_portal'))
+@section('page-title', __('purchasing.copy.create_purchase_order'))
 
 @section('content')
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Purchase Orders' => \App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index'),
-        'Create' => null,
+        __('purchasing.breadcrumbs.purchase_orders') => \App\Support\PurchasingNavigation::backUrl('purchasing.purchase-orders.index'),
+        __('purchasing.breadcrumbs.create') => null,
     ]" />
 
     <x-ui.page-header
-        title="Create Purchase Order"
-        eyebrow="Order Processing"
-        :description="'Build an official PO from ' . ($quotation->purchaseRequisition->pr_number ?? 'the accepted quotation') . ' with fixed commercial rates.'"
+        :title="__('purchasing.copy.create_purchase_order')"
+        :eyebrow="__('purchasing.copy.order_processing')"
+        :description="__('purchasing.page.create_po_help', ['reference' => $quotation->purchaseRequisition->pr_number ?? __('purchasing.copy.quotation')])"
     >
         <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Back to Quotations</span>
+                <span>{{ __('purchasing.copy.back_to_quotations') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
     {{-- Section 1: Primary Quotation Snapshot --}}
     <x-ui.form-section
-        title="Commercial Snapshot"
-        description="The supplier, currency, and exchange rate are locked based on the accepted quotation."
+        :title="__('purchasing.copy.commercial_snapshot')"
+        :description="__('purchasing.copy.the_supplier_currency_and_exchange_rate_are_locked_based_on_the_accepted_quotation')"
     >
         <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
             <div class="p-3 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.supplier') }}</div>
                 <div class="fw-bold tw-text-on-surface fs-6 mt-1">{{ $quotation->supplier->name }}</div>
             </div>
             <div class="p-3 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Primary PR Reference</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.primary_pr_reference') }}</div>
                 <div class="fw-bold text-primary fs-6 mt-1">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
             </div>
             <div class="p-3 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Procurement Period</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name }}</div>
             </div>
             <div class="p-3 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Locked Currency & Exchange Rate</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.locked_currency_exchange_rate') }}</div>
                 <div class="fw-bold tw-text-on-surface fs-6 mt-1">
                     <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $quotation->currency }}</span>
                     @if($rate)
                         <span class="tw-text-on-surface tw-text-ui-xs tw-font-mono">1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}</span>
                     @else
-                        <span class="text-danger tw-text-ui-xs">Exchange rate not found</span>
+                        <span class="text-danger tw-text-ui-xs">{{ __('purchasing.copy.exchange_rate_not_found') }}</span>
                     @endif
                 </div>
             </div>
@@ -59,12 +59,12 @@
     {{-- Section 2: Multi-PR Consolidation (if other compatible quotations exist) --}}
     @if($otherQuotations->count() > 0)
         <x-ui.form-section
-            title="Combine Additional PRs"
-            description="Select compatible approved quotations from {{ $quotation->supplier->name }} ({{ $quotation->currency }}) to combine into this PO."
+            :title="__('purchasing.copy.combine_additional_prs')"
+            :description="__('purchasing.copy.combine_approved_quotations_help', ['supplier' => $quotation->supplier->name, 'currency' => $quotation->currency])"
         >
             <x-slot:actions>
                 <span class="ui-status-chip ui-status-chip--info">
-                    {{ $otherQuotations->count() }} Compatible Quotations Available
+                    {{ __('purchasing.page.compatible_count', ['count' => $otherQuotations->count()]) }}
                 </span>
             </x-slot:actions>
 
@@ -98,9 +98,9 @@
                             <div class="flex-grow-1">
                                 <div class="fw-bold tw-text-on-surface tw-text-ui-sm pr-label">{{ $prNumber }}</div>
                                 <div class="tw-text-on-surface-variant tw-text-ui-xs">
-                                    {{ $oq->purchaseRequisition->period->display_label ?? $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ $oq->items->count() }} item(s)
+                                     {{ $oq->purchaseRequisition->period->display_label ?? $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ trans_choice('purchasing.copy.item_count', $oq->items->count(), ['count' => $oq->items->count()]) }}
                                     @if($oq->exchange_rate)
-                                        &bull; Rate: Rp {{ number_format($oq->exchange_rate->rate_to_idr, 0, ',', '.') }}
+                                        &bull; {{ __('purchasing.copy.exchange_rate_value') }}: Rp {{ number_format($oq->exchange_rate->rate_to_idr, 0, ',', '.') }}
                                     @endif
                                 </div>
                             </div>
@@ -117,12 +117,12 @@
 
     {{-- Section 3: Material Breakdown Table --}}
     <x-ui.form-section
-        title="Material Breakdown"
-        description="Comprehensive item list including consolidated PR lines, quantities, and converted costs."
+        :title="__('purchasing.copy.material_breakdown')"
+        :description="__('purchasing.copy.comprehensive_item_list_including_consolidated_pr_lines_quantities_and_converted_costs')"
     >
         <x-slot:actions>
             <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums" id="totalItemCount">
-                {{ $quotation->items->count() }} Item(s)
+                {{ trans_choice('purchasing.copy.item_count', $quotation->items->count(), ['count' => $quotation->items->count()]) }}
             </span>
         </x-slot:actions>
 
@@ -130,15 +130,15 @@
             <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                 <thead class="table-light text-center">
                     <tr>
-                        <th scope="col" style="width: 40px;">No</th>
-                        <th scope="col">PR No.</th>
-                        <th scope="col">Material</th>
-                        <th scope="col" class="text-center">Qty</th>
-                        <th scope="col" class="text-end">Weight/Unit (kg)</th>
-                        <th scope="col" class="text-end">Total Weight (kg)</th>
-                        <th scope="col" class="text-end">Price/Kg ({{ $quotation->currency }})</th>
-                        <th scope="col" class="text-end">Amount ({{ $quotation->currency }})</th>
-                        <th scope="col" class="text-end">Est. IDR</th>
+                        <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.material') }}</th>
+                        <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight_kg_a35c48') }}</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }} ({{ $quotation->currency }})</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.amount') }} ({{ $quotation->currency }})</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.est_idr') }}</th>
                     </tr>
                 </thead>
                 <tbody id="materialTableBody">
@@ -157,7 +157,7 @@
                             <td class="fw-semibold tw-text-on-surface">
                                 {{ $item->prItem->material_name }}
                                 @if(!$isAvail)
-                                    <span class="ui-status-chip ui-status-chip--error ms-1">Not Available</span>
+                                    <span class="ui-status-chip ui-status-chip--error ms-1">{{ __('purchasing.copy.not_available') }}</span>
                                 @endif
                             </td>
                             <td class="text-center ui-tabular-nums">{{ $isAvail ? number_format($item->available_qty ?? $item->prItem->quantity_value, 0) : '—' }}</td>
@@ -171,7 +171,7 @@
                 </tbody>
                 <tfoot class="table-light fw-bold border-top">
                     <tr>
-                        <td colspan="7" class="text-end tw-text-on-surface">GRAND TOTAL</td>
+                        <td colspan="7" class="text-end tw-text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
                         <td class="text-end tw-text-on-surface ui-tabular-nums" id="grandTotalAmount">{{ number_format($totalAmount, 2) }} {{ $quotation->currency }}</td>
                         <td class="text-end text-primary ui-tabular-nums fs-6" id="grandTotalIdr">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                     </tr>
@@ -188,12 +188,12 @@
         <div id="additionalQuotationInputs"></div>
 
         <x-ui.form-section
-            title="Order Logistics and Remarks"
-            description="Specify the estimated material delivery arrival date and any operational order instructions."
+            :title="__('purchasing.copy.order_logistics_and_remarks')"
+            :description="__('purchasing.copy.specify_the_estimated_material_delivery_arrival_date_and_any_operational_order_instructions')"
         >
             <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
-                <x-ui.date-picker name="estimated_arrival" label="Estimated Arrival Date" required />
-                <x-ui.textarea name="notes" label="Purchase Order Notes / Instructions" :rows="2" placeholder="e.g. Include original COO & B/L with cargo, notify 3 days prior to ETA..." />
+                <x-ui.date-picker name="estimated_arrival" :label="__('purchasing.copy.estimated_arrival_date')" required />
+                <x-ui.textarea name="notes" :label="__('purchasing.copy.purchase_order_notes_instructions')" :rows="2" :placeholder="__('purchasing.copy.e_g_include_original_coo_b_l_with_cargo_notify_3_days_prior_to_eta')" />
             </div>
         </x-ui.form-section>
 
@@ -202,14 +202,14 @@
             <x-slot:left>
                 <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
                     <x-ui.icon name="arrow-left" size="sm" />
-                    <span>Cancel</span>
+                    <span>{{ __('purchasing.copy.cancel') }}</span>
                 </x-ui.button>
             </x-slot:left>
 
             <x-slot:right>
                 <x-ui.button type="button" id="btnCreatePo" size="sm">
                     <x-ui.icon name="check-circle" size="sm" />
-                    <span>Create Purchase Order</span>
+                    <span>{{ __('purchasing.copy.create_purchase_order') }}</span>
                 </x-ui.button>
             </x-slot:right>
         </x-ui.action-bar>
@@ -294,7 +294,7 @@
         $('#materialTableBody').html(html);
         $('#grandTotalAmount').text(formatNumber(totalAmount, 2) + ' ' + currency);
         $('#grandTotalIdr').text('Rp ' + formatNumber(totalIdr, 0));
-        $('#totalItemCount').text(allItems.length + ' Item(s)');
+        $('#totalItemCount').text(window.AdasiI18n.choice('purchasing.js.item_count', allItems.length, { count: allItems.length }));
 
         // Update hidden inputs for additional quotation_ids
         $('#additionalQuotationInputs').empty();
@@ -312,15 +312,15 @@
     $('#btnCreatePo').on('click', function() {
         const checkedCount = $('.consolidate-check:checked').length;
         const totalPr = 1 + checkedCount;
-        const prMsg = totalPr > 1
-            ? `The PO will be created by combining <strong>${totalPr} PRs</strong>. `
-            : '';
+        const confirmationText = totalPr > 1
+            ? @js(__('common.final_review.po_consolidated_warning')).replace(':count', String(totalPr))
+            : @js(__('common.final_review.po_warning'));
 
         AdasiAlert.confirm({
-            title: 'Create Purchase Order?',
-            html: prMsg + 'Quotations from other suppliers on the same PR will automatically be <strong>rejected</strong>.',
-            confirmText: 'Yes, Create PO!',
-            cancelText: 'Cancel'
+            title: @json(__('purchasing.copy.create_purchase_order')),
+            text: confirmationText,
+            confirmText: @json(__('purchasing.copy.yes_create_po')),
+            cancelText: @json(__('purchasing.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
                 window.AdasiButton?.startLoading('#btnCreatePo');

@@ -520,17 +520,17 @@ class PaymentForecastAndReportingTest extends TestCase
         $response = $this->actingAs($finance)->get(route('finance.dashboard'));
         $response->assertOk();
         $response->assertSee('Payment Forecast');
-        $response->assertSee('Akumulasi Invoice Ready to Pay');
-        $response->assertSee('Total Akumulasi Periode');
-        $response->assertSee('Ready to Pay Saat Ini');
-        $response->assertSee('Invoice Masuk Periode');
-        $response->assertSee('Mingguan');
-        $response->assertSee('Bulanan');
+        $response->assertSee(__('finance.labels.ready_accumulation', [], 'en'));
+        $response->assertSee(__('finance.labels.accumulated_period', [], 'en'));
+        $response->assertSee(__('finance.review.current_ready', [], 'en'));
+        $response->assertSee(__('finance.labels.period_invoices', [], 'en'));
+        $response->assertSee(__('finance.review.weekly', [], 'en'));
+        $response->assertSee(__('finance.labels.monthly', [], 'en'));
         $response->assertSee('forecastMonthSelect');
-        $response->assertSee('Periode');
-        $response->assertSee('Invoice Ready to Pay');
-        $response->assertSee('Nilai Periode');
-        $response->assertSee('Akumulasi');
+        $response->assertSee(__('finance.review.period', [], 'en'));
+        $response->assertSee(__('finance.labels.invoice_ready', [], 'en'));
+        $response->assertSee(__('finance.review.period_amount', [], 'en'));
+        $response->assertSee(__('finance.labels.accumulation', [], 'en'));
 
         // Test JSON endpoint with month query
         $jsonResponse = $this->actingAs($finance)->get(route('finance.forecast', ['month' => '2026-09']));
@@ -673,7 +673,8 @@ class PaymentForecastAndReportingTest extends TestCase
             'event' => 'revision_requested',
             'notes' => 'Faktur pajak tidak valid',
         ]);
-        $notificationService->send($invoice, $historyRev);
+        $notificationService->send($invoice, $historyRev, ['reason' => 'Faktur pajak tidak valid']);
+        $this->assertSame('Faktur pajak tidak valid', $historyRev->fresh()->notes);
 
         Notification::assertSentTo($supplier, SystemNotification::class, function (SystemNotification $notification) use ($supplier): bool {
             $data = $notification->toDatabase($supplier);

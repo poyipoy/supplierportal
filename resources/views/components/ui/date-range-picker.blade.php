@@ -3,10 +3,10 @@
     'granularity' => 'day',
     'startName',
     'startId' => null,
-    'startLabel' => 'Start Date',
+    'startLabel' => __('common.calendar.start'),
     'endName',
     'endId' => null,
-    'endLabel' => 'End Date',
+    'endLabel' => __('common.calendar.end'),
     'startValue' => null,
     'endValue' => null,
     'startMin' => null,
@@ -38,7 +38,7 @@
     $describedBy = collect([$helperId, $errorId])->filter()->implode(' ');
     $formatRangeDisplay = function ($value, $granularity) {
         if (! $value) {
-            return 'Any time';
+            return __('js.calendar.any_time');
         }
         if ($granularity === 'month' && preg_match('/^\d{4}-\d{2}$/', (string) $value)) {
             [$year, $month] = explode('-', (string) $value);
@@ -48,7 +48,7 @@
             [$year, $month, $day] = explode('-', (string) $value);
             return date('d M Y', mktime(0, 0, 0, (int) $month, (int) $day, (int) $year));
         }
-        return 'Any time';
+        return __('js.calendar.any_time');
     };
 
     $startDisplay = $formatRangeDisplay($startResolvedValue, $granularity);
@@ -74,7 +74,7 @@
     </div>
 
     <div data-calendar-enhanced hidden>
-        <span id="{{ $labelId }}" class="{{ $compact ? 'tw-sr-only' : 'tw-text-ui-sm tw-font-medium tw-text-on-surface' }}">{{ $startLabel }} and {{ $endLabel }}</span>
+        <span id="{{ $labelId }}" class="{{ $compact ? 'tw-sr-only' : 'tw-text-ui-sm tw-font-medium tw-text-on-surface' }}">{{ __('common.review.range_label', ['start' => $startLabel, 'end' => $endLabel]) }}</span>
         <div class="ui-date-range-trigger" role="group" aria-labelledby="{{ $labelId }}" @if($describedBy) aria-describedby="{{ $describedBy }}" @endif>
             <button type="button" class="ui-date-range-trigger__field" data-calendar-boundary="start" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ $panelId }}">
                 <span class="ui-date-range-trigger__label">{{ $startLabel }}</span>
@@ -92,26 +92,26 @@
     @if($helper)<p id="{{ $helperId }}" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $helper }}</p>@endif
     <p id="{{ $errorId }}" data-calendar-error class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-font-medium tw-text-error {{ $message ? '' : 'tw-hidden' }}" role="alert"><x-ui.icon name="circle-alert" size="sm" class="tw-mt-0.5" /><span data-calendar-error-message>{{ $message }}</span></p>
 
-    <div id="{{ $panelId }}" class="ui-calendar-panel ui-calendar-panel--range {{ $granularity === 'month' ? 'ui-calendar-panel--month-range' : 'ui-calendar-panel--day-range' }}" data-calendar-panel hidden role="dialog" aria-modal="false" aria-label="Choose date range">
+    <div id="{{ $panelId }}" class="ui-calendar-panel ui-calendar-panel--range {{ $granularity === 'month' ? 'ui-calendar-panel--month-range' : 'ui-calendar-panel--day-range' }}" data-calendar-panel hidden role="dialog" aria-modal="false" aria-label="{{ __('common.calendar.choose_range') }}">
         <div class="ui-calendar-panel__topline">
-            <div><span class="ui-calendar-panel__title">Select {{ $granularity === 'month' ? 'months' : 'dates' }}</span><span class="ui-calendar-panel__context" data-calendar-context>Select {{ $startLabel }}</span></div>
-            <button type="button" class="ui-calendar-panel__close" data-calendar-close aria-label="Close calendar"><x-ui.icon name="x" size="sm" /></button>
+            <div><span class="ui-calendar-panel__title">{{ __($granularity === 'month' ? 'common.calendar.select_months' : 'common.calendar.select_dates') }}</span><span class="ui-calendar-panel__context" data-calendar-context>{{ __('common.calendar.select_label', ['label' => $startLabel]) }}</span></div>
+            <button type="button" class="ui-calendar-panel__close" data-calendar-close aria-label="{{ __('common.calendar.close') }}"><x-ui.icon name="x" size="sm" /></button>
         </div>
 
         @if($presets)
-            <div class="ui-calendar-presets" data-calendar-presets aria-label="Quick ranges"></div>
+            <div class="ui-calendar-presets" data-calendar-presets aria-label="{{ __('common.calendar.quick_ranges') }}"></div>
         @endif
 
         @if($granularity === 'month')
             <div class="ui-month-grid__header">
-                <button type="button" class="ui-calendar-icon-action" data-calendar-year-previous aria-label="Previous year"><x-ui.icon name="chevron-left" size="sm" /></button>
-                <label class="tw-sr-only" for="{{ $resolvedId }}-year">Calendar year</label>
-                <select id="{{ $resolvedId }}-year" class="ui-month-grid__year" data-calendar-year aria-label="Calendar year"></select>
-                <button type="button" class="ui-calendar-icon-action" data-calendar-year-next aria-label="Next year"><x-ui.icon name="chevron-right" size="sm" /></button>
+                <button type="button" class="ui-calendar-icon-action" data-calendar-year-previous aria-label="{{ __('common.calendar.previous_year') }}"><x-ui.icon name="chevron-left" size="sm" /></button>
+                <label class="tw-sr-only" for="{{ $resolvedId }}-year">{{ __('common.calendar.year') }}</label>
+                <select id="{{ $resolvedId }}-year" class="ui-month-grid__year" data-calendar-year aria-label="{{ __('common.calendar.year') }}"></select>
+                <button type="button" class="ui-calendar-icon-action" data-calendar-year-next aria-label="{{ __('common.calendar.next_year') }}"><x-ui.icon name="chevron-right" size="sm" /></button>
             </div>
-            <div class="ui-month-grid" data-calendar-month-grid role="grid" aria-label="Months"></div>
+            <div class="ui-month-grid" data-calendar-month-grid role="grid" aria-label="{{ __('common.calendar.months') }}"></div>
         @else
-            <calendar-range data-calendar-day-grid months="2" first-day-of-week="1" page-by="single" locale="en-GB">
+            <calendar-range data-calendar-day-grid months="2" first-day-of-week="1" page-by="single" locale="{{ app()->getLocale() === 'id' ? 'id-ID' : 'en-GB' }}">
                 <x-ui.icon slot="previous" name="chevron-left" size="sm" aria-hidden="true" />
                 <calendar-select-year slot="heading" max-years="81"></calendar-select-year>
                 <x-ui.icon slot="next" name="chevron-right" size="sm" aria-hidden="true" />
@@ -121,9 +121,9 @@
         @endif
 
         <div class="ui-calendar-panel__footer">
-            <button type="button" class="ui-calendar-text-action" data-calendar-clear>Clear</button>
+            <button type="button" class="ui-calendar-text-action" data-calendar-clear>{{ __('common.actions.clear') }}</button>
             <span class="ui-calendar-panel__range-summary" data-calendar-range-summary aria-live="polite"></span>
-            <div class="ui-calendar-panel__footer-actions"><button type="button" class="ui-calendar-text-action" data-calendar-cancel>Cancel</button><button type="button" class="ui-calendar-apply-action" data-calendar-apply>Apply</button></div>
+            <div class="ui-calendar-panel__footer-actions"><button type="button" class="ui-calendar-text-action" data-calendar-cancel>{{ __('common.actions.cancel') }}</button><button type="button" class="ui-calendar-apply-action" data-calendar-apply>{{ __('common.actions.apply') }}</button></div>
         </div>
         <span class="tw-sr-only" data-calendar-live aria-live="polite" aria-atomic="true"></span>
     </div>

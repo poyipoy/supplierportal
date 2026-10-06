@@ -1,22 +1,22 @@
 @extends('layouts.app')
-@section('title', 'Daftar Invoice - Supplier Lokal')
-@section('page-title', 'Daftar Invoice')
+@section('title', __('local_invoice.list.page_title'))
+@section('page-title', __('local_invoice.list.title'))
 
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header
-        title="Daftar Seluruh Invoice"
-        description="Pantau status verifikasi, catatan revisi, dan jadwal pembayaran invoice Anda."
-        eyebrow="Invoice Supplier Lokal"
+        :title="__('local_invoice.list.all')"
+        :description="__('local_invoice.list.description')"
+        :eyebrow="__('local_invoice.labels.local_invoice')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary" size="sm">
                 <x-ui.icon name="plus" size="sm" />
-                <span>Ajukan Invoice</span>
+                <span>{{ __('local_invoice.actions.submit') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('local-supplier.dashboard')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Dashboard</span>
+                <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -24,8 +24,8 @@
     @include('local-invoices.filters')
 
     <x-ui.data-table
-        title="Invoice Saya"
-        :description="'Menampilkan '.$invoices->total().' data invoice.'"
+        :title="__('local_invoice.list.mine')"
+        :description="trans_choice('local_invoice.list.summary', $invoices->total())"
     >
         @include('local-invoices.table', ['portal'=>'local-supplier'])
 

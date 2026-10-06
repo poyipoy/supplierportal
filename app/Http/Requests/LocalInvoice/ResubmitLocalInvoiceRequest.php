@@ -20,7 +20,7 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
         $invoice = $this->route('invoice');
         if ($invoice && $this->has('invoice_number') && $this->input('invoice_number') !== $invoice->invoice_number) {
             throw ValidationException::withMessages([
-                'invoice_number' => "Nomor invoice dari berkas yang diunggah ({$this->input('invoice_number')}) tidak sesuai dengan nomor invoice tagihan ini ({$invoice->invoice_number}). Nomor invoice tidak boleh diubah saat revisi.",
+                'invoice_number' => __('local_invoice.validation.revision_identity', ['uploaded' => $this->input('invoice_number'), 'number' => $invoice->invoice_number]),
             ]);
         }
     }

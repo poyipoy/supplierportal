@@ -4,14 +4,21 @@ namespace App\Services\LocalInvoice;
 
 use App\Models\LocalInvoice;
 use App\Models\User;
+use App\Support\StatusHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
 
 class InvoiceExpiryService
 {
-    public function __construct(private LocalGrReservationService $reservations) {}
+    public function __construct(
+        private LocalGrReservationService $reservations,
+        private ?DeliveryScheduleValidator $deliveryScheduleValidator = null
+    ) {
+        $this->deliveryScheduleValidator ??= app(DeliveryScheduleValidator::class);
+    }
 
     /**
      * Record a missed delivery schedule.
@@ -25,7 +32,9 @@ class InvoiceExpiryService
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
             if ($inv->status !== LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT) {
-                throw new RuntimeException("Cannot record missed delivery: invoice is in [{$inv->status}] status.");
+                throw new RuntimeException(__('local_invoice.validation.missed_status', [
+                    'status' => StatusHelper::localInvoiceLabel($inv->status),
+                ]));
             }
 
             $currentMissed = $inv->missed_delivery_count;
@@ -43,7 +52,7 @@ class InvoiceExpiryService
                     'to_status' => LocalInvoice::STATUS_EXPIRED,
                     'actor_id' => $actor ? $actor->id : $inv->supplier_id,
                     'event' => 'expired',
-                    'notes' => 'Invoice expired after missing scheduled physical document delivery twice.',
+                    'notes' => __('local_invoice.history.expired'),
                     'created_at' => now(),
                 ]);
                 $this->reservations->release($inv, $actor);
@@ -58,7 +67,7 @@ class InvoiceExpiryService
                     'to_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
                     'actor_id' => $actor ? $actor->id : $inv->supplier_id,
                     'event' => 'delivery_missed',
-                    'notes' => 'Physical document delivery was missed on the scheduled date. Rescheduling required.',
+                    'notes' => __('local_invoice.history.delivery_missed'),
                     'created_at' => now(),
                 ]);
             }
@@ -72,8 +81,10 @@ class InvoiceExpiryService
      */
     public function rescheduleDelivery(LocalInvoice $invoice, Carbon $newDate, User $actor): LocalInvoice
     {
-        if ($newDate->dayOfWeek !== Carbon::WEDNESDAY) {
-            throw new InvalidArgumentException('New delivery date must be on a Wednesday.');
+        try {
+            $this->deliveryScheduleValidator->assert($newDate);
+        } catch (ValidationException $e) {
+            throw new InvalidArgumentException($e->validator->errors()->first());
         }
 
         return DB::transaction(function () use ($invoice, $newDate, $actor) {
@@ -81,11 +92,13 @@ class InvoiceExpiryService
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
             if ($inv->status !== LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT) {
-                throw new RuntimeException("Cannot reschedule: invoice is in [{$inv->status}] status.");
+                throw new RuntimeException(__('local_invoice.validation.reschedule_status', [
+                    'status' => StatusHelper::localInvoiceLabel($inv->status),
+                ]));
             }
 
             if ($inv->missed_delivery_count >= 2) {
-                throw new RuntimeException('Cannot reschedule: invoice has exceeded maximum missed delivery attempts.');
+                throw new RuntimeException(__('local_invoice.validation.reschedule_limit'));
             }
 
             $inv->update([
@@ -99,7 +112,7 @@ class InvoiceExpiryService
                 'to_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
                 'actor_id' => $actor->id,
                 'event' => 'rescheduled',
-                'notes' => "Physical delivery rescheduled to Wednesday, {$newDate->toDateString()}.",
+                'notes' => __('local_invoice.history.rescheduled', ['date' => $newDate->toDateString()]),
                 'created_at' => now(),
             ]);
 

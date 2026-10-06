@@ -137,13 +137,13 @@ class FinanceDrpPaidController extends Controller
     {
         if ($batch->isDraft()) {
             throw ValidationException::withMessages([
-                'batch' => 'Batch DRP masih berstatus DRAFT. Finalisasi batch terlebih dahulu sebelum dapat ditandai lunas.',
+                'batch' => __('finance.paid_feedback.draft'),
             ]);
         }
 
         if ($batch->isPaid()) {
             throw ValidationException::withMessages([
-                'batch' => "Batch DRP [{$batch->batch_number}] sudah berstatus PAID.",
+                'batch' => __('finance.paid_feedback.already_paid', ['number' => $batch->batch_number]),
             ]);
         }
 
@@ -163,15 +163,12 @@ class FinanceDrpPaidController extends Controller
         $totalOverpayment = (float) $freshBatch->total_overpayment_amount;
 
         if ($freshBatch->status === PaymentBatch::STATUS_PARTIALLY_PAID) {
-            $message = "Batch DRP [{$batch->batch_number}] berhasil diproses dengan status Sebagian Lunas (Partially Paid).";
-            if ($totalOverpayment > 0) {
-                $message .= ' Terdeteksi kelebihan bayar sebesar Rp '.number_format($totalOverpayment, 0, ',', '.').' yang otomatis dicatat pada modul Refund Overpayment.';
-            }
+            $message = __($totalOverpayment > 0 ? 'finance.paid_feedback.partial_overpayment' : 'finance.paid_feedback.partial', ['number' => $batch->batch_number, 'amount' => number_format($totalOverpayment, 0, ',', '.')]);
         } else {
             if ($totalOverpayment > 0) {
-                $message = "Batch DRP [{$batch->batch_number}] berhasil ditandai Lunas (PAID). Terdeteksi kelebihan bayar sebesar Rp ".number_format($totalOverpayment, 0, ',', '.').' yang otomatis dicatat pada modul Refund Overpayment.';
+                $message = __('finance.paid_feedback.paid_overpayment', ['number' => $batch->batch_number, 'amount' => number_format($totalOverpayment, 0, ',', '.')]);
             } else {
-                $message = "Batch DRP [{$batch->batch_number}] berhasil ditandai Lunas (PAID).";
+                $message = __('finance.paid_feedback.paid', ['number' => $batch->batch_number]);
             }
         }
 

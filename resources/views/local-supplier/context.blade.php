@@ -1,14 +1,14 @@
 @extends('layouts.app')
-@section('title', 'Pilih Portal Supplier')
-@section('page-title', 'Pilih Portal Supplier')
+@section('title', __('navigation.context.title'))
+@section('page-title', __('navigation.context.title'))
 @section('content')
-<x-ui.page-header title="Pilih Portal Supplier" description="Pilih konteks pengadaan untuk sesi kerja Anda." />
+<x-ui.page-header :title="__('navigation.context.title')" :description="__('navigation.context.help')" />
 <div class="row g-3">
     @forelse($scopes as $scope)
         @php
             $isImport = $scope === 'import';
-            $label = $isImport ? 'Material Procurement' : 'Local Supplier';
-            $description = $isImport ? 'Quotation, PO, Shipment' : 'Invoice, Vendor Profile';
+            $label = $isImport ? __('navigation.material_procurement') : __('navigation.local_supplier');
+            $description = $isImport ? __('navigation.portal_descriptions.import') : __('navigation.portal_descriptions.local');
             $icon = $isImport ? 'boxes' : 'receipt';
             $isActive = isset($currentContext) && $currentContext === $scope;
         @endphp
@@ -25,7 +25,7 @@
                             </div>
                             @if($isActive)
                                 <span class="badge tw-bg-primary-container tw-text-on-primary-container d-inline-flex align-items-center tw-gap-1 px-2 py-1">
-                                    <x-ui.icon name="check" size="xs" /> Aktif
+                                    <x-ui.icon name="check" size="xs" /> {{ __('local_invoice.labels.active') }}
                                 </span>
                             @endif
                         </div>
@@ -35,7 +35,7 @@
                         @csrf
                         <input type="hidden" name="context" value="{{ $scope }}">
                         <x-ui.button type="submit" variant="{{ $isActive ? 'secondary' : 'primary' }}" class="w-100">
-                            {{ $isActive ? 'Tetap di ' . $label : 'Masuk ke ' . $label }}
+                            {{ __($isActive ? 'navigation.context.stay' : 'navigation.context.enter', ['portal' => $label]) }}
                         </x-ui.button>
                     </form>
                 </div>
@@ -44,7 +44,7 @@
     @empty
         <div class="col-12">
             <x-ui.card>
-                <p class="tw-text-on-surface-variant m-0">Akses supplier belum dikonfigurasi. Silakan hubungi administrator.</p>
+                <p class="tw-text-on-surface-variant m-0">{{ __('navigation.context.unconfigured') }}</p>
             </x-ui.card>
         </div>
     @endforelse

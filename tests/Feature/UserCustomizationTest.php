@@ -40,6 +40,7 @@ class UserCustomizationTest extends TestCase
                     'time_format' => 'system',
                     'number_format' => 'system',
                     'notification_preferences' => [],
+                    'locale' => 'en',
                 ]);
 
             $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);

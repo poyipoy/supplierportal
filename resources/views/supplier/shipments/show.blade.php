@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Shipment: ' . $shipment->shipment_number . ' - ADASI Portal')
-@section('page-title', 'Shipment Details')
+@section('title', __('shipments.titles.detail', ['number' => $shipment->shipment_number]))
+@section('page-title', __('shipments.copy.shipment_details'))
 
 @push('styles')
 <style>
@@ -40,8 +40,8 @@
 <div class="tw-grid tw-gap-4">
     {{-- 1. Breadcrumb & Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Shipments' => route('supplier.shipments.index'),
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.shipments') => route('supplier.shipments.index'),
         $shipment->shipment_number => null,
     ]" />
 
@@ -57,9 +57,9 @@
     @endphp
 
     <x-ui.page-header
-        :title="'Shipment ' . $shipment->shipment_number"
-        eyebrow="Delivery Package & Logistics"
-        description="Consolidated shipment batch details, shipping documentation upload, and receiving status."
+        :title="__('shipments.closure.title', ['number' => $shipment->shipment_number])"
+        :eyebrow="__('shipments.copy.delivery_package_logistics')"
+        :description="__('shipments.copy.consolidated_shipment_batch_details_shipping_documentation_upload_and_receiving_status')"
     >
         <x-slot:actions>
             <div class="tw-flex tw-flex-wrap tw-gap-2 align-items-center">
@@ -70,14 +70,14 @@
                 @if($isDraft)
                     <x-ui.button :href="route('supplier.shipments.edit', $shipment)" variant="outline" size="sm">
                         <x-slot:leading><x-ui.icon name="pencil" size="sm" /></x-slot:leading>
-                        Edit Draft
+                        {{ __('shipments.copy.edit_draft_64d64e') }}
                     </x-ui.button>
 
                     <form method="POST" action="{{ route('supplier.shipments.submit', $shipment) }}" class="d-inline" id="submitShipmentForm">
                         @csrf
                         <x-ui.button type="button" variant="primary" size="sm" id="btnConfirmSubmit">
                             <x-slot:leading><x-ui.icon name="truck" size="sm" /></x-slot:leading>
-                            Submit Shipment
+                            {{ __('shipments.copy.submit_shipment') }}
                         </x-ui.button>
                     </form>
                 @endif
@@ -87,7 +87,7 @@
                         @csrf
                         <x-ui.button type="button" variant="danger" size="sm" id="btnConfirmCancel">
                             <x-slot:leading><x-ui.icon name="x-circle" size="sm" /></x-slot:leading>
-                            Cancel Shipment
+                            {{ __('shipments.copy.cancel_shipment_f1cc5e') }}
                         </x-ui.button>
                     </form>
                 @endif
@@ -96,21 +96,21 @@
     </x-ui.page-header>
 
     {{-- 2. Visual Lifecycle Tracking Stepper --}}
-    <div class="shipment-tracking-strip" aria-label="Shipment delivery progress">
+    <div class="shipment-tracking-strip" aria-label="{{ __('shipments.copy.shipment_delivery_progress') }}">
         @if($isCancelled)
             <div class="shipment-tracking-step is-cancelled">
-                <div class="tw-text-ui-xs fw-semibold text-danger">STATUS</div>
-                <div class="fw-bold fs-6 text-danger">Cancelled</div>
-                <div class="tw-text-ui-xs text-danger mt-1">Delivery batch was cancelled and balances released</div>
+                <div class="tw-text-ui-xs fw-semibold text-danger">{{ __('shipments.copy.status') }}</div>
+                <div class="fw-bold fs-6 text-danger">{{ __('shipments.copy.cancelled') }}</div>
+                <div class="tw-text-ui-xs text-danger mt-1">{{ __('shipments.copy.delivery_batch_was_cancelled_and_balances_released') }}</div>
             </div>
         @else
             {{-- Step 1: Draft --}}
             <div class="shipment-tracking-step {{ $isDraft ? 'is-active' : 'is-completed' }}">
                 <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 1</span>
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">{{ __('shipments.copy.step_1') }}</span>
                     <x-ui.icon :name="$isDraft ? 'circle-dot' : 'check'" size="sm" :class="$isDraft ? 'text-primary' : 'text-success'" />
                 </div>
-                <div class="fw-bold fs-6 tw-text-on-surface">Draft Allocation</div>
+                <div class="fw-bold fs-6 tw-text-on-surface">{{ __('shipments.copy.draft_allocation') }}</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
                     {{ $regionalFormatter->timestamp($shipment->created_at, 'date') }}
                 </div>
@@ -119,7 +119,7 @@
             {{-- Step 2: In Transit --}}
             <div class="shipment-tracking-step {{ $isSubmitted ? 'is-active' : ($isArrived ? 'is-completed' : '') }}">
                 <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 2</span>
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">{{ __('shipments.copy.step_2') }}</span>
                     @if($isArrived)
                         <x-ui.icon name="check" size="sm" class="text-success" />
                     @elseif($isSubmitted)
@@ -128,12 +128,12 @@
                         <x-ui.icon name="circle" size="sm" class="tw-text-outline" />
                     @endif
                 </div>
-                <div class="fw-bold fs-6 tw-text-on-surface">In Transit</div>
+                <div class="fw-bold fs-6 tw-text-on-surface">{{ __('shipments.copy.in_transit') }}</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
                     @if($shipment->shipment_date)
-                        Dispatched: {{ $regionalFormatter->date($shipment->shipment_date, 'human') }}
+                        {{ __('shipments.audit_ui.dispatched_on', ['date' => $regionalFormatter->date($shipment->shipment_date, 'human')]) }}
                     @else
-                        Awaiting dispatch
+                        {{ __('shipments.audit_ui.awaiting_dispatch') }}
                     @endif
                 </div>
             </div>
@@ -141,7 +141,7 @@
             {{-- Step 3: Arrived at Plant --}}
             <div class="shipment-tracking-step {{ $isArrived && !$hasQc ? 'is-active' : ($isArrived && $hasQc ? 'is-completed' : '') }}">
                 <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 3</span>
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">{{ __('shipments.copy.step_3') }}</span>
                     @if($isArrived && $hasQc)
                         <x-ui.icon name="check" size="sm" class="text-success" />
                     @elseif($isArrived)
@@ -150,14 +150,14 @@
                         <x-ui.icon name="circle" size="sm" class="tw-text-outline" />
                     @endif
                 </div>
-                <div class="fw-bold fs-6 tw-text-on-surface">Arrived at Plant</div>
+                <div class="fw-bold fs-6 tw-text-on-surface">{{ __('shipments.copy.arrived_at_plant') }}</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
                     @if($shipment->actual_arrival_date)
-                        Arrived: {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}
+                        {{ __('common.final_copy.arrived') }} {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}
                     @elseif($shipment->estimated_arrival_date)
-                        ETA: {{ $regionalFormatter->date($shipment->estimated_arrival_date, 'human') }}
+                        {{ __('supplier.copy.estimated_arrival') }}: {{ $regionalFormatter->date($shipment->estimated_arrival_date, 'human') }}
                     @else
-                        ETA pending
+                        {{ __('shipments.audit_ui.eta_pending') }}
                     @endif
                 </div>
             </div>
@@ -165,7 +165,7 @@
             {{-- Step 4: Quality Control --}}
             <div class="shipment-tracking-step {{ $hasQc ? 'is-completed' : '' }}">
                 <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">STEP 4</span>
+                    <span class="tw-text-ui-xs fw-semibold tw-text-on-surface-variant">{{ __('shipments.copy.step_4') }}</span>
                     @if($hasQc)
                         @php $allOk = $shipment->qcInspections->every(fn($i) => $i->status === 'ok'); @endphp
                         <x-ui.icon :name="$allOk ? 'check-circle' : 'alert-circle'" size="sm" :class="$allOk ? 'text-success' : 'text-danger'" />
@@ -173,14 +173,14 @@
                         <x-ui.icon name="circle" size="sm" class="tw-text-outline" />
                     @endif
                 </div>
-                <div class="fw-bold fs-6 tw-text-on-surface">QC Inspection</div>
+                <div class="fw-bold fs-6 tw-text-on-surface">{{ __('shipments.copy.qc_inspection') }}</div>
                 <div class="tw-text-ui-xs tw-text-on-surface-variant mt-1">
                     @if($hasQc)
-                        {{ $shipment->qcInspections->count() }} report(s) filed
+                        {{ trans_choice('shipments.audit_ui.reports_filed', $shipment->qcInspections->count(), ['count' => $shipment->qcInspections->count()]) }}
                     @elseif($isArrived)
-                        Inspection pending
+                        {{ __('shipments.audit_ui.inspection_pending') }}
                     @else
-                        Awaiting arrival
+                        {{ __('shipments.audit_ui.awaiting_arrival') }}
                     @endif
                 </div>
             </div>
@@ -188,10 +188,10 @@
     </div>
 
     {{-- 3. Shipment Overview Card --}}
-    <x-ui.card title="Shipment Logistics Overview">
+    <x-ui.card :title="__('shipments.copy.shipment_logistics_overview')">
         <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-5">
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Consolidated POs</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('shipments.copy.consolidated_pos') }}</div>
                 <div class="fw-bold tw-text-on-surface fs-6 mt-1 d-flex flex-wrap gap-1">
                     @forelse($pos as $po)
                         <a href="{{ route('supplier.purchase-orders.show', $po) }}" class="text-primary text-decoration-none">
@@ -203,30 +203,30 @@
                 </div>
             </div>
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Total Consignment Qty</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('shipments.copy.total_consignment_qty') }}</div>
                 <div class="fw-bold text-primary fs-6 mt-1 ui-tabular-nums">
                     {{ $regionalFormatter->number(number_format($totalQty), 'international') }} pcs
                 </div>
             </div>
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Actual Weight</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('shipments.copy.actual_weight') }}</div>
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1 ui-tabular-nums">
                     {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalWeight), 'decimal') }} Kg
                 </div>
             </div>
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Shipment / Dispatch Date</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('shipments.copy.shipment_dispatch_date') }}</div>
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1">
                     {{ $shipment->shipment_date ? $regionalFormatter->date($shipment->shipment_date, 'human') : '-' }}
                 </div>
             </div>
             <div class="p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Target / Actual Arrival</div>
+                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('shipments.copy.target_actual_arrival') }}</div>
                 <div class="fw-semibold tw-text-on-surface fs-6 mt-1">
                     @if($shipment->actual_arrival_date)
-                        <span class="text-success fw-bold">Arrived: {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}</span>
+                        <span class="text-success fw-bold">{{ __('common.final_copy.arrived') }} {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}</span>
                     @elseif($shipment->estimated_arrival_date)
-                        <span>ETA: {{ $regionalFormatter->date($shipment->estimated_arrival_date, 'human') }}</span>
+                        <span>{{ __('supplier.copy.estimated_arrival') }}: {{ $regionalFormatter->date($shipment->estimated_arrival_date, 'human') }}</span>
                     @else
                         -
                     @endif
@@ -236,26 +236,26 @@
 
         @if($shipment->notes)
             <div class="mt-3 p-3 tw-bg-surface-container tw-border tw-border-outline-variant rounded tw-text-ui-xs">
-                <span class="fw-semibold">Logistics Notes:</span> {{ $shipment->notes }}
+                <span class="fw-semibold">{{ __('shipments.copy.logistics_notes') }}</span> {{ $shipment->notes }}
             </div>
         @endif
     </x-ui.card>
 
     {{-- 4. Shipped Line Items Table --}}
     <x-ui.card
-        title="Included Material Items"
-        description="Line-item breakdown of quantities dispatched in this consignment."
+        :title="__('shipments.copy.included_material_items')"
+        :description="__('shipments.copy.line_item_breakdown_of_quantities_dispatched_in_this_consignment')"
     >
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 tw-text-ui-xs">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" style="width: 44px;" class="text-center">No</th>
-                        <th scope="col">PO Reference</th>
-                        <th scope="col">Material Name</th>
-                        <th scope="col" class="text-end">Shipped Qty</th>
-                        <th scope="col" class="text-end">Actual Weight</th>
-                        <th scope="col">Item Notes</th>
+                        <th scope="col" style="width: 44px;" class="text-center">{{ __('shipments.copy.no') }}</th>
+                        <th scope="col">{{ __('shipments.copy.po_reference') }}</th>
+                        <th scope="col">{{ __('shipments.copy.material_name') }}</th>
+                        <th scope="col" class="text-end">{{ __('shipments.copy.shipped_qty') }}</th>
+                        <th scope="col" class="text-end">{{ __('shipments.copy.actual_weight') }}</th>
+                        <th scope="col">{{ __('shipments.copy.item_notes') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -268,7 +268,7 @@
                                 </a>
                             </td>
                             <td class="fw-medium">
-                                {{ $item->quotationItem->prItem->material_name ?? 'Material' }}
+                                {{ $item->quotationItem->prItem->material_name ?? __('shipments.copy.material') }}
                             </td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">
                                 {{ $regionalFormatter->number(number_format($item->shipped_qty), 'international') }} pcs
@@ -288,17 +288,17 @@
 
     {{-- 5. Shared Shipping Documents Hub --}}
     <x-ui.card
-        title="Shared Shipping & Import Documents"
-        description="One shared set of documents (Invoice, Packing List, BL, Form E) covers all purchase orders consolidated in this delivery."
+        :title="__('shipments.copy.shared_shipping_import_documents')"
+        :description="__('shipments.copy.one_shared_set_of_documents_invoice_packing_list_bl_form_e_covers_all_purchase_orders_consolidated_i')"
     >
         <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
             @foreach($shipment->documents as $doc)
                 @php
                     $docLabel = match($doc->doc_type) {
-                        'invoice' => 'Commercial Invoice',
-                        'packing_list' => 'Packing List',
-                        'bl' => 'Bill of Lading (BL)',
-                        'form_e' => 'Form E / Certificate of Origin',
+                        'invoice' => __('shipments.copy.commercial_invoice'),
+                        'packing_list' => __('shipments.copy.packing_list'),
+                        'bl' => __('shipments.copy.bill_of_lading_bl'),
+                        'form_e' => __('shipments.copy.form_e_certificate_of_origin'),
                         default => strtoupper($doc->doc_type),
                     };
                     $latestAtt = $doc->latestAttachment;
@@ -315,7 +315,7 @@
                         <div class="mt-2 tw-text-ui-xs">
                             @if($doc->document_number)
                                 <div class="tw-text-on-surface-variant mb-1">
-                                    <span class="fw-semibold">Ref:</span> {{ $doc->document_number }}
+                                    <span class="fw-semibold">{{ __('common.labels_review.reference') }}</span> {{ $doc->document_number }}
                                 </div>
                             @endif
 
@@ -327,7 +327,7 @@
                                     </span>
                                 </a>
                             @else
-                                <span class="tw-text-outline fst-italic">No file uploaded</span>
+                                <span class="tw-text-outline fst-italic">{{ __('shipments.copy.no_file_uploaded') }}</span>
                             @endif
                         </div>
                     </div>
@@ -340,16 +340,16 @@
                                 name="document_number"
                                 value="{{ old('document_number', $doc->document_number) }}"
                                 class="form-control form-control-sm mb-1.5 tw-text-ui-xs"
-                                placeholder="Doc Ref No. (optional)"
+                                placeholder="{{ __('shipments.copy.doc_ref_no_optional') }}"
                             >
                             <div class="input-group input-group-sm">
                                 <input type="file" name="file" class="form-control form-control-sm" required accept=".pdf,.jpg,.jpeg,.png,.xlsx,.doc,.docx">
-                                <button type="submit" class="btn btn-outline-primary btn-sm" title="Upload file">
+                                <button type="submit" class="btn btn-outline-primary btn-sm" title="{{ __('shipments.copy.upload_file') }}">
                                     <x-ui.icon name="upload" size="sm" />
                                 </button>
                             </div>
                             <div class="tw-text-outline" style="font-size: 10px; margin-top: 3px;">
-                                Max 10MB (PDF, Image, Excel, Word)
+                                {{ __('shipments.copy.max_10mb_pdf_image_excel_word') }}
                             </div>
                         </form>
                     @endif
@@ -367,14 +367,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('btnConfirmSubmit');
     const submitForm = document.getElementById('submitShipmentForm');
     submitBtn?.addEventListener('click', () => {
-        const title = 'Submit Shipment Delivery?';
-        const text = 'Submitting this shipment locks the allocated quantities and notifies Purchasing and QC that the goods are in transit.';
+        const title = @js(__('shipments.confirmations.submit.title'));
+        const text = @js(__('shipments.confirmations.submit.body'));
 
         if (window.AdasiAlert) {
             window.AdasiAlert.confirm({
                 title: title,
                 text: text,
-                confirmText: 'Yes, Submit Delivery',
+                confirmText: @json(__('shipments.copy.yes_submit_delivery')),
                 confirmTone: 'primary'
             }).then(res => {
                 if (res.isConfirmed) {
@@ -392,14 +392,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelBtn = document.getElementById('btnConfirmCancel');
     const cancelForm = document.getElementById('cancelShipmentForm');
     cancelBtn?.addEventListener('click', () => {
-        const title = 'Cancel this Shipment?';
-        const text = 'Are you sure you want to cancel this consignment? Any reserved quantities will be returned to the purchase order balance.';
+        const title = @js(__('shipments.confirmations.cancel.title'));
+        const text = @js(__('shipments.confirmations.cancel.body'));
 
         if (window.AdasiAlert) {
             window.AdasiAlert.confirm({
                 title: title,
                 text: text,
-                confirmText: 'Yes, Cancel Shipment',
+                confirmText: @json(__('shipments.copy.yes_cancel_shipment')),
                 confirmTone: 'danger'
             }, true).then(res => {
                 if (res.isConfirmed) {

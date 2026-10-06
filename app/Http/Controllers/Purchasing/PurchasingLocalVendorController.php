@@ -39,7 +39,7 @@ class PurchasingLocalVendorController extends Controller
     {
         $service->approve($request, $req->user(), $req->input('notes'));
 
-        return back()->with('success', 'Vendor change request approved by Purchasing.');
+        return back()->with('success', __('local_procurement.vendor_ui.purchasing_approved'));
     }
 
     public function rejectChange(SupplierChangeRequest $request, Request $req, VendorChangeRequestService $service)
@@ -47,7 +47,7 @@ class PurchasingLocalVendorController extends Controller
         $req->validate(['notes' => 'required|string|max:1000']);
         $service->reject($request, $req->user(), $req->input('notes'));
 
-        return back()->with('success', 'Vendor change request rejected by Purchasing.');
+        return back()->with('success', __('local_procurement.vendor_ui.purchasing_rejected'));
     }
 
     /**

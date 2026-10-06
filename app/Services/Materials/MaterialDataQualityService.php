@@ -5,6 +5,7 @@ namespace App\Services\Materials;
 use App\Data\Materials\HsCodeConditionSet;
 use App\Models\HsCodeRule;
 use App\Models\MaterialMaster;
+use App\Models\PrItem;
 
 final class MaterialDataQualityService
 {
@@ -61,9 +62,9 @@ final class MaterialDataQualityService
             ->filter(fn (array $overlap) => ! $overlap['same_code'] && $overlap['same_priority'])
             ->map(fn (array $overlap) => [
                 'category' => $this->categoryLabel($overlap['category']),
-                'shape' => $overlap['shape'],
+                'shape' => PrItem::shapeLabel($overlap['shape']),
                 'hs_codes' => $overlap['hs_codes'],
-                'message' => 'Two active rules can match the same dimensions and return different HS Codes.',
+                'message' => __('materials.copy.two_active_rules_can_match_the_same_dimensions_and_return_different_hs_codes'),
             ])
             ->values();
 
@@ -87,14 +88,14 @@ final class MaterialDataQualityService
                 'duplicate_rule_coverage' => [
                     'count' => $duplicateCoverage->count(),
                     'message' => $duplicateCoverage->isEmpty()
-                        ? 'All active rules currently cover distinct ranges.'
-                        : 'Some active rules cover the same range and return the same HS Code. No action is required.',
+                        ? __('materials.copy.all_active_rules_currently_cover_distinct_ranges')
+                        : __('materials.copy.some_active_rules_cover_the_same_range_and_return_the_same_hs_code_no_action_is_required'),
                 ],
                 'inactive_rules_kept_for_reference' => $rules
                     ->where('status', HsCodeRule::STATUS_INACTIVE)
                     ->map(fn (HsCodeRule $rule) => [
                         'hs_code' => $rule->hs_code,
-                        'note' => $rule->notes ?: 'Kept inactive for reference.',
+                        'note' => $this->referenceNote($rule->notes),
                     ])->values(),
                 'rule_categories_not_used_by_materials' => $ruleCategories
                     ->diff($mappedCategories)
@@ -107,6 +108,19 @@ final class MaterialDataQualityService
 
     private function categoryLabel(string $category): string
     {
-        return ucwords(str_replace('_', ' ', $category));
+        return MaterialMaster::hsCategoryLabel($category);
+    }
+
+    private function referenceNote(?string $note): string
+    {
+        if (blank($note)) {
+            return __('materials.copy.kept_inactive_for_reference');
+        }
+
+        if (preg_match('/^Inactive alternative retained for audit; (\d{4}\.\d{2}\.\d{2}) was selected\.$/', $note, $match)) {
+            return __('materials.copy.inactive_alternative_retained_for_audit', ['selected' => $match[1]]);
+        }
+
+        return $note;
     }
 }

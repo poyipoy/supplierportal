@@ -52,6 +52,6 @@ class ExchangeRateController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return back()->with('success', "New {$request->currency} exchange rate successfully added.");
+        return back()->with('success', __('admin.feedback.rate_added', ['currency' => $request->currency]));
     }
 }

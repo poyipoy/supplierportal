@@ -31,7 +31,7 @@ class RevokeSessionController extends Controller
         }
 
         if (hash_equals((string) $request->session()->getId(), $sessionId)) {
-            return back()->with('warning', 'Use the sign-out button to end your current session.');
+            return back()->with('warning', __('auth.feedback.current_session'));
         }
 
         $deleted = $sessions->revoke($request->user(), $sessionId);

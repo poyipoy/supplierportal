@@ -27,7 +27,12 @@ class ProcessExportJob implements ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(public readonly int $exportJobId) {}
+    public string $locale = 'en';
+
+    public function __construct(public readonly int $exportJobId, string $locale = 'en')
+    {
+        $this->locale = \App\Services\UserPreferenceService::normalizeLocale($locale);
+    }
 
     public function handle(ExportProgressService $progress): void
     {
@@ -41,53 +46,60 @@ class ProcessExportJob implements ShouldQueue
             throw new RuntimeException('Unsupported export class.');
         }
 
-        $exportClass = $record->export_class;
-        $export = new $exportClass(...$record->export_args);
+        $previousLocale = app()->getLocale();
+        try {
+            app()->setLocale(\App\Services\UserPreferenceService::normalizeLocale($this->locale));
+            $exportClass = $record->export_class;
+            $export = new $exportClass(...$record->export_args);
+            $export->setExportLocale($this->locale);
 
-        if (! $export instanceof TracksExportProgress) {
-            throw new RuntimeException('The export does not support row progress tracking.');
-        }
+            if (! $export instanceof TracksExportProgress) {
+                throw new RuntimeException('The export does not support row progress tracking.');
+            }
 
-        // Expensive construction/counting happens while the durable record is
-        // still queued. A process death here is therefore safe for worker retry.
-        $totalRows = max(0, $export->progressTotalRows());
-        $export->setExportProgressContext((int) $record->getKey());
-        $path = 'exports/'.$record->user_id.'/'.$record->getKey().'/'.$record->file_name;
+            // Expensive construction/counting happens while the durable record is
+            // still queued. A process death here is therefore safe for worker retry.
+            $totalRows = max(0, $export->progressTotalRows());
+            $export->setExportProgressContext((int) $record->getKey());
+            $path = 'exports/'.$record->user_id.'/'.$record->getKey().'/'.$record->file_name;
 
-        if ($export instanceof GeneratesWorkbook) {
+            if ($export instanceof GeneratesWorkbook) {
+                $progress->handoffToExportQueue(
+                    $record,
+                    $path,
+                    $totalRows,
+                    function () use ($record): void {
+                        $pending = GenerateWorkbookJob::dispatch((int) $record->getKey(), $this->locale)
+                            ->onQueue('exports');
+
+                        // Force dispatch before the surrounding database transaction commits.
+                        unset($pending);
+                    },
+                );
+
+                return;
+            }
+
             $progress->handoffToExportQueue(
                 $record,
                 $path,
                 $totalRows,
-                function () use ($record): void {
-                    $pending = GenerateWorkbookJob::dispatch((int) $record->getKey())
-                        ->onQueue('exports');
+                function () use ($export, $path, $record): void {
+                    $pending = Excel::queue($export, $path, $record->disk)
+                        ->allOnQueue('exports')
+                        ->appendToChain(new FinalizeExportJob((int) $record->getKey()));
+
+                    $pending->getJob()->chainCatchCallbacks = [
+                        new MarkExportFailed((int) $record->getKey()),
+                    ];
 
                     // Force dispatch before the surrounding database transaction commits.
                     unset($pending);
                 },
             );
-
-            return;
+        } finally {
+            app()->setLocale($previousLocale);
         }
-
-        $progress->handoffToExportQueue(
-            $record,
-            $path,
-            $totalRows,
-            function () use ($export, $path, $record): void {
-                $pending = Excel::queue($export, $path, $record->disk)
-                    ->allOnQueue('exports')
-                    ->appendToChain(new FinalizeExportJob((int) $record->getKey()));
-
-                $pending->getJob()->chainCatchCallbacks = [
-                    new MarkExportFailed((int) $record->getKey()),
-                ];
-
-                // Force dispatch before the surrounding database transaction commits.
-                unset($pending);
-            },
-        );
     }
 
     public function failed(Throwable $exception): void

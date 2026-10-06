@@ -41,18 +41,18 @@ class ConversationPresenter
 
             return [
                 'type' => 'PR',
-                'title' => $conversable->pr_number ?? 'Draft Requisition',
+                'title' => $conversable->pr_number ?? __('purchasing.copy.draft_requisition'),
                 'subtitle' => $conversable->period?->name ?? '-',
                 'status' => strtoupper((string) $conversable->status),
                 'url' => self::contextUrl($viewer, $conversation, $quotation),
                 'fields' => array_values(array_filter([
-                    ['label' => 'Supplier', 'value' => self::supplierName($conversation->supplierUser)],
-                    ['label' => 'Material', 'value' => $conversable->items->count().' item'],
-                    ['label' => 'Quotation Status', 'value' => $quotation?->statusLabel() ?? 'None'],
-                    ['label' => 'Currency', 'value' => $quotation?->currency],
-                    ['label' => 'Total Quotation', 'value' => $quotation ? self::quotationTotal($quotation) : null],
-                    ['label' => 'Estimated Delivery', 'value' => self::formatDate($quotation?->estimated_delivery)],
-                    ['label' => 'Valid Until', 'value' => self::formatDate($quotation?->validity_period)],
+                    ['label' => __('purchasing.copy.supplier'), 'value' => self::supplierName($conversation->supplierUser)],
+                    ['label' => __('purchasing.copy.material'), 'value' => trans_choice('common.chat.material_count', $conversable->items->count())],
+                    ['label' => __('purchasing.copy.quotation_status'), 'value' => $quotation?->statusLabel() ?? __('purchasing.copy.none')],
+                    ['label' => __('purchasing.copy.currency'), 'value' => $quotation?->currency],
+                    ['label' => __('purchasing.copy.total_quotation'), 'value' => $quotation ? self::quotationTotal($quotation) : null],
+                    ['label' => __('purchasing.copy.estimated_delivery'), 'value' => self::formatDate($quotation?->estimated_delivery)],
+                    ['label' => __('purchasing.copy.valid_until'), 'value' => self::formatDate($quotation?->validity_period)],
                 ], fn ($field) => filled($field['value'] ?? null))),
                 'quotation' => $quotation ? [
                     'id' => $quotation->id,
@@ -77,16 +77,16 @@ class ConversationPresenter
 
             return [
                 'type' => 'PO',
-                'title' => $conversable->po_number ?? 'Purchase Order',
-                'subtitle' => $prNumbers ?: 'Purchase Order',
+                'title' => $conversable->po_number ?? __('purchasing.copy.purchase_order'),
+                'subtitle' => $prNumbers ?: __('purchasing.copy.purchase_order'),
                 'status' => strtoupper((string) $conversable->status),
                 'url' => self::contextUrl($viewer, $conversation, null),
                 'fields' => array_values(array_filter([
-                    ['label' => 'Supplier', 'value' => self::supplierName($conversation->supplierUser)],
-                    ['label' => 'No. PR', 'value' => $prNumbers],
-                    ['label' => 'Currency', 'value' => $conversable->currency],
-                    ['label' => 'Estimated Arrival', 'value' => self::formatDate($conversable->estimated_arrival)],
-                    ['label' => 'Actual Arrival', 'value' => self::formatDate($conversable->actual_arrival)],
+                    ['label' => __('purchasing.copy.supplier'), 'value' => self::supplierName($conversation->supplierUser)],
+                    ['label' => __('purchasing.conversation.pr_number'), 'value' => $prNumbers],
+                    ['label' => __('purchasing.copy.currency'), 'value' => $conversable->currency],
+                    ['label' => __('purchasing.copy.estimated_arrival'), 'value' => self::formatDate($conversable->estimated_arrival)],
+                    ['label' => __('purchasing.copy.actual_arrival'), 'value' => self::formatDate($conversable->actual_arrival)],
                 ], fn ($field) => filled($field['value'] ?? null))),
                 'quotation' => null,
             ];
@@ -95,7 +95,7 @@ class ConversationPresenter
         return [
             'type' => 'DOC',
             'title' => $conversation->context_label,
-            'subtitle' => 'Chat context',
+            'subtitle' => __('purchasing.copy.chat_context'),
             'status' => null,
             'url' => null,
             'fields' => [],
@@ -114,7 +114,7 @@ class ConversationPresenter
         if ($viewer->role === 'supplier' && $quotation->status === Quotation::STATUS_REVISION_REQUESTED) {
             return [[
                 'key' => 'open_revision',
-                'label' => 'Open Revision Form',
+                'label' => __('purchasing.copy.open_revision_form'),
                 'icon' => 'refresh-cw',
                 'type' => 'link',
                 'url' => route('supplier.quotations.create', $quotation->purchaseRequisition),
@@ -132,7 +132,7 @@ class ConversationPresenter
             if (in_array($quotation->status, [Quotation::STATUS_SUBMITTED, Quotation::STATUS_ALL_UNAVAILABLE], true)) {
                 $actions[] = [
                     'key' => 'request_price_revision',
-                    'label' => 'Request Revision',
+                    'label' => __('purchasing.copy.request_revision'),
                     'icon' => 'badge-dollar-sign',
                     'type' => 'prompt',
                     'requires_note' => true,
@@ -143,7 +143,7 @@ class ConversationPresenter
             $actions = array_merge($actions, [
                 [
                     'key' => 'request_validity_extension',
-                    'label' => 'Extend Validity',
+                    'label' => __('purchasing.copy.extend_validity'),
                     'icon' => 'calendar-plus',
                     'type' => 'prompt',
                     'requires_note' => false,
@@ -151,7 +151,7 @@ class ConversationPresenter
                 ],
                 [
                     'key' => 'request_delivery_confirmation',
-                    'label' => 'Confirm Estimated Delivery',
+                    'label' => __('purchasing.copy.confirm_estimated_delivery'),
                     'icon' => 'truck',
                     'type' => 'prompt',
                     'requires_note' => false,
@@ -163,7 +163,7 @@ class ConversationPresenter
         if ($quotation->canApproveBy($viewer) && ! $quotation->isExpired() && $quotation->hasAvailableItems()) {
             $actions[] = [
                 'key' => 'accept_quotation',
-                'label' => 'Accept Quotation',
+                'label' => __('purchasing.copy.accept_quotation'),
                 'icon' => 'circle-check',
                 'type' => 'confirm',
                 'requires_note' => false,
@@ -174,7 +174,7 @@ class ConversationPresenter
         if ($quotation->canApproveBy($viewer) && $quotation->hasAvailableItems()) {
             $actions[] = [
                 'key' => 'reject_quotation',
-                'label' => 'Reject Quotation',
+                'label' => __('purchasing.copy.reject_quotation'),
                 'icon' => 'circle-x',
                 'type' => 'prompt',
                 'requires_note' => true,
@@ -189,17 +189,17 @@ class ConversationPresenter
     {
         if ($viewer->role === 'supplier') {
             return [
-                'Understood, we will review the price and supporting documents again.',
-                'We will send the revised quotation after the data is updated.',
-                'Please confirm which part needs to be revised first.',
+                __('purchasing.copy.understood_we_will_review_the_price_and_supporting_documents_again'),
+                __('purchasing.copy.we_will_send_the_revised_quotation_after_the_data_is_updated'),
+                __('purchasing.copy.please_confirm_which_part_needs_to_be_revised_first'),
             ];
         }
 
         return [
-            'Please revise the price for the submitted material.',
-            'The quotation validity needs to be extended before PO processing.',
-            'Please confirm the latest estimated delivery date.',
-            'Please attach the latest supporting quotation documents.',
+            __('purchasing.copy.please_revise_the_price_for_the_submitted_material'),
+            __('purchasing.copy.the_quotation_validity_needs_to_be_extended_before_po_processing'),
+            __('purchasing.copy.please_confirm_the_latest_estimated_delivery_date'),
+            __('purchasing.copy.please_attach_the_latest_supporting_quotation_documents'),
         ];
     }
 
@@ -209,20 +209,20 @@ class ConversationPresenter
 
         if ($conversation->status === Conversation::STATUS_RESOLVED) {
             return [
-                'label' => 'Completed',
+                'label' => __('purchasing.copy.completed'),
                 'class' => 'bg-success',
                 'description' => $conversation->resolved_at
-                    ? 'Resolved '.$conversation->resolved_at->diffForHumans()
-                    : 'The conversation is completed.',
+                    ? __('purchasing.conversation.resolved', ['time' => $conversation->resolved_at->copy()->locale(app()->getLocale())->diffForHumans()])
+                    : __('purchasing.copy.the_conversation_is_completed'),
                 'is_overdue' => false,
             ];
         }
 
         if (! $latest) {
             return [
-                'label' => 'No messages yet',
+                'label' => __('purchasing.copy.no_messages_yet'),
                 'class' => 'bg-secondary',
-                'description' => 'The conversation has been created but has no messages yet.',
+                'description' => __('purchasing.copy.the_conversation_has_been_created_but_has_no_messages_yet'),
                 'is_overdue' => false,
             ];
         }
@@ -234,18 +234,18 @@ class ConversationPresenter
 
         if ($needsViewerResponse && $hours >= 24) {
             return [
-                'label' => 'No reply for > 1 day',
+                'label' => __('purchasing.conversation.overdue'),
                 'class' => 'bg-danger',
-                'description' => 'The latest message has been waiting for your reply since '.$latest->created_at->diffForHumans().'.',
+                'description' => __('purchasing.conversation.waiting_since', ['time' => $latest->created_at->copy()->locale(app()->getLocale())->diffForHumans()]),
                 'is_overdue' => true,
             ];
         }
 
         if ($needsViewerResponse) {
             return [
-                'label' => 'Needs Reply',
+                'label' => __('purchasing.copy.needs_reply'),
                 'class' => 'bg-warning text-dark',
-                'description' => 'The latest message is from the other party.',
+                'description' => __('purchasing.copy.the_latest_message_is_from_the_other_party'),
                 'is_overdue' => false,
             ];
         }
@@ -253,7 +253,7 @@ class ConversationPresenter
         return [
             'label' => $conversation->statusLabelFor($viewer),
             'class' => $conversation->statusBadgeClassFor($viewer),
-            'description' => 'The latest message has been sent and is waiting for the other party response.',
+            'description' => __('purchasing.copy.the_latest_message_has_been_sent_and_is_waiting_for_the_other_party_response'),
             'is_overdue' => false,
         ];
     }
@@ -308,8 +308,8 @@ class ConversationPresenter
             return null;
         }
 
-        return $date instanceof Carbon
-            ? $date->format('d M Y')
-            : Carbon::parse($date)->format('d M Y');
+        $date = $date instanceof Carbon ? $date : Carbon::parse($date);
+
+        return $date->copy()->locale(app()->getLocale())->translatedFormat('d M Y');
     }
 }

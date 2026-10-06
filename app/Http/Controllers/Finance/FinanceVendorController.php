@@ -39,7 +39,7 @@ class FinanceVendorController extends Controller
     {
         $service->approve($request, $req->user(), $req->input('notes'));
 
-        return back()->with('success', 'Vendor change request approved and applied to master.');
+        return back()->with('success', __('finance.feedback.vendor_approved'));
     }
 
     public function rejectChange(SupplierChangeRequest $request, Request $req, VendorChangeRequestService $service)
@@ -47,6 +47,6 @@ class FinanceVendorController extends Controller
         $req->validate(['notes' => 'required|string|max:1000']);
         $service->reject($request, $req->user(), $req->input('notes'));
 
-        return back()->with('success', 'Vendor change request rejected.');
+        return back()->with('success', __('finance.feedback.vendor_rejected'));
     }
 }

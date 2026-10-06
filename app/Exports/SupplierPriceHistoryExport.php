@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings, WithStyles, WithTitle
+class SupplierPriceHistoryExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings, WithStyles, WithTitle
 {
     use InteractsWithExportProgress;
 
@@ -60,7 +60,7 @@ class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress
 
         return $data->map(fn (array $row) => [
             $row['pr_number'] ?? '-',
-            $row['submitted_at_display'] ?? 'Draft',
+            $row['submitted_at_display'] ?? __('status.quotation.draft'),
             $row['status_label'],
             $row['price_per_kg'],
             $row['currency'],
@@ -83,22 +83,22 @@ class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress
     {
         if ($this->view === 'yearly') {
             return [
-                'Year',
-                'Average Price/Kg',
-                'Lowest Price/Kg',
-                'Highest Price/Kg',
-                'Currency',
-                '% Change',
+                __('exports.headings.year'),
+                __('exports.headings.average_price_kg'),
+                __('exports.headings.lowest_price_kg'),
+                __('exports.headings.highest_price_kg'),
+                __('exports.headings.currency'),
+                __('exports.headings.change'),
             ];
         }
 
         return [
-            'No. PR',
-            'PO Date',
-            'Status',
-            'Price/Kg',
-            'Currency',
-            '% Change',
+            __('exports.headings.pr_number'),
+            __('exports.history.po_date'),
+            __('exports.headings.status'),
+            __('exports.history.price_kg'),
+            __('exports.headings.currency'),
+            __('exports.headings.change'),
         ];
     }
 
@@ -109,7 +109,7 @@ class SupplierPriceHistoryExport implements FromCollection, TracksExportProgress
 
     public function title(): string
     {
-        return 'Price History - '.substr(str_replace(['/', '\\', '?', '*', ':', '[', ']'], '_', $this->materialName), 0, 15);
+        return __('exports.history.sheet_title', ['material' => substr(str_replace(['/', '\\', '?', '*', ':', '[', ']'], '_', $this->materialName), 0, 15)]);
     }
 
     public function columnWidths(): array

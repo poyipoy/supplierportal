@@ -1,12 +1,12 @@
 @extends('layouts.auth')
 
-@section('title', 'Registration Status Access - ADASI Supplier Portal')
+@section('title', __('registration.access_title'))
 
 @section('content')
 <header class="tw-mb-5">
-    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">Supplier Onboarding</p>
-    <h2 class="tw-m-0 tw-mt-1.5 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">Registration Status Access</h2>
-    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">Enter your Registration Reference and Access Key to track review progress or submit revisions.</p>
+    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">{{ __('registration.onboarding') }}</p>
+    <h2 class="tw-m-0 tw-mt-1.5 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">{{ __('registration.access_heading') }}</h2>
+    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">{{ __('registration.access_help') }}</p>
 </header>
 
 @if (session('error'))
@@ -27,7 +27,7 @@
     @csrf
 
     <div class="tw-grid tw-gap-1.5">
-        <label for="reference" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Registration Reference</label>
+        <label for="reference" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.reference') }}</label>
         <div class="tw-relative">
             <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
                 <x-ui.icon name="hash" size="sm" />
@@ -37,7 +37,7 @@
                 type="text"
                 name="reference"
                 class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-font-mono tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('reference') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
-                placeholder="e.g. REG-2026-AB12CD34"
+                placeholder="{{ __('registration.registration_example') }}"
                 value="{{ old('reference') }}"
                 required
                 autofocus
@@ -47,7 +47,7 @@
     </div>
 
     <div class="tw-grid tw-gap-1.5" x-data="{ showKey: false }">
-        <label for="access_key" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">Registration Access Key</label>
+        <label for="access_key" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.key') }}</label>
         <div class="tw-relative">
             <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
                 <x-ui.icon name="key" size="sm" />
@@ -57,7 +57,7 @@
                 :type="showKey ? 'text' : 'password'"
                 name="access_key"
                 class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-11 tw-font-mono tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('access_key') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
-                placeholder="Enter 32-character key"
+                placeholder="{{ __('registration.access_placeholder') }}"
                 required
             >
             <button
@@ -65,7 +65,7 @@
                 class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-1 tw-my-auto tw-inline-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container"
                 @click="showKey = !showKey"
                 tabindex="-1"
-                :aria-label="showKey ? 'Hide access key' : 'Show access key'"
+                :aria-label="showKey ? @js(__('registration.hide_key')) : @js(__('registration.show_key'))"
             >
                 <x-ui.icon name="eye" size="sm" x-show="!showKey" />
                 <x-ui.icon name="eye-off" size="sm" x-show="showKey" />
@@ -76,12 +76,12 @@
 
     <button type="submit" class="ui-focus-ring ui-motion tw-mt-1 tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90">
         <x-ui.icon name="arrow-right" size="sm" />
-        <span>View Registration Status</span>
+        <span>{{ __('registration.view_status') }}</span>
     </button>
 </form>
 
 <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-text-center tw-text-ui-xs tw-text-on-surface-variant">
-    <p class="tw-m-0">Need to register a new supplier? <a href="{{ route('supplier.register') }}" class="tw-font-semibold tw-text-primary hover:tw-underline">Start registration</a></p>
-    <p class="tw-m-0 tw-mt-1.5"><a href="{{ route('login') }}" class="tw-text-on-surface-variant hover:tw-text-primary hover:tw-underline">Sign in with active portal account</a></p>
+    <p class="tw-m-0">{{ __('registration.new_supplier') }} <a href="{{ route('supplier.register') }}" class="tw-font-semibold tw-text-primary hover:tw-underline">{{ __('registration.start') }}</a></p>
+    <p class="tw-m-0 tw-mt-1.5"><a href="{{ route('login') }}" class="tw-text-on-surface-variant hover:tw-text-primary hover:tw-underline">{{ __('registration.active_login') }}</a></p>
 </div>
 @endsection

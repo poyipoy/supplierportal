@@ -415,8 +415,8 @@ class FinanceDrpPaidTest extends TestCase
         // Verify that DRP Paid page renders disabled button and tooltip note
         $pageResponse = $this->actingAs($this->finance)->get(route('finance.drp.paid.index'));
         $pageResponse->assertOk();
-        $pageResponse->assertSee('Voucher Belum Lengkap');
-        $pageResponse->assertSee('Terdapat 1 tagihan yang belum diterbitkan Voucher Bayar');
+        $pageResponse->assertSee(__('finance.voucher.incomplete'));
+        $pageResponse->assertSee(__('finance.paid_ui.missing_vouchers', ['count' => 1]));
         $pageResponse->assertSee('disabled');
 
         $this->assertNull($batch->paid_at);
@@ -930,8 +930,8 @@ class FinanceDrpPaidTest extends TestCase
         // Assert supplier detail view shows the Overpayment banner and transfer mutation card
         $supplierShowResponse = $this->actingAs($this->supplier)->get(route('local-supplier.invoices.show', $invoice));
         $supplierShowResponse->assertOk();
-        $supplierShowResponse->assertSee('Pemberitahuan Kelebihan Pembayaran (Overpayment)');
-        $supplierShowResponse->assertSee('Riwayat Pembayaran &amp; Mutasi Transfer Bank', false);
+        $supplierShowResponse->assertSee(__('local_invoice.detail.overpayment_title'));
+        $supplierShowResponse->assertSee(__('local_invoice.labels.payment_history'));
     }
 
     public function test_mark_batch_paid_with_underpayment_sets_correction_required_and_partially_paid_batch(): void
@@ -1054,24 +1054,24 @@ class FinanceDrpPaidTest extends TestCase
         // Assert supplier detail view shows the Underpayment banner and transfer mutation card
         $supplierShowResponse = $this->actingAs($this->supplier)->get(route('local-supplier.invoices.show', $invoice));
         $supplierShowResponse->assertOk();
-        $supplierShowResponse->assertSee('Pembayaran Sebagian (Kurang Bayar)');
-        $supplierShowResponse->assertSee('Riwayat Pembayaran &amp; Mutasi Transfer Bank', false);
+        $supplierShowResponse->assertSee(__('local_invoice.detail.underpaid_title'));
+        $supplierShowResponse->assertSee(__('local_invoice.labels.payment_history'));
         $supplierShowResponse->assertSee('TRF-UNDERPAY-123');
         $supplierShowResponse->assertSee('Potong biaya admin bank transfer');
-        $supplierShowResponse->assertSee('Sisa: Rp 50');
+        $supplierShowResponse->assertSee(__('local_invoice.detail.remaining_amount', ['amount' => '50']));
 
         // Assert DRP Paid index view displays remaining amount breakdown
         $indexResponse = $this->actingAs($this->finance)->get(route('finance.drp.paid.index'));
         $indexResponse->assertOk();
-        $indexResponse->assertSee('Sebagian Sudah Dibayar');
-        $indexResponse->assertSee('Terbayar: Rp 450');
-        $indexResponse->assertSee('Sisa: Rp 50');
+        $indexResponse->assertSee(__('finance.paid_ui.partial'));
+        $indexResponse->assertSee(__('finance.paid_ui.paid_amount', ['amount' => '450']));
+        $indexResponse->assertSee(__('finance.paid_ui.remaining', ['amount' => '50']));
 
         // Assert DRP show view displays remaining amount breakdown cards
         $showResponse = $this->actingAs($this->finance)->get(route('finance.drp.show', $batch));
         $showResponse->assertOk();
-        $showResponse->assertSee('Sudah Terbayar');
-        $showResponse->assertSee('Sisa Belum Lunas');
+        $showResponse->assertSee(__('local_invoice.labels.paid'));
+        $showResponse->assertSee(__('local_invoice.labels.remaining'));
 
         // Settle the remaining 50.00 in a second mark-paid call
         $settleResponse = $this->actingAs($this->finance)->post(route('finance.drp.paid.mark-paid', $batch), [
@@ -1188,15 +1188,15 @@ class FinanceDrpPaidTest extends TestCase
             ],
         ]);
         $res->assertRedirect();
-        $res->assertSessionHas('success', fn ($msg) => str_contains($msg, 'Terdeteksi kelebihan bayar sebesar Rp 200'));
+        $res->assertSessionHas('success', __('finance.paid_feedback.paid_overpayment', ['number' => $batch1->batch_number, 'amount' => '200'], 'en'));
 
         // Visit DRP Paid list and assert overpayment badge and transfer amount appear
         $listRes = $this->actingAs($this->finance)->get(route('finance.drp.paid.index', ['tab' => 'paid']));
         $listRes->assertOk();
         $listRes->assertSee('DRP-BATCH-OVERPAY-1');
-        $listRes->assertSee('Overpayment: Rp 200 (Open)');
-        $listRes->assertSee('Transfer: Rp 1.200');
-        $listRes->assertSee('Refund Overpayment');
+        $listRes->assertSee(__('finance.paid_ui.overpayment', ['amount' => '200']));
+        $listRes->assertSee(__('finance.paid_ui.transferred', ['amount' => '1.200']));
+        $listRes->assertSee(__('finance.refund.title'));
 
         // Test filter overpayment_status=has_overpayment
         $filterAllOp = $this->actingAs($this->finance)->get(route('finance.drp.paid.index', [
@@ -1234,12 +1234,12 @@ class FinanceDrpPaidTest extends TestCase
         ]));
         $filterSettledAfter->assertOk();
         $filterSettledAfter->assertSee('DRP-BATCH-OVERPAY-1');
-        $filterSettledAfter->assertSee('Overpayment Selesai (Rp 200)');
+        $filterSettledAfter->assertSee(__('finance.paid_ui.overpayment_settled', ['amount' => '200']));
 
         // Test DRP Show
         $showRes = $this->actingAs($this->finance)->get(route('finance.drp.show', $batch1));
         $showRes->assertOk();
-        $showRes->assertSee('Overpayment Selesai (Rp 200)');
+        $showRes->assertSee(__('finance.paid_ui.overpayment_settled', ['amount' => '200']));
         $showRes->assertSee('Refund');
     }
 }

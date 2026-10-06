@@ -77,9 +77,9 @@ class EnforceAuthSessionSecurity
         $request->session()->regenerateToken();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => __('auth.feedback.unauthenticated')], 401);
         }
 
-        return redirect()->route('login')->with('status', 'Your session has ended. Please sign in again.');
+        return redirect()->route('login')->with('status', __('auth.feedback.session_ended'));
     }
 }

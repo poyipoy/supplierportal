@@ -26,13 +26,13 @@
     @endif
 
     @if($loading)
-        <div class="tw-grid tw-gap-2 tw-p-4" role="status" aria-label="Loading data">
+        <div class="tw-grid tw-gap-2 tw-p-4" role="status" aria-label="{{ __('common.states.loading') }}">
             @for($row = 0; $row < 5; $row++)<x-ui.skeleton class="tw-h-10 tw-w-full" />@endfor
         </div>
     @elseif($error)
-        <div class="tw-p-4"><x-ui.alert tone="error" title="Unable to load data">{{ $error }}</x-ui.alert></div>
+        <div class="tw-p-4"><x-ui.alert tone="error" :title="__('common.states.load_failed')">{{ $error }}</x-ui.alert></div>
     @elseif($empty)
-        @isset($emptyState){{ $emptyState }}@else<x-ui.empty-state title="No data available" description="Records will appear here when they become available." />@endisset
+        @isset($emptyState){{ $emptyState }}@else<x-ui.empty-state :title="__('common.states.empty')" :description="__('common.states.empty_description')" />@endisset
     @else
         <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full tw-min-w-0 tw-max-w-full">{{ $slot }}</div>
     @endif

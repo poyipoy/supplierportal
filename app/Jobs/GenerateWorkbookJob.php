@@ -25,7 +25,12 @@ class GenerateWorkbookJob implements ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(public readonly int $exportJobId) {}
+    public string $locale = 'en';
+
+    public function __construct(public readonly int $exportJobId, string $locale = 'en')
+    {
+        $this->locale = \App\Services\UserPreferenceService::normalizeLocale($locale);
+    }
 
     public function handle(ExportProgressService $progress): void
     {
@@ -41,6 +46,7 @@ class GenerateWorkbookJob implements ShouldQueue
 
         $exportClass = $record->export_class;
         $export = new $exportClass(...$record->export_args);
+        $export->setExportLocale($this->locale);
 
         if (! $export instanceof GeneratesWorkbook) {
             throw new RuntimeException('The export does not support workbook generation.');
@@ -53,7 +59,13 @@ class GenerateWorkbookJob implements ShouldQueue
         $path = $record->file_path ?: ('exports/'.$record->user_id.'/'.$record->getKey().'/'.$record->file_name);
         $disk = $record->disk ?: 'private';
 
-        $export->generateWorkbook($path, $disk);
+        $previousLocale = app()->getLocale();
+        try {
+            app()->setLocale(\App\Services\UserPreferenceService::normalizeLocale($this->locale));
+            $export->generateWorkbook($path, $disk);
+        } finally {
+            app()->setLocale($previousLocale);
+        }
 
         FinalizeExportJob::dispatch((int) $record->getKey())->onQueue('exports');
     }

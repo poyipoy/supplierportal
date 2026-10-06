@@ -60,6 +60,7 @@ class QuickAccessService
             $available[$key] = [
                 'key' => $key,
                 ...$item,
+                'label' => __($item['label']),
                 'url' => ! empty($item['purchasing_list'])
                     ? PurchasingNavigation::listUrl($item['route'])
                     : route($item['route']),

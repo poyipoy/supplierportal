@@ -17,10 +17,12 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('no-store')->name('login.store');
 
-    Route::get('forgot-password', [PasswordAssistanceController::class, 'show'])
-        ->middleware('no-store')->name('password.request');
-
 });
+
+// This is an informational assistance page only. Allow an authenticated account
+// to use its saved locale for the copied email template; no reset flow is added.
+Route::get('forgot-password', [PasswordAssistanceController::class, 'show'])
+    ->middleware('no-store')->name('password.request');
 
 Route::middleware(['mfa.pending', 'no-store'])->group(function () {
     Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'show'])

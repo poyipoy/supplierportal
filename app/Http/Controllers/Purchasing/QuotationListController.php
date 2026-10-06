@@ -44,7 +44,7 @@ class QuotationListController extends Controller
         if ($request->filled('date_from') && $request->filled('date_to') && $request->date_to < $request->date_from) {
             return back()
                 ->withInput()
-                ->withErrors(['date_to' => 'End date cannot be before start date']);
+                ->withErrors(['date_to' => __('purchasing.copy.end_date_cannot_be_before_start_date_36b168')]);
         }
 
         $query = Quotation::with(['supplier', 'purchaseRequisition.period', 'items'])
@@ -137,7 +137,7 @@ class QuotationListController extends Controller
             $eligible = $item->is_available && ($award === null || $award->purchase_order_id === null);
             $skipReason = match (true) {
                 ! $item->is_available => 'Unavailable - skipped',
-                $award?->purchase_order_id !== null => 'Already assigned to PO - skipped',
+                $award?->purchase_order_id !== null => __('purchasing.copy.already_assigned_to_po_skipped'),
                 default => null,
             };
 
@@ -164,7 +164,7 @@ class QuotationListController extends Controller
         $chatAvailable = in_array($quotation->status, ['submitted', 'revision_requested', 'accepted', 'all_unavailable'], true);
         $supplierDisplayName = $quotation->supplier->supplier->company_name
             ?? $quotation->supplier->name
-            ?? 'Supplier';
+            ?? __('purchasing.copy.supplier');
 
         return view('purchasing.quotations.show', compact(
             'quotation',
@@ -218,23 +218,23 @@ class QuotationListController extends Controller
                     ->firstOrFail();
 
                 if ((int) $lockedQuotation->pr_id !== (int) $lockedPr->id) {
-                    throw new InvalidArgumentException('The quotation no longer belongs to this Purchase Requisition.');
+                    throw new InvalidArgumentException(__('purchasing.copy.the_quotation_no_longer_belongs_to_this_purchase_requisition'));
                 }
 
                 if ($lockedPr->status === 'completed') {
-                    throw new InvalidArgumentException('A Purchase Order cannot be generated because this Purchase Requisition is already completed.');
+                    throw new InvalidArgumentException(__('purchasing.copy.a_purchase_order_cannot_be_generated_because_this_purchase_requisition_is_already_completed'));
                 }
 
                 if (! in_array($lockedQuotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
-                    throw new InvalidArgumentException("This quotation is not eligible for PO generation in its current status '{$lockedQuotation->status}'.");
+                    throw new InvalidArgumentException(__('purchasing.errors.ineligible_quotation', ['status' => \App\Support\StatusHelper::quotationLabel($lockedQuotation->status)]));
                 }
 
                 if ($lockedQuotation->isExpired()) {
-                    throw new InvalidArgumentException('This quotation has expired. Ask the supplier to submit a revision before generating a Purchase Order.');
+                    throw new InvalidArgumentException(__('purchasing.copy.this_quotation_has_expired_ask_the_supplier_to_submit_a_revision_before_generating_a_purchase_order'));
                 }
 
                 if ($lockedQuotation->purchaseOrders()->exists()) {
-                    throw new InvalidArgumentException('This quotation is already assigned to a Purchase Order.');
+                    throw new InvalidArgumentException(__('purchasing.copy.this_quotation_is_already_assigned_to_a_purchase_order'));
                 }
 
                 $lockedQuotationItems = QuotationItem::query()
@@ -253,7 +253,7 @@ class QuotationListController extends Controller
                 $selections = [];
                 foreach ($lockedQuotationItems as $quotationItem) {
                     if (! $lockedPrItems->has($quotationItem->pr_item_id)) {
-                        throw new InvalidArgumentException('A quotation item no longer belongs to this Purchase Requisition.');
+                        throw new InvalidArgumentException(__('purchasing.copy.a_quotation_item_no_longer_belongs_to_this_purchase_requisition'));
                     }
 
                     $existingAward = $lockedAwards->get($quotationItem->pr_item_id);
@@ -265,7 +265,7 @@ class QuotationListController extends Controller
                 }
 
                 if ($selections === []) {
-                    throw new InvalidArgumentException('No available quotation items remain eligible for Purchase Order generation.');
+                    throw new InvalidArgumentException(__('purchasing.copy.no_available_quotation_items_remain_eligible_for_purchase_order_generation'));
                 }
 
                 $awards = $awardService->awardBatch($lockedPr, $selections, $request->user());
@@ -275,7 +275,7 @@ class QuotationListController extends Controller
                 ]);
 
                 if ($purchaseOrders->count() !== 1) {
-                    throw new InvalidArgumentException('Direct quotation generation must produce exactly one Purchase Order.');
+                    throw new InvalidArgumentException(__('purchasing.copy.direct_quotation_generation_must_produce_exactly_one_purchase_order'));
                 }
 
                 return $purchaseOrders->firstOrFail();
@@ -287,16 +287,16 @@ class QuotationListController extends Controller
 
             return back()->withInput()->with(
                 'error',
-                'The quotation selection or Purchase Order state changed while it was being finalized. Please refresh and try again.'
+                __('purchasing.copy.the_quotation_selection_or_purchase_order_state_changed_while_it_was_being_finalized_please_refresh')
             );
         } catch (\Throwable $exception) {
             report($exception);
 
-            return back()->withInput()->with('error', 'Failed to generate the Purchase Order from this quotation.');
+            return back()->withInput()->with('error', __('purchasing.copy.failed_to_generate_the_purchase_order_from_this_quotation'));
         }
 
         return redirect()->route('purchasing.purchase-orders.show', $po)
-            ->with('success', "Purchase Order {$po->po_number} successfully created from this quotation!");
+            ->with('success', __('purchasing.feedback.po_created', ['po' => $po->po_number]));
     }
 
     public function accept(Request $request, $id)
@@ -307,13 +307,13 @@ class QuotationListController extends Controller
                 $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
 
                 if (! $quotation->canApproveBy(auth()->user())) {
-                    throw new InvalidArgumentException('This quotation cannot be accepted.');
+                    throw new InvalidArgumentException(__('purchasing.copy.this_quotation_cannot_be_accepted'));
                 }
                 if (! $quotation->hasAvailableItems()) {
-                    throw new InvalidArgumentException('This quotation cannot be accepted because all items are marked as not available by the supplier.');
+                    throw new InvalidArgumentException(__('purchasing.copy.this_quotation_cannot_be_accepted_because_all_items_are_marked_as_not_available_by_the_supplier'));
                 }
                 if ($quotation->isExpired()) {
-                    throw new InvalidArgumentException('This quotation has expired. Ask the supplier to submit a revision before accepting it.');
+                    throw new InvalidArgumentException(__('purchasing.copy.this_quotation_has_expired_ask_the_supplier_to_submit_a_revision_before_accepting_it'));
                 }
 
                 $quotation->update([
@@ -329,9 +329,9 @@ class QuotationListController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        $this->notifySupplierOfReview($quotation, 'accepted', 'Quotation Accepted', 'Quotation for PR :pr_number has been accepted by Purchasing.');
+        $this->notifySupplierOfReview($quotation, 'accepted', 'purchasing.notify.accepted_title', 'purchasing.notify.accepted_body');
 
-        return back()->with('success', 'Quotation successfully accepted.');
+        return back()->with('success', __('purchasing.copy.quotation_successfully_accepted'));
     }
 
     public function reject(Request $request, $id)
@@ -339,7 +339,7 @@ class QuotationListController extends Controller
         $request->validate([
             'reviewer_notes' => 'required|string|max:1000',
         ], [
-            'reviewer_notes.required' => 'Rejection notes are required.',
+            'reviewer_notes.required' => __('purchasing.copy.rejection_notes_are_required'),
         ]);
 
         try {
@@ -348,10 +348,10 @@ class QuotationListController extends Controller
                 $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
 
                 if (! $quotation->canApproveBy(auth()->user())) {
-                    throw new InvalidArgumentException('This quotation cannot be rejected.');
+                    throw new InvalidArgumentException(__('purchasing.copy.this_quotation_cannot_be_rejected'));
                 }
                 if (! $quotation->hasAvailableItems()) {
-                    throw new InvalidArgumentException('Cannot reject a quotation that has no available items.');
+                    throw new InvalidArgumentException(__('purchasing.copy.cannot_reject_a_quotation_that_has_no_available_items'));
                 }
 
                 $quotation->update([
@@ -367,9 +367,9 @@ class QuotationListController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        $this->notifySupplierOfReview($quotation, 'rejected', 'Quotation Rejected', 'Quotation for PR :pr_number was rejected by Purchasing.');
+        $this->notifySupplierOfReview($quotation, 'rejected', 'purchasing.notify.rejected_title', 'purchasing.notify.rejected_body');
 
-        return back()->with('success', 'Quotation successfully rejected.');
+        return back()->with('success', __('purchasing.copy.quotation_successfully_rejected'));
     }
 
     /**
@@ -380,7 +380,7 @@ class QuotationListController extends Controller
         $request->validate([
             'revision_note' => 'required|string|max:1000',
         ], [
-            'revision_note.required' => 'Revision notes are required.',
+            'revision_note.required' => __('purchasing.copy.revision_notes_are_required'),
         ]);
 
         $revisionNote = trim((string) $request->input('revision_note', ''));
@@ -390,10 +390,10 @@ class QuotationListController extends Controller
                 $quotation->load(['supplier.supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
 
                 if ($quotation->purchaseRequisition->status === 'completed') {
-                    throw new InvalidArgumentException('The PR is completed. A quotation revision cannot be requested.');
+                    throw new InvalidArgumentException(__('purchasing.copy.the_pr_is_completed_a_quotation_revision_cannot_be_requested'));
                 }
                 if (! $quotation->canRequestRevision()) {
-                    throw new InvalidArgumentException('A revision can only be requested for submitted or unavailable quotations that have not been used to create a PO.');
+                    throw new InvalidArgumentException(__('purchasing.copy.a_revision_can_only_be_requested_for_submitted_or_unavailable_quotations_that_have_not_been_used_to'));
                 }
 
                 $quotation->update([
@@ -410,16 +410,14 @@ class QuotationListController extends Controller
                     'supplier_user_id' => $quotation->supplier_id,
                 ]);
 
-                $reason = ! $quotation->hasAvailableItems()
-                    ? 'because all items were marked as not available.'
-                    : 'because the quotation validity has expired.';
-
-                $message = 'Please revise the quotation for PR '
-                    .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
-                    .' '.$reason;
+                $message = __(! $quotation->hasAvailableItems()
+                    ? 'notifications.conversation.revise_unavailable'
+                    : 'notifications.conversation.revise_expired', [
+                        'pr_number' => $quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id,
+                    ]);
 
                 if ($revisionNote !== '') {
-                    $message .= "\n\nRevision notes: ".$revisionNote;
+                    $message = __('notifications.conversation.with_revision_note', ['message' => $message, 'note' => $revisionNote]);
                 }
 
                 $conversation->messages()->create([
@@ -436,8 +434,8 @@ class QuotationListController extends Controller
         $this->notifySupplierOfReview(
             $quotation,
             'revision_requested',
-            'Quotation Revision Requested',
-            'Purchasing requested a quotation revision for PR :pr_number.',
+            'purchasing.copy.quotation_revision_requested',
+            'purchasing.notify.revision_body',
         );
 
         $showParameters = [$quotation];
@@ -446,7 +444,7 @@ class QuotationListController extends Controller
         }
 
         return redirect()->route('purchasing.quotations.show', $showParameters)
-            ->with('success', 'Quotation revision request has been sent to the supplier.');
+            ->with('success', __('purchasing.copy.quotation_revision_request_has_been_sent_to_the_supplier'));
     }
 
     private function notifySupplierOfReview(Quotation $quotation, string $eventSuffix, string $title, string $message): void

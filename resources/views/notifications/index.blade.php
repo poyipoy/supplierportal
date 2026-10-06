@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Notifications - ADASI Portal')
-@section('page-title', 'Notifications')
+@section('title', __('common.notification.title').' - ADASI Portal')
+@section('page-title', __('common.notification.title'))
 
 @section('content')
 @php
@@ -9,15 +9,15 @@
 
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header
-        title="Notification Center"
-        description="Persistent workflow updates and account activity across the portal."
-        eyebrow="Activity"
+        :title="__('common.review.notification_center')"
+        :description="__('common.review.notification_description')"
+        :eyebrow="__('common.review.activity')"
     >
         <x-slot:actions>
             <form action="{{ route('notifications.mark-all-read') }}" method="POST">
                 @csrf
                 <button type="submit" class="ui-focus-ring ui-motion tw-inline-flex tw-h-9 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-3 tw-text-ui-sm tw-font-medium tw-text-on-surface hover:tw-bg-surface-container">
-                    <x-ui.icon name="check-check" />Mark All as Read
+                    <x-ui.icon name="check-check" />{{ __('common.notification.mark_all') }}
                 </button>
             </form>
         </x-slot:actions>
@@ -25,9 +25,9 @@
 
     <div class="tw-grid tw-gap-5 lg:tw-grid-cols-[16rem_minmax(0,1fr)] lg:tw-items-start">
         {{-- Category Sidebar --}}
-        <nav class="tw-border tw-border-outline tw-bg-surface-container" aria-label="Notification categories">
+        <nav class="tw-border tw-border-outline tw-bg-surface-container" aria-label="{{ __('common.notification.categories') }}">
             <div class="tw-border-b tw-border-outline-variant tw-bg-surface-low tw-px-4 tw-py-3">
-                <h2 class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Categories</h2>
+                <h2 class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">{{ __('common.fields.category') }}</h2>
             </div>
             <div class="tw-divide-y tw-divide-outline-variant">
                 @foreach($categoryOptions as $key => $category)
@@ -77,8 +77,8 @@
                         </div>
                         <div class="tw-min-w-0 tw-flex-1">
                             <div class="tw-flex tw-items-start tw-justify-between tw-gap-2">
-                                <span class="tw-text-ui-sm {{ $isUnread ? 'tw-font-semibold' : 'tw-font-medium' }} tw-truncate">{{ $notif->data['title'] ?? 'Notification' }}</span>
-                                <span class="tw-shrink-0 tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">{{ $notif->created_at->diffForHumans(short: true) }}</span>
+                                <span class="tw-text-ui-sm {{ $isUnread ? 'tw-font-semibold' : 'tw-font-medium' }} tw-truncate">{{ $notif->data['title'] ?? __('common.notification.single') }}</span>
+                                <span class="tw-shrink-0 tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">{{ $notif->created_at->locale(app()->getLocale())->diffForHumans(short: true) }}</span>
                             </div>
                             <div class="tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant tw-line-clamp-2">{{ $notif->data['message'] ?? '-' }}</div>
                             <div class="tw-mt-1.5 tw-flex tw-items-center tw-gap-3">
@@ -86,14 +86,14 @@
                                     <x-ui.icon :name="$notifCategory['icon']" />{{ $notifCategory['label'] }}
                                 </span>
                                 @if($isUnread)
-                                    <span class="tw-inline-flex tw-h-1.5 tw-w-1.5 tw-rounded-full tw-bg-primary" aria-label="Unread"></span>
+                                    <span class="tw-inline-flex tw-h-1.5 tw-w-1.5 tw-rounded-full tw-bg-primary" aria-label="{{ __('common.review.unread') }}"></span>
                                 @endif
                             </div>
                         </div>
                     </a>
                 @empty
                     <div class="tw-py-12 tw-px-5">
-                        <x-empty-state :icon="$selectedOption['icon']" title="No notifications in this category." text="New activity will appear here when it arrives." />
+                        <x-empty-state :icon="$selectedOption['icon']" :title="__('common.review.empty_notifications')" :text="__('common.review.new_activity')" />
                     </div>
                 @endforelse
             </div>

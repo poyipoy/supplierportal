@@ -35,7 +35,7 @@
         @if($title)<div class="tw-font-semibold">{{ $title }}</div>@endif
         <div class="tw-text-ui-sm">{{ $slot }}</div>
     </div>
-    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-11 tw-w-11 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full hover:tw-bg-surface" @click="close()" aria-label="Dismiss notification">
+    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-11 tw-w-11 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full hover:tw-bg-surface" @click="close()" aria-label="{{ __('common.notification.dismiss') }}">
         <x-ui.icon name="x" size="sm" />
     </button>
 </div>

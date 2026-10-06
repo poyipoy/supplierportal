@@ -40,23 +40,23 @@ class LocalGrImportService
             $rowErrors = [];
 
             foreach ($row['_formula_columns'] ?? [] as $column) {
-                $rowErrors[] = [$column, 'Excel formulas are not allowed.'];
+                $rowErrors[] = [$column, __('local_procurement.import.formula')];
             }
 
             foreach (['gr_number', 'po_number', 'qty', 'gr_date'] as $field) {
                 if (! isset($row[$field]) || $row[$field] === null || $row[$field] === '') {
-                    $rowErrors[] = [$field, 'This field is required.'];
+                    $rowErrors[] = [$field, __('local_procurement.import.field_required')];
                 }
             }
 
             $grDate = $this->date($row['gr_date'] ?? null);
             if (! empty($row['gr_date']) && ! $grDate) {
-                $rowErrors[] = ['gr_date', 'Use a valid date format (YYYY-MM-DD or Excel date).'];
+                $rowErrors[] = ['gr_date', __('local_procurement.import.date_invalid')];
             }
 
             $qty = $this->decimal($row['qty'] ?? null);
             if (($row['qty'] !== null && $row['qty'] !== '') && ($qty === null || bccomp($qty, '0', 4) <= 0)) {
-                $rowErrors[] = ['qty', 'Quantity must be a positive number.'];
+                $rowErrors[] = ['qty', __('local_procurement.validation.quantity_positive')];
             }
 
             foreach ($rowErrors as [$field, $message]) {
@@ -90,7 +90,7 @@ class LocalGrImportService
                 $errors[] = [
                     'row' => $firstRow,
                     'column' => 'po_number',
-                    'message' => "GR '{$groupRows->first()['gr_number']}' is linked to multiple different PO numbers: {$originalPos}.",
+                    'message' => __('local_procurement.import.gr_po_conflict', ['gr' => $groupRows->first()['gr_number'], 'pos' => $originalPos]),
                 ];
             }
 
@@ -100,7 +100,7 @@ class LocalGrImportService
                 $errors[] = [
                     'row' => $firstRow,
                     'column' => 'gr_date',
-                    'message' => "GR '{$groupRows->first()['gr_number']}' has conflicting calendar dates: {$distinctDates->implode(', ')}.",
+                    'message' => __('local_procurement.import.gr_date_conflict', ['gr' => $groupRows->first()['gr_number'], 'dates' => $distinctDates->implode(', ')]),
                 ];
             }
         }
@@ -117,7 +117,7 @@ class LocalGrImportService
                 $errors[] = [
                     'row' => $first['_row'],
                     'column' => 'qty',
-                    'message' => "Aggregated quantity for GR '{$first['gr_number']}' must be greater than zero.",
+                    'message' => __('local_procurement.import.gr_qty_positive', ['gr' => $first['gr_number']]),
                 ];
             }
 
@@ -163,7 +163,7 @@ class LocalGrImportService
                 $errors[] = [
                     'row' => $group['_row'],
                     'column' => 'po_number',
-                    'message' => "GR {$group['gr_number']} references PO {$group['po_number']}, but no matching Local PO exists.",
+                    'message' => __('local_procurement.import.gr_po_missing', ['gr' => $group['gr_number'], 'po' => $group['po_number']]),
                 ];
                 $group['action'] = 'UNMATCHED_PO';
 
@@ -178,7 +178,7 @@ class LocalGrImportService
                 $errors[] = [
                     'row' => $group['_row'],
                     'column' => 'po_number',
-                    'message' => "New GR cannot be added to a closed or cancelled PO ({$group['po_number']}).",
+                    'message' => __('local_procurement.import.gr_closed_po', ['po' => $group['po_number']]),
                 ];
                 $group['action'] = 'PO_CLOSED';
             }
@@ -212,7 +212,7 @@ class LocalGrImportService
                 $errors[] = [
                     'row' => $group['_row'],
                     'column' => 'gr_number',
-                    'message' => "GR '{$group['gr_number']}' already exists with conflicting data (PO, Date, or Qty differs).",
+                    'message' => __('local_procurement.import.gr_existing_conflict', ['gr' => $group['gr_number']]),
                 ];
                 $group['action'] = 'CONFLICT';
             }
@@ -235,7 +235,7 @@ class LocalGrImportService
 
             if (! $result['success']) {
                 throw ValidationException::withMessages([
-                    'import_file' => collect($result['errors'])->map(fn ($e) => "Row {$e['row']} {$e['column']}: {$e['message']}")->all(),
+                    'import_file' => collect($result['errors'])->map(fn ($e) => __('local_procurement.import.row_error', ['row' => $e['row'], 'column' => $e['column'], 'message' => $e['message']]))->all(),
                 ]);
             }
 

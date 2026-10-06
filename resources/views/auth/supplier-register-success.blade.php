@@ -1,6 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Registration Submitted - ADASI Supplier Portal')
+@section('title', __('registration.submitted_title'))
 
 @section('content')
 <style>
@@ -12,16 +12,16 @@
         <x-ui.icon name="check-circle" size="lg" />
     </div>
 
-    <h2 class="tw-m-0 tw-text-ui-xl tw-font-bold tw-text-on-surface">Registration Submitted!</h2>
+    <h2 class="tw-m-0 tw-text-ui-xl tw-font-bold tw-text-on-surface">{{ __('registration.submitted') }}</h2>
     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">
-        Thank you, <strong class="tw-text-on-surface">{{ $companyName }}</strong>. Your registration application has been received and queued for review.
+        {{ __('registration.thanks', ['company' => $companyName]) }}
     </p>
 
     {{-- STATUS CHIP --}}
     <div class="tw-mt-3">
         <span class="ui-status-chip ui-status-chip--warning">
             <x-ui.icon name="clock" size="xs" />
-            Status: PENDING REVIEW
+            {{ __('common.fields.status') }}: {{ __('registration.statuses.pending') }}
         </span>
     </div>
 
@@ -30,14 +30,14 @@
         <div class="tw-flex tw-items-start tw-gap-2.5 tw-text-warning-dim tw-bg-warning/10 tw-p-3 tw-rounded-ui-xs tw-mb-4">
             <x-ui.icon name="alert-triangle" size="sm" class="tw-shrink-0 tw-mt-0.5" />
             <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface">
-                <strong>IMPORTANT:</strong> Save your Access Key now! For security reasons, the Access Key is <strong>only shown once</strong> and cannot be retrieved later. You need both the Reference and Access Key to track review status and perform revisions.
+                {{ __('registration.important_key') }}
             </p>
         </div>
 
         {{-- REGISTRATION REFERENCE --}}
         <div class="tw-mb-4">
             <label class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant tw-uppercase tw-tracking-wider tw-mb-1">
-                Registration Reference
+                {{ __('registration.reference') }}
             </label>
             <div class="tw-flex tw-items-center tw-justify-between tw-bg-surface tw-border tw-border-outline-variant tw-rounded-ui-xs tw-p-2.5">
                 <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-primary">{{ $reference }}</span>
@@ -48,7 +48,7 @@
                 >
                     <x-ui.icon name="copy" size="xs" x-show="!copiedRef" />
                     <x-ui.icon name="check" size="xs" x-show="copiedRef" />
-                    <span x-text="copiedRef ? 'Copied' : 'Copy'">Copy</span>
+                    <span x-text="copiedRef ? @js(__('registration.copied')) : @js(__('common.actions.copy'))">{{ __('common.actions.copy') }}</span>
                 </button>
             </div>
         </div>
@@ -56,7 +56,7 @@
         {{-- REGISTRATION ACCESS KEY --}}
         <div>
             <label class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant tw-uppercase tw-tracking-wider tw-mb-1">
-                Registration Access Key (Private Secret)
+                {{ __('registration.private_key') }}
             </label>
             <div class="tw-flex tw-items-center tw-justify-between tw-bg-surface tw-border tw-border-outline-variant tw-rounded-ui-xs tw-p-2.5">
                 <span class="tw-font-mono tw-text-ui-xs tw-text-on-surface tw-break-all">{{ $accessKey }}</span>
@@ -67,7 +67,7 @@
                 >
                     <x-ui.icon name="copy" size="xs" x-show="!copiedKey" />
                     <x-ui.icon name="check" size="xs" x-show="copiedKey" />
-                    <span x-text="copiedKey ? 'Copied' : 'Copy'">Copy</span>
+                    <span x-text="copiedKey ? @js(__('registration.copied')) : @js(__('common.actions.copy'))">{{ __('common.actions.copy') }}</span>
                 </button>
             </div>
         </div>
@@ -80,14 +80,14 @@
             class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-primary-foreground tw-no-underline hover:tw-brightness-95"
         >
             <x-ui.icon name="search" size="sm" />
-            <span>Check Registration Status</span>
+            <span>{{ __('registration.check_status') }}</span>
         </a>
 
         <a
             href="{{ route('login') }}"
             class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-no-underline hover:tw-bg-surface-container"
         >
-            <span>Return to Portal Login</span>
+            <span>{{ __('registration.return_login') }}</span>
         </a>
     </div>
 </div>

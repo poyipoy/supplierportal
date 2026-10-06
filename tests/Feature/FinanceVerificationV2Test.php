@@ -14,6 +14,7 @@ use App\Services\LocalInvoice\LocalPoReferenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use InvalidArgumentException;
 use Tests\TestCase;
 
@@ -76,7 +77,11 @@ class FinanceVerificationV2Test extends TestCase
         );
 
         $finance = User::factory()->create(['role' => 'finance']);
-        $invoice = $this->receiptService->recordReceipt($finance, $invoice);
+        $receiptQr = URL::signedRoute('receipts.verify-supplier', [
+            'receipt' => $invoice->receipt->receipt_number,
+            'revision' => $invoice->revision_number,
+        ]);
+        $invoice = $this->receiptService->recordReceipt($finance, $invoice, scannedReceiptQr: $receiptQr);
 
         return [$invoice, $finance, $supplierUser];
     }
@@ -197,7 +202,7 @@ class FinanceVerificationV2Test extends TestCase
         $response = $this->actingAs($finance)->get(route('finance.dashboard'));
         $response->assertOk();
         $response->assertSee('Payment Forecast');
-        $response->assertSee('Akumulasi Invoice Ready to Pay');
+        $response->assertSee(__('finance.labels.ready_accumulation'));
 
         $this->actingAs($finance)->get(route('finance.invoices.index'))->assertOk();
         $this->actingAs($finance)->get(route('finance.drp.supplier'))->assertOk();
@@ -239,7 +244,7 @@ class FinanceVerificationV2Test extends TestCase
         [$invoice, $finance] = $this->createReadyForVerificationInvoice();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Tax Invoice (Faktur Pajak) cannot be NOT APPLICABLE for PKP suppliers.');
+        $this->expectExceptionMessage(__('local_invoice.validation.pkp_tax_required'));
 
         $this->verificationService->verifySectionA($invoice, [
             'invoice_check' => LocalInvoiceVerification::CHECK_OK,
@@ -255,7 +260,7 @@ class FinanceVerificationV2Test extends TestCase
         [$invoice, $finance] = $this->createReadyForVerificationInvoice();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Delivery Note (Surat Jalan) cannot be NOT APPLICABLE for goods (Barang) suppliers.');
+        $this->expectExceptionMessage(__('local_invoice.validation.goods_dn_required'));
 
         $this->verificationService->verifySectionA($invoice, [
             'invoice_check' => LocalInvoiceVerification::CHECK_OK,
@@ -287,7 +292,7 @@ class FinanceVerificationV2Test extends TestCase
             ], $finance);
             $this->fail('Expected InvalidArgumentException for empty notes');
         } catch (InvalidArgumentException $e) {
-            $this->assertStringContainsString('Verification notes are mandatory', $e->getMessage());
+            $this->assertSame(__('local_invoice.validation.ppn_notes'), $e->getMessage());
         }
 
         // Missing verified_ppn must throw
@@ -299,7 +304,7 @@ class FinanceVerificationV2Test extends TestCase
             ], $finance);
             $this->fail('Expected InvalidArgumentException for missing verified_ppn');
         } catch (InvalidArgumentException $e) {
-            $this->assertStringContainsString('Corrected PPN amount is mandatory', $e->getMessage());
+            $this->assertSame(__('local_invoice.validation.corrected_ppn'), $e->getMessage());
         }
     }
 
@@ -359,8 +364,8 @@ class FinanceVerificationV2Test extends TestCase
         $responseInitial = $this->actingAs($finance)->get(route('finance.invoices.show', $invoice));
         $responseInitial->assertOk();
         $responseInitial->assertDontSee('Terkunci (Read-Only)');
-        $responseInitial->assertSee('Simpan Section A');
-        $responseInitial->assertSee('Simpan Section B');
+        $responseInitial->assertSee(__('finance.actions.save_a'));
+        $responseInitial->assertSee(__('finance.actions.save_b'));
         $responseInitial->assertDontSee('<fieldset disabled', false);
 
         // 2. Perform verification and approve to READY_TO_PAY
@@ -392,9 +397,9 @@ class FinanceVerificationV2Test extends TestCase
         $responseLocked->assertOk();
 
         // Must display locked chips and notices
-        $responseLocked->assertSee('Terkunci (Read-Only)');
-        $responseLocked->assertSee('Section A telah terkunci dan disetujui');
-        $responseLocked->assertSee('Section B telah diverifikasi dan dikunci');
+        $responseLocked->assertSee(__('local_invoice.labels.read_only'));
+        $responseLocked->assertSee(__('finance.invoice_ui.section_a_locked'));
+        $responseLocked->assertSee(__('finance.labels.tax_locked'));
 
         // Form controls must be inside fieldset disabled
         $responseLocked->assertSee('<fieldset disabled', false);

@@ -2,9 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const layout = await readFile(new URL('../../resources/views/layouts/app.blade.php', import.meta.url), 'utf8');
 const exportView = await readFile(new URL('../../resources/views/exports/index.blade.php', import.meta.url), 'utf8');
+// Resolve only the bounded literal copy map used by this view; no Laravel boot or DB access.
+const copyPattern = /const copy = @js\(\[([\s\S]*?)\]\);/;
+const copyEntries = [...exportView.match(copyPattern)[1].matchAll(/'([a-z_]+)'\s*=>\s*__\('([a-z0-9_.]+)'\)/g)];
+const copyKeys = [...new Set(copyEntries.map(entry => entry[2]))];
+const translationScript = `require 'vendor/autoload.php'; $result=[]; foreach(json_decode($argv[1],true) as $key){ [$domain,$item]=explode('.', $key, 2); $lines=require 'lang/en/'.$domain.'.php'; $result[$key]=Illuminate\\Support\\Arr::get($lines,$item,$key); } echo json_encode($result,JSON_THROW_ON_ERROR);`;
+const englishCopy = JSON.parse(execFileSync('php', ['-r', translationScript, JSON.stringify(copyKeys)], {cwd: fileURLToPath(new URL('../../', import.meta.url)), encoding: 'utf8'}));
+const resolvedCopy = Object.fromEntries(copyEntries.map(entry => [entry[1], englishCopy[entry[2]]]));
+function resolveViewCopy(script) {
+    return script.replace(copyPattern, `const copy = ${JSON.stringify(resolvedCopy)};`);
+}
 const cases = JSON.parse(await readFile(new URL('../Fixtures/regional-timestamp-cases.json', import.meta.url), 'utf8'));
 const registry = {
     number_profiles: {},
@@ -72,12 +84,13 @@ test('null, missing, malformed and calendar-date inputs use the neutral fallback
 test('only the three approved polling labels use displayTimestamp and keep raw fields', () => {
     assert.match(exportView, /formatDate\s*=\s*\(value\)\s*=>/);
     assert.match(exportView, /const regionalTimestamp\s*=\s*\(value\)\s*=>\s*window\.AdasiPreferences\.displayTimestamp\(value,\s*formatDate\)/);
-    assert.equal((exportView.match(/regionalTimestamp\(item\.(?:created_at|completed_at|expires_at)\)/g) || []).length, 3);
+    assert.equal((exportView.match(/regionalTimestamp\(item\.created_at\)|datedLabel\('(?:completed_at|expires_at)', item\.(?:completed_at|expires_at)\)/g) || []).length, 3);
     assert.doesNotMatch(exportView, /regionalTimestamp\(item\.(?!created_at|completed_at|expires_at)/);
     assert.equal((exportView.match(/formatDate\(item\.(?:created_at|completed_at|expires_at)\)/g) || []).length, 0);
     assert.match(exportView, /escapeHtml\(regionalTimestamp\(item\.created_at\)\)/);
-    assert.match(exportView, /escapeHtml\(regionalTimestamp\(item\.completed_at\)\)/);
-    assert.match(exportView, /escapeHtml\(regionalTimestamp\(item\.expires_at\)\)/);
+    assert.match(exportView, /escapeHtml\(datedLabel\('completed_at', item\.completed_at\)\)/);
+    assert.match(exportView, /escapeHtml\(datedLabel\('expires_at', item\.expires_at\)\)/);
+    assert.match(exportView, /copy\[key\]\.replace\(':date', regionalTimestamp\(date\)\)/);
 });
 
 test('polling renders escaped Regional timestamps without mutating the response items', async () => {
@@ -103,7 +116,7 @@ test('polling renders escaped Regional timestamps without mutating the response 
     };
     const scriptStart = exportView.lastIndexOf('<script>');
     const scriptEnd = exportView.indexOf('</script>', scriptStart);
-    const script = exportView.slice(scriptStart + '<script>'.length, scriptEnd)
+    const script = resolveViewCopy(exportView.slice(scriptStart + '<script>'.length, scriptEnd))
         .replace('@json(route(\'exports.index\', request()->query(), absolute: false))', '"/exports"')
         .replace('@json($hasPending)', 'true');
     const context = {
@@ -144,7 +157,7 @@ test('polling System mode keeps the browser Intl renderer instead of the server 
     };
     const scriptStart = exportView.lastIndexOf('<script>');
     const scriptEnd = exportView.indexOf('</script>', scriptStart);
-    const script = exportView.slice(scriptStart + '<script>'.length, scriptEnd)
+    const script = resolveViewCopy(exportView.slice(scriptStart + '<script>'.length, scriptEnd))
         .replace('@json(route(\'exports.index\', request()->query(), absolute: false))', '"/exports"')
         .replace('@json($hasPending)', 'true');
     vm.runInNewContext(script, {
@@ -177,4 +190,36 @@ test('timestamp preference logic accepts no arbitrary formatter or timezone inpu
     assert.doesNotMatch(source, /new Function|eval\(|Intl\.[^(]+\([^)]*regional/);
     assert.match(source, /Asia\/Jakarta/);
     assert.match(source, /regionalRegistry\.date_formats/);
+});
+
+test('system-mode export history timestamps follow the account language', async () => {
+    const value = '2026-10-28T23:35:00Z';
+    const timers = [];
+    let ready;
+    const body = {innerHTML: ''};
+    const state = {innerHTML: '', textContent: '', className: ''};
+    const window = {AdasiPreferences: boot(), setTimeout: (callback, delay) => timers.push({callback, delay})};
+    const document = {
+        documentElement: {lang: 'id'},
+        addEventListener: (name, handler) => { if (name === 'DOMContentLoaded') ready = handler; },
+        getElementById: (id) => id === 'exportJobsTableBody' ? body : state,
+    };
+    const scriptStart = exportView.lastIndexOf('<script>');
+    const scriptEnd = exportView.indexOf('</script>', scriptStart);
+    const script = resolveViewCopy(exportView.slice(scriptStart + '<script>'.length, scriptEnd))
+        .replace('@json(route(\'exports.index\', request()->query(), absolute: false))', '"/exports"')
+        .replace('@json($hasPending)', 'true');
+    vm.runInNewContext(script, {
+        window, document, Date, Intl, String, Number, Object, Array, Promise,
+        fetch: async () => ({
+            ok: true,
+            json: async () => ({data: [{id: 'job', label: 'Export', file_name: 'file.xlsx', status: 'completed', created_at: value}], has_pending: false}),
+        }),
+    });
+    ready();
+    await timers[0].callback();
+
+    const expected = new Intl.DateTimeFormat('id-ID', {dateStyle: 'medium', timeStyle: 'short'}).format(new Date(value));
+    assert.match(body.innerHTML, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(body.innerHTML, /Okt/);
 });

@@ -11,36 +11,36 @@ class InvoiceWorkflowController extends Controller
 {
     public function physicalVerification(WorkflowRequest $request, LocalInvoice $invoice, InvoiceWorkflowService $service)
     {
-        abort(404, 'Legacy accounting workflow is disabled. Use Finance V2 verification.');
+        abort(404, __('accounting.feedback.legacy_disabled'));
     }
 
     public function startReview(WorkflowRequest $request, LocalInvoice $invoice, InvoiceWorkflowService $service)
     {
-        abort(404, 'Legacy accounting workflow is disabled. Use Finance V2 verification.');
+        abort(404, __('accounting.feedback.legacy_disabled'));
     }
 
     public function requestRevision(WorkflowRequest $request, LocalInvoice $invoice, InvoiceWorkflowService $service)
     {
-        abort(404, 'Legacy accounting workflow is disabled. Use Finance V2 verification.');
+        abort(404, __('accounting.feedback.legacy_disabled'));
     }
 
     public function reject(WorkflowRequest $request, LocalInvoice $invoice, InvoiceWorkflowService $service)
     {
-        abort(404, 'Legacy accounting workflow is disabled. Use Finance V2 verification.');
+        abort(404, __('accounting.feedback.legacy_disabled'));
     }
 
     public function approve(WorkflowRequest $request, LocalInvoice $invoice, InvoiceWorkflowService $service)
     {
-        abort(404, 'Legacy accounting workflow is disabled. Use Finance V2 verification.');
+        abort(404, __('accounting.feedback.legacy_disabled'));
     }
 
     public function schedulePayment(WorkflowRequest $request, LocalInvoice $invoice, InvoiceWorkflowService $service)
     {
-        abort(404, 'Legacy accounting workflow is disabled. Use Finance V2 verification.');
+        abort(404, __('accounting.feedback.legacy_disabled'));
     }
 
     public function completePayment(WorkflowRequest $request, LocalInvoice $invoice, InvoiceWorkflowService $service)
     {
-        abort(404, 'Legacy accounting workflow is disabled. Use Finance V2 verification.');
+        abort(404, __('accounting.feedback.legacy_disabled'));
     }
 }

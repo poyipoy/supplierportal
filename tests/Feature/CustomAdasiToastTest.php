@@ -106,20 +106,20 @@ class CustomAdasiToastTest extends TestCase
 
         $this->assertStringContainsString('window.AdasiAlert.confirm(options)', $runtime);
         $this->assertStringContainsString('window.AdasiToast.progress({', $runtime);
-        $this->assertStringContainsString("title: 'Starting export'", $runtime);
-        $this->assertStringContainsString("message: 'Submitting the export request...'", $runtime);
+        $this->assertStringContainsString("title: t('js.export.starting')", $runtime);
+        $this->assertStringContainsString("message: t('js.export.submitting')", $runtime);
         $this->assertStringContainsString('window.AdasiToast?.update(state.toastId, changes)', $runtime);
         $this->assertStringContainsString('progress: 100', $runtime);
         $this->assertStringContainsString('processed_rows', $runtime);
         $this->assertStringContainsString('total_rows', $runtime);
         $this->assertStringContainsString('rowProgressLabel(processedRows, totalRows, rowLabel)', $runtime);
-        $this->assertStringContainsString('Processed ${rowProgressLabel(processedRows, totalRows, rowLabel)}.', $runtime);
+        $this->assertStringContainsString("t('js.export.processed', { progress: rowProgressLabel(processedRows, totalRows, rowLabel) })", $runtime);
         $this->assertStringContainsString("rowLabel.replace(/\\brows$/i, 'row')", $runtime);
         $this->assertStringContainsString('handleProgress', $runtime);
         $this->assertStringContainsString('progressStageLabels', $runtime);
-        $this->assertStringContainsString("label: 'View jobs'", $runtime);
-        $this->assertStringContainsString("label: 'Cancel'", $runtime);
-        $this->assertStringContainsString("label: 'Dismiss'", $runtime);
+        $this->assertStringContainsString("label: t('js.export.view_jobs')", $runtime);
+        $this->assertStringContainsString("label: t('js.actions.cancel')", $runtime);
+        $this->assertStringContainsString("label: t('js.export.dismiss')", $runtime);
         $this->assertStringContainsString("variant: 'danger'", $runtime);
         $this->assertStringContainsString('maxActions: 3', $runtime);
         $this->assertStringContainsString('dismiss: false', $runtime);
@@ -161,8 +161,8 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringContainsString('actions: progressActionsForState(state)', $runtime);
         $this->assertStringContainsString('const isManualDismissReason = (reason) =>', $runtime);
         $this->assertStringContainsString("['manual', 'action', 'clear']", $runtime);
-        $this->assertStringContainsString('View jobs', $runtime);
-        $this->assertStringContainsString('Dismiss', $runtime);
+        $this->assertStringContainsString('js.export.view_jobs', $runtime);
+        $this->assertStringContainsString('js.export.dismiss', $runtime);
         $this->assertStringContainsString('cancelExport', $runtime);
     }
 
@@ -178,8 +178,8 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringContainsString('sourceCount === null', $runtime);
         $this->assertStringNotContainsString('data rows to Excel', $runtime);
         $this->assertStringContainsString('rowLabel: state.rowLabel', $runtime);
-        $this->assertStringContainsString("cleanPresentationText(record.rowLabel, 'rows')", $runtime);
-        $this->assertStringContainsString('Each material item will be written as a separate Excel row.', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
+        $this->assertStringContainsString("cleanPresentationText(record.rowLabel, t('js.export.rows'))", $runtime);
+        $this->assertStringContainsString('purchasing.copy.each_material_item_will_be_written_as_a_separate_excel_row', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
         $this->assertStringContainsString('data-export-count-table="#historyTable"', file_get_contents(resource_path('views/qc/inspections/index.blade.php')));
 
         $controlCount = 0;
@@ -202,7 +202,7 @@ class CustomAdasiToastTest extends TestCase
             }
         }
 
-        $this->assertSame(16, $controlCount);
+        $this->assertSame(17, $controlCount);
     }
 
     public function test_async_export_toast_rehydrates_before_polling_with_scoped_view_transition(): void
@@ -246,7 +246,7 @@ class CustomAdasiToastTest extends TestCase
         $this->assertFileExists(resource_path('views/notifications/index.blade.php'));
         $this->assertStringContainsString('insertNotification(', $layout);
         $this->assertStringContainsString("type: 'message'", $layout);
-        $this->assertStringContainsString("label: 'View'", $layout);
+        $this->assertStringContainsString("label: @js(__('common.actions.view'))", $layout);
         $this->assertStringContainsString('markReadAndRedirect(', $layout);
         $this->assertStringContainsString('deliverTransientNotification(', $layout);
         $this->assertStringContainsString('shouldSuppressTransientNotification(', $layout);

@@ -12,7 +12,7 @@ use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-class QuotationDetailExport implements FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings
+class QuotationDetailExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings
 {
     use InteractsWithExportProgress;
 
@@ -57,7 +57,7 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
                 SpreadsheetCellSanitizer::text($supplierName),
                 SpreadsheetCellSanitizer::text(strtoupper((string) $quotation->currency)),
                 SpreadsheetCellSanitizer::text($quotation->statusLabel()),
-                $quotation->submitted_at?->format('Y-m-d H:i:s') ?? '-',
+                $quotation->submitted_at ? \App\Support\BusinessTime::format($quotation->submitted_at, 'Y-m-d H:i:s', false) : '-',
                 $quotation->estimated_delivery?->format('Y-m-d') ?? '-',
                 $quotation->validity_period?->format('Y-m-d') ?? '-',
                 SpreadsheetCellSanitizer::text($quotation->payment_terms),
@@ -83,7 +83,7 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
                 $offerAmount === null ? null : $offerAmount * $rate,
                 SpreadsheetCellSanitizer::text($item->notes),
                 $item->attachments->count(),
-                $item->is_available ? 'Available' : 'Not Available',
+                $item->is_available ? __('status.availability.available') : __('status.availability.not_available'),
                 $item->offered_weight_per_unit === null ? null : (float) $item->offered_weight_per_unit,
                 SpreadsheetCellSanitizer::text($item->offered_weight_source),
                 $item->offered_total_weight,
@@ -98,43 +98,43 @@ class QuotationDetailExport implements FromCollection, TracksExportProgress, Wit
     public function headings(): array
     {
         $headings = [
-            'PR Number',
-            'Period',
-            'Supplier',
-            'Currency',
-            'Status',
-            'Submitted At',
-            'Estimated Delivery',
-            'Valid Until',
-            'Payment Terms',
-            'General Notes',
+            __('exports.headings.pr_number'),
+            __('exports.headings.period'),
+            __('exports.headings.supplier'),
+            __('exports.headings.currency'),
+            __('exports.headings.status'),
+            __('exports.headings.submitted_at').' ('.\App\Support\BusinessTime::label().')',
+            __('exports.closure.estimated_delivery'),
+            __('exports.closure.valid_until'),
+            __('exports.closure.payment_terms'),
+            __('exports.closure.general_notes'),
         ];
 
         if ($this->includeReviewerNotes) {
-            $headings[] = 'Reviewer Notes';
+            $headings[] = __('exports.closure.reviewer_notes');
         }
 
         return array_merge($headings, [
-            'Material',
-            'HS Code',
-            'Requested Quantity',
-            'Requested Dimensions',
-            'Offered Quantity',
-            'Offered Dimensions',
-            'Weight/Unit',
-            'Total Weight',
-            'Price per Kg',
-            'Amount',
-            'Price per Kg IDR',
-            'Amount IDR',
-            'Item Notes',
-            'MTC Attachment Count',
-            'Availability',
-            'Offer Weight/Unit',
-            'Offer Weight Source',
-            'Offer Total Weight',
-            'Requested Amount',
-            'Offer Amount',
+            __('exports.headings.material'),
+            __('exports.headings.hs_code'),
+            __('exports.headings.requested_quantity'),
+            __('exports.headings.requested_dimensions'),
+            __('exports.headings.offered_quantity'),
+            __('exports.headings.offered_dimensions'),
+            __('exports.headings.weight_unit'),
+            __('exports.headings.total_weight'),
+            __('exports.headings.price_per_kg'),
+            __('exports.headings.amount'),
+            __('exports.closure.price_kg_idr'),
+            __('exports.closure.amount_idr'),
+            __('exports.headings.item_notes'),
+            __('exports.closure.mtc_count'),
+            __('exports.headings.availability'),
+            __('exports.headings.offer_weight_unit'),
+            __('exports.headings.offer_weight_source'),
+            __('exports.headings.offer_total_weight'),
+            __('exports.headings.requested_amount'),
+            __('exports.headings.offer_amount'),
         ]);
     }
 

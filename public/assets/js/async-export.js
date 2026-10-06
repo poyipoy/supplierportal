@@ -1,5 +1,6 @@
 (function (window, document) {
     'use strict';
+    const t = (key, replacements = {}) => window.AdasiI18n.t(key, replacements);
 
     const selector = '[data-async-export]';
     const activeExports = new Map();
@@ -11,13 +12,13 @@
     const pendingExportStorageKey = 'adasi:pending-export-jobs:v1';
     const downloadClaimStoragePrefix = 'adasi:export-download-claim:';
     const progressStageLabels = Object.freeze({
-        queued: 'Waiting for processing',
-        preparing: 'Preparing data',
-        generating: 'Generating workbook',
-        finalizing: 'Finalizing file',
-        completed: 'Completed',
-        failed: 'Failed',
-        cancelled: 'Cancelled',
+        queued: t('js.export.waiting'),
+        preparing: t('js.export.preparing_data'),
+        generating: t('js.export.generating'),
+        finalizing: t('js.export.finalizing'),
+        completed: t('js.export.completed_stage'),
+        failed: t('js.export.failed_stage'),
+        cancelled: t('js.export.cancelled_stage'),
     });
     let confirmationOpen = false;
 
@@ -55,7 +56,7 @@
 
         if (exportsUrl) {
             actions.push({
-                label: 'View jobs',
+                label: t('js.export.view_jobs'),
                 variant: 'primary',
                 url: exportsUrl,
                 dismiss: false,
@@ -64,7 +65,7 @@
 
         if (cancelAction || cancelDisabled) {
             actions.push({
-                label: 'Cancel',
+                label: t('js.actions.cancel'),
                 variant: 'danger',
                 onClick: cancelAction,
                 disabled: cancelDisabled,
@@ -73,7 +74,7 @@
         }
 
         actions.push({
-            label: 'Dismiss',
+            label: t('js.export.dismiss'),
             variant: 'secondary',
         });
 
@@ -112,9 +113,9 @@
 
     const createStartingToast = (toastId) => showOrQueueProgressToast({
         id: toastId,
-        title: 'Starting export',
-        message: 'Submitting the export request...',
-        progressLabel: 'Starting',
+        title: t('js.export.starting'),
+        message: t('js.export.submitting'),
+        progressLabel: t('js.export.starting_stage'),
         actions: exportActions(null),
     });
 
@@ -125,9 +126,9 @@
     };
 
     const exportPresentationFor = (control) => ({
-        sourceSingular: cleanPresentationText(control?.dataset?.exportSourceSingular, 'record'),
-        sourcePlural: cleanPresentationText(control?.dataset?.exportSourcePlural, 'records'),
-        rowLabel: cleanPresentationText(control?.dataset?.exportRowLabel, 'rows'),
+        sourceSingular: cleanPresentationText(control?.dataset?.exportSourceSingular, t('js.export.record')),
+        sourcePlural: cleanPresentationText(control?.dataset?.exportSourcePlural, t('js.export.records')),
+        rowLabel: cleanPresentationText(control?.dataset?.exportRowLabel, t('js.export.rows')),
         rowExplanation: cleanPresentationText(control?.dataset?.exportRowExplanation, ''),
         filtered: control?.dataset?.exportFiltered !== 'false',
     });
@@ -169,7 +170,8 @@
         ? rowLabel.replace(/\brows$/i, 'row')
         : rowLabel;
 
-    const legacyCountText = (count) => count.toLocaleString();
+    const countLocale = window.AdasiI18n?.locale === 'id' ? 'id-ID' : 'en-GB';
+    const legacyCountText = (count) => count.toLocaleString(countLocale);
     const regionalCountText = (count) => {
         const preferences = window.AdasiPreferences;
         const numberFormat = preferences?.regional?.number_format;
@@ -186,26 +188,26 @@
     };
 
     const rowProgressLabel = (processedRows, totalRows, rowLabel, countText = legacyCountText) => (
-        `${countText(processedRows)} of ${countText(totalRows)} ${rowUnitFor(rowLabel, totalRows)}`
+        t('js.export.row_progress', { processed: countText(processedRows), total: countText(totalRows), label: rowUnitFor(rowLabel, totalRows) })
     );
 
     const progressMessageFor = (payload, stage, processedRows, totalRows, rowLabel, countText = legacyCountText) => {
         if (totalRows > 0 && stage === 'generating') {
             if (countText === legacyCountText) {
-                return `Processed ${rowProgressLabel(processedRows, totalRows, rowLabel)}.`;
+                return t('js.export.processed', { progress: rowProgressLabel(processedRows, totalRows, rowLabel) });
             }
 
-            return `Processed ${rowProgressLabel(processedRows, totalRows, rowLabel, countText)}.`;
+            return t('js.export.processed', { progress: rowProgressLabel(processedRows, totalRows, rowLabel, countText) });
         }
 
         if (totalRows > 0 && stage === 'finalizing') {
             const rowUnit = rowUnitFor(rowLabel, totalRows);
             const verb = totalRows === 1 ? 'is' : 'are';
 
-            return `All ${countText(totalRows)} ${rowUnit} ${verb} processed. Finalizing the file.`;
+            return window.AdasiI18n.choice('js.export.all_processed', totalRows, { count: countText(totalRows), label: rowUnit });
         }
 
-        return payload.message || 'The export is continuing in the background.';
+        return payload.message || t('js.export.background');
     };
 
     const normalizeExportJobId = (value) => value === null || value === undefined
@@ -403,9 +405,9 @@
 
         state.cancelInFlight = true;
         updateExportToast(state, {
-            title: 'Cancelling export',
-            message: 'Requesting cancellation from the export worker...',
-            progressLabel: 'Cancelling',
+            title: t('js.export.cancelling'),
+            message: t('js.export.cancel_request'),
+            progressLabel: t('js.export.cancelling_stage'),
             actions: exportActions(state.exportsUrl, () => cancelExport(state), true),
             maxActions: 3,
             autoClose: 0,
@@ -442,15 +444,15 @@
 
             notify(
                 Number(error?.status) === 409 ? 'warning' : 'error',
-                Number(error?.status) === 409 ? 'Export already finished' : 'Unable to cancel export',
+                Number(error?.status) === 409 ? t('js.export.already_finished') : t('js.export.cancel_failed'),
                 error instanceof Error
                     ? error.message
-                    : 'The export will continue processing in the background.',
+                    : t('js.export.continues'),
             );
 
             if (state.isPending && !state.progressDismissed) {
                 updateExportToast(state, {
-                    title: state.lastStatus === 'queued' ? 'Export queued' : 'Export in progress',
+                    title: state.lastStatus === 'queued' ? t('js.export.queued') : t('js.export.in_progress'),
                     message: progressMessageFor(
                         { message: state.lastMessage },
                         state.lastStage,
@@ -461,7 +463,7 @@
                     ),
                     progressLabel: state.lastTotalRows > 0
                         ? rowProgressLabel(state.lastProcessedRows, state.lastTotalRows, state.rowLabel, regionalCountText)
-                        : progressStageLabels[state.lastStage] || 'Processing',
+                        : progressStageLabels[state.lastStage] || t('js.processing'),
                     actions: progressActionsForState(state),
                     maxActions: 3,
                     autoClose: 0,
@@ -497,11 +499,11 @@
         if (!state.toastId && state.rehydrateToast && window.AdasiToast && !state.progressDismissed) {
             state.toastId = window.AdasiToast.progress({
                 id: state.persistedToastId || createExportToastId(),
-                title: changes.title || 'Export in progress',
-                message: changes.message || 'The export is continuing in the background.',
+                title: changes.title || t('js.export.in_progress'),
+                message: changes.message || t('js.export.background'),
                 progress: changes.progress,
                 indeterminate: changes.indeterminate === true,
-                progressLabel: changes.progressLabel || 'Processing',
+                progressLabel: changes.progressLabel || t('js.processing'),
                 actions: changes.actions || progressActionsForState(state),
                 maxActions: changes.maxActions ?? 3,
             });
@@ -520,7 +522,7 @@
             return;
         }
         if (state.silent && !changes.forceNotify) return;
-        notify(changes.type || 'info', changes.title || 'Export update', changes.message || '');
+        notify(changes.type || 'info', changes.title || t('js.export.update'), changes.message || '');
     };
 
     const findActiveExport = (exportJobId) => {
@@ -551,7 +553,7 @@
             : null;
         const processedRows = Math.max(0, Number(payload.processed_rows) || 0);
         const totalRows = Math.max(0, Number(payload.total_rows) || 0);
-        const rowLabel = cleanPresentationText(state.rowLabel, 'rows');
+        const rowLabel = cleanPresentationText(state.rowLabel, t('js.export.rows'));
         const terminal = ['completed', 'failed', 'cancelled'].includes(payload.status);
         const message = progressMessageFor(payload, stage, processedRows, totalRows, rowLabel);
         const visibleMessage = progressMessageFor(payload, stage, processedRows, totalRows, rowLabel, regionalCountText);
@@ -591,16 +593,16 @@
 
         const changes = {
             title: payload.status === 'completed'
-                ? 'Export completed'
+                ? t('js.export.completed')
                 : payload.status === 'failed'
-                    ? 'Export could not be completed'
+                    ? t('js.export.failed')
                     : payload.status === 'cancelled'
-                        ? 'Export cancelled'
-                    : payload.status === 'queued' ? 'Export queued' : 'Export in progress',
+                        ? t('js.export.cancelled')
+                    : payload.status === 'queued' ? t('js.export.queued') : t('js.export.in_progress'),
             message: visibleMessage,
             progressLabel: totalRows > 0 && ['generating', 'finalizing'].includes(stage)
                 ? rowProgressLabel(processedRows, totalRows, rowLabel, regionalCountText)
-                : progressStageLabels[stage] || 'Processing',
+                : progressStageLabels[stage] || t('js.processing'),
             actions: terminal ? exportActions(state.exportsUrl) : progressActionsForState(state),
             maxActions: terminal ? 2 : 3,
             autoClose: 0,
@@ -638,17 +640,17 @@
             ? presentation.sourceSingular
             : presentation.sourcePlural;
         const scope = sourceCount === null
-            ? `Export ${presentation.sourcePlural}${presentation.filtered ? ' matching the current filters' : ''}?`
-            : `Export ${regionalCountText(sourceCount)} ${sourceLabel}${presentation.filtered ? ' matching the current filters' : ''}?`;
+            ? t(presentation.filtered ? 'js.export.confirm_all_filtered' : 'js.export.confirm_all', { label: presentation.sourcePlural })
+            : t(presentation.filtered ? 'js.export.confirm_filtered' : 'js.export.confirm_scope', { count: regionalCountText(sourceCount), label: sourceLabel });
         const explanation = presentation.rowExplanation
-            || `Progress will track ${presentation.rowLabel}.`;
+            || t('js.export.track', { label: presentation.rowLabel });
         const options = {
-            title: 'Confirm Export',
+            title: t('js.export.confirm'),
             text: `${scope} ${explanation}`,
             type: 'info',
             confirmTone: 'success',
-            confirmText: 'Export',
-            cancelText: 'Cancel',
+            confirmText: t('js.export.action'),
+            cancelText: t('js.actions.cancel'),
         };
 
         if (window.AdasiAlert) {
@@ -700,9 +702,10 @@
             }
 
             if (element instanceof HTMLButtonElement) {
-                element.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Menyiapkan...';
+                element.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>';
+                element.appendChild(document.createTextNode(t('js.export.preparing')));
             } else if (element instanceof HTMLInputElement) {
-                element.value = 'Menyiapkan...';
+                element.value = t('js.export.preparing');
             }
 
             return;
@@ -748,8 +751,8 @@
         }
 
         return response.status === 401
-            ? 'Your session has expired. Please sign in again.'
-            : 'The export request could not be processed.';
+            ? t('js.export.session_help')
+            : t('js.export.request_failed');
     };
 
     const triggerDownload = async (downloadUrl, fileName, exportJobId) => {
@@ -768,12 +771,12 @@
 
         const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
         if (contentType.includes('text/html')) {
-            throw new Error('The download session is invalid. Please sign in again.');
+            throw new Error(t('js.export.invalid_session'));
         }
 
         const blob = await response.blob();
         if (!blob.size) {
-            throw new Error('The export file is empty or unavailable.');
+            throw new Error(t('js.export.empty_file'));
         }
 
         const objectUrl = window.URL.createObjectURL(blob);
@@ -807,8 +810,8 @@
                 updateExportToast(state, {
                     forceNotify: true,
                     type: 'warning',
-                    title: 'Export is still processing',
-                    message: 'Automatic monitoring has stopped. The file will remain available in Export History.',
+                    title: t('js.export.still_processing'),
+                    message: t('js.export.monitor_stopped'),
                     autoClose: 0,
                 });
                 return;
@@ -859,10 +862,10 @@
                             updateExportToast(state, {
                                 forceNotify: true,
                                 type: 'success',
-                                title: 'Export completed',
-                                message: 'The Excel file was downloaded automatically.',
+                                title: t('js.export.completed'),
+                                message: t('js.export.downloaded'),
                                 progress: 100,
-                                progressLabel: 'Completed',
+                                progressLabel: t('js.export.completed_stage'),
                                 autoClose: 4000,
                                 terminal: true,
                             });
@@ -872,8 +875,8 @@
                             updateExportToast(state, {
                                 forceNotify: true,
                                 type: 'error',
-                                title: 'Automatic download failed',
-                                message: error instanceof Error ? error.message : 'Download the file from Export History.',
+                                title: t('js.export.download_failed'),
+                                message: error instanceof Error ? error.message : t('js.export.download_history'),
                                 autoClose: 0,
                                 terminal: true,
                             });
@@ -883,8 +886,8 @@
                         updateExportToast(state, {
                             forceNotify: true,
                             type: 'error',
-                            title: 'Export file is unavailable',
-                            message: payload.message || 'The export file cannot be downloaded.',
+                            title: t('js.export.file_unavailable'),
+                            message: payload.message || t('js.export.cannot_download'),
                             autoClose: 0,
                             terminal: true,
                         });
@@ -897,8 +900,8 @@
                     updateExportToast(state, {
                         forceNotify: true,
                         type: 'error',
-                        title: 'Export could not be completed',
-                        message: payload.message || 'Try the export again or review Export History.',
+                        title: t('js.export.failed'),
+                        message: payload.message || t('js.export.retry'),
                         autoClose: 0,
                         terminal: true,
                     });
@@ -910,8 +913,8 @@
                     updateExportToast(state, {
                         forceNotify: true,
                         type: 'error',
-                        title: 'Export status is unavailable',
-                        message: 'Review the job in Export History.',
+                        title: t('js.export.status_unavailable'),
+                        message: t('js.export.review_history'),
                         autoClose: 0,
                         terminal: true,
                     });
@@ -924,10 +927,10 @@
                     updateExportToast(state, {
                         forceNotify: true,
                         type: 'warning',
-                        title: error.status === 401 ? 'Session expired' : 'Export is unavailable',
+                        title: error.status === 401 ? t('js.export.session_expired') : t('js.export.unavailable'),
                         message: error instanceof Error
                             ? error.message
-                            : 'Review the job in Export History.',
+                            : t('js.export.review_history'),
                         autoClose: 0,
                         terminal: true,
                     });
@@ -941,8 +944,8 @@
                     updateExportToast(state, {
                         forceNotify: true,
                         type: 'warning',
-                        title: 'Export status could not be refreshed',
-                        message: 'The file will remain available in Export History after processing.',
+                        title: t('js.export.refresh_failed'),
+                        message: t('js.export.available_after'),
                         autoClose: 0,
                         terminal: true,
                     });
@@ -986,7 +989,7 @@
             lastProgress: null,
             lastProcessedRows: 0,
             lastTotalRows: 0,
-            lastMessage: 'Submitting the export request...',
+            lastMessage: t('js.export.submitting'),
             rowLabel: presentation.rowLabel,
             lastProgressSignature: null,
             startedAt: Date.now(),
@@ -1011,7 +1014,7 @@
 
             const payload = await response.json();
             if (!payload.export_job_id || !payload.status_url) {
-                throw new Error('The export response is incomplete.');
+                throw new Error(t('js.export.incomplete'));
             }
 
             state.exportJobId = payload.export_job_id;
@@ -1029,7 +1032,7 @@
                 progress: 0,
                 processed_rows: 0,
                 total_rows: 0,
-                message: payload.message || 'The export will continue in the background.',
+                message: payload.message || t('js.export.continue_background'),
             });
             updateExportToast(state, {
                 actions: progressActionsForState(state),
@@ -1043,8 +1046,8 @@
             setBusy(control, false);
             updateExportToast(state, {
                 type: 'error',
-                title: 'Unable to Start Export',
-                message: error instanceof Error ? error.message : 'The export request could not be processed.',
+                title: t('js.export.start_failed'),
+                message: error instanceof Error ? error.message : t('js.export.request_failed'),
                 autoClose: 0,
                 terminal: true,
             });
@@ -1070,7 +1073,7 @@
                 : Math.min(100, Math.max(0, Number(record.progress) || 0));
             const restoredProcessedRows = Math.max(0, Number(record.processedRows) || 0);
             const restoredTotalRows = Math.max(0, Number(record.totalRows) || 0);
-            const restoredRowLabel = cleanPresentationText(record.rowLabel, 'rows');
+            const restoredRowLabel = cleanPresentationText(record.rowLabel, t('js.export.rows'));
             const restoredExportsUrl = typeof record.exportsUrl === 'string' && record.exportsUrl
                 ? record.exportsUrl
                 : null;
@@ -1097,7 +1100,7 @@
             );
             const restoredProgressLabel = restoredTotalRows > 0 && ['generating', 'finalizing'].includes(restoredStage)
                 ? rowProgressLabel(restoredProcessedRows, restoredTotalRows, restoredRowLabel, regionalCountText)
-                : progressStageLabels[restoredStage] || 'Processing';
+                : progressStageLabels[restoredStage] || t('js.processing');
 
             const state = {
                 control: null,
@@ -1134,7 +1137,7 @@
             if (state.rehydrateToast) {
                 state.toastId = showOrQueueProgressToast({
                     id: toastId,
-                    title: restoredStatus === 'queued' ? 'Export queued' : 'Export in progress',
+                    title: restoredStatus === 'queued' ? t('js.export.queued') : t('js.export.in_progress'),
                     message: restoredVisibleMessage,
                     progress: restoredProgress,
                     progressLabel: restoredProgressLabel,

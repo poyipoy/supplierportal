@@ -76,7 +76,7 @@ class LocalProcurementController extends Controller
     {
         $po = $service->createPurchaseOrder($request->user(), $request->validated());
 
-        return redirect()->route($this->prefix().'.show', $po)->with('success', 'Local PO created.');
+        return redirect()->route($this->prefix().'.show', $po)->with('success', __('local_procurement.feedback.po_created'));
     }
 
     public function show(LocalPurchaseOrder $purchaseOrder)
@@ -95,42 +95,42 @@ class LocalProcurementController extends Controller
     {
         $service->updatePurchaseOrder($request->user(), $purchaseOrder, $request->validated());
 
-        return redirect()->route($this->prefix().'.show', $purchaseOrder)->with('success', 'Local PO updated.');
+        return redirect()->route($this->prefix().'.show', $purchaseOrder)->with('success', __('local_procurement.feedback.po_updated'));
     }
 
     public function close(Request $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service)
     {
         $service->closePurchaseOrder($request->user(), $purchaseOrder);
 
-        return back()->with('success', 'Local PO closed.');
+        return back()->with('success', __('local_procurement.feedback.po_closed'));
     }
 
     public function cancel(Request $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service)
     {
         $service->cancelPurchaseOrder($request->user(), $purchaseOrder);
 
-        return back()->with('success', 'Local PO cancelled.');
+        return back()->with('success', __('local_procurement.feedback.po_cancelled'));
     }
 
     public function storeGoodsReceipt(SaveLocalGoodsReceiptRequest $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service)
     {
         $service->createGoodsReceipt($request->user(), $purchaseOrder, $request->validated());
 
-        return back()->with('success', 'Goods Receipt added.');
+        return back()->with('success', __('local_procurement.feedback.gr_added'));
     }
 
     public function updateGoodsReceipt(SaveLocalGoodsReceiptRequest $request, LocalGoodsReceipt $goodsReceipt, LocalProcurementMasterService $service)
     {
         $service->updateGoodsReceipt($request->user(), $goodsReceipt, $request->validated());
 
-        return back()->with('success', 'Goods Receipt updated.');
+        return back()->with('success', __('local_procurement.feedback.gr_updated'));
     }
 
     public function cancelGoodsReceipt(Request $request, LocalGoodsReceipt $goodsReceipt, LocalProcurementMasterService $service)
     {
         $service->cancelGoodsReceipt($request->user(), $goodsReceipt);
 
-        return back()->with('success', 'Goods Receipt cancelled.');
+        return back()->with('success', __('local_procurement.feedback.gr_cancelled'));
     }
 
     public function template()
@@ -180,15 +180,10 @@ class LocalProcurementController extends Controller
         $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
         $rows = session()->pull('local_po_import.'.$data['token']);
         $metadata = session()->pull('local_po_import_meta.'.$data['token'], []);
-        abort_unless(is_array($rows), 419, 'Import preview expired. Upload the workbook again.');
+        abort_unless(is_array($rows), 419, __('local_procurement.feedback.preview_expired'));
         $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
 
-        $msg = "Import PO selesai: {$counts['newPo']} PO baru dibuat";
-        if ($counts['existingPo'] > 0) {
-            $msg .= ", {$counts['existingPo']} PO sudah terdaftar (dilewati).";
-        } else {
-            $msg .= '.';
-        }
+        $msg = __('local_procurement.feedback.po_imported', ['created' => $counts['newPo'], 'existing' => $counts['existingPo']]);
 
         return redirect()->route($this->prefix().'.index')->with('success', $msg);
     }
@@ -225,15 +220,10 @@ class LocalProcurementController extends Controller
         $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
         $rows = session()->pull('local_gr_import.'.$data['token']);
         $metadata = session()->pull('local_gr_import_meta.'.$data['token'], []);
-        abort_unless(is_array($rows), 419, 'Import preview expired. Upload the workbook again.');
+        abort_unless(is_array($rows), 419, __('local_procurement.feedback.preview_expired'));
         $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
 
-        $msg = "Import GR selesai: {$counts['newGr']} GR baru dibuat dari {$counts['sourceRows']} baris ERP";
-        if ($counts['existingGr'] > 0) {
-            $msg .= ", {$counts['existingGr']} GR sudah terdaftar (dilewati).";
-        } else {
-            $msg .= '.';
-        }
+        $msg = __('local_procurement.feedback.gr_imported', ['created' => $counts['newGr'], 'rows' => $counts['sourceRows'], 'existing' => $counts['existingGr']]);
 
         return redirect()->route($this->prefix().'.index')->with('success', $msg);
     }
@@ -271,10 +261,10 @@ class LocalProcurementController extends Controller
         $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
         $rows = session()->pull('local_po_gr_import.'.$data['token']);
         $metadata = session()->pull('local_po_gr_import_meta.'.$data['token'], []);
-        abort_unless(is_array($rows), 419, 'Import preview expired. Upload the workbook again.');
+        abort_unless(is_array($rows), 419, __('local_procurement.feedback.preview_expired'));
         $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
 
-        return redirect()->route($this->prefix().'.index')->with('success', "Import completed: {$counts['newPo']} PO and {$counts['newGr']} GR created.");
+        return redirect()->route($this->prefix().'.index')->with('success', __('local_procurement.feedback.combined_imported', ['po' => $counts['newPo'], 'gr' => $counts['newGr']]));
     }
 
     public function uploadPo(UploadLocalPoDocumentRequest $request, LocalPoDocumentService $service)
@@ -285,10 +275,10 @@ class LocalProcurementController extends Controller
 
         if ($ext === 'zip') {
             $result = $service->uploadZip($request->user(), $supplier, $file);
-            $message = "Berhasil mengunggah {$result['count']} dokumen PO dari arsip ZIP untuk supplier {$supplier->name}.";
+            $message = __('local_procurement.feedback.zip_uploaded', ['count' => $result['count'], 'supplier' => $supplier->name]);
         } else {
             $po = $service->uploadSinglePdf($request->user(), $supplier, $file);
-            $message = "Dokumen PO berhasil diunggah dan ditautkan ke PO {$po->po_number}.";
+            $message = __('local_procurement.feedback.po_uploaded', ['number' => $po->po_number]);
         }
 
         return redirect()->back()->with('success', $message);

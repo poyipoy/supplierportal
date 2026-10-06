@@ -246,6 +246,8 @@ class UnifiedPaymentEngineTest extends TestCase
         $this->assertSame(PaymentGroup::STATUS_PAID, $group1->status);
         $this->assertSame(LocalInvoice::STATUS_PAID, $inv1->status);
         $this->assertTrue($inv1->isPaid());
+        $paymentHistory = $inv1->statusHistories()->where('event', 'paid')->latest('id')->firstOrFail();
+        $this->assertSame(__('finance.history.payment_confirmed', ['reference' => 'TRF-BCA-001']), $paymentHistory->notes);
         $this->assertSame(PaymentBatch::STATUS_PARTIALLY_PAID, $finalizedBatch->status);
 
         // 2. Pay Group 2
@@ -321,7 +323,7 @@ class UnifiedPaymentEngineTest extends TestCase
 
         $response = $this->actingAs($finance)->get(route('finance.drp.show', $batch));
         $response->assertOk();
-        $response->assertSee('Terbilang: "Lima Juta Rupiah"', false);
+        $response->assertSee(__('finance.drp_ui.amount_words', ['words' => 'Lima Juta'], 'en'), false);
         $response->assertSee('5.000.000');
     }
 

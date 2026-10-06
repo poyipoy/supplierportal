@@ -112,7 +112,7 @@ class SupplierPriceHistoryBuilderTest extends TestCase
         $this->assertSame($secondQuotation->currency, $exportRows->get(1)[4]);
         $this->assertSame($lateQuotation->currency, $exportRows->last()[4]);
         $this->assertSame([
-            'No. PR',
+            __('exports.headings.pr_number', [], 'en'),
             'PO Date',
             'Status',
             'Price/Kg',

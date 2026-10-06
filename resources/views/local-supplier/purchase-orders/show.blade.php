@@ -1,31 +1,31 @@
 @extends('layouts.app')
-@section('title', 'PO ' . $purchaseOrder->po_number . ' - Supplier Lokal')
-@section('page-title', 'Detail Purchase Order')
+@section('title', __('local_procurement.closure.po_detail_title', ['number' => $purchaseOrder->po_number]))
+@section('page-title', __('local_procurement.list.detail_short'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
         :title="$purchaseOrder->po_number"
-        :description="'Dokumen Purchase Order diterbitkan pada ' . ($purchaseOrder->po_date?->format('d M Y') ?? '—') . ' dengan komitmen plafon sebesar Rp ' . number_format($purchaseOrder->total_amount, 2, ',', '.') . '.'"
-        eyebrow="Detail Purchase Order"
+        :description="__('local_procurement.review.po_document', ['date' => $regionalFormatter->date($purchaseOrder->po_date, 'human') ?? '-', 'amount' => number_format($purchaseOrder->total_amount, 2, ',', '.')])"
+        :eyebrow="__('local_procurement.list.detail_short')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.purchase-orders.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Kembali ke Daftar</span>
+                <span>{{ __('local_invoice.form.back_list') }}</span>
             </x-ui.button>
 
             @if($purchaseOrder->latestPoDocument())
-                <x-ui.button :href="route('attachments.show', $purchaseOrder->latestPoDocument()->id)" target="_blank" variant="outline" size="sm">
+                <x-ui.button :href="route('attachments.show', $purchaseOrder->latestPoDocument())" target="_blank" variant="outline" size="sm">
                     <x-ui.icon name="file-text" size="sm" />
-                    <span>Unduh Dokumen PO (PDF)</span>
+                    <span>{{ __('local_procurement.actions.download_po') }}</span>
                 </x-ui.button>
             @endif
 
             @if($purchaseOrder->status === 'OPEN')
                 <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary" size="sm">
                     <x-ui.icon name="plus" size="sm" />
-                    <span>Ajukan Invoice</span>
+                    <span>{{ __('local_invoice.actions.submit') }}</span>
                 </x-ui.button>
             @endif
         </x-slot:actions>
@@ -41,35 +41,35 @@
 
     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4">
         <x-ui.metric-card
-            label="Nilai Plafon PO"
+            :label="__('local_procurement.review.ceiling_value')"
             :value="'Rp ' . number_format($purchaseOrder->total_amount, 0, ',', '.')"
             icon="banknote"
             tone="primary"
-            meta="Total komitmen anggaran resmi"
+            :meta="__('local_procurement.closure.budget_commitment')"
         />
 
         <x-ui.metric-card
-            label="Total Realisasi GR"
+            :label="__('local_procurement.labels.gr_total')"
             :value="number_format($totalGrQty, 4, ',', '.')"
             icon="package-check"
             tone="success"
-            :meta="$activeGrs->count() . ' penerimaan barang tercatat'"
+            :meta="trans_choice('local_procurement.closure.gr_record_count', $activeGrs->count())"
         />
 
         <x-ui.metric-card
-            label="Sisa Plafon PO"
+            :label="__('local_procurement.labels.remaining_ceiling')"
             :value="'Rp ' . number_format($remainingPoCeiling, 0, ',', '.')"
             icon="layers"
             :tone="$remainingPoCeiling > 0 ? 'neutral' : 'warning'"
-            meta="Kapasitas penagihan tersisa"
+            :meta="__('local_procurement.closure.remaining_capacity')"
         />
 
         <x-ui.metric-card
-            label="Tagihan Diajukan"
+            :label="__('ga.dashboard.claim_total')"
             :value="'Rp ' . number_format($invoicedAmount, 0, ',', '.')"
             icon="receipt"
             tone="neutral"
-            :meta="$purchaseOrder->invoices->count() . ' invoice terdata'"
+            :meta="trans_choice('local_procurement.closure.invoice_record_count', $purchaseOrder->invoices->count())"
         />
     </div>
 
@@ -83,34 +83,34 @@
                 <div>
                     <div class="tw-text-ui-base tw-font-bold tw-font-mono tw-text-on-surface">{{ $purchaseOrder->po_number }}</div>
                     <div class="tw-text-ui-xs tw-text-on-surface-variant">
-                        Tanggal Dokumen: {{ $purchaseOrder->po_date?->format('d M Y') ?? '—' }}
+                        {{ __('common.final_review.po_document_date', ['date' => $regionalFormatter->date($purchaseOrder->po_date, 'human') ?? '-']) }}
                     </div>
                 </div>
             </div>
             <div class="tw-flex tw-items-center tw-gap-2">
                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($purchaseOrder->status)">
-                    Status: {{ $purchaseOrder->status }}
+                    {{ __('local_invoice.labels.status') }}: {{ \App\Support\StatusHelper::localFinanceLabel($purchaseOrder->status) }}
                 </x-ui.status-chip>
             </div>
         </div>
 
         <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3 tw-text-ui-xs">
             <div>
-                <span class="tw-text-on-surface-variant">Catatan / Deskripsi PO:</span>
+                <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.po_description_notes') }}:</span>
                 <p class="tw-text-ui-xs tw-text-on-surface tw-mt-0.5 tw-mb-0">
-                    {{ $purchaseOrder->description ?: 'Tidak ada catatan khusus pada dokumen PO ini.' }}
+                    {{ $purchaseOrder->description === 'Imported via Infor ERP Purchase Order' ? __('local_procurement.provenance.imported_po') : ($purchaseOrder->description ?: __('local_procurement.closure.po_no_notes')) }}
                 </p>
             </div>
             <div>
-                <span class="tw-text-on-surface-variant">Dokumen Resmi Terlampir:</span>
+                <span class="tw-text-on-surface-variant">{{ __('local_invoice.labels.attached_documents') }}:</span>
                 <div class="tw-mt-1">
                     @if($purchaseOrder->latestPoDocument())
-                        <a href="{{ route('attachments.show', $purchaseOrder->latestPoDocument()->id) }}" target="_blank" class="tw-inline-flex tw-items-center tw-gap-1.5 tw-text-primary tw-font-semibold tw-no-underline hover:tw-underline">
+                        <a href="{{ route('attachments.show', $purchaseOrder->latestPoDocument()) }}" target="_blank" class="tw-inline-flex tw-items-center tw-gap-1.5 tw-text-primary tw-font-semibold tw-no-underline hover:tw-underline">
                             <x-ui.icon name="file-text" size="sm" />
                             <span>{{ $purchaseOrder->latestPoDocument()->file_name }}</span>
                         </a>
                     @else
-                        <span class="tw-text-on-surface-variant tw-italic">Belum ada dokumen PO yang diunggah oleh tim ADASI.</span>
+                        <span class="tw-text-on-surface-variant tw-italic">{{ __('local_procurement.empty.po_document') }}</span>
                     @endif
                 </div>
             </div>
@@ -119,19 +119,19 @@
 
     {{-- Goods Receipts (GR) Table --}}
     <x-ui.data-table
-        title="Daftar Penerimaan Barang (Goods Receipt)"
-        :description="'Seluruh GR yang telah diverifikasi dan diterima untuk PO ' . $purchaseOrder->po_number . '.'"
+        :title="__('local_procurement.labels.gr_list')"
+        :description="__('local_procurement.review.gr_po', ['po' => $purchaseOrder->po_number])"
     >
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 tw-text-ui-xs">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Nomor GR</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal GR</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Qty</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Deskripsi / Keterangan</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status GR</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status Penagihan</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.review.gr_number') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_date') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('common.fields.qty') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.claim_description') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_procurement.labels.gr_status') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.billing_status') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -142,7 +142,7 @@
                             </td>
                             <td>
                                 <span class="tw-text-ui-xs tw-text-on-surface-variant">
-                                    {{ $gr->gr_date?->format('d M Y') ?? '—' }}
+                                    {{ $regionalFormatter->date($gr->gr_date, 'human') ?? '—' }}
                                 </span>
                             </td>
                             <td class="text-end tw-font-mono">
@@ -155,17 +155,17 @@
                             </td>
                             <td class="text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($gr->status)">
-                                    {{ $gr->status }}
+                                    {{ \App\Support\StatusHelper::localFinanceLabel($gr->status) }}
                                 </x-ui.status-chip>
                             </td>
                             <td class="text-center">
                                 @if($gr->currentInvoice)
                                     <a href="{{ route('local-supplier.invoices.show', $gr->currentInvoice) }}" class="badge bg-success-subtle text-success border border-success-subtle tw-no-underline hover:tw-underline">
-                                        Ditagihkan ({{ $gr->currentInvoice->invoice_number }})
+                                        {{ __('local_procurement.closure.invoiced_number', ['number' => $gr->currentInvoice->invoice_number]) }}
                                     </a>
                                 @else
                                     <span class="badge bg-light text-secondary border">
-                                        Belum Ditagihkan
+                                        {{ __('local_procurement.labels.not_invoiced') }}
                                     </span>
                                 @endif
                             </td>
@@ -173,7 +173,7 @@
                     @empty
                         <tr>
                             <td colspan="6" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
-                                Belum ada berkas Goods Receipt (GR) yang diterbitkan untuk PO ini.
+                                {{ __('local_procurement.empty.gr_po') }}
                             </td>
                         </tr>
                     @endforelse
@@ -185,18 +185,18 @@
     {{-- Associated Invoices Table --}}
     @if($purchaseOrder->invoices->isNotEmpty())
         <x-ui.data-table
-            title="Riwayat Tagihan Terkait (Invoices)"
-            :description="'Daftar invoice yang diajukan dengan merujuk pada PO ' . $purchaseOrder->po_number . '.'"
+            :title="__('local_procurement.labels.invoice_history')"
+            :description="__('local_procurement.review.invoice_po', ['po' => $purchaseOrder->po_number])"
         >
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 tw-text-ui-xs">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col" class="tw-text-ui-xs tw-font-semibold">Nomor Invoice</th>
-                            <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal Invoice</th>
-                            <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">DPP Tagihan</th>
-                            <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status</th>
-                            <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Aksi</th>
+                            <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.receipt.invoice_number') }}</th>
+                            <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.invoice_date') }}</th>
+                            <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_procurement.review.dpp') }}</th>
+                            <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
+                            <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -207,7 +207,7 @@
                                 </td>
                                 <td>
                                     <span class="tw-text-ui-xs tw-text-on-surface-variant">
-                                        {{ $inv->invoice_date?->format('d M Y') ?? '—' }}
+                                        {{ $regionalFormatter->date($inv->invoice_date, 'human') ?? '—' }}
                                     </span>
                                 </td>
                                 <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
@@ -215,13 +215,13 @@
                                 </td>
                                 <td class="text-center">
                                     <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($inv->status)">
-                                        {{ $inv->status }}
+                                        {{ \App\Support\StatusHelper::localInvoiceLabel($inv->status) }}
                                     </x-ui.status-chip>
                                 </td>
                                 <td class="text-end">
                                     <x-ui.button :href="route('local-supplier.invoices.show', $inv)" size="sm" variant="outline">
                                         <x-ui.icon name="eye" size="sm" />
-                                        <span>Detail</span>
+                                        <span>{{ __('local_invoice.actions.detail') }}</span>
                                     </x-ui.button>
                                 </td>
                             </tr>

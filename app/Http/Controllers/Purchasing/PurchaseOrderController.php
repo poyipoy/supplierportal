@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\MaterialProgressService;
 use App\Services\NotificationService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
@@ -80,7 +81,7 @@ class PurchaseOrderController extends Controller
                         ->orWhere(function ($q) {
                             $q->where('status', 'active')
                                 ->whereNotNull('estimated_arrival')
-                                ->whereDate('estimated_arrival', '<', today())
+                                ->whereDate('estimated_arrival', '<', BusinessTime::today()->toDateString())
                                 ->whereNull('actual_arrival');
                         });
                 });
@@ -146,7 +147,7 @@ class PurchaseOrderController extends Controller
                             $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', Hashids::encode((int) $po->latest_ng_inspection_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
                         }
                     }
-                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>';
+                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('purchasing.copy.details')).'</a>';
                     $html .= '</div>';
 
                     return $html;
@@ -208,7 +209,7 @@ class PurchaseOrderController extends Controller
         $quotation = Quotation::with('purchaseRequisition')->findOrFail($quotation_id);
 
         return redirect()->route('purchasing.comparison.show', $quotation->purchaseRequisition)
-            ->with('error', 'New Purchase Orders must be finalized through item offer selection.');
+            ->with('error', __('purchasing.copy.new_purchase_orders_must_be_finalized_through_item_offer_selection'));
     }
 
     /**
@@ -225,7 +226,7 @@ class PurchaseOrderController extends Controller
 
         return back()->withInput()->with(
             'error',
-            'New Purchase Orders must be created from valid item offer selections.'
+            __('purchasing.copy.new_purchase_orders_must_be_created_from_valid_item_offer_selections')
         );
     }
 
@@ -294,19 +295,19 @@ class PurchaseOrderController extends Controller
             if (! $po->isLegacyArrivalEligible()) {
                 return [
                     'po' => $po,
-                    'error' => 'This Purchase Order uses shipment-based receiving. Confirm physical arrival from the relevant Shipment.',
+                    'error' => __('purchasing.copy.this_purchase_order_uses_shipment_based_receiving_confirm_physical_arrival_from_the_relevant_shipmen'),
                 ];
             }
 
             if (! in_array($po->status, ['active', 'overdue'], true)) {
                 return [
                     'po' => $po,
-                    'error' => 'Material arrival can only be confirmed for Active or Overdue PO records.',
+                    'error' => __('purchasing.copy.material_arrival_can_only_be_confirmed_for_active_or_overdue_po_records'),
                 ];
             }
 
             $po->update([
-                'actual_arrival' => now()->toDateString(),
+                'actual_arrival' => BusinessTime::today()->toDateString(),
                 'status' => 'waiting_qc',
             ]);
 
@@ -325,8 +326,8 @@ class PurchaseOrderController extends Controller
             $qcUsers,
             'po.material_arrived',
             "po.material_arrived:{$po->id}",
-            'Material Arrived - Ready for Inspection',
-            "Material from PO {$po->po_number} has arrived. Please perform QC inspection.",
+            'purchasing.copy.material_arrived_ready_for_inspection',
+            'purchasing.notify.arrived_body',
             route('qc.inspections.create', $po, absolute: false),
             'package text-warning',
             [
@@ -334,9 +335,10 @@ class PurchaseOrderController extends Controller
                 'po_id' => $po->id,
                 'po_number' => $po->po_number,
             ],
+            ['po' => $po->po_number],
         );
 
         return redirect()->route('purchasing.purchase-orders.show', $po)
-            ->with('success', 'Material arrival confirmed. QC will be notified for inspection.');
+            ->with('success', __('purchasing.copy.material_arrival_confirmed_qc_will_be_notified_for_inspection'));
     }
 }

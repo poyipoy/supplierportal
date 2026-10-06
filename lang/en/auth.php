@@ -1,20 +1,112 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication Language Lines
-    |--------------------------------------------------------------------------
-    |
-    | The following language lines are used during authentication for various
-    | messages that we need to display to the user. You are free to modify
-    | these language lines according to your application's requirements.
-    |
-    */
-
+    'registration_verification_failed' => 'Security verification failed. Please try again.',
+    'confirmation.incorrect' => 'The entered password is incorrect.',
+    'confirmation.required' => 'Password confirmation required.',
+    'registration_session.required' => 'Please enter your registration reference and access key to view or update your registration.',
+    'registration_session.expired' => 'Your registration session has expired or been revoked. Please verify your reference and access key.',
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'login.title' => 'Sign In - ADASI Supplier Portal',
+    'login.heading' => 'Sign in to your account',
+    'login.instructions' => 'Enter your assigned portal credentials.',
+    'login.email' => 'Email address',
+    'login.password' => 'Password',
+    'login.sign_in' => 'Sign In',
+    'login.remember' => 'Remember me',
+    'login.help' => 'Password Assistance',
+    'login.new_supplier' => 'New supplier?',
+    'login.register' => 'Register as a Supplier',
+    'login.register_alt' => 'Register Supplier',
+    'login.registered' => 'Already registered?',
+    'login.show_password' => 'Show password',
+    'login.hide_password' => 'Hide password',
+    'login.welcome' => 'Welcome back',
+    'password_assistance.title' => 'Password Assistance - ADASI Supplier Portal',
+    'password_assistance.heading' => 'Password Assistance',
+    'password_assistance.description' => 'For security reasons, password reset requests are handled manually by our internal team. Please contact the support team using your registered company email address.',
+    'password_assistance.support' => 'Support Email',
+    'password_assistance.no_support' => 'Please contact your company representative for support contact details.',
+    'password_assistance.subject_label' => 'Subject',
+    'password_assistance.template_label' => 'Email Template',
+    'password_assistance.copy_email' => 'Copy Email Address',
+    'password_assistance.copy_subject' => 'Copy Subject',
+    'password_assistance.copy_template' => 'Copy Email Template',
+    'password_assistance.email_copy_label' => 'Email address',
+    'password_assistance.template_copy_label' => 'Email template',
+    'password_assistance.open_app' => 'Open Email App',
+    'password_assistance.back' => 'Back to Sign In',
+    'password_assistance.subject' => 'Supplier Portal - Password Assistance Request',
+    'password_assistance.template' => 'Dear Support Team,
 
+I would like to request assistance resetting my Supplier Portal password.
+
+Company Name: [Company Name]
+Supplier/Vendor Name: [Supplier/Vendor Name]
+Registered Email: [Registered Email]
+Contact Person: [Contact Person]
+
+Please assist with the password reset process.
+
+Thank you.',
+    'confirm.title' => 'Confirm Password - ADASI Supplier Portal',
+    'confirm.heading' => 'Confirm your password',
+    'confirm.help' => 'For your security, enter your current password before continuing.',
+    'confirm.enter' => 'Enter your password',
+    'confirm.action' => 'Confirm and Continue',
+    'confirm.continuing' => 'Continuing your request',
+    'two_factor.title' => 'Two-Factor Authentication - ADASI Supplier Portal',
+    'two_factor.heading' => 'Two-factor authentication',
+    'two_factor.help' => 'Enter the 6-digit code from your authenticator app, or use a recovery code.',
+    'two_factor.code' => 'Authenticator or recovery code',
+    'two_factor.verify' => 'Verify and Sign In',
+    'two_factor.back' => 'Back to login',
+    'register.heading' => 'Create your account',
+    'register.help' => 'Enter your identity and choose a strong password.',
+    'register.confirm' => 'Confirm password',
+    'register.submit' => 'Register',
+    'register.new' => 'New account',
+    'rate_limit.heading' => 'Too many requests',
+    'rate_limit.title' => 'Too Many Requests - ADASI Supplier Portal',
+    'rate_limit.support' => 'If the issue continues, please contact Astra Daido Support.',
+    'confirm.protected' => 'Protected action',
+    'confirm.wait' => 'Your password was confirmed. Please wait while we continue.',
+    'login.reset' => 'Reset/Forgot password?',
+    'login.remember_device' => 'Remember this device',
+    'login.registration_status' => 'Check registration status',
+    'rate_limit.request_limited' => 'Request limited',
+    'rate_limit.wait' => 'Please wait a moment',
+    'rate_limit.help' => 'To protect your account, this action is temporarily limited due to too many requests.',
+    'two_factor.verification' => 'Sign-in verification',
+    'two_factor.identity' => 'Verify your identity',
+    'two_factor.expiry' => 'This challenge expires after 10 minutes.',
+    'feedback.invalid_code' => 'The authentication code is invalid.',
+    'feedback.used_code' => 'The authentication code is invalid or has already been used.',
+    'feedback.current_session' => 'Use the sign-out button to end your current session.',
+    'feedback.no_access' => 'You do not have access to this page.',
+    'feedback.unauthenticated' => 'Unauthenticated.',
+    'feedback.session_ended' => 'Your session has ended. Please sign in again.',
+    'feedback.many_attempts' => 'Too Many Attempts.',
+    'feedback.back_verification' => 'Back to Verification',
+    'feedback.back_security' => 'Back to Security',
+    'feedback.back_setup' => 'Back to MFA Setup',
+    'feedback.wait' => 'Too many requests. Please wait a moment before trying again.',
+    'feedback.wait_minutes' => '{1} Too many requests. Please wait :count minute before trying again.|[2,*] Too many requests. Please wait :count minutes before trying again.',
+    'feedback.wait_seconds' => '{1} Too many requests. Please wait :count second before trying again.|[2,*] Too many requests. Please wait :count seconds before trying again.',
+    'feedback.verification_sent' => 'A new verification link has been sent to your email address.',
+    'feedback.profile_updated' => 'Your profile information was updated.',
+    'feedback.password_updated' => 'Your password was updated.',
+    'feedback.already_enabled' => 'Two-factor authentication is already enabled.',
+    'feedback.disabled' => 'Two-factor authentication was disabled.',
+    'feedback.other_sessions_out' => 'Other active sessions were signed out.',
+    'feedback.account_update' => 'Account update',
+    'feedback.wait_title' => 'Please Wait - ADASI Supplier Portal',
+    'feedback.wait_before' => 'Please wait',
+    'feedback.wait_after' => 'before trying again.',
+    'feedback.wait_moment' => 'a moment',
+    'feedback.minutes' => '{1} :count minute|[2,*] :count minutes',
+    'feedback.seconds' => '{1} :count second|[2,*] :count seconds',
+    'feedback.registration_update' => 'Please update your details as requested.',
 ];

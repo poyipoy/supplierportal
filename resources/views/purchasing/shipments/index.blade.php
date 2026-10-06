@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Shipments & Logistics - ADASI Portal')
-@section('page-title', 'Shipments & Logistics')
+@section('title', __('shipments.copy.shipments_logistics_adasi_portal'))
+@section('page-title', __('shipments.titles.logistics', []))
 
 @push('styles')
 <style>
@@ -17,14 +17,14 @@
 <div class="tw-grid tw-gap-4">
     {{-- 1. Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('purchasing.dashboard'),
-        'Shipments' => null,
+        __('purchasing.breadcrumbs.dashboard') => route('purchasing.dashboard'),
+        __('purchasing.breadcrumbs.shipments') => null,
     ]" />
 
     <x-ui.page-header
-        title="Physical Shipments & Deliveries"
-        eyebrow="Logistics Management"
-        description="Monitor physical deliveries across suppliers, verify shipping documentation sets, and confirm port/warehouse arrivals."
+        :title="__('shipments.copy.physical_shipments_deliveries')"
+        :eyebrow="__('shipments.copy.logistics_management')"
+        :description="__('shipments.copy.monitor_physical_deliveries_across_suppliers_verify_shipping_documentation_sets_and_confirm_port_war')"
     >
         <x-slot:actions>
             <x-ui.button
@@ -34,14 +34,14 @@
                 data-async-export
                 id="exportShipmentsBtn"
                 :data-export-url="route('purchasing.export.shipments')"
-                data-export-source-singular="shipment"
-                data-export-source-plural="shipments"
+                data-export-source-singular="{{ __('exports.sources.shipment') }}"
+                data-export-source-plural="{{ __('exports.sources.shipments') }}"
                 data-export-count-table="#shipmentTable"
-                data-export-row-label="shipment rows"
-                data-export-row-explanation="Each shipment will be exported with consolidated POs and fulfillment metrics."
+                data-export-row-label="{{ __('shipments.copy.shipment_rows') }}"
+                data-export-row-explanation="{{ __('shipments.copy.each_shipment_will_be_exported_with_consolidated_pos_and_fulfillment_metrics') }}"
             >
                 <x-ui.icon name="file-spreadsheet" />
-                <span>Export Excel</span>
+                <span>{{ __('shipments.copy.export_excel') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -57,13 +57,13 @@
                     type="text"
                     id="filter_search"
                     class="form-control border-start-0 ps-0"
-                    placeholder="Search shipment, PO, or supplier..."
+                    placeholder="{{ __('shipments.copy.search_shipment_po_or_supplier') }}"
                     autocomplete="off"
-                    aria-label="Search shipment registry"
+                    aria-label="{{ __('shipments.copy.search_shipment_registry') }}"
                     value="{{ request('search') }}"
                 >
-                <x-ui.button type="button" size="sm" id="searchShipmentBtn" aria-label="Search shipments">
-                    Search
+                <x-ui.button type="button" size="sm" id="searchShipmentBtn" aria-label="{{ __('shipments.copy.search_shipments') }}">
+                    {{ __('shipments.copy.search') }}
                 </x-ui.button>
             </div>
         </x-slot:search>
@@ -71,18 +71,18 @@
         <x-slot:filters>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <div style="min-width: 170px;">
-                    <select id="filter_status" class="form-select form-select-sm" aria-label="Filter by Status">
-                        <option value="">All Statuses</option>
-                        <option value="draft" @selected(request('status') === 'draft')>Draft</option>
-                        <option value="submitted" @selected(request('status') === 'submitted')>In Transit</option>
-                        <option value="arrived" @selected(request('status') === 'arrived')>Arrived at Plant</option>
-                        <option value="cancelled" @selected(request('status') === 'cancelled')>Cancelled</option>
+                    <select id="filter_status" class="form-select form-select-sm" aria-label="{{ __('shipments.copy.filter_by_status') }}">
+                        <option value="">{{ __('shipments.copy.all_statuses') }}</option>
+                        <option value="draft" @selected(request('status') === 'draft')>{{ __('shipments.copy.draft') }}</option>
+                        <option value="submitted" @selected(request('status') === 'submitted')>{{ __('shipments.copy.in_transit') }}</option>
+                        <option value="arrived" @selected(request('status') === 'arrived')>{{ __('shipments.copy.arrived_at_plant') }}</option>
+                        <option value="cancelled" @selected(request('status') === 'cancelled')>{{ __('shipments.copy.cancelled') }}</option>
                     </select>
                 </div>
 
                 <div style="min-width: 200px;">
-                    <select id="filter_supplier" class="form-select form-select-sm" aria-label="Filter by Supplier">
-                        <option value="">All Suppliers</option>
+                    <select id="filter_supplier" class="form-select form-select-sm" aria-label="{{ __('shipments.copy.filter_by_supplier') }}">
+                        <option value="">{{ __('shipments.copy.all_suppliers') }}</option>
                         @foreach($suppliers as $supplier)
                             <option value="{{ $supplier->getRouteKey() }}" @selected((string) request('supplier_id') === (string) $supplier->getRouteKey())>
                                 {{ $supplier->name }}
@@ -96,11 +96,11 @@
                         id="shipmentDateRange"
                         start-name="date_from"
                         start-id="shipmentDateFrom"
-                        start-label="From"
+                        :start-label="__('shipments.copy.from')"
                         start-value="{{ request('date_from') }}"
                         end-name="date_to"
                         end-id="shipmentDateTo"
-                        end-label="To"
+                        :end-label="__('shipments.copy.to')"
                         end-value="{{ request('date_to') }}"
                         compact
                     />
@@ -108,7 +108,7 @@
 
                 <x-ui.button type="button" variant="ghost" size="sm" id="resetFilter" class="shipment-filter-reset">
                     <x-ui.icon name="rotate-ccw" />
-                    <span>Reset</span>
+                    <span>{{ __('shipments.copy.reset') }}</span>
                 </x-ui.button>
             </div>
             <div id="filterChips" class="d-none flex-wrap tw-gap-1.5 align-items-center ms-2" aria-live="polite"></div>
@@ -120,17 +120,17 @@
         <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="shipmentTable">
             <thead class="table-light">
                 <tr>
-                    <th scope="col">Shipment No.</th>
-                    <th scope="col">Supplier</th>
-                    <th scope="col">Consolidated POs</th>
-                    <th scope="col" class="text-center">Items</th>
-                    <th scope="col" class="text-center">Total Qty</th>
-                    <th scope="col" class="text-center">Actual Weight</th>
-                    <th scope="col">Shipment Date</th>
-                    <th scope="col">Est. Arrival</th>
-                    <th scope="col">Actual Arrival</th>
-                    <th scope="col" class="text-center">Status</th>
-                    <th scope="col" class="text-end" style="width: 80px;">Action</th>
+                    <th scope="col">{{ __('shipments.copy.shipment_no') }}</th>
+                    <th scope="col">{{ __('shipments.copy.supplier') }}</th>
+                    <th scope="col">{{ __('shipments.copy.consolidated_pos') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.items') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.total_qty') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.actual_weight') }}</th>
+                    <th scope="col">{{ __('shipments.copy.shipment_date') }}</th>
+                    <th scope="col">{{ __('shipments.copy.est_arrival') }}</th>
+                    <th scope="col">{{ __('shipments.copy.actual_arrival') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
+                    <th scope="col" class="text-end" style="width: 80px;">{{ __('shipments.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -172,12 +172,12 @@
                             {!! \App\Support\StatusHelper::badge(\App\Support\StatusHelper::shipmentBadge($shp->status), \App\Support\StatusHelper::shipmentLabel($shp->status)) !!}
                         </td>
                         <td class="text-end">
-                            <a href="{{ route('purchasing.shipments.show', $shp) }}" class="ui-data-action ui-data-action--primary">Details</a>
+                            <a href="{{ route('purchasing.shipments.show', $shp) }}" class="ui-data-action ui-data-action--primary">{{ __('shipments.copy.details') }}</a>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="11" class="text-center py-4 tw-text-on-surface-variant">No shipments matching filter criteria.</td>
+                        <td colspan="11" class="text-center py-4 tw-text-on-surface-variant">{{ __('shipments.copy.no_shipments_matching_filter_criteria') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -215,6 +215,7 @@
                 { data: 'status_badge', name: 'status', className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
+
             order: []
         });
 
@@ -266,7 +267,7 @@
                 const $remove = $('<button>', {
                     type: 'button',
                     class: 'ui-focus-ring tw-inline-flex tw-h-5 tw-w-5 tw-items-center tw-justify-center tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-p-0 tw-text-primary hover:tw-bg-primary/10',
-                    'aria-label': `Remove ${label} filter`,
+                    'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
                     text: '×'
                 });
 
@@ -278,21 +279,21 @@
 
             const chips = [];
             if (search) {
-                chips.push(createChip(`Search: ${search}`, () => {
+                chips.push(createChip(window.AdasiI18n.t('js.filters.search', { search }), () => {
                     $('#filter_search').val('');
                     updateFilterChips();
                     table.draw();
                 }));
             }
             if (statusText) {
-                chips.push(createChip(`Status: ${statusText}`, () => {
+                chips.push(createChip(@js(__('common.final_copy.status')) + ' ' + statusText, () => {
                     $('#filter_status').val('');
                     updateFilterChips();
                     table.draw();
                 }));
             }
             if (supplierText) {
-                chips.push(createChip(`Supplier: ${supplierText}`, () => {
+                chips.push(createChip(window.AdasiI18n.t('js.filters.supplier', { supplier: supplierText }), () => {
                     $('#filter_supplier').val('');
                     updateFilterChips();
                     table.draw();
@@ -300,8 +301,8 @@
             }
             if (dateFrom || dateTo) {
                 const label = (dateFrom && dateTo)
-                    ? `Date: ${dateFrom} to ${dateTo}`
-                    : (dateFrom ? `From: ${dateFrom}` : `To: ${dateTo}`);
+                    ? window.AdasiI18n.t('js.filters.date_range', { from: dateFrom, to: dateTo })
+                    : (dateFrom ? window.AdasiI18n.t('js.filters.from', { date: dateFrom }) : window.AdasiI18n.t('js.filters.to', { date: dateTo }));
                 chips.push(createChip(label, () => {
                     $('#shipmentDateFrom').val('');
                     $('#shipmentDateTo').val('');

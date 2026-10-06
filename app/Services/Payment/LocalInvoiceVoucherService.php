@@ -23,10 +23,10 @@ class LocalInvoiceVoucherService
     {
         $this->authorize($actor);
         if (! in_array($data['payment_method'] ?? null, [LocalInvoiceVoucher::METHOD_BANK, LocalInvoiceVoucher::METHOD_KAS], true)) {
-            throw ValidationException::withMessages(['payment_method' => 'Choose exactly one payment method: Bank or Kas.']);
+            throw ValidationException::withMessages(['payment_method' => __('finance.validation.voucher_method')]);
         }
         if (blank($data['voucher_date'] ?? null)) {
-            throw ValidationException::withMessages(['voucher_date' => 'Voucher date is required.']);
+            throw ValidationException::withMessages(['voucher_date' => __('finance.validation.voucher_date')]);
         }
 
         return DB::transaction(function () use ($item, $data, $actor) {
@@ -36,22 +36,22 @@ class LocalInvoiceVoucherService
                 return $existing;
             }
             if (! $lockedItem->isActive() || $lockedItem->payable_type !== LocalInvoice::class) {
-                throw ValidationException::withMessages(['payment_item' => 'Voucher Bayar is only available for an active Local Supplier invoice item.']);
+                throw ValidationException::withMessages(['payment_item' => __('finance.validation.voucher_active_item')]);
             }
 
             $group = $lockedItem->group()->lockForUpdate()->firstOrFail();
             $batch = $group->batch()->lockForUpdate()->firstOrFail();
             if ($batch->batch_type !== PaymentBatch::TYPE_SUPPLIER || ! in_array($batch->status, [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID], true)) {
-                throw ValidationException::withMessages(['payment_item' => 'Finalize the Supplier DRP batch before issuing its vouchers.']);
+                throw ValidationException::withMessages(['payment_item' => __('finance.validation.voucher_finalize_batch')]);
             }
 
             $invoice = LocalInvoice::whereKey($lockedItem->payable_id)->lockForUpdate()->firstOrFail();
             if (! $invoice->isReadyToPay()) {
-                throw new RuntimeException("Invoice [{$invoice->invoice_number}] is not Ready to Pay.");
+                throw new RuntimeException(__('finance.validation.invoice_not_ready', ['number' => $invoice->invoice_number]));
             }
             $verification = $invoice->currentVerification()->lockForUpdate()->first();
             if (! $verification || ! $verification->is_locked) {
-                throw ValidationException::withMessages(['payment_item' => 'The latest invoice verification must be locked.']);
+                throw ValidationException::withMessages(['payment_item' => __('finance.validation.verification_locked')]);
             }
             if ($invoice->local_purchase_order_id) {
                 $histories = $invoice->goodsReceiptHistories()->whereIn('state', [LocalInvoiceGoodsReceipt::STATE_RESERVED, LocalInvoiceGoodsReceipt::STATE_CONSUMED])->get();
@@ -59,7 +59,7 @@ class LocalInvoiceVoucherService
                 $historyIds = $histories->pluck('local_goods_receipt_id')->map(fn ($id) => (int) $id)->sort()->values()->all();
                 $receiptIds = $receipts->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
                 if ($histories->isEmpty() || $histories->contains(fn (LocalInvoiceGoodsReceipt $history) => $history->state !== LocalInvoiceGoodsReceipt::STATE_CONSUMED) || $receipts->isEmpty() || $receipts->contains(fn ($receipt) => $receipt->status !== LocalGoodsReceipt::STATUS_INVOICED) || $historyIds !== $receiptIds) {
-                    throw ValidationException::withMessages(['payment_item' => 'The authoritative GR allocation has not been fully consumed.']);
+                    throw ValidationException::withMessages(['payment_item' => __('finance.validation.gr_consumed')]);
                 }
             }
 
@@ -68,7 +68,7 @@ class LocalInvoiceVoucherService
             $pph = $verification->totalWithholdingExact();
             $net = $verification->netPayableExact($invoice->invoice_amount);
             if (Money::compare($net, $lockedItem->amount) !== 0) {
-                throw ValidationException::withMessages(['payment_item' => 'DRP item amount no longer matches the verified invoice payable.']);
+                throw ValidationException::withMessages(['payment_item' => __('finance.validation.drp_amount_changed')]);
             }
             $grReferences = $invoice->goodsReceiptHistories()->where('state', LocalInvoiceGoodsReceipt::STATE_CONSUMED)
                 ->orderBy('id')->pluck('gr_number_snapshot')->implode(', ');

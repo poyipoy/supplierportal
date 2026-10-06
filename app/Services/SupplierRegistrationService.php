@@ -9,6 +9,7 @@ use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
 use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
 use Illuminate\Http\UploadedFile;
@@ -55,13 +56,13 @@ class SupplierRegistrationService
             if (! $isSameUser) {
                 if ($existingUser->account_status !== User::ACCOUNT_STATUS_REJECTED) {
                     throw ValidationException::withMessages([
-                        'email' => __('The provided registration details cannot be processed. Please verify your information or contact support.'),
+                        'email' => __('local_procurement.registration.unprocessed'),
                     ]);
                 }
             } else {
                 if (! in_array($existingUser->account_status, [User::ACCOUNT_STATUS_REJECTED, User::ACCOUNT_STATUS_REVISION], true)) {
                     throw ValidationException::withMessages([
-                        'email' => __('The provided registration details cannot be processed. Please verify your information or contact support.'),
+                        'email' => __('local_procurement.registration.unprocessed'),
                     ]);
                 }
             }
@@ -76,7 +77,7 @@ class SupplierRegistrationService
 
             if ($existingNib) {
                 throw ValidationException::withMessages([
-                    'nib' => __('The provided registration details cannot be processed. Please verify your information or contact support.'),
+                    'nib' => __('local_procurement.registration.unprocessed'),
                 ]);
             }
         }
@@ -90,7 +91,7 @@ class SupplierRegistrationService
 
             if ($existingNpwp) {
                 throw ValidationException::withMessages([
-                    'npwp' => __('The provided registration details cannot be processed. Please verify your information or contact support.'),
+                    'npwp' => __('local_procurement.registration.unprocessed'),
                 ]);
             }
         }
@@ -117,7 +118,7 @@ class SupplierRegistrationService
             if ($existingUser) {
                 if ($existingUser->account_status !== User::ACCOUNT_STATUS_REJECTED) {
                     throw ValidationException::withMessages([
-                        'email' => __('The provided registration details cannot be processed. Please verify your information or contact support.'),
+                        'email' => __('local_procurement.registration.unprocessed'),
                     ]);
                 }
                 $this->checkDuplicates($data['email'], $data['nib'], $data['npwp'], $existingUser->id);
@@ -258,8 +259,9 @@ class SupplierRegistrationService
             $this->notifyReviewers(
                 event: 'supplier_registration.submitted',
                 eventKey: "supplier_reg_{$attempt->id}_submitted",
-                title: 'New Supplier Registration',
-                message: "Supplier {$data['company_name']} has submitted registration {$reference}.",
+                title: 'notifications.registration.submitted.title',
+                message: 'notifications.registration.submitted.message',
+                replace: ['company' => $data['company_name'], 'reference' => $reference],
                 url: route('supplier-registrations.show', $attempt->hash),
                 attempt: $attempt,
             );
@@ -283,12 +285,12 @@ class SupplierRegistrationService
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             if ($user->account_status !== User::ACCOUNT_STATUS_REVISION) {
-                throw new \DomainException(__('Only registrations in revision status can be resubmitted.'));
+                throw new \DomainException(__('local_procurement.registration.resubmit_revision'));
             }
 
             $lastAttempt = $user->registrationAttempts()->orderByDesc('attempt_number')->lockForUpdate()->first();
             if (! $lastAttempt || $lastAttempt->status !== SupplierRegistrationAttempt::STATUS_REVISION) {
-                throw new \DomainException(__('Active attempt is not in revision status.'));
+                throw new \DomainException(__('local_procurement.registration.attempt_revision'));
             }
 
             $this->checkDuplicates($data['email'] ?? $user->email, $data['nib'], $data['npwp'], $user->id);
@@ -408,8 +410,9 @@ class SupplierRegistrationService
             $this->notifyReviewers(
                 event: 'supplier_registration.resubmitted',
                 eventKey: "supplier_reg_{$newAttempt->id}_resubmitted",
-                title: 'Supplier Registration Resubmitted',
-                message: "Supplier {$data['company_name']} has resubmitted their registration with revisions.",
+                title: 'notifications.registration.resubmitted.title',
+                message: 'notifications.registration.resubmitted.message',
+                replace: ['company' => $data['company_name']],
                 url: route('supplier-registrations.show', $newAttempt->hash),
                 attempt: $newAttempt,
             );
@@ -431,7 +434,7 @@ class SupplierRegistrationService
             $user = User::query()->whereKey($attempt->user_id)->lockForUpdate()->firstOrFail();
 
             if ($attempt->status !== SupplierRegistrationAttempt::STATUS_PENDING) {
-                throw new \DomainException(__('Only pending registrations can be requested for revision.'));
+                throw new \DomainException(__('local_procurement.registration.request_pending'));
             }
 
             $attempt->update([
@@ -456,8 +459,9 @@ class SupplierRegistrationService
             $this->notifyReviewers(
                 event: 'supplier_registration.revision_requested',
                 eventKey: "supplier_reg_{$attempt->id}_revision_requested",
-                title: 'Supplier Registration Revision Requested',
-                message: "Revision requested for supplier {$user->name} by {$reviewer->name}.",
+                title: 'notifications.registration.revision_requested.title',
+                message: 'notifications.registration.revision_requested.message',
+                replace: ['company' => $user->name, 'reviewer' => $reviewer->name],
                 url: route('supplier-registrations.show', $attempt->hash),
                 attempt: $attempt,
             );
@@ -476,7 +480,7 @@ class SupplierRegistrationService
             $user = User::query()->whereKey($attempt->user_id)->lockForUpdate()->firstOrFail();
 
             if (! in_array($attempt->status, [SupplierRegistrationAttempt::STATUS_PENDING, SupplierRegistrationAttempt::STATUS_REVISION], true)) {
-                throw new \DomainException(__('This registration cannot be rejected in its current status.'));
+                throw new \DomainException(__('local_procurement.registration.reject_status'));
             }
 
             $attempt->update([
@@ -517,8 +521,9 @@ class SupplierRegistrationService
             $this->notifyReviewers(
                 event: 'supplier_registration.rejected',
                 eventKey: "supplier_reg_{$attempt->id}_rejected",
-                title: 'Supplier Registration Rejected',
-                message: "Registration for supplier {$user->name} was rejected by {$reviewer->name}.",
+                title: 'notifications.registration.rejected.title',
+                message: 'notifications.registration.rejected.message',
+                replace: ['company' => $user->name, 'reviewer' => $reviewer->name],
                 url: route('supplier-registrations.show', $attempt->hash),
                 attempt: $attempt,
             );
@@ -539,13 +544,13 @@ class SupplierRegistrationService
             $user = User::query()->whereKey($attempt->user_id)->lockForUpdate()->firstOrFail();
 
             if ($attempt->status !== SupplierRegistrationAttempt::STATUS_PENDING) {
-                throw new \DomainException(__('Only pending registrations can be approved.'));
+                throw new \DomainException(__('local_procurement.registration.approve_pending'));
             }
 
             $validScopes = array_values(array_intersect(['import', 'local'], $scopes));
             if (empty($validScopes)) {
                 throw ValidationException::withMessages([
-                    'scopes' => __('At least one valid supplier scope (import or local) must be assigned upon approval.'),
+                    'scopes' => __('local_procurement.registration.scope_required'),
                 ]);
             }
 
@@ -607,8 +612,10 @@ class SupplierRegistrationService
             $this->notifyReviewers(
                 event: 'supplier_registration.approved',
                 eventKey: "supplier_reg_{$attempt->id}_approved",
-                title: 'Supplier Registration Approved',
-                message: "Supplier {$user->name} has been approved with scope(s): ".implode(', ', $validScopes).'.',
+                title: 'notifications.registration.approved.title',
+                message: 'notifications.registration.approved.message',
+                replace: ['company' => $user->name],
+                localizedReplace: ['scopes' => 'notifications.registration.scopes.'.(count($validScopes) > 1 ? 'both' : $validScopes[0])],
                 url: route('supplier-registrations.show', $attempt->hash),
                 attempt: $attempt,
             );
@@ -673,7 +680,7 @@ class SupplierRegistrationService
             if ($file instanceof UploadedFile && $file->isValid()) {
                 $ext = strtolower($file->getClientOriginalExtension());
                 $randomName = Str::random(40).'.'.$ext;
-                $storageDir = 'attachments/supplier-registrations/'.now()->format('Y/m');
+                $storageDir = 'attachments/supplier-registrations/'.now()->format('Y/m'); // biz-time:ignore storage path
                 $relativePath = $storageDir.'/'.$randomName;
 
                 // Windows-safe stream upload to private disk
@@ -737,7 +744,7 @@ class SupplierRegistrationService
      */
     protected function generateRegistrationReference(): string
     {
-        $year = now()->format('Y');
+        $year = BusinessTime::now()->format('Y');
 
         do {
             $random = strtoupper(Str::random(8));
@@ -757,6 +764,8 @@ class SupplierRegistrationService
         string $message,
         string $url,
         SupplierRegistrationAttempt $attempt,
+        array $replace = [],
+        array $localizedReplace = [],
     ): void {
         $reviewers = User::query()
             ->whereIn('role', ['admin', 'finance', 'purchasing'])
@@ -778,6 +787,8 @@ class SupplierRegistrationService
                 'category' => NotificationCategory::OTHER,
                 'domain' => NotificationDomain::GLOBAL,
             ],
+            replace: $replace,
+            localizedReplace: $localizedReplace,
         );
     }
 }

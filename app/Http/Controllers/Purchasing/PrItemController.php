@@ -20,7 +20,7 @@ class PrItemController extends Controller
         $pr = PurchaseRequisition::findOrFail($validated['pr_id']);
 
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'], true)) {
-            return response()->json(['error' => 'Cannot add items to this requisition.'], 403);
+            return response()->json(['error' => __('purchasing.copy.cannot_add_items_to_this_requisition')], 403);
         }
 
         $result = $this->processor->process($validated, false, auth()->id());
@@ -39,7 +39,7 @@ class PrItemController extends Controller
         $pr = $item->purchaseRequisition;
 
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'], true)) {
-            return response()->json(['error' => 'Cannot edit items on this requisition.'], 403);
+            return response()->json(['error' => __('purchasing.copy.cannot_edit_items_on_this_requisition')], 403);
         }
 
         $result = $this->processor->process($request->validated(), false, auth()->id(), $item);
@@ -58,12 +58,12 @@ class PrItemController extends Controller
         $pr = $item->purchaseRequisition;
 
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'], true)) {
-            return response()->json(['error' => 'Cannot delete items from this requisition.'], 403);
+            return response()->json(['error' => __('purchasing.copy.cannot_delete_items_from_this_requisition')], 403);
         }
 
         if ($item->quotationItems()->exists() || $item->qcItems()->exists()) {
             return response()->json([
-                'error' => 'This material is already referenced by a quotation or QC record and cannot be deleted.',
+                'error' => __('purchasing.copy.this_material_is_already_referenced_by_a_quotation_or_qc_record_and_cannot_be_deleted'),
             ], 422);
         }
 

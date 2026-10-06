@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() === 'id' ? 'id' : 'en' }}">
 <head>
     <meta charset="UTF-8">
-    <title>Purchase Order - {{ $po->po_number }}</title>
+    <title>{{ __('purchasing.copy.purchase_order') }} - {{ $po->po_number }}</title>
     <style>
         * {
             margin: 0;
@@ -242,7 +242,7 @@
                     <div class="company-subtitle">Kawasan Industri Suryacipta, Karawang, Jawa Barat 41363</div>
                 </div>
                 <div class="header-right">
-                    <div class="doc-title">PURCHASE ORDER</div>
+                    <div class="doc-title">{{ __('documents.copy.purchase_order') }}</div>
                     <div class="doc-number">{{ $po->po_number }}</div>
                 </div>
             </div>
@@ -251,33 +251,33 @@
         <!-- Info Section -->
         <div class="info-section">
             <div class="info-box">
-                <div class="info-label">Date PO</div>
-                <div class="info-value"><strong>{{ $po->created_at->format('d F Y') }}</strong></div>
+                <div class="info-label">{{ __('documents.copy.date_po') }}</div>
+                <div class="info-value"><strong>{{ \App\Support\BusinessTime::toBusiness($po->created_at)->locale(app()->getLocale())->translatedFormat('d F Y') }}</strong></div>
 
-                <div class="info-label">PR No.</div>
+                <div class="info-label">{{ __('documents.copy.pr_no') }}</div>
                 <div class="info-value">
                     @php $prs = $po->purchaseRequisitions(); @endphp
                     {{ $prs->map(fn($pr) => $pr->pr_number ?? '-')->implode(', ') }}
                     @if($prs->count() > 1)
-                        ({{ $prs->count() }} PR digabung)
+                        ({{ trans_choice('documents.copy.combined_prs', $prs->count(), ['count' => $prs->count()]) }})
                     @endif
                 </div>
 
-                <div class="info-label">Period</div>
+                <div class="info-label">{{ __('documents.copy.period') }}</div>
                 <div class="info-value">{{ $prs->map(fn($pr) => $pr->period->display_label ?? $pr->period->name ?? '-')->unique()->implode(', ') }}</div>
 
-                <div class="info-label">Created By</div>
+                <div class="info-label">{{ __('documents.copy.created_by') }}</div>
                 <div class="info-value">{{ $po->creator->name ?? '-' }}</div>
             </div>
             <div class="info-box info-box-right">
-                <div class="info-label">Supplier</div>
+                <div class="info-label">{{ __('documents.copy.supplier') }}</div>
                 <div class="info-value"><strong>{{ $po->supplier->name ?? '-' }}</strong></div>
 
-                <div class="info-label">Currency</div>
+                <div class="info-label">{{ __('documents.copy.currency') }}</div>
                 <div class="info-value">{{ $po->currency ?? 'USD' }}</div>
 
-                <div class="info-label">Estimated Arrival</div>
-                <div class="info-value">{{ $po->estimated_arrival ? $po->estimated_arrival->format('d F Y') : '-' }}</div>
+                <div class="info-label">{{ __('documents.copy.estimated_arrival') }}</div>
+                <div class="info-value">{{ $po->estimated_arrival ? $po->estimated_arrival->locale(app()->getLocale())->translatedFormat('d F Y') : '-' }}</div>
             </div>
         </div>
 
@@ -285,16 +285,16 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th scope="col" class="text-center" style="width: 30px;">No</th>
-                    <th scope="col">Material</th>
+                    <th scope="col" class="text-center" style="width: 30px;">{{ __('documents.copy.no') }}</th>
+                    <th scope="col">{{ __('documents.copy.material') }}</th>
                     <th scope="col" class="text-center">HS Code</th>
-                    <th scope="col" class="text-center">Specification</th>
-                    <th scope="col" class="text-center">Qty</th>
-                    <th scope="col" class="text-right">Weight/Unit</th>
-                    <th scope="col" class="text-right">Total Weight</th>
-                    <th scope="col" class="text-right">Price/kg</th>
-                    <th scope="col" class="text-right">Total ({{ $po->currency ?? 'USD' }})</th>
-                    <th scope="col" class="text-right">Total (IDR)</th>
+                    <th scope="col" class="text-center">{{ __('documents.copy.specification') }}</th>
+                    <th scope="col" class="text-center">{{ __('documents.copy.qty') }}</th>
+                    <th scope="col" class="text-right">{{ __('documents.copy.weight_unit') }}</th>
+                    <th scope="col" class="text-right">{{ __('documents.copy.total_weight') }}</th>
+                    <th scope="col" class="text-right">{{ __('documents.copy.price_kg') }}</th>
+                    <th scope="col" class="text-right">{{ __('documents.copy.total') }} ({{ $po->currency ?? 'USD' }})</th>
+                    <th scope="col" class="text-right">{{ __('documents.copy.total_idr') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -307,7 +307,7 @@
                                 {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                 @if($rate)
                                     <span style="color: #64748b; font-weight: 400; margin-left: 8px;">
-                                        Exchange rate: 1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}
+                                        {{ __('common.final_review.exchange_rate', ['currency' => $quotation->currency, 'amount' => number_format($rate->rate_to_idr, 0, ',', '.')]) }}
                                     </span>
                                 @endif
                             </td>
@@ -345,11 +345,11 @@
             <div class="totals-box">
                 <table class="totals-table">
                     <tr>
-                        <td>Total ({{ $po->currency ?? 'USD' }})</td>
+                        <td>{{ __('documents.copy.total') }} ({{ $po->currency ?? 'USD' }})</td>
                         <td class="text-right"><strong>{{ number_format($grandTotalFx, 2, ',', '.') }}</strong></td>
                     </tr>
                     <tr class="grand-total">
-                        <td>GRAND TOTAL (IDR)</td>
+                        <td>{{ __('documents.copy.grand_total_idr') }}</td>
                         <td class="text-right">Rp {{ number_format($grandTotalIdr, 0, ',', '.') }}</td>
                     </tr>
                 </table>
@@ -359,22 +359,22 @@
         <!-- Signatures -->
         <div class="signature-section">
             <div class="signature-box">
-                <div class="signature-title">Created By</div>
-                <div class="signature-line">{{ $po->creator->name ?? '_______________' }}<br>Purchasing</div>
+                <div class="signature-title">{{ __('documents.copy.created_by') }}</div>
+                <div class="signature-line">{{ $po->creator->name ?? '_______________' }}<br>{{ __('documents.copy.purchasing') }}</div>
             </div>
             <div class="signature-box">
-                <div class="signature-title">Approved By</div>
-                <div class="signature-line">_______________<br>Manager Purchasing</div>
+                <div class="signature-title">{{ __('documents.copy.approved_by') }}</div>
+                <div class="signature-line">_______________<br>{{ __('documents.copy.manager_purchasing') }}</div>
             </div>
             <div class="signature-box">
-                <div class="signature-title">Received By</div>
-                <div class="signature-line">_______________<br>Supplier</div>
+                <div class="signature-title">{{ __('documents.copy.received_by') }}</div>
+                <div class="signature-line">_______________<br>{{ __('documents.copy.supplier') }}</div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            This document was generated automatically by ADASI Supplier Portal on {{ now()->format('d F Y, H:i') }} WIB.
+            {{ __('documents.pdf.generated', ['date' => \App\Support\BusinessTime::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i').' '.\App\Support\BusinessTime::label()]) }}
         </div>
     </div>
 </body>
