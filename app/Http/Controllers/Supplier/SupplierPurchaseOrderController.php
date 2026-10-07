@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Supplier;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Services\MaterialProgressService;
@@ -20,6 +21,7 @@ class SupplierPurchaseOrderController extends Controller
      */
     public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
+        $filters = PurchaseOrderExportFilters::validated($request, supplier: true, index: true);
         $supplierId = (int) auth()->id();
         $query = PurchaseOrder::query()
             ->select([
@@ -60,8 +62,11 @@ class SupplierPurchaseOrderController extends Controller
             ->where('supplier_id', auth()->id())
             ->orderBy('created_at', 'desc');
 
+        PurchaseOrderExportFilters::apply($query, $filters);
+
         if ($request->ajax()) {
             return DataTables::eloquent($query)
+                ->filter(fn ($query) => null)
                 ->addColumn('po_number_display', fn ($po) => $po->po_number)
                 ->addColumn('period_name', function ($po) {
                     $periods = $po->quotations->map(fn ($q) => $q->purchaseRequisition?->period?->display_label)->filter()->unique();

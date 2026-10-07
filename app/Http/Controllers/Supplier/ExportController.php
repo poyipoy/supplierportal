@@ -7,13 +7,14 @@ use App\Exports\PurchaseOrdersExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\AdvancedExportRequest;
+use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class ExportController extends Controller
 {
@@ -67,21 +68,9 @@ class ExportController extends Controller
         return $this->dispatchResponse($request, $exportJob);
     }
 
-    public function purchaseOrders(Request $request)
+    public function purchaseOrders(AdvancedExportRequest $request)
     {
-        $filters = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date'],
-            'po_number' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', Rule::in(['draft', 'active', 'waiting_qc', 'claim_needed', 'overdue', 'completed', 'cancelled'])],
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
-            throw ValidationException::withMessages([
-                'end_date' => __('supplier.copy.end_date_cannot_be_before_start_date'),
-            ]);
-        }
+        $filters = PurchaseOrderExportFilters::validated($request, supplier: true);
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.supplier_po_summary'),
@@ -95,6 +84,7 @@ class ExportController extends Controller
                 $filters['search'] ?? null,
             ],
             'rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('supplier.po'),
         );
 
         return $this->dispatchResponse($request, $exportJob);

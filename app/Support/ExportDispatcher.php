@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\GeneratesWorkbook;
 use App\Exports\InspectionsExport;
 use App\Exports\LocalInvoicesExport;
@@ -17,9 +18,12 @@ use App\Exports\ShipmentsExport;
 use App\Exports\SupplierPriceHistoryExport;
 use App\Jobs\ProcessExportJob;
 use App\Models\ExportJob;
+use App\Models\User;
 use App\Services\UserPreferenceService;
 use App\Support\Export\ExportOptions;
+use App\Support\Export\ExportOptionsResolver;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
@@ -69,7 +73,22 @@ class ExportDispatcher
 
         $connection = ExportJob::query()->getModel()->getConnection();
 
+        if ($options !== null && is_a($exportClass, AcceptsExportOptions::class, true)) {
+            ExportOptionsResolver::authorizeStored($exportClass, $user, $options);
+            $preview = new $exportClass(...$args);
+            $preview->applyOptions($options);
+            if ($preview->progressTotalRows() > (int) config('exports.max_rows')) {
+                throw ValidationException::withMessages(['options' => __('exports.advanced.row_limit', ['limit' => config('exports.max_rows')])]);
+            }
+        }
+
         return $connection->transaction(function () use ($user, $label, $exportClass, $args, $fileName, $options): ExportJob {
+            if ($options !== null) {
+                User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+                if (ExportJob::query()->where('user_id', $user->getKey())->whereIn('status', [ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING])->count() >= (int) config('exports.max_concurrent_per_user')) {
+                    throw ValidationException::withMessages(['options' => __('exports.advanced.concurrent_limit', ['limit' => config('exports.max_concurrent_per_user')])]);
+                }
+            }
             $record = ExportJob::create([
                 'user_id' => $user->getKey(),
                 'label' => $label,

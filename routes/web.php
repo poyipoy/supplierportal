@@ -494,7 +494,7 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     // Export
     Route::get('/export/requisitions', [ExportController::class, 'requisitions'])->name('export.requisitions');
     Route::get('/export/requisitions/{purchaseRequisition}', [ExportController::class, 'requisitionDetail'])->name('export.requisitions.detail');
-    Route::get('/export/purchase-orders', [ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
+    Route::match(['get', 'post'], '/export/purchase-orders', [ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
     Route::get('/export/purchase-orders/{purchaseOrder}', [ExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
     Route::get('/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
@@ -564,7 +564,7 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('s
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
     Route::get('/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
-    Route::get('/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
+    Route::match(['get', 'post'], '/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
     Route::get('/export/purchase-orders/{purchaseOrder}', [SupplierExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
     Route::get('/quotations/period/{period_id}', [QuotationController::class, 'period'])->name('quotations.period');
     Route::get('/quotations/{pr_id}/import-template', [QuotationController::class, 'importTemplate'])->name('quotations.import-template');

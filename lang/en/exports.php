@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'advanced' => [
+        'invalid_columns' => 'Select valid columns allowed for this export, including required columns.',
+        'row_limit' => 'This export exceeds the maximum of :limit rows. Narrow the filters.',
+        'concurrent_limit' => 'You already have :limit active exports. Wait for one to finish.',
+    ],
     'prompts.transfer_remark_match' => 'Match the Transaction ID column.',
     'prompts.recipient_name_length' => 'Up to 70 characters.',
     'closure.estimated_delivery' => 'Estimated Delivery',

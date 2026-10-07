@@ -10,6 +10,8 @@ use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\ShipmentsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\AdvancedExportRequest;
+use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\ExchangeRate;
 use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
@@ -48,29 +50,9 @@ class ExportController extends Controller
         return $this->dispatchResponse($request, $exportJob);
     }
 
-    public function purchaseOrders(Request $request)
+    public function purchaseOrders(AdvancedExportRequest $request)
     {
-        $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
-
-        $filters = $request->validate([
-            'supplier_id' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date'],
-            'po_number' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', Rule::in(['active', 'waiting_qc', 'claim_needed', 'overdue', 'completed', 'cancelled'])],
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-        $filters['supplier_id'] = $supplier?->getKey();
-
-        if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
-            throw ValidationException::withMessages([
-                'end_date' => __('purchasing.copy.end_date_cannot_be_before_start_date'),
-            ]);
-        }
+        $filters = PurchaseOrderExportFilters::validated($request);
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.po_summary'),
@@ -84,6 +66,7 @@ class ExportController extends Controller
                 $filters['search'] ?? null,
             ],
             'rekap_po_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('purchasing.po'),
         );
 
         return $this->dispatchResponse($request, $exportJob);

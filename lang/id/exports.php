@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'advanced' => [
+        'invalid_columns' => 'Pilih kolom yang diizinkan untuk ekspor ini, termasuk kolom wajib.',
+        'row_limit' => 'Ekspor melebihi batas :limit baris. Persempit filter.',
+        'concurrent_limit' => 'Anda memiliki :limit ekspor aktif. Tunggu salah satunya selesai.',
+    ],
     'prompts.transfer_remark_match' => 'Samakan dengan kolom Transaction ID.',
     'prompts.recipient_name_length' => 'Maksimal 70 karakter.',
     'closure.estimated_delivery' => 'Estimasi Pengiriman',

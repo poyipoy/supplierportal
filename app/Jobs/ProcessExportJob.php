@@ -10,6 +10,7 @@ use App\Models\ExportJob;
 use App\Services\ExportProgressService;
 use App\Services\UserPreferenceService;
 use App\Support\Export\ExportOptions;
+use App\Support\Export\ExportOptionsResolver;
 use App\Support\ExportDispatcher;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -66,6 +67,7 @@ class ProcessExportJob implements ShouldQueue
                     throw new RuntimeException('The export does not accept these options.');
                 }
                 $export->applyOptions($options);
+                ExportOptionsResolver::authorizeStored($exportClass, $record->user()->firstOrFail(), $options);
             } elseif ($format !== 'xlsx') {
                 throw new RuntimeException('CSV exports require explicit export options.');
             }
@@ -77,6 +79,9 @@ class ProcessExportJob implements ShouldQueue
             // Expensive construction/counting happens while the durable record is
             // still queued. A process death here is therefore safe for worker retry.
             $totalRows = max(0, $export->progressTotalRows());
+            if ($record->export_options !== null && $totalRows > (int) config('exports.max_rows')) {
+                throw new RuntimeException('Export row limit exceeded after dispatch.');
+            }
             $export->setExportProgressContext((int) $record->getKey());
             $path = 'exports/'.$record->user_id.'/'.$record->getKey().'/'.$record->file_name;
 
