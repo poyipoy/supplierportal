@@ -5,6 +5,7 @@ namespace App\Services\LocalInvoice;
 use App\Models\LocalInvoice;
 use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
+use App\Support\BusinessTime;
 use Illuminate\Database\Eloquent\Builder;
 
 class InvoiceQuery
@@ -69,7 +70,7 @@ class InvoiceQuery
             $query->whereMonth('invoice_date', $filters['month']);
         }
         if (! empty($filters['overdue'])) {
-            $query->whereDate('due_date', '<', today())->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);
+            $query->whereDate('due_date', '<', BusinessTime::today()->toDateString())->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);
         }
 
         return $query;
@@ -81,7 +82,7 @@ class InvoiceQuery
 
         return [
             'counts' => (clone $query)->select('status')->selectRaw('COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
-            'overdue' => (clone $query)->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED'])->whereDate('due_date', '<', today())->count(),
+            'overdue' => (clone $query)->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED'])->whereDate('due_date', '<', BusinessTime::today()->toDateString())->count(),
             'invoices' => $query->latest('id')->limit(5)->get(),
         ];
     }

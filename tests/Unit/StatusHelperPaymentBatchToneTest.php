@@ -13,6 +13,9 @@ class StatusHelperPaymentBatchToneTest extends TestCase
         $this->assertSame('info', StatusHelper::paymentBatchTone(PaymentBatch::STATUS_FINALIZED));
         $this->assertSame('success', StatusHelper::paymentBatchTone(PaymentBatch::STATUS_PAID));
         $this->assertSame('warning', StatusHelper::paymentBatchTone(PaymentBatch::STATUS_PARTIALLY_PAID));
+        $this->assertSame('warning', StatusHelper::paymentBatchTone('partially_paid'));
+        $this->assertSame('warning', StatusHelper::localFinanceTone(PaymentBatch::STATUS_PARTIALLY_PAID));
+        $this->assertSame('warning', StatusHelper::localFinanceTone('partially_paid'));
         $this->assertSame('neutral', StatusHelper::paymentBatchTone(PaymentBatch::STATUS_DRAFT));
         $this->assertSame('error', StatusHelper::paymentBatchTone(PaymentBatch::STATUS_CANCELLED));
         $this->assertSame('neutral', StatusHelper::paymentBatchTone('UNKNOWN_STATUS'));

@@ -1,25 +1,25 @@
 @extends('layouts.app')
-@section('title', 'Siapkan DRP GA Draft - General Affairs')
-@section('page-title', 'Siapkan DRP GA Draft')
+@section('title', __('ga.actions.prepare_drp_page'))
+@section('page-title', __('ga.actions.prepare_drp'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Siapkan Draft DRP GA"
-        description="Pilih klaim karyawan yang telah disetujui Ready to Pay untuk disatukan dalam paket DRP Draft sebelum diserahkan ke Finance untuk dieksekusi."
-        eyebrow="General Affairs Operations"
+        :title="__('finance.drp.prepare_ga')"
+        :description="__('ga.review.drp_help')"
+        :eyebrow="__('ga.dashboard.operational')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('ga.claims.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Kembali ke Register</span>
+                <span>{{ __('ga.detail.back') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
     <x-ui.card
-        title="Klaim Karyawan Siap Bayar (Ready to Pay)"
-        description="Centang klaim yang akan dimasukkan ke dalam batch draft DRP GA baru."
+        :title="__('ga.review.ready_claims')"
+        :description="__('finance.drp.ga_selection')"
     >
         <form method="POST" action="{{ route('ga.drp-draft.store') }}">
             @csrf
@@ -28,12 +28,12 @@
                     <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" style="width: 40px;">Pilih</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">No. Klaim</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">Karyawan Penerima</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tipe Klaim</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">Rekening Bank</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Nominal (Rp)</th>
+                                <th scope="col" style="width: 40px;">{{ __('common.actions.choose') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.review.claim_number') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.employee_payee') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.claim_type') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.bank_account') }}</th>
+                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('ga.labels.claim_amount') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -44,7 +44,7 @@
                                     </td>
                                     <td>
                                         <strong class="tw-font-mono tw-text-on-surface">{{ $claim->claim_number }}</strong>
-                                        <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $claim->claim_date?->format('d M Y') }}</span>
+                                        <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $regionalFormatter->date($claim->claim_date, 'human') }}</span>
                                     </td>
                                     <td>
                                         <strong class="tw-text-on-surface">{{ $claim->employee?->name }}</strong>
@@ -52,12 +52,11 @@
                                     </td>
                                     <td>
                                         <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
-                                            {{ $claim->claim_type }}
+                                            {{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="tw-font-medium">{{ $claim->employee?->bank_name }}</span>
-                                        <span class="tw-block tw-font-mono tw-text-ui-xs">{{ $claim->employee?->account_number }} a.n {{ $claim->employee?->account_holder_name }}</span>
+                                        {{ __('finance.drp_ui.bank_details', ['bank' => $claim->employee?->bank_name, 'account' => $claim->employee?->account_number, 'holder' => $claim->employee?->account_holder_name]) }}
                                     </td>
                                     <td class="text-end tw-font-mono tw-font-bold tw-text-primary">
                                         Rp {{ number_format($claim->amount, 0, ',', '.') }}
@@ -66,7 +65,7 @@
                             @empty
                                 <tr>
                                     <td colspan="6" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
-                                        Tidak ada klaim berstatus Ready to Pay yang tersedia untuk DRP baru.
+                                        {{ __('finance.drp.empty_ga_candidates') }}
                                     </td>
                                 </tr>
                             @endforelse
@@ -77,11 +76,11 @@
                 @if($eligibleClaims->isNotEmpty())
                     <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3">
                         <div class="tw-flex-1">
-                            <input type="text" name="notes" class="form-control form-control-sm" placeholder="Catatan pengajuan batch DRP GA (opsional)...">
+                            <input type="text" name="notes" class="form-control form-control-sm" placeholder="{{ __('ga.review.batch_notes') }}">
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="check" size="sm" />
-                            <span>Kirim Draft DRP ke Finance</span>
+                            <span>{{ __('ga.review.send_drp') }}</span>
                         </x-ui.button>
                     </div>
                 @endif

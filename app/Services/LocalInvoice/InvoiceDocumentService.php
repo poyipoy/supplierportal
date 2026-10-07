@@ -48,6 +48,12 @@ class InvoiceDocumentService
         $baseRules = ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
 
         foreach (['invoice', 'tax_invoice', 'delivery_note', 'supporting'] as $type) {
+            $typeLabel = __(match ($type) {
+                'tax_invoice' => 'local_invoice.labels.tax_invoice',
+                'delivery_note' => 'local_invoice.labels.delivery_note',
+                'supporting' => 'local_invoice.labels.supporting',
+                default => 'local_invoice.labels.invoice',
+            });
             $isRequired = match ($type) {
                 'invoice' => true,
                 'tax_invoice' => $requiresTaxInvoice,
@@ -60,7 +66,7 @@ class InvoiceDocumentService
 
             if ($isRequired && ! $hasRetained && empty($uploaded)) {
                 throw ValidationException::withMessages([
-                    $type => "Berkas {$type} wajib diunggah.",
+                    $type => __('local_invoice.validation.file_required', ['type' => $typeLabel]),
                 ]);
             }
 
@@ -73,7 +79,7 @@ class InvoiceDocumentService
 
             if ($retainedCount + count($list) > 5) {
                 throw ValidationException::withMessages([
-                    $type => "Total berkas untuk {$type} melebihi batas maksimal 5 berkas.",
+                    $type => __('local_invoice.validation.file_limit', ['type' => $typeLabel]),
                 ]);
             }
 
@@ -88,11 +94,11 @@ class InvoiceDocumentService
                 $written[] = $path;
                 $stream = fopen($file->getPathname(), 'r');
                 if ($stream === false) {
-                    throw new RuntimeException('Unable to read uploaded document.');
+                    throw new RuntimeException(__('local_invoice.validation.document_read'));
                 }
                 try {
                     if (! Storage::disk('private')->put($path, $stream)) {
-                        throw new RuntimeException('Unable to store document.');
+                        throw new RuntimeException(__('local_invoice.validation.document_store'));
                     }
                 } finally {
                     fclose($stream);

@@ -55,7 +55,7 @@ class RegionalFinalClosureSweepTest extends TestCase
         $detailPath = resource_path('views/local-invoices/detail.blade.php');
         $detailContent = file_get_contents($detailPath);
         $this->assertStringContainsString(
-            '$overpaymentRefund->refund_date ? $overpaymentRefund->refund_date->format(\'d M Y\')',
+            '$overpaymentRefund->refund_date ? $regionalFormatter->fixedDate($overpaymentRefund->refund_date, \'d M Y\')',
             $detailContent,
             'TD-REG-02: Mixed refund date / settled_at fallback must remain untouched'
         );

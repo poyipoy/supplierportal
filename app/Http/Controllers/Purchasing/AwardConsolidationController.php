@@ -74,6 +74,6 @@ class AwardConsolidationController extends Controller
         }
 
         return redirect()->route('purchasing.purchase-orders.show', $pos->first())
-            ->with('success', 'Selected item awards consolidated into one Purchase Order.');
+            ->with('success', __('purchasing.copy.selected_item_awards_consolidated_into_one_purchase_order'));
     }
 }

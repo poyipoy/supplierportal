@@ -1,14 +1,14 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
-@section('title', 'vs Best Price - ADASI Portal')
-@section('page-title', 'Price Comparison')
+@section('title', __('purchasing.copy.vs_best_price_adasi_portal'))
+@section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
 <div id="purchasingComparisonContainer" class="tw-grid tw-gap-6 tw-min-w-0 tw-max-w-full" data-server-tabs-container>
     <x-ui.page-header
-        title="Current vs Best Price"
-        description="Prioritize price gaps against the historical best after exchange-rate conversion."
-        eyebrow="Purchasing"
+        :title="__('purchasing.copy.current_vs_best_price')"
+        :description="__('purchasing.copy.prioritize_price_gaps_against_the_historical_best_after_exchange_rate_conversion')"
+        :eyebrow="__('purchasing.copy.purchasing')"
     />
     <x-purchasing.comparison-tabs active="vs-best" />
 

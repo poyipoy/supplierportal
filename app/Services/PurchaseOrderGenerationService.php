@@ -70,7 +70,7 @@ class PurchaseOrderGenerationService
         })->filter(fn ($id) => $id > 0)->values()->all();
 
         if (empty($awardIds)) {
-            throw new InvalidArgumentException('No item awards selected for PO generation.');
+            throw new InvalidArgumentException(__('purchasing.copy.no_item_awards_selected_for_po_generation'));
         }
 
         sort($awardIds);
@@ -79,7 +79,7 @@ class PurchaseOrderGenerationService
         $awardReferences = PrItemAward::query()->whereIn('id', $awardIds)->orderBy('id')
             ->get(['id', 'pr_id', 'pr_item_id']);
         if ($awardReferences->count() !== count($awardIds)) {
-            throw new InvalidArgumentException('One or more selected item awards could not be found.');
+            throw new InvalidArgumentException(__('purchasing.copy.one_or_more_selected_item_awards_could_not_be_found'));
         }
 
         return DB::transaction(function () use ($awardIds, $awardReferences, $creator, $options) {
@@ -103,7 +103,7 @@ class PurchaseOrderGenerationService
                 ->orderBy('id')
                 ->get(['id', 'quotation_id', 'quotation_item_id']);
             if ($awardReferences->count() !== count($awardIds)) {
-                throw new InvalidArgumentException('One or more selected item awards changed during PO generation.');
+                throw new InvalidArgumentException(__('purchasing.copy.one_or_more_selected_item_awards_changed_during_po_generation'));
             }
 
             $quotationIds = $awardReferences->pluck('quotation_id')->unique()->sort()->values()->all();
@@ -129,7 +129,7 @@ class PurchaseOrderGenerationService
                 ->get();
 
             if ($lockedAwards->count() !== count($awardIds)) {
-                throw new InvalidArgumentException('One or more selected item awards could not be found.');
+                throw new InvalidArgumentException(__('purchasing.copy.one_or_more_selected_item_awards_could_not_be_found'));
             }
 
             $lockedAwards->load(['prItem', 'purchaseRequisition']);
@@ -139,21 +139,21 @@ class PurchaseOrderGenerationService
             }
             if (($options['require_single_supplier'] ?? false)
                 && $lockedAwards->pluck('supplier_id')->unique()->count() !== 1) {
-                throw new InvalidArgumentException('Select awards from exactly one supplier for consolidation.');
+                throw new InvalidArgumentException(__('purchasing.copy.select_awards_from_exactly_one_supplier_for_consolidation'));
             }
 
             // Revalidate every award
             foreach ($lockedAwards as $award) {
                 if ($award->purchase_order_id !== null) {
-                    throw new InvalidArgumentException("Award #{$award->id} for PR Item #{$award->pr_item_id} has already been assigned to PO #{$award->purchase_order_id}.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.award_assigned', ['award' => $award->id, 'item' => $award->pr_item_id, 'po' => $award->purchase_order_id]));
                 }
 
                 if (! $award->quotationItem || ! $award->quotationItem->is_available) {
-                    throw new InvalidArgumentException("Award #{$award->id} contains an item that is no longer marked as available.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.award_unavailable', ['award' => $award->id]));
                 }
 
                 if (! $award->quotation || ! in_array($award->quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
-                    throw new InvalidArgumentException("Award #{$award->id} belongs to a quotation with ineligible status '{$award->quotation?->status}'.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.award_ineligible', ['award' => $award->id, 'status' => $award->quotation?->status]));
                 }
             }
 
@@ -166,7 +166,7 @@ class PurchaseOrderGenerationService
                 // Ensure all quotations in this supplier group share the same currency
                 $currencies = $supplierAwards->map(fn ($a) => $a->quotation?->currency)->filter()->unique();
                 if ($currencies->count() > 1) {
-                    throw new InvalidArgumentException("Supplier #{$supplierId} awards span multiple currencies ({$currencies->implode(', ')}). A PO must have a single currency.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.multiple_currencies', ['supplier' => $supplierId, 'currencies' => $currencies->implode(', ')]));
                 }
 
                 $currency = $currencies->first() ?? 'USD';
@@ -187,7 +187,7 @@ class PurchaseOrderGenerationService
                     ->pluck('quotation_id');
 
                 if ($alreadyAssignedQuotations->isNotEmpty()) {
-                    throw new InvalidArgumentException("Quotation #{$alreadyAssignedQuotations->first()} is already assigned to an existing PO.");
+                    throw new InvalidArgumentException(__('purchasing.guard_copy.quotation_assigned', ['quotation' => $alreadyAssignedQuotations->first()]));
                 }
 
                 // Determine estimated arrival & notes
@@ -254,15 +254,16 @@ class PurchaseOrderGenerationService
                         $supplierUser,
                         'po.issued',
                         "po.issued:{$po->id}",
-                        'New PO Issued',
-                        "Purchase Order {$po->po_number} has been issued for your awarded items.",
+                        'purchasing.copy.new_po_issued',
+                        'purchasing.notify.po_issued_body',
                         route('supplier.purchase-orders.show', $po, absolute: false),
                         'receipt text-primary',
                         [
                             'category' => NotificationCategory::OTHER,
                             'po_id' => $po->id,
                             'po_number' => $po->po_number,
-                        ]
+                        ],
+                        ['po' => $po->po_number],
                     );
                 }
 
@@ -301,7 +302,7 @@ class PurchaseOrderGenerationService
                             'status' => Quotation::STATUS_REJECTED,
                             'reviewed_at' => now(),
                             'reviewed_by' => $creator->id,
-                            'reviewer_notes' => 'Awarded to alternative supplier offers.',
+                            'reviewer_notes' => __('purchasing.copy.awarded_to_alternative_supplier_offers'),
                         ]);
                 } else {
                     // Items still remain unresolved - ensure PR remains actionable (e.g. bidding)

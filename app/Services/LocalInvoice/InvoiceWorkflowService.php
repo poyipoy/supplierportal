@@ -34,7 +34,7 @@ class InvoiceWorkflowService
             Gate::forUser($actor->fresh())->authorize($action, $invoice);
             [$from, $to, $event] = self::ACTIONS[$action];
             if ($invoice->status !== $from || ($action === 'startReview' && $invoice->review_started_at)) {
-                throw ValidationException::withMessages(['workflow' => 'This action is no longer available. Refresh the invoice.']);
+                throw ValidationException::withMessages(['workflow' => __('local_invoice.validation.workflow_unavailable')]);
             }
             Validator::make($data, [
                 'notes' => [in_array($action, ['requestRevision', 'reject']) ? 'required' : 'nullable', 'string', 'max:5000'],
@@ -43,7 +43,7 @@ class InvoiceWorkflowService
             if ($from === 'UNDER_REVIEW') {
                 if (! $invoice->physical_verified_at || ! $invoice->physicalVerifications()->where('revision_number', $invoice->revision_number)->where('status', 'matched')->exists()
                     || $invoice->physicalVerifications()->where('revision_number', $invoice->revision_number)->where('status', 'invalidated')->exists()) {
-                    throw ValidationException::withMessages(['workflow' => 'The current revision requires physical verification.']);
+                    throw ValidationException::withMessages(['workflow' => __('local_invoice.validation.physical_required')]);
                 }
             }
             if (in_array($action, ['verifyPhysical', 'approve'])) {
@@ -71,7 +71,12 @@ class InvoiceWorkflowService
             }
             $invoice->fill($changes)->save();
             $history = $invoice->statusHistories()->create(['from_status' => $from, 'to_status' => $to, 'event' => $event, 'actor_id' => $actor->id, 'notes' => $data['notes'] ?? null, 'created_at' => now()]);
-            $this->notifications->send($invoice, $history);
+            $this->notifications->send($invoice, $history, [
+                'reason' => (string) ($data['notes'] ?? ''),
+                'raw_notes' => (string) ($data['notes'] ?? ''),
+                'due_date' => $invoice->due_date?->format('Y-m-d') ?? '',
+                'payment_term' => (string) ($invoice->payment_term_days_snapshot ?? ''),
+            ]);
 
             return $invoice;
         });
@@ -82,7 +87,7 @@ class InvoiceWorkflowService
         $revision = $invoice->revisions()->where('revision_number', $invoice->revision_number)->firstOrFail();
         $documents = $revision->documents()->whereIn('document_type', ['invoice', 'tax_invoice'])->get();
         if ($documents->count() !== 2 || $documents->contains(fn ($document) => ! Storage::disk('private')->exists($document->file_path))) {
-            throw ValidationException::withMessages(['documents' => 'Invoice and Faktur Pajak files must be available for this revision.']);
+            throw ValidationException::withMessages(['documents' => __('local_invoice.validation.documents_required')]);
         }
     }
 }

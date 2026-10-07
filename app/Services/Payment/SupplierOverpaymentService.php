@@ -23,23 +23,23 @@ class SupplierOverpaymentService
     {
         abort_unless($actor->is_active && ($actor->isFinance() || $actor->isAdmin()), 403);
         if (! $proof || ! $proof->isValid() || $proof->getSize() > 10 * 1024 * 1024 || ! in_array(strtolower((string) $proof->getClientOriginalExtension()), ['pdf', 'jpg', 'jpeg', 'png'], true) || ! in_array(strtolower((string) $proof->getMimeType()), ['application/pdf', 'image/jpeg', 'image/png'], true)) {
-            throw ValidationException::withMessages(['proof' => 'Refund proof must be a valid PDF, JPG, or PNG file up to 10 MB.']);
+            throw ValidationException::withMessages(['proof' => __('finance.validation.refund_proof')]);
         }
         $refundAmount = trim((string) ($data['refund_amount'] ?? ''));
         if (! preg_match('/^\d{1,18}(?:\.\d{1,2})?$/', $refundAmount) || bccomp($refundAmount, '0', 2) <= 0) {
-            throw ValidationException::withMessages(['refund_amount' => 'Refund amount must be positive with up to two decimal places.']);
+            throw ValidationException::withMessages(['refund_amount' => __('finance.validation.refund_amount')]);
         }
         if (blank(trim((string) ($data['refund_reference'] ?? ''))) || blank($data['refund_date'] ?? null)) {
-            throw ValidationException::withMessages(['refund_reference' => 'Refund reference and date are required.']);
+            throw ValidationException::withMessages(['refund_reference' => __('finance.validation.refund_reference')]);
         }
-        $path = 'attachments/'.now()->format('Y/m').'/'.$proof->hashName();
+        $path = 'attachments/'.now()->format('Y/m').'/'.$proof->hashName(); // biz-time:ignore storage path
         $stream = fopen($proof->getPathname(), 'r');
         if ($stream === false) {
-            throw ValidationException::withMessages(['proof' => 'Refund proof could not be read.']);
+            throw ValidationException::withMessages(['proof' => __('finance.validation.proof_read')]);
         }
         try {
             if (! Storage::disk('private')->put($path, $stream)) {
-                throw ValidationException::withMessages(['proof' => 'Refund proof could not be stored.']);
+                throw ValidationException::withMessages(['proof' => __('finance.validation.proof_store')]);
             }
         } finally {
             if (is_resource($stream)) {
@@ -51,10 +51,10 @@ class SupplierOverpaymentService
             return DB::transaction(function () use ($refund, $data, $proof, $actor, $path) {
                 $locked = SupplierOverpaymentRefund::whereKey($refund->id)->lockForUpdate()->firstOrFail();
                 if ($locked->status !== SupplierOverpaymentRefund::STATUS_OPEN) {
-                    throw ValidationException::withMessages(['refund' => 'This overpayment has already been settled.']);
+                    throw ValidationException::withMessages(['refund' => __('finance.validation.already_settled')]);
                 }
                 if (bccomp((string) $data['refund_amount'], (string) $locked->overpayment_amount, 2) !== 0) {
-                    throw ValidationException::withMessages(['refund_amount' => 'The refund must equal the full overpayment amount. Partial refunds are not allowed.']);
+                    throw ValidationException::withMessages(['refund_amount' => __('finance.validation.refund_full')]);
                 }
                 $locked->update(['status' => SupplierOverpaymentRefund::STATUS_SETTLED, 'refund_amount' => $data['refund_amount'],
                     'refund_reference' => trim($data['refund_reference']), 'refund_date' => $data['refund_date'],
@@ -65,10 +65,15 @@ class SupplierOverpaymentService
 
                 $invoice = $locked->invoice;
                 if ($invoice) {
-                    $notes = 'Refund kelebihan bayar sebesar Rp '.number_format((float) $data['refund_amount'], 0, ',', '.').' telah diselesaikan oleh Finance ADASI (Ref: '.trim($data['refund_reference']).').';
-                    if (! empty($data['notes'])) {
-                        $notes .= ' Catatan: '.trim($data['notes']);
-                    }
+                    $additionalNotes = trim((string) ($data['notes'] ?? ''));
+                    $historyMessage = $additionalNotes === ''
+                        ? 'local_invoice.history.refund_settled'
+                        : 'local_invoice.history.refund_settled_with_notes';
+                    $notes = __($historyMessage, [
+                        'amount' => number_format((float) $data['refund_amount'], 0, ',', '.'),
+                        'reference' => trim($data['refund_reference']),
+                        'notes' => $additionalNotes,
+                    ]);
 
                     $history = $invoice->statusHistories()->create([
                         'from_status' => $invoice->status,
@@ -79,7 +84,11 @@ class SupplierOverpaymentService
                         'created_at' => now(),
                     ]);
 
-                    $this->notifications->send($invoice, $history);
+                    $this->notifications->send($invoice, $history, [
+                        'amount' => (string) $data['refund_amount'],
+                        'reference' => trim($data['refund_reference']),
+                        'raw_notes' => (string) ($data['notes'] ?? ''),
+                    ]);
                 }
 
                 return $locked->fresh('attachments');

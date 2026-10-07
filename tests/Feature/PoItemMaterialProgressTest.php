@@ -975,8 +975,11 @@ class PoItemMaterialProgressTest extends TestCase
 
         $summary = $this->progressService->poSummary($po);
         $this->assertFalse($summary['is_homogeneous']);
-        $this->assertStringContainsString('Order Confirmed', $summary['text']);
-        $this->assertStringContainsString('Ready to Ship', $summary['text']);
+        $this->assertSame('1 item — Order Confirmed · 1 item — Ready to Ship', $summary['text']);
+
+        app()->setLocale('id');
+        $indonesianSummary = $this->progressService->poSummary($po);
+        $this->assertSame('1 item — Pesanan Dikonfirmasi · 1 item — Siap Dikirim', $indonesianSummary['text']);
     }
 
     /**

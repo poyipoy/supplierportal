@@ -7,6 +7,8 @@ use App\Jobs\Middleware\TrackExportChunkProgress;
 
 trait InteractsWithExportProgress
 {
+    use LocalizesExport;
+
     private ?int $exportProgressJobId = null;
 
     private ?int $exportProgressTotalRows = null;

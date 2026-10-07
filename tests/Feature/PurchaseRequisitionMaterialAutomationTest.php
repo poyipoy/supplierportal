@@ -77,7 +77,7 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
                 'Inner D. (mm)',
                 'Length (mm)',
             ])
-            ->assertSee('KG / Unit (kg)')
+            ->assertSee(__('purchasing.copy.weight_unit_kg_e8ab70'))
             ->assertSee('HS Code')
             ->assertSee('data-pr-row-number', false)
             ->assertSee('renumberPrRows', false)

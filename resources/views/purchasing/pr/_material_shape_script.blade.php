@@ -93,7 +93,7 @@ function applyMaterialShapeRules(row, clearIrrelevant = true) {
 function resetMaterialPreview($row) {
     $row.find('.hs-code-display').val('');
     $row.find('.hs-code-manual-override').val('0');
-    $row.find('.hs-status-badge').removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error').addClass('ui-status-chip--neutral').text('Needs more data');
+    $row.find('.hs-status-badge').removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error').addClass('ui-status-chip--neutral').text(@json(__('purchasing.copy.needs_more_data')));
     $row.find('.weight-unit-display').val('0.0000');
     $row.find('.weight-manual-override').val('0');
 }
@@ -105,14 +105,14 @@ function selectMaterialInRow($row, material) {
     setMaterialSearchOpen($row, false);
     $row.find('.hs-code-manual-override').val('0');
     $row.find('.weight-manual-override').val('0');
-    $row.find('.pr-remark-material-name').text(material.material_code || material.text || 'Material');
+    $row.find('.pr-remark-material-name').text(material.material_code || material.text || @json(__('purchasing.copy.material')));
     scheduleMaterialPreview($row, 0);
 }
 
 function renderMaterialSearchResults($row, results) {
     const $panel = $row.find('.material-search-results').empty();
     if (!Array.isArray(results) || results.length === 0) {
-        $('<div class="list-group-item small text-muted">No active master material found.</div>').appendTo($panel);
+        $('<div class="list-group-item small text-muted">{{ __('purchasing.copy.no_active_master_material_found') }}</div>').appendTo($panel);
     } else {
         results.forEach((material) => {
             const category = material.category || 'unmapped';
@@ -196,18 +196,18 @@ function renderMaterialPreview($row, payload) {
     const selectedCode = hs.selected_code || hs.code || '';
     const isManual = hs.source === 'manual';
     const labelMap = {
-        matched: 'Auto matched',
-        ambiguous: 'Ambiguous',
-        no_rule: 'No rule',
-        unmapped_material: 'Unmapped material',
-        insufficient_data: 'Needs more data'
+        matched: @json(__('purchasing.copy.auto_matched')),
+        ambiguous: @json(__('purchasing.copy.ambiguous')),
+        no_rule: @json(__('purchasing.copy.no_rule')),
+        unmapped_material: @json(__('purchasing.copy.unmapped_material')),
+        insufficient_data: @json(__('purchasing.copy.needs_more_data'))
     };
 
     $row.find('.hs-code-display').val(selectedCode);
     $row.find('.hs-status-badge')
         .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
         .addClass(isManual ? 'ui-status-chip--warning' : (hs.status === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
-        .text(isManual ? 'Manual selection' : (labelMap[hs.status] || hs.status || 'Needs more data'));
+        .text(isManual ? @json(__('purchasing.copy.manual_selection')) : (labelMap[hs.status] || hs.status || @json(__('purchasing.copy.needs_more_data'))));
 
     $row.find('.hs-code-manual-override').val(isManual ? '1' : '0');
 
@@ -259,7 +259,7 @@ function requestMaterialPreview($row) {
             $row.find('.hs-status-badge')
                 .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--neutral')
                 .addClass('ui-status-chip--error')
-                .text('Invalid data');
+                .text(@json(__('purchasing.copy.invalid_data')));
         })
         .always(() => {
             if (materialPreviewRequests.get(row) === request) {
@@ -382,7 +382,7 @@ $(document).on('click', '[data-remark-trigger]', function(e) {
         const currentVal = $cell.find('.pr-item-remark').val() || '';
         $cell.find('.pr-remark-draft').val(currentVal);
 
-        const matName = $cell.closest('tr').find('.material-master-search').val() || 'Material';
+        const matName = $cell.closest('tr').find('.material-master-search').val() || @json(__('purchasing.copy.material'));
         $cell.find('.pr-remark-material-name').text(matName);
 
         $popover.prop('hidden', false);
@@ -407,11 +407,11 @@ $(document).on('click', '[data-remark-save]', function(e) {
         $triggerText.text(draftVal);
         $trigger.addClass('has-remark').attr('title', draftVal);
         if (!$trigger.find('.pr-remark-trigger__badge').length) {
-            $trigger.append('<span class="pr-remark-trigger__badge" title="Remark entered" aria-hidden="true"></span>');
+            $trigger.append('<span class="pr-remark-trigger__badge" title="{{ __('purchasing.copy.remark_entered') }}" aria-hidden="true"></span>');
         }
     } else {
-        $triggerText.text('Add remark...');
-        $trigger.removeClass('has-remark').attr('title', 'Click to add remark');
+        $triggerText.text(@json(__('purchasing.copy.add_remark')));
+        $trigger.removeClass('has-remark').attr('title', @json(__('purchasing.copy.click_to_add_remark')));
         $trigger.find('.pr-remark-trigger__badge').remove();
     }
 
@@ -435,11 +435,11 @@ $(document).on('change input', '.pr-item-remark', function() {
         $triggerText.text(val);
         $trigger.addClass('has-remark').attr('title', val);
         if (!$trigger.find('.pr-remark-trigger__badge').length) {
-            $trigger.append('<span class="pr-remark-trigger__badge" title="Remark entered" aria-hidden="true"></span>');
+            $trigger.append('<span class="pr-remark-trigger__badge" title="{{ __('purchasing.copy.remark_entered') }}" aria-hidden="true"></span>');
         }
     } else {
-        $triggerText.text('Add remark...');
-        $trigger.removeClass('has-remark').attr('title', 'Click to add remark');
+        $triggerText.text(@json(__('purchasing.copy.add_remark')));
+        $trigger.removeClass('has-remark').attr('title', @json(__('purchasing.copy.click_to_add_remark')));
         $trigger.find('.pr-remark-trigger__badge').remove();
     }
 });

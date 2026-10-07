@@ -25,6 +25,7 @@ class UpdateUserPreferenceRequest extends FormRequest
         $optionalKeys = array_column(array_filter($widgets, fn (array $widget): bool => ! $widget['required']), 'key');
 
         return [
+            'locale' => ['sometimes', 'required', 'string', Rule::in(['en', 'id'])],
             'timezone' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.timezones')))],
             'date_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.date_formats')))],
             'time_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.time_formats')))],
@@ -58,17 +59,17 @@ class UpdateUserPreferenceRequest extends FormRequest
             $actualContext = $quickAccess->contextFor($user);
 
             if ($user->isSupplier() && $this->input('supplier_context') !== $actualContext) {
-                $validator->errors()->add('supplier_context', 'The supplier portal changed. Reload customization before saving.');
+                $validator->errors()->add('supplier_context', __('customization.supplier_context_changed'));
             }
 
             $submittedKeys = (array) $this->input('quick_access', []);
             if (count(array_unique($submittedKeys, SORT_REGULAR)) !== count($submittedKeys)) {
-                $validator->errors()->add('quick_access', 'Choose each shortcut only once.');
+                $validator->errors()->add('quick_access', __('customization.duplicate_shortcut'));
             }
 
             foreach ((array) $this->input('quick_access', []) as $key) {
                 if (! is_string($key) || ! $quickAccess->isAvailableKey($user, $key, $actualContext)) {
-                    $validator->errors()->add('quick_access', 'One or more selected shortcuts are not available for your role or active portal.');
+                    $validator->errors()->add('quick_access', __('customization.unavailable_shortcut'));
                     break;
                 }
             }

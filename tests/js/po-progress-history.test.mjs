@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const viewPaths = [
     '../../resources/views/purchasing/po/show.blade.php',
@@ -27,7 +29,12 @@ function extractRenderer(source) {
     }
 
     assert.notEqual(end, -1, 'the safe history renderer must be a complete function');
-    return source.slice(start, end);
+    const renderer = source.slice(start, end);
+    const pattern = /@(?:json|js)\(__\('([a-z0-9_.]+)'\)\)/g;
+    const keys = [...new Set([...renderer.matchAll(pattern)].map(match => match[1]))];
+    const script = `require 'vendor/autoload.php'; $result=[]; foreach(json_decode($argv[1],true) as $key){ [$domain,$item]=explode('.', $key, 2); $lines=require 'lang/en/'.$domain.'.php'; $result[$key]=Illuminate\\Support\\Arr::get($lines,$item,$key); } echo json_encode($result,JSON_THROW_ON_ERROR);`;
+    const copy = JSON.parse(execFileSync('php', ['-r', script, JSON.stringify(keys)], {cwd: fileURLToPath(new URL('../../', import.meta.url)), encoding: 'utf8'}));
+    return renderer.replace(pattern, (_, key) => JSON.stringify(copy[key]));
 }
 
 function createDocument() {

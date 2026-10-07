@@ -26,7 +26,7 @@ class LocalPoDocumentService
 
         if ($poCandidate === '') {
             throw ValidationException::withMessages([
-                'file' => 'Nama berkas dokumen PO tidak valid atau kosong.',
+                'file' => __('local_procurement.document_validation.filename'),
             ]);
         }
 
@@ -39,13 +39,13 @@ class LocalPoDocumentService
 
         if ($matches->isEmpty()) {
             throw ValidationException::withMessages([
-                'file' => "Berkas '{$filename}' tidak cocok dengan Purchase Order mana pun milik supplier {$supplier->name}. Pastikan nama berkas sesuai dengan nomor PO terdaftar.",
+                'file' => __('local_procurement.document_validation.unmatched', ['filename' => $filename, 'supplier' => $supplier->name]),
             ]);
         }
 
         if ($matches->count() > 1) {
             throw ValidationException::withMessages([
-                'file' => "Ditemukan lebih dari satu Purchase Order yang cocok dengan nama berkas '{$filename}' untuk supplier {$supplier->name} (ambiguous match).",
+                'file' => __('local_procurement.document_validation.ambiguous', ['filename' => $filename, 'supplier' => $supplier->name]),
             ]);
         }
 
@@ -62,7 +62,7 @@ class LocalPoDocumentService
         $ext = strtolower($file->getClientOriginalExtension());
         if ($ext !== 'pdf') {
             throw ValidationException::withMessages([
-                'file' => "Berkas '{$file->getClientOriginalName()}' harus berformat PDF (.pdf).",
+                'file' => __('local_procurement.document_validation.pdf_required', ['filename' => $file->getClientOriginalName()]),
             ]);
         }
 
@@ -71,14 +71,14 @@ class LocalPoDocumentService
         fclose($handle);
         if ($header !== '%PDF-') {
             throw ValidationException::withMessages([
-                'file' => "Berkas '{$file->getClientOriginalName()}' bukan berkas PDF yang valid.",
+                'file' => __('local_procurement.document_validation.pdf_invalid', ['filename' => $file->getClientOriginalName()]),
             ]);
         }
 
         $po = $this->matchPo($supplier, $file->getClientOriginalName());
 
         $written = [];
-        $path = 'attachments/'.now()->format('Y/m').'/'.Str::uuid().'.pdf';
+        $path = 'attachments/'.now()->format('Y/m').'/'.Str::uuid().'.pdf'; // biz-time:ignore storage path
         $stream = fopen($file->getPathname(), 'r');
         try {
             Storage::disk('private')->put($path, $stream);
@@ -129,7 +129,7 @@ class LocalPoDocumentService
         $ext = strtolower($zipFile->getClientOriginalExtension());
         if ($ext !== 'zip') {
             throw ValidationException::withMessages([
-                'file' => 'Berkas arsip harus berformat ZIP (.zip).',
+                'file' => __('local_procurement.document_validation.zip_required'),
             ]);
         }
 
@@ -141,20 +141,20 @@ class LocalPoDocumentService
         if ($res !== true) {
             File::deleteDirectory($tempDir);
             throw ValidationException::withMessages([
-                'file' => 'Berkas ZIP tidak dapat dibuka atau rusak.',
+                'file' => __('local_procurement.document_validation.zip_invalid'),
             ]);
         }
 
         try {
             if ($zip->numFiles <= 0) {
                 throw ValidationException::withMessages([
-                    'file' => 'Arsip ZIP kosong.',
+                    'file' => __('local_procurement.document_validation.zip_empty'),
                 ]);
             }
 
             if ($zip->numFiles > 100) {
                 throw ValidationException::withMessages([
-                    'file' => 'Arsip ZIP melebihi batas maksimal 100 berkas.',
+                    'file' => __('local_procurement.document_validation.zip_count'),
                 ]);
             }
 
@@ -174,7 +174,7 @@ class LocalPoDocumentService
                     || preg_match('/^[a-zA-Z]:/', $entryName)
                 ) {
                     throw ValidationException::withMessages([
-                        'file' => "Arsip ZIP mengandung jalur direktori yang tidak aman (path traversal): '{$entryName}'.",
+                        'file' => __('local_procurement.document_validation.zip_path', ['filename' => $entryName]),
                     ]);
                 }
 
@@ -187,21 +187,21 @@ class LocalPoDocumentService
                 $entryExt = strtolower(pathinfo($entryName, PATHINFO_EXTENSION));
                 if (in_array($entryExt, ['zip', 'tar', 'gz', 'tgz', 'rar', '7z', 'bz2'], true)) {
                     throw ValidationException::withMessages([
-                        'file' => "Arsip ZIP mengandung arsip bersarang (nested archive): '{$entryName}'. Arsip bersarang dilarang demi keamanan.",
+                        'file' => __('local_procurement.document_validation.zip_nested', ['filename' => $entryName]),
                     ]);
                 }
 
                 // Non-PDF check
                 if ($entryExt !== 'pdf') {
                     throw ValidationException::withMessages([
-                        'file' => "Semua berkas di dalam arsip ZIP harus berupa dokumen PDF (.pdf). Ditemukan berkas tidak valid: '{$entryName}'.",
+                        'file' => __('local_procurement.document_validation.zip_pdf_only', ['filename' => $entryName]),
                     ]);
                 }
 
                 $totalSize += $stat['size'];
                 if ($totalSize > $maxTotalSize) {
                     throw ValidationException::withMessages([
-                        'file' => 'Total ukuran tidak terkompresi dari berkas dalam ZIP melebihi batas maksimal 100 MB.',
+                        'file' => __('local_procurement.document_validation.zip_size'),
                     ]);
                 }
             }
@@ -221,7 +221,7 @@ class LocalPoDocumentService
                 $stream = $zip->getStream($entryName);
                 if (! $stream) {
                     throw ValidationException::withMessages([
-                        'file' => "Gagal mengekstrak berkas '{$entryName}' dari arsip ZIP.",
+                        'file' => __('local_procurement.document_validation.zip_extract', ['filename' => $entryName]),
                     ]);
                 }
                 file_put_contents($targetPath, stream_get_contents($stream));
@@ -235,7 +235,7 @@ class LocalPoDocumentService
 
             if (empty($extractedFiles)) {
                 throw ValidationException::withMessages([
-                    'file' => 'Tidak ditemukan berkas dokumen PDF yang valid di dalam arsip ZIP.',
+                    'file' => __('local_procurement.document_validation.zip_no_pdf'),
                 ]);
             }
 
@@ -249,7 +249,7 @@ class LocalPoDocumentService
                 fclose($fh);
                 if ($magic !== '%PDF-') {
                     throw ValidationException::withMessages([
-                        'file' => "Berkas '{$fileInfo['name']}' di dalam arsip ZIP bukan PDF yang valid.",
+                        'file' => __('local_procurement.document_validation.pdf_invalid', ['filename' => $fileInfo['name']]),
                     ]);
                 }
 
@@ -257,7 +257,7 @@ class LocalPoDocumentService
 
                 if (in_array($po->id, $matchedPoIds, true)) {
                     throw ValidationException::withMessages([
-                        'file' => "Arsip ZIP mengandung lebih dari satu berkas untuk Purchase Order yang sama: {$po->po_number}.",
+                        'file' => __('local_procurement.document_validation.zip_duplicate', ['po' => $po->po_number]),
                     ]);
                 }
                 $matchedPoIds[] = $po->id;
@@ -276,7 +276,7 @@ class LocalPoDocumentService
             try {
                 $staged = [];
                 foreach ($preflighted as $item) {
-                    $destPath = 'attachments/'.now()->format('Y/m').'/'.Str::uuid().'.pdf';
+                    $destPath = 'attachments/'.now()->format('Y/m').'/'.Str::uuid().'.pdf'; // biz-time:ignore storage path
                     $stream = fopen($item['temp_path'], 'r');
                     try {
                         Storage::disk('private')->put($destPath, $stream);

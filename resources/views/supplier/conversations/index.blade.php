@@ -1,36 +1,36 @@
 @extends('layouts.app')
 
-@section('title', 'Negotiations & Chat - ADASI Portal')
-@section('page-title', 'Negotiations with Purchasing')
+@section('title', __('supplier.copy.negotiations_chat_adasi_portal'))
+@section('page-title', __('supplier.copy.negotiations_with_purchasing'))
 
 @section('content')
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Negotiations' => null,
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.negotiations') => null,
     ]" />
 
     <x-ui.page-header
-        title="Negotiations with Purchasing"
-        eyebrow="Commercial Negotiation"
-        description="Direct messaging channels linked to your supplier purchase requisitions and purchase orders."
+        :title="__('supplier.copy.negotiations_with_purchasing')"
+        :eyebrow="__('supplier.copy.commercial_negotiation')"
+        :description="__('supplier.copy.direct_messaging_channels_linked_to_your_supplier_purchase_requisitions_and_purchase_orders')"
     />
 
     {{-- Conversations DataTable --}}
     <x-ui.data-table
-        title="Active Negotiation Channels"
-        description="Prioritize unread messages and track Purchasing SLA response status."
+        :title="__('supplier.copy.active_negotiation_channels')"
+        :description="__('supplier.copy.prioritize_unread_messages_and_track_purchasing_sla_response_status')"
     >
         <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100 datatable">
             <thead class="table-light">
                 <tr>
-                    <th scope="col">Document Reference</th>
-                    <th scope="col">Purchasing Officer</th>
-                    <th scope="col">Latest Message</th>
-                    <th scope="col">Last Active</th>
-                    <th scope="col">Status & SLA</th>
-                    <th scope="col" class="tw-w-36 text-end">Action</th>
+                    <th scope="col">{{ __('supplier.copy.document_reference') }}</th>
+                    <th scope="col">{{ __('supplier.copy.purchasing_officer') }}</th>
+                    <th scope="col">{{ __('supplier.copy.latest_message') }}</th>
+                    <th scope="col">{{ __('supplier.copy.last_active') }}</th>
+                    <th scope="col">{{ __('supplier.copy.status_sla') }}</th>
+                    <th scope="col" class="tw-w-36 text-end">{{ __('supplier.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -63,7 +63,7 @@
                                     <span class="text-truncate tw-max-w-64">{{ Str::limit($conv->latestMessage->body, 55) }}</span>
                                 </div>
                             @else
-                                <span class="tw-text-outline italic">No messages sent yet</span>
+                                <span class="tw-text-outline italic">{{ __('supplier.copy.no_messages_sent_yet') }}</span>
                             @endif
                         </td>
                         <td class="tw-text-on-surface-variant ui-tabular-nums">
@@ -88,7 +88,7 @@
                                 data-open-chat-conversation="{{ $conv->getRouteKey() }}"
                             >
                                 <x-slot:leading><x-ui.icon name="message-square" /></x-slot:leading>
-                                Open Chat
+                                {{ __('supplier.audit_ui.open_chat') }}
                                 @if($unreadCount > 0)
                                     <x-slot:trailing><span class="ui-status-chip ui-status-chip--error ui-tabular-nums">{{ $unreadCount }}</span></x-slot:trailing>
                                 @endif
@@ -97,7 +97,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6"><x-ui.empty-state icon="message-square-more" title="No negotiations yet" description="Negotiation channels will appear when a Purchasing conversation is opened." /></td>
+                        <td colspan="6"><x-ui.empty-state icon="message-square-more" :title="__('supplier.copy.no_negotiations_yet')" :description="__('supplier.copy.negotiation_channels_will_appear_when_a_purchasing_conversation_is_opened')" /></td>
                     </tr>
                 @endforelse
             </tbody>

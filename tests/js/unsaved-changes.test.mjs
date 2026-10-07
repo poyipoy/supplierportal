@@ -1,3 +1,4 @@
+import { installI18n } from './i18n-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -44,26 +45,11 @@ function createMockDOM(pathname = '/local-supplier/invoices/create', scopeMeta =
     return { mockWindow, mockDocument, elements, listeners };
 }
 
-test('scope localization resolves properly between local and import', () => {
-    const I18N = {
-        local: { leaveTitle: 'Tinggalkan halaman ini?', stayButton: 'Tetap di Sini', leaveButton: 'Tinggalkan Halaman' },
-        import: { leaveTitle: 'Leave this page?', stayButton: 'Stay on Page', leaveButton: 'Leave Page' },
-    };
-
-    function resolveScope(metaContent, pathname) {
-        if (metaContent) return metaContent.toLowerCase();
-        const path = pathname.toLowerCase();
-        if (path.startsWith('/local-supplier') || path.startsWith('/finance') || path.startsWith('/accounting') || path.startsWith('/ga')) {
-            return 'local';
-        }
-        return 'import';
-    }
-
-    assert.equal(resolveScope('local', '/any/path'), 'local');
-    assert.equal(resolveScope('import', '/any/path'), 'import');
-    assert.equal(resolveScope(null, '/local-supplier/invoices/create'), 'local');
-    assert.equal(resolveScope(null, '/purchasing/requisitions/create'), 'import');
-    assert.equal(resolveScope(null, '/supplier/quotations/create'), 'import');
+test('unsaved-change language follows account locale independently of portal scope', () => {
+    const english = installI18n({}, 'en');
+    const indonesian = installI18n({}, 'id');
+    assert.equal(english.AdasiI18n.t('js.navigation.leave_title'), 'Leave this page?');
+    assert.equal(indonesian.AdasiI18n.t('js.navigation.leave_title'), 'Tinggalkan halaman ini?');
 });
 
 test('snapshot and dirty diff correctly identifies untouched, modified, and reverted states', () => {

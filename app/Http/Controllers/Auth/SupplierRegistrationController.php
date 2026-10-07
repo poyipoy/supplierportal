@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\TurnstileStatus;
+use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\SupplierRegistrationRequest;
+use App\Http\Requests\SupplierRegistration\RegistrationCredentialAccessRequest;
 use App\Http\Requests\SupplierRegistration\ResubmitRegistrationRequest;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
+use App\Services\Auth\LoginRateLimiter;
 use App\Services\Auth\TurnstileVerifier;
 use App\Services\SupplierRegistrationService;
+use App\Support\BusinessTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
@@ -53,6 +58,7 @@ class SupplierRegistrationController extends Controller
             'registration_reference' => $result['reference'],
             'registration_access_key' => $result['access_key'],
             'company_name' => $safeData['company_name'],
+            'registration_submitted_at' => BusinessTime::now()->toIso8601String(),
         ]);
     }
 
@@ -63,13 +69,14 @@ class SupplierRegistrationController extends Controller
     {
         if (! session()->has('registration_reference') || ! session()->has('registration_access_key')) {
             return redirect()->route('supplier.registration.access-form')
-                ->with('info', __('If you have already submitted your registration, please check your status here.'));
+                ->with('info', __('registration.feedback.check_status'));
         }
 
         return view('auth.supplier-register-success', [
             'reference' => session('registration_reference'),
             'accessKey' => session('registration_access_key'),
             'companyName' => session('company_name'),
+            'submittedAt' => BusinessTime::format(session('registration_submitted_at') ?? BusinessTime::now()),
         ]);
     }
 
@@ -78,7 +85,93 @@ class SupplierRegistrationController extends Controller
      */
     public function showAccessForm()
     {
-        return view('auth.supplier-registration-access');
+        return view('auth.supplier-registration-access', [
+            'turnstileRequired' => (bool) session('auth_turnstile_required', false),
+            'turnstileSiteKey' => config('auth_security.turnstile.site_key'),
+        ]);
+    }
+
+    /**
+     * Authenticate applicant with registered email + password (lost access key fallback).
+     *
+     * Mirrors the normal sign-in defences (shared rate-limit budget, Turnstile, constant-time
+     * check, tarpit, audit) but only opens the isolated registration session.
+     */
+    public function authenticateCredentials(
+        RegistrationCredentialAccessRequest $request,
+        LoginRateLimiter $limiter,
+        TurnstileVerifier $turnstile,
+    ) {
+        $email = $limiter->normalizedEmail($request->string('email')->toString());
+        $limiter->ensureNotLimited($request, $email);
+
+        $routeMeta = ['route' => 'supplier.registration.access.credentials'];
+
+        if ($limiter->requiresTurnstile($request, $email) && $turnstile->configured()) {
+            if ($turnstile->verify($request) === TurnstileStatus::Invalid) {
+                $limiter->hit($request, $email);
+                event(new AuthSecurityEvent('captcha_failed', email: $email, metadata: $routeMeta));
+                $this->applyTarpit($limiter, $request, $email);
+
+                return $this->credentialFailure($email, true);
+            }
+        }
+
+        $access = $this->registrationService->authenticateWithCredentials(
+            $email,
+            $request->string('password')->toString(),
+        );
+
+        if (! $access) {
+            $limiter->hit($request, $email);
+            event(new AuthSecurityEvent('login_failed', email: $email, metadata: $routeMeta));
+            $this->applyTarpit($limiter, $request, $email);
+
+            return $this->credentialFailure($email, $limiter->requiresTurnstile($request, $email));
+        }
+
+        $limiter->clearAfterSuccess($request, $email);
+
+        // Isolated registration session only (never Auth::login)
+        $request->session()->regenerate();
+        $request->session()->put('registration_access_id', $access->id);
+        $request->session()->put('registration_user_id', $access->user_id);
+
+        return redirect()->route('supplier.registration.status');
+    }
+
+    private function credentialFailure(string $email, bool $turnstileRequired)
+    {
+        return back()
+            ->withInput(['email' => $email])
+            ->with('access_tab', 'credentials')
+            ->with('auth_turnstile_required', $turnstileRequired)
+            ->withErrors(['email' => __('registration.feedback.invalid_credentials')], 'credentials');
+    }
+
+    private function applyTarpit(LoginRateLimiter $limiter, Request $request, string $email): void
+    {
+        $tarpit = config('auth_security.login.tarpit');
+
+        if (! ($tarpit['enabled'] ?? false)) {
+            return;
+        }
+
+        $failures = $limiter->currentFailureCount($request, $email);
+        $threshold = (int) ($tarpit['threshold'] ?? 3);
+
+        if ($failures < $threshold) {
+            return;
+        }
+
+        $delayMs = min(
+            ($failures - $threshold + 1) * (int) ($tarpit['delay_step_ms'] ?? 1000),
+            (int) ($tarpit['max_delay_ms'] ?? 2000),
+        );
+
+        if ($delayMs > 0) {
+            usleep($delayMs * 1000);
+        }
     }
 
     /**
@@ -97,7 +190,7 @@ class SupplierRegistrationController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
 
-            return back()->withInput()->with('error', __("Too many attempts. Please try again in {$seconds} seconds."));
+            return back()->withInput()->with('error', __('registration.feedback.too_many', ['seconds' => $seconds]));
         }
 
         $access = $this->registrationService->authenticateAccess(
@@ -108,7 +201,7 @@ class SupplierRegistrationController extends Controller
         if (! $access) {
             RateLimiter::hit($throttleKey, 60);
 
-            return back()->withInput()->with('error', __('Invalid registration reference or access key.'));
+            return back()->withInput()->with('error', __('registration.feedback.invalid_access'));
         }
 
         RateLimiter::clear($throttleKey);
@@ -158,7 +251,7 @@ class SupplierRegistrationController extends Controller
 
         if (! $latestAttempt || $latestAttempt->status !== SupplierRegistrationAttempt::STATUS_REVISION) {
             return redirect()->route('supplier.registration.status')
-                ->with('info', __('Your registration is not currently open for revision.'));
+                ->with('info', __('registration.feedback.not_revision'));
         }
 
         return view('auth.supplier-registration-edit', [
@@ -192,7 +285,7 @@ class SupplierRegistrationController extends Controller
         );
 
         return redirect()->route('supplier.registration.status')
-            ->with('success', __('Your revised registration has been submitted successfully for review.'));
+            ->with('success', __('registration.feedback.resubmitted'));
     }
 
     /**
@@ -204,14 +297,22 @@ class SupplierRegistrationController extends Controller
         $access = $request->attributes->get('registrationAccess');
 
         if ((int) $document->supplier_id !== (int) $access->user_id) {
-            abort(403, 'Unauthorized access to document.');
+            abort(403, __('registration.feedback.document_unauthorized'));
         }
 
         if (! Storage::disk('private')->exists($document->file_path)) {
-            abort(404, 'Document file not found.');
+            abort(404, __('registration.feedback.document_missing'));
         }
 
-        return Storage::disk('private')->download($document->file_path, $document->original_filename);
+        return Storage::disk('private')->download(
+            $document->file_path,
+            $document->original_filename,
+            [
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'no-store, private',
+                'Pragma' => 'no-cache',
+            ]
+        );
     }
 
     /**
@@ -222,6 +323,6 @@ class SupplierRegistrationController extends Controller
         $request->session()->forget(['registration_access_id', 'registration_user_id']);
 
         return redirect()->route('supplier.registration.access-form')
-            ->with('info', __('You have exited your registration session.'));
+            ->with('info', __('registration.feedback.exited'));
     }
 }

@@ -109,8 +109,10 @@ class CustomAdasiAlertTest extends TestCase
 
         $this->assertStringContainsString('data-pdf-confirm', $layout);
         $this->assertStringContainsString('window.pdfConfirmationOpen', $layout);
-        $this->assertStringContainsString("title: 'Download PDF Document?'", $layout);
-        $this->assertStringContainsString("confirmText: 'Yes, Download'", $layout);
+        $this->assertStringContainsString("title: @js(__('navigation.pdf_confirm'))", $layout);
+        $this->assertSame('Download PDF Document?', __('navigation.pdf_confirm', [], 'en'));
+        $this->assertSame('Unduh Dokumen PDF?', __('navigation.pdf_confirm', [], 'id'));
+        $this->assertStringContainsString("confirmText: @js(__('js.actions.yes_download'))", $layout);
         $this->assertStringContainsString("window.open(pdfBtn.href, '_blank'", $layout);
 
         foreach ([

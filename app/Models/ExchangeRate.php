@@ -30,6 +30,30 @@ class ExchangeRate extends Model
         self::CURRENCY_CNY => 'CNY - Chinese Yuan',
     ];
 
+    public static function currencyLabel(string $currency): string
+    {
+        $term = match ($currency) {
+            self::CURRENCY_USD => 'currency_usd',
+            self::CURRENCY_JPY => 'currency_jpy',
+            self::CURRENCY_IDR => 'currency_idr',
+            self::CURRENCY_CNY => 'currency_cny',
+            default => null,
+        };
+
+        return $term === null ? $currency : $currency.' - '.__('terms.'.$term);
+    }
+
+    public static function currencyOptions(): array
+    {
+        $options = [];
+
+        foreach (self::CURRENCIES as $currency) {
+            $options[$currency] = self::currencyLabel($currency);
+        }
+
+        return $options;
+    }
+
     protected $fillable = [
         'currency',
         'rate_to_idr',

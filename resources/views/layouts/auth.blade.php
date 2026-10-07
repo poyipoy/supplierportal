@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex, nofollow">
     @yield('meta')
-    <title>@yield('title', 'Sign In - ADASI Supplier Portal')</title>
+    <title>@yield('title', __('auth.login.title'))</title>
 
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
+    @include('partials.i18n-bootstrap')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -139,6 +140,7 @@
         .auth-form-panel {
             display: flex;
             flex-direction: column;
+            min-width: 0;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
@@ -209,7 +211,6 @@
             letter-spacing: 0.06em;
             text-transform: uppercase;
             color: var(--md-on-surface-variant);
-            opacity: 0.6;
             margin-top: 0.25rem;
         }
     </style>
@@ -220,7 +221,7 @@
             @yield('brand-panel')
         @else
             {{-- Left Column: Industrial Image Panel --}}
-            <aside class="auth-brand-panel" aria-label="ADASI Supplier Portal information">
+            <aside class="auth-brand-panel" aria-label="{{ __('navigation.brand_info') }}">
                 <div class="auth-brand-panel__image">
                     <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager" draggable="false">
                     <div class="auth-brand-panel__overlay"></div>
@@ -228,20 +229,20 @@
 
                 <div class="auth-brand-panel__content">
                     <div class="auth-brand-logo">
-                        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="ADASI Logo" draggable="false">
+                        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" draggable="false">
                         <div>
                             <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
-                            <span class="auth-brand-logo__sub">Supplier Portal</span>
+                            <span class="auth-brand-logo__sub">{{ __('common.review.supplier_portal') }}</span>
                         </div>
                     </div>
 
                     <div class="auth-brand-headline">
                         @hasSection('page-heading')
-                        <p class="auth-brand-title">Integrated procurement. One shared platform.</p>
+                        <p class="auth-brand-title">{{ __('navigation.brand_heading') }}</p>
                         @else
-                        <h1>Integrated procurement. One shared platform.</h1>
+                        <h1>{{ __('navigation.brand_heading') }}</h1>
                         @endif
-                        <p>Manage purchasing activities, supplier collaboration, and order progress in a single portal.</p>
+                        <p>{{ __('navigation.brand_description') }}</p>
                     </div>
 
                     <div class="auth-brand-footer">
@@ -258,7 +259,7 @@
                     <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" draggable="false">
                     <span>
                         <span class="auth-mobile-brand__name">ADASI</span>
-                        <span class="auth-mobile-brand__sub">Supplier Portal</span>
+                        <span class="auth-mobile-brand__sub">{{ __('common.review.supplier_portal') }}</span>
                     </span>
                 </a>
 

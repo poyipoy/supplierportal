@@ -7,6 +7,7 @@ use App\Models\LocalPurchaseOrder;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\VendorMaster\VendorMasterService;
+use App\Support\BusinessTime;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +22,11 @@ class InvoiceSubmissionService
         private InvoiceNotificationService $notifications,
         private LocalPoReferenceService $poReferenceService,
         private LocalGrReservationService $reservations,
-        private VendorMasterService $vendorMasterService
-    ) {}
+        private VendorMasterService $vendorMasterService,
+        private ?DeliveryScheduleValidator $deliveryScheduleValidator = null
+    ) {
+        $this->deliveryScheduleValidator ??= app(DeliveryScheduleValidator::class);
+    }
 
     public function submit(User $actor, array $data, array $files): LocalInvoice
     {
@@ -34,7 +38,7 @@ class InvoiceSubmissionService
             if ($derivedInvoice !== null) {
                 if (! empty($data['invoice_number']) && $data['invoice_number'] !== $derivedInvoice) {
                     throw ValidationException::withMessages([
-                        'invoice_number' => "Nomor invoice ({$data['invoice_number']}) tidak sesuai dengan nama berkas invoice ({$derivedInvoice}).",
+                        'invoice_number' => __('local_invoice.validation.invoice_filename', ['number' => $data['invoice_number'], 'filename' => $derivedInvoice]),
                     ]);
                 }
                 $data['invoice_number'] = $derivedInvoice;
@@ -45,7 +49,7 @@ class InvoiceSubmissionService
             if ($derivedTax !== null) {
                 if (! empty($data['tax_invoice_number']) && $parser->normalizeDigits($data['tax_invoice_number']) !== $parser->normalizeDigits($derivedTax)) {
                     throw ValidationException::withMessages([
-                        'tax_invoice_number' => "Nomor faktur pajak ({$data['tax_invoice_number']}) tidak sesuai dengan nama berkas faktur pajak ({$derivedTax}).",
+                        'tax_invoice_number' => __('local_invoice.validation.tax_filename', ['number' => $data['tax_invoice_number'], 'filename' => $derivedTax]),
                     ]);
                 }
                 $data['tax_invoice_number'] = $derivedTax;
@@ -59,21 +63,15 @@ class InvoiceSubmissionService
                 Gate::forUser($actor->fresh())->authorize('create', LocalInvoice::class);
                 $supplier = Supplier::where('user_id', $actor->id)->lockForUpdate()->first();
                 if (! $supplier || $supplier->payment_term_days < 1 || $supplier->payment_term_days > 365) {
-                    throw ValidationException::withMessages(['payment_term_days' => 'A Local payment term must be configured by Admin.']);
+                    throw ValidationException::withMessages(['payment_term_days' => __('local_invoice.validation.term_configured')]);
                 }
                 if (LocalInvoice::where('supplier_id', $actor->id)->where('invoice_number', $data['invoice_number'])->exists()) {
-                    throw ValidationException::withMessages(['invoice_number' => 'This invoice number has already been submitted.']);
+                    throw ValidationException::withMessages(['invoice_number' => __('local_invoice.validation.invoice_duplicate')]);
                 }
 
                 // 1. Validate Wednesday delivery schedule if provided
                 if (! empty($data['scheduled_physical_delivery_date'])) {
-                    $sched = Carbon::parse($data['scheduled_physical_delivery_date'])->startOfDay();
-                    if ($sched->isBefore(today())) {
-                        throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule cannot be in the past.']);
-                    }
-                    if ($sched->dayOfWeek !== Carbon::WEDNESDAY) {
-                        throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule must be on a Wednesday.']);
-                    }
+                    $this->deliveryScheduleValidator->assert($data['scheduled_physical_delivery_date']);
                 }
 
                 // The new browser flow submits the authoritative Local PO / whole-GR
@@ -84,7 +82,7 @@ class InvoiceSubmissionService
                 if (array_key_exists('local_purchase_order_id', $data)) {
                     $po = LocalPurchaseOrder::whereKey($data['local_purchase_order_id'])->lockForUpdate()->first();
                     if (! $po || (int) $po->supplier_id !== (int) $actor->id) {
-                        throw ValidationException::withMessages(['local_purchase_order_id' => 'The selected PO does not belong to this supplier.']);
+                        throw ValidationException::withMessages(['local_purchase_order_id' => __('local_procurement.validation.po_owner')]);
                     }
                     $poResolved = [
                         'po_source' => 'INTERNAL', 'po_number' => $po->po_number,
@@ -105,10 +103,10 @@ class InvoiceSubmissionService
                         $field = str_contains(strtolower($e->getMessage()), 'manual goods receipt')
                             ? 'manual_gr_reference'
                             : 'po_number';
-                        throw ValidationException::withMessages([$field => $e->getMessage()]);
+                        throw ValidationException::withMessages([$field => $this->poReferenceService->messageForDisplay($e, $internalPoRef, $poSource)]);
                     }
                     if (($poResolved['authoritative'] ?? false) === true) {
-                        throw ValidationException::withMessages(['local_purchase_order_id' => 'Select the authoritative Local Purchase Order and its whole Goods Receipts.']);
+                        throw ValidationException::withMessages(['local_purchase_order_id' => __('local_invoice.validation.authoritative_selection')]);
                     }
                 }
 
@@ -123,7 +121,7 @@ class InvoiceSubmissionService
                 $taxAmount = isset($data['tax_amount']) ? (float) $data['tax_amount'] : $calcPpn;
 
                 // 4. Generate sequence number
-                $year = now()->year;
+                $year = BusinessTime::now()->year;
                 DB::table('local_invoice_sequences')->insertOrIgnore(['year' => $year, 'last_number' => 0]);
                 $sequence = DB::table('local_invoice_sequences')->where('year', $year)->lockForUpdate()->first();
                 $number = $sequence->last_number + 1;
@@ -200,7 +198,7 @@ class InvoiceSubmissionService
             $derivedInvoice = $parser->parseInvoiceNumber($files['invoice'], $invoice->invoice_number);
             if ($derivedInvoice !== null && $derivedInvoice !== $invoice->invoice_number) {
                 throw ValidationException::withMessages([
-                    'invoice_number' => "Nomor invoice dari berkas yang diunggah ({$derivedInvoice}) tidak sesuai dengan nomor invoice tagihan ({$invoice->invoice_number}).",
+                    'invoice_number' => __('local_invoice.validation.revision_filename', ['filename' => $derivedInvoice, 'number' => $invoice->invoice_number]),
                 ]);
             }
         }
@@ -209,7 +207,7 @@ class InvoiceSubmissionService
             if ($derivedTax !== null) {
                 if (! empty($data['tax_invoice_number']) && $parser->normalizeDigits($data['tax_invoice_number']) !== $parser->normalizeDigits($derivedTax)) {
                     throw ValidationException::withMessages([
-                        'tax_invoice_number' => "Nomor faktur pajak ({$data['tax_invoice_number']}) tidak sesuai dengan nama berkas faktur pajak ({$derivedTax}).",
+                        'tax_invoice_number' => __('local_invoice.validation.tax_filename', ['number' => $data['tax_invoice_number'], 'filename' => $derivedTax]),
                     ]);
                 }
                 $data['tax_invoice_number'] = $derivedTax;
@@ -222,34 +220,28 @@ class InvoiceSubmissionService
                 $invoice = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
                 Gate::forUser($actor->fresh())->authorize('resubmit', $invoice);
                 if ($invoice->status !== LocalInvoice::STATUS_NEED_REVISION || $data['invoice_number'] !== $invoice->invoice_number) {
-                    throw ValidationException::withMessages(['invoice' => 'Only an invoice needing revision can be resubmitted, with its original invoice number.']);
+                    throw ValidationException::withMessages(['invoice' => __('local_invoice.validation.resubmit_revision')]);
                 }
 
                 $supplier = Supplier::where('user_id', $actor->id)->firstOrFail();
 
                 // 1. Validate Wednesday delivery schedule if provided
                 if (! empty($data['scheduled_physical_delivery_date'])) {
-                    $sched = Carbon::parse($data['scheduled_physical_delivery_date'])->startOfDay();
-                    if ($sched->isBefore(today())) {
-                        throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule cannot be in the past.']);
-                    }
-                    if ($sched->dayOfWeek !== Carbon::WEDNESDAY) {
-                        throw ValidationException::withMessages(['scheduled_physical_delivery_date' => 'Physical document delivery schedule must be on a Wednesday.']);
-                    }
+                    $this->deliveryScheduleValidator->assert($data['scheduled_physical_delivery_date']);
                 }
 
                 $request = $invoice->statusHistories()->where('event', 'revision_requested')->latest('id')->firstOrFail();
 
                 if ($invoice->local_purchase_order_id && ! array_key_exists('local_purchase_order_id', $data)) {
                     throw ValidationException::withMessages([
-                        'local_purchase_order_id' => 'Authoritative Local Supplier invoices must be resubmitted with their PO and whole GR selection.',
+                        'local_purchase_order_id' => __('local_invoice.validation.resubmit_selection'),
                     ]);
                 }
 
                 if (array_key_exists('local_purchase_order_id', $data)) {
                     $po = LocalPurchaseOrder::whereKey($data['local_purchase_order_id'])->lockForUpdate()->first();
                     if (! $po || (int) $po->supplier_id !== (int) $actor->id) {
-                        throw ValidationException::withMessages(['local_purchase_order_id' => 'The selected PO does not belong to this supplier.']);
+                        throw ValidationException::withMessages(['local_purchase_order_id' => __('local_procurement.validation.po_owner')]);
                     }
                     $poResolved = [
                         'po_source' => 'INTERNAL', 'po_number' => $po->po_number,
@@ -270,10 +262,10 @@ class InvoiceSubmissionService
                         $field = str_contains(strtolower($e->getMessage()), 'manual goods receipt')
                             ? 'manual_gr_reference'
                             : 'po_number';
-                        throw ValidationException::withMessages([$field => $e->getMessage()]);
+                        throw ValidationException::withMessages([$field => $this->poReferenceService->messageForDisplay($e, $internalPoRef, $poSource)]);
                     }
                     if (($poResolved['authoritative'] ?? false) === true) {
-                        throw ValidationException::withMessages(['local_purchase_order_id' => 'Select the authoritative Local Purchase Order and its whole Goods Receipts.']);
+                        throw ValidationException::withMessages(['local_purchase_order_id' => __('local_invoice.validation.authoritative_selection')]);
                     }
                 }
 
@@ -317,7 +309,7 @@ class InvoiceSubmissionService
                     'verified_by' => $actor->id,
                     'verified_at' => now(),
                     'created_at' => now(),
-                    'notes' => 'Superseded by revision '.$revision->revision_number,
+                    'notes' => __('local_invoice.history.physical_verification_superseded', ['revision' => $revision->revision_number]),
                 ]);
 
                 $invoice->fill(array_merge($this->values($data), [

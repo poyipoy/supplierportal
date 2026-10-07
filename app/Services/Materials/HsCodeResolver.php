@@ -23,7 +23,7 @@ final class HsCodeResolver
                 null,
                 null,
                 [],
-                'The selected material has no canonical HS category.',
+                __('materials.copy.the_selected_material_has_no_canonical_hs_category'),
                 $dimensions,
             );
         }
@@ -34,7 +34,7 @@ final class HsCodeResolver
                 null,
                 null,
                 [],
-                'Select a material shape to resolve the HS Code.',
+                __('materials.copy.select_a_material_shape_to_resolve_the_hs_code'),
                 $dimensions,
             );
         }
@@ -52,7 +52,7 @@ final class HsCodeResolver
                 null,
                 null,
                 [],
-                'No active HS Code rule covers this category and shape.',
+                __('materials.copy.no_active_hs_code_rule_covers_this_category_and_shape'),
                 $dimensions,
             );
         }
@@ -76,8 +76,8 @@ final class HsCodeResolver
                 null,
                 [],
                 $hasIncompleteEvaluation
-                    ? 'Complete the dimensions needed to evaluate the HS Code rules.'
-                    : 'No active HS Code rule matches the supplied dimensions.',
+                    ? __('materials.copy.complete_the_dimensions_needed_to_evaluate_the_hs_code_rules')
+                    : __('materials.copy.no_active_hs_code_rule_matches_the_supplied_dimensions'),
                 $dimensions,
             );
         }
@@ -98,7 +98,7 @@ final class HsCodeResolver
                 null,
                 null,
                 $candidatePayload,
-                'More than one top-priority rule produces a different HS Code.',
+                __('materials.copy.more_than_one_top_priority_rule_produces_a_different_hs_code'),
                 $dimensions,
             );
         }
@@ -111,7 +111,7 @@ final class HsCodeResolver
             $winner->hs_code,
             $winner->id,
             $candidatePayload,
-            'HS Code matched automatically.',
+            __('materials.copy.hs_code_matched_automatically'),
             $dimensions,
         );
     }

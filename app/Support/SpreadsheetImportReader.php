@@ -15,7 +15,7 @@ final class SpreadsheetImportReader
         $sourcePath = $uploadedFile->getPathname();
 
         if ($sourcePath === '' || ! is_file($sourcePath) || ! is_readable($sourcePath)) {
-            throw new RuntimeException('The uploaded spreadsheet is no longer readable.');
+            throw new RuntimeException(__('local_procurement.import.unreadable'));
         }
 
         $directory = storage_path('framework/cache/import-previews');
@@ -27,7 +27,7 @@ final class SpreadsheetImportReader
 
         try {
             if (! File::copy($sourcePath, $temporaryPath)) {
-                throw new RuntimeException('The uploaded spreadsheet could not be prepared for reading.');
+                throw new RuntimeException(__('local_procurement.import.prepare_failed'));
             }
 
             Excel::import($import, $temporaryPath);

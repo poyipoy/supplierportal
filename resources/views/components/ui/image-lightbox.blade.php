@@ -17,7 +17,7 @@
         <div class="adasi-image-lightbox__header">
             <div class="adasi-image-lightbox__title-wrap">
                 <span class="adasi-image-lightbox__counter" id="adasiImageLightboxCounter" style="display: none;"></span>
-                <span class="adasi-image-lightbox__title" id="adasiImageLightboxTitle">Image Preview</span>
+                <span class="adasi-image-lightbox__title" id="adasiImageLightboxTitle">{{ __('common.image.preview') }}</span>
             </div>
             <div class="adasi-image-lightbox__header-actions">
                 <a
@@ -25,7 +25,7 @@
                     id="adasiImageLightboxDownload"
                     download
                     class="adasi-image-lightbox__btn"
-                    title="Download Image"
+                    title="{{ __('common.image.download') }}"
                 >
                     <x-ui.icon name="download" size="sm" />
                 </a>
@@ -33,8 +33,8 @@
                     type="button"
                     class="adasi-image-lightbox__btn adasi-image-lightbox__btn--close"
                     data-lightbox-close
-                    title="Close (Esc)"
-                    aria-label="Close"
+                    title="{{ __('common.image.close') }}"
+                    aria-label="{{ __('common.actions.close') }}"
                 >
                     <x-ui.icon name="x" size="sm" />
                 </button>
@@ -46,8 +46,8 @@
             type="button"
             class="adasi-image-lightbox__nav-btn adasi-image-lightbox__nav-btn--prev"
             id="adasiLightboxNavPrev"
-            title="Previous Image (←)"
-            aria-label="Previous Image"
+            title="{{ __('common.image.previous_key') }}"
+            aria-label="{{ __('common.image.previous') }}"
             style="display: none;"
         >
             <x-ui.icon name="chevron-left" size="md" />
@@ -57,8 +57,8 @@
             type="button"
             class="adasi-image-lightbox__nav-btn adasi-image-lightbox__nav-btn--next"
             id="adasiLightboxNavNext"
-            title="Next Image (→)"
-            aria-label="Next Image"
+            title="{{ __('common.image.next_key') }}"
+            aria-label="{{ __('common.image.next') }}"
             style="display: none;"
         >
             <x-ui.icon name="chevron-right" size="md" />
@@ -69,7 +69,7 @@
             <div class="adasi-image-lightbox__image-wrapper" id="adasiImageLightboxWrapper">
                 <img
                     src=""
-                    alt="Preview"
+                    alt="{{ __('common.review.preview_short') }}"
                     id="adasiImageLightboxImg"
                     class="adasi-image-lightbox__img"
                     draggable="false"
@@ -78,13 +78,13 @@
         </div>
 
         {{-- Floating Bottom Control Toolbar --}}
-        <div class="adasi-image-lightbox__toolbar" role="toolbar" aria-label="Image controls">
+        <div class="adasi-image-lightbox__toolbar" role="toolbar" aria-label="{{ __('common.image.controls') }}">
             <button
                 type="button"
                 class="adasi-image-lightbox__toolbar-btn"
                 id="adasiLightboxToolbarPrev"
-                title="Previous Image (←)"
-                aria-label="Previous Image"
+                title="{{ __('common.image.previous_key') }}"
+                aria-label="{{ __('common.image.previous') }}"
                 style="display: none;"
             >
                 <x-ui.icon name="chevron-left" size="sm" />
@@ -94,8 +94,8 @@
                 type="button"
                 class="adasi-image-lightbox__toolbar-btn"
                 id="adasiLightboxZoomOut"
-                title="Zoom Out (-)"
-                aria-label="Zoom Out"
+                title="{{ __('common.image.zoom_out_key') }}"
+                aria-label="{{ __('common.image.zoom_out') }}"
             >
                 <x-ui.icon name="minus" size="sm" />
             </button>
@@ -106,8 +106,8 @@
                 type="button"
                 class="adasi-image-lightbox__toolbar-btn"
                 id="adasiLightboxZoomIn"
-                title="Zoom In (+)"
-                aria-label="Zoom In"
+                title="{{ __('common.image.zoom_in_key') }}"
+                aria-label="{{ __('common.image.zoom_in') }}"
             >
                 <x-ui.icon name="plus" size="sm" />
             </button>
@@ -118,8 +118,8 @@
                 type="button"
                 class="adasi-image-lightbox__toolbar-btn"
                 id="adasiLightboxZoomReset"
-                title="Reset Zoom & Pan (100%)"
-                aria-label="Reset Zoom"
+                title="{{ __('common.image.reset_pan') }}"
+                aria-label="{{ __('common.image.reset') }}"
             >
                 <x-ui.icon name="rotate-ccw" size="sm" />
             </button>
@@ -128,8 +128,8 @@
                 type="button"
                 class="adasi-image-lightbox__toolbar-btn"
                 id="adasiLightboxToolbarNext"
-                title="Next Image (→)"
-                aria-label="Next Image"
+                title="{{ __('common.image.next_key') }}"
+                aria-label="{{ __('common.image.next') }}"
                 style="display: none;"
             >
                 <x-ui.icon name="chevron-right" size="sm" />
@@ -529,7 +529,7 @@
         showGalleryItem(prevIdx);
     }
 
-    function openLightbox(src, title = 'Image Preview', downloadUrl = null, gallery = null, startIndex = 0) {
+    function openLightbox(src, title = @js(__('common.image.preview')), downloadUrl = null, gallery = null, startIndex = 0) {
         const modal = $lightbox();
         if (!modal) return;
 
@@ -724,12 +724,12 @@
                 const gallery = triggers.map(t => {
                     const tHref = t.getAttribute('href') || t.dataset.lightboxImage || t.dataset.src;
                     const tImg = t.querySelector('img');
-                    const tTitle = t.getAttribute('title') || t.dataset.title || tImg?.getAttribute('alt') || 'Evidence Image';
+                    const tTitle = t.getAttribute('title') || t.dataset.title || tImg?.getAttribute('alt') || @js(__('common.review.evidence_image'));
                     return { src: tHref, title: tTitle, downloadUrl: tHref };
                 }).filter(item => item.src);
 
                 const currentIndex = triggers.indexOf(trigger);
-                openLightbox(href, trigger.getAttribute('title') || trigger.dataset.title || img?.getAttribute('alt') || 'Evidence Image', href, gallery, currentIndex >= 0 ? currentIndex : 0);
+                openLightbox(href, trigger.getAttribute('title') || trigger.dataset.title || img?.getAttribute('alt') || @js(__('common.review.evidence_image')), href, gallery, currentIndex >= 0 ? currentIndex : 0);
             }
         });
     });

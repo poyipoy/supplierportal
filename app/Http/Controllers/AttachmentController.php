@@ -9,35 +9,35 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 
 class AttachmentController extends Controller
 {
-    public function show($id)
+    public function show(Attachment $attachment)
     {
-        $attachment = Attachment::findOrFail($id);
-
         $this->authorize('view', $attachment);
 
         /** @var FilesystemAdapter $disk */
         $disk = Storage::disk('private');
 
         if (! $disk->exists($attachment->file_path)) {
-            abort(404, 'File not found.');
+            abort(404, __('common.errors.file_not_found'));
         }
 
         $fileName = $this->safeDownloadName($attachment->file_name);
-        $fallbackName = $this->asciiFallbackName($fileName);
         $contentType = str_replace(
             ["\r", "\n"],
             '',
             $attachment->file_type ?: $disk->mimeType($attachment->file_path) ?: 'application/octet-stream'
         );
 
-        return response()->file($disk->path($attachment->file_path), [
-            'Content-Type' => $contentType,
-            'Content-Disposition' => HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_INLINE,
-                $fileName,
-                $fallbackName
-            ),
-        ]);
+        return $disk->response(
+            $attachment->file_path,
+            $fileName,
+            [
+                'Content-Type' => $contentType,
+                'Cache-Control' => 'no-store, private',
+                'Pragma' => 'no-cache',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+            HeaderUtils::DISPOSITION_INLINE
+        );
     }
 
     private function safeDownloadName(?string $fileName): string
@@ -47,13 +47,5 @@ class AttachmentController extends Controller
         $fileName = str_replace(["\r", "\n"], '', $fileName);
 
         return trim($fileName) !== '' ? $fileName : 'attachment';
-    }
-
-    private function asciiFallbackName(string $fileName): string
-    {
-        $fallback = preg_replace('/[^A-Za-z0-9._-]/', '_', $fileName) ?: 'attachment';
-        $fallback = trim($fallback, '._');
-
-        return $fallback !== '' ? $fallback : 'attachment';
     }
 }

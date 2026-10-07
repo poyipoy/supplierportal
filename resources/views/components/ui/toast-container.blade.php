@@ -5,7 +5,7 @@
 <section
     x-data="adasiToastCenter"
     class="adasi-toast-region {{ $context === 'app' ? 'adasi-toast-region--app' : '' }}"
-    aria-label="Notifications"
+    aria-label="{{ __('common.notification.title') }}"
     aria-relevant="additions text"
 >
     <template x-for="toast in state.visible" :key="toast.id">
@@ -61,7 +61,7 @@
                     type="button"
                     class="adasi-toast__close ui-focus-ring"
                     @click="dismiss(toast.id)"
-                    aria-label="Dismiss notification"
+                    aria-label="{{ __('common.notification.dismiss') }}"
                 >
                     <x-ui.icon name="x" size="sm" />
                 </button>

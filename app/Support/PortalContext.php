@@ -128,8 +128,8 @@ class PortalContext
     public static function label(?string $scope): string
     {
         return match ($scope) {
-            self::SCOPE_IMPORT => self::LABEL_IMPORT,
-            self::SCOPE_LOCAL => self::LABEL_LOCAL,
+            self::SCOPE_IMPORT => __('navigation.material_procurement'),
+            self::SCOPE_LOCAL => __('navigation.local_supplier'),
             default => '',
         };
     }
@@ -137,8 +137,8 @@ class PortalContext
     public static function description(?string $scope): string
     {
         return match ($scope) {
-            self::SCOPE_IMPORT => 'Quotation, PO, Shipment',
-            self::SCOPE_LOCAL => 'Invoice, Vendor Profile',
+            self::SCOPE_IMPORT => __('navigation.portal_descriptions.import'),
+            self::SCOPE_LOCAL => __('navigation.portal_descriptions.local'),
             default => '',
         };
     }

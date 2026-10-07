@@ -1,5 +1,6 @@
 (function (window, document) {
     'use strict';
+    const t = (key, replacements = {}) => window.AdasiI18n.t(key, replacements);
 
     const SweetAlert = window.Swal;
     const fallbackResult = (overrides) => Object.assign({
@@ -48,7 +49,7 @@
     });
 
     const nativeConfirm = (options, danger) => Promise.resolve(fallbackResult({
-        isConfirmed: window.confirm(`${asText(options.title, danger ? 'Confirm action' : 'Confirmation')}\n\n${asText(options.text, '')}`),
+        isConfirmed: window.confirm(`${asText(options.title, danger ? t('js.actions.confirm') : t('js.actions.confirmation'))}\n\n${asText(options.text, '')}`),
         isDismissed: false,
     })).then((result) => ({ ...result, isDismissed: !result.isConfirmed }));
 
@@ -59,8 +60,8 @@
         return SweetAlert.fire({
             ...baseOptions(options, danger ? 'warning' : asText(options.type, 'question'), danger ? 'danger' : asText(options.confirmTone, 'primary')),
             showCancelButton: true,
-            confirmButtonText: asText(options.confirmText, danger ? 'Yes, Continue' : 'Yes, Continue'),
-            cancelButtonText: asText(options.cancelText, 'Cancel'),
+            confirmButtonText: asText(options.confirmText, danger ? t('js.actions.continue') : t('js.actions.continue')),
+            cancelButtonText: asText(options.cancelText, t('js.actions.cancel')),
             reverseButtons: true,
             focusConfirm: !danger,
             focusCancel: danger,
@@ -71,7 +72,7 @@
     const prompt = (rawOptions) => {
         const options = asOptions(rawOptions);
         if (!SweetAlert) {
-            const value = window.prompt(asText(options.title, 'Input'), asText(options.initialValue, ''));
+            const value = window.prompt(asText(options.title, t('js.actions.input')), asText(options.initialValue, ''));
             return Promise.resolve(fallbackResult({
                 isConfirmed: value !== null,
                 isDismissed: value === null,
@@ -89,8 +90,8 @@
             inputValue: asText(options.initialValue, ''),
             inputAttributes: maxLength ? { maxlength: String(maxLength) } : {},
             showCancelButton: true,
-            confirmButtonText: asText(options.confirmText, 'Submit'),
-            cancelButtonText: asText(options.cancelText, 'Cancel'),
+            confirmButtonText: asText(options.confirmText, t('js.actions.submit')),
+            cancelButtonText: asText(options.cancelText, t('js.actions.cancel')),
             reverseButtons: true,
             focusConfirm: false,
             allowOutsideClick: false,
@@ -106,10 +107,10 @@
             inputValidator: (value) => {
                 const normalized = String(value || '').trim();
                 if (options.required && !normalized) {
-                    return asText(options.requiredMessage, 'This field is required.');
+                    return asText(options.requiredMessage, t('js.validation.required'));
                 }
                 if (maxLength && normalized.length > maxLength) {
-                    return `Maximum ${maxLength} characters are allowed.`;
+                    return t('js.validation.max_characters', { count: maxLength });
                 }
                 return typeof options.validate === 'function' ? options.validate(value) : null;
             },
@@ -119,13 +120,13 @@
     const alert = (type, rawOptions) => {
         const options = asOptions(rawOptions);
         if (!SweetAlert) {
-            window.alert(`${asText(options.title, type)}\n\n${asText(options.text, '')}`);
+            window.alert(`${asText(options.title, t(({ success: 'js.toast.completed', error: 'js.toast.failed', warning: 'js.toast.attention', info: 'js.toast.update' })[type] || 'js.toast.update'))}\n\n${asText(options.text, '')}`);
             return Promise.resolve(fallbackResult({ isConfirmed: true, isDismissed: false }));
         }
 
         return SweetAlert.fire({
             ...baseOptions(options, type, asText(options.confirmTone, 'primary')),
-            confirmButtonText: asText(options.confirmText, 'OK'),
+            confirmButtonText: asText(options.confirmText, t('js.actions.ok')),
             showConfirmButton: options.showConfirmButton !== false,
             showCloseButton: options.showCloseButton === true,
             allowOutsideClick: options.allowOutsideClick !== false,
@@ -139,7 +140,7 @@
 
         const actions = typeof options.onClick === 'function'
             ? [{
-                label: asText(options.actionLabel, 'View'),
+                label: asText(options.actionLabel, t('js.actions.view')),
                 variant: 'primary',
                 onClick: options.onClick,
             }]

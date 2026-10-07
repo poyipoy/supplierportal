@@ -19,17 +19,17 @@ class QcExportController extends Controller
         ]);
 
         $exportJob = ExportDispatcher::dispatch(
-            'Rekap Inspeksi QC',
+            __('exports.job_labels.qc_summary'),
             InspectionsExport::class,
             [
                 $filters['start_date'] ?? null,
                 $filters['end_date'] ?? null,
                 $filters['status'] ?? null,
             ],
-            'rekap_inspeksi_qc_'.now()->format('Ymd_His').'.xlsx',
+            'rekap_inspeksi_qc_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
-        $message = 'The export request was accepted. The file will download automatically when ready.';
+        $message = __('qc.copy.the_export_request_was_accepted_the_file_will_download_automatically_when_ready');
 
         if ($request->wantsJson()) {
             return response()->json([

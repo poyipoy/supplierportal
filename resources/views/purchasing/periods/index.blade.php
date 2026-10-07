@@ -1,20 +1,20 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
-@section('title', 'Period Management - ADASI Portal')
-@section('page-title', 'Period Management')
+@section('title', __('purchasing.titles.periods', []))
+@section('page-title', __('purchasing.titles.periods_page', []))
 
 @section('content')
     <div class="tw-grid tw-gap-4">
         {{-- 1. Compact Page Header --}}
         <x-ui.page-header
-            title="Quotation Periods"
-            eyebrow="Purchasing"
-            description="Open and close annual procurement periods that control when requisitions and supplier quotations can be created."
+            :title="__('purchasing.copy.quotation_periods')"
+            :eyebrow="__('purchasing.copy.purchasing')"
+            :description="__('purchasing.copy.open_and_close_annual_procurement_periods_that_control_when_requisitions_and_supplier_quotations_can')"
         >
             <x-slot:actions>
                 <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#createModal">
                     <x-ui.icon name="plus-circle" size="sm" />
-                    <span>Add Period</span>
+                    <span>{{ __('purchasing.copy.add_period') }}</span>
                 </x-ui.button>
             </x-slot:actions>
         </x-ui.page-header>
@@ -24,12 +24,12 @@
             <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="periodsTable">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">Period Name</th>
-                        <th scope="col">Scope</th>
-                        <th scope="col">Year</th>
-                        <th scope="col" class="text-center">Status</th>
-                        <th scope="col">Created By</th>
-                        <th scope="col" class="text-end" style="width: 80px;">Action</th>
+                        <th scope="col">{{ __('purchasing.copy.period_name') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.scope') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.year') }}</th>
+                        <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.created_by') }}</th>
+                        <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -44,21 +44,21 @@
                 <form action="{{ route('purchasing.periods.store') }}" method="POST">
                     @csrf
                     <div class="modal-header">
-                        <h6 class="modal-title fw-bold" id="createPeriodModalTitle">Add New Procurement Period</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h6 class="modal-title fw-bold" id="createPeriodModalTitle">{{ __('purchasing.copy.add_new_procurement_period') }}</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="tw-grid tw-gap-3">
-                            <x-ui.input name="year" type="number" label="Year" :value="now()->year" min="2000" required />
-                            <x-ui.select name="status" label="Status" helper="PRs and Quotations can only be created in Open periods." required>
-                                <option value="open">Open (Accepting Quotations)</option>
-                                <option value="closed">Closed (Completed / Archived)</option>
+                            <x-ui.input name="year" type="number" :label="__('purchasing.copy.year')" :value="now()->year" min="2000" required />
+                            <x-ui.select name="status" :label="__('purchasing.copy.status')" :helper="__('purchasing.copy.prs_and_quotations_can_only_be_created_in_open_periods')" required>
+                                <option value="open">{{ __('purchasing.copy.open_accepting_quotations') }}</option>
+                                <option value="closed">{{ __('purchasing.copy.closed_completed_archived') }}</option>
                             </x-ui.select>
                         </div>
                     </div>
                     <div class="modal-footer tw-bg-surface-low border-top">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
-                        <x-ui.button type="submit" size="sm">Save Period</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                        <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_period') }}</x-ui.button>
                     </div>
                 </form>
             </div>
@@ -73,30 +73,30 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
-                        <h6 class="modal-title fw-bold" id="editPeriodModalTitle">Edit Procurement Period</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h6 class="modal-title fw-bold" id="editPeriodModalTitle">{{ __('purchasing.copy.edit_procurement_period') }}</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="tw-grid tw-gap-3">
-                            <x-ui.input name="name" id="editName" label="Period name" required />
+                            <x-ui.input name="name" id="editName" :label="__('purchasing.copy.period_name_922e05')" required />
                             <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2">
-                                <x-ui.select name="month" id="editMonth" label="Scope (legacy month optional)" helper="Leave Annual for a year-based procurement period.">
-                                    <option value="">Annual</option>
+                                <x-ui.select name="month" id="editMonth" :label="__('purchasing.copy.scope_legacy_month_optional')" :helper="__('purchasing.copy.leave_annual_for_a_year_based_procurement_period')">
+                                    <option value="">{{ __('purchasing.copy.annual') }}</option>
                                     @for($m=1; $m<=12; $m++)
                                         <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
                                     @endfor
                                 </x-ui.select>
-                                <x-ui.input name="year" id="editYear" type="number" label="Year" min="2000" required />
+                                <x-ui.input name="year" id="editYear" type="number" :label="__('purchasing.copy.year')" min="2000" required />
                             </div>
-                            <x-ui.select name="status" id="editStatus" label="Status" required>
-                                <option value="open">Open (Accepting Quotations)</option>
-                                <option value="closed">Closed (Completed / Archived)</option>
+                            <x-ui.select name="status" id="editStatus" :label="__('purchasing.copy.status')" required>
+                                <option value="open">{{ __('purchasing.copy.open_accepting_quotations') }}</option>
+                                <option value="closed">{{ __('purchasing.copy.closed_completed_archived') }}</option>
                             </x-ui.select>
                         </div>
                     </div>
                     <div class="modal-footer tw-bg-surface-low border-top">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
-                        <x-ui.button type="submit" size="sm">Save Changes</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                        <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_changes') }}</x-ui.button>
                     </div>
                 </form>
             </div>
@@ -120,6 +120,7 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},
+
             order: []
         });
 

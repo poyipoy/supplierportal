@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <title>{{ $voucher->voucher_number }}</title>
@@ -53,50 +53,50 @@
             </td>
             <td class="kop-text-cell">
                 <div class="company-name">PT. ASTRA DAIDO STEEL INDONESIA</div>
-                <div class="company-dept">FINANCE &amp; ACCOUNTS PAYABLE DEPARTMENT</div>
+                <div class="company-dept">{{ __('finance.copy_review.finance_department') }}</div>
                 <div class="company-address">Kawasan Industri Delta Silicon 8, Jl. Albasia Raya K. 07 No.003 Lippo Cikarang, Cikarang Pusat - Bekasi </div>
-                <div class="company-contact">Telp: 021-39506699 &middot; Email: finance@adasi.co.id &middot; Website: www.astra-daido.co.id</div>
+                <div class="company-contact">{{ __('documents.copy.phone') }}: 021-39506699 &middot; {{ __('documents.copy.email') }}: finance@adasi.co.id &middot; {{ __('documents.copy.website') }}: www.astra-daido.co.id</div>
             </td>
             <td class="kop-spacer-cell"></td>
         </tr>
     </table>
     <div class="kop-divider"></div>
 
-    <div class="title">VOUCHER BAYAR</div>
+    <div class="title">{{ __('finance.voucher.print_title') }}</div>
     <div class="number">{{ $voucher->voucher_number }}</div>
 
     <table class="meta">
         <tr>
-            <td><strong>Ref/Batch</strong> {{ $voucher->batch->batch_number }}</td>
-            <td><strong>Tgl.</strong> {{ $voucher->voucher_date->format('d F Y') }}</td>
-            <td class="checkboxes"><strong>Metode</strong> [{{ $voucher->payment_method === 'BANK' ? 'X' : ' ' }}] Bank &nbsp; [{{ $voucher->payment_method === 'KAS' ? 'X' : ' ' }}] Kas</td>
+            <td><strong>{{ __('common.labels_review.ref_batch') }}</strong> {{ $voucher->batch->batch_number }}</td>
+            <td><strong>{{ __('local_invoice.labels.date') }}</strong> {{ $regionalFormatter->date($voucher->voucher_date, 'full_human') }}</td>
+            <td class="checkboxes"><strong>{{ __('finance.voucher.method') }}</strong> [{{ $voucher->payment_method === 'BANK' ? 'X' : ' ' }}] {{ __('common.labels_review.bank') }} &nbsp; [{{ $voucher->payment_method === 'KAS' ? 'X' : ' ' }}] {{ __('finance.voucher.cash') }}</td>
         </tr>
         <tr>
-            <td colspan="2"><strong>Dibayar kepada</strong> {{ $voucher->supplier_name_snapshot }}</td>
+            <td colspan="2"><strong>{{ __('finance.voucher.payee') }}</strong> {{ $voucher->supplier_name_snapshot }}</td>
             <td><strong>NPWP</strong> {{ $voucher->npwp_snapshot ?: '-' }}</td>
         </tr>
         <tr class="bank-block">
-            <td colspan="3"><strong>Bank</strong> {{ $voucher->bank_name_snapshot }} / {{ $voucher->bank_account_snapshot }} a.n. {{ $voucher->bank_account_holder_snapshot }}</td>
+            <td colspan="3"><strong>{{ __('common.labels_review.bank') }}</strong> {{ $voucher->bank_name_snapshot }} / {{ $voucher->bank_account_snapshot }} {{ __('finance.drp_surface.account_holder') }} {{ $voucher->bank_account_holder_snapshot }}</td>
         </tr>
     </table>
 
     <table style="margin-top: 14px">
-        <thead><tr><th>Keterangan</th><th class="right">Nilai (IDR)</th></tr></thead>
+        <thead><tr><th>{{ __('finance.voucher.description') }}</th><th class="right">{{ __('finance.voucher.amount_idr') }}</th></tr></thead>
         <tbody>
-            <tr><td>Invoice {{ $voucher->invoice_number_snapshot }}<br>PO {{ $voucher->po_number_snapshot }}<br>GR {{ $voucher->gr_references_snapshot }}</td><td class="right">{{ number_format($voucher->dpp_snapshot, 2, ',', '.') }}</td></tr>
+            <tr><td>{{ __('local_invoice.labels.invoice') }} {{ $voucher->invoice_number_snapshot }}<br>PO {{ $voucher->po_number_snapshot }}<br>GR {{ $voucher->gr_references_snapshot }}</td><td class="right">{{ number_format($voucher->dpp_snapshot, 2, ',', '.') }}</td></tr>
             <tr><td>PPN</td><td class="right">{{ number_format($voucher->ppn_snapshot, 2, ',', '.') }}</td></tr>
-            <tr><td>Potongan PPh</td><td class="right">({{ number_format($voucher->pph_snapshot, 2, ',', '.') }})</td></tr>
-            <tr class="totals"><th>Total Voucher</th><th class="right amount">Rp {{ number_format($voucher->amount, 2, ',', '.') }}</th></tr>
-            <tr><td colspan="2"><strong>Terbilang:</strong> {{ $voucher->terbilang_snapshot }}</td></tr>
+            <tr><td>{{ __('finance.voucher.withholding') }}</td><td class="right">({{ number_format($voucher->pph_snapshot, 2, ',', '.') }})</td></tr>
+            <tr class="totals"><th>{{ __('finance.voucher.total_amount') }}</th><th class="right amount">Rp {{ number_format($voucher->amount, 2, ',', '.') }}</th></tr>
+            <tr><td colspan="2"><strong>{{ __('finance.voucher.remarks') }}:</strong> {{ $voucher->terbilang_snapshot }}</td></tr>
         </tbody>
     </table>
 
-    @if($voucher->remarks_snapshot)<p><strong>Catatan:</strong> {{ $voucher->remarks_snapshot }}</p>@endif
+    @if($voucher->remarks_snapshot)<p><strong>{{ __('local_invoice.labels.notes') }}:</strong> {{ $voucher->remarks_snapshot }}</p>@endif
 
     <table class="signatures">
-        <tr><td>Diterima<br><br><br>&nbsp;</td><td>Disetujui<br><br><br>&nbsp;</td><td>Diperiksa<br><br><br>&nbsp;</td><td>Dibuat<br><br><br>&nbsp;</td></tr>
+        <tr><td>{{ __('local_invoice.labels.received') }}<br><br><br>&nbsp;</td><td>{{ __('local_invoice.labels.approved') }}<br><br><br>&nbsp;</td><td>{{ __('local_invoice.labels.reviewed') }}<br><br><br>&nbsp;</td><td>{{ __('local_invoice.labels.created') }}<br><br><br>&nbsp;</td></tr>
     </table>
-    <table class="admin-footer"><tr><td>[ ] Jurnal</td><td>[ ] Cek</td><td>[ ] Posting</td><td>[ ] Filing</td></tr></table>
-    <p class="muted">Generated from authoritative server snapshots on {{ $voucher->finalized_at->format('d M Y H:i') }}.</p>
+    <table class="admin-footer"><tr><td>[ ] {{ __('finance.voucher.journal') }}</td><td>[ ] {{ __('finance.voucher.check') }}</td><td>[ ] {{ __('finance.voucher.posting') }}</td><td>[ ] {{ __('finance.voucher.filing') }}</td></tr></table>
+    <p class="muted">{{ __('finance.voucher.generated', ['date' => $regionalFormatter->timestamp($voucher->finalized_at, 'datetime')]) }}</p>
 </body>
 </html>

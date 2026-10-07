@@ -21,7 +21,7 @@
         <div class="tw-text-ui-sm">{{ $slot }}</div>
     </div>
     @if($dismissible)
-        <button type="button" class="ui-focus-ring tw-inline-flex tw-h-11 tw-w-11 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full hover:tw-bg-surface-container" @click="visible = false" aria-label="Dismiss message">
+        <button type="button" class="ui-focus-ring tw-inline-flex tw-h-11 tw-w-11 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-full hover:tw-bg-surface-container" @click="visible = false" aria-label="{{ __('common.actions.dismiss') }}">
             <x-ui.icon name="x" size="sm" />
         </button>
     @endif

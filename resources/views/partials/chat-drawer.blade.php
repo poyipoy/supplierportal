@@ -3,12 +3,12 @@
         <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
             <div class="offcanvas-header tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface tw-px-4 tw-py-3">
                 <div class="tw-flex tw-flex-1 tw-min-w-0 tw-items-center tw-gap-2.5">
-                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="Back to Chat List" aria-label="Back to chat list">
+                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="{{ __('common.chat.back') }}" aria-label="{{ __('common.chat.back_lower') }}">
                         <x-ui.icon name="arrow-left" />
                     </button>
                     <div class="tw-flex-1 tw-min-w-0 tw-overflow-hidden">
-                        <h6 class="offcanvas-title tw-m-0 tw-truncate tw-text-ui-sm tw-font-semibold" id="chatDrawerTitle">Negotiation & Chat</h6>
-                        <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">Active conversation list</span>
+                        <h6 class="offcanvas-title tw-m-0 tw-truncate tw-text-ui-sm tw-font-semibold" id="chatDrawerTitle">{{ __('common.chat.title') }}</h6>
+                        <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">{{ __('common.chat.list') }}</span>
                     </div>
                 </div>
                 <div class="tw-flex tw-shrink-0 tw-items-center tw-gap-2 ms-auto">
@@ -17,22 +17,22 @@
                             class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
                             id="chatDrawerMuteToggle"
                             aria-pressed="false"
-                            title="Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges."
-                            aria-label="Mute conversation notifications">
+                            title="{{ __('common.chat.mute_help') }}"
+                            aria-label="{{ __('common.chat.mute') }}">
                             <span class="chat-drawer-mute-icon-unmuted d-inline-flex">
                                 <x-ui.icon name="bell" />
                             </span>
                             <span class="chat-drawer-mute-icon-muted d-none">
                                 <x-ui.icon name="bell-off" />
                             </span>
-                            <span class="tw-sr-only" id="chatDrawerMuteSrLabel">Mute conversation notifications</span>
+                            <span class="tw-sr-only" id="chatDrawerMuteSrLabel">{{ __('common.chat.mute') }}</span>
                         </button>
                     </div>
                     <button type="button"
                         class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
                         data-bs-dismiss="offcanvas"
-                        title="Close"
-                        aria-label="Close">
+                        title="{{ __('common.actions.close') }}"
+                        aria-label="{{ __('common.actions.close') }}">
                         <x-ui.icon name="x" />
                     </button>
                 </div>
@@ -43,13 +43,13 @@
                     <div class="tw-border-b tw-border-outline-variant tw-bg-surface tw-p-3">
                         <div class="tw-relative">
                             <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-2.5 tw-pointer-events-none tw-text-on-surface-variant"><x-ui.icon name="search" /></div>
-                            <input type="search" class="tw-h-9 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-pl-8 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary" id="chatDrawerSearch" placeholder="Search partner, PO, or PR">
+                            <input type="search" class="tw-h-9 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-pl-8 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary" id="chatDrawerSearch" placeholder="{{ __('common.chat.search') }}">
                         </div>
                     </div>
                     <div class="chat-thread-list" id="chatDrawerList">
                         <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-8 tw-text-on-surface-variant">
                             <span class="ui-spinner" aria-hidden="true"></span>
-                            <span class="tw-mt-2 tw-text-ui-xs">Loading chats...</span>
+                            <span class="tw-mt-2 tw-text-ui-xs">{{ __('common.chat.loading') }}</span>
                         </div>
                     </div>
                 </div>
@@ -63,23 +63,23 @@
                             <div class="chat-composer-tools d-flex align-items-center justify-content-between gap-2 mb-2">
                                 <div class="dropdown d-none" id="chatDrawerTemplates">
                                     <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <x-ui.icon name="zap" />Template
+                                        <x-ui.icon name="zap" /> {{ __('common.chat.template') }}
                                     </button>
                                     <div class="dropdown-menu p-2 chat-template-menu" id="chatDrawerTemplateMenu"></div>
                                 </div>
                                 <div class="tw-flex-1 tw-text-end tw-text-ui-xs tw-text-on-surface-variant d-none" id="chatDrawerAttachmentList"></div>
                             </div>
                             <div class="tw-flex tw-gap-2 tw-items-end">
-                                <textarea class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="Type a message..." aria-label="Message"></textarea>
-                                <label class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container tw-mb-0" for="chatDrawerAttachments" title="Attach files" aria-label="Attach files">
+                                <textarea class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="{{ __('common.chat.type') }}" aria-label="{{ __('common.fields.message') }}"></textarea>
+                                <label class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container tw-mb-0" for="chatDrawerAttachments" title="{{ __('common.upload.attach') }}" aria-label="{{ __('common.upload.attach') }}">
                                     <x-ui.icon name="paperclip" />
                                 </label>
                                 <input type="file" class="d-none" id="chatDrawerAttachments" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
-                                <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="chatDrawerSend" aria-label="Send message">
+                                <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="chatDrawerSend" aria-label="{{ __('common.chat.send') }}">
                                     <x-ui.icon name="send" />
                                 </button>
                             </div>
-                            <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">Enter to send, Shift+Enter for a new line.</div>
+                            <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('common.chat.enter_send') }}</div>
                         </form>
                     </div>
                 </div>
@@ -177,7 +177,7 @@
 
                         if (loading) {
                             sendButton.setAttribute('aria-busy', 'true');
-                            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">Sending message</span>';
+                            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">{{ __('common.chat.sending') }}</span>';
                             return;
                         }
 
@@ -218,7 +218,7 @@
 
                     const normalizeMessage = (message) => {
                         const createdAt = message.created_at ? new Date(message.created_at) : new Date();
-                        const senderName = message.sender_name || (message.sender ? message.sender.name : 'User');
+                        const senderName = message.sender_name || (message.sender ? message.sender.name : @js(__('common.user')));
 
                         return {
                             id: Number(message.id),
@@ -228,7 +228,7 @@
                             isMe: typeof message.is_me === 'boolean'
                                 ? message.is_me
                                 : Number(message.sender_id) === config.myId,
-                            time: message.time || createdAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                            time: message.time || createdAt.toLocaleTimeString(window.AdasiI18n.locale === 'id' ? 'id-ID' : 'en-GB', { hour: '2-digit', minute: '2-digit' })
                         };
                     };
 
@@ -237,9 +237,9 @@
                         if (!muteToggle) return;
                         muteToggle.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
                         if (isMuted) {
-                            muteToggle.setAttribute('aria-label', 'Unmute conversation notifications');
-                            muteToggle.setAttribute('title', 'Notifications are currently muted. Click to unmute.');
-                            if (muteSrLabel) muteSrLabel.textContent = 'Unmute conversation notifications';
+                            muteToggle.setAttribute('aria-label', @js(__('common.chat.unmute')));
+                            muteToggle.setAttribute('title', @js(__('common.chat.currently_muted')));
+                            if (muteSrLabel) muteSrLabel.textContent = @js(__('common.chat.unmute'));
                             if (muteIconUnmuted) {
                                 muteIconUnmuted.classList.add('d-none');
                                 muteIconUnmuted.classList.remove('d-inline-flex');
@@ -251,9 +251,9 @@
                             muteToggle.classList.add('tw-bg-surface-container', 'tw-text-on-surface');
                             muteToggle.classList.remove('tw-bg-transparent', 'tw-text-on-surface-variant');
                         } else {
-                            muteToggle.setAttribute('aria-label', 'Mute conversation notifications');
-                            muteToggle.setAttribute('title', 'Muting silences notification popups and unread badges for this conversation. You will still see messages and chat unread badges.');
-                            if (muteSrLabel) muteSrLabel.textContent = 'Mute conversation notifications';
+                            muteToggle.setAttribute('aria-label', @js(__('common.chat.mute')));
+                            muteToggle.setAttribute('title', @js(__('common.chat.mute_help')));
+                            if (muteSrLabel) muteSrLabel.textContent = @js(__('common.chat.mute'));
                             if (muteIconUnmuted) {
                                 muteIconUnmuted.classList.remove('d-none');
                                 muteIconUnmuted.classList.add('d-inline-flex');
@@ -277,8 +277,8 @@
                         inputEl.value = '';
                         clearAttachments();
                         backButton.classList.add('d-none');
-                        titleEl.textContent = 'Negotiation & Chat';
-                        subtitleEl.textContent = 'Active conversation list';
+                        titleEl.textContent = @js(__('common.chat.title'));
+                        subtitleEl.textContent = @js(__('common.chat.list'));
                         if (muteContainer) {
                             muteContainer.classList.add('d-none');
                             muteContainer.classList.remove('d-flex');
@@ -293,7 +293,7 @@
 
                     const setConversationMode = (conversation) => {
                         backButton.classList.remove('d-none');
-                        titleEl.textContent = conversation.partner_name || 'Chat';
+                        titleEl.textContent = conversation.partner_name || @js(__('common.chat.short'));
                         subtitleEl.textContent = `${conversation.context_label || '-'} · ${conversation.partner_role || ''}`;
                         if (muteContainer) {
                             muteContainer.classList.remove('d-none');
@@ -319,8 +319,8 @@
                             listEl.innerHTML = `
                                 <div class="text-center text-muted py-5 px-4">
                                     <x-ui.icon name="message-square-text" size="lg" />
-                                    <div class="fw-medium mt-2">No chats yet</div>
-                                    <div class="small">Conversations will appear after they are created from a PR or PO.</div>
+                                    <div class="fw-medium mt-2">{{ __('common.chat.empty_chats') }}</div>
+                                    <div class="small">{{ __('common.chat.empty') }}</div>
                                 </div>
                             `;
                             return;
@@ -331,7 +331,7 @@
                                 <div class="d-flex justify-content-between gap-2 mb-1">
                                     <div class="fw-semibold text-truncate d-flex align-items-center gap-1.5">
                                         <span>${escapeHtml(conversation.partner_name)}</span>
-                                        ${conversation.muted ? `<span class="tw-inline-flex tw-items-center tw-text-on-surface-variant" title="Notifications are muted for this conversation"><x-ui.icon name="bell-off" size="xs" /></span>` : ''}
+                                        ${conversation.muted ? `<span class="tw-inline-flex tw-items-center tw-text-on-surface-variant" title="${escapeHtml(window.AdasiI18n.t('js.chat.muted_help'))}"><x-ui.icon name="bell-off" size="xs" /></span>` : ''}
                                     </div>
                                     ${conversation.unread_count > 0 ? `<span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">${conversation.unread_count}</span>` : ''}
                                 </div>
@@ -340,7 +340,7 @@
                                     <small class="text-muted text-truncate">${escapeHtml(conversation.context_label)}</small>
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 mb-1">
-                                    <span class="${chipClass(conversation.status_badge_class)}">${escapeHtml(conversation.status_label || 'Active')}</span>
+                                    <span class="${chipClass(conversation.status_badge_class)}">${escapeHtml(conversation.status_label || @js(__('common.chat.active')))}</span>
                                     ${conversation.sla ? `<span class="${chipClass(conversation.sla.class)}">${escapeHtml(conversation.sla.label || '')}</span>` : ''}
                                 </div>
                                 <div class="small text-muted text-truncate">${escapeHtml(conversation.latest_preview)}</div>
@@ -353,7 +353,7 @@
                         listEl.innerHTML = `
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm me-1"></div>
-                                <span>Loading chats...</span>
+                                <span>{{ __('common.chat.loading') }}</span>
                             </div>
                         `;
 
@@ -362,7 +362,7 @@
 
                         return fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Failed to load chat list.');
+                                if (!response.ok) throw new Error(@js(__('common.chat.load_list_failed')));
                                 return response.json();
                             })
                             .then((data) => {
@@ -372,7 +372,7 @@
                             .catch(() => {
                                 listEl.innerHTML = `
                                     <div class="tw-m-3 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-error-container-foreground" role="alert">
-                                        Failed to load chat list. Please try again later.
+                                        {{ __('common.chat.failed_list') }}
                                     </div>
                                 `;
                             });
@@ -402,10 +402,10 @@
                                     <div class="small text-muted text-truncate mt-1">${escapeHtml(context.subtitle || '')}</div>
                                 </div>
                                 <div class="d-flex gap-1 flex-shrink-0">
-                                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant hover:tw-bg-surface-container" data-chat-context-toggle title="Toggle details" aria-label="Toggle context details">
+                                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant hover:tw-bg-surface-container" data-chat-context-toggle title="{{ __('common.chat.toggle') }}" aria-label="{{ __('common.chat.toggle_context') }}">
                                         <x-ui.icon name="chevron-down" />
                                     </button>
-                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="Open details" aria-label="Open context details"><x-ui.icon name="external-link" /></a>` : ''}
+                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="${escapeHtml(@js(__('common.accessibility.open_details')))}" aria-label="${escapeHtml(@js(__('common.accessibility.open_context')))}"><x-ui.icon name="external-link" /></a>` : ''}
                                 </div>
                             </div>
                             <div class="chat-context-grid d-none mt-2" id="chatContextDetail">${fields}</div>
@@ -475,8 +475,8 @@
 
                         const read = Boolean(message.is_read);
                         const title = read
-                            ? `Read${message.read_at_display ? ' ' + message.read_at_display : ''}`
-                            : 'Sent, unread';
+                            ? window.AdasiI18n.t(message.read_at_display ? 'js.chat.read_at' : 'js.chat.read', { time: message.read_at_display || '' })
+                            : window.AdasiI18n.t('js.chat.sent_unread');
 
                         return `<span class="chat-read-receipt ${read ? 'is-read' : ''}" data-read-receipt-id="${message.id}" title="${escapeHtml(title)}">
                             <x-ui.icon name="check-check" />
@@ -502,7 +502,10 @@
                             if (!receiptEl) return;
 
                             receiptEl.classList.add('is-read');
-                            receiptEl.setAttribute('title', `Read${receipt.read_at_display ? ' ' + receipt.read_at_display : ''}`);
+                            receiptEl.setAttribute('title', window.AdasiI18n.t(
+    receipt.read_at_display ? 'js.chat.read_at' : 'js.chat.read',
+    { time: receipt.read_at_display || '' }
+));
                         });
                     };
 
@@ -511,7 +514,7 @@
                         const wrapperClass = normalized.isMe ? 'justify-content-end' : 'justify-content-start';
                         const alignClass = normalized.isMe ? 'align-items-end' : 'align-items-start';
                         const bubbleClass = normalized.isMe ? 'is-me' : 'is-partner';
-                        const senderLabel = normalized.isMe ? 'You' : normalized.senderName;
+                        const senderLabel = normalized.senderName;
                        
                         messagesEl.insertAdjacentHTML('beforeend', `
                             <div class="chat-message-row ${normalized.isMe ? 'is-me' : 'is-partner'} ${wrapperClass}" data-message-id="${normalized.id}">
@@ -550,7 +553,7 @@
                         messagesEl.innerHTML = `
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm me-1"></div>
-                                Loading messages...
+                                {{ __('common.chat.messages_loading') }}
                             </div>
                         `;
 
@@ -558,7 +561,7 @@
                             headers: { 'Accept': 'application/json' }
                         })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Failed to open chat.');
+                                if (!response.ok) throw new Error(@js(__('common.chat.open_error')));
                                 return response.json();
                             })
                             .then((data) => {
@@ -576,8 +579,8 @@
                                     messagesEl.innerHTML = `
                                         <div class="text-center text-muted py-5" id="chatDrawerEmpty">
                                             <x-ui.icon name="message-circle-more" size="lg" />
-                                            <div class="fw-medium mt-2">No messages yet</div>
-                                            <div class="small">Start the conversation from the composer below.</div>
+                                            <div class="fw-medium mt-2">{{ __('common.chat.empty_messages') }}</div>
+                                            <div class="small">{{ __('common.chat.start') }}</div>
                                         </div>
                                     `;
                                 } else {
@@ -595,7 +598,7 @@
                                 }
                                 messagesEl.innerHTML = `
                                     <div class="tw-m-3 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-error-container-foreground" role="alert">
-                                        Failed to load chat details. Please try again later.
+                                        {{ __('common.chat.failed_details') }}
                                     </div>
                                 `;
                             });
@@ -650,14 +653,14 @@
                         if (!activeConversationId || button.disabled) return;
 
                         const action = button.dataset.chatAction;
-                        const label = button.dataset.chatActionLabel || 'Negotiation Action';
+                        const label = button.dataset.chatActionLabel || @js(__('common.chat.action'));
                         const requiresNote = button.dataset.chatActionNote === '1';
                         const actionType = button.dataset.chatActionType || 'prompt';
 
                         const execute = (note = '') => {
                             button.disabled = true;
                             const originalHtml = button.innerHTML;
-                            button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Processing`;
+                            button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${escapeHtml(@js(__('datatables.processing')))}`;
 
                             return fetch(buildUrl(config.quickActionUrlTemplate, activeConversationId), {
                                 method: 'POST',
@@ -674,7 +677,7 @@
                                             .then((payload) => {
                                                 const messages = payload.errors
                                                     ? Object.values(payload.errors).flat().join('\n')
-                                                    : (payload.message || 'The action cannot be processed yet.');
+                                                    : (payload.message || @js(__('common.chat.action_unavailable')));
                                                 throw new Error(messages);
                                             });
                                     }
@@ -696,16 +699,16 @@
 
                                     AdasiToast.show({
                                         type: 'success',
-                                        title: 'Success',
-                                        message: `${label} processed successfully.`,
+                                        title: @js(__('common.chat.success')),
+                                        message: @js(__('common.chat.action_processed')).replace(':label', label),
                                         autoClose: 1400
                                     });
                                 })
                                 .catch((error) => {
                                     AdasiToast.show({
                                         type: 'error',
-                                        title: 'Action Failed',
-                                        message: error.message || 'The action cannot be processed yet.',
+                                        title: @js(__('common.chat.action_failed')),
+                                        message: error.message || @js(__('common.chat.action_unavailable')),
                                         autoClose: 4000
                                     });
                                 })
@@ -718,13 +721,13 @@
                         if (requiresNote || actionType === 'prompt') {
                             AdasiAlert.prompt({
                                 title: label,
-                                inputLabel: requiresNote ? 'Notes are required' : 'Additional notes',
-                                placeholder: 'Write a note for the supplier...',
+                                inputLabel: requiresNote ? @js(__('common.chat.notes_required')) : @js(__('common.chat.additional_notes')),
+                                placeholder: @js(__('common.chat.note_placeholder')),
                                 maxLength: 1000,
                                 required: requiresNote,
-                                requiredMessage: 'Notes are required.',
-                                confirmText: 'Send',
-                                cancelText: 'Cancel'
+                                requiredMessage: @js(__('common.chat.notes_required_message')),
+                                confirmText: window.AdasiI18n.t('js.actions.send'),
+                                cancelText: window.AdasiI18n.t('js.actions.cancel')
                             }).then((result) => {
                                 if (result.isConfirmed) {
                                     execute(String(result.value || '').trim());
@@ -735,9 +738,9 @@
 
                         AdasiAlert.confirm({
                             title: label,
-                            text: 'Continue with this action?',
-                            confirmText: 'Yes, continue',
-                            cancelText: 'Cancel'
+                            text: @js(__('common.chat.continue')),
+                            confirmText: window.AdasiI18n.t('js.actions.continue'),
+                            cancelText: window.AdasiI18n.t('js.actions.cancel')
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 execute();
@@ -809,7 +812,7 @@
                         activeOpenerButton = submitButton;
                         if (submitButton) {
                             if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
-                                window.AdasiButton.startLoading(submitButton, { text: 'Opening...' });
+                                window.AdasiButton.startLoading(submitButton, { text: @js(__('common.chat.opening')) });
                             } else {
                                 submitButton.disabled = true;
                             }
@@ -825,7 +828,7 @@
                             body: new FormData(form)
                         })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Failed to create chat.');
+                                if (!response.ok) throw new Error(@js(__('common.chat.create_error')));
                                 return response.json();
                             })
                             .then((data) => {
@@ -837,8 +840,8 @@
                             .catch(() => {
                                 AdasiToast.show({
                                     type: 'error',
-                                    title: 'Unable to Open Chat',
-                                    message: 'Chat cannot be opened yet. Please try again later.',
+                                    title: @js(__('common.chat.open_failed')),
+                                    message: @js(__('common.chat.open_help')),
                                     autoClose: 4000
                                 });
                             })
@@ -876,7 +879,7 @@
                             body: payload
                         })
                             .then((response) => {
-                                if (!response.ok) throw new Error('Failed to send message.');
+                                if (!response.ok) throw new Error(@js(__('common.chat.send_error')));
                                 return response.json();
                             })
                             .then((data) => {
@@ -893,8 +896,8 @@
                             .catch(() => {
                                 AdasiToast.show({
                                     type: 'error',
-                                    title: 'Message Not Sent',
-                                    message: 'The message was not sent. Please try again.',
+                                    title: @js(__('common.chat.send_failed')),
+                                    message: @js(__('common.chat.send_help')),
                                     autoClose: 4000
                                 });
                            })

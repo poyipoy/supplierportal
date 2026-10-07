@@ -30,12 +30,12 @@ final class PurchaseRequisitionItemSynchronizer
             $current = $itemId !== null ? $existing->get($itemId) : null;
 
             if ($itemId !== null && $current === null) {
-                $errors["items.{$index}.id"] = 'The selected item does not belong to this requisition.';
+                $errors["items.{$index}.id"] = __('materials.copy.the_selected_item_does_not_belong_to_this_requisition');
 
                 continue;
             }
             if ($itemId !== null && in_array($itemId, $seenIds, true)) {
-                $errors["items.{$index}.id"] = 'The same requisition item cannot be submitted twice.';
+                $errors["items.{$index}.id"] = __('materials.copy.the_same_requisition_item_cannot_be_submitted_twice');
 
                 continue;
             }
@@ -57,7 +57,7 @@ final class PurchaseRequisitionItemSynchronizer
         $omitted = $existing->except($seenIds);
         foreach ($omitted as $item) {
             if ($item->quotation_items_count > 0 || $item->qc_items_count > 0) {
-                $errors['items'] = 'A material already referenced by a quotation or QC record cannot be removed.';
+                $errors['items'] = __('materials.copy.a_material_already_referenced_by_a_quotation_or_qc_record_cannot_be_removed');
                 break;
             }
         }
@@ -110,7 +110,7 @@ final class PurchaseRequisitionItemSynchronizer
 
         if ($inputs === []) {
             throw ValidationException::withMessages([
-                'items' => 'At least one material is required before submitting.',
+                'items' => __('materials.copy.at_least_one_material_is_required_before_submitting'),
             ]);
         }
 

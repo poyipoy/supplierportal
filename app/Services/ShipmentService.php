@@ -11,6 +11,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\ShipmentItem;
 use App\Models\User;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ use Throwable;
 
 class ShipmentService
 {
-    private const LEGACY_ONLY_ARRIVAL_MESSAGE = 'This Purchase Order was already received through the legacy receiving flow and cannot be converted to shipment-based receiving.';
+    private const LEGACY_ONLY_ARRIVAL_MESSAGE = 'shipments.validation.legacy_only_arrival';
 
     public function __construct(
         protected NotificationService $notifications
@@ -58,8 +59,8 @@ class ShipmentService
                 'shipment_number' => Shipment::generateShipmentNumber(),
                 'supplier_id' => $supplier->id,
                 'status' => Shipment::STATUS_DRAFT,
-                'shipment_date' => $data['shipment_date'] ?? now()->toDateString(),
-                'estimated_arrival_date' => $data['estimated_arrival_date'] ?? now()->addDays(14)->toDateString(),
+                'shipment_date' => $data['shipment_date'] ?? BusinessTime::today()->toDateString(),
+                'estimated_arrival_date' => $data['estimated_arrival_date'] ?? BusinessTime::today()->addDays(14)->toDateString(),
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $supplier->id,
             ]);
@@ -103,7 +104,7 @@ class ShipmentService
     private function syncDraftItemsWithinTransaction(Shipment $shipment, array $items): void
     {
         if ($shipment->status !== Shipment::STATUS_DRAFT) {
-            throw new InvalidArgumentException("Cannot modify items of a shipment that is already {$shipment->status}.");
+            throw new InvalidArgumentException(__('shipments.guard_copy.modify_status', ['status' => $shipment->status]));
         }
 
         // Defense in depth: reject duplicate allocations for the same PO item within one shipment
@@ -112,7 +113,7 @@ class ShipmentService
             ->filter(fn ($group) => $group->count() > 1);
 
         if ($duplicates->isNotEmpty()) {
-            throw new InvalidArgumentException('Duplicate item entries detected for the same Purchase Order item in this shipment.');
+            throw new InvalidArgumentException(__('shipments.copy.duplicate_item_entries_detected_for_the_same_purchase_order_item_in_this_shipment'));
         }
 
         $existingPoIds = $shipment->items()->pluck('purchase_order_id');
@@ -132,17 +133,17 @@ class ShipmentService
             ->keyBy('id');
 
         if ($pos->count() !== count($poIds)) {
-            throw new InvalidArgumentException('One or more referenced Purchase Orders could not be found.');
+            throw new InvalidArgumentException(__('shipments.copy.one_or_more_referenced_purchase_orders_could_not_be_found'));
         }
 
         // Validate supplier ownership on every PO
         foreach ($pos as $po) {
             if ((int) $po->supplier_id !== (int) $shipment->supplier_id) {
-                throw new InvalidArgumentException("Purchase Order #{$po->po_number} does not belong to supplier #{$shipment->supplier_id}.");
+                throw new InvalidArgumentException(__('shipments.guard_copy.po_supplier', ['po' => $po->po_number, 'supplier' => $shipment->supplier_id]));
             }
 
             if ($po->hasLegacyOnlyArrivalState()) {
-                throw new InvalidArgumentException(self::LEGACY_ONLY_ARRIVAL_MESSAGE);
+                throw new InvalidArgumentException(__(self::LEGACY_ONLY_ARRIVAL_MESSAGE));
             }
         }
 
@@ -150,11 +151,11 @@ class ShipmentService
         foreach ($items as $item) {
             $rawQty = $item['shipped_qty'] ?? $item['shipped_quantity'] ?? null;
             if ($rawQty === null || $rawQty === '') {
-                throw new InvalidArgumentException('Shipped quantity must be greater than zero.');
+                throw new InvalidArgumentException(__('shipments.copy.shipped_quantity_must_be_greater_than_zero'));
             }
 
             if (! is_numeric($rawQty) || (float) $rawQty != (int) $rawQty || (int) $rawQty <= 0) {
-                throw new InvalidArgumentException('Shipped quantity must be a positive integer.');
+                throw new InvalidArgumentException(__('shipments.copy.shipped_quantity_must_be_a_positive_integer'));
             }
             $shippedQty = (int) $rawQty;
 
@@ -162,7 +163,7 @@ class ShipmentService
             // piece count. `shipped_quantity` is a legacy *quantity* alias only.
             $rawWeight = $item['actual_weight_kg'] ?? null;
             if ($rawWeight === null || $rawWeight === '' || ! is_numeric($rawWeight) || (float) $rawWeight <= 0) {
-                throw new InvalidArgumentException('Actual weight (kg) must be supplied explicitly and be greater than zero.');
+                throw new InvalidArgumentException(__('shipments.copy.actual_weight_kg_must_be_supplied_explicitly_and_be_greater_than_zero'));
             }
             $actualWeightKg = round((float) $rawWeight, 4);
 
@@ -171,7 +172,7 @@ class ShipmentService
             $po = $pos->get($poId);
 
             if (! $po) {
-                throw new InvalidArgumentException("Purchase Order #{$poId} not found.");
+                throw new InvalidArgumentException(__('shipments.errors.po_not_found', ['id' => $poId]));
             }
 
             // Cross-validate commercial source consistency
@@ -182,11 +183,11 @@ class ShipmentService
                     ->first();
 
                 if (! $award) {
-                    throw new InvalidArgumentException("Quotation item #{$qItemId} does not belong to Purchase Order #{$po->po_number}.");
+                    throw new InvalidArgumentException(__('shipments.guard_copy.item_po', ['item' => $qItemId, 'po' => $po->po_number]));
                 }
 
                 if ((int) $award->supplier_id !== (int) $shipment->supplier_id) {
-                    throw new InvalidArgumentException("Item does not belong to supplier #{$shipment->supplier_id}.");
+                    throw new InvalidArgumentException(__('shipments.guard_copy.item_supplier', ['supplier' => $shipment->supplier_id]));
                 }
             } else {
                 $isLegacyItem = DB::table('po_quotations')
@@ -196,7 +197,7 @@ class ShipmentService
                     ->exists();
 
                 if (! $isLegacyItem) {
-                    throw new InvalidArgumentException("Quotation item #{$qItemId} does not belong to Purchase Order #{$po->po_number}.");
+                    throw new InvalidArgumentException(__('shipments.guard_copy.item_po', ['item' => $qItemId, 'po' => $po->po_number]));
                 }
             }
 
@@ -237,11 +238,11 @@ class ShipmentService
             $lockedShipment = Shipment::whereKey($shipmentId)->lockForUpdate()->firstOrFail();
 
             if ((int) $lockedShipment->supplier_id !== (int) $supplier->id) {
-                throw new InvalidArgumentException('This shipment does not belong to the authenticated supplier.');
+                throw new InvalidArgumentException(__('shipments.copy.this_shipment_does_not_belong_to_the_authenticated_supplier'));
             }
 
             if ($lockedShipment->status !== Shipment::STATUS_DRAFT) {
-                throw new InvalidArgumentException('Only draft shipments can be edited.');
+                throw new InvalidArgumentException(__('shipments.copy.only_draft_shipments_can_be_edited'));
             }
 
             $lockedShipment->update([
@@ -275,11 +276,11 @@ class ShipmentService
             /** @var Shipment|null $lockedShipment */
             $lockedShipment = Shipment::where('id', $shipmentId)->lockForUpdate()->first();
             if (! $lockedShipment) {
-                throw new InvalidArgumentException("Shipment #{$shipmentId} not found.");
+                throw new InvalidArgumentException(__('shipments.errors.not_found', ['id' => $shipmentId]));
             }
 
             if ($lockedShipment->status !== Shipment::STATUS_DRAFT) {
-                throw new InvalidArgumentException("Shipment #{$lockedShipment->shipment_number} cannot be submitted because its status is {$lockedShipment->status}.");
+                throw new InvalidArgumentException(__('shipments.guard_copy.submit_status', ['number' => $lockedShipment->shipment_number, 'status' => $lockedShipment->status]));
             }
 
             // A locking read does not establish a REPEATABLE READ snapshot.
@@ -294,7 +295,7 @@ class ShipmentService
                 ])->all();
 
             if (empty($itemsData)) {
-                throw new InvalidArgumentException('A shipment must contain at least one item allocation.');
+                throw new InvalidArgumentException(__('shipments.copy.a_shipment_must_contain_at_least_one_item_allocation'));
             }
 
             // Defense in depth: disallow duplicate item entries within the same shipment request
@@ -303,7 +304,7 @@ class ShipmentService
                 ->filter(fn ($group) => $group->count() > 1);
 
             if ($duplicates->isNotEmpty()) {
-                throw new InvalidArgumentException('Duplicate item entries detected for the same Purchase Order item in this shipment.');
+                throw new InvalidArgumentException(__('shipments.copy.duplicate_item_entries_detected_for_the_same_purchase_order_item_in_this_shipment'));
             }
 
             $itemsData = collect($itemsData)
@@ -324,21 +325,21 @@ class ShipmentService
                 ->keyBy('id');
 
             if ($lockedPos->count() !== count($poIds)) {
-                throw new InvalidArgumentException('One or more referenced Purchase Orders could not be found.');
+                throw new InvalidArgumentException(__('shipments.copy.one_or_more_referenced_purchase_orders_could_not_be_found'));
             }
 
             // Invariant 5: ONE SHIPMENT -> EXACTLY ONE SUPPLIER
             foreach ($lockedPos as $po) {
                 if ((int) $po->supplier_id !== (int) $lockedShipment->supplier_id) {
-                    throw new InvalidArgumentException("Purchase Order #{$po->po_number} belongs to another supplier. Multi-supplier shipments are forbidden.");
+                    throw new InvalidArgumentException(__('shipments.guard_copy.multiple_suppliers', ['po' => $po->po_number]));
                 }
 
                 if (! in_array($po->status, ['active', 'overdue', 'waiting_qc'])) {
-                    throw new InvalidArgumentException("Purchase Order #{$po->po_number} is not eligible for delivery (status: {$po->status}).");
+                    throw new InvalidArgumentException(__('shipments.guard_copy.po_ineligible', ['po' => $po->po_number, 'status' => $po->status]));
                 }
 
                 if ($po->hasLegacyOnlyArrivalState()) {
-                    throw new InvalidArgumentException(self::LEGACY_ONLY_ARRIVAL_MESSAGE);
+                    throw new InvalidArgumentException(__(self::LEGACY_ONLY_ARRIVAL_MESSAGE));
                 }
             }
 
@@ -363,10 +364,10 @@ class ShipmentService
 
                 $rawQty = $itemAlloc['shipped_qty'] ?? $itemAlloc['shipped_quantity'] ?? null;
                 if ($rawQty === null || $rawQty === '') {
-                    throw new InvalidArgumentException('Shipped quantity must be greater than zero.');
+                    throw new InvalidArgumentException(__('shipments.copy.shipped_quantity_must_be_greater_than_zero'));
                 }
                 if (! is_numeric($rawQty) || (float) $rawQty != (int) $rawQty || (int) $rawQty <= 0) {
-                    throw new InvalidArgumentException('Shipped quantity must be a positive integer.');
+                    throw new InvalidArgumentException(__('shipments.copy.shipped_quantity_must_be_a_positive_integer'));
                 }
                 $shippedQty = (int) $rawQty;
 
@@ -374,13 +375,13 @@ class ShipmentService
                 // piece count. `shipped_quantity` is a legacy *quantity* alias only.
                 $rawWeight = $itemAlloc['actual_weight_kg'] ?? null;
                 if ($rawWeight === null || $rawWeight === '' || ! is_numeric($rawWeight) || (float) $rawWeight <= 0) {
-                    throw new InvalidArgumentException('Actual weight (kg) must be supplied explicitly and be greater than zero.');
+                    throw new InvalidArgumentException(__('shipments.copy.actual_weight_kg_must_be_supplied_explicitly_and_be_greater_than_zero'));
                 }
                 $actualWeightKg = round((float) $rawWeight, 4);
 
                 $po = $lockedPos->get($poId);
                 if (! $po) {
-                    throw new InvalidArgumentException("Purchase Order #{$poId} not found.");
+                    throw new InvalidArgumentException(__('shipments.errors.po_not_found', ['id' => $poId]));
                 }
 
                 // Cross-validate quotation item belongs to this PO (commercial consistency)
@@ -391,11 +392,11 @@ class ShipmentService
                         ->first();
 
                     if (! $award) {
-                        throw new InvalidArgumentException("Quotation item #{$qItemId} does not belong to Purchase Order #{$po->po_number}.");
+                        throw new InvalidArgumentException(__('shipments.guard_copy.item_po', ['item' => $qItemId, 'po' => $po->po_number]));
                     }
 
                     if ((int) $award->supplier_id !== (int) $lockedShipment->supplier_id) {
-                        throw new InvalidArgumentException("Item does not belong to supplier #{$lockedShipment->supplier_id}.");
+                        throw new InvalidArgumentException(__('shipments.guard_copy.item_supplier', ['supplier' => $lockedShipment->supplier_id]));
                     }
                 } else {
                     $isLegacyItem = DB::table('po_quotations')
@@ -405,13 +406,13 @@ class ShipmentService
                         ->exists();
 
                     if (! $isLegacyItem) {
-                        throw new InvalidArgumentException("Quotation item #{$qItemId} does not belong to Purchase Order #{$po->po_number}.");
+                        throw new InvalidArgumentException(__('shipments.guard_copy.item_po', ['item' => $qItemId, 'po' => $po->po_number]));
                     }
                 }
 
                 $qItem = $lockedQItems->get($qItemId);
                 if (! $qItem) {
-                    throw new InvalidArgumentException("Quotation item #{$qItemId} not found.");
+                    throw new InvalidArgumentException(__('shipments.guard_copy.item_missing', ['item' => $qItemId]));
                 }
 
                 // PO serialization precedes the consistent-read snapshot used by
@@ -422,7 +423,7 @@ class ShipmentService
 
                 if ($shippedQty > $remainingQty) {
                     throw new InvalidArgumentException(
-                        "Shipped quantity ({$shippedQty} pcs) exceeds remaining ordered quantity ({$remainingQty} pcs) for item '{$qItem->prItem?->material_name}'."
+                        __('shipments.guard_copy.quantity_remaining', ['qty' => $shippedQty, 'remaining' => $remainingQty, 'material' => $qItem->prItem?->material_name])
                     );
                 }
 
@@ -454,8 +455,8 @@ class ShipmentService
             $lockedShipment->update([
                 'status' => Shipment::STATUS_SUBMITTED,
                 'submitted_at' => now(),
-                'shipment_date' => $data['shipment_date'] ?? $lockedShipment->shipment_date ?? now()->toDateString(),
-                'estimated_arrival_date' => $data['estimated_arrival_date'] ?? $lockedShipment->estimated_arrival_date ?? now()->addDays(14)->toDateString(),
+                'shipment_date' => $data['shipment_date'] ?? $lockedShipment->shipment_date ?? BusinessTime::today()->toDateString(),
+                'estimated_arrival_date' => $data['estimated_arrival_date'] ?? $lockedShipment->estimated_arrival_date ?? BusinessTime::today()->addDays(14)->toDateString(),
                 'notes' => $data['notes'] ?? $lockedShipment->notes,
             ]);
 
@@ -466,15 +467,16 @@ class ShipmentService
                 $purchasingUsers,
                 'shipment.submitted',
                 "shipment.submitted:{$lockedShipment->id}",
-                'New Shipment Submitted',
-                "Supplier {$lockedShipment->supplier->name} submitted shipment {$lockedShipment->shipment_number} for PO(s): {$poNumbers}.",
+                'shipments.copy.new_shipment_submitted',
+                'shipments.notify.submitted_body',
                 route('purchasing.purchase-orders.show', $lockedPos->first(), absolute: false),
                 'truck text-primary',
                 [
                     'category' => NotificationCategory::OTHER,
                     'shipment_id' => $lockedShipment->id,
                     'shipment_number' => $lockedShipment->shipment_number,
-                ]
+                ],
+                ['supplier' => $lockedShipment->supplier->name, 'shipment' => $lockedShipment->shipment_number, 'po' => $poNumbers],
             );
 
             return $lockedShipment->fresh(['items', 'documents', 'supplier']);
@@ -492,11 +494,11 @@ class ShipmentService
             /** @var Shipment|null $lockedShipment */
             $lockedShipment = Shipment::where('id', $shipmentId)->lockForUpdate()->first();
             if (! $lockedShipment) {
-                throw new InvalidArgumentException("Shipment #{$shipmentId} not found.");
+                throw new InvalidArgumentException(__('shipments.errors.not_found', ['id' => $shipmentId]));
             }
 
             if ($lockedShipment->status === Shipment::STATUS_ARRIVED) {
-                throw new InvalidArgumentException('Cannot cancel a shipment that has already arrived.');
+                throw new InvalidArgumentException(__('shipments.copy.cannot_cancel_a_shipment_that_has_already_arrived'));
             }
 
             if ($lockedShipment->status === Shipment::STATUS_CANCELLED) {
@@ -527,14 +529,14 @@ class ShipmentService
             /** @var Shipment|null $lockedShipment */
             $lockedShipment = Shipment::with(['items.purchaseOrder', 'supplier'])->where('id', $shipmentId)->lockForUpdate()->first();
             if (! $lockedShipment) {
-                throw new InvalidArgumentException("Shipment #{$shipmentId} not found.");
+                throw new InvalidArgumentException(__('shipments.errors.not_found', ['id' => $shipmentId]));
             }
 
             if ($lockedShipment->status !== Shipment::STATUS_SUBMITTED) {
-                throw new InvalidArgumentException("Arrival can only be confirmed for submitted shipments (current status: {$lockedShipment->status}).");
+                throw new InvalidArgumentException(__('shipments.guard_copy.arrival_status', ['status' => $lockedShipment->status]));
             }
 
-            $arrivalDate = $options['actual_arrival_date'] ?? now()->toDateString();
+            $arrivalDate = $options['actual_arrival_date'] ?? BusinessTime::today()->toDateString();
 
             $lockedShipment->update([
                 'status' => Shipment::STATUS_ARRIVED,
@@ -565,8 +567,8 @@ class ShipmentService
                     $qcUsers,
                     'po.material_arrived',
                     "shipment.arrived:{$lockedShipment->id}:po:{$po->id}",
-                    'Shipment Material Arrived - Ready for QC',
-                    "Shipment {$lockedShipment->shipment_number} for PO {$po->po_number} has arrived. Please perform QC inspection.",
+                    'shipments.notify.arrived_title',
+                    'shipments.notify.arrived_body',
                     route('qc.inspections.create', $po, absolute: false),
                     'package text-warning',
                     [
@@ -574,7 +576,8 @@ class ShipmentService
                         'po_id' => $po->id,
                         'po_number' => $po->po_number,
                         'shipment_id' => $lockedShipment->id,
-                    ]
+                    ],
+                    ['po' => $po->po_number, 'shipment' => $lockedShipment->shipment_number],
                 );
             }
 
@@ -593,14 +596,14 @@ class ShipmentService
     ): Attachment {
         $document->loadMissing('shipment');
         if (! $document->shipment || (int) $document->shipment->supplier_id !== (int) $user->id) {
-            throw new InvalidArgumentException('This shipment document does not belong to the authenticated supplier.');
+            throw new InvalidArgumentException(__('shipments.copy.this_shipment_document_does_not_belong_to_the_authenticated_supplier'));
         }
 
-        $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName();
+        $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
 
         $stream = fopen($file->getPathname(), 'r');
         if (! is_resource($stream)) {
-            throw new \RuntimeException('The uploaded document could not be read.');
+            throw new \RuntimeException(__('shipments.copy.the_uploaded_document_could_not_be_read'));
         }
 
         $disk = Storage::disk('private');
@@ -618,7 +621,7 @@ class ShipmentService
 
         if (! $stored) {
             $disk->delete($path);
-            throw new \RuntimeException('The shipment document could not be stored on the private disk.');
+            throw new \RuntimeException(__('shipments.copy.the_shipment_document_could_not_be_stored_on_the_private_disk'));
         }
 
         try {
@@ -630,7 +633,7 @@ class ShipmentService
                     ->firstOrFail();
 
                 if ((int) $lockedDocument->shipment?->supplier_id !== (int) $user->id) {
-                    throw new InvalidArgumentException('This shipment document does not belong to the authenticated supplier.');
+                    throw new InvalidArgumentException(__('shipments.copy.this_shipment_document_does_not_belong_to_the_authenticated_supplier'));
                 }
 
                 $attachment = $lockedDocument->attachments()->create([

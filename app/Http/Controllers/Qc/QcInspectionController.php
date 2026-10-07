@@ -11,6 +11,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\RegionalDisplayFormatter;
 use App\Support\NotificationCategory;
 use App\Support\StatusHelper;
 use Illuminate\Database\Eloquent\Model;
@@ -46,7 +47,7 @@ class QcInspectionController extends Controller
         return view('qc.inspections.index', compact('waitingCount', 'historyCount'));
     }
 
-    public function dataWaiting(Request $request)
+    public function dataWaiting(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
         $query = $this->waitingPurchaseOrdersQuery()->with([
             'supplier',
@@ -58,8 +59,12 @@ class QcInspectionController extends Controller
         return DataTables::eloquent($query)
             ->addColumn('po_number_display', fn ($po) => $po->po_number)
             ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
-            ->addColumn('arrival_date', fn ($po) => $po->actual_arrival ? $po->actual_arrival->format('d M Y') : '-')
-            ->addColumn('item_count', fn ($po) => $po->quotations->sum('items_count').' Item')
+            ->addColumn('arrival_date', fn ($po) => $po->actual_arrival ? $regionalFormatter->date($po->actual_arrival, 'human') : '-')
+            ->addColumn('item_count', function ($po) {
+                $count = (int) $po->quotations->sum('items_count');
+
+                return trans_choice('purchasing.copy.item_count', $count, ['count' => $count]);
+            })
             ->addColumn('action', function ($po) {
                 $inspectedShipmentIds = QcInspection::where('po_id', $po->id)
                     ->whereNotNull('shipment_id')
@@ -90,13 +95,13 @@ class QcInspectionController extends Controller
         return DataTables::eloquent($query)
             ->addColumn('po_number', fn ($i) => $i->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn ($i) => $i->purchaseOrder->supplier->name ?? '-')
-            ->addColumn('inspected_date', fn ($i) => $i->inspected_at?->format('d M Y, H:i') ?? '-')
+            ->addColumn('inspected_date', fn ($i) => $i->inspected_at ? \App\Support\BusinessTime::format($i->inspected_at, 'd M Y, H:i') : '-')
             ->addColumn('status_badge', fn ($i) => StatusHelper::badge(
                 StatusHelper::qcBadge($i->status),
                 StatusHelper::qcLabel($i->status)
             ))
             ->addColumn('inspector_name', fn ($i) => $i->inspector->name ?? '-')
-            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Details</a>')
+            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('qc.copy.details')).'</a>')
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
@@ -109,7 +114,7 @@ class QcInspectionController extends Controller
         $po = PurchaseOrder::with(['supplier', 'quotations.items.prItem', 'shipmentItems.shipment'])->findOrFail($po_id);
 
         if (! in_array($po->status, ['waiting_qc', 'claim_needed'], true)) {
-            return redirect()->route('qc.inspections.index')->with('error', 'This PO is not in Waiting QC status.');
+            return redirect()->route('qc.inspections.index')->with('error', __('qc.copy.this_po_is_not_in_waiting_qc_status'));
         }
 
         $shipment = null;
@@ -118,7 +123,7 @@ class QcInspectionController extends Controller
             $shipment = (new Shipment)->resolveRouteBinding($rawShipmentId);
 
             if (! $shipment) {
-                return redirect()->route('qc.inspections.index')->with('error', 'The specified shipment could not be found.');
+                return redirect()->route('qc.inspections.index')->with('error', __('qc.copy.the_specified_shipment_could_not_be_found'));
             }
         }
 
@@ -135,15 +140,15 @@ class QcInspectionController extends Controller
         if ($shipment) {
             $hasPoItems = $shipment->items()->where('purchase_order_id', $po->id)->exists();
             if (! $hasPoItems) {
-                return redirect()->route('qc.inspections.index')->with('error', 'The specified shipment does not contain items for this PO.');
+                return redirect()->route('qc.inspections.index')->with('error', __('qc.copy.the_specified_shipment_does_not_contain_items_for_this_po'));
             }
 
             if (QcInspection::where('po_id', $po->id)->where('shipment_id', $shipment->id)->exists()) {
-                return redirect()->route('qc.inspections.index')->with('error', 'This shipment for PO '.$po->po_number.' has already been inspected.');
+                return redirect()->route('qc.inspections.index')->with('error', __('qc.feedback.already_inspected', ['po' => $po->po_number]));
             }
         } else {
             if (QcInspection::where('po_id', $po->id)->whereNull('shipment_id')->exists()) {
-                return redirect()->route('qc.inspections.index')->with('error', 'This PO has already been inspected.');
+                return redirect()->route('qc.inspections.index')->with('error', __('qc.copy.this_po_has_already_been_inspected'));
             }
         }
 
@@ -187,12 +192,12 @@ class QcInspectionController extends Controller
         }
 
         $validated = $request->validate($rules, [
-            'items.*.pr_item_id.in' => 'The inspected material does not match this PO.',
-            'attachments.*.required' => 'Evidence photos are required for every NG item.',
-            'attachments.*.min' => 'Evidence photos are required for every NG item.',
-            'attachments.*.*.required' => 'Evidence photos are required for every NG item.',
-            'attachments.*.*.mimes' => 'NG evidence photos must be JPG, JPEG, or PNG files.',
-            'attachments.*.*.max' => 'Each NG evidence photo must not exceed 10MB.',
+            'items.*.pr_item_id.in' => __('qc.copy.the_inspected_material_does_not_match_this_po'),
+            'attachments.*.required' => __('qc.copy.evidence_photos_are_required_for_every_ng_item'),
+            'attachments.*.min' => __('qc.copy.evidence_photos_are_required_for_every_ng_item'),
+            'attachments.*.*.required' => __('qc.copy.evidence_photos_are_required_for_every_ng_item'),
+            'attachments.*.*.mimes' => __('qc.copy.ng_evidence_photos_must_be_jpg_jpeg_or_png_files'),
+            'attachments.*.*.max' => __('qc.copy.each_ng_evidence_photo_must_not_exceed_10mb'),
         ]);
 
         $shipment = null;
@@ -214,7 +219,7 @@ class QcInspectionController extends Controller
                     ->first();
 
                 if (! $shipment) {
-                    throw new \RuntimeException('The specified shipment could not be found.');
+                    throw new \RuntimeException(__('qc.copy.the_specified_shipment_could_not_be_found'));
                 }
             }
 
@@ -224,7 +229,7 @@ class QcInspectionController extends Controller
             $po->load(['supplier', 'quotations.items.prItem']);
 
             if (! in_array($po->status, ['waiting_qc', 'claim_needed'], true)) {
-                throw new \RuntimeException('This PO is not valid for inspection.');
+                throw new \RuntimeException(__('qc.copy.this_po_is_not_valid_for_inspection'));
             }
 
             // The PO lock serializes participation. Lock only the inspected
@@ -233,17 +238,17 @@ class QcInspectionController extends Controller
                 ->where('purchase_order_id', $po->id)->exists();
 
             if ($hasShipmentItems && ! $request->filled('shipment_id')) {
-                throw new \RuntimeException('A shipment is required for inspection because this Purchase Order has shipment items.');
+                throw new \RuntimeException(__('qc.copy.a_shipment_is_required_for_inspection_because_this_purchase_order_has_shipment_items'));
             }
 
             if ($request->filled('shipment_id') && ! $shipmentId) {
-                throw new \RuntimeException('The specified shipment could not be found.');
+                throw new \RuntimeException(__('qc.copy.the_specified_shipment_could_not_be_found'));
             }
 
             $expectedShipmentItems = collect();
             if ($shipmentId) {
                 if ($shipment->status !== Shipment::STATUS_ARRIVED) {
-                    throw new \RuntimeException('QC inspection is only allowed for an arrived shipment.');
+                    throw new \RuntimeException(__('qc.copy.qc_inspection_is_only_allowed_for_an_arrived_shipment'));
                 }
 
                 $expectedShipmentItems = ShipmentItem::query()
@@ -255,11 +260,11 @@ class QcInspectionController extends Controller
                     ->get();
 
                 if ($expectedShipmentItems->isEmpty()) {
-                    throw new \RuntimeException('The specified shipment does not contain items for this Purchase Order.');
+                    throw new \RuntimeException(__('qc.copy.the_specified_shipment_does_not_contain_items_for_this_purchase_order'));
                 }
 
                 if (QcInspection::where('po_id', $po->id)->where('shipment_id', $shipment->id)->exists()) {
-                    throw new \RuntimeException('This shipment for Purchase Order '.$po->po_number.' has already been inspected.');
+                    throw new \RuntimeException(__('qc.feedback.already_inspected', ['po' => $po->po_number]));
                 }
 
                 $expectedByPrItem = $expectedShipmentItems->mapWithKeys(function (ShipmentItem $shipmentItem) {
@@ -270,21 +275,21 @@ class QcInspectionController extends Controller
                     ->map(fn ($id) => (int) $id);
 
                 if ($submittedPrItemIds->duplicates()->isNotEmpty()) {
-                    throw new \RuntimeException('Each shipment item must be inspected exactly once; duplicate lines were submitted.');
+                    throw new \RuntimeException(__('qc.copy.each_shipment_item_must_be_inspected_exactly_once_duplicate_lines_were_submitted'));
                 }
 
                 $submittedKeys = $submittedPrItemIds->sort()->values()->all();
                 $expectedKeys = $expectedByPrItem->keys()->sort()->values()->all();
                 if ($submittedKeys !== $expectedKeys) {
-                    throw new \RuntimeException('The inspection must contain every item from the selected shipment for this Purchase Order exactly once.');
+                    throw new \RuntimeException(__('qc.copy.the_inspection_must_contain_every_item_from_the_selected_shipment_for_this_purchase_order_exactly_on'));
                 }
             } else {
                 if ($hasShipmentItems) {
-                    throw new \RuntimeException('Shipment-aware QC items must reference a shipment item.');
+                    throw new \RuntimeException(__('qc.copy.shipment_aware_qc_items_must_reference_a_shipment_item'));
                 }
 
                 if (QcInspection::where('po_id', $po->id)->whereNull('shipment_id')->exists()) {
-                    throw new \RuntimeException('This PO has already been inspected.');
+                    throw new \RuntimeException(__('qc.copy.this_po_has_already_been_inspected'));
                 }
             }
 
@@ -320,7 +325,7 @@ class QcInspectionController extends Controller
                     : null;
 
                 if ($shipment && ! $shipmentItemId) {
-                    throw new \RuntimeException('Shipment-aware QC items must reference a shipment item.');
+                    throw new \RuntimeException(__('qc.copy.shipment_aware_qc_items_must_reference_a_shipment_item'));
                 }
 
                 $qcItem = QcItem::create($measurements + [
@@ -343,7 +348,7 @@ class QcInspectionController extends Controller
             }
 
             if ($overallStatus === 'ng' && ! $inspection->attachments()->exists()) {
-                throw new \RuntimeException('NG evidence photos were not uploaded. Please upload the evidence photos again before saving the inspection.');
+                throw new \RuntimeException(__('qc.copy.ng_evidence_photos_were_not_uploaded_please_upload_the_evidence_photos_again_before_saving_the_inspe'));
             }
 
             // One authoritative precedence rule owns the resulting PO state.
@@ -357,10 +362,8 @@ class QcInspectionController extends Controller
                 $purchasingUsers,
                 $isOk ? 'qc.inspection_ok' : 'qc.inspection_ng',
                 'qc.inspection_result:'.$inspection->id,
-                $isOk ? 'QC Inspection Completed' : 'NG Material Found',
-                $isOk
-                    ? 'Material from '.$po->po_number.' has passed QC inspection.'
-                    : 'Material from '.$po->po_number.' was marked NG by QC. Please submit a claim to the supplier.',
+                $isOk ? 'qc.notify.ok_title' : 'qc.copy.ng_material_found',
+                $isOk ? 'qc.notify.ok_body' : 'qc.notify.ng_body',
                 $isOk
                     ? route('purchasing.purchase-orders.show', $po, absolute: false)
                     : route('purchasing.claims.create', $inspection, absolute: false),
@@ -371,9 +374,10 @@ class QcInspectionController extends Controller
                     'po_number' => $po->po_number,
                     'inspection_id' => $inspection->id,
                 ],
+                ['po' => $po->po_number],
             );
 
-            return redirect()->route('qc.inspections.show', $inspection)->with('success', 'Inspection result successfully saved.');
+            return redirect()->route('qc.inspections.show', $inspection)->with('success', __('qc.copy.inspection_result_successfully_saved'));
 
         } catch (\RuntimeException $e) {
             DB::rollBack();
@@ -390,7 +394,7 @@ class QcInspectionController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return back()->withInput()->with('error', 'An error occurred while saving the inspection. Please try again.');
+            return back()->withInput()->with('error', __('qc.copy.an_error_occurred_while_saving_the_inspection_please_try_again'));
         }
     }
 
@@ -468,17 +472,17 @@ class QcInspectionController extends Controller
         $inspection = QcInspection::findOrFail($id);
 
         if ($inspection->status !== 'ng') {
-            return back()->with('error', 'Evidence photos can only be added for NG inspections.');
+            return back()->with('error', __('qc.copy.evidence_photos_can_only_be_added_for_ng_inspections'));
         }
 
         $request->validate([
             'attachments' => 'required|array|min:1',
             'attachments.*' => 'required|file|mimes:jpg,jpeg,png|max:10240',
         ], [
-            'attachments.required' => 'Select at least 1 NG evidence photo.',
-            'attachments.min' => 'Select at least 1 NG evidence photo.',
-            'attachments.*.mimes' => 'NG evidence photos must be JPG, JPEG, or PNG files.',
-            'attachments.*.max' => 'Each NG evidence photo must not exceed 10MB.',
+            'attachments.required' => __('qc.copy.select_at_least_1_ng_evidence_photo'),
+            'attachments.min' => __('qc.copy.select_at_least_1_ng_evidence_photo'),
+            'attachments.*.mimes' => __('qc.copy.ng_evidence_photos_must_be_jpg_jpeg_or_png_files'),
+            'attachments.*.max' => __('qc.copy.each_ng_evidence_photo_must_not_exceed_10mb'),
         ]);
 
         $stagedAttachments = [];
@@ -503,19 +507,19 @@ class QcInspectionController extends Controller
                 'exception' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to save evidence photos. Please try again.');
+            return back()->with('error', __('qc.copy.failed_to_save_evidence_photos_please_try_again'));
         }
 
-        return back()->with('success', 'QC evidence photos successfully added.');
+        return back()->with('success', __('qc.copy.qc_evidence_photos_successfully_added'));
     }
 
     private function saveAttachment(UploadedFile $file, Model $attachable): string
     {
-        $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName();
+        $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
         $stream = fopen($file->getPathname(), 'r');
 
         if (! $stream) {
-            throw new \RuntimeException('File cannot be read. Please upload the file again.');
+            throw new \RuntimeException(__('qc.copy.file_cannot_be_read_please_upload_the_file_again'));
         }
 
         try {

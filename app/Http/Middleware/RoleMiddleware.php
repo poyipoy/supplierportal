@@ -28,7 +28,7 @@ class RoleMiddleware
                 'path' => $request->path(),
                 'method' => $request->method(),
             ]);
-            abort(403, 'You do not have access to this page.');
+            abort(403, __('auth.feedback.no_access'));
         }
 
         return $next($request);

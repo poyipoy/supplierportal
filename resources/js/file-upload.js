@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 /**
  * ADASI Portal Supplier - File Upload Dropzone & Preview Component for Alpine.js
  * Supports both Single File and Multi-File / Bulk Upload with DataTransfer sync.
@@ -17,7 +18,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
         if (Array.isArray(paramA.existingFiles)) {
             initialExisting = paramA.existingFiles.map((f, i) => ({
                 id: f.id ?? null,
-                name: f.name || f.filename || ('Berkas ' + (i + 1)),
+                name: f.name || f.filename || t('js.upload.file', { number: i + 1 }),
                 size: f.size || '',
                 url: f.url || null,
             }));
@@ -34,7 +35,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
         if (Array.isArray(options.existingFiles)) {
             initialExisting = options.existingFiles.map((f, i) => ({
                 id: f.id ?? null,
-                name: f.name || f.filename || ('Berkas ' + (i + 1)),
+                name: f.name || f.filename || t('js.upload.file', { number: i + 1 }),
                 size: f.size || '',
                 url: f.url || null,
             }));
@@ -125,7 +126,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             if (!this.isMultiple) {
                 const file = incoming[0];
                 if (file.size > this.maxBytes) {
-                    this.clientError = 'Ukuran berkas melebihi ' + this.maxSizeMb + ' MB (' + this.formatBytes(file.size) + '). Silakan pilih berkas yang lebih kecil.';
+                    this.clientError = t('js.upload.size', { limit: this.maxSizeMb, size: this.formatBytes(file.size) });
                     this.clearAll();
                     return;
                 }
@@ -137,11 +138,11 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
 
             for (const file of incoming) {
                 if (this.totalFilesCount >= this.maxFiles) {
-                    this.clientError = 'Batas maksimal ' + this.maxFiles + ' berkas telah tercapai.';
+                    this.clientError = t('js.upload.limit', { count: this.maxFiles });
                     break;
                 }
                 if (file.size > this.maxBytes) {
-                    this.clientError = 'Berkas "' + file.name + '" melebihi batas ' + this.maxSizeMb + ' MB (' + this.formatBytes(file.size) + '). Berkas tersebut dilewati.';
+                    this.clientError = t('js.upload.skipped', { name: file.name, limit: this.maxSizeMb, size: this.formatBytes(file.size) });
                     continue;
                 }
                 const duplicate = this.stagedFiles.some(f => f.name === file.name && f.size === file.size);

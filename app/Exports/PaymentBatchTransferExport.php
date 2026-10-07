@@ -28,7 +28,7 @@ use RuntimeException;
  *
  * @see PaymentBatchTransferSheetRenderer
  */
-class PaymentBatchTransferExport implements GeneratesWorkbook, TracksExportProgress
+class PaymentBatchTransferExport implements \Illuminate\Contracts\Translation\HasLocalePreference, GeneratesWorkbook, TracksExportProgress
 {
     use InteractsWithExportProgress;
 

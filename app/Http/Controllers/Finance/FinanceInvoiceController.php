@@ -25,7 +25,7 @@ class FinanceInvoiceController extends Controller
             'invoices' => $invoices,
             'filters' => $filters,
             'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get(),
-            'title' => 'Invoice Register',
+            'title' => __('local_invoice.list.title'),
         ]);
     }
 
@@ -54,9 +54,13 @@ class FinanceInvoiceController extends Controller
 
     public function receivePhysical(Request $request, LocalInvoice $invoice, InvoicePhysicalReceiptService $service)
     {
-        $service->recordReceipt($request->user(), $invoice, $request->input('notes'));
+        $data = $request->validate([
+            'receipt_qr' => ['required', 'string', 'max:2048'],
+        ]);
 
-        return back()->with('success', 'Physical document receipt recorded successfully. Due date calculated.');
+        $service->recordReceipt($request->user(), $invoice, $request->input('notes'), $data['receipt_qr']);
+
+        return back()->with('success', __('local_invoice.feedback.received'));
     }
 
     public function verifySectionA(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
@@ -92,7 +96,7 @@ class FinanceInvoiceController extends Controller
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Section A (Pemeriksaan Dokumen & Referensi) berhasil disimpan.',
+                'message' => __('local_invoice.feedback.section_a_saved'),
                 'section' => 'A',
                 'is_section_a_passed' => (bool) $verification->is_section_a_passed,
                 'is_section_b_passed' => (bool) $verification->is_section_b_passed,
@@ -101,7 +105,7 @@ class FinanceInvoiceController extends Controller
         }
 
         return redirect()->to(route('finance.invoices.show', $invoice).'#section-a')
-            ->with('success', 'Section A (Pemeriksaan Dokumen & Referensi) berhasil disimpan.');
+            ->with('success', __('local_invoice.feedback.section_a_saved'));
     }
 
     public function verifySectionB(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
@@ -138,7 +142,7 @@ class FinanceInvoiceController extends Controller
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Section B (Verifikasi Perpajakan) berhasil disimpan.',
+                'message' => __('local_invoice.feedback.section_b_saved'),
                 'section' => 'B',
                 'is_section_a_passed' => (bool) $verification->is_section_a_passed,
                 'is_section_b_passed' => (bool) $verification->is_section_b_passed,
@@ -147,14 +151,14 @@ class FinanceInvoiceController extends Controller
         }
 
         return redirect()->to(route('finance.invoices.show', $invoice).'#section-b')
-            ->with('success', 'Section B (Verifikasi Perpajakan) berhasil disimpan.');
+            ->with('success', __('local_invoice.feedback.section_b_saved'));
     }
 
     public function approveReadyToPay(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
     {
         $service->lockAndApprove($invoice, $request->user());
 
-        return back()->with('success', 'Invoice verification locked and transitioned to Ready to Pay.');
+        return back()->with('success', __('local_invoice.feedback.approved'));
     }
 
     public function requestRevision(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
@@ -162,7 +166,7 @@ class FinanceInvoiceController extends Controller
         $request->validate(['notes' => 'required|string|max:2000']);
         $service->requestRevision($invoice, $request->input('notes'), $request->user());
 
-        return back()->with('success', 'Revision requested from Supplier.');
+        return back()->with('success', __('local_invoice.feedback.revision_requested'));
     }
 
     public function reject(Request $request, LocalInvoice $invoice, InvoiceVerificationService $service)
@@ -170,7 +174,7 @@ class FinanceInvoiceController extends Controller
         $data = $request->validate(['notes' => 'required|string|max:2000']);
         $service->reject($invoice, $data['notes'], $request->user());
 
-        return back()->with('success', 'Invoice rejected and its GR reservations released.');
+        return back()->with('success', __('local_invoice.feedback.rejected'));
     }
 
     public function masterInvoice(InvoiceFilterRequest $request, InvoiceQuery $query)
@@ -189,12 +193,12 @@ class FinanceInvoiceController extends Controller
     {
         $filters = $request->validated();
         ExportDispatcher::dispatch(
-            'Master Invoices Report',
+            __('exports.job_labels.invoice_master'),
             LocalInvoicesExport::class,
             [$request->user()->id, $filters, false],
-            'master-invoices-'.now()->format('Ymd-His').'.xlsx'
+            'master-invoices-'.now()->format('Ymd-His').'.xlsx' // biz-time:ignore instant filename
         );
 
-        return redirect()->route('exports.index')->with('success', 'Master invoices export queued.');
+        return redirect()->route('exports.index')->with('success', __('local_invoice.feedback.export_queued'));
     }
 }

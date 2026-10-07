@@ -53,7 +53,7 @@ class FinanceDrpController extends Controller
 
         $batch = $service->createSupplierBatch($request->user(), $request->input('invoice_ids'), $request->input('notes'));
 
-        return redirect()->route('finance.drp.show', $batch)->with('success', "DRP Batch [{$batch->batch_number}] created in DRAFT status.");
+        return redirect()->route('finance.drp.show', $batch)->with('success', __('finance.feedback.batch_created', ['number' => $batch->batch_number]));
     }
 
     public function indexGa()
@@ -80,7 +80,7 @@ class FinanceDrpController extends Controller
     {
         $service->finalizeBatch($batch, $request->user());
 
-        return back()->with('success', "DRP Batch [{$batch->batch_number}] finalized. Membership and fees locked.");
+        return back()->with('success', __('finance.feedback.batch_finalized', ['number' => $batch->batch_number]));
     }
 
     public function removeItem(PaymentItem $item, Request $request, PaymentBatchService $service)
@@ -88,7 +88,7 @@ class FinanceDrpController extends Controller
         $request->validate(['reason' => 'required|string|max:500']);
         $service->removeItem($item, $request->user(), $request->input('reason'));
 
-        return back()->with('success', 'Item removed from Draft DRP.');
+        return back()->with('success', __('finance.feedback.item_removed'));
     }
 
     public function cancelBatch(PaymentBatch $batch, Request $request, PaymentBatchService $service)
@@ -97,7 +97,7 @@ class FinanceDrpController extends Controller
         $service->cancelBatch($batch, $request->user(), $request->input('reason'));
 
         return redirect()->route($batch->batch_type === PaymentBatch::TYPE_SUPPLIER ? 'finance.drp.supplier' : 'finance.drp.ga')
-            ->with('success', "Batch DRP [{$batch->batch_number}] berhasil dibatalkan. Seluruh tagihan telah dikembalikan ke antrean Ready to Pay.");
+            ->with('success', __('finance.feedback.batch_cancelled', ['number' => $batch->batch_number]));
     }
 
     public function overrideFee(PaymentGroup $group, Request $request, PaymentBatchService $service)
@@ -109,7 +109,7 @@ class FinanceDrpController extends Controller
 
         $service->overrideGroupFee($group, (float) $request->input('bank_fee'), $request->input('reason'), $request->user());
 
-        return back()->with('success', 'Bank fee updated with mandatory reason.');
+        return back()->with('success', __('finance.feedback.fee_updated'));
     }
 
     public function assignVoucher(PaymentGroup $group, Request $request, PaymentVoucherService $service)
@@ -121,17 +121,17 @@ class FinanceDrpController extends Controller
 
         $service->assignVoucher($group, $request->input('voucher_number'), $request->input('voucher_date'), $request->user());
 
-        return back()->with('success', 'Voucher details updated.');
+        return back()->with('success', __('finance.feedback.voucher_updated'));
     }
 
     public function export(PaymentBatch $batch, Request $request)
     {
         if ($batch->batch_type !== PaymentBatch::TYPE_SUPPLIER) {
-            abort(422, 'Hanya DRP Supplier yang dapat diexport.');
+            abort(422, __('finance.export_validation.supplier_only'));
         }
 
         if ($batch->status === PaymentBatch::STATUS_CANCELLED) {
-            abort(422, 'Batch DRP yang dibatalkan tidak dapat diexport.');
+            abort(422, __('finance.export_validation.cancelled'));
         }
 
         $hasActiveItems = $batch->groups()
@@ -143,17 +143,17 @@ class FinanceDrpController extends Controller
             ->exists();
 
         if (! $hasActiveItems) {
-            abort(422, 'Batch DRP tidak memiliki tagihan aktif untuk diexport.');
+            abort(422, __('finance.export_validation.empty'));
         }
 
         $exportJob = ExportDispatcher::dispatch(
-            "DRP Supplier {$batch->batch_number}",
+            __('exports.job_labels.drp', ['number' => $batch->batch_number]),
             PaymentBatchDrpExport::class,
             [$request->user()->id, [$batch->id]],
             "DRP_{$batch->batch_number}.xlsx"
         );
 
-        $message = 'Permintaan export DRP telah diterima. File akan terunduh otomatis setelah siap.';
+        $message = __('finance.feedback.export_accepted');
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -186,7 +186,7 @@ class FinanceDrpController extends Controller
         $resolvedIds = [];
         foreach ($rawIds as $hashId) {
             if (ctype_digit((string) $hashId)) {
-                abort(422, 'Raw integer batch IDs are not accepted. Use hashed identifiers.');
+                abort(422, __('finance.export_validation.raw_ids'));
             }
 
             try {
@@ -196,7 +196,7 @@ class FinanceDrpController extends Controller
             }
 
             if (count($decoded) !== 1 || (int) $decoded[0] <= 0) {
-                abort(422, "Invalid batch identifier: {$hashId}");
+                abort(422, __('finance.export_validation.invalid_id', ['id' => $hashId]));
             }
 
             $resolvedIds[] = (int) $decoded[0];
@@ -206,7 +206,7 @@ class FinanceDrpController extends Controller
         $resolvedIds = array_values(array_unique($resolvedIds));
 
         if (empty($resolvedIds)) {
-            abort(422, 'No valid batch IDs provided.');
+            abort(422, __('finance.export_validation.missing_ids'));
         }
 
         // Load all batches with eager loading
@@ -232,21 +232,21 @@ class FinanceDrpController extends Controller
         if ($batches->count() !== count($resolvedIds)) {
             $foundIds = $batches->pluck('id')->toArray();
             $missing = array_diff($resolvedIds, $foundIds);
-            abort(422, 'Beberapa batch DRP tidak ditemukan: '.implode(', ', $missing));
+            abort(422, __('finance.export_validation.missing_batches', ['ids' => implode(', ', $missing)]));
         }
 
         // Validate: all batches must be TYPE_SUPPLIER
         $nonSupplier = $batches->filter(fn ($b) => $b->batch_type !== PaymentBatch::TYPE_SUPPLIER);
         if ($nonSupplier->isNotEmpty()) {
             $names = $nonSupplier->pluck('batch_number')->join(', ');
-            abort(422, "Hanya DRP Supplier yang dapat diexport transfer. Batch berikut bukan SUPPLIER: {$names}");
+            abort(422, __('finance.export_validation.non_supplier', ['numbers' => $names]));
         }
 
         // Validate: no CANCELLED batches
         $cancelled = $batches->filter(fn ($b) => $b->status === PaymentBatch::STATUS_CANCELLED);
         if ($cancelled->isNotEmpty()) {
             $names = $cancelled->pluck('batch_number')->join(', ');
-            abort(422, "Batch DRP yang dibatalkan tidak dapat diexport: {$names}");
+            abort(422, __('finance.export_validation.cancelled_batches', ['numbers' => $names]));
         }
 
         // Validate: every batch must have at least one active supplier item
@@ -259,7 +259,7 @@ class FinanceDrpController extends Controller
             });
 
             if (! $hasActiveItems) {
-                abort(422, "Batch [{$batch->batch_number}] tidak memiliki tagihan aktif untuk export transfer.");
+                abort(422, __('finance.export_validation.empty_batch', ['number' => $batch->batch_number]));
             }
         }
 
@@ -269,13 +269,13 @@ class FinanceDrpController extends Controller
             $details = collect($bankFailures)
                 ->map(fn ($f) => "[{$f['batch_number']}] bank: {$f['bank_name']}")
                 ->join('; ');
-            abort(422, "Bank tidak dapat dikenali untuk export transfer: {$details}");
+            abort(422, __('finance.export_validation.unknown_banks', ['details' => $details]));
         }
 
         // All validation passed — dispatch single export job
-        $fileName = 'DRP_TRANSFER_'.now()->format('Ymd').'.xlsx';
+        $fileName = 'DRP_TRANSFER_'.now()->format('Ymd').'.xlsx'; // biz-time:ignore instant filename
         $batchNumbers = $batches->pluck('batch_number')->join(', ');
-        $label = "Transfer DRP: {$batchNumbers}";
+        $label = __('exports.job_labels.drp_transfer', ['numbers' => $batchNumbers]);
 
         // Truncate label if too long
         if (strlen($label) > 200) {
@@ -289,7 +289,7 @@ class FinanceDrpController extends Controller
             $fileName
         );
 
-        $message = 'Permintaan export transfer DRP telah diterima. File akan terunduh otomatis setelah siap.';
+        $message = __('finance.feedback.transfer_export_accepted');
 
         if ($request->wantsJson()) {
             return response()->json([

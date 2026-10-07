@@ -56,8 +56,6 @@ class FinanceGaClaimController extends Controller
             $request->input('reason')
         );
 
-        $actionStr = $request->boolean('approve') ? 'disetujui (Ready to Pay)' : 'dimintakan revisi ke GA';
-
-        return back()->with('success', "Klaim GA [{$claim->claim_number}] berhasil {$actionStr}.");
+        return back()->with('success', __($request->boolean('approve') ? 'ga.feedback.approved' : 'ga.feedback.revision_requested', ['number' => $claim->claim_number]));
     }
 }

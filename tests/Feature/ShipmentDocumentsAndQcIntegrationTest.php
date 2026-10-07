@@ -13,6 +13,7 @@ use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\Shipment;
+use App\Support\BusinessTime;
 use App\Models\ShipmentDocument;
 use App\Models\User;
 use App\Services\PrItemAwardService;
@@ -250,7 +251,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $this->actingAs($this->purchasingUser)
             ->post(route('purchasing.shipments.confirm-arrival', $shipment), [
-                'actual_arrival_date' => now()->addDay()->toDateString(),
+                'actual_arrival_date' => BusinessTime::today()->addDay()->toDateString(),
             ])
             ->assertSessionHasErrors('actual_arrival_date');
 

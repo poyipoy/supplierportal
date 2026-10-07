@@ -39,6 +39,16 @@ class PrItem extends Model
         self::SHAPE_HOLLOW,
     ];
 
+    public static function shapeLabel(string $shape): string
+    {
+        return match ($shape) {
+            self::SHAPE_FLAT => __('materials.shape.flat'),
+            self::SHAPE_ROUND => __('materials.shape.round'),
+            self::SHAPE_HOLLOW => __('materials.shape.hollow'),
+            default => __('common.unknown'),
+        };
+    }
+
     public const DIMENSION_FIELDS = [
         'thickness',
         'd_inner',
@@ -54,6 +64,13 @@ class PrItem extends Model
         'width' => 'Width',
         'length' => 'Length',
     ];
+
+    public static function dimensionLabel(string $field): string
+    {
+        return array_key_exists($field, self::DIMENSION_LABELS)
+            ? __('materials.dimensions.'.$field)
+            : $field;
+    }
 
     public const FIXED_DIMENSION_ORDER = [
         'thickness',

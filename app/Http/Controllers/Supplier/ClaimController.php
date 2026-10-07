@@ -30,7 +30,7 @@ class ClaimController extends Controller
             return DataTables::eloquent($query)
                 ->addColumn('claim_id', fn ($c) => $c->claim_number)
                 ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
-                ->addColumn('created_date', fn ($c) => $c->created_at->format('d M Y'))
+                ->addColumn('created_date', fn ($c) => \App\Support\BusinessTime::format($c->created_at, 'd M Y', false))
                 ->addColumn('deadline_display', function ($c) use ($regionalFormatter) {
                     $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
                     $date = $c->deadline ? $regionalFormatter->date($c->deadline, 'human') : '-';
@@ -47,7 +47,7 @@ class ClaimController extends Controller
                     );
                 })
                 ->addColumn('action', function ($c) {
-                    $label = $c->status === 'pending' ? 'Give Response' : 'View Details';
+                    $label = $c->status === 'pending' ? __('claims.copy.give_response') : __('claims.copy.view_details');
 
                     return '<a href="'.route('supplier.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.$label.'</a>';
                 })
@@ -67,7 +67,7 @@ class ClaimController extends Controller
         ])->findOrFail($id);
 
         if ($claim->supplier_id !== auth()->id()) {
-            abort(403, 'Access denied.');
+            abort(403, __('claims.copy.access_denied'));
         }
 
         return view('supplier.claims.show', compact('claim'));
@@ -78,7 +78,7 @@ class ClaimController extends Controller
         $claimReference = MaterialClaim::findOrFail($id);
 
         if ((int) $claimReference->supplier_id !== (int) auth()->id()) {
-            abort(403, 'Access denied.');
+            abort(403, __('claims.copy.access_denied'));
         }
 
         $request->validate([
@@ -95,11 +95,11 @@ class ClaimController extends Controller
                 $claim = MaterialClaim::whereKey($claimReference->id)->lockForUpdate()->firstOrFail();
 
                 if ((int) $claim->supplier_id !== (int) auth()->id()) {
-                    abort(403, 'Access denied.');
+                    abort(403, __('claims.copy.access_denied'));
                 }
 
                 if (! in_array($claim->status, ['pending', 'escalated'], true)) {
-                    throw new \RuntimeException('This claim can no longer accept a supplier response.');
+                    throw new \RuntimeException(__('claims.copy.this_claim_can_no_longer_accept_a_supplier_response'));
                 }
 
                 $claim->update([
@@ -123,7 +123,7 @@ class ClaimController extends Controller
 
                 // Use getPathname() to avoid getRealPath() returning false on Windows.
                 $fileName = $file->hashName();
-                $path = 'attachments/claims/'.now()->format('Y/m').'/'.$fileName;
+                $path = 'attachments/claims/'.now()->format('Y/m').'/'.$fileName; // biz-time:ignore storage path
 
                 $stream = fopen($file->getPathname(), 'r');
                 if (! $stream) {
@@ -151,8 +151,8 @@ class ClaimController extends Controller
             $purchasingUsers,
             'claim.responded',
             "claim.responded:{$claim->id}",
-            'Claim Response Accepted',
-            'The supplier has responded to the claim for PO '.$claim->purchaseOrder->po_number.'.',
+            'claims.copy.claim_response_accepted',
+            'claims.notify.responded_body',
             route('purchasing.claims.show', $claim, absolute: false),
             'reply text-primary',
             [
@@ -162,8 +162,9 @@ class ClaimController extends Controller
                 'po_id' => $claim->po_id,
                 'po_number' => $claim->purchaseOrder->po_number,
             ],
+            ['po' => $claim->purchaseOrder->po_number],
         );
 
-        return redirect()->route('supplier.claims.show', $claim)->with('success', 'Response successfully sent.');
+        return redirect()->route('supplier.claims.show', $claim)->with('success', __('claims.copy.response_successfully_sent'));
     }
 }

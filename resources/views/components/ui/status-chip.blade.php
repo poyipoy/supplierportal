@@ -1,6 +1,11 @@
 @props(['tone' => 'neutral', 'size' => 'sm', 'icon' => null])
 
 @php
+    $normalizedTone = match ($tone) {
+        'primary' => 'info',
+        'danger' => 'error',
+        default => $tone,
+    };
     $tones = [
         'neutral' => ['tw-bg-surface-container tw-text-on-surface', 'circle'],
         'info' => ['tw-bg-primary-container tw-text-primary-container-foreground', 'info'],
@@ -9,10 +14,10 @@
         'error' => ['tw-bg-error-container tw-text-error-container-foreground', 'circle-x'],
     ];
     $sizes = ['sm' => 'tw-min-h-6 tw-gap-1.5 tw-px-2 tw-text-ui-xs', 'md' => 'tw-min-h-7 tw-gap-2 tw-px-2.5 tw-text-ui-sm'];
-    [$toneClasses, $defaultIcon] = $tones[$tone] ?? $tones['neutral'];
+    [$toneClasses, $defaultIcon] = $tones[$normalizedTone] ?? $tones['neutral'];
 @endphp
 
-<span {{ $attributes->class(['ui-status-chip', 'ui-status-chip--'.$tone, 'tw-inline-flex tw-max-w-full tw-items-center tw-rounded-ui-full tw-font-semibold', $toneClasses, $sizes[$size] ?? $sizes['sm']]) }}>
+<span {{ $attributes->class(['ui-status-chip', 'ui-status-chip--'.$normalizedTone, 'tw-inline-flex tw-max-w-full tw-items-center tw-rounded-ui-full tw-font-semibold', $toneClasses, $sizes[$size] ?? $sizes['sm']]) }}>
     <x-ui.icon :name="$icon ?: $defaultIcon" size="sm" class="tw-shrink-0" />
     <span class="tw-truncate">{{ $slot }}</span>
 </span>

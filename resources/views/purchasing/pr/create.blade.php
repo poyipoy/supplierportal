@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Create Purchase Requisition - ADASI Portal')
-@section('page-title', 'Create Purchase Requisition')
+@section('title', __('purchasing.copy.create_purchase_requisition_adasi_portal'))
+@section('page-title', __('purchasing.copy.create_purchase_requisition'))
 
 @push('styles')
     @include('purchasing.pr._form_table_styles')
@@ -12,13 +12,13 @@
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         'Purchase Requisition' => \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index'),
-        'Create' => null,
+        __('purchasing.breadcrumbs.create') => null,
     ]" />
 
     <x-ui.page-header
-        title="Create Purchase Requisition"
-        eyebrow="Purchasing Workflow"
-        description="Select the procurement period, designate supplier audience, and specify material requirements."
+        :title="__('purchasing.copy.create_purchase_requisition')"
+        :eyebrow="__('purchasing.copy.purchasing_workflow')"
+        :description="__('purchasing.copy.select_the_procurement_period_designate_supplier_audience_and_specify_material_requirements')"
     />
 
     {{-- Main Sectioned Form --}}
@@ -31,12 +31,12 @@
         <div class="tw-grid tw-gap-5">
             {{-- Section 1: General Information --}}
             <x-ui.form-section
-                title="General Information"
-                description="Define the procurement context, invitation scope, and requisition remarks."
+                :title="__('purchasing.copy.general_information')"
+                :description="__('purchasing.copy.define_the_procurement_context_invitation_scope_and_requisition_remarks')"
             >
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
-                    <x-ui.select name="period_id" id="period_id" label="Quotation Period" class="pr-period-field" required>
-                        <option value="">-- Select Period --</option>
+                    <x-ui.select name="period_id" id="period_id" :label="__('purchasing.copy.quotation_period')" class="pr-period-field" required>
+                        <option value="">{{ __('purchasing.copy.select_period') }}</option>
                         @foreach($periods as $period)
                             <option value="{{ $period->id }}" {{ old('period_id') == $period->id ? 'selected' : '' }}>
                                 {{ $period->display_label }}
@@ -62,10 +62,10 @@
                         <x-ui.textarea
                             name="notes"
                             id="notes"
-                            label="Additional Remarks / Notes"
+                            :label="__('purchasing.copy.additional_remarks_notes')"
                             :value="old('notes')"
                             rows="2"
-                            placeholder="e.g. Required delivery Cikarang plant, strict thickness tolerance..."
+                            :placeholder="__('purchasing.copy.e_g_required_delivery_cikarang_plant_strict_thickness_tolerance')"
                         />
                     </div>
                 </div>
@@ -73,8 +73,8 @@
 
             {{-- Section 2: Material Requirements --}}
             <x-ui.form-section
-                title="Material Requirements"
-                description="Add materials from master data, specify dimensional shapes, and inspect auto-computed weights."
+                :title="__('purchasing.copy.material_requirements')"
+                :description="__('purchasing.copy.add_materials_from_master_data_specify_dimensional_shapes_and_inspect_auto_computed_weights')"
                 class="pr-material-section"
             >
                 <x-slot:actions>
@@ -82,14 +82,14 @@
                         @include('purchasing.pr._import_controls')
                         <x-ui.button type="button" variant="outline" size="sm" id="btnAddRow">
                             <x-ui.icon name="plus" size="sm" />
-                            <span>Add Material</span>
+                            <span>{{ __('purchasing.copy.add_material') }}</span>
                         </x-ui.button>
                     </div>
                 </x-slot:actions>
 
                 <div class="table-responsive pr-form-table-scroll border rounded overflow-hidden">
                     <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw-text-ui-xs" id="itemsTable">
-                        <caption class="visually-hidden">Required material entry table with shape-aware dimension columns</caption>
+                        <caption class="visually-hidden">{{ __('purchasing.copy.required_material_entry_table_with_shape_aware_dimension_columns') }}</caption>
                         <colgroup>
                             <col style="width: 48px; min-width: 48px;">
                             <col style="width: 250px; min-width: 250px;">
@@ -107,17 +107,17 @@
                         </colgroup>
                         <thead class="table-light text-center">
                             <tr class="pr-group-header">
-                                <th scope="col" class="pr-sticky-number">No</th>
-                                <th scope="col" class="pr-sticky-material">Material <span class="text-danger">*</span></th>
+                                <th scope="col" class="pr-sticky-number">{{ __('purchasing.copy.no') }}</th>
+                                <th scope="col" class="pr-sticky-material">{{ __('purchasing.copy.material') }} <span class="text-danger">*</span></th>
                                 <th scope="col">HS Code</th>
-                                <th scope="col">Shape</th>
-                                <th scope="col">Qty <span class="text-danger">*</span></th>
+                                <th scope="col">{{ __('purchasing.copy.shape') }}</th>
+                                <th scope="col">{{ __('purchasing.copy.qty') }} <span class="text-danger">*</span></th>
                                 @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)
-                                    <th scope="col">{{ \App\Models\PrItem::DIMENSION_LABELS[$dimensionField] }} (mm)</th>
+                                    <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }} (mm)</th>
                                 @endforeach
-                                <th scope="col">KG / Unit (kg)</th>
-                                <th scope="col">Remark</th>
-                                <th scope="col" class="pr-sticky-action">Action</th>
+                                <th scope="col">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
+                                <th scope="col">{{ __('purchasing.copy.remark') }}</th>
+                                <th scope="col" class="pr-sticky-action">{{ __('purchasing.copy.action') }}</th>
                             </tr>
                         </thead>
                         <tbody id="itemsBody">
@@ -131,7 +131,7 @@
                 </div>
 
                 @error('items') <div class="text-danger small tw-mt-1.5">{{ $message }}</div> @enderror
-                <div id="noItemAlert" class="text-danger small tw-mt-1.5 d-none" role="alert" aria-live="assertive">At least 1 material row is required before saving or submitting.</div>
+                <div id="noItemAlert" class="text-danger small tw-mt-1.5 d-none" role="alert" aria-live="assertive">{{ __('purchasing.copy.at_least_1_material_row_is_required_before_saving_or_submitting') }}</div>
             </x-ui.form-section>
         </div>
 
@@ -140,17 +140,17 @@
             <x-slot:left>
                 <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="ghost" size="sm">
                     <x-ui.icon name="arrow-left" size="sm" />
-                    <span>Cancel</span>
+                    <span>{{ __('purchasing.copy.cancel') }}</span>
                 </x-ui.button>
             </x-slot:left>
 
             <x-slot:right>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
-                    <span>Save Draft</span>
+                    <span>{{ __('purchasing.copy.save_draft') }}</span>
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSubmitPr" onclick="confirmSubmit()">
                     <x-ui.icon name="send" size="sm" />
-                    <span>Submit Requisition</span>
+                    <span>{{ __('purchasing.copy.submit_requisition') }}</span>
                 </x-ui.button>
             </x-slot:right>
         </x-ui.action-bar>
@@ -185,9 +185,9 @@
 
     function removeRow(btn) {
         AdasiAlert.confirmDanger({
-            title: 'Delete this row?',
-            confirmText: 'Yes, Delete',
-            cancelText: 'Cancel'
+            title: @json(__('purchasing.copy.delete_this_row')),
+            confirmText: @json(__('purchasing.audit_ui.confirm_delete')),
+            cancelText: @json(__('purchasing.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
                 $(btn).closest('tr').remove();
@@ -245,10 +245,10 @@
         }
 
         AdasiAlert.confirm({
-            title: 'Submit Requisition?',
-            text: 'Status will change to Submitted and will be open for quotation bidding.',
-            confirmText: 'Yes, Submit!',
-            cancelText: 'Cancel'
+            title: @json(__('purchasing.copy.submit_requisition')),
+            text: @json(__('purchasing.copy.status_will_change_to_submitted_and_will_be_open_for_quotation_bidding')),
+            confirmText: @json(__('purchasing.copy.yes_submit')),
+            cancelText: @json(__('purchasing.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
                 const submitBtn = document.getElementById('btnSubmitPr');

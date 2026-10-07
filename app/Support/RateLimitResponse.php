@@ -37,7 +37,11 @@ final class RateLimitResponse
             return self::json($headers);
         }
 
-        return self::fullPage($headers, self::fullPageContext('login.store'));
+        $context = $request->route()?->getName() === 'supplier.registration.access.credentials'
+            ? self::fullPageContext('supplier.registration.access.credentials')
+            : self::fullPageContext('login.store');
+
+        return self::fullPage($headers, $context);
     }
 
     /**
@@ -75,7 +79,7 @@ final class RateLimitResponse
     private static function json(array $headers): Response
     {
         return self::applyHeaders(
-            response()->json(['message' => 'Too Many Attempts.'], 429),
+            response()->json(['message' => __('auth.feedback.many_attempts')], 429),
             $headers,
         );
     }
@@ -88,19 +92,23 @@ final class RateLimitResponse
         return match ($routeName) {
             'login.store' => [
                 'returnUrl' => route('login'),
-                'returnLabel' => 'Back to Sign In',
+                'returnLabel' => __('auth.password_assistance.back'),
+            ],
+            'supplier.registration.access.credentials' => [
+                'returnUrl' => route('supplier.registration.access-form'),
+                'returnLabel' => __('registration.credential_access.back'),
             ],
             'two-factor.challenge.store' => [
                 'returnUrl' => route('two-factor.challenge'),
-                'returnLabel' => 'Back to Verification',
+                'returnLabel' => __('auth.feedback.back_verification'),
             ],
             'profile.two-factor.start' => [
                 'returnUrl' => route('profile.security'),
-                'returnLabel' => 'Back to Security',
+                'returnLabel' => __('auth.feedback.back_security'),
             ],
             'profile.two-factor.confirm' => [
                 'returnUrl' => route('profile.two-factor.setup'),
-                'returnLabel' => 'Back to MFA Setup',
+                'returnLabel' => __('auth.feedback.back_setup'),
             ],
             default => null,
         };
@@ -154,16 +162,16 @@ final class RateLimitResponse
     private static function warningMessage(int $retryAfter): string
     {
         if ($retryAfter <= 0) {
-            return 'Too many requests. Please wait a moment before trying again.';
+            return __('auth.feedback.wait');
         }
 
         if ($retryAfter > 60) {
             $minutes = (int) ceil($retryAfter / 60);
 
-            return 'Too many requests. Please wait '.$minutes.' '.($minutes === 1 ? 'minute' : 'minutes').' before trying again.';
+            return trans_choice('auth.feedback.wait_minutes', $minutes, ['count' => $minutes]);
         }
 
-        return 'Too many requests. Please wait '.$retryAfter.' '.($retryAfter === 1 ? 'second' : 'seconds').' before trying again.';
+        return trans_choice('auth.feedback.wait_seconds', $retryAfter, ['count' => $retryAfter]);
     }
 
     /**

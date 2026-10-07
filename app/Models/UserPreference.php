@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserPreference extends Model
 {
-    protected $fillable = ['theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard_preferences', 'timezone', 'date_format', 'time_format', 'number_format'];
+    protected $fillable = ['theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard_preferences', 'timezone', 'date_format', 'time_format', 'number_format', 'locale'];
 
     protected function casts(): array
     {

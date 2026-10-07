@@ -19,12 +19,12 @@
     </div>
 @endif
 
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw-grid tw-grid-cols-1 tw-gap-6 tw-pb-16">
     {{-- Top Page Header --}}
     <x-ui.page-header
-        :title="'Invoice '.$invoice->invoice_number"
-        :description="'No. Pengajuan: '.$invoice->submission_number.' · PO: '.$invoice->po_number"
-        :eyebrow="'Vendor: '.$companyName"
+        :title="__('terms.invoice').' '.$invoice->invoice_number"
+        :description="__('local_invoice.detail.reference', ['number' => $invoice->submission_number, 'po' => $invoice->po_number])"
+        :eyebrow="__('local_invoice.detail.vendor', ['name' => $companyName])"
     >
         <x-slot:meta>
             <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($invoice->status)">
@@ -32,11 +32,11 @@
             </x-ui.status-chip>
             @if($invoice->physical_verified_at)
                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-ui-xs tw-bg-success/10 tw-text-success tw-font-medium">
-                    <x-ui.icon name="check-circle" size="sm" /> Fisik Terverifikasi
+                    <x-ui.icon name="check-circle" size="sm" /> {{ __('local_invoice.labels.verified_physical') }}
                 </span>
             @else
                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-ui-xs tw-bg-surface-container tw-text-on-surface-variant">
-                    <x-ui.icon name="clock" size="sm" /> Menunggu Fisik Asli
+                    <x-ui.icon name="clock" size="sm" /> {{ __('local_invoice.detail.await_physical') }}
                 </span>
             @endif
         </x-slot:meta>
@@ -47,26 +47,26 @@
                 @can('resubmit', $invoice)
                     <x-ui.button :href="route('local-supplier.invoices.revision', $invoice)" variant="primary">
                         <x-ui.icon name="file-edit" size="sm" />
-                        <span>Kirim Ulang Revisi</span>
+                        <span>{{ __('local_invoice.detail.resubmit') }}</span>
                     </x-ui.button>
                 @endcan
             @endif
 
             <x-ui.button :href="route($portal.'.invoices.receipt', $invoice)" variant="outline">
                 <x-ui.icon name="receipt" size="sm" />
-                <span>Kwitansi / Tanda Terima</span>
+                <span>{{ __('local_invoice.detail.receipt') }}</span>
             </x-ui.button>
 
             @can('cancel', $invoice)
                 <form method="POST" action="{{ route('local-supplier.invoices.cancel', $invoice) }}" class="tw-inline" onsubmit="event.preventDefault(); window.AdasiAlert.confirmDanger({title: 'Batalkan Invoice?', text: 'Batalkan invoice ini dan lepaskan seluruh reservasi GR?', confirmText: 'Ya, Batalkan', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
                     @csrf
-                    <x-ui.button type="submit" variant="danger" size="sm"><x-ui.icon name="x-circle" size="sm" /> Batalkan</x-ui.button>
+                    <x-ui.button type="submit" variant="danger" size="sm"><x-ui.icon name="x-circle" size="sm" /> {{ __('local_invoice.detail.cancel') }}</x-ui.button>
                 </form>
             @endcan
 
             <x-ui.button :href="route($portal.'.invoices.index')" variant="ghost">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Kembali</span>
+                <span>{{ __('common.actions.back') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -82,16 +82,16 @@
                     <x-ui.icon name="alert-triangle" size="sm" />
                 </div>
                 <div class="tw-min-w-0 tw-flex-1">
-                    <h4 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">Invoice Memerlukan Revisi</h4>
+                    <h4 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('finance.labels.invoice_pending') }}</h4>
                     <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
-                        <strong>Catatan Petugas Accounting:</strong> {{ $revisionReason ?: 'Harap perbaiki berkas sesuai permintaan tim verifikasi.' }}
+                        <strong>{{ __('local_invoice.detail.accounting_notes') }}</strong> {{ $revisionReason ?: __('local_invoice.detail.revision_hint') }}
                     </p>
                 </div>
                 @if(auth()->user()->isSupplier())
                     @can('resubmit', $invoice)
                         <div class="tw-shrink-0">
                             <x-ui.button :href="route('local-supplier.invoices.revision', $invoice)" variant="primary" size="sm">
-                                <x-ui.icon name="file-edit" size="sm" /> Perbaiki Sekarang
+                                <x-ui.icon name="file-edit" size="sm" /> {{ __('local_invoice.detail.correct_now') }}
                             </x-ui.button>
                         </div>
                     @endcan
@@ -115,31 +115,31 @@
                 </div>
                 <div class="tw-min-w-0 tw-flex-1">
                     <div class="tw-flex tw-items-center tw-gap-2">
-                        <h4 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">Pembayaran Sebagian (Kurang Bayar)</h4>
+                        <h4 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_invoice.detail.underpaid_title') }}</h4>
                         <span class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-bold tw-bg-warning/20 tw-text-warning-container-foreground">
-                            Pending Settlement Sisa
+                            {{ __('local_invoice.detail.remaining_settlement') }}
                         </span>
                     </div>
                     <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
-                        Finance telah mentransfer sebagian dana ke rekening Anda. Sisa tagihan akan diproses pelunasannya melalui batch pembayaran DRP berikutnya.
+                        {{ __('local_invoice.detail.underpaid_help') }}
                     </p>
                     <div class="tw-mt-3 tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-2 tw-p-2.5 tw-rounded tw-bg-surface tw-border tw-border-outline-variant tw-text-ui-xs tw-font-mono">
                         <div>
-                            <span class="tw-text-on-surface-variant tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">Nilai Tagihan Net:</span>
+                            <span class="tw-text-on-surface-variant tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">{{ __('local_invoice.detail.net_amount') }}</span>
                             <span class="tw-font-bold tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw-text-success tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">Sudah Ditransfer:</span>
+                            <span class="tw-text-success tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">{{ __('local_invoice.labels.transferred') }}:</span>
                             <span class="tw-font-bold tw-text-success">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw-text-warning-container-foreground tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">Sisa Belum Dibayar:</span>
+                            <span class="tw-text-warning-container-foreground tw-block tw-text-[10px] tw-uppercase tw-font-sans tw-font-semibold">{{ __('local_invoice.labels.remaining_unpaid') }}:</span>
                             <span class="tw-font-bold tw-text-warning-container-foreground">Rp {{ $regionalFormatter->number(number_format($remainingPayable, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                     </div>
                     @if($latestTransfer?->correction_reason)
                         <div class="tw-mt-2 tw-text-ui-xs tw-text-on-surface-variant">
-                            <strong>Keterangan / Alasan Pemotongan:</strong> {{ $latestTransfer->correction_reason }}
+                            <strong>{{ __('local_invoice.detail.deduction_reason') }}</strong> {{ $latestTransfer->correction_reason }}
                         </div>
                     @endif
                 </div>
@@ -170,26 +170,26 @@
                 </div>
                 <div class="tw-min-w-0 tw-flex-1">
                     <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
-                        <h4 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">Pemberitahuan Kelebihan Pembayaran (Overpayment)</h4>
+                        <h4 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">{{ __('local_invoice.detail.overpayment_title') }}</h4>
                         <span class="tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-amber-100 tw-text-amber-800 dark:tw-bg-amber-950 dark:tw-text-amber-300">
-                            Perlu Pengembalian Dana
+                            {{ __('local_invoice.detail.refund_required') }}
                         </span>
                     </div>
                     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">
-                        Transfer yang dikirimkan oleh Finance ADASI melebihi nilai tagihan invoice Anda sebesar <strong class="tw-text-amber-700 dark:tw-text-amber-400">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</strong>.
+                        {{ __('local_invoice.detail.overpayment_help', ['amount' => $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian')]) }}
                     </p>
 
                     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-3 tw-mt-3 tw-p-3 tw-bg-surface tw-rounded-ui-sm tw-border tw-border-outline-variant/50">
                         <div>
-                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">Nilai Tagihan</span>
+                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">{{ __('local_invoice.detail.invoice_amount') }}</span>
                             <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">Total Ditransfer</span>
+                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">{{ __('finance.drp.total_transferred') }}</span>
                             <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw-text-[11px] tw-text-amber-700 dark:tw-text-amber-400 tw-block tw-font-medium">Kelebihan Bayar</span>
+                            <span class="tw-text-[11px] tw-text-amber-700 dark:tw-text-amber-400 tw-block tw-font-medium">{{ __('local_invoice.detail.overpayment_amount') }}</span>
                             <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-amber-700 dark:tw-text-amber-400">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                     </div>
@@ -197,66 +197,49 @@
                     <div class="tw-mt-4 tw-p-4 tw-rounded-ui-sm tw-bg-surface-container-low tw-border tw-border-outline-variant/60">
                         <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-mb-2">
                             <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-1.5">
-                                <x-ui.icon name="building-2" size="xs" /> Rekening Tujuan Refund Resmi ADASI
+                                <x-ui.icon name="building-2" size="xs" /> {{ __('local_invoice.labels.refund_account') }}
                             </span>
                             @if($adasiAccNo)
                                 <button type="button"
                                     class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-primary/10 tw-text-primary hover:tw-bg-primary/20 tw-transition-colors"
                                     data-copy-text="{{ $adasiAccNo }}"
-                                    title="Salin Nomor Rekening">
+                                    title="{{ __('local_invoice.detail.copy_account') }}">
                                     <x-ui.icon name="copy" size="xs" />
-                                    <span>Salin Nomor Rekening</span>
+                                    <span>{{ __('local_invoice.detail.copy_account') }}</span>
                                 </button>
                             @endif
                         </div>
                         <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-3 tw-text-ui-xs">
                             <div>
-                                <span class="tw-text-on-surface-variant tw-block">Bank</span>
+                                <span class="tw-text-on-surface-variant tw-block">{{ __('common.labels_review.bank') }}</span>
                                 <span class="tw-font-semibold tw-text-on-surface">{{ $adasiBank }}</span>
                             </div>
                             <div>
-                                <span class="tw-text-on-surface-variant tw-block">Nomor Rekening</span>
+                                <span class="tw-text-on-surface-variant tw-block">{{ __('ga.detail.bank_number') }}</span>
                                 <span class="tw-font-mono tw-font-bold tw-text-on-surface">{{ $adasiAccNo }}</span>
                             </div>
                             <div>
-                                <span class="tw-text-on-surface-variant tw-block">Atas Nama</span>
+                                <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.labels.account_name') }}</span>
                                 <span class="tw-font-semibold tw-text-on-surface">{{ $adasiAccHolder }}</span>
                             </div>
                             <div>
-                                <span class="tw-text-on-surface-variant tw-block">Kontak Finance</span>
+                                <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.detail.finance_contact') }}</span>
                                 @if(!empty($adasiFinanceEmail) || !empty($adasiFinanceWa))
                                     <div class="tw-mt-1.5 tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                                         @if(!empty($adasiFinanceEmail))
                                             @php
-                                                $mailSubject = '[Konfirmasi Refund Kelebihan Bayar] Invoice ' . ($invoice->invoice_number ?? '') . ' - ' . $companyName;
-                                                $mailBody = "Kepada Yth.\n"
-                                                    . "Tim Finance & Accounting\n"
-                                                    . "PT Astra Daido Steel Indonesia (ADASI)\n\n"
-                                                    . "Dengan hormat,\n\n"
-                                                    . "Sehubungan dengan kelebihan pembayaran (overpayment) pada invoice kami, bersama email ini kami bermaksud untuk mengonfirmasikan pengembalian dana (refund) dengan rincian data sebagai berikut:\n\n"
-                                                    . "A. RINCIAN INVOICE & PEMBAYARAN:\n"
-                                                    . "• Nama Vendor / Supplier : " . $companyName . "\n"
-                                                    . "• No. Invoice            : " . ($invoice->invoice_number ?? '-') . "\n"
-                                                    . "• No. Pengajuan          : " . ($invoice->submission_number ?? '-') . "\n"
-                                                    . "• No. Purchase Order (PO): " . ($invoice->po_number ?? '-') . "\n"
-                                                    . "• Nilai Tagihan Netto    : Rp " . number_format($expectedNet, 0, ',', '.') . "\n"
-                                                    . "• Total Ditransfer ADASI : Rp " . number_format($alreadyPaid, 0, ',', '.') . "\n"
-                                                    . "--------------------------------------------------\n"
-                                                    . "• Nominal Selisih Lebih  : Rp " . number_format($overAmount, 0, ',', '.') . "\n\n"
-                                                    . "B. DATA PENGEMBALIAN DANA (REFUND):\n"
-                                                    . "• Rekening Tujuan ADASI  : " . $adasiBank . " - " . $adasiAccNo . " (a.n. " . $adasiAccHolder . ")\n"
-                                                    . "• Bank Pengirim          : \n"
-                                                    . "• No. Rekening Pengirim  : \n"
-                                                    . "• Atas Nama Pengirim     : \n"
-                                                    . "• Tanggal Transfer       : \n"
-                                                    . "• Nominal Refund         : Rp " . number_format($overAmount, 0, ',', '.') . "\n\n"
-                                                    . "C. LAMPIRAN BUKTI TRANSFER:\n"
-                                                    . "Bersama email ini kami sertakan dokumen/bukti transfer pengembalian dana tersebut sebagai bahan verifikasi.\n\n"
-                                                    . "Mohon kesediaan Tim Finance ADASI untuk memeriksa dan mengonfirmasi penerimaan dana pengembalian ini.\n\n"
-                                                    . "Atas perhatian dan kerja samanya, kami ucapkan terima kasih.\n\n"
-                                                    . "Hormat kami,\n"
-                                                    . $companyName;
-                                                $fullDraftText = "Subjek: " . $mailSubject . "\n\n" . $mailBody;
+                                                $mailSubject = __('local_invoice.refund_contact.subject', ['invoice' => $invoice->invoice_number ?? '', 'company' => $companyName]);
+                                                $mailBody = __('local_invoice.refund_contact.body', [
+                                                    'company' => $companyName,
+                                                    'invoice' => $invoice->invoice_number ?? '-',
+                                                    'submission' => $invoice->submission_number ?? '-',
+                                                    'po' => $invoice->po_number ?? '-',
+                                                    'expected' => number_format($expectedNet, 0, ',', '.'),
+                                                    'actual' => number_format($alreadyPaid, 0, ',', '.'),
+                                                    'overpayment' => number_format($overAmount, 0, ',', '.'),
+                                                    'bank' => $adasiBank, 'account' => $adasiAccNo, 'holder' => $adasiAccHolder,
+                                                ]);
+                                                $fullDraftText = __('local_invoice.refund_contact.draft', ['subject' => $mailSubject, 'body' => $mailBody]);
                                                 $mailUrl = 'mailto:' . $adasiFinanceEmail . '?subject=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
                                                 $gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' . rawurlencode($adasiFinanceEmail) . '&su=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
                                                 $outlookUrl = 'https://outlook.office.com/mail/deeplink/compose?to=' . rawurlencode($adasiFinanceEmail) . '&subject=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
@@ -267,9 +250,9 @@
                                                     class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-primary/10 hover:tw-bg-primary/20 tw-text-primary dark:tw-text-primary-light tw-transition-colors"
                                                     data-bs-toggle="dropdown"
                                                     aria-expanded="false"
-                                                    title="Pilihan Kontak Email ({{ $adasiFinanceEmail }})">
+                                                    title="{{ __('local_invoice.refund_contact.email_options', ['email' => $adasiFinanceEmail]) }}">
                                                     <x-ui.icon name="mail" size="sm" class="tw-w-4 tw-h-4 tw-shrink-0" />
-                                                    <span>Email</span>
+                                                    <span>{{ __('common.fields.email') }}</span>
                                                     <x-ui.icon name="chevron-down" size="xs" class="tw-w-3 tw-h-3 tw-shrink-0 tw-opacity-70" />
                                                 </button>
                                                 <ul class="dropdown-menu shadow-sm tw-text-ui-xs tw-border tw-border-outline-variant tw-rounded-ui-md tw-py-1 tw-min-w-[220px] z-[1060]">
@@ -279,7 +262,7 @@
                                                             target="_blank"
                                                             rel="noopener noreferrer">
                                                             <x-ui.icon name="external-link" size="xs" class="tw-text-primary tw-shrink-0" />
-                                                            <span>Buka di Gmail (Web)</span>
+                                                            <span>{{ __('local_invoice.refund_contact.gmail') }}</span>
                                                         </a>
                                                     </li>
                                                     <li>
@@ -288,14 +271,14 @@
                                                             target="_blank"
                                                             rel="noopener noreferrer">
                                                             <x-ui.icon name="external-link" size="xs" class="tw-text-primary tw-shrink-0" />
-                                                            <span>Buka di Outlook (Web)</span>
+                                                            <span>{{ __('local_invoice.refund_contact.outlook') }}</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container"
                                                             href="{{ $mailUrl }}">
                                                             <x-ui.icon name="mail" size="xs" class="tw-text-primary tw-shrink-0" />
-                                                            <span>Aplikasi Email Bawaan</span>
+                                                            <span>{{ __('local_invoice.refund_contact.email_app') }}</span>
                                                         </a>
                                                     </li>
                                                     <li><hr class="dropdown-divider my-1 tw-border-outline-variant/60"></li>
@@ -304,18 +287,18 @@
                                                             class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container tw-w-full tw-text-left"
                                                             data-copy-target="#email-draft-text-{{ $invoice->id }}"
                                                             data-copy-text="{{ $fullDraftText }}"
-                                                            data-copy-msg="Draf email konfirmasi refund berhasil disalin ke clipboard!">
+                                                            data-copy-msg="{{ __('local_invoice.refund_contact.draft_copied') }}">
                                                             <x-ui.icon name="file-text" size="xs" class="tw-text-primary tw-shrink-0" />
-                                                            <span>Salin Teks Draf Pesan</span>
+                                                            <span>{{ __('local_invoice.refund_contact.copy_draft') }}</span>
                                                         </button>
                                                     </li>
                                                     <li>
                                                         <button type="button"
                                                             class="dropdown-item tw-flex tw-items-center tw-gap-2 tw-py-1.5 tw-px-3 tw-text-on-surface hover:tw-bg-surface-container tw-w-full tw-text-left"
                                                             data-copy-text="{{ $adasiFinanceEmail }}"
-                                                            data-copy-msg="Alamat email Finance ({{ $adasiFinanceEmail }}) berhasil disalin!">
+                                                            data-copy-msg="{{ __('local_invoice.refund_contact.email_copied', ['email' => $adasiFinanceEmail]) }}">
                                                             <x-ui.icon name="copy" size="xs" class="tw-text-primary tw-shrink-0" />
-                                                            <span>Salin Alamat Email Saja</span>
+                                                            <span>{{ __('local_invoice.refund_contact.copy_email') }}</span>
                                                         </button>
                                                     </li>
                                                 </ul>
@@ -327,21 +310,18 @@
                                                 if (str_starts_with($cleanWa, '0')) {
                                                     $cleanWa = '62' . substr($cleanWa, 1);
                                                 }
-                                                $waText = "Halo Tim Finance ADASI,\n\n"
-                                                    . "Kami ingin mengonfirmasikan pengembalian kelebihan bayar (refund) invoice dengan rincian:\n"
-                                                    . "• Vendor: " . $companyName . "\n"
-                                                    . "• No. Invoice: " . ($invoice->invoice_number ?? '-') . "\n"
-                                                    . "• No. PO: " . ($invoice->po_number ?? '-') . "\n"
-                                                    . "• Nilai Kelebihan Bayar: Rp " . number_format($overAmount, 0, ',', '.') . "\n"
-                                                    . "• Rekening Tujuan: " . $adasiBank . " (" . $adasiAccNo . " a.n. " . $adasiAccHolder . ")\n\n"
-                                                    . "Bukti transfer terlampir. Mohon dicek dan dikonfirmasi. Terima kasih.";
+                                                $waText = __('local_invoice.refund_contact.whatsapp_body', [
+                                                    'company' => $companyName, 'invoice' => $invoice->invoice_number ?? '-',
+                                                    'po' => $invoice->po_number ?? '-', 'amount' => number_format($overAmount, 0, ',', '.'),
+                                                    'bank' => $adasiBank, 'account' => $adasiAccNo, 'holder' => $adasiAccHolder,
+                                                ]);
                                                 $waUrl = 'https://wa.me/' . $cleanWa . '?text=' . rawurlencode($waText);
                                             @endphp
                                             <a href="{{ $waUrl }}"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-emerald-500/10 hover:tw-bg-emerald-500/20 tw-text-emerald-700 dark:tw-text-emerald-400 dark:hover:tw-text-emerald-300 hover:tw-underline tw-transition-colors"
-                                                title="Hubungi via WhatsApp">
+                                                title="{{ __('local_invoice.refund_contact.whatsapp') }}">
                                                 <x-ui.icon name="whatsapp" size="sm" class="tw-w-4 tw-h-4 tw-shrink-0" />
                                                 <span>WhatsApp</span>
                                             </a>
@@ -353,7 +333,7 @@
                     </div>
 
                     <p class="tw-m-0 tw-mt-3 tw-text-[11px] tw-text-on-surface-variant">
-                        <strong>Petunjuk:</strong> Harap transfer pengembalian dana selisih lebih tersebut ke rekening resmi di atas, kemudian konfirmasikan bukti transfer kepada tim Finance ADASI.
+                        <strong>{{ __('local_invoice.detail.instructions') }}</strong> {{ __('local_invoice.labels.refund_help') }}
                     </p>
                 </div>
             </div>
@@ -371,36 +351,36 @@
                 </div>
                 <div class="tw-min-w-0 tw-flex-1">
                     <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
-                        <h4 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">Penyelesaian Kelebihan Pembayaran (Overpayment)</h4>
+                        <h4 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">{{ __('local_invoice.detail.refund_settlement') }}</h4>
                         <span class="tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-emerald-100 tw-text-emerald-800 dark:tw-bg-emerald-950 dark:tw-text-emerald-300">
-                            Selesai / Terverifikasi
+                            {{ __('local_invoice.detail.verified_settlement') }}
                         </span>
                     </div>
                     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">
-                        Pengembalian kelebihan dana atas invoice ini telah diselesaikan dan diverifikasi oleh tim Finance ADASI.
+                        {{ __('local_invoice.detail.refund_settled_help') }}
                     </p>
 
                     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-3 tw-mt-3 tw-p-3.5 tw-bg-surface tw-rounded-ui-sm tw-border tw-border-outline-variant/50 tw-text-ui-xs">
                         <div>
-                            <span class="tw-text-on-surface-variant tw-block">Nominal Dikembalikan</span>
+                            <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.detail.returned_amount') }}</span>
                             <span class="tw-font-mono tw-font-bold tw-text-ui-sm tw-text-emerald-700 dark:tw-text-emerald-400">
                                 Rp {{ $regionalFormatter->number(number_format((float) ($overpaymentRefund->refund_amount ?? $overpaymentRefund->overpayment_amount), 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                         <div>
-                            <span class="tw-text-on-surface-variant tw-block">Tanggal Pengembalian</span>
+                            <span class="tw-text-on-surface-variant tw-block">{{ __('finance.refund.return_date') }}</span>
                             <span class="tw-font-semibold tw-text-on-surface">
-                                {{ $overpaymentRefund->refund_date ? $overpaymentRefund->refund_date->format('d M Y') : ($overpaymentRefund->settled_at ? \App\Support\BusinessTime::format($overpaymentRefund->settled_at, 'd M Y', false) : '-') }}
+                                {{ $overpaymentRefund->refund_date ? $regionalFormatter->fixedDate($overpaymentRefund->refund_date, 'd M Y') : ($overpaymentRefund->settled_at ? $regionalFormatter->businessTime($overpaymentRefund->settled_at, 'd M Y') : '-') }}
                             </span>
                         </div>
                         <div>
-                            <span class="tw-text-on-surface-variant tw-block">Nomor Referensi Refund</span>
+                            <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.detail.refund_reference') }}</span>
                             <span class="tw-font-mono tw-font-semibold tw-text-on-surface">
                                 {{ $overpaymentRefund->refund_reference ?: '-' }}
                             </span>
                         </div>
                         <div>
-                            <span class="tw-text-on-surface-variant tw-block">Catatan Finance</span>
+                            <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.labels.finance_notes') }}</span>
                             <span class="tw-text-on-surface">
                                 {{ $overpaymentRefund->notes ?: '-' }}
                             </span>
@@ -412,14 +392,14 @@
                             <div class="tw-flex tw-items-center tw-gap-2 tw-min-w-0">
                                 <x-ui.icon name="file-text" size="xs" class="tw-text-primary tw-shrink-0" />
                                 <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface tw-truncate" title="{{ $proof->file_name }}">
-                                    Bukti Penyelesaian: {{ $proof->file_name }}
+                                    {{ __('local_invoice.detail.settlement_proof', ['filename' => $proof->file_name]) }}
                                 </span>
                             </div>
                             <a href="{{ route('attachments.show', $proof) }}"
                                 target="_blank"
                                 class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-ui-sm tw-text-ui-xs tw-font-semibold tw-bg-primary/10 tw-text-primary hover:tw-bg-primary/20 tw-transition-colors tw-shrink-0">
                                 <x-ui.icon name="download" size="xs" />
-                                <span>Unduh Bukti</span>
+                                <span>{{ __('local_invoice.actions.download_proof') }}</span>
                             </a>
                         </div>
                     @endif
@@ -429,32 +409,32 @@
     @endif
 
     {{-- 2-Column Grid Layout --}}
-    <div class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
+    <div class="tw-grid tw-grid-cols-1 tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
         {{-- Left Column: Main Detail & Documents --}}
-        <div class="lg:tw-col-span-8 tw-space-y-6">
+        <div class="tw-min-w-0 lg:tw-col-span-8 tw-space-y-6">
             {{-- Financial & Reference Information --}}
-            <x-ui.card title="Detail Tagihan & Pembayaran">
+            <x-ui.card :title="__('local_invoice.labels.payment_summary')">
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <div>
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Nomor Invoice</span>
+                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_invoice.receipt.invoice_number') }}</span>
                         <span class="tw-font-semibold tw-text-ui-sm tw-text-on-surface">{{ $invoice->invoice_number }}</span>
                     </div>
                     <div>
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Tanggal Invoice</span>
+                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_invoice.labels.invoice_date') }}</span>
                         <span class="tw-font-medium tw-text-ui-sm tw-text-on-surface">{{ $regionalFormatter->date($invoice->invoice_date, 'human') }}</span>
                     </div>
                     <div>
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Nomor Purchase Order (PO)</span>
+                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_invoice.receipt.po_number') }}</span>
                         <span class="tw-font-semibold tw-text-ui-sm tw-text-on-surface">{{ $invoice->po_number }}</span>
                     </div>
                     <div>
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Vendor / Supplier</span>
+                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_procurement.labels.vendor') }}</span>
                         <span class="tw-font-medium tw-text-ui-sm tw-text-on-surface">{{ $companyName }}</span>
                         <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $invoice->supplier->email }}</span>
                     </div>
                     @if($invoice->tax_invoice_number)
                         <div>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">Nomor Faktur Pajak (NSFP)</span>
+                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_invoice.detail.tax_number') }}</span>
                             <span class="tw-font-semibold tw-font-mono tw-text-ui-sm tw-text-primary">{{ $invoice->tax_invoice_number }}</span>
                         </div>
                     @endif
@@ -463,11 +443,11 @@
                 <div class="tw-border-t tw-border-outline-variant tw-mt-4 tw-pt-4">
                     <div class="tw-grid tw-gap-3 sm:tw-grid-cols-3 tw-p-3 tw-rounded-ui-sm tw-bg-surface-container-low">
                         <div>
-                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-uppercase tw-font-semibold tw-tracking-wider">Nilai DPP</span>
+                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-uppercase tw-font-semibold tw-tracking-wider">{{ __('local_invoice.detail.dpp') }}</span>
                             <span class="tw-block tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format((float) $invoice->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-font-mono tw-block" title="Nilai Asli">
+                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-font-mono tw-block" title="{{ __('local_invoice.detail.original_amount') }}">
                                 IDR {{ $invoice->invoice_amount }}
                             </span>
                         </div>
@@ -476,12 +456,12 @@
                             <span class="tw-block tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format((float) $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-font-mono tw-block" title="Nilai Asli">
+                            <span class="tw-text-[11px] tw-text-on-surface-variant tw-font-mono tw-block" title="{{ __('local_invoice.detail.original_amount') }}">
                                 IDR {{ $invoice->tax_amount }}
                             </span>
                         </div>
                         <div>
-                            <span class="tw-text-[11px] tw-text-primary tw-uppercase tw-font-semibold tw-tracking-wider">Total Pembayaran</span>
+                            <span class="tw-text-[11px] tw-text-primary tw-uppercase tw-font-semibold tw-tracking-wider">{{ __('finance.labels.payment_total') }}</span>
                             <span class="tw-block tw-font-mono tw-font-bold tw-text-ui-base tw-text-primary">
                                 Rp {{ $regionalFormatter->number(number_format((float) $totalAmount, 0, ',', '.'), 'indonesian') }}
                             </span>
@@ -491,17 +471,17 @@
             </x-ui.card>
 
             @if($invoice->localPurchaseOrder)
-                <x-ui.card title="Purchase Order (PO) & Penerimaan Barang (GR)" description="Invoice ini menggunakan referensi resmi dari master Local PO/GR.">
+                <x-ui.card :title="__('local_invoice.detail.po_gr')" :description="__('local_invoice.form.po_reference_help')">
                     <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-4 tw-text-ui-xs tw-mb-4">
-                        <div><span class="tw-text-on-surface-variant tw-block">Nomor PO</span><strong class="tw-font-mono tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_number }}</strong></div>
-                        <div><span class="tw-text-on-surface-variant tw-block">Tanggal PO</span><strong class="tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
-                        <div><span class="tw-text-on-surface-variant tw-block">Total Nilai PO</span><strong class="tw-font-mono tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
+                        <div><span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.receipt.po_number') }}</span><strong class="tw-font-mono tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_number }}</strong></div>
+                        <div><span class="tw-text-on-surface-variant tw-block">{{ __('local_procurement.labels.po_date') }}</span><strong class="tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
+                        <div><span class="tw-text-on-surface-variant tw-block">{{ __('local_procurement.labels.po_total') }}</span><strong class="tw-font-mono tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
                     </div>
-                    <div class="table-responsive"><table class="table table-sm align-middle tw-m-0 tw-text-ui-xs"><thead><tr><th>Nomor GR</th><th>Tanggal GR</th><th class="text-end">Qty</th><th>Status</th></tr></thead><tbody>
+                    <div class="table-responsive"><table class="table table-sm align-middle tw-m-0 tw-text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
-                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ $history->state }}</x-ui.status-chip></td></tr>
+                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
                         @empty
-                            <tr><td colspan="4" class="tw-text-center tw-text-on-surface-variant">Belum ada riwayat GR.</td></tr>
+                            <tr><td colspan="4" class="tw-text-center tw-text-on-surface-variant">{{ __('local_procurement.empty.gr_history') }}</td></tr>
                         @endforelse
                     </tbody></table></div>
                 </x-ui.card>
@@ -510,19 +490,19 @@
             {{-- Riwayat Pembayaran & Mutasi Transfer Bank --}}
             @if($payment && $payment->transfers->isNotEmpty())
                 <x-ui.card
-                    title="Riwayat Pembayaran & Mutasi Transfer Bank"
-                    description="Rincian seluruh transaksi pengiriman dana bank oleh Finance ADASI untuk invoice ini."
+                    :title="__('local_invoice.labels.payment_history')"
+                    :description="__('local_invoice.labels.bank_transfers_help')"
                 >
                     <div class="table-responsive">
                         <table class="table table-sm align-middle tw-m-0 tw-text-ui-xs">
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Tanggal Transfer</th>
-                                    <th>Jenis Transfer</th>
-                                    <th>No. Referensi Bank</th>
-                                    <th class="text-end">Nominal Masuk</th>
-                                    <th>Catatan / Keterangan</th>
+                                    <th>{{ __('finance.payment.transfer_date') }}</th>
+                                    <th>{{ __('local_invoice.labels.transfer_type') }}</th>
+                                    <th>{{ __('local_invoice.detail.bank_reference') }}</th>
+                                    <th class="text-end">{{ __('local_invoice.detail.received_amount') }}</th>
+                                    <th>{{ __('local_invoice.detail.remarks') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -533,11 +513,11 @@
                                         <td>
                                             @if($transfer->transfer_type === 'primary')
                                                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
-                                                    Transfer Pokok
+                                                    {{ __('local_invoice.labels.primary_transfer') }}
                                                 </span>
                                             @else
                                                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-warning/10 tw-text-warning-container-foreground">
-                                                    Transfer Koreksi / Pelunasan
+                                                    {{ __('local_invoice.labels.correction_transfer') }}
                                                 </span>
                                             @endif
                                         </td>
@@ -553,16 +533,16 @@
                             </tbody>
                             <tfoot>
                                 <tr class="tw-border-t tw-border-outline-variant tw-bg-surface-container-low">
-                                    <th colspan="4" class="tw-font-bold">Total Uang Diterima:</th>
+                                    <th colspan="4" class="tw-font-bold">{{ __('local_invoice.labels.total_received') }}:</th>
                                     <th class="text-end tw-font-mono tw-font-bold tw-text-ui-sm tw-text-success">
                                         Rp {{ $regionalFormatter->number(number_format((float) $payment->actual_paid_total, 0, ',', '.'), 'indonesian') }}
                                     </th>
                                     <th>
                                         @if($payment->status === 'FINALIZED')
-                                            <span class="tw-text-success tw-font-semibold">Lunas</span>
+                                            <span class="tw-text-success tw-font-semibold">{{ __('terms.paid') }}</span>
                                         @elseif($payment->status === 'CORRECTION_REQUIRED')
                                             <span class="tw-text-warning-container-foreground tw-font-semibold">
-                                                Sisa: Rp {{ $regionalFormatter->number(number_format(max(0.0, (float) $payment->expected_amount - (float) $payment->actual_paid_total), 0, ',', '.'), 'indonesian') }}
+                                                {{ __('local_invoice.detail.remaining_amount', ['amount' => $regionalFormatter->number(number_format(max(0.0, (float) $payment->expected_amount - (float) $payment->actual_paid_total), 0, ',', '.'), 'indonesian')]) }}
                                             </span>
                                         @endif
                                     </th>
@@ -575,8 +555,8 @@
 
             {{-- Document Attachments (Current Revision) --}}
             <x-ui.card
-                title="Dokumen Lampiran (Revisi {{ $invoice->revision_number }})"
-                description="Dokumen digital resmi yang diunggah untuk pengajuan invoice ini."
+                :title="__('local_invoice.detail.revision_documents', ['number' => $invoice->revision_number])"
+                :description="__('common.final_review.digital_docs')"
             >
                 @include('local-invoices.partials._documents_grid', [
                     'documents' => $currentRevision ? $currentRevision->documents : collect()
@@ -585,28 +565,28 @@
 
             {{-- Revision History (if multiple revisions exist) --}}
             @if($invoice->revisions->count() > 1)
-                <x-ui.card title="Riwayat Versi / Revisi Dokumen">
+                <x-ui.card :title="__('local_invoice.labels.revision_history')">
                     <div class="tw-space-y-3">
                         @foreach($invoice->revisions->sortByDesc('revision_number') as $rev)
                             <div class="tw-border tw-border-outline-variant tw-rounded-ui-sm tw-p-3.5 {{ $rev->revision_number === $invoice->revision_number ? 'tw-bg-surface-container-low' : 'tw-bg-surface' }}">
                                 <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-mb-2">
                                     <div class="tw-flex tw-items-center tw-gap-2">
-                                        <span class="tw-font-bold tw-text-ui-xs tw-text-on-surface">Revisi {{ $rev->revision_number }}</span>
+                                        <span class="tw-font-bold tw-text-ui-xs tw-text-on-surface">{{ __('local_invoice.detail.revision', ['number' => $rev->revision_number]) }}</span>
                                         @if($rev->revision_number === $invoice->revision_number)
-                                            <span class="tw-px-2 tw-py-0.2 tw-rounded-full tw-text-[10px] tw-font-semibold tw-bg-primary/10 tw-text-primary">Aktif</span>
+                                            <span class="tw-px-2 tw-py-0.2 tw-rounded-full tw-text-[10px] tw-font-semibold tw-bg-primary/10 tw-text-primary">{{ __('local_invoice.labels.active') }}</span>
                                         @endif
                                     </div>
                                     <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($rev->created_at, 'datetime_comma') }}</span>
                                 </div>
                                 @if($rev->reason)
                                     <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-2">
-                                        <em>Alasan Revisi:</em> {{ $rev->reason }}
+                                        <em>{{ __('local_invoice.labels.revision_reason') }}:</em> {{ $rev->reason }}
                                     </div>
                                 @endif
                                 <div class="tw-flex tw-flex-wrap tw-gap-2">
                                     @foreach($rev->documents as $revDoc)
                                         <a href="{{ route('local-invoice-documents.show', $revDoc) }}" target="_blank" class="tw-text-ui-xs tw-text-primary tw-underline hover:tw-text-primary/80">
-                                            {{ $docTypeLabels[$revDoc->document_type] ?? ucwords(str_replace('_', ' ', $revDoc->document_type)) }}
+                                            {{ $docTypeLabels[$revDoc->document_type] ?? __('local_invoice.documents.types.'.$revDoc->document_type) }}
                                         </a>
                                         @if(! $loop->last) <span class="tw-text-on-surface-variant">·</span> @endif
                                     @endforeach
@@ -622,15 +602,15 @@
         <div class="lg:tw-col-span-4 tw-space-y-6 tw-sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
             {{-- Payment & Due Date Card (Internal only, hidden from Supplier) --}}
             @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
-            <x-ui.card title="Jadwal Pembayaran">
+            <x-ui.card :title="__('local_invoice.labels.payment_schedule')">
                 <div class="tw-space-y-3">
                     <div class="tw-flex tw-justify-between tw-text-ui-xs">
-                        <span class="tw-text-on-surface-variant">Termin Pembayaran:</span>
-                        <span class="tw-font-semibold tw-text-on-surface">Net {{ $invoice->payment_term_days_snapshot }} Hari</span>
+                        <span class="tw-text-on-surface-variant">{{ __('local_invoice.detail.payment_term') }}</span>
+                        <span class="tw-font-semibold tw-text-on-surface">{{ trans_choice('local_invoice.table.term_days', $invoice->payment_term_days_snapshot ?? 0) }}</span>
                     </div>
 
                     <div class="tw-flex tw-justify-between tw-items-center tw-text-ui-xs">
-                        <span class="tw-text-on-surface-variant">Jatuh Tempo:</span>
+                        <span class="tw-text-on-surface-variant">{{ __('local_invoice.labels.due_date') }}:</span>
                         <span class="tw-font-semibold tw-text-on-surface">{{ $invoice->due_date ? $regionalFormatter->date($invoice->due_date, 'human') : '—' }}</span>
                     </div>
 
@@ -638,11 +618,11 @@
                         <div class="tw-p-2.5 tw-rounded-ui-sm tw-text-center {{ $remDays < 0 ? 'tw-bg-error/10 tw-text-error' : ($remDays <= 3 ? 'tw-bg-warning-container tw-text-warning-container-foreground' : 'tw-bg-success/10 tw-text-success') }}">
                             <span class="tw-font-bold tw-text-ui-sm">
                                 @if($remDays < 0)
-                                    Terlewat {{ abs($remDays) }} Hari
+                                    {{ trans_choice('local_invoice.table.overdue_days', abs($remDays)) }}
                                 @elseif($remDays === 0)
-                                    Jatuh Tempo Hari Ini
+                                    {{ __('local_invoice.detail.due_today') }}
                                 @else
-                                    Tersisa {{ $remDays }} Hari
+                                    {{ trans_choice('local_invoice.table.remaining_days', $remDays) }}
                                 @endif
                             </span>
                         </div>
@@ -650,14 +630,14 @@
 
                     @if($invoice->scheduled_payment_date)
                         <div class="tw-flex tw-justify-between tw-text-ui-xs tw-border-t tw-border-outline-variant tw-pt-2">
-                            <span class="tw-text-on-surface-variant">Jadwal Bayar ADASI:</span>
+                            <span class="tw-text-on-surface-variant">{{ __('local_invoice.detail.payment_schedule') }}</span>
                             <span class="tw-font-bold tw-text-primary">{{ $regionalFormatter->date($invoice->scheduled_payment_date, 'human') }}</span>
                         </div>
                     @endif
 
                     @if($invoice->completed_at)
                         <div class="tw-flex tw-justify-between tw-text-ui-xs tw-border-t tw-border-outline-variant tw-pt-2">
-                            <span class="tw-text-on-surface-variant">Pembayaran Selesai:</span>
+                            <span class="tw-text-on-surface-variant">{{ __('local_invoice.detail.payment_completed') }}</span>
                             <span class="tw-font-bold tw-text-success">{{ $regionalFormatter->timestamp($invoice->completed_at, 'datetime_comma') }}</span>
                         </div>
                     @endif
@@ -668,8 +648,8 @@
             {{-- Operator Workflow Actions Box (Only for Accounting/Finance) --}}
             @if(auth()->user()->isLocalOperator())
                 <x-ui.card
-                    title="Aksi Workflow Petugas"
-                    description="Pilih tindakan sesuai tahapan verifikasi dokumen dan pembayaran."
+                    :title="__('finance.labels.workflow_actions')"
+                    :description="__('local_invoice.detail.workflow_help')"
                 >
                     @if(!empty($workflowActions))
                         <div class="tw-space-y-4">
@@ -697,7 +677,7 @@
                                         @if(in_array($action, ['request-revision', 'reject', 'physical-verification', 'schedule-payment', 'complete-payment']))
                                             <div class="tw-mb-2">
                                                 <label for="notes-{{ $action }}" class="form-label tw-text-[11px] tw-text-on-surface-variant">
-                                                    {{ in_array($action, ['request-revision', 'reject']) ? 'Alasan / Catatan (Wajib)' : 'Catatan Tambahan (Opsional)' }}
+                                                    {{ __(in_array($action, ['request-revision', 'reject']) ? 'local_invoice.closure.notes_required' : 'local_invoice.closure.notes_optional') }}
                                                     @if(in_array($action, ['request-revision', 'reject'])) <span class="text-danger">*</span> @endif
                                                 </label>
                                                 <textarea
@@ -706,7 +686,7 @@
                                                     name="notes"
                                                     rows="2"
                                                     maxlength="5000"
-                                                    placeholder="Tuliskan catatan verifikasi..."
+                                                    placeholder="{{ __('ga.verification.notes') }}"
                                                     @required(in_array($action, ['request-revision', 'reject']))
                                                 >{{ old('notes') }}</textarea>
                                             </div>
@@ -715,7 +695,7 @@
                                         @if($action === 'schedule-payment')
                                             <div class="tw-mb-3">
                                                 <label for="scheduled-payment-date" class="form-label tw-text-[11px] tw-text-on-surface-variant">
-                                                    Tanggal Jadwal Pembayaran <span class="text-danger">*</span>
+                                                    {{ __('common.final_review.payment_schedule_date') }} <span class="text-danger">*</span>
                                                 </label>
                                                 <x-ui.date-picker
                                                     name="scheduled_payment_date"
@@ -736,7 +716,7 @@
                                             @elseif($isWarning) <x-ui.icon name="file-edit" size="sm" />
                                             @elseif($isDestructive) <x-ui.icon name="x-circle" size="sm" />
                                             @else <x-ui.icon name="play" size="sm" /> @endif
-                                            <span>Konfirmasi {{ $label }}</span>
+                                            <span>{{ __('local_invoice.detail.confirm_action', ['action' => $label]) }}</span>
                                         </x-ui.button>
                                     </form>
                                 </div>
@@ -745,7 +725,7 @@
                     @else
                         <div class="tw-text-center tw-py-4">
                             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">
-                                Tidak ada tindakan yang diperlukan untuk status saat ini.
+                                {{ __('local_invoice.detail.no_actions') }}
                             </span>
                         </div>
                     @endif
@@ -753,27 +733,7 @@
             @endif
 
             {{-- Status & Verification Timeline Stepper (Balanced in Right Column) --}}
-            <x-ui.card title="Jejak Status & Verifikasi">
-                @php
-                    $eventLabels = [
-                        'submitted' => 'Pengajuan Dibuat',
-                        'resubmitted' => 'Revisi Diajukan',
-                        'physical_verified' => 'Dokumen Fisik Terverifikasi',
-                        'delivery_missed' => 'Jadwal Kirim Fisik Terlewat',
-                        'rescheduled' => 'Jadwal Kirim Fisik Diubah',
-                        'expired' => 'Invoice Kadaluarsa',
-                        'revision_requested' => 'Permintaan Revisi',
-                        'approved' => 'Invoice Disetujui',
-                        'payment_scheduled' => 'Jadwal Bayar Ditentukan',
-                        'partial_payment' => 'Pembayaran Parsial',
-                        'overpaid' => 'Kelebihan Pembayaran',
-                        'refund_settled' => 'Refund Kelebihan Bayar Selesai',
-                        'completed' => 'Pembayaran Selesai',
-                        'paid' => 'Invoice Lunas',
-                        'cancelled' => 'Invoice Dibatalkan',
-                        'rejected' => 'Invoice Ditolak',
-                    ];
-                @endphp
+            <x-ui.card :title="__('local_invoice.labels.verification_history')">
                 <div class="tw-relative tw-ps-6 tw-space-y-6 before:tw-absolute before:tw-left-2.5 before:tw-top-2 before:tw-bottom-2 before:tw-w-0.5 before:tw-bg-outline-variant">
                     @forelse($invoice->statusHistories as $history)
                         <div class="tw-relative">
@@ -783,16 +743,16 @@
                             <div>
                                 <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
                                     <span class="tw-font-semibold tw-text-ui-sm tw-text-on-surface">
-                                        {{ $eventLabels[$history->event] ?? ucwords(str_replace('_', ' ', $history->event)) }}
+                                        {{ \App\Models\LocalInvoice::eventLabel($history->event) }}
                                     </span>
                                     <span class="tw-text-ui-xs tw-text-on-surface-variant">
                                         {{ $regionalFormatter->timestamp($history->created_at, 'datetime_comma') }}
                                     </span>
                                 </div>
                                 <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-0.5">
-                                    Oleh: <strong>{{ $history->actor->name }}</strong>
+                                        {{ __('ga.detail.actor', ['name' => $history->actor->name]) }}
                                     @if($history->to_status)
-                                        · Status: <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($history->to_status)">
+                                        · {{ __('common.labels_review.status') }} <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($history->to_status)">
                                             {{ \App\Support\StatusHelper::localInvoiceLabel($history->to_status) }}
                                         </x-ui.status-chip>
                                     @endif
@@ -805,33 +765,33 @@
                             </div>
                         </div>
                     @empty
-                        <div class="tw-text-ui-xs tw-text-on-surface-variant">Belum ada riwayat aktivitas.</div>
+                        <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_invoice.empty.activity') }}</div>
                     @endforelse
                 </div>
             </x-ui.card>
 
             {{-- Physical Submission Guidelines Card --}}
-            <x-ui.card title="Petunjuk Dokumen Fisik">
+            <x-ui.card :title="__('local_invoice.detail.physical_guidelines')">
                 <div class="tw-space-y-3 tw-text-ui-xs tw-text-on-surface-variant">
                     <div class="tw-flex tw-gap-2.5 tw-items-start">
                         <x-ui.icon name="map-pin" size="sm" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                         <div>
-                            <strong class="tw-text-on-surface tw-block">Loket Verifikasi:</strong>
-                            Loket Accounting PT Astra Daido Steel Indonesia, Gd. Utama Lt. 1.
+                            <strong class="tw-text-on-surface tw-block">{{ __('local_invoice.detail.counter') }}</strong>
+                            {{ __('local_invoice.detail.counter_address') }}
                         </div>
                     </div>
                     <div class="tw-flex tw-gap-2.5 tw-items-start">
                         <x-ui.icon name="file-badge" size="sm" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                         <div>
-                            <strong class="tw-text-on-surface tw-block">Ketentuan Materai:</strong>
-                            Tagihan di atas Rp 5.000.000 wajib bermaterai Rp 10.000 dan dicap basah.
+                            <strong class="tw-text-on-surface tw-block">{{ __('local_invoice.detail.stamp') }}</strong>
+                            {{ __('local_invoice.detail.stamp_help') }}
                         </div>
                     </div>
                     <div class="tw-flex tw-gap-2.5 tw-items-start">
                         <x-ui.icon name="receipt" size="sm" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                         <div>
-                            <strong class="tw-text-on-surface tw-block">Bukti Tanda Terima:</strong>
-                            Gunakan tombol <em>Kwitansi / Tanda Terima</em> di atas saat menyerahkan berkas fisik.
+                            <strong class="tw-text-on-surface tw-block">{{ __('local_invoice.detail.receipt_proof') }}</strong>
+                            {{ __('local_invoice.receipt.required') }}
                         </div>
                     </div>
                 </div>

@@ -11,5 +11,5 @@
     @else
         <span aria-hidden="true">{{ $initials ?: '?' }}</span>
     @endif
-    <span class="tw-sr-only">Avatar {{ $name }}</span>
+    <span class="tw-sr-only">{{ __('common.review.avatar_name', ['name' => $name]) }}</span>
 </span>

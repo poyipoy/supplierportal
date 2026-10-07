@@ -317,9 +317,9 @@ class LocalPoImportTest extends TestCase
             ->get(route('finance.local-procurement.index'));
 
         $response->assertOk();
-        $response->assertSee('File Spreadsheet Purchase Order (PO) ERP (.xlsx)');
-        $response->assertSee('Template Purchase Order (PO) ERP');
-        $response->assertSee('Pemetaan Kolom ERP Infor Purchase Order (PO):');
+        $response->assertSee(__('local_procurement.import.po_file', [], 'en'));
+        $response->assertSee(__('local_procurement.import.po_template', [], 'en'));
+        $response->assertSee(__('finance.review.po_mapping', [], 'en'));
         $response->assertDontSee('tdpur');
     }
 

@@ -461,13 +461,13 @@ class AsyncExportQueueTest extends TestCase
         Storage::disk('private')->assertMissing($failedPath);
         $this->assertCount(2, $sentNotifications);
         $this->assertSame('export.completed', $sentNotifications[0][1]);
-        $this->assertSame('Export Completed', $sentNotifications[0][3]);
-        $this->assertSame('Export :label is ready to download.', $sentNotifications[0][4]);
+        $this->assertSame('notifications.exports.completed.title', $sentNotifications[0][3]);
+        $this->assertSame('notifications.exports.completed.message', $sentNotifications[0][4]);
         $this->assertSame(NotificationCategory::OTHER, $sentNotifications[0][7]['category']);
         $this->assertSame($completed->getRouteKey(), $sentNotifications[0][7]['export_job_id']);
         $this->assertSame('export.failed', $sentNotifications[1][1]);
-        $this->assertSame('Export Failed', $sentNotifications[1][3]);
-        $this->assertSame('The export could not be processed. Please try again.', $sentNotifications[1][4]);
+        $this->assertSame('notifications.exports.failed.title', $sentNotifications[1][3]);
+        $this->assertSame('notifications.exports.failed.message', $sentNotifications[1][4]);
         $this->assertSame(NotificationCategory::OTHER, $sentNotifications[1][7]['category']);
         Event::assertDispatched(ExportProgressUpdated::class, fn (ExportProgressUpdated $event) => $event->exportJobId === $completed->getRouteKey()
             && $event->stage === ExportJob::STAGE_GENERATING
@@ -792,6 +792,40 @@ class AsyncExportQueueTest extends TestCase
 
         $this->assertSame(2, PurchaseRequisition::query()->count());
         $this->assertSame(3, (new RequisitionsExport)->progressTotalRows());
+    }
+
+    public function test_collection_queue_rows_use_captured_locale_before_serialization_and_restore_worker_locale(): void
+    {
+        Event::fake([ExportProgressUpdated::class]);
+        Queue::fake();
+        $notifications = \Mockery::mock(NotificationService::class);
+        $notifications->shouldNotReceive('send');
+        app()->setLocale('en');
+        $record = $this->createExportJob($this->supplier, [
+            'export_class' => SupplierPriceHistoryExport::class,
+            'export_args' => [$this->supplier->id, 'monthly', 'Async Export Steel', null],
+        ]);
+        (new ProcessExportJob($record->id, 'id'))->handle(new ExportProgressService($notifications));
+        $this->assertSame('en', app()->getLocale());
+        Queue::assertPushed(QueueExport::class, function (QueueExport $job): bool {
+            $chunks = collect($job->chained)->map(fn (string $serialized) => unserialize($serialized))
+                ->filter(fn ($child) => $child instanceof AppendDataToSheet);
+            $this->assertCount(1, $chunks);
+            $this->assertSame(__('status.quotation.submitted', [], 'id'), $chunks->first()->data[0][2]);
+            $this->assertSame($this->requisition->pr_number, $chunks->first()->data[0][0]);
+            $this->assertSame(10.0, (float) $chunks->first()->data[0][3]);
+            return true;
+        });
+        $invalid = $this->createExportJob($this->purchasing, [
+            'export_class' => PurchaseOrderDetailExport::class, 'export_args' => [],
+        ]);
+        try {
+            (new ProcessExportJob($invalid->id, 'id'))->handle(new ExportProgressService($notifications));
+            $this->fail('Invalid constructor arguments must still fail.');
+        } catch (\ArgumentCountError) {
+            $this->assertSame('en', app()->getLocale());
+            $this->assertSame(ExportJob::STATUS_QUEUED, $invalid->fresh()->status);
+        }
     }
 
     public function test_collection_history_export_reuses_rows_without_serializing_the_cache(): void

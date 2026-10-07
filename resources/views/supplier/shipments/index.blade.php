@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Shipments & Deliveries - ADASI Portal')
-@section('page-title', 'Shipments & Deliveries')
+@section('title', __('shipments.copy.shipments_deliveries_adasi_portal'))
+@section('page-title', __('shipments.titles.deliveries', []))
 
 @push('styles')
 <style>
@@ -17,19 +17,19 @@
 <div class="tw-grid tw-gap-4">
     {{-- 1. Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Shipments' => null,
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.shipments') => null,
     ]" />
 
     <x-ui.page-header
-        title="My Shipments & Deliveries"
-        eyebrow="Logistics & Fulfillment"
-        description="Create and manage physical consignments, consolidate deliveries across multiple POs, and track shipping documentation."
+        :title="__('shipments.copy.my_shipments_deliveries')"
+        :eyebrow="__('shipments.copy.logistics_fulfillment')"
+        :description="__('shipments.copy.create_and_manage_physical_consignments_consolidate_deliveries_across_multiple_pos_and_track_shippin')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('supplier.shipments.create')" variant="primary" size="sm">
                 <x-slot:leading><x-ui.icon name="plus" size="sm" /></x-slot:leading>
-                <span>New Shipment</span>
+                <span>{{ __('shipments.copy.new_shipment') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -45,13 +45,13 @@
                     type="text"
                     id="filter_search"
                     class="form-control border-start-0 ps-0"
-                    placeholder="Search shipment number or PO..."
+                    placeholder="{{ __('shipments.copy.search_shipment_number_or_po') }}"
                     autocomplete="off"
-                    aria-label="Search shipment history"
+                    aria-label="{{ __('shipments.copy.search_shipment_history') }}"
                     value="{{ request('search') }}"
                 >
-                <x-ui.button type="button" size="sm" id="searchShipmentBtn" aria-label="Search shipments">
-                    Search
+                <x-ui.button type="button" size="sm" id="searchShipmentBtn" aria-label="{{ __('shipments.copy.search_shipments') }}">
+                    {{ __('shipments.copy.search') }}
                 </x-ui.button>
             </div>
         </x-slot:search>
@@ -59,12 +59,12 @@
         <x-slot:filters>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <div style="min-width: 170px;">
-                    <select id="filter_status" class="form-select form-select-sm" aria-label="Filter by Status">
-                        <option value="">All Statuses</option>
-                        <option value="draft" @selected(request('status') === 'draft')>Draft</option>
-                        <option value="submitted" @selected(request('status') === 'submitted')>In Transit</option>
-                        <option value="arrived" @selected(request('status') === 'arrived')>Arrived at Plant</option>
-                        <option value="cancelled" @selected(request('status') === 'cancelled')>Cancelled</option>
+                    <select id="filter_status" class="form-select form-select-sm" aria-label="{{ __('shipments.copy.filter_by_status') }}">
+                        <option value="">{{ __('shipments.copy.all_statuses') }}</option>
+                        <option value="draft" @selected(request('status') === 'draft')>{{ __('shipments.copy.draft') }}</option>
+                        <option value="submitted" @selected(request('status') === 'submitted')>{{ __('shipments.copy.in_transit') }}</option>
+                        <option value="arrived" @selected(request('status') === 'arrived')>{{ __('shipments.copy.arrived_at_plant') }}</option>
+                        <option value="cancelled" @selected(request('status') === 'cancelled')>{{ __('shipments.copy.cancelled') }}</option>
                     </select>
                 </div>
 
@@ -73,11 +73,11 @@
                         id="supplierShipmentDateRange"
                         start-name="date_from"
                         start-id="supplierShipmentDateFrom"
-                        start-label="From"
+                        :start-label="__('shipments.copy.from')"
                         start-value="{{ request('date_from') }}"
                         end-name="date_to"
                         end-id="supplierShipmentDateTo"
-                        end-label="To"
+                        :end-label="__('shipments.copy.to')"
                         end-value="{{ request('date_to') }}"
                         compact
                     />
@@ -85,7 +85,7 @@
 
                 <x-ui.button type="button" variant="ghost" size="sm" id="resetFilter" class="shipment-filter-reset">
                     <x-ui.icon name="rotate-ccw" />
-                    <span>Reset</span>
+                    <span>{{ __('shipments.copy.reset') }}</span>
                 </x-ui.button>
             </div>
             <div id="filterChips" class="d-none flex-wrap tw-gap-1.5 align-items-center ms-2" aria-live="polite"></div>
@@ -97,15 +97,15 @@
         <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="supplierShipmentTable">
             <thead class="table-light">
                 <tr>
-                    <th scope="col">Shipment No.</th>
-                    <th scope="col">PO References</th>
-                    <th scope="col" class="text-center">Items</th>
-                    <th scope="col" class="text-center">Total Qty</th>
-                    <th scope="col" class="text-center">Actual Weight</th>
-                    <th scope="col">Shipment Date</th>
-                    <th scope="col">Est. Arrival</th>
-                    <th scope="col" class="text-center">Status</th>
-                    <th scope="col" class="text-end" style="width: 140px;">Action</th>
+                    <th scope="col">{{ __('shipments.copy.shipment_no') }}</th>
+                    <th scope="col">{{ __('shipments.copy.po_references') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.items') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.total_qty') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.actual_weight') }}</th>
+                    <th scope="col">{{ __('shipments.copy.shipment_date') }}</th>
+                    <th scope="col">{{ __('shipments.copy.est_arrival') }}</th>
+                    <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
+                    <th scope="col" class="text-end" style="width: 140px;">{{ __('shipments.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -144,22 +144,22 @@
                                 <div class="d-inline-flex align-items-center justify-content-end gap-1">
                                     <form action="{{ route('supplier.shipments.submit', $shp) }}" method="POST" class="draft-submit-form tw-m-0">
                                         @csrf
-                                        <button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="Submit draft {{ $shp->shipment_number }}">
-                                            Submit
+                                        <button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="{{ __('shipments.a11y.submit_draft', ['shipment' => $shp->shipment_number]) }}">
+                                            {{ __('shipments.copy.submit') }}
                                         </button>
                                     </form>
                                     <div class="dropdown">
-                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for {{ $shp->shipment_number }}">
-                                            More
+                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('shipments.a11y.more_actions', ['shipment' => $shp->shipment_number]) }}">
+                                            {{ __('shipments.copy.more') }}
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a href="{{ route('supplier.shipments.show', $shp) }}" class="dropdown-item">View details</a></li>
-                                            <li><a href="{{ route('supplier.shipments.edit', $shp) }}" class="dropdown-item">Edit draft</a></li>
+                                            <li><a href="{{ route('supplier.shipments.show', $shp) }}" class="dropdown-item">{{ __('shipments.copy.view_details') }}</a></li>
+                                            <li><a href="{{ route('supplier.shipments.edit', $shp) }}" class="dropdown-item">{{ __('shipments.copy.edit_draft') }}</a></li>
                                             <li>
                                                 <form action="{{ route('supplier.shipments.cancel', $shp) }}" method="POST" class="cancel-form">
                                                     @csrf
                                                     <button type="button" class="dropdown-item text-danger btn-cancel-shipment btn-delete">
-                                                        Cancel shipment
+                                                        {{ __('shipments.copy.cancel_shipment') }}
                                                     </button>
                                                 </form>
                                             </li>
@@ -168,14 +168,14 @@
                                 </div>
                             @else
                                 <div class="d-inline-flex justify-content-end">
-                                    <a href="{{ route('supplier.shipments.show', $shp) }}" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="View {{ $shp->shipment_number }}">Details</a>
+                                    <a href="{{ route('supplier.shipments.show', $shp) }}" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="{{ __('shipments.copy.view_shipment', ['number' => $shp->shipment_number]) }}">{{ __('shipments.copy.details') }}</a>
                                 </div>
                             @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center py-4 tw-text-on-surface-variant">No shipments created yet. Click "New Shipment" to initiate a delivery.</td>
+                        <td colspan="9" class="text-center py-4 tw-text-on-surface-variant">{{ __('shipments.js.empty_supplier_shipments', ['action' => __('shipments.copy.new_shipment')]) }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -210,6 +210,7 @@
                 { data: 'status_badge', name: 'status', className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
+
             order: []
         });
 
@@ -258,7 +259,7 @@
                 const $remove = $('<button>', {
                     type: 'button',
                     class: 'ui-focus-ring tw-inline-flex tw-h-5 tw-w-5 tw-items-center tw-justify-center tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-p-0 tw-text-primary hover:tw-bg-primary/10',
-                    'aria-label': `Remove ${label} filter`,
+                    'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
                     text: '×'
                 });
 
@@ -270,14 +271,14 @@
 
             const chips = [];
             if (search) {
-                chips.push(createChip(`Search: ${search}`, () => {
+                chips.push(createChip(window.AdasiI18n.t('js.filters.search', { search }), () => {
                     $('#filter_search').val('');
                     updateFilterChips();
                     table.draw();
                 }));
             }
             if (statusText) {
-                chips.push(createChip(`Status: ${statusText}`, () => {
+                chips.push(createChip(@js(__('common.final_copy.status')) + ' ' + statusText, () => {
                     $('#filter_status').val('');
                     updateFilterChips();
                     table.draw();
@@ -285,8 +286,8 @@
             }
             if (dateFrom || dateTo) {
                 const label = (dateFrom && dateTo)
-                    ? `Date: ${dateFrom} to ${dateTo}`
-                    : (dateFrom ? `From: ${dateFrom}` : `To: ${dateTo}`);
+                    ? window.AdasiI18n.t('js.filters.date_range', { from: dateFrom, to: dateTo })
+                    : (dateFrom ? window.AdasiI18n.t('js.filters.from', { date: dateFrom }) : window.AdasiI18n.t('js.filters.to', { date: dateTo }));
                 chips.push(createChip(label, () => {
                     $('#supplierShipmentDateFrom').val('');
                     $('#supplierShipmentDateTo').val('');
@@ -315,16 +316,16 @@
             const form = $(this).closest('form');
             if (window.AdasiAlert) {
                 AdasiAlert.confirmDanger({
-                    title: @json('Cancel this Shipment?'),
-                    text: @json('Are you sure you want to cancel this consignment? Any reserved quantities will be returned to the purchase order balance.'),
-                    confirmText: @json('Yes, Cancel!'),
-                    cancelText: @json('Cancel')
+                    title: @json(__('shipments.copy.cancel_this_shipment')),
+                    text: @json(__('shipments.copy.are_you_sure_you_want_to_cancel_this_consignment_any_reserved_quantities_will_be_returned_to_the_pur')),
+                    confirmText: @js(__('shipments.confirmations.cancel.confirm')),
+                    cancelText: @json(__('shipments.copy.cancel'))
                 }).then((result) => {
                     if (result.isConfirmed) {
                         form.submit();
                     }
                 });
-            } else if (confirm(@json("Cancel this Shipment?\n\nAre you sure you want to cancel this consignment? Any reserved quantities will be returned to the purchase order balance."))) {
+            } else if (confirm(@js(__('shipments.confirmations.cancel.title')."\n\n".__('shipments.confirmations.cancel.body')))) {
                 form.submit();
             }
         });
@@ -342,10 +343,10 @@
 
             if (window.AdasiAlert) {
                 AdasiAlert.confirm({
-                    title: @json('Submit Shipment Delivery?'),
-                    text: @json('Submitting this shipment locks allocated quantities and notifies Purchasing and QC that goods are in transit.'),
-                    confirmText: @json('Yes, Submit!'),
-                    cancelText: @json('Cancel')
+                    title: @js(__('shipments.confirmations.submit.title')),
+                    text: @js(__('shipments.confirmations.submit.body')),
+                    confirmText: @json(__('shipments.copy.yes_submit')),
+                    cancelText: @json(__('shipments.copy.cancel'))
                 }).then((result) => {
                     draftSubmitConfirmationOpen = false;
 
@@ -354,7 +355,7 @@
                         form.submit();
                     }
                 });
-            } else if (confirm(@json("Submit Shipment Delivery?\n\nSubmitting this shipment locks allocated quantities and notifies Purchasing and QC that goods are in transit."))) {
+            } else if (confirm(@js(__('shipments.confirmations.submit.title')."\n\n".__('shipments.confirmations.submit.body')))) {
                 window.AdasiButton?.startLoading($button[0]);
                 form.submit();
             } else {

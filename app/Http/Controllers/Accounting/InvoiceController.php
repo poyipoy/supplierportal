@@ -24,7 +24,7 @@ class InvoiceController extends Controller
         if ($physical) {
             $filters['status'] = 'WAITING_PHYSICAL_DOCUMENT';
         }
-        $title = $physical ? 'Physical Verification' : ($payments ? 'Payment Schedule' : 'Invoice Register');
+        $title = $physical ? __('accounting.titles.physical') : ($payments ? __('accounting.titles.payments') : __('accounting.titles.register'));
 
         return view('accounting.invoices.index', [
             'invoices' => $query->filtered($filters, payments: $payments)->latest('id')->paginate(25)->withQueryString(),

@@ -330,7 +330,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         $showResponse->assertSee('First batch delivery');
 
         // 4. Supplier A downloads attachment
-        $downloadResponse = $this->actingAs($this->supplierA)->get(route('attachments.show', $attachment->id));
+        $downloadResponse = $this->actingAs($this->supplierA)->get(route('attachments.show', $attachment));
         $downloadResponse->assertStatus(200);
     }
 
@@ -352,7 +352,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         $showResponse->assertStatus(403);
 
         // 3. Supplier A attempts to download Beta's PO attachment
-        $downloadResponse = $this->actingAs($this->supplierA)->get(route('attachments.show', $betaAttachment->id));
+        $downloadResponse = $this->actingAs($this->supplierA)->get(route('attachments.show', $betaAttachment));
         $downloadResponse->assertStatus(403);
 
         // 4. Supplier A index page must never contain Beta's PO

@@ -88,8 +88,8 @@ class UserNotificationPreferencesTest extends TestCase
                 ->assertDontSeeText('Required notifications')
                 ->assertViewHas('events', function (array $events): bool {
                     $order = [
-                        'Purchase requisitions', 'Quotations', 'Conversations', 'Purchase orders', 'Documents',
-                        'Shipments and QC', 'Material claims', 'Local invoices', 'Supplier registration', 'Exports', 'Security',
+                        'notifications.categories.requisitions', 'notifications.categories.quotations', 'notifications.categories.conversations', 'notifications.categories.purchase_orders', 'notifications.categories.documents',
+                        'notifications.categories.shipments_qc', 'notifications.categories.claims', 'notifications.categories.local_invoices', 'notifications.categories.registration', 'notifications.categories.exports', 'notifications.categories.security',
                     ];
                     $actual = array_values(array_unique(array_column($events, 'category')));
 
@@ -103,7 +103,7 @@ class UserNotificationPreferencesTest extends TestCase
     {
         $user = $this->localSupplier();
         $response = $this->actingAs($user)->get(route('profile.notifications'))->assertOk()
-            ->assertSeeText('Local invoices')->assertSeeText('Invoice diajukan')
+            ->assertSeeText('Local invoices')->assertSeeText('Invoice submitted')
             ->assertDontSeeText('Required notifications');
         $document = new DOMDocument;
         $previous = libxml_use_internal_errors(true);
@@ -115,7 +115,7 @@ class UserNotificationPreferencesTest extends TestCase
         }
         $xpath = new DOMXPath($document);
         $this->assertCount(1, $xpath->query('//h1[normalize-space(.)="Notifications"]'));
-        $this->assertCount(1, $xpath->query('//fieldset/legend[normalize-space(.)="Invoice diajukan"]'));
+        $this->assertCount(1, $xpath->query('//fieldset/legend[normalize-space(.)="Invoice submitted"]'));
         $name = 'notification_preferences['.self::KEY.']';
         $checkbox = $xpath->query('//input[@type="checkbox" and @name="'.$name.'"]')->item(0);
         $this->assertSame($name, $checkbox->getAttribute('name'));

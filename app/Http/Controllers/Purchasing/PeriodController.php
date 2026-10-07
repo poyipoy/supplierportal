@@ -22,11 +22,11 @@ class PeriodController extends Controller
 
             return DataTables::eloquent($query)
                 ->addColumn('name_display', fn ($p) => $p->name)
-                ->addColumn('month_display', fn ($p) => $p->is_annual ? 'Annual' : date('F', mktime(0, 0, 0, $p->month, 1)).' ('.$p->month.')')
+                ->addColumn('month_display', fn ($p) => $p->is_annual ? __('purchasing.copy.annual') : date('F', mktime(0, 0, 0, $p->month, 1)).' ('.$p->month.')')
                 ->addColumn('year_display', fn ($p) => $p->year)
                 ->addColumn('status_badge', fn ($p) => $p->status === 'open'
-                    ? '<span class="ui-status-chip ui-status-chip--success">Open</span>'
-                    : '<span class="ui-status-chip ui-status-chip--neutral">Closed</span>')
+                    ? '<span class="ui-status-chip ui-status-chip--success">'.e(__('purchasing.copy.open')).'</span>'
+                    : '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('purchasing.copy.closed')).'</span>')
                 ->addColumn('creator_name', fn ($p) => $p->creator->name ?? '-')
                 ->addColumn('action', function ($p) {
                     return '<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit"
@@ -34,7 +34,7 @@ class PeriodController extends Controller
                         data-name="'.e($p->name).'"
                         data-month="'.($p->month ?? '').'"
                         data-year="'.$p->year.'"
-                        data-status="'.$p->status.'" aria-label="Edit period '.e($p->name).'">Edit</button>';
+                        data-status="'.$p->status.'" aria-label="'.e(__('purchasing.action_names.edit_period', ['name' => $p->name])).'">'.e(__('purchasing.copy.edit')).'</button>';
                 })
                 ->rawColumns(['status_badge', 'action'])
                 ->make(true);
@@ -61,8 +61,8 @@ class PeriodController extends Controller
 
         if ($exists) {
             return back()->with('error', $request->filled('month')
-                ? 'A period for the selected month and year already exists.'
-                : 'An annual period for the selected year already exists.');
+                ? __('purchasing.copy.a_period_for_the_selected_month_and_year_already_exists')
+                : __('purchasing.copy.an_annual_period_for_the_selected_year_already_exists'));
         }
 
         Period::create([
@@ -73,7 +73,7 @@ class PeriodController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return back()->with('success', 'Period successfully added.');
+        return back()->with('success', __('purchasing.copy.period_successfully_added'));
     }
 
     /**
@@ -99,8 +99,8 @@ class PeriodController extends Controller
 
             if ($exists) {
                 return back()->with('error', $request->filled('month')
-                    ? 'A period for the selected month and year already exists.'
-                    : 'An annual period for the selected year already exists.');
+                    ? __('purchasing.copy.a_period_for_the_selected_month_and_year_already_exists')
+                    : __('purchasing.copy.an_annual_period_for_the_selected_year_already_exists'));
             }
         }
 
@@ -111,6 +111,6 @@ class PeriodController extends Controller
             'status' => $request->status,
         ]);
 
-        return back()->with('success', 'Period successfully updated.');
+        return back()->with('success', __('purchasing.copy.period_successfully_updated'));
     }
 }

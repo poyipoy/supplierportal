@@ -65,7 +65,7 @@ class InvoiceNotificationCopyTest extends TestCase
         $this->service = app(InvoiceNotificationService::class);
     }
 
-    public function test_registered_local_invoice_events_use_registry_labels_as_title(): void
+    public function test_registered_local_invoice_events_use_recipient_language_title(): void
     {
         $events = [
             'submitted',
@@ -93,7 +93,7 @@ class InvoiceNotificationCopyTest extends TestCase
 
             $this->service->send($this->invoice, $history);
 
-            $expectedTitle = config("notification_preferences.local_invoice_{$event}.label");
+            $expectedTitle = trans("notifications.invoice.events.{$event}.title", [], 'en');
             $this->assertNotEmpty($expectedTitle, "Registry label for local_invoice_{$event} must exist.");
 
             // Supplier or Finance should have received notification with expected title
@@ -111,7 +111,7 @@ class InvoiceNotificationCopyTest extends TestCase
         }
     }
 
-    public function test_unregistered_events_use_private_indonesian_map_title(): void
+    public function test_unregistered_events_use_localized_event_dictionary_title(): void
     {
         $unregisteredMap = [
             'delivery_missed' => 'Batas pengiriman berkas terlewat',
@@ -122,7 +122,8 @@ class InvoiceNotificationCopyTest extends TestCase
             'completed' => 'Pembayaran selesai',
         ];
 
-        foreach ($unregisteredMap as $event => $expectedTitle) {
+        foreach (array_keys($unregisteredMap) as $event) {
+            $expectedTitle = trans("notifications.invoice.events.{$event}.title", [], 'en');
             $history = LocalInvoiceStatusHistory::create([
                 'local_invoice_id' => $this->invoice->id,
                 'from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
@@ -163,10 +164,10 @@ class InvoiceNotificationCopyTest extends TestCase
             ->first();
 
         $this->assertNotNull($notification);
-        $this->assertSame('Local invoice: Custom Unknown Action', $notification->data['title']);
+        $this->assertSame(trans('notifications.invoice.updated.title', [], 'en'), $notification->data['title']);
     }
 
-    public function test_internal_events_use_indonesian_fallback_message_when_notes_empty(): void
+    public function test_internal_events_render_event_copy_without_parsing_persisted_audit_notes(): void
     {
         // 1. Without notes: fallback to 'Menunggu berkas fisik.'
         $historyWithoutNotes = LocalInvoiceStatusHistory::create([
@@ -185,7 +186,8 @@ class InvoiceNotificationCopyTest extends TestCase
             ->first();
 
         $this->assertNotNull($financeNotification);
-        $this->assertSame('SUB-2026-0001 — Menunggu berkas fisik.', $financeNotification->data['message']);
+        $expected = trans('notifications.invoice.events.submitted.message', ['submission' => 'SUB-2026-0001', 'invoice' => 'INV-2026-0001'], 'en');
+        $this->assertSame($expected, $financeNotification->data['message']);
 
         // 2. With notes: use notes
         $historyWithNotes = LocalInvoiceStatusHistory::create([
@@ -197,14 +199,15 @@ class InvoiceNotificationCopyTest extends TestCase
             'notes' => 'Dokumen lengkap dikirim via kurir.',
         ]);
 
-        $this->service->send($this->invoice, $historyWithNotes);
+        $this->service->send($this->invoice, $historyWithNotes, ['raw_notes' => $historyWithNotes->notes]);
 
         $financeNotification2 = $this->financeUser->notifications()
             ->where('data->event_key', 'local-invoice:'.$historyWithNotes->id)
             ->first();
 
         $this->assertNotNull($financeNotification2);
-        $this->assertSame('SUB-2026-0001 — Dokumen lengkap dikirim via kurir.', $financeNotification2->data['message']);
+        $this->assertSame($expected, $financeNotification2->data['message']);
+        $this->assertSame('Dokumen lengkap dikirim via kurir.', $historyWithNotes->fresh()->notes);
     }
 
     public function test_supplier_copy_for_submitted_resubmitted_shares_resolved_title(): void
@@ -221,7 +224,7 @@ class InvoiceNotificationCopyTest extends TestCase
 
             $this->service->send($this->invoice, $history);
 
-            $expectedTitle = config("notification_preferences.local_invoice_{$event}.label");
+            $expectedTitle = trans("notifications.invoice.events.{$event}.title", [], 'en');
 
             $financeNotification = $this->financeUser->notifications()
                 ->where('data->event_key', 'local-invoice:'.$history->id)
@@ -238,7 +241,7 @@ class InvoiceNotificationCopyTest extends TestCase
             $this->assertSame($financeNotification->data['title'], $supplierNotification->data['title']);
 
             // Supplier message uses invoice number
-            $this->assertSame('SUB-2026-0001 — INV-2026-0001', $supplierNotification->data['message']);
+            $this->assertSame(trans('notifications.invoice.confirmation.message', ['submission' => 'SUB-2026-0001', 'invoice' => 'INV-2026-0001'], 'en'), $supplierNotification->data['message']);
         }
     }
 
@@ -278,7 +281,7 @@ class InvoiceNotificationCopyTest extends TestCase
         $this->assertSame($countBefore, $countAfter, 'Duplicate send must not create duplicate notification rows.');
     }
 
-    public function test_send_physical_delivery_reminder_output_is_unchanged(): void
+    public function test_send_physical_delivery_reminder_is_localized_without_changing_identity(): void
     {
         $this->service->sendPhysicalDeliveryReminder($this->invoice);
 
@@ -287,8 +290,8 @@ class InvoiceNotificationCopyTest extends TestCase
             ->first();
 
         $this->assertNotNull($notification);
-        $this->assertSame('Pengingat pengiriman berkas fisik', $notification->data['title']);
-        $this->assertSame('SUB-2026-0001 — Jadwal penyerahan berkas fisik invoice Anda sudah dekat.', $notification->data['message']);
+        $this->assertSame(trans('notifications.invoice.events.physical_delivery_reminder.title', [], 'en'), $notification->data['title']);
+        $this->assertSame(trans('notifications.invoice.events.physical_delivery_reminder.message', ['submission' => 'SUB-2026-0001', 'invoice' => 'INV-2026-0001'], 'en'), $notification->data['message']);
         $this->assertSame('receipt', $notification->data['icon']);
         $this->assertSame(NotificationCategory::INVOICE, $notification->data['category']);
         $this->assertSame(NotificationDomain::LOCAL, $notification->data['domain']);
@@ -325,5 +328,35 @@ class InvoiceNotificationCopyTest extends TestCase
             ->first();
 
         $this->assertNotNull($supplierNotification, 'Supplier with default ON should still receive notification.');
+    }
+
+    public function test_structured_recipient_copy_keeps_user_notes_literal_and_audit_history_unchanged(): void
+    {
+        $this->supplierUser->preference()->create([
+            ...config('user_preferences.defaults'), 'locale' => 'id',
+        ]);
+        $raw = 'notifications.invoice.updated.title <b>Supplier remark</b>';
+        $history = LocalInvoiceStatusHistory::create([
+            'local_invoice_id' => $this->invoice->id,
+            'from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
+            'to_status' => LocalInvoice::STATUS_NEED_REVISION,
+            'actor_id' => $this->financeUser->id,
+            'event' => 'revision_requested',
+            'notes' => $raw,
+        ]);
+
+        app()->setLocale('en');
+        $this->service->send($this->invoice, $history, ['reason' => $raw]);
+        $notification = $this->supplierUser->notifications()
+            ->where('data->event_key', 'local-invoice:'.$history->id)->firstOrFail();
+
+        $this->assertSame(trans('notifications.invoice.events.revision_requested.title', [], 'id'), $notification->data['title']);
+        $this->assertSame(trans('notifications.invoice.events.revision_requested.message', [
+            'submission' => $this->invoice->submission_number,
+            'invoice' => $this->invoice->invoice_number,
+            'reason' => $raw,
+        ], 'id'), $notification->data['message']);
+        $this->assertSame($raw, $history->fresh()->notes);
+        $this->assertSame('en', app()->getLocale());
     }
 }

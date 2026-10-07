@@ -8,6 +8,7 @@ use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Support\BusinessTime;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -18,8 +19,9 @@ class AdminController extends Controller
         $usersByRole = User::where('is_active', true)->selectRaw('role, COUNT(*) as total')
             ->groupBy('role')->pluck('total', 'role')->toArray();
         $totalUsersActive = array_sum($usersByRole);
-        $transaksiBulanIni = PurchaseOrder::whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)->count();
+        $monthStart = BusinessTime::toStorage(BusinessTime::now()->startOfMonth());
+        $monthEnd = BusinessTime::toStorage(BusinessTime::now()->endOfMonth());
+        $transaksiBulanIni = PurchaseOrder::whereBetween('created_at', [$monthStart, $monthEnd])->count();
         $supplierCount = Supplier::count();
         $klaimAktif = MaterialClaim::whereIn('status', ['pending', 'responded'])->count();
 
@@ -49,6 +51,6 @@ class AdminController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return back()->with('success', "{$request->currency} exchange rate successfully updated.");
+        return back()->with('success', __('admin.feedback.rate_updated', ['currency' => $request->currency]));
     }
 }

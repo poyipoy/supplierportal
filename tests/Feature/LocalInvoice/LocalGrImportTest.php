@@ -443,9 +443,9 @@ class LocalGrImportTest extends TestCase
             ->get(route('finance.local-procurement.index'));
 
         $response->assertOk();
-        $response->assertSee('File Spreadsheet Goods Receipt (GR) ERP (.xlsx)');
-        $response->assertSee('Template Goods Receipt (GR) ERP');
-        $response->assertSee('Ketentuan Agregasi & Pemetaan ERP Infor Goods Receipt (GR):', false);
+        $response->assertSee(__('local_procurement.import.gr_file', [], 'en'));
+        $response->assertSee(__('local_procurement.import.gr_template', [], 'en'));
+        $response->assertSee(__('finance.review.gr_mapping', [], 'en'));
         $response->assertDontSee('whinh');
     }
 

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 
-class PaymentBatchDrpExport implements GeneratesWorkbook, TracksExportProgress
+class PaymentBatchDrpExport implements \Illuminate\Contracts\Translation\HasLocalePreference, GeneratesWorkbook, TracksExportProgress
 {
     use InteractsWithExportProgress;
 
@@ -57,7 +57,7 @@ class PaymentBatchDrpExport implements GeneratesWorkbook, TracksExportProgress
         }
 
         $renderer = app(PaymentBatchDrpSheetRenderer::class);
-        $spreadsheet = $renderer->render($batches);
+        $spreadsheet = $renderer->render($batches, locale: $this->preferredLocale());
 
         $tempPath = tempnam(sys_get_temp_dir(), 'drp_exp_');
         if ($tempPath === false) {

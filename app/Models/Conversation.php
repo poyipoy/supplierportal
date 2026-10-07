@@ -128,13 +128,13 @@ class Conversation extends Model
     {
         return match ($this->status) {
             self::STATUS_WAITING_SUPPLIER => $viewer->id === $this->supplier_user_id
-                ? 'Needs Reply'
-                : 'Waiting for Supplier',
+                ? __('purchasing.copy.needs_reply')
+                : __('purchasing.copy.waiting_for_supplier'),
             self::STATUS_WAITING_PURCHASING => $viewer->id === $this->purchasing_user_id
-                ? 'Needs Reply'
-                : 'Waiting for Purchasing',
-            self::STATUS_RESOLVED => 'Completed',
-            default => 'Active',
+                ? __('purchasing.copy.needs_reply')
+                : __('purchasing.copy.waiting_for_purchasing'),
+            self::STATUS_RESOLVED => __('purchasing.copy.completed'),
+            default => __('purchasing.copy.active'),
         };
     }
 
@@ -179,12 +179,12 @@ class Conversation extends Model
     public function getContextLabelAttribute(): string
     {
         if ($this->conversable_type === PurchaseRequisition::class) {
-            return 'PR: '.($this->conversable?->pr_number ?? 'Draft Requisition');
+            return 'PR: '.($this->conversable?->pr_number ?? __('purchasing.copy.draft_requisition'));
         }
         if ($this->conversable_type === PurchaseOrder::class) {
-            return 'PO: '.($this->conversable?->po_number ?? 'Purchase Order');
+            return 'PO: '.($this->conversable?->po_number ?? __('purchasing.copy.purchase_order'));
         }
 
-        return 'Diskusi Pengadaan';
+        return __('purchasing.copy.diskusi_pengadaan');
     }
 }

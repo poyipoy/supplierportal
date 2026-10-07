@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Detail PR: ' . ($pr->pr_number ?? 'Draft') . ' - ADASI Portal')
-@section('page-title', 'Detail Purchase Requisition: ' . ($pr->pr_number ?? 'Draft'))
+@section('title', __('purchasing.copy.detail_purchase_requisition').': '.($pr->pr_number ?? __('purchasing.copy.draft')).' - ADASI Portal')
+@section('page-title', __('purchasing.copy.detail_purchase_requisition').': '.($pr->pr_number ?? __('purchasing.copy.draft')))
 
 @push('styles')
 <style>
@@ -67,30 +67,30 @@
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('purchasing.dashboard'),
-        'Purchase Requisition' => \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index'),
-        ($pr->pr_number ?? 'Draft') => null,
+        __('purchasing.breadcrumbs.dashboard') => route('purchasing.dashboard'),
+        __('purchasing.copy.purchase_requisition') => \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index'),
+        ($pr->pr_number ?? __('purchasing.copy.draft')) => null,
     ]" />
 
     <x-ui.page-header
-        :title="$pr->pr_number ?? 'Requisition Draft'"
-        eyebrow="Purchase Requisition Details"
-        description="Review material requirements, invited suppliers, quotation responses, and workflow progress."
+        :title="$pr->pr_number ?? __('purchasing.closure.pr_draft')"
+        :eyebrow="__('purchasing.copy.purchase_requisition_details')"
+        :description="__('purchasing.copy.review_material_requirements_invited_suppliers_quotation_responses_and_workflow_progress')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="outline" size="sm" data-async-export data-export-source-singular="requisition" data-export-source-plural="requisitions" data-export-source-count="1" data-export-filtered="false" data-export-row-label="material rows" data-export-row-explanation="Each material item will be written as a separate Excel row.">
+            <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="outline" size="sm" data-async-export data-export-source-singular="{{ __('exports.sources.requisition') }}" data-export-source-plural="{{ __('exports.sources.requisitions') }}" data-export-source-count="1" data-export-filtered="false" data-export-row-label="{{ __('purchasing.copy.material_rows') }}" data-export-row-explanation="{{ __('purchasing.copy.each_material_item_will_be_written_as_a_separate_excel_row') }}">
                 <x-ui.icon name="file-spreadsheet" />
-                <span>Export Excel</span>
+                <span>{{ __('purchasing.copy.export_excel') }}</span>
             </x-ui.button>
             <x-status-badge type="pr" :status="$pr->status" size="lg" />
             @if($pr->status === 'bidding')
                 <span
                     class="ui-tabular-nums tw-inline-flex tw-items-center tw-rounded-ui-xs tw-border tw-border-primary tw-bg-primary-container tw-px-2.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-text-primary-container-foreground"
-                    title="{{ $submittedQuotationCount }} supplier quotations submitted"
-                    aria-label="{{ $submittedQuotationCount }} supplier quotations submitted"
+                    title="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
+                    aria-label="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
                 >
                     <x-ui.icon name="users" size="sm" class="me-1" />
-                    {{ $submittedQuotationCount }} Quotations
+                    {{ trans_choice('purchasing.summary.quotations', $submittedQuotationCount, ['count' => $submittedQuotationCount]) }}
                 </span>
             @endif
         </x-slot:actions>
@@ -100,29 +100,29 @@
     <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4">
         <x-ui.metric-card
             flat
-            label="Procurement Period"
+            :label="__('purchasing.copy.procurement_period')"
             :value="$pr->period->display_label"
             icon="calendar"
             tone="neutral"
         />
         <x-ui.metric-card
             flat
-            label="Total Requested Weight"
+            :label="__('purchasing.copy.total_requested_weight')"
             :value="\App\Support\NumberFormat::maxDecimals($totalKg) . ' kg'"
             icon="weight"
             tone="primary"
         />
         <x-ui.metric-card
             flat
-            label="Created By"
+            :label="__('purchasing.copy.created_by')"
             :value="$pr->creator->name ?? '-'"
             icon="user"
             tone="neutral"
         />
         <x-ui.metric-card
             flat
-            label="Date Created"
-            :value="$pr->created_at->format('d M Y, H:i')"
+            :label="__('purchasing.copy.date_created')"
+            :value="$regionalFormatter->timestamp($pr->created_at, 'datetime_comma')"
             icon="clock"
             tone="neutral"
         />
@@ -132,12 +132,12 @@
         {{-- Main Column --}}
         <div class="tw-grid tw-min-w-0 tw-gap-4">
             {{-- Audience & Notes Card --}}
-        <x-ui.card title="Audience and Instructions">
+        <x-ui.card :title="__('purchasing.copy.audience_and_instructions')">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <span class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase d-block mb-1">Invited Suppliers</span>
+                        <span class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase d-block mb-1">{{ __('purchasing.copy.invited_suppliers') }}</span>
                         @if($pr->invitedSuppliers->isEmpty())
-                            <span class="ui-status-chip ui-status-chip--neutral">All Registered Suppliers</span>
+                            <span class="ui-status-chip ui-status-chip--neutral">{{ __('purchasing.copy.all_registered_suppliers') }}</span>
                         @else
                             <div class="d-flex flex-wrap tw-gap-1.5">
                                 @foreach($pr->invitedSuppliers as $supplier)
@@ -149,11 +149,11 @@
                         @endif
                     </div>
                     <div class="col-md-6">
-                        <span class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase d-block mb-1">Requisition Notes</span>
+                        <span class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase d-block mb-1">{{ __('purchasing.copy.requisition_notes') }}</span>
                         @if($pr->notes)
                             <div class="tw-text-on-surface tw-text-ui-sm tw-whitespace-pre-line">{{ $pr->notes }}</div>
                         @else
-                            <span class="tw-text-outline tw-text-ui-sm fst-italic">No additional instructions provided.</span>
+                            <span class="tw-text-outline tw-text-ui-sm fst-italic">{{ __('purchasing.copy.no_additional_instructions_provided') }}</span>
                         @endif
                     </div>
                 </div>
@@ -161,39 +161,39 @@
 
             {{-- Material List Table --}}
             <x-ui.data-table
-                :title="'Material Requirements (' . $pr->items->count() . ' items)'"
-                description="Required specifications, shapes, dimensions, and computed weights."
+                :title="__('purchasing.page.material_count', ['count' => $pr->items->count()])"
+                :description="__('purchasing.copy.required_specifications_shapes_dimensions_and_computed_weights')"
             >
                 <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                     <thead class="table-light text-center">
                         <tr>
-                            <th scope="col" style="width: 40px;">No</th>
+                            <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
                             <th scope="col">HS Code</th>
-                            <th scope="col">HS Status</th>
-                            <th scope="col" class="text-start">Material</th>
-                            <th scope="col">Shape</th>
-                            <th scope="col" class="text-start">Dimensions (mm)</th>
-                            <th scope="col">Qty</th>
-                            <th scope="col" class="text-end">KG / Unit</th>
-                            <th scope="col" class="text-end">Total Weight</th>
-                            <th scope="col">Remark</th>
+                            <th scope="col">{{ __('purchasing.copy.hs_status') }}</th>
+                            <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.shape') }}</th>
+                            <th scope="col" class="text-start">{{ __('purchasing.copy.dimensions_mm') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.qty') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($pr->items as $index => $item)
                             @php
                                 $hsStatusLabel = match (true) {
-                                    $item->hs_code_source === 'manual' => 'Manual',
-                                    $item->hs_code_resolution_status === 'matched' => 'Auto',
-                                    $item->hs_code_source === 'legacy' => 'Legacy',
-                                    $item->hs_code_resolution_status === 'no_rule' => 'No Rule',
-                                    $item->hs_code_resolution_status === 'ambiguous' => 'Ambiguous',
-                                    $item->hs_code_resolution_status === 'unmapped_material' => 'Unmapped',
-                                    default => 'Unresolved',
+                                    $item->hs_code_source === 'manual' => __('purchasing.copy.manual_selection'),
+                                    $item->hs_code_resolution_status === 'matched' => __('purchasing.copy.auto_matched'),
+                                    $item->hs_code_source === 'legacy' => __('purchasing.copy.legacy_source'),
+                                    $item->hs_code_resolution_status === 'no_rule' => __('purchasing.copy.no_rule'),
+                                    $item->hs_code_resolution_status === 'ambiguous' => __('purchasing.copy.ambiguous'),
+                                    $item->hs_code_resolution_status === 'unmapped_material' => __('purchasing.copy.unmapped_material'),
+                                    default => __('purchasing.copy.unresolved'),
                                 };
-                                $hsStatusTone = match ($hsStatusLabel) {
-                                    'Auto' => 'ui-status-chip--success',
-                                    'Manual' => 'ui-status-chip--warning',
+                                $hsStatusTone = match (true) {
+                                    $item->hs_code_source === 'manual' => 'ui-status-chip--warning',
+                                    $item->hs_code_resolution_status === 'matched' => 'ui-status-chip--success',
                                     default => 'ui-status-chip--neutral',
                                 };
                             @endphp
@@ -220,29 +220,29 @@
 
             {{-- Incoming Quotations Table --}}
             <x-ui.data-table
-                title="Incoming Supplier Quotations"
-                :description="$quotations->count() . ' supplier offers submitted for this requisition.'"
+                :title="__('purchasing.copy.incoming_supplier_quotations')"
+                :description="__('purchasing.page.quotation_count', ['count' => $quotations->count()])"
                 :empty="$quotations->isEmpty()"
             >
                 <x-slot:emptyState>
                     <x-ui.empty-state
                         icon="inbox"
-                        title="No quotations received yet"
-                        description="Supplier responses will appear here as soon as they submit their pricing."
+                        :title="__('purchasing.copy.no_quotations_received_yet')"
+                        :description="__('purchasing.copy.supplier_responses_will_appear_here_as_soon_as_they_submit_their_pricing')"
                     />
                 </x-slot:emptyState>
 
                 <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                     <thead class="table-light text-center">
                         <tr>
-                            <th scope="col">Supplier</th>
-                            <th scope="col">Curr</th>
-                            <th scope="col" class="text-end">Total Price</th>
-                            <th scope="col" class="text-end">Estimated IDR</th>
-                            <th scope="col">Est. Delivery</th>
-                            <th scope="col">Submitted</th>
-                            <th scope="col">Status</th>
-                            <th scope="col" class="text-end" style="width: 140px;">Action</th>
+                            <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.curr') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.total_price') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.estimated_idr') }}</th>
+                            <th scope="col">{{ __('common.labels_review.est_delivery') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.submitted') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.status') }}</th>
+                            <th scope="col" class="text-end" style="width: 140px;">{{ __('purchasing.copy.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -261,28 +261,28 @@
                                     @if($quotation->total_idr !== null)
                                         Rp {{ \App\Support\NumberFormat::maxDecimals($quotation->total_idr) }}
                                         @if($isLowest)
-                                            <x-ui.icon name="circle-check" class="ms-1 text-success" aria-label="Lowest estimated total" />
+                                            <x-ui.icon name="circle-check" class="ms-1 text-success" aria-label="{{ __('purchasing.copy.lowest_estimated_total') }}" />
                                         @endif
                                     @else
                                         <span class="tw-text-outline">-</span>
                                     @endif
                                 </td>
                                 <td class="text-center ui-tabular-nums tw-text-on-surface-variant">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
-                                <td class="text-center ui-tabular-nums tw-text-on-surface-variant">{{ $quotation->submitted_at ? $quotation->submitted_at->format('d M Y, H:i') : '-' }}</td>
+                                <td class="text-center ui-tabular-nums tw-text-on-surface-variant">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</td>
                                 <td class="text-center"><x-status-badge type="quotation" :status="$quotation->status" /></td>
                                 <td class="text-end">
                                     <div class="d-inline-flex align-items-center tw-gap-1.5 justify-content-end">
                                         <x-ui.icon-button
                                             :href="route('purchasing.quotations.show', [$quotation, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()])"
                                             icon="eye"
-                                            label="View quotation details"
+                                            :label="__('purchasing.copy.view_quotation_details')"
                                             size="sm"
                                         />
                                         @if($submittedQuotationCount >= 2)
                                             <x-ui.icon-button
                                                 :href="\App\Support\PurchasingNavigation::toRoute('purchasing.comparison.inter-supplier', ['pr_id' => $pr])"
                                                 icon="bar-chart-2"
-                                                label="Launch side-by-side comparison"
+                                                :label="__('purchasing.copy.launch_side_by_side_comparison')"
                                                 variant="secondary"
                                                 size="sm"
                                             />
@@ -297,18 +297,18 @@
         </div>
 
         {{-- Sidebar Column --}}
-        <aside class="tw-grid tw-gap-4" aria-label="Requisition actions and progress">
+        <aside class="tw-grid tw-gap-4" aria-label="{{ __('purchasing.copy.requisition_actions_and_progress') }}">
             {{-- Action Card --}}
-            <x-ui.card title="Workflow Actions">
+            <x-ui.card :title="__('purchasing.copy.workflow_actions')">
                 <div class="tw-grid tw-gap-3">
                     @if($pr->created_by !== auth()->id())
-                        <x-ui.alert tone="info" title="Read-only access">Created by {{ $pr->creator->name ?? 'another Purchasing user' }}.</x-ui.alert>
+                        <x-ui.alert tone="info" :title="__('purchasing.copy.read_only_access')">{{ __('common.final_review.created_by', ['name' => $pr->creator->name ?? __('purchasing.copy.another_purchasing_user')]) }}</x-ui.alert>
                     @elseif($pr->status === 'draft')
-                        <x-ui.alert tone="warning" title="Draft requisition">Complete the material list before submitting this requisition.</x-ui.alert>
+                        <x-ui.alert tone="warning" :title="__('purchasing.copy.draft_requisition')">{{ __('purchasing.copy.complete_the_material_list_before_submitting_this_requisition') }}</x-ui.alert>
                         <div class="tw-grid tw-gap-2">
                             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr)" variant="outline" size="sm">
                                 <x-ui.icon name="square-pen" size="sm" />
-                                <span>Edit Draft</span>
+                                <span>{{ __('purchasing.copy.edit_draft') }}</span>
                             </x-ui.button>
                             <form action="{{ route('purchasing.requisitions.submit', $pr) }}" method="POST">
                                 @csrf
@@ -316,25 +316,25 @@
                                 <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                                 <x-ui.button type="button" class="btn-submit tw-w-full" size="sm">
                                     <x-ui.icon name="send" size="sm" />
-                                    <span>Submit Requisition</span>
+                                    <span>{{ __('purchasing.copy.submit_requisition') }}</span>
                                 </x-ui.button>
                             </form>
                         </div>
                     @elseif($pr->status === 'rejected')
-                        <x-ui.alert tone="error" title="Requisition rejected">Review the recorded notes and revise the requisition before resubmitting.</x-ui.alert>
+                        <x-ui.alert tone="error" :title="__('purchasing.copy.requisition_rejected')">{{ __('purchasing.copy.review_the_recorded_notes_and_revise_the_requisition_before_resubmitting') }}</x-ui.alert>
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr)" variant="danger" size="sm">
                             <x-ui.icon name="rotate-ccw" size="sm" />
-                            <span>Revise & Resubmit</span>
+                            <span>{{ __('purchasing.copy.revise_resubmit') }}</span>
                         </x-ui.button>
                     @else
-                        <x-ui.alert tone="success" title="Requisition active">This requisition has been submitted and is active in procurement.</x-ui.alert>
+                        <x-ui.alert tone="success" :title="__('purchasing.copy.requisition_active')">{{ __('purchasing.copy.this_requisition_has_been_submitted_and_is_active_in_procurement') }}</x-ui.alert>
                     @endif
                 </div>
             </x-ui.card>
 
             {{-- Supplier Chat Channels --}}
             @if($pr->quotations && $pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->count() > 0)
-                <x-ui.card title="Supplier Discussions" description="Open direct supplier chat threads for this PR.">
+                <x-ui.card :title="__('purchasing.copy.supplier_discussions')" :description="__('purchasing.copy.open_direct_supplier_chat_threads_for_this_pr')">
                     <div class="tw-grid tw-gap-2">
                         @foreach($pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->unique('supplier_id') as $quotation)
                             <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form data-managed-submit>
@@ -351,23 +351,23 @@
             @endif
 
             {{-- Workflow Timeline --}}
-            <x-ui.card title="Workflow Progress">
+            <x-ui.card :title="__('purchasing.copy.workflow_progress')">
                 <ol class="pr-timeline">
                     <li class="pr-timeline-item is-complete">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold text-primary">Created (Draft)</div>
-                        <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $pr->created_at->toIso8601String() }}">{{ $pr->created_at->format('d M Y, H:i') }}</time>
+                        <div class="tw-text-ui-sm fw-bold text-primary">{{ __('purchasing.copy.created_draft') }}</div>
+                        <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $pr->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->created_at, 'datetime_comma') }}</time>
                     </li>
                     <li class="pr-timeline-item {{ $hasReachedSubmitted ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold {{ $hasReachedSubmitted ? 'text-primary' : 'tw-text-outline' }}">Submitted</div>
+                        <div class="tw-text-ui-sm fw-bold {{ $hasReachedSubmitted ? 'text-primary' : 'tw-text-outline' }}">{{ __('purchasing.copy.submitted') }}</div>
                         @if($hasReachedSubmitted)
-                            <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $pr->updated_at->format('d M Y, H:i') }}</time>
+                            <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->updated_at, 'datetime_comma') }}</time>
                         @endif
                     </li>
                     <li class="pr-timeline-item {{ $hasReachedBidding ? 'is-current' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw-text-outline' }}">Supplier Bidding</div>
+                        <div class="tw-text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw-text-outline' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
                     </li>
                 </ol>
             </x-ui.card>
@@ -382,10 +382,10 @@
         const $btn = $(this);
         const form = $btn.closest('form');
         AdasiAlert.confirm({
-            title: @json('Submit Requisition?'),
-            text: @json('Status will change to Submitted and cannot be edited anymore.'),
-            confirmText: @json('Yes, Submit!'),
-            cancelText: @json('Cancel')
+            title: @json(__('purchasing.copy.submit_requisition')),
+            text: @json(__('purchasing.copy.status_will_change_to_submitted_and_cannot_be_edited_anymore')),
+            confirmText: @json(__('purchasing.copy.yes_submit')),
+            cancelText: @json(__('purchasing.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
                 window.AdasiButton?.startLoading($btn[0]);

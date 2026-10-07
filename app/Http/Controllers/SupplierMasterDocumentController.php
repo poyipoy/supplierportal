@@ -18,7 +18,11 @@ class SupplierMasterDocumentController extends Controller
         return Storage::disk('private')->download(
             $document->file_path,
             $filename,
-            ['X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store']
+            [
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'no-store, private',
+                'Pragma' => 'no-cache',
+            ]
         );
     }
 }

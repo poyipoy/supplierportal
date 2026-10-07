@@ -30,6 +30,27 @@ class MaterialMaster extends Model
         self::HS_CATEGORY_OTHER,
     ];
 
+    public static function hsCategoryLabel(string $category): string
+    {
+        return in_array($category, self::HS_CATEGORIES, true)
+            ? __('materials.categories.'.$category)
+            : __('common.unknown');
+    }
+
+    public static function densityProfileLabel(string $profile): string
+    {
+        return in_array($profile, self::DENSITY_PROFILES, true)
+            ? __('admin.copy.density_'.$profile)
+            : __('common.unknown');
+    }
+
+    public static function manufacturerScopeLabel(string $scope): string
+    {
+        return in_array($scope, self::MANUFACTURER_SCOPES, true)
+            ? __('admin.copy.manufacturer_scope_'.$scope)
+            : __('common.unknown');
+    }
+
     public const DENSITY_STEEL = 'steel';
 
     public const DENSITY_ALUMINIUM = 'aluminium';

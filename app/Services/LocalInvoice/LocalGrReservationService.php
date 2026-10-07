@@ -21,12 +21,12 @@ class LocalGrReservationService
     {
         $ids = $this->normalizeIds($goodsReceiptIds);
         if ($ids === []) {
-            throw ValidationException::withMessages(['goods_receipt_ids' => 'Select at least one Goods Receipt.']);
+            throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_select')]);
         }
 
         $po = LocalPurchaseOrder::whereKey($purchaseOrderId)->lockForUpdate()->first();
         if (! $po || (int) $po->supplier_id !== (int) $supplier->id) {
-            throw ValidationException::withMessages(['local_purchase_order_id' => 'The selected PO does not belong to this supplier.']);
+            throw ValidationException::withMessages(['local_purchase_order_id' => __('local_procurement.validation.po_owner')]);
         }
         $current = LocalGoodsReceipt::where('current_invoice_id', $invoice->id)->orderBy('id')->lockForUpdate()->get();
         if ($po->status !== LocalPurchaseOrder::STATUS_OPEN) {
@@ -34,21 +34,21 @@ class LocalGrReservationService
                 && $current->isNotEmpty()
                 && $current->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all() === $ids;
             if (! $continuingClosedReservation) {
-                throw ValidationException::withMessages(['local_purchase_order_id' => 'Only an OPEN PO can accept a new GR reservation. Existing reservations may continue after closure.']);
+                throw ValidationException::withMessages(['local_purchase_order_id' => __('local_procurement.validation.reservation_open')]);
             }
         }
         $receipts = LocalGoodsReceipt::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
         if ($receipts->count() !== count($ids)) {
-            throw ValidationException::withMessages(['goods_receipt_ids' => 'One or more selected Goods Receipts do not exist.']);
+            throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_missing')]);
         }
 
         foreach ($receipts as $receipt) {
             if ((int) $receipt->local_purchase_order_id !== (int) $po->id) {
-                throw ValidationException::withMessages(['goods_receipt_ids' => "GR {$receipt->gr_number} does not belong to PO {$po->po_number}."]);
+                throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_po', ['gr' => $receipt->gr_number, 'po' => $po->po_number])]);
             }
             $ownedByInvoice = (int) $receipt->current_invoice_id === (int) $invoice->id;
             if (! ($receipt->status === LocalGoodsReceipt::STATUS_AVAILABLE || ($receipt->status === LocalGoodsReceipt::STATUS_RESERVED && $ownedByInvoice))) {
-                throw ValidationException::withMessages(['goods_receipt_ids' => "GR {$receipt->gr_number} is no longer available."]);
+                throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_unavailable', ['gr' => $receipt->gr_number])]);
             }
         }
 
@@ -60,7 +60,7 @@ class LocalGrReservationService
         if (bccomp(bcadd((string) $otherInvoiced, (string) $invoice->invoice_amount, 2), (string) $po->total_amount, 2) > 0) {
             $remaining = bcsub((string) $po->total_amount, (string) $otherInvoiced, 2);
             throw ValidationException::withMessages([
-                'goods_receipt_ids' => 'Invoice DPP exceeds the remaining PO financial ceiling of Rp '.number_format((float) $remaining, 2, ',', '.').'.',
+                'goods_receipt_ids' => __('local_procurement.validation.dpp_ceiling', ['amount' => number_format((float) $remaining, 2, ',', '.')]),
             ]);
         }
 
@@ -142,11 +142,11 @@ class LocalGrReservationService
         }
         $receipts = LocalGoodsReceipt::where('current_invoice_id', $invoice->id)->orderBy('id')->lockForUpdate()->get();
         if ($receipts->isEmpty()) {
-            throw ValidationException::withMessages(['goods_receipt_ids' => 'The invoice has no active GR reservation.']);
+            throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_reservation_missing')]);
         }
         foreach ($receipts as $receipt) {
             if ($receipt->status !== LocalGoodsReceipt::STATUS_RESERVED) {
-                throw ValidationException::withMessages(['goods_receipt_ids' => "GR {$receipt->gr_number} is not RESERVED by this invoice."]);
+                throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_not_reserved', ['gr' => $receipt->gr_number])]);
             }
             $before = $receipt->toArray();
             $receipt->update(['status' => LocalGoodsReceipt::STATUS_INVOICED, 'updated_by' => $actor->id]);
@@ -161,7 +161,7 @@ class LocalGrReservationService
     {
         $normalized = array_map(fn ($id) => filter_var($id, FILTER_VALIDATE_INT), $ids);
         if (in_array(false, $normalized, true) || in_array(0, $normalized, true) || count(array_unique($normalized)) !== count($normalized)) {
-            throw ValidationException::withMessages(['goods_receipt_ids' => 'Goods Receipt selection contains an invalid or duplicate value.']);
+            throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_invalid')]);
         }
         sort($normalized, SORT_NUMERIC);
 

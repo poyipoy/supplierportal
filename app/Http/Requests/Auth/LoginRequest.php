@@ -98,7 +98,7 @@ class LoginRequest extends FormRequest
 
         $targetHash = $isActiveAndEligible
             ? (string) $user->password
-            : (string) config('auth_security.dummy_hash');
+            : (string) config('auth_security.dummy_hash', '$2y$12$e80yq9M2XvH0WJ1aR8P1eeS4xLgXk2.mK6uV4C7W1A4rK5eS8V1ee');
 
         $passwordMatches = Hash::check($this->string('password')->toString(), $targetHash);
 

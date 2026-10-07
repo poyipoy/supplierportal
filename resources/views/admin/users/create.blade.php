@@ -1,17 +1,17 @@
 @extends('layouts.app')
-@section('title', 'Add New User - ADASI Portal')
-@section('page-title', 'Create User')
+@section('title', __('admin.copy.add_new_user_adasi_portal'))
+@section('page-title', __('admin.copy.create_user'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-24">
     <x-ui.page-header
-        title="Add User"
-        description="Create an account with the approved role and supplier organization context."
-        eyebrow="Admin Users"
+        :title="__('admin.copy.add_user')"
+        :description="__('admin.copy.create_an_account_with_the_approved_role_and_supplier_organization_context')"
+        :eyebrow="__('admin.copy.admin_users')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" size="sm" /> Back to User List
+                <x-ui.icon name="arrow-left" size="sm" /> {{ __('admin.copy.back_to_user_list') }}
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -21,13 +21,13 @@
 
         {{-- Section 1: Account & Security Profile --}}
         <x-ui.form-section
-            title="Account Identity and Access"
-            description="Identity, credentials, role, and activation status for this account."
+            :title="__('admin.copy.account_identity_and_access')"
+            :description="__('admin.copy.identity_credentials_role_and_activation_status_for_this_account')"
         >
             <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-name">
-                        Full Name <span class="text-danger">*</span>
+                        {{ __('admin.copy.full_name') }} <span class="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -35,7 +35,7 @@
                         id="user-name"
                         class="form-control @error('name') is-invalid @enderror"
                         value="{{ old('name') }}"
-                        placeholder="e.g. John Doe"
+                        placeholder="{{ __('admin.copy.e_g_john_doe') }}"
                         required
                     >
                     @error('name')
@@ -45,7 +45,7 @@
 
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-email">
-                        Email Address <span class="text-danger">*</span>
+                        {{ __('admin.copy.email_address') }} <span class="text-danger">*</span>
                     </label>
                     <input
                         type="email"
@@ -53,7 +53,7 @@
                         id="user-email"
                         class="form-control @error('email') is-invalid @enderror"
                         value="{{ old('email') }}"
-                        placeholder="e.g. user@astradaido.co.id"
+                        placeholder="{{ __('admin.copy.e_g_user_astradaido_co_id') }}"
                         required
                     >
                     @error('email')
@@ -63,16 +63,16 @@
 
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="role-select">
-                        Portal Role <span class="text-danger">*</span>
+                        {{ __('admin.copy.portal_role') }} <span class="text-danger">*</span>
                     </label>
                     <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
-                        <option value="">-- Select Access Role --</option>
-                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin (Full System Control)</option>
-                        <option value="purchasing" {{ old('role') == 'purchasing' ? 'selected' : '' }}>Purchasing (Requisitions & POs)</option>
-                        <option value="supplier" {{ old('role') == 'supplier' ? 'selected' : '' }}>Supplier (Material &amp; Invoicing)</option>
-                        <option value="qc" {{ old('role') == 'qc' ? 'selected' : '' }}>Quality Control (Inspections & Claims)</option>
-                        <option value="finance" {{ old('role') == 'finance' ? 'selected' : '' }}>Finance (Accounts Payable & DRP)</option>
-                        <option value="ga" {{ old('role') == 'ga' ? 'selected' : '' }}>General Affairs (Claims & Employees)</option>
+                        <option value="">{{ __('admin.copy.select_access_role') }}</option>
+                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>{{ __('admin.copy.admin_full_system_control') }}</option>
+                        <option value="purchasing" {{ old('role') == 'purchasing' ? 'selected' : '' }}>{{ __('admin.copy.purchasing_requisitions_pos') }}</option>
+                        <option value="supplier" {{ old('role') == 'supplier' ? 'selected' : '' }}>{{ __('common.final_copy.supplier_material_invoicing') }}</option>
+                        <option value="qc" {{ old('role') == 'qc' ? 'selected' : '' }}>{{ __('admin.copy.quality_control_inspections_claims') }}</option>
+                        <option value="finance" {{ old('role') == 'finance' ? 'selected' : '' }}>{{ __('admin.copy.finance_accounts_payable_drp') }}</option>
+                        <option value="ga" {{ old('role') == 'ga' ? 'selected' : '' }}>{{ __('admin.copy.general_affairs_claims_employees') }}</option>
                     </select>
                     @error('role')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -83,14 +83,14 @@
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
                         <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="isActive">
-                            Active Account (Allowed to sign in)
+                            {{ __('admin.copy.active_account_allowed_to_sign_in') }}
                         </label>
                     </div>
                 </div>
 
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password">
-                        Initial Password <span class="text-danger">*</span>
+                        {{ __('admin.copy.initial_password') }} <span class="text-danger">*</span>
                     </label>
                     <input
                         type="password"
@@ -101,9 +101,9 @@
                         minlength="12"
                         maxlength="255"
                         autocomplete="new-password"
-                        placeholder="Minimum 12 characters"
+                        placeholder="{{ __('admin.copy.minimum_12_characters') }}"
                     >
-                    <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1 tw-block">Must be at least 12 characters long.</small>
+                    <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1 tw-block">{{ __('admin.copy.must_be_at_least_12_characters_long') }}</small>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -111,7 +111,7 @@
 
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password-confirmation">
-                        Confirm Initial Password <span class="text-danger">*</span>
+                        {{ __('admin.copy.confirm_initial_password') }} <span class="text-danger">*</span>
                     </label>
                     <input
                         type="password"
@@ -122,7 +122,7 @@
                         minlength="12"
                         maxlength="255"
                         autocomplete="new-password"
-                        placeholder="Re-enter same password"
+                        placeholder="{{ __('admin.copy.re_enter_same_password') }}"
                     >
                 </div>
             </div>
@@ -133,13 +133,13 @@
             @include('admin.users.supplier-scopes')
 
             <x-ui.form-section
-                title="Supplier Organization"
-                description="Company identity, contact details, and material category."
+                :title="__('admin.copy.supplier_organization')"
+                :description="__('admin.copy.company_identity_contact_details_and_material_category')"
             >
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <div>
                         <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-company-name">
-                            Company Legal Name (PT / CV / Corp) <span class="text-danger">*</span>
+                            {{ __('admin.copy.company_legal_name_pt_cv_corp') }} <span class="text-danger">*</span>
                         </label>
                         <input
                             type="text"
@@ -147,7 +147,7 @@
                             id="supplier-company-name"
                             class="form-control @error('company_name') is-invalid @enderror"
                             value="{{ old('company_name') }}"
-                            placeholder="e.g. PT Daido Steel Indah"
+                            placeholder="{{ __('admin.copy.e_g_pt_daido_steel_indah') }}"
                         >
                         @error('company_name')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -156,7 +156,7 @@
 
                     <div>
                         <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-category">
-                            Material Supply Category <span class="text-danger">*</span>
+                            {{ __('admin.copy.material_supply_category') }} <span class="text-danger">*</span>
                         </label>
                         <input
                             type="text"
@@ -164,7 +164,7 @@
                             id="supplier-category"
                             class="form-control @error('category') is-invalid @enderror"
                             value="{{ old('category') }}"
-                            placeholder="e.g. Special Steel, Tool Steel, Rods"
+                            placeholder="{{ __('admin.copy.e_g_special_steel_tool_steel_rods') }}"
                         >
                         @error('category')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -173,7 +173,7 @@
 
                     <div>
                         <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-phone">
-                            Phone / Contact Number <span class="text-danger">*</span>
+                            {{ __('admin.copy.phone_contact_number') }} <span class="text-danger">*</span>
                         </label>
                         <input
                             type="text"
@@ -181,7 +181,7 @@
                             id="supplier-phone"
                             class="form-control @error('phone') is-invalid @enderror"
                             value="{{ old('phone') }}"
-                            placeholder="e.g. +62 21 8934567"
+                            placeholder="{{ __('admin.copy.e_g_62_21_8934567') }}"
                         >
                         @error('phone')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -190,7 +190,7 @@
 
                     <div>
                         <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-npwp">
-                            Tax ID / NPWP <span class="text-danger">*</span>
+                            {{ __('admin.copy.tax_id_npwp') }} <span class="text-danger">*</span>
                         </label>
                         <input
                             type="text"
@@ -198,7 +198,7 @@
                             id="supplier-npwp"
                             class="form-control @error('npwp') is-invalid @enderror"
                             value="{{ old('npwp') }}"
-                            placeholder="e.g. 01.234.567.8-901.000"
+                            placeholder="{{ __('admin.copy.e_g_01_234_567_8_901_000') }}"
                         >
                         @error('npwp')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -207,14 +207,14 @@
 
                     <div class="sm:tw-col-span-2">
                         <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-address">
-                            Registered Office Address <span class="text-danger">*</span>
+                            {{ __('admin.copy.registered_office_address') }} <span class="text-danger">*</span>
                         </label>
                         <textarea
                             name="address"
                             id="supplier-address"
                             class="form-control @error('address') is-invalid @enderror"
                             rows="3"
-                            placeholder="Full address of factory or office..."
+                            placeholder="{{ __('admin.copy.full_address_of_factory_or_office') }}"
                         >{{ old('address') }}</textarea>
                         @error('address')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -228,11 +228,11 @@
         <x-ui.action-bar>
             <x-slot:right>
                 <x-ui.button :href="route('admin.users.index')" variant="ghost">
-                    Cancel
+                    {{ __('admin.copy.cancel') }}
                 </x-ui.button>
                 <x-ui.button type="submit">
                     <x-ui.icon name="check" size="sm" />
-                    Create User Account
+                    {{ __('admin.copy.create_user_account') }}
                 </x-ui.button>
             </x-slot:right>
         </x-ui.action-bar>
@@ -252,9 +252,9 @@
         const hiddenScopesContainer = document.getElementById('hidden-scopes-container');
 
         const scopeDescriptions = {
-            import: 'Access: Material Requisitions (PR), Quotations, Purchase Orders (PO), and QC Inspections.',
-            local: 'Access: Local Invoice Submissions, Physical Document Verification, and Payment Processing.',
-            both: 'Full Access: Both Import Material Procurement and Local Invoice Processing.'
+            import: @json(__('admin.copy.access_material_requisitions_pr_quotations_purchase_orders_po_and_qc_inspections')),
+            local: @json(__('admin.copy.access_local_invoice_submissions_physical_document_verification_and_payment_processing')),
+            both: @json(__('admin.copy.full_access_both_import_material_procurement_and_local_invoice_processing'))
         };
 
         const requiredSupplierFields = [

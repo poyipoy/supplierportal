@@ -13,8 +13,8 @@ class EnforceSupplierDomain
     public function handle(Request $request, Closure $next)
     {
         if ($request->routeIs('attachments.show')) {
-            $attachment = Attachment::find($request->route('id'));
-            if ($attachment && in_array($attachment->attachable_type, [
+            $attachment = $request->route('attachment');
+            if ($attachment instanceof Attachment && in_array($attachment->attachable_type, [
                 SupplierOverpaymentRefund::class,
                 LocalPurchaseOrder::class,
             ], true)) {

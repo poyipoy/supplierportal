@@ -3,8 +3,10 @@
 namespace App\Http\Requests\LocalInvoice;
 
 use App\Models\LocalInvoice;
+use App\Services\LocalInvoice\DeliveryScheduleValidator;
 use App\Services\LocalInvoice\InvoiceFilenameParser;
 use App\Services\VendorMaster\VendorMasterService;
+use App\Support\BusinessTime;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -152,10 +154,14 @@ class StoreLocalInvoiceRequest extends FormRequest
             'scheduled_physical_delivery_date' => [
                 'nullable',
                 'date_format:Y-m-d',
-                'after_or_equal:today',
+                'after_or_equal:'.BusinessTime::today()->toDateString(),
                 function ($attribute, $value, $fail) {
-                    if (! empty($value) && Carbon::parse($value)->dayOfWeek !== Carbon::WEDNESDAY) {
-                        $fail('Jadwal penyerahan dokumen fisik harus jatuh pada hari Rabu.');
+                    if (! empty($value)) {
+                        try {
+                            app(DeliveryScheduleValidator::class)->assert($value, $attribute);
+                        } catch (ValidationException $e) {
+                            $fail('Jadwal penyerahan dokumen fisik harus jatuh pada hari Rabu.');
+                        }
                     }
                 },
             ],
@@ -190,34 +196,34 @@ class StoreLocalInvoiceRequest extends FormRequest
     public function messages(): array
     {
         $messages = [
-            'tax_invoice_number.required' => 'Nomor Faktur Pajak wajib diisi untuk vendor PKP.',
-            'tax_invoice_number.regex' => 'Format Nomor Faktur Pajak tidak valid. Gunakan format Coretax 17 digit (contoh: 01.00.26.00000000001) atau 16 digit e-Faktur.',
-            'tax_invoice_number.unique' => 'Nomor Faktur Pajak ini sudah pernah digunakan pada tagihan Anda sebelumnya.',
-            'invoice_number.required' => 'Nomor Invoice wajib diisi.',
-            'invoice_number.unique' => 'Nomor Invoice ini sudah pernah Anda submit sebelumnya.',
-            'invoice_date.required' => 'Tanggal Invoice wajib diisi.',
-            'invoice_amount.required' => 'Nilai DPP Invoice wajib diisi.',
-            'goods_receipt_ids.required_with' => 'Paling sedikit satu Penerimaan Barang (GR) utuh wajib dipilih.',
-            'goods_receipt_ids.min' => 'Paling sedikit satu Penerimaan Barang (GR) utuh wajib dipilih.',
-            'invoice.required' => 'Berkas Invoice wajib diunggah.',
-            'tax_invoice.required' => 'Berkas Faktur Pajak wajib diunggah untuk vendor PKP.',
-            'delivery_note.required' => 'Berkas Surat Jalan (Delivery Note) wajib diunggah untuk kategori Barang.',
-            'scheduled_physical_delivery_date.after_or_equal' => 'Jadwal penyerahan dokumen fisik tidak boleh di masa lampau.',
+            'tax_invoice_number.required' => __('local_invoice.validation.tax_number_required'),
+            'tax_invoice_number.regex' => __('local_invoice.validation.tax_number_format'),
+            'tax_invoice_number.unique' => __('local_invoice.validation.tax_number_duplicate'),
+            'invoice_number.required' => __('local_invoice.validation.invoice_number_required'),
+            'invoice_number.unique' => __('local_invoice.validation.invoice_duplicate'),
+            'invoice_date.required' => __('local_invoice.validation.invoice_date_required'),
+            'invoice_amount.required' => __('local_invoice.validation.dpp_required'),
+            'goods_receipt_ids.required_with' => __('local_invoice.validation.whole_gr_required'),
+            'goods_receipt_ids.min' => __('local_invoice.validation.whole_gr_required'),
+            'invoice.required' => __('local_invoice.validation.invoice_file_required'),
+            'tax_invoice.required' => __('local_invoice.validation.tax_file_required'),
+            'delivery_note.required' => __('local_invoice.validation.dn_file_required'),
+            'scheduled_physical_delivery_date.after_or_equal' => __('local_invoice.validation.delivery_past'),
         ];
 
         foreach ([
-            'invoice' => 'Berkas Invoice',
-            'tax_invoice' => 'Faktur Pajak',
-            'delivery_note' => 'Surat Jalan',
-            'supporting' => 'Dokumen Pendukung',
+            'invoice' => __('local_invoice.labels.invoice'),
+            'tax_invoice' => __('local_invoice.labels.tax_invoice'),
+            'delivery_note' => __('local_invoice.labels.delivery_note'),
+            'supporting' => __('local_invoice.labels.supporting'),
         ] as $field => $label) {
             if (is_array($this->file($field))) {
-                $messages["{$field}.max"] = "Maksimal 5 berkas yang diizinkan untuk {$label}.";
-                $messages["{$field}.*.mimes"] = "Berkas {$label} harus berformat PDF, JPG, JPEG, atau PNG.";
-                $messages["{$field}.*.max"] = "Ukuran setiap berkas {$label} tidak boleh melebihi 5 MB.";
+                $messages["{$field}.max"] = __('local_invoice.validation.file_count', ['type' => $label]);
+                $messages["{$field}.*.mimes"] = __('local_invoice.validation.file_type', ['type' => $label]);
+                $messages["{$field}.*.max"] = __('local_invoice.validation.file_size', ['type' => $label]);
             } else {
-                $messages["{$field}.max"] = "Ukuran berkas {$label} tidak boleh melebihi 5 MB.";
-                $messages["{$field}.mimes"] = "Berkas {$label} harus berformat PDF, JPG, JPEG, atau PNG.";
+                $messages["{$field}.max"] = __('local_invoice.validation.file_size', ['type' => $label]);
+                $messages["{$field}.mimes"] = __('local_invoice.validation.file_type', ['type' => $label]);
             }
         }
 
@@ -235,7 +241,7 @@ class StoreLocalInvoiceRequest extends FormRequest
                     $rawSubmitted = $this->input('_original_invoice_number');
                     $derivedInvoiceNumber = $parser->parseInvoiceNumber($invoiceFiles, $rawSubmitted);
                     if (is_string($rawSubmitted) && trim($rawSubmitted) !== '' && trim($rawSubmitted) !== $derivedInvoiceNumber) {
-                        $validator->errors()->add('invoice_number', "Nomor invoice yang diinput ({$rawSubmitted}) tidak sesuai dengan nama berkas invoice yang diunggah ({$derivedInvoiceNumber}). Nomor tagihan wajib mengikuti nama berkas.");
+                        $validator->errors()->add('invoice_number', __('local_invoice.validation.filename_mismatch', ['number' => $rawSubmitted, 'filename' => $derivedInvoiceNumber]));
                     }
                 } catch (ValidationException $e) {
                     foreach ($e->errors() as $key => $messages) {
@@ -252,7 +258,7 @@ class StoreLocalInvoiceRequest extends FormRequest
                     $rawSubmittedTax = $this->input('_original_tax_invoice_number');
                     $derivedTaxNumber = $parser->parseTaxInvoiceNumber($taxFiles, $rawSubmittedTax);
                     if ($derivedTaxNumber !== null && is_string($rawSubmittedTax) && trim($rawSubmittedTax) !== '' && $parser->normalizeDigits($rawSubmittedTax) !== $parser->normalizeDigits($derivedTaxNumber)) {
-                        $validator->errors()->add('tax_invoice_number', "Nomor faktur pajak yang diinput ({$rawSubmittedTax}) tidak sesuai dengan nama berkas faktur pajak yang diunggah ({$derivedTaxNumber}).");
+                        $validator->errors()->add('tax_invoice_number', __('local_invoice.validation.tax_filename', ['number' => $rawSubmittedTax, 'filename' => $derivedTaxNumber]));
                     }
                 } catch (ValidationException $e) {
                     foreach ($e->errors() as $key => $messages) {

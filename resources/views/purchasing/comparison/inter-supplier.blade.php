@@ -1,14 +1,14 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
-@section('title', 'Inter-Supplier Comparison - ADASI Portal')
-@section('page-title', 'Price Comparison')
+@section('title', __('purchasing.copy.inter_supplier_comparison_adasi_portal'))
+@section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
 <div id="purchasingComparisonContainer" class="tw-grid tw-gap-6 tw-min-w-0 tw-max-w-full" data-server-tabs-container>
     <x-ui.page-header
-        title="Price Comparison"
-        description="Compare supplier offers for a PR, inspect historical movement, and benchmark current prices."
-        eyebrow="Purchasing"
+        :title="__('purchasing.copy.price_comparison')"
+        :description="__('purchasing.copy.compare_supplier_offers_for_a_pr_inspect_historical_movement_and_benchmark_current_prices')"
+        :eyebrow="__('purchasing.copy.purchasing')"
     />
     <x-purchasing.comparison-tabs active="inter-supplier" />
 

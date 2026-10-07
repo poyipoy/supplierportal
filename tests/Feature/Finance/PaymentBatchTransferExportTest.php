@@ -125,6 +125,24 @@ class PaymentBatchTransferExportTest extends TestCase
 
     // ─── Selection Tests ──────────────────────────────────────────────
 
+    public function test_bank_integration_cells_are_identical_in_both_application_locales(): void
+    {
+        [$batch] = $this->createBatchWithGroup('DRP-LOCALE-FIXED', 'BCA', 5000000, 'INV-LOCALE', '2026-09-08');
+        $baseline = null;
+        foreach (['en', 'id'] as $locale) {
+            app()->setLocale($locale);
+            $workbook = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch]));
+            $this->assertSame(['Data'], $workbook->getSheetNames());
+            $cells = $workbook->getActiveSheet()->rangeToArray('A1:U2');
+            $this->assertSame(array_values(PaymentBatchTransferSheetRenderer::COLUMNS), $cells[0]);
+            if ($baseline !== null) {
+                $this->assertSame($baseline, $cells);
+            }
+            $baseline = $cells;
+            $workbook->disconnectWorksheets();
+        }
+    }
+
     public function test_empty_selection_rejected(): void
     {
         $this->actingAs($this->finance)
@@ -618,30 +636,32 @@ class PaymentBatchTransferExportTest extends TestCase
         $this->assertLessThanOrEqual(18, strlen($rows[0]['remark_2']));
     }
 
-    public function test_data_validation_applied_to_remarks_and_receiver_name(): void
+    public function test_data_validation_prompts_follow_locale_and_keep_bank_template_rules(): void
     {
         [$batch] = $this->createBatchWithGroup('DRP-2026-00001');
         $batch->load(['groups.items.payable']);
 
-        $renderer = new PaymentBatchTransferSheetRenderer;
-        $spreadsheet = $renderer->render(collect([$batch]));
-        $sheet = $spreadsheet->getSheetByName('Data');
-
-        // Check M1:N1048576 covers Remark 1 and Remark 2 across all rows (existing and newly added)
-        $this->assertTrue($sheet->dataValidationExists('M1:N1048576'));
-        $dvM = $sheet->getDataValidation('M1:N1048576');
-        $this->assertSame('18', $dvM->getFormula1());
-        $this->assertSame('M1:N1048576', $dvM->getSqref());
-        $this->assertSame('Disamakan dengan kolom Transaction ID', $dvM->getPrompt());
-
-        // Check Q1:Q1048576 covers Receiver Name across all rows (existing and newly added)
-        $this->assertTrue($sheet->dataValidationExists('Q1:Q1048576'));
-        $dvQ = $sheet->getDataValidation('Q1:Q1048576');
-        $this->assertSame('70', $dvQ->getFormula1());
-        $this->assertSame('Q1:Q1048576', $dvQ->getSqref());
-        $this->assertSame('Tidak lebih dari 70 karakter', $dvQ->getPrompt());
-
-        $spreadsheet->disconnectWorksheets();
+        $previousLocale = app()->getLocale();
+        try {
+            foreach (['en', 'id'] as $locale) {
+                app()->setLocale($locale);
+                $spreadsheet = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch]));
+                $sheet = $spreadsheet->getSheetByName('Data');
+                $this->assertTrue($sheet->dataValidationExists('M1:N1048576'));
+                $dvM = $sheet->getDataValidation('M1:N1048576');
+                $this->assertSame('18', $dvM->getFormula1());
+                $this->assertSame('M1:N1048576', $dvM->getSqref());
+                $this->assertSame(__('exports.prompts.transfer_remark_match'), $dvM->getPrompt());
+                $this->assertTrue($sheet->dataValidationExists('Q1:Q1048576'));
+                $dvQ = $sheet->getDataValidation('Q1:Q1048576');
+                $this->assertSame('70', $dvQ->getFormula1());
+                $this->assertSame('Q1:Q1048576', $dvQ->getSqref());
+                $this->assertSame(__('exports.prompts.recipient_name_length'), $dvQ->getPrompt());
+                $spreadsheet->disconnectWorksheets();
+            }
+        } finally {
+            app()->setLocale($previousLocale);
+        }
     }
 
     // ─── Workbook Structure Tests ─────────────────────────────────────

@@ -391,6 +391,69 @@ class NotificationUrlResolverTest extends TestCase
         return [$admin, $purchasing, $supplier, $qc, $pr, $quotation, $po];
     }
 
+    public function test_resolver_routes_local_invoice_id_to_appropriate_role_portal(): void
+    {
+        $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $supplier->supplierScopes()->create(['scope' => 'local']);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
+        $accounting = User::factory()->create(['role' => 'accounting', 'is_active' => true]);
+        $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+
+        $invoice = LocalInvoice::create([
+            'supplier_id' => $supplier->id,
+            'submission_number' => 'SUB/09/2026/ROLE01',
+            'invoice_number' => 'INV-ROLE-001',
+            'invoice_date' => now()->toDateString(),
+            'po_number' => 'PO-LOCAL-100',
+            'invoice_amount' => 1000000,
+            'tax_amount' => 110000,
+            'payment_term_days_snapshot' => 30,
+            'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
+            'submitted_at' => now(),
+            'revision_number' => 1,
+        ]);
+
+        $resolver = app(NotificationUrlResolver::class);
+
+        $notifPurchasing = $this->notification($purchasing, [
+            'local_invoice_id' => $invoice->id,
+            'domain' => 'global',
+        ]);
+        $this->assertSame(
+            route('purchasing.local-invoices.show', $invoice, absolute: false),
+            $resolver->resolve($notifPurchasing, $purchasing)
+        );
+
+        $notifAccounting = $this->notification($accounting, [
+            'local_invoice_id' => $invoice->id,
+            'domain' => 'local',
+        ]);
+        $this->assertSame(
+            route('accounting.invoices.show', $invoice, absolute: false),
+            $resolver->resolve($notifAccounting, $accounting)
+        );
+
+        $notifFinance = $this->notification($finance, [
+            'local_invoice_id' => $invoice->id,
+            'domain' => 'local',
+        ]);
+        $this->assertSame(
+            route('finance.invoices.show', $invoice, absolute: false),
+            $resolver->resolve($notifFinance, $finance)
+        );
+
+        session(['supplier_context' => 'local']);
+        $notifSupplier = $this->notification($supplier, [
+            'local_invoice_id' => $invoice->id,
+            'domain' => 'local',
+        ]);
+        $this->assertSame(
+            route('local-supplier.invoices.show', $invoice, absolute: false),
+            $resolver->resolve($notifSupplier, $supplier)
+        );
+    }
+
     private function notification(User $user, array $data): DatabaseNotification
     {
         return $user->notifications()->create([

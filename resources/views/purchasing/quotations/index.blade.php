@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Quotation List - ADASI Portal')
-@section('page-title', 'Supplier Quotations')
+@section('title', __('purchasing.copy.quotation_list_adasi_portal'))
+@section('page-title', __('purchasing.copy.supplier_quotations'))
 
 @push('styles')
     <style>
@@ -53,9 +53,9 @@
     <div class="tw-grid tw-gap-4">
         {{-- 1. Compact Page Header --}}
         <x-ui.page-header
-            title="Supplier Quotations"
-            eyebrow="Purchasing"
-            description="Review submitted supplier offers, validity, currency, and workflow status across requisitions."
+            :title="__('purchasing.copy.supplier_quotations')"
+            :eyebrow="__('purchasing.copy.purchasing')"
+            :description="__('purchasing.copy.review_submitted_supplier_offers_validity_currency_and_workflow_status_across_requisitions')"
         >
             <x-slot:actions>
                 <x-ui.button
@@ -65,17 +65,17 @@
                     data-async-export
                     id="exportQuotationsBtn"
                     :data-export-url="route('purchasing.export.quotations')"
-                    data-export-source-singular="quotation"
-                    data-export-source-plural="quotations"
+                    data-export-source-singular="{{ __('exports.sources.quotation') }}"
+                    data-export-source-plural="{{ __('exports.sources.quotations') }}"
                     :data-export-source-count="$quotations->total()"
-                    data-export-row-label="quotation item rows"
-                    data-export-row-explanation="Each quotation item will be written as a separate Excel row."
+                    data-export-row-label="{{ __('purchasing.copy.quotation_item_rows') }}"
+                    data-export-row-explanation="{{ __('purchasing.copy.each_quotation_item_will_be_written_as_a_separate_excel_row') }}"
                 >
                     <x-ui.icon name="file-spreadsheet" />
-                    <span>Export Excel</span>
+                    <span>{{ __('purchasing.copy.export_excel') }}</span>
                 </x-ui.button>
                 <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums" id="quotationCountBadge">
-                    {{ $quotations->total() }} Quotations
+                    {{ trans_choice('purchasing.summary.quotations', $quotations->total(), ['count' => $quotations->total()]) }}
                 </span>
             </x-slot:actions>
         </x-ui.page-header>
@@ -92,8 +92,8 @@
                             name="pr_number"
                             class="form-control form-control-sm"
                             value="{{ request('pr_number') }}"
-                            placeholder="PR number (REQ/...)"
-                            aria-label="Filter by PR Number"
+                            placeholder="{{ __('purchasing.copy.pr_number_req') }}"
+                            aria-label="{{ __('purchasing.copy.filter_by_pr_number') }}"
                         />
                     </div>
 
@@ -103,11 +103,11 @@
                             granularity="month"
                             start-name="date_from"
                             start-id="quotationDateFrom"
-                            start-label="From"
+                            :start-label="__('purchasing.copy.from')"
                             :start-value="request('date_from')"
                             end-name="date_to"
                             end-id="quotationDateTo"
-                            end-label="To"
+                            :end-label="__('purchasing.copy.to')"
                             :end-value="request('date_to')"
                             error-id="quotationDateError"
                             compact
@@ -116,12 +116,12 @@
 
                     <x-ui.button type="submit" variant="primary" size="sm" data-calendar-native-submit>
                         <x-ui.icon name="filter" />
-                        <span>Apply filters</span>
+                        <span>{{ __('purchasing.copy.apply_filters_926161') }}</span>
                     </x-ui.button>
 
                     <div style="min-width: 160px;">
-                        <select name="supplier_id" class="form-select form-select-sm" aria-label="Filter by Supplier">
-                            <option value="">All Suppliers</option>
+                        <select name="supplier_id" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
+                            <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
                             @foreach($suppliers as $supplier)
                                 <option value="{{ $supplier->getRouteKey() }}" {{ request('supplier_id') === $supplier->getRouteKey() ? 'selected' : '' }}>
                                     {{ $supplier->name }}
@@ -131,28 +131,28 @@
                     </div>
 
                     <div style="min-width: 130px;">
-                        <select name="status" class="form-select form-select-sm" aria-label="Filter by Status">
-                            <option value="">All Statuses</option>
-                            <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
-                            <option value="all_unavailable" {{ request('status') == 'all_unavailable' ? 'selected' : '' }}>All Unavailable</option>
-                            <option value="revision_requested" {{ request('status') == 'revision_requested' ? 'selected' : '' }}>Needs Revision</option>
-                            <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>Accepted</option>
-                            <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                        <select name="status" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+                            <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
+                            <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>{{ __('purchasing.copy.submitted') }}</option>
+                            <option value="all_unavailable" {{ request('status') == 'all_unavailable' ? 'selected' : '' }}>{{ __('purchasing.copy.all_unavailable') }}</option>
+                            <option value="revision_requested" {{ request('status') == 'revision_requested' ? 'selected' : '' }}>{{ __('purchasing.copy.needs_revision') }}</option>
+                            <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>{{ __('purchasing.copy.accepted') }}</option>
+                            <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>{{ __('purchasing.copy.rejected') }}</option>
                         </select>
                     </div>
 
                     <div style="min-width: 90px;">
-                        <select name="currency" class="form-select form-select-sm" aria-label="Filter by Currency">
-                            <option value="">All Curr</option>
+                        <select name="currency" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_currency') }}">
+                            <option value="">{{ __('purchasing.copy.all_curr') }}</option>
                             @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
-                                <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ $currency }}</option>
+                                <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
                             @endforeach
                         </select>
                     </div>
 
                     <x-ui.button :href="route('purchasing.quotations.index')" variant="ghost" size="sm">
                         <x-ui.icon name="rotate-ccw" />
-                        <span>Reset</span>
+                        <span>{{ __('purchasing.copy.reset') }}</span>
                     </x-ui.button>
                 </form>
             </x-slot:filters>
@@ -164,19 +164,19 @@
                 <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col" style="width: 40px;" class="text-center">No</th>
-                            <th scope="col">Supplier</th>
-                            <th scope="col">PR No.</th>
-                            <th scope="col">Period</th>
-                            <th scope="col" class="text-center">Currency</th>
-                            <th scope="col" class="text-center">Items</th>
-                            <th scope="col" class="text-center">Status</th>
-                            <th scope="col">Date Submitted</th>
+                            <th scope="col" style="width: 40px;" class="text-center">{{ __('purchasing.copy.no') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.period') }}</th>
+                            <th scope="col" class="text-center">{{ __('purchasing.copy.currency') }}</th>
+                            <th scope="col" class="text-center">{{ __('purchasing.copy.items') }}</th>
+                            <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.date_submitted') }}</th>
                             <th scope="col">
-                                Valid Until
-                                <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="Expired quotations cannot be used to create a PO until the supplier submits a revision." />
+                                {{ __('purchasing.copy.valid_until') }}
+                                <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
                             </th>
-                            <th scope="col" class="text-end" style="width: 80px;">Action</th>
+                            <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -214,17 +214,17 @@
                                     <a
                                         href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q) }}"
                                         class="ui-data-action ui-data-action--primary ui-focus-ring"
-                                        aria-label="View quotation"
+                                        aria-label="{{ __('purchasing.copy.view_quotation') }}"
                                     >
                                         <x-ui.icon name="eye" size="sm" />
-                                        <span class="d-none d-md-inline ms-1">View</span>
+                                        <span class="d-none d-md-inline ms-1">{{ __('purchasing.copy.view') }}</span>
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="10" class="text-center py-4">
-                                    <x-ui.empty-state icon="inbox" title="No quotations received" description="Submitted supplier quotations will appear here." />
+                                    <x-ui.empty-state icon="inbox" :title="__('purchasing.copy.no_quotations_received')" :description="__('purchasing.copy.submitted_supplier_quotations_will_appear_here')" />
                                 </td>
                             </tr>
                         @endforelse
@@ -258,7 +258,7 @@
             const toggleDateError = (show) => {
                 dateRangeControl.classList.toggle('is-invalid', show);
                 dateRangeControl.dataset.calendarInvalid = String(show);
-                dateError.querySelector('[data-calendar-error-message]').textContent = 'End month cannot be before start month.';
+                dateError.querySelector('[data-calendar-error-message]').textContent = @json(__('purchasing.copy.end_month_cannot_be_before_start_month'));
                 dateError.classList.toggle('tw-hidden', !show);
             };
 
@@ -354,7 +354,7 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to load quotation data.');
+                        throw new Error(@json(__('purchasing.copy.failed_to_load_quotation_data')));
                     }
 
                     const html = await response.text();

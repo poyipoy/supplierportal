@@ -29,7 +29,7 @@ class AnnouncementController extends Controller
             'published_at' => $request->has('is_published') ? now() : null,
         ]);
 
-        return redirect()->route('admin.announcements.index')->with('success', 'Announcement successfully created.');
+        return redirect()->route('admin.announcements.index')->with('success', __('admin.copy.announcement_successfully_created'));
     }
 
     public function edit(Announcement $announcement)
@@ -45,20 +45,20 @@ class AnnouncementController extends Controller
             'published_at' => $request->has('is_published') ? ($announcement->published_at ?? now()) : null,
         ]);
 
-        return redirect()->route('admin.announcements.index')->with('success', 'Announcement successfully updated.');
+        return redirect()->route('admin.announcements.index')->with('success', __('admin.copy.announcement_successfully_updated'));
     }
 
     public function destroy(Announcement $announcement)
     {
         $announcement->delete();
 
-        return redirect()->route('admin.announcements.index')->with('success', 'Announcement successfully deleted.');
+        return redirect()->route('admin.announcements.index')->with('success', __('admin.copy.announcement_successfully_deleted'));
     }
 
     public function togglePublish(Announcement $announcement)
     {
         $announcement->update(['published_at' => $announcement->published_at ? null : now()]);
 
-        return back()->with('success', $announcement->published_at ? 'Announcement published.' : 'Announcement withdrawn.');
+        return back()->with('success', $announcement->published_at ? __('admin.copy.announcement_published') : __('admin.copy.announcement_withdrawn'));
     }
 }

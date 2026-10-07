@@ -117,7 +117,7 @@ class MaterialProgressService
             'award_id' => $award->id,
             'award_hashid' => $award->hash,
             'award' => $award,
-            'material_name' => $award->prItem?->material_name ?? 'Material',
+            'material_name' => $award->prItem?->material_name ?? __('purchasing.copy.material'),
             'hs_code' => $award->prItem?->hs_code,
             'ordered_qty' => $orderedQty,
             'accepted_qty' => $acceptedQty,
@@ -158,17 +158,17 @@ class MaterialProgressService
     {
         // Role and ownership check (fail-secure Zero Trust)
         if ($user->role !== 'supplier' || (int) $user->id !== (int) $po->supplier_id || (int) $award->supplier_id !== (int) $user->id) {
-            abort(403, 'Unauthorized: Only the assigned supplier can update material progress.');
+            abort(403, __('purchasing.copy.unauthorized_only_the_assigned_supplier_can_update_material_progress'));
         }
 
         if ((int) $award->purchase_order_id !== (int) $po->id) {
-            abort(403, 'Award does not belong to the requested purchase order.');
+            abort(403, __('purchasing.copy.award_does_not_belong_to_the_requested_purchase_order'));
         }
 
         $newStatus = $data['status'] ?? null;
         if (! in_array($newStatus, PoItemProgressUpdate::STATUSES, true)) {
             throw ValidationException::withMessages([
-                'status' => 'The selected material progress status is invalid.',
+                'status' => __('purchasing.copy.the_selected_material_progress_status_is_invalid'),
             ]);
         }
 
@@ -178,12 +178,14 @@ class MaterialProgressService
             $lockedAward = PrItemAward::where('id', $award->id)->lockForUpdate()->firstOrFail();
 
             if ((int) $lockedAward->purchase_order_id !== (int) $lockedPo->id) {
-                abort(403, 'Award does not belong to locked purchase order.');
+                abort(403, __('purchasing.copy.award_does_not_belong_to_locked_purchase_order'));
             }
 
             if (in_array($lockedPo->status, ['completed', 'cancelled'], true)) {
                 throw ValidationException::withMessages([
-                    'status' => "Cannot update material progress on a {$lockedPo->status} purchase order.",
+                    'status' => __('purchasing.copy.material_progress_locked_po', [
+                        'status' => StatusHelper::poLabel($lockedPo->status),
+                    ]),
                 ]);
             }
 
@@ -193,7 +195,7 @@ class MaterialProgressService
 
             if ($supplierControlledQty <= 0) {
                 throw ValidationException::withMessages([
-                    'status' => 'Cannot update material progress when supplier-controlled quantity is zero.',
+                    'status' => __('purchasing.copy.cannot_update_material_progress_when_supplier_controlled_quantity_is_zero'),
                 ]);
             }
 
@@ -206,7 +208,7 @@ class MaterialProgressService
                 $note = trim($data['note'] ?? '');
                 if ($note === '') {
                     throw ValidationException::withMessages([
-                        'note' => 'A progress note or reason is required when moving material progress backward.',
+                        'note' => __('purchasing.copy.a_progress_note_or_reason_is_required_when_moving_material_progress_backward'),
                     ]);
                 }
             }
@@ -222,18 +224,17 @@ class MaterialProgressService
 
             // Notify purchasing team (NotificationService defers until afterCommit)
             $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
-            $materialName = $lockedAward->prItem?->material_name ?? 'Material';
+            $materialName = $lockedAward->prItem?->material_name ?? __('purchasing.copy.material');
             $fromLabel = StatusHelper::materialProgressLabel($previousStatus);
             $toLabel = StatusHelper::materialProgressLabel($newStatus);
-            $readyFormatted = $update->estimated_ready_date ? $update->estimated_ready_date->format('d M Y') : 'Not specified';
             $supplierName = $user->name;
 
             $this->notifications->send(
                 $purchasingUsers,
                 'po_item_progress.updated',
                 "po_item_progress.updated:{$update->id}",
-                'Supplier Material Progress Updated',
-                "Supplier {$supplierName} updated {$materialName} on {$lockedPo->po_number}: {$fromLabel} → {$toLabel}. Current Supplier-controlled Qty: {$supplierControlledQty} pcs. Estimated Ready: {$readyFormatted}.",
+                'purchasing.copy.supplier_material_progress_updated',
+                'purchasing.notify.material_progress_body',
                 route('purchasing.purchase-orders.show', $lockedPo, absolute: false).'#material-progress',
                 'clock text-primary',
                 [
@@ -241,7 +242,18 @@ class MaterialProgressService
                     'po_id' => $lockedPo->id,
                     'award_id' => $lockedAward->id,
                     'progress_update_id' => $update->id,
-                ]
+                ],
+                [
+                    'supplier' => $supplierName,
+                    'material' => $lockedAward->prItem?->material_name ?? '-',
+                    'po' => $lockedPo->po_number,
+                    'qty' => $supplierControlledQty,
+                    'ready' => $update->estimated_ready_date ? '@date:'.$update->estimated_ready_date->toDateString() : __('purchasing.copy.not_specified'),
+                ],
+                [
+                    'from' => 'status.material_progress.'.$previousStatus,
+                    'to' => 'status.material_progress.'.$newStatus,
+                ],
             );
 
             return $update;
@@ -269,7 +281,7 @@ class MaterialProgressService
 
         if ($awards->isEmpty()) {
             return [
-                'text' => 'No awarded items',
+                'text' => __('purchasing.copy.no_awarded_items'),
                 'counts' => [],
                 'is_homogeneous' => true,
                 'items' => [],
@@ -287,11 +299,11 @@ class MaterialProgressService
                 $stageLabel = $projection['manual_progress_label'];
                 $counts[$stageLabel] = ($counts[$stageLabel] ?? 0) + 1;
             } elseif ($projection['in_transit_qty'] > 0) {
-                $counts['In Transit'] = ($counts['In Transit'] ?? 0) + 1;
+                $counts[__('purchasing.copy.in_transit')] = ($counts[__('purchasing.copy.in_transit')] ?? 0) + 1;
             } elseif ($projection['accepted_qty'] >= $projection['ordered_qty']) {
-                $counts['Accepted'] = ($counts['Accepted'] ?? 0) + 1;
+                $counts[__('purchasing.copy.accepted')] = ($counts[__('purchasing.copy.accepted')] ?? 0) + 1;
             } elseif ($projection['arrived_pending_qc_qty'] > 0) {
-                $counts['Waiting QC'] = ($counts['Waiting QC'] ?? 0) + 1;
+                $counts[__('purchasing.copy.waiting_qc')] = ($counts[__('purchasing.copy.waiting_qc')] ?? 0) + 1;
             } else {
                 $stageLabel = $projection['manual_progress_label'];
                 $counts[$stageLabel] = ($counts[$stageLabel] ?? 0) + 1;
@@ -300,7 +312,7 @@ class MaterialProgressService
 
         $parts = [];
         foreach ($counts as $label => $count) {
-            $parts[] = "{$count} {$label}";
+            $parts[] = trans_choice('purchasing.copy.progress_summary', $count, ['count' => $count, 'stage' => $label]);
         }
 
         $summaryText = implode(' · ', $parts);

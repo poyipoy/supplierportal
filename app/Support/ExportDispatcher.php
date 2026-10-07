@@ -79,7 +79,10 @@ class ExportDispatcher
             ]);
 
             self::assertAtomicQueueConfiguration($record);
-            $pending = ProcessExportJob::dispatch((int) $record->getKey())->onQueue('exports');
+            $activeLocale = app()->getLocale();
+            $userPrefLocale = app(\App\Services\UserPreferenceService::class)->for($user)['locale'] ?? 'en';
+            $locale = \App\Services\UserPreferenceService::normalizeLocale($activeLocale ?: $userPrefLocale);
+            $pending = ProcessExportJob::dispatch((int) $record->getKey(), $locale)->onQueue('exports');
 
             // Force the root database-queue insert before the record transaction
             // commits. A failure or process termination rolls both changes back.

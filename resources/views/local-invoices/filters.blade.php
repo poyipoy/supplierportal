@@ -17,7 +17,7 @@
 @endphp
 
 <form method="GET" action="{{ url()->current() }}" class="tw-mb-4" id="invoiceFilterForm">
-    <x-ui.toolbar aria-label="Kontrol filter invoice">
+    <x-ui.toolbar :aria-label="__('local_invoice.filters.controls')">
         <x-slot:search>
             <div class="tw-relative tw-w-full">
                 <input
@@ -25,7 +25,7 @@
                     name="q"
                     id="invoice-search"
                     class="form-control form-control-sm"
-                    placeholder="Cari invoice, nomor pengajuan, PO, atau tanda terima..."
+                    placeholder="{{ __('local_invoice.filters.search') }}"
                     value="{{ request('q') }}"
                     maxlength="100"
                     autocomplete="off"
@@ -34,10 +34,10 @@
         </x-slot:search>
 
         <x-slot:filters>
-            <div class="tw-flex tw-items-center tw-gap-2">
-                <label for="invoice-status" class="visually-hidden">Status</label>
-                <select id="invoice-status" class="form-select form-select-sm tw-min-w-[160px]" name="status">
-                    <option value="">Semua Status</option>
+            <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                <label for="invoice-status" class="visually-hidden">{{ __('local_invoice.labels.status') }}</label>
+                <select id="invoice-status" class="form-select form-select-sm tw-w-full tw-min-w-0 sm:tw-w-auto sm:tw-min-w-[160px]" name="status">
+                    <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
                     @foreach(\App\Models\LocalInvoice::STATUSES as $status)
                         <option value="{{ $status }}" @selected(request('status') === $status)>
                             {{ \App\Support\StatusHelper::localInvoiceLabel($status) }}
@@ -56,7 +56,7 @@
                     class="tw-relative tw-gap-1.5"
                 >
                     <x-ui.icon name="sliders-horizontal" size="sm" />
-                    <span>Filter Lanjutan</span>
+                    <span>{{ __('local_invoice.filters.advanced') }}</span>
                     @if($advancedFilterCount > 0)
                         <span class="tw-inline-flex tw-items-center tw-justify-center tw-min-w-5 tw-h-5 tw-px-1.5 tw-rounded-ui-full tw-bg-primary tw-text-primary-foreground tw-text-[11px] tw-font-bold tw-leading-none">
                             {{ $advancedFilterCount }}
@@ -69,12 +69,12 @@
         <x-slot:actions>
             <x-ui.button type="submit" size="sm">
                 <x-ui.icon name="filter" size="sm" />
-                <span>Terapkan</span>
+                <span>{{ __('local_invoice.actions.apply') }}</span>
             </x-ui.button>
             @if($hasAnyFilters)
                 <x-ui.button :href="url()->current()" variant="ghost" size="sm">
                     <x-ui.icon name="rotate-ccw" size="sm" />
-                    <span>Reset</span>
+                    <span>{{ __('local_invoice.filters.reset') }}</span>
                 </x-ui.button>
             @endif
         </x-slot:actions>
@@ -90,8 +90,8 @@
                         <x-ui.icon name="sliders-horizontal" size="sm" />
                     </span>
                     <div>
-                        <h4 class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-m-0">Kriteria Filter Lanjutan</h4>
-                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-m-0">Sesuaikan rentang tanggal, organisasi supplier, dan tempo pembayaran</p>
+                        <h4 class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-m-0">{{ __('local_invoice.filters.criteria') }}</h4>
+                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-m-0">{{ __('local_invoice.filters.criteria_help') }}</p>
                     </div>
                 </div>
                 <button
@@ -99,20 +99,20 @@
                     class="btn-close tw-text-ui-xs"
                     data-bs-toggle="collapse"
                     data-bs-target="#invoiceMoreFilters"
-                    aria-label="Tutup filter lanjutan"
+                    aria-label="{{ __('local_invoice.filters.close_advanced') }}"
                 ></button>
             </div>
 
             {{-- 3-Column Inputs Grid --}}
             <div class="tw-pt-3.5 tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-3 tw-items-start">
                 <div>
-                    <label class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">Rentang Tanggal Pengajuan</label>
+                    <label class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">{{ __('local_invoice.filters.submission_range') }}</label>
                     <x-ui.date-range-picker
                         id="invoice-submitted-range"
                         start-name="from"
                         end-name="to"
-                        start-label="Diajukan Dari"
-                        end-label="Diajukan Sampai"
+                        :start-label="__('local_invoice.filters.submitted_from')"
+                        :end-label="__('local_invoice.filters.submitted_to')"
                         :start-value="request('from')"
                         :end-value="request('to')"
                         :compact="true"
@@ -120,13 +120,13 @@
                 </div>
 
                 <div>
-                    <label class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">Rentang Tanggal Jatuh Tempo</label>
+                    <label class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">{{ __('local_invoice.filters.due_range') }}</label>
                     <x-ui.date-range-picker
                         id="invoice-due-range"
                         start-name="due_from"
                         end-name="due_to"
-                        start-label="Jatuh Tempo Dari"
-                        end-label="Jatuh Tempo Sampai"
+                        :start-label="__('local_invoice.filters.due_from')"
+                        :end-label="__('local_invoice.filters.due_to')"
                         :start-value="request('due_from')"
                         :end-value="request('due_to')"
                         :compact="true"
@@ -134,19 +134,19 @@
                 </div>
 
                 <div>
-                    <label for="invoice-overpayment-status" class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">Status Kelebihan Bayar</label>
+                    <label for="invoice-overpayment-status" class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">{{ __('finance.refund.status') }}</label>
                     <select name="overpayment_status" id="invoice-overpayment-status" class="form-select form-select-sm tw-min-h-[var(--ui-control-height-md)] tw-w-full">
-                        <option value="all" @selected(request('overpayment_status') === 'all' || !request()->filled('overpayment_status'))>Semua Status Refund</option>
-                        <option value="open" @selected(request('overpayment_status') === 'open')>Perlu Refund (Open)</option>
-                        <option value="settled" @selected(request('overpayment_status') === 'settled')>Refund Selesai (Settled)</option>
+                        <option value="all" @selected(request('overpayment_status') === 'all' || !request()->filled('overpayment_status'))>{{ __('finance.refund.all_statuses') }}</option>
+                        <option value="open" @selected(request('overpayment_status') === 'open')>{{ __('local_invoice.filters.refund_open') }}</option>
+                        <option value="settled" @selected(request('overpayment_status') === 'settled')>{{ __('finance.refund.completed_status') }}</option>
                     </select>
                 </div>
 
                 @if(! auth()->user()->isSupplier())
                     <div>
-                        <label for="invoice-supplier" class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">Organisasi Supplier</label>
+                        <label for="invoice-supplier" class="tw-block tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1.5">{{ __('local_invoice.filters.supplier_organization') }}</label>
                         <select name="supplier" id="invoice-supplier" class="form-select form-select-sm tw-min-h-[var(--ui-control-height-md)] tw-w-full">
-                            <option value="">Semua Supplier</option>
+                            <option value="">{{ __('local_invoice.labels.all_suppliers') }}</option>
                             @foreach($suppliers ?? [] as $supplier)
                                 <option value="{{ $supplier->hash }}" @selected(request('supplier') === $supplier->hash)>
                                     {{ $supplier->supplier?->company_name ?: $supplier->name }}
@@ -175,7 +175,7 @@
                                 @checked(request('overdue'))
                             >
                             <x-ui.icon name="alert-triangle" size="xs" class="{{ request('overdue') ? 'tw-text-error' : 'tw-text-on-surface-variant' }}" />
-                            <span>Hanya Jatuh Tempo</span>
+                            <span>{{ __('local_invoice.filters.overdue') }}</span>
                         </label>
 
                         @if($payments ?? false)
@@ -192,7 +192,7 @@
                                     @checked(request('history'))
                                 >
                                 <x-ui.icon name="check-circle" size="xs" class="{{ request('history') ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}" />
-                                <span>Sertakan Pembayaran Selesai</span>
+                                <span>{{ __('local_invoice.filters.include_paid') }}</span>
                             </label>
                         @endif
                     @endif
@@ -207,19 +207,19 @@
                         data-bs-toggle="collapse"
                         data-bs-target="#invoiceMoreFilters"
                     >
-                        <span>Tutup</span>
+                        <span>{{ __('local_invoice.actions.close') }}</span>
                     </x-ui.button>
 
                     @if($hasAnyFilters)
                         <x-ui.button :href="url()->current()" variant="ghost" size="sm">
                             <x-ui.icon name="rotate-ccw" size="sm" />
-                            <span>Reset</span>
+                            <span>{{ __('local_invoice.filters.reset') }}</span>
                         </x-ui.button>
                     @endif
 
                     <x-ui.button type="submit" variant="primary" size="sm">
                         <x-ui.icon name="filter" size="sm" />
-                        <span>Terapkan Filter</span>
+                        <span>{{ __('local_invoice.actions.apply_filters') }}</span>
                     </x-ui.button>
                 </div>
             </div>

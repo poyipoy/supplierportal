@@ -10,6 +10,11 @@ use Illuminate\Validation\ValidationException;
 
 class UserPreferenceService
 {
+    public static function normalizeLocale(mixed $locale): string
+    {
+        return is_string($locale) && in_array($locale, ['en', 'id'], true) ? $locale : 'en';
+    }
+
     public function __construct(
         private readonly QuickAccessService $quickAccess,
         private readonly DashboardWidgetService $dashboardWidgets,
@@ -40,6 +45,7 @@ class UserPreferenceService
                 'dashboard_preferences' => $this->dashboardWidgets->normalizeLayouts($user, is_array($stored->dashboard_preferences) ? $stored->dashboard_preferences : []),
                 'sidebar_revision' => max(1, (int) $stored->sidebar_revision),
                 'notification_preferences' => is_array($stored->notification_preferences) ? $stored->notification_preferences : [],
+                'locale' => self::normalizeLocale($stored->locale),
             ]
             : [...$defaults, 'revision' => 0, 'notification_preferences' => []];
 
@@ -72,7 +78,7 @@ class UserPreferenceService
 
             if (count($quickAccess) > (int) config('user_preferences.quick_access_limit')) {
                 throw ValidationException::withMessages([
-                    'quick_access' => 'Reduce the selected shortcuts to six or fewer across your account contexts.',
+                    'quick_access' => __('customization.shortcuts.limit', ['count' => (int) config('user_preferences.quick_access_limit')]),
                 ]);
             }
 
@@ -93,6 +99,7 @@ class UserPreferenceService
                 'page_size' => $values['page_size'],
                 'quick_access' => $quickAccess,
                 'accent' => $values['accent'] ?? $savedAccent,
+                'locale' => self::normalizeLocale($values['locale'] ?? $stored?->locale),
                 'dashboard_preferences' => $layouts,
                 ...$this->regionalValues($stored, $values),
             ]);
@@ -117,6 +124,30 @@ class UserPreferenceService
             unset($defaults['sidebar_revision']);
             $preference->fill($defaults);
             $preference->sidebar_revision = max(1, (int) ($stored?->sidebar_revision ?? 1)) + 1;
+            $preference->revision = ($stored?->revision ?? 0) + 1;
+            $lockedUser->preference()->save($preference);
+            request()->attributes->remove($this->requestCacheKey($lockedUser));
+            app(NotificationPreferenceService::class)->forget($lockedUser);
+
+            return $this->for($lockedUser->refresh());
+        }, 3);
+    }
+
+    public function saveLocale(User $user, mixed $locale): array
+    {
+        $locale = self::normalizeLocale($locale);
+
+        return DB::transaction(function () use ($user, $locale): array {
+            $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            $stored = $lockedUser->preference()->first();
+            $preference = $stored ?? new UserPreference;
+
+            if ($stored === null) {
+                $preference->fill(config('user_preferences.defaults'));
+                $preference->sidebar_revision = 1;
+            }
+
+            $preference->locale = $locale;
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $lockedUser->preference()->save($preference);
             request()->attributes->remove($this->requestCacheKey($lockedUser));

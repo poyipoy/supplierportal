@@ -40,10 +40,10 @@ class ExportController extends Controller
         $scope = ! empty($filters['period_id']) ? 'period_'.$filters['period_id'] : 'all';
 
         $exportJob = ExportDispatcher::dispatch(
-            'Rekap Quotation Supplier',
+            __('exports.job_labels.supplier_quotation_summary'),
             QuotationsExport::class,
             [$filters, (int) auth()->id(), true],
-            'quotation_supplier_'.$scope.'_'.now()->format('Ymd_His').'.xlsx',
+            'quotation_supplier_'.$scope.'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -54,14 +54,14 @@ class ExportController extends Controller
         abort_unless(
             (int) $quotation->supplier_id === (int) auth()->id(),
             403,
-            'You do not have access to this quotation.'
+            __('supplier.copy.you_do_not_have_access_to_this_quotation')
         );
 
         $exportJob = ExportDispatcher::dispatch(
-            'Detail Quotation Supplier',
+            __('supplier.copy.detail_quotation_supplier'),
             QuotationDetailExport::class,
             [(int) $quotation->getKey(), (int) auth()->id(), false],
-            'detail_quotation_'.$quotation->getKey().'_'.now()->format('Ymd_His').'.xlsx',
+            'detail_quotation_'.$quotation->getKey().'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -79,12 +79,12 @@ class ExportController extends Controller
 
         if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
             throw ValidationException::withMessages([
-                'end_date' => 'End date cannot be before start date.',
+                'end_date' => __('supplier.copy.end_date_cannot_be_before_start_date'),
             ]);
         }
 
         $exportJob = ExportDispatcher::dispatch(
-            'Rekap Purchase Order Supplier',
+            __('exports.job_labels.supplier_po_summary'),
             PurchaseOrdersExport::class,
             [
                 (int) auth()->id(),
@@ -94,7 +94,7 @@ class ExportController extends Controller
                 $filters['status'] ?? null,
                 $filters['search'] ?? null,
             ],
-            'rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx',
+            'rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -105,14 +105,14 @@ class ExportController extends Controller
         abort_unless(
             (int) $purchaseOrder->supplier_id === (int) auth()->id(),
             403,
-            'You do not have access to this purchase order.'
+            __('supplier.copy.you_do_not_have_access_to_this_purchase_order')
         );
 
         $exportJob = ExportDispatcher::dispatch(
-            'Detail Purchase Order Supplier',
+            __('supplier.copy.detail_purchase_order_supplier'),
             PurchaseOrderDetailExport::class,
             [(int) $purchaseOrder->getKey(), (int) auth()->id()],
-            'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx',
+            'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -120,7 +120,7 @@ class ExportController extends Controller
 
     private function dispatchResponse(Request $request, ExportJob $exportJob)
     {
-        $message = 'The export request was accepted. The file will download automatically when ready.';
+        $message = __('supplier.copy.the_export_request_was_accepted_the_file_will_download_automatically_when_ready');
 
         if ($request->wantsJson()) {
             return response()->json([

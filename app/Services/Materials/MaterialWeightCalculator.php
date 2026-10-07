@@ -18,16 +18,16 @@ final class MaterialWeightCalculator
     public function calculate(MaterialMaster $material, ?string $shape, array $dimensions, int $quantity = 1): WeightCalculationResult
     {
         if (! in_array($shape, PrItem::SHAPES, true)) {
-            return $this->incomplete('Select a material shape to calculate KG per unit.');
+            return $this->incomplete('Select a material shape to calculate KG per unit.', 'materials.copy.select_a_material_shape_to_calculate_kg_per_unit');
         }
 
         foreach (PrItem::relevantDimensionFields($shape) as $field) {
             $value = $dimensions[$field] ?? null;
             if ($value === null || $value === '') {
-                return $this->incomplete('Complete all dimensions required by the selected shape.');
+                return $this->incomplete('Complete all dimensions required by the selected shape.', 'materials.copy.complete_all_dimensions_required_by_the_selected_shape');
             }
             if (! is_numeric($value) || (float) $value <= 0) {
-                return $this->invalid('Dimensions must be numeric values greater than zero.');
+                return $this->invalid('Dimensions must be numeric values greater than zero.', 'materials.copy.dimensions_must_be_numeric_values_greater_than_zero');
             }
         }
 
@@ -38,7 +38,7 @@ final class MaterialWeightCalculator
         $length = (float) ($dimensions['length'] ?? 0);
 
         if ($shape === PrItem::SHAPE_HOLLOW && ! MaterialDimensionRules::hasValidHollowDiameterPair($inner, $outer)) {
-            return $this->invalid('Inner diameter must be smaller than outer diameter.');
+            return $this->invalid('Inner diameter must be smaller than outer diameter.', 'materials.copy.inner_diameter_must_be_smaller_than_outer_diameter');
         }
 
         [$rawWeight, $formulaKey, $factor] = match ($shape) {
@@ -57,6 +57,7 @@ final class MaterialWeightCalculator
             $formulaKey,
             $factor,
             'KG per unit was calculated by the server.',
+            'materials.copy.kg_per_unit_was_calculated_by_the_server',
         );
     }
 
@@ -72,13 +73,13 @@ final class MaterialWeightCalculator
         ];
     }
 
-    private function incomplete(string $message): WeightCalculationResult
+    private function incomplete(string $message, string $messageKey): WeightCalculationResult
     {
-        return new WeightCalculationResult('incomplete', null, null, null, null, $message);
+        return new WeightCalculationResult('incomplete', null, null, null, null, $message, $messageKey);
     }
 
-    private function invalid(string $message): WeightCalculationResult
+    private function invalid(string $message, string $messageKey): WeightCalculationResult
     {
-        return new WeightCalculationResult('invalid', null, null, null, null, $message);
+        return new WeightCalculationResult('invalid', null, null, null, null, $message, $messageKey);
     }
 }

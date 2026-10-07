@@ -253,8 +253,8 @@ class ExportProgressService
                 $record->user,
                 'export.completed',
                 'export:'.$record->getKey().':completed',
-                'Export Completed',
-                'Export :label is ready to download.',
+                'notifications.exports.completed.title',
+                'notifications.exports.completed.message',
                 route('exports.download', $record, absolute: false),
                 'file-spreadsheet',
                 [
@@ -338,8 +338,8 @@ class ExportProgressService
                 $record->user,
                 'export.failed',
                 'export:'.$record->getKey().':failed',
-                'Export Failed',
-                'The export could not be processed. Please try again.',
+                'notifications.exports.failed.title',
+                'notifications.exports.failed.message',
                 route('exports.index', absolute: false),
                 'triangle-alert',
                 [
@@ -353,12 +353,13 @@ class ExportProgressService
     private function broadcast(ExportJob $record): void
     {
         try {
+            $locale = UserPreferenceService::normalizeLocale(\App\Models\UserPreference::query()->where('user_id', $record->user_id)->value('locale'));
             event(new ExportProgressUpdated(
                 (int) $record->user_id,
                 (string) $record->getRouteKey(),
                 (string) $record->status,
                 (string) $record->progress_stage,
-                $record->progressMessage(),
+                $record->progressMessage($locale),
                 $record->progress,
                 (int) $record->processed_rows,
                 (int) $record->total_rows,

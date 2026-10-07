@@ -37,31 +37,31 @@ class UserController extends Controller
                 })
                 ->addColumn('role_badge', function ($user) {
                     return match ($user->role) {
-                        'admin' => '<span class="ui-status-chip ui-status-chip--neutral">Admin</span>',
-                        'purchasing' => '<span class="ui-status-chip ui-status-chip--neutral">Purchasing</span>',
-                        'supplier' => '<span class="ui-status-chip ui-status-chip--neutral">Supplier</span>',
+                        'admin' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.admin')).'</span>',
+                        'purchasing' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.purchasing')).'</span>',
+                        'supplier' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.supplier')).'</span>',
                         'qc' => '<span class="ui-status-chip ui-status-chip--neutral">QC</span>',
-                        'accounting' => '<span class="ui-status-chip ui-status-chip--info">Accounting</span>',
-                        'finance' => '<span class="ui-status-chip ui-status-chip--info">Finance</span>',
-                        'ga' => '<span class="ui-status-chip ui-status-chip--info">General Affairs</span>',
+                        'accounting' => '<span class="ui-status-chip ui-status-chip--info">'.e(__('navigation.roles.accounting')).'</span>',
+                        'finance' => '<span class="ui-status-chip ui-status-chip--info">'.e(__('admin.copy.finance')).'</span>',
+                        'ga' => '<span class="ui-status-chip ui-status-chip--info">'.e(__('admin.copy.general_affairs')).'</span>',
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e($user->role).'</span>',
                     };
                 })
                 ->addColumn('status_badge', fn ($user) => $user->is_active
-                    ? '<span class="ui-status-chip ui-status-chip--success">Active</span>'
-                    : '<span class="ui-status-chip ui-status-chip--neutral">Inactive</span>')
+                    ? '<span class="ui-status-chip ui-status-chip--success">'.e(__('admin.copy.active')).'</span>'
+                    : '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.inactive')).'</span>')
                 ->addColumn('mfa_badge', fn ($user) => $user->hasTwoFactorAuthentication()
-                    ? '<span class="ui-status-chip ui-status-chip--success">Enabled</span>'
-                    : '<span class="ui-status-chip ui-status-chip--neutral">Not enabled</span>')
-                ->addColumn('created_date', fn ($user) => $user->created_at->format('d M Y'))
+                    ? '<span class="ui-status-chip ui-status-chip--success">'.e(__('admin.copy.enabled')).'</span>'
+                    : '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.not_enabled')).'</span>')
+                ->addColumn('created_date', fn ($user) => \App\Support\BusinessTime::format($user->created_at, 'd M Y', false))
                 ->addColumn('action', function ($user) {
                     $html = '<div class="d-inline-flex align-items-center gap-1">'
-                        .'<a href="'.route('admin.users.edit', $user).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="Edit '.e($user->name).'">Edit</a>';
+                        .'<a href="'.route('admin.users.edit', $user).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.edit', ['name' => $user->name])).'">'.e(__('admin.copy.edit')).'</a>';
                     if ($user->id !== auth()->id()) {
                         $html .= '<div class="dropdown">'
-                            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for '.e($user->name).'">More</button>'
+                            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $user->name])).'">'.e(__('admin.copy.more')).'</button>'
                             .'<ul class="dropdown-menu dropdown-menu-end">'
-                            .'<li><form action="'.route('admin.users.destroy', $user).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">Delete user</button></form></li>'
+                            .'<li><form action="'.route('admin.users.destroy', $user).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">'.e(__('admin.copy.delete_user')).'</button></form></li>'
                             .'</ul></div>';
                     }
 
@@ -150,12 +150,13 @@ class UserController extends Controller
             }
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', 'User successfully added.');
+            return redirect()->route('admin.users.index')->with('success', __('admin.copy.user_successfully_added'));
 
         } catch (\Exception $e) {
             DB::rollBack();
+            report($e);
 
-            return back()->withInput()->with('error', "An error occurred: {$e->getMessage()}");
+            return back()->withInput()->with('error', __('admin.copy.an_error_occurred_while_saving_the_user_please_try_again'));
         }
     }
 
@@ -301,12 +302,13 @@ class UserController extends Controller
                 ]));
             }
 
-            return redirect()->route('admin.users.index')->with('success', 'User successfully updated.');
+            return redirect()->route('admin.users.index')->with('success', __('admin.copy.user_successfully_updated'));
 
         } catch (\Exception $e) {
             DB::rollBack();
+            report($e);
 
-            return back()->withInput()->with('error', "An error occurred: {$e->getMessage()}");
+            return back()->withInput()->with('error', __('admin.copy.an_error_occurred_while_updating_the_user_please_try_again'));
         }
     }
 
@@ -316,7 +318,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', 'You cannot delete your own account.');
+            return back()->with('error', __('admin.copy.you_cannot_delete_your_own_account'));
         }
 
         try {
@@ -327,11 +329,11 @@ class UserController extends Controller
             $user->delete();
             DB::commit();
 
-            return redirect()->route('admin.users.index')->with('success', 'User successfully deleted.');
+            return redirect()->route('admin.users.index')->with('success', __('admin.copy.user_successfully_deleted'));
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'Failed to delete user. Make sure there is no tightly related data.');
+            return back()->with('error', __('admin.copy.failed_to_delete_user_make_sure_there_is_no_tightly_related_data'));
         }
     }
 }

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'PO Details: ' . $po->po_number . ' - ADASI Portal')
-@section('page-title', 'Purchase Order Details')
+@section('title', __('purchasing.titles.po_detail', ['number' => $po->po_number]))
+@section('page-title', __('purchasing.copy.purchase_order_details'))
 
 @push('styles')
 <style>
@@ -153,25 +153,25 @@
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('purchasing.dashboard'),
-        'Purchase Orders' => route('purchasing.purchase-orders.index'),
+        __('purchasing.breadcrumbs.dashboard') => route('purchasing.dashboard'),
+        __('purchasing.breadcrumbs.purchase_orders') => route('purchasing.purchase-orders.index'),
         $po->po_number => null,
     ]" />
 
     <x-ui.page-header
         :title="$po->po_number"
-        eyebrow="Purchase Order Details"
-        :description="'Purchase order for ' . $po->supplier->name . ' with arrival, QC, document, and claim tracking.'"
+        :eyebrow="__('purchasing.copy.purchase_order_details')"
+        :description="__('purchasing.page.po_help', ['supplier' => $po->supplier->name])"
     >
         <x-slot:actions>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" />
-            <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export data-export-source-singular="purchase order" data-export-source-plural="purchase orders" data-export-source-count="1" data-export-filtered="false" data-export-row-label="ordered material rows" data-export-row-explanation="Each ordered material item will be written as a separate Excel row.">
+            <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export data-export-source-singular="{{ __('exports.sources.purchase_order') }}" data-export-source-plural="{{ __('exports.sources.purchase_orders') }}" data-export-source-count="1" data-export-filtered="false" data-export-row-label="{{ __('purchasing.copy.ordered_material_rows') }}" data-export-row-explanation="{{ __('purchasing.copy.each_ordered_material_item_will_be_written_as_a_separate_excel_row') }}">
                 <x-ui.icon name="file-spreadsheet" />
-                <span>Export Excel</span>
+                <span>{{ __('purchasing.copy.export_excel') }}</span>
             </x-ui.button>
-            <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" title="Print Purchase Order" data-pdf-confirm>
+            <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" :title="__('purchasing.copy.print_purchase_order')" data-pdf-confirm>
                 <x-ui.icon name="file-text" />
-                <span>Print PDF</span>
+                <span>{{ __('purchasing.copy.print_pdf') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -183,56 +183,56 @@
     @endphp
     <div class="po-tracking-strip">
         <div class="po-tracking-step {{ $prDate ? 'is-active' : '' }}">
-            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">1. PR Created</div>
+            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.1_pr_created') }}</div>
             <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $prDate ? $regionalFormatter->timestamp($prDate, 'date') : '-' }}</div>
-            <div class="tw-text-outline tw-text-ui-xs">{{ $primaryPr?->pr_number ?? 'Requisition' }}</div>
+            <div class="tw-text-outline tw-text-ui-xs">{{ $primaryPr?->pr_number ?? __('terms.purchase_requisition') }}</div>
         </div>
         <div class="po-tracking-step is-active">
-            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">2. PO Created</div>
+            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.2_po_created') }}</div>
             <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $regionalFormatter->timestamp($po->created_at, 'date') }}</div>
             <div class="tw-text-outline tw-text-ui-xs">{{ $regionalFormatter->time($po->created_at) }}</div>
         </div>
         <div class="po-tracking-step {{ $po->estimated_arrival ? 'is-active' : '' }}">
-            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">3. PO Target Arrival Date</div>
+            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.3_po_target_arrival_date') }}</div>
             <div class="fw-bold {{ $po->is_overdue ? 'text-danger' : 'tw-text-on-surface' }} tw-text-ui-sm tw-mt-0.5">
                 {{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}
             </div>
             <div class="tw-text-outline tw-text-ui-xs">
-                {{ $po->is_overdue ? 'Overdue' : 'Purchasing target at ADASI' }}
+                {{ $po->is_overdue ? __('purchasing.copy.overdue') : __('purchasing.copy.purchasing_target_at_adasi') }}
             </div>
         </div>
         <div class="po-tracking-step {{ $po->actual_arrival ? 'is-active' : '' }}">
-            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">4. Actual Arrival</div>
+            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.4_actual_arrival') }}</div>
             <div class="fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw-text-outline' }} tw-text-ui-sm tw-mt-0.5">
                 @if($po->actual_arrival)
                     <x-ui.icon name="circle-check" size="sm" class="me-1 text-success" />
                     {{ $regionalFormatter->date($po->actual_arrival) }}
                 @else
-                    Pending Delivery
+                    {{ __('purchasing.audit_ui.pending_delivery') }}
                 @endif
             </div>
             <div class="tw-text-outline tw-text-ui-xs">
-                {{ $po->actual_arrival ? 'Received at plant' : 'Waiting arrival' }}
+                {{ $po->actual_arrival ? __('purchasing.copy.received_at_plant') : __('purchasing.copy.waiting_arrival') }}
             </div>
         </div>
     </div>
 
     {{-- Sticky In-Page Navigation Bar --}}
-    <nav class="po-sticky-nav-bar" aria-label="Purchase order sections">
+    <nav class="po-sticky-nav-bar" aria-label="{{ __('purchasing.copy.purchase_order_sections') }}">
         <ul class="nav po-nav-pills" id="po-section-nav">
-            <li class="nav-item"><a class="nav-link active" href="#sec-info">Order Info</a></li>
-            <li class="nav-item"><a class="nav-link" href="#sec-material">Materials & Commercials</a></li>
+            <li class="nav-item"><a class="nav-link active" href="#sec-info">{{ __('purchasing.copy.order_info') }}</a></li>
+            <li class="nav-item"><a class="nav-link" href="#sec-material">{{ __('purchasing.copy.materials_commercials') }}</a></li>
             @if(isset($itemProjections) && $itemProjections->isNotEmpty())
-                <li class="nav-item"><a class="nav-link" href="#sec-material-progress">Material Progress</a></li>
+                <li class="nav-item"><a class="nav-link" href="#sec-material-progress">{{ __('purchasing.copy.material_progress') }}</a></li>
             @endif
             @if($po->qcInspections->isNotEmpty())
-                <li class="nav-item"><a class="nav-link" href="#sec-inspection">QC Inspection</a></li>
+                <li class="nav-item"><a class="nav-link" href="#sec-inspection">{{ __('purchasing.copy.qc_inspection') }}</a></li>
             @endif
-            <li class="nav-item"><a class="nav-link" href="#sec-document">Import Documents</a></li>
+            <li class="nav-item"><a class="nav-link" href="#sec-document">{{ __('purchasing.copy.import_documents') }}</a></li>
             @if($po->status === 'claim_needed')
-                <li class="nav-item"><a class="nav-link text-danger" href="#sec-claim">Material Claim</a></li>
+                <li class="nav-item"><a class="nav-link text-danger" href="#sec-claim">{{ __('purchasing.copy.material_claim') }}</a></li>
             @endif
-            <li class="nav-item"><a class="nav-link" href="#sec-timeline">Timeline</a></li>
+            <li class="nav-item"><a class="nav-link" href="#sec-timeline">{{ __('purchasing.copy.timeline') }}</a></li>
         </ul>
     </nav>
 
@@ -240,14 +240,14 @@
         {{-- Main Column --}}
         <div class="tw-grid tw-min-w-0 tw-gap-4">
             {{-- Order Info Card --}}
-            <x-ui.card title="Order Information" id="sec-info" class="tw-scroll-mt-24">
+            <x-ui.card :title="__('purchasing.copy.order_information')" id="sec-info" class="tw-scroll-mt-24">
                 <div class="tw-grid tw-gap-px tw-overflow-hidden tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 lg:tw-grid-cols-3">
                     <div class="tw-bg-surface-container tw-p-2.5">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Supplier</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.supplier') }}</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->supplier->name }}</div>
                     </div>
                     <div class="tw-bg-surface-container tw-p-2.5">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Reference (No. PR)</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.reference_no_pr') }}</div>
                         <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">
                             @php $prs = $po->purchaseRequisitions(); @endphp
                             @if($prs->isEmpty())
@@ -259,26 +259,26 @@
                                     </a>
                                 @endforeach
                                 @if($prs->count() > 1)
-                                    <span class="ui-status-chip ui-status-chip--info">{{ $prs->count() }} PRs</span>
+                                    <span class="ui-status-chip ui-status-chip--info">{{ trans_choice('purchasing.copy.pr_count', $prs->count(), ['count' => $prs->count()]) }}</span>
                                 @endif
                             @endif
                         </div>
                     </div>
                     <div class="tw-bg-surface-container tw-p-2.5">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Procurement Period</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
                             @php $periods = $prs->map(fn($pr) => $pr->period?->display_label ?? '-')->unique(); @endphp
                             {{ $periods->implode(', ') }}
                         </div>
                     </div>
                     <div class="tw-bg-surface-container tw-p-2.5">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Locked Currency</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.locked_currency') }}</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->currency }}</span>
                         </div>
                     </div>
                     <div class="tw-bg-surface-container tw-p-2.5 sm:tw-col-span-2">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">PO Notes & Remark</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.po_notes_remark') }}</div>
                         <div class="tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $po->notes ?: '-' }}</div>
                     </div>
                 </div>
@@ -286,25 +286,25 @@
 
             {{-- Material Details Table --}}
             <x-ui.data-table
-            title="Materials and Commercial Breakdown"
-                description="Line items grouped by quotation and reference PR."
+            :title="__('purchasing.copy.materials_and_commercial_breakdown')"
+                :description="__('purchasing.copy.line_items_grouped_by_quotation_and_reference_pr')"
                 id="sec-material"
                 class="tw-scroll-mt-24"
             >
                 <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                     <thead class="table-light text-center">
                         <tr>
-                            <th scope="col" style="width: 35px;">No</th>
-                            <th scope="col">Material</th>
-                            <th scope="col">Specification</th>
-                            <th scope="col">Qty</th>
-                            <th scope="col" class="text-end">Weight/Unit</th>
-                            <th scope="col" class="text-end">Total Weight</th>
-                            <th scope="col" class="text-end">Price/Kg</th>
-                            <th scope="col" class="text-end">Amount</th>
-                            <th scope="col" class="text-end">Converted IDR</th>
-                            <th scope="col">Reference (No. PR)</th>
-                            <th scope="col">Remark</th>
+                            <th scope="col" style="width: 35px;">{{ __('purchasing.copy.no') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.material') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.specification') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.qty') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.weight_unit') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.amount') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.converted_idr') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.reference_no_pr') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -324,7 +324,7 @@
                                         <span class="tw-text-on-surface-variant fw-normal ms-2">
                                             ({{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }})
                                             @if($rate)
-                                                &bull; Locked Exchange Rate: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($rate->rate_to_idr), 'decimal') }}
+                                                &bull; {{ __('purchasing.copy.locked_exchange_rate') }}: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($rate->rate_to_idr), 'decimal') }}
                                             @endif
                                         </span>
                                     </td>
@@ -342,10 +342,10 @@
                                     <td class="fw-bold tw-text-on-surface">{{ $item->prItem->material_name }}</td>
                                     <td class="text-center">
                                         @if(!$item->is_available)
-                                            <span class="ui-status-chip ui-status-chip--error">Not Available</span>
+                                            <span class="ui-status-chip ui-status-chip--error">{{ __('purchasing.copy.not_available') }}</span>
                                         @elseif($item->prItem->shape)
-                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">Requested: {{ $item->prItem->dimension_label }}</div>
-                                            <div class="fw-semibold tw-text-ui-xs tw-mt-0.5">Offer: {{ $item->available_dimension_label }}</div>
+                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">{{ __('common.final_copy.requested') }} {{ $item->prItem->dimension_label }}</div>
+                                            <div class="fw-semibold tw-text-ui-xs tw-mt-0.5">{{ __('common.final_copy.offer') }} {{ $item->available_dimension_label }}</div>
                                         @else
                                             <span class="tw-text-outline">-</span>
                                         @endif
@@ -353,7 +353,7 @@
                                     <td class="text-center ui-tabular-nums">{{ $item->is_available ? ($item->available_qty ?? $item->prItem->quantity_value) : '—' }}</td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
                                         {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed), 'decimal') : '—' }}
-                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">Est Weight</span>@endif
+                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">{{ __('purchasing.copy.est_weight') }}</span>@endif
                                     </td>
                                     <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
@@ -363,7 +363,7 @@
                                     <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal') : '—' }}</td>
                                     <td class="text-nowrap">
                                         @if($quotation->purchaseRequisition)
-                                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none fw-medium" title="Open PR detail">
+                                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none fw-medium" title="{{ __('purchasing.copy.open_pr_detail') }}">
                                                 {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
                                             </a>
                                         @else
@@ -385,7 +385,7 @@
                     </tbody>
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
-                            <td colspan="7" class="text-end tw-text-on-surface">GRAND TOTAL</td>
+                            <td colspan="7" class="text-end tw-text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
                             <td class="text-end tw-text-on-surface ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($grandTotalAmount), 'decimal') }} {{ $po->currency }}</td>
                             <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($grandTotalIdr), 'decimal') }}</td>
                             <td colspan="2"></td>
@@ -397,8 +397,8 @@
             {{-- Supplier Material Progress Section --}}
             @if(isset($itemProjections) && $itemProjections->isNotEmpty())
                 <x-ui.data-table
-                    title="Supplier Material Progress"
-                    description="Live tracking of supplier manufacturing and dispatch preparation per awarded item."
+                    :title="__('purchasing.copy.supplier_material_progress')"
+                    :description="__('purchasing.copy.live_tracking_of_supplier_manufacturing_and_dispatch_preparation_per_awarded_item')"
                     id="sec-material-progress"
                     class="tw-scroll-mt-24"
                 >
@@ -414,18 +414,18 @@
                         <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th scope="col" style="width: 35px;">No</th>
-                                    <th scope="col" class="text-start">Material</th>
-                                    <th scope="col">Ordered</th>
-                                    <th scope="col">Accepted</th>
-                                    <th scope="col">In Transit</th>
-                                    <th scope="col">Waiting QC</th>
-                                    <th scope="col">Supplier-Controlled</th>
-                                    <th scope="col">Supplier Progress</th>
-                                    <th scope="col">Original Ready Date</th>
-                                    <th scope="col">Current Estimated Ready</th>
-                                    <th scope="col">Last Supplier Update</th>
-                                    <th scope="col" class="text-end">History</th>
+                                    <th scope="col" style="width: 35px;">{{ __('purchasing.copy.no') }}</th>
+                                    <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.ordered') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.accepted') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.in_transit') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.waiting_qc') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.supplier_controlled') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.supplier_progress') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.original_ready_date') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.current_estimated_ready') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.last_supplier_update') }}</th>
+                                    <th scope="col" class="text-end">{{ __('purchasing.copy.history') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -435,7 +435,7 @@
                                         <td class="text-start">
                                             <div class="fw-bold tw-text-on-surface">{{ $p['material_name'] }}</div>
                                             @if($p['hs_code'])
-                                                <div class="tw-text-on-surface-variant tw-text-ui-xs">HS: {{ $p['hs_code'] }}</div>
+                                                <div class="tw-text-on-surface-variant tw-text-ui-xs">{{ __('common.fields.hs_code') }}: {{ $p['hs_code'] }}</div>
                                             @endif
                                         </td>
                                         <td class="text-center ui-tabular-nums fw-semibold">{{ $p['ordered_qty'] }} pcs</td>
@@ -454,7 +454,7 @@
                                                 {{ $p['manual_progress_label'] }}
                                             </span>
                                         </td>
-                                        <td class="text-center ui-tabular-nums tw-text-on-surface-variant" title="Supplier Original Estimated Ready / Dispatch Date">
+                                        <td class="text-center ui-tabular-nums tw-text-on-surface-variant" title="{{ __('purchasing.copy.supplier_original_estimated_ready_dispatch_date') }}">
                                             {{ $p['original_supplier_ready_date'] ? $regionalFormatter->date(\Carbon\Carbon::parse($p['original_supplier_ready_date'])) : '-' }}
                                         </td>
                                         <td class="text-center ui-tabular-nums fw-semibold {{ $p['current_estimated_ready_date'] ? 'text-primary' : 'tw-text-on-surface-variant' }}">
@@ -463,9 +463,9 @@
                                         <td class="text-center tw-text-on-surface-variant" style="font-size: 0.75rem;">
                                             @if($p['last_progress_update_at'])
                                                 <div>{{ $regionalFormatter->timestamp($p['last_progress_update_at'], 'datetime') }}</div>
-                                                <div class="tw-text-outline">{{ $p['last_updated_by'] ?? 'Supplier' }}</div>
+                                                <div class="tw-text-outline">{{ $p['last_updated_by'] ?? __('purchasing.copy.supplier') }}</div>
                                             @else
-                                                <span class="text-muted">No updates</span>
+                                                <span class="text-muted">{{ __('purchasing.copy.no_updates') }}</span>
                                             @endif
                                         </td>
                                         <td class="text-end">
@@ -474,7 +474,7 @@
                                                     data-award-id="{{ $p['award_id'] }}"
                                                     data-material-name="{{ $p['material_name'] }}"
                                                     data-history-url="{{ route('purchasing.purchase-orders.item-progress.history', ['po_id' => $po, 'award_id' => $p['award']]) }}">
-                                                History
+                                                {{ __('purchasing.copy.history') }}
                                             </button>
                                         </td>
                                     </tr>
@@ -493,43 +493,43 @@
             @endphp
             @if($latestInspection)
                 <x-ui.card
-                    title="QC Inspection Report"
-                    description="Incoming quality verification by ADASI QC team."
+                    :title="__('purchasing.copy.qc_inspection_report')"
+                    :description="__('purchasing.copy.incoming_quality_verification_by_adasi_qc_team')"
                     id="sec-inspection"
                     class="tw-scroll-mt-24"
                 >
                     <x-slot:actions>
                         <span class="ui-status-chip {{ $latestInspection->status === 'ng' ? 'ui-status-chip--error' : 'ui-status-chip--success' }}">
-                            Status: {{ $latestInspection->status }}
+                            {{ __('common.final_copy.status') }} {{ \App\Support\StatusHelper::qcLabel($latestInspection->status) }}
                         </span>
                     </x-slot:actions>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Inspection Date</div>
+                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.inspection_date') }}</div>
                             <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $latestInspection->inspected_at ? $regionalFormatter->timestamp($latestInspection->inspected_at, 'datetime_comma') : '-' }}</div>
                         </div>
                         <div class="col-md-4">
-                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Inspected By</div>
+                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.inspected_by') }}</div>
                             <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $latestInspection->inspector->name ?? '-' }}</div>
                         </div>
                         <div class="col-md-4">
-                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Defective (NG) Items</div>
+                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.defective_ng_items') }}</div>
                             <div class="fw-bold {{ $latestInspection->items->where('status', 'ng')->count() > 0 ? 'text-danger' : 'text-success' }} tw-text-ui-sm tw-mt-0.5">
-                                {{ $latestInspection->items->where('status', 'ng')->count() }} Item(s)
+                                {{ trans_choice('purchasing.copy.item_count', $latestInspection->items->where('status', 'ng')->count(), ['count' => $latestInspection->items->where('status', 'ng')->count()]) }}
                             </div>
                         </div>
                     </div>
 
                     @if($latestInspection->items->where('status', 'ng')->count() > 0)
                         <div class="mb-3">
-                            <div class="fw-bold text-danger tw-text-ui-xs tw-uppercase tw-mb-1.5">Problematic Materials (NG)</div>
+                            <div class="fw-bold text-danger tw-text-ui-xs tw-uppercase tw-mb-1.5">{{ __('purchasing.copy.problematic_materials_ng') }}</div>
                             <ul class="list-group list-group-flush border rounded overflow-hidden">
                                 @foreach($latestInspection->items->where('status', 'ng') as $item)
                                     <li class="list-group-item py-2 px-3 tw-text-ui-xs">
                                         <span class="fw-bold tw-text-on-surface d-block">{{ $item->prItem->material_name }}</span>
                                         @if($item->notes)
-                                            <span class="tw-text-on-surface-variant fst-italic">QC Remarks: {{ $item->notes }}</span>
+                                            <span class="tw-text-on-surface-variant fst-italic">{{ __('common.final_copy.qc_remarks') }} {{ $item->notes }}</span>
                                         @endif
                                     </li>
                                 @endforeach
@@ -539,12 +539,12 @@
 
                     @if($latestInspection->attachments->count() > 0)
                         <div>
-                            <div class="fw-bold tw-text-on-surface-variant tw-text-ui-xs tw-uppercase tw-mb-1.5">QC Photo Evidence</div>
+                            <div class="fw-bold tw-text-on-surface-variant tw-text-ui-xs tw-uppercase tw-mb-1.5">{{ __('purchasing.copy.qc_photo_evidence') }}</div>
                             <div class="row g-2">
                                 @foreach($latestInspection->attachments as $att)
                                     <div class="col-4 col-md-3">
-                                        <a href="{{ route('attachments.show', $att->id) }}" target="_blank" class="d-block border rounded overflow-hidden tw-bg-surface-low tw-h-24">
-                                            <img src="{{ route('attachments.show', $att->id) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
+                                        <a href="{{ route('attachments.show', $att) }}" target="_blank" class="d-block border rounded overflow-hidden tw-bg-surface-low tw-h-24">
+                                            <img src="{{ route('attachments.show', $att) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw-object-cover">
                                         </a>
                                     </div>
                                 @endforeach
@@ -556,8 +556,8 @@
 
             {{-- Import Document Tracking --}}
             <x-ui.card
-                title="Import Document Tracking"
-                description="Status tracking for 4 mandatory import customs documents: Invoice, Bill of Lading, Packing List, and Form-E."
+                :title="__('purchasing.copy.import_document_tracking')"
+                :description="__('purchasing.copy.status_tracking_for_4_mandatory_import_customs_documents_invoice_bill_of_lading_packing_list_and_for')"
                 id="sec-document"
                 class="tw-scroll-mt-24"
             >
@@ -573,7 +573,7 @@
                 {{-- Progress Bar --}}
                 <div class="progress mb-3" style="height: 6px;">
                     <div class="progress-bar tw-bg-success" role="progressbar" id="docProgressBar"
-                         aria-label="Import document completion"
+                         aria-label="{{ __('purchasing.copy.import_document_completion') }}"
                          aria-valuemin="0"
                          aria-valuemax="100"
                          aria-valuenow="{{ $totalDocs > 0 ? round($completedDocs / $totalDocs * 100) : 0 }}"
@@ -581,23 +581,23 @@
                 </div>
 
                 @if($allDocsComplete)
-                    <x-ui.alert id="allDocsAlert" tone="success" title="Import Documents Complete" class="tw-mb-3">
-                        All mandatory import customs documents have been fully verified.
+                    <x-ui.alert id="allDocsAlert" tone="success" :title="__('purchasing.copy.import_documents_complete')" class="tw-mb-3">
+                        {{ __('purchasing.copy.all_mandatory_import_customs_documents_have_been_fully_verified') }}
                     </x-ui.alert>
                 @endif
                 <template id="allDocsAlertTemplate">
-                    <x-ui.alert id="allDocsAlert" tone="success" title="Import Documents Complete" class="tw-mb-3">
-                        All mandatory import customs documents have been fully verified.
+                    <x-ui.alert id="allDocsAlert" tone="success" :title="__('purchasing.copy.import_documents_complete')" class="tw-mb-3">
+                        {{ __('purchasing.copy.all_mandatory_import_customs_documents_have_been_fully_verified') }}
                     </x-ui.alert>
                 </template>
 
                 <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 xl:tw-grid-cols-4">
                     @php
                         $docConfig = [
-                            'invoice' => ['label' => 'Invoice', 'icon' => 'receipt', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
-                            'bl' => ['label' => 'Bill of Lading', 'icon' => 'truck', 'statuses' => ['pending' => 'Not Available', 'issued' => 'Issued', 'done' => 'Accepted']],
-                            'packing_list' => ['label' => 'Packing List', 'icon' => 'list-checks', 'statuses' => ['pending' => 'Not Available', 'received' => 'Accepted', 'verified' => 'Verified']],
-                            'form_e' => ['label' => 'Form-E', 'icon' => 'file-badge', 'statuses' => ['pending' => 'Not Available', 'processing' => 'Processing', 'done' => 'Completed']],
+                            'invoice' => ['label' => __('purchasing.copy.invoice_document'), 'icon' => 'receipt', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'received' => __('purchasing.copy.accepted'), 'verified' => __('purchasing.copy.verified')]],
+                            'bl' => ['label' => __('purchasing.copy.bill_of_lading'), 'icon' => 'truck', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'issued' => __('purchasing.copy.issued'), 'done' => __('purchasing.copy.accepted')]],
+                            'packing_list' => ['label' => __('purchasing.copy.packing_list'), 'icon' => 'list-checks', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'received' => __('purchasing.copy.accepted'), 'verified' => __('purchasing.copy.verified')]],
+                            'form_e' => ['label' => 'Form-E', 'icon' => 'file-badge', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'processing' => __('purchasing.copy.processing'), 'done' => __('purchasing.copy.completed')]],
                         ];
                     @endphp
 
@@ -610,7 +610,7 @@
                             $config = $docConfig[$doc->doc_type] ?? ['label' => $doc->doc_type, 'icon' => 'file', 'statuses' => []];
                             $summaryItem = $customsSummary[$doc->doc_type] ?? null;
                             $effectiveStatus = $summaryItem['status'] ?? $doc->status;
-                            $statusLabel = $config['statuses'][$effectiveStatus] ?? ucfirst($effectiveStatus);
+                            $statusLabel = $config['statuses'][$effectiveStatus] ?? \App\Support\StatusHelper::shipmentDocLabel($effectiveStatus);
                             $chipClasses = match($effectiveStatus) {
                                 'pending' => 'ui-status-chip--neutral',
                                 'received', 'issued', 'processing' => 'ui-status-chip--info',
@@ -654,16 +654,16 @@
                                                     <x-ui.icon name="truck" size="sm" class="text-primary flex-shrink-0" />
                                                     <a href="{{ route('purchasing.shipments.show', $sDoc['shipment']) }}" 
                                                        class="tw-text-ui-xs tw-font-semibold text-primary text-decoration-none hover:tw-underline tw-truncate" 
-                                                       title="Open shipment {{ $sDoc['shipment_number'] }}">
+                                                       title="{{ __('common.final_review.open_shipment', ['number' => $sDoc['shipment_number']]) }}">
                                                         {{ $sDoc['shipment_number'] }}
                                                     </a>
                                                 </div>
-                                                <a href="{{ route('attachments.show', $sDoc['attachment']->id) }}" 
+                                                <a href="{{ route('attachments.show', $sDoc['attachment']) }}"
                                                    target="_blank" 
                                                    class="btn btn-outline-primary btn-sm py-1 px-2 tw-text-ui-xs tw-w-full d-inline-flex align-items-center justify-content-center gap-1.5 rounded" 
-                                                   title="View {{ $sDoc['attachment']->file_name }}">
+                                                   title="{{ __('common.actions.view') }} {{ $sDoc['attachment']->file_name }}">
                                                     <x-ui.icon name="file-text" size="sm" />
-                                                    <span class="tw-truncate">View File</span>
+                                                    <span class="tw-truncate">{{ __('purchasing.copy.view_file') }}</span>
                                                 </a>
                                             </div>
                                         @endforeach
@@ -671,7 +671,7 @@
                                 @else
                                     <div class="tw-rounded-lg tw-bg-surface-container-low/50 tw-border tw-border-dashed tw-border-outline-variant/60 tw-p-2 tw-text-center tw-flex tw-flex-col tw-items-center tw-justify-center" style="min-height: 72px;">
                                         <x-ui.icon name="file" size="sm" class="tw-text-outline/40 tw-mb-1" />
-                                        <span class="tw-text-outline/70 tw-text-ui-xs tw-font-medium">No file uploaded</span>
+                                        <span class="tw-text-outline/70 tw-text-ui-xs tw-font-medium">{{ __('purchasing.copy.no_file_uploaded') }}</span>
                                     </div>
                                 @endif
                             </div>
@@ -684,7 +684,7 @@
                                         data-doc-label="{{ $config['label'] }}"
                                         data-doc-status="{{ $effectiveStatus }}"
                                         :data-doc-statuses="json_encode($config['statuses'])">
-                                    <x-ui.icon name="square-pen" size="sm" class="me-1" /> Update Status
+                                    <x-ui.icon name="square-pen" size="sm" class="me-1" /> {{ __('purchasing.copy.update_status') }}
                                 </x-ui.button>
                             </div>
                         </div>
@@ -694,16 +694,16 @@
         </div>
 
         {{-- Sidebar Column --}}
-        <aside class="tw-grid tw-gap-4" aria-label="PO operations and timeline">
+        <aside class="tw-grid tw-gap-4" aria-label="{{ __('purchasing.copy.po_operations_and_timeline') }}">
             {{-- Supplier Chat Channel --}}
-            <x-ui.card title="Supplier Negotiation">
+            <x-ui.card :title="__('purchasing.copy.supplier_negotiation')">
                 <form action="{{ route('purchasing.conversations.start.po', $po) }}" method="POST" data-chat-start-form data-managed-submit>
                     @csrf
                     <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                     <x-ui.button type="submit" variant="outline" size="sm" class="tw-w-full tw-justify-between">
                         <span class="d-inline-flex align-items-center gap-2">
                             <x-ui.icon name="message-square" size="sm" />
-                            <span class="fw-semibold">Chat with Supplier</span>
+                            <span class="fw-semibold">{{ __('purchasing.copy.chat_with_supplier') }}</span>
                         </span>
                         <x-ui.icon name="chevron-right" size="sm" />
                     </x-ui.button>
@@ -712,25 +712,25 @@
 
             {{-- Material Claim Alert (if status claim_needed) --}}
             @if($po->status === 'claim_needed')
-                <x-ui.card title="Defect Claim Follow-Up" id="sec-claim" class="tw-scroll-mt-24 border-danger">
+                <x-ui.card :title="__('purchasing.copy.defect_claim_follow_up')" id="sec-claim" class="tw-scroll-mt-24 border-danger">
                     <x-slot:actions><span class="ui-status-chip ui-status-chip--error">NG</span></x-slot:actions>
                     <p class="text-danger tw-text-ui-xs fw-medium mb-3">
-                        Quality inspection failed (status NG). Immediate claim action is required.
+                        {{ __('purchasing.copy.quality_inspection_failed_status_ng_immediate_claim_action_is_required') }}
                     </p>
 
                     @if($activeClaim)
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim)" variant="danger" size="sm" class="tw-w-full tw-justify-between">
-                            <span><x-ui.icon name="octagon-alert" size="sm" class="me-1" /> View Active Claim</span>
+                            <span><x-ui.icon name="octagon-alert" size="sm" class="me-1" /> {{ __('purchasing.copy.view_active_claim') }}</span>
                             <x-ui.icon name="chevron-right" size="sm" />
                         </x-ui.button>
                     @elseif($latestNgInspection)
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection)" variant="danger" size="sm" class="tw-w-full tw-justify-between">
-                            <span><x-ui.icon name="plus-circle" size="sm" class="me-1" /> Submit Material Claim</span>
+                            <span><x-ui.icon name="plus-circle" size="sm" class="me-1" /> {{ __('purchasing.copy.submit_material_claim') }}</span>
                             <x-ui.icon name="chevron-right" size="sm" />
                         </x-ui.button>
                     @else
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.index')" variant="outline" size="sm" class="tw-w-full tw-justify-between">
-                            <span><x-ui.icon name="folder-open" size="sm" class="me-1" /> Open Claim List</span>
+                            <span><x-ui.icon name="folder-open" size="sm" class="me-1" /> {{ __('purchasing.copy.open_claim_list') }}</span>
                             <x-ui.icon name="chevron-right" size="sm" />
                         </x-ui.button>
                     @endif
@@ -739,23 +739,23 @@
 
             {{-- Confirm Arrival Action Button --}}
             @if(in_array($po->status, ['active', 'overdue']) && !$po->actual_arrival && $po->isLegacyArrivalEligible())
-                <x-ui.card title="Delivery Status Action">
+                <x-ui.card :title="__('purchasing.copy.delivery_status_action')">
                     <form action="{{ route('purchasing.purchase-orders.confirm-arrival', $po) }}" method="POST" id="arrivalForm">
                         @csrf
                         <x-ui.button type="button" size="sm" class="tw-w-full" id="btnConfirmArrival">
                             <x-ui.icon name="package-check" size="sm" />
-                            <span>Confirm Material Arrival</span>
+                            <span>{{ __('purchasing.copy.confirm_material_arrival') }}</span>
                         </x-ui.button>
                     </form>
                 </x-ui.card>
             @endif
 
             {{-- Timeline History --}}
-            <x-ui.card title="Order Timeline" id="sec-timeline" class="tw-scroll-mt-24">
+            <x-ui.card :title="__('purchasing.copy.order_timeline')" id="sec-timeline" class="tw-scroll-mt-24">
                 <ol class="pr-timeline">
                     <li class="pr-timeline-item is-complete">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold text-primary">PO Created</div>
+                        <div class="tw-text-ui-sm fw-bold text-primary">{{ __('purchasing.copy.po_created') }}</div>
                         <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $po->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($po->created_at, 'datetime_comma') }}</time>
                     </li>
 
@@ -763,15 +763,15 @@
                         @if($doc->status !== 'pending')
                             @php
                                 $docLabels = [
-                                    'invoice' => 'Invoice',
-                                    'bl' => 'Bill of Lading',
-                                    'packing_list' => 'Packing List',
+                                    'invoice' => __('purchasing.copy.invoice_document'),
+                                    'bl' => __('purchasing.copy.bill_of_lading'),
+                                    'packing_list' => __('purchasing.copy.packing_list'),
                                     'form_e' => 'Form-E',
                                 ];
                             @endphp
                             <li class="pr-timeline-item is-complete">
                                 <span class="pr-timeline-marker" aria-hidden="true"></span>
-                                <div class="tw-text-ui-sm fw-bold tw-text-on-surface">{{ $docLabels[$doc->doc_type] ?? $doc->doc_type }}: {{ ucfirst($doc->status) }}</div>
+                                <div class="tw-text-ui-sm fw-bold tw-text-on-surface">{{ $docLabels[$doc->doc_type] ?? __('purchasing.copy.document') }}: {{ \App\Support\StatusHelper::shipmentDocLabel($doc->status) }}</div>
                                 <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $doc->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($doc->updated_at, 'datetime_comma') }}</time>
                             </li>
                         @endif
@@ -779,13 +779,13 @@
 
                     <li class="pr-timeline-item {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'is-current' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning' : 'tw-text-on-surface-variant' }}">Estimated Arrival</div>
+                        <div class="tw-text-ui-sm fw-bold {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning' : 'tw-text-on-surface-variant' }}">{{ __('purchasing.copy.estimated_arrival') }}</div>
                         <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs">{{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}</time>
                     </li>
 
                     <li class="pr-timeline-item {{ $po->actual_arrival ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw-text-outline' }}">Material Arrival</div>
+                        <div class="tw-text-ui-sm fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw-text-outline' }}">{{ __('purchasing.copy.material_arrival') }}</div>
                         @if($po->actual_arrival)
                             <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs">{{ $regionalFormatter->date($po->actual_arrival) }}</time>
                         @endif
@@ -801,21 +801,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title fw-bold" id="modalDocTitle">Update Document Status</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h6 class="modal-title fw-bold" id="modalDocTitle">{{ __('purchasing.copy.update_document_status') }}</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body tw-p-3.5">
                 <input type="hidden" id="modalDocId">
                 <div>
-                    <label class="form-label small fw-semibold tw-text-on-surface" for="modalDocStatus">Select New Status</label>
+                    <label class="form-label small fw-semibold tw-text-on-surface" for="modalDocStatus">{{ __('purchasing.copy.select_new_status') }}</label>
                     <select class="form-select form-select-sm" id="modalDocStatus"></select>
                 </div>
             </div>
             <div class="modal-footer tw-bg-surface-low border-top">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSaveDocStatus">
                     <span class="spinner-border spinner-border-sm d-none me-1" id="docSpinner"></span>
-                    Save Changes
+                    {{ __('purchasing.copy.save_changes') }}
                 </x-ui.button>
             </div>
         </div>
@@ -828,17 +828,17 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title tw-text-ui-base fw-bold" id="progressHistoryModalLabel">
-                    Material Progress History
+                    {{ __('purchasing.copy.material_progress_history') }}
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body" id="progressHistoryModalBody">
                 <div class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Loading history...
+                    <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> {{ __('purchasing.copy.loading_history') }}
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('purchasing.copy.close') }}</button>
             </div>
         </div>
     </div>
@@ -999,7 +999,7 @@
         const statuses = $(this).data('doc-statuses');
 
         $('#modalDocId').val(docId);
-        $('#modalDocTitle').text('Update Document: ' + docLabel);
+        $('#modalDocTitle').text(@js(__('common.final_review.update_document')).replace(':document', docLabel));
 
         const select = $('#modalDocStatus');
         select.empty();
@@ -1028,8 +1028,8 @@
             success: function(res) {
                 if (res.success) {
                     const statusLabels = {
-                        'pending': @json('Not Available'), 'received': @json('Accepted'), 'verified': @json('Verified'),
-                        'issued': @json('Issued'), 'processing': @json('Processing'), 'done': @json('Completed')
+                        'pending': @json(__('purchasing.copy.not_available')), 'received': @json(\App\Support\StatusHelper::shipmentDocLabel('received')), 'verified': @json(\App\Support\StatusHelper::shipmentDocLabel('verified')),
+                        'issued': @json(\App\Support\StatusHelper::shipmentDocLabel('issued')), 'processing': @json(\App\Support\StatusHelper::shipmentDocLabel('processing')), 'done': @json(\App\Support\StatusHelper::shipmentDocLabel('done'))
                     };
                     const statusClasses = {
                         'pending': 'ui-status-chip--neutral', 'received': 'ui-status-chip--info', 'verified': 'ui-status-chip--success',
@@ -1060,8 +1060,8 @@
                         .text(completed + '/' + total + ' complete')
                         .attr('class', 'ui-status-chip ' + (docsComplete ? 'ui-status-chip--success' : 'ui-status-chip--warning'))
                         .attr('data-bs-title', docsComplete
-                            ? 'All import documents are complete.'
-                            : 'Some import documents still need to be completed or verified.');
+                            ? @json(__('purchasing.copy.all_import_documents_are_complete'))
+                            : @json(__('purchasing.copy.some_import_documents_still_need_to_be_completed_or_verified')));
                     window.initAdasiTooltips?.(document);
 
                     if (docsComplete) {
@@ -1077,7 +1077,7 @@
 
                     AdasiToast.show({
                         type: 'success',
-                        title: @json('Success!'),
+                        title: @json(__('common.feedback.success')),
                         message: res.message,
                         autoClose: 1500
                     });
@@ -1086,8 +1086,8 @@
             error: function(xhr) {
                 AdasiToast.show({
                     type: 'error',
-                    title: @json('Update Failed'),
-                    message: @json('The document status could not be updated.'),
+                    title: @json(__('purchasing.copy.update_failed')),
+                    message: @json(__('purchasing.copy.the_document_status_could_not_be_updated')),
                     autoClose: 4000
                 });
             },
@@ -1100,11 +1100,11 @@
 
     $('#btnConfirmArrival').on('click', function() {
         AdasiAlert.confirm({
-            title: @json('Confirm Material Arrival?'),
-            text: @json('The arrival date will be set to today and QC will be notified.'),
+            title: @json(__('purchasing.copy.confirm_material_arrival')),
+            text: @json(__('purchasing.copy.the_arrival_date_will_be_set_to_today_and_qc_will_be_notified')),
             confirmTone: 'success',
-            confirmText: @json('Yes, Confirm!'),
-            cancelText: @json('Cancel')
+            confirmText: @json(__('purchasing.audit_ui.confirm_arrival')),
+            cancelText: @json(__('purchasing.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#arrivalForm').submit();
@@ -1137,16 +1137,16 @@
             header.append(status, timestamp);
 
             const details = textElement('div', 'tw-text-on-surface-variant mb-1', '');
-            details.appendChild(textElement('strong', '', 'Supplier-controlled Qty snapshot:'));
+            details.appendChild(textElement('strong', '', @json(__('purchasing.copy.supplier_controlled_qty_snapshot'))));
             appendText(details, ` ${item.supplier_controlled_qty_snapshot} pcs`);
             if (item.estimated_ready_date_display) {
                 appendText(details, ' • ');
-                details.appendChild(textElement('strong', '', 'Estimated Ready:'));
+                details.appendChild(textElement('strong', '', @json(__('purchasing.copy.estimated_ready'))));
                 appendText(details, ` ${item.estimated_ready_date_display}`);
             }
             appendText(details, ' • ');
-            details.appendChild(textElement('strong', '', 'Updated by:'));
-            appendText(details, ` ${item.updated_by ?? 'Supplier User'}`);
+            details.appendChild(textElement('strong', '', @json(__('purchasing.copy.updated_by'))));
+            appendText(details, ` ${item.updated_by ?? @json(__('purchasing.copy.supplier_user'))}`);
 
             row.append(header, details);
             if (item.note) {
@@ -1167,8 +1167,8 @@
         const titleEl = document.getElementById('progressHistoryModalLabel');
         const bodyEl = document.getElementById('progressHistoryModalBody');
 
-        titleEl.textContent = `Progress History: ${materialName}`;
-        bodyEl.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Loading history...</div>';
+        titleEl.textContent = window.AdasiI18n.t('purchasing.js.progress_history', { material: materialName });
+        bodyEl.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> ' + window.AdasiI18n.t('purchasing.js.loading_history') + '</div>';
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
@@ -1179,14 +1179,14 @@
         .then(res => res.json())
         .then(data => {
             if (!data.history || data.history.length === 0) {
-                bodyEl.innerHTML = '<div class="text-center py-4 text-muted">No progress updates recorded yet. Default state is <strong>Awaiting Confirmation</strong>.</div>';
+                bodyEl.innerHTML = '<div class="text-center py-4 text-muted">' + window.AdasiI18n.t('purchasing.js.no_progress') + '</div>';
                 return;
             }
 
             bodyEl.replaceChildren(renderProgressHistoryRows(data.history));
         })
         .catch(() => {
-            bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">Failed to load progress history.</div>';
+            bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">' + window.AdasiI18n.t('purchasing.js.history_failed') + '</div>';
         });
     });
 </script>

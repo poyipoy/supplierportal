@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Models\LocalInvoice;
+use App\Support\BusinessTime;
 use App\Support\Money;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -14,12 +15,20 @@ class PaymentForecastService
     public const DEFAULT_MONTHLY_PERIODS = 6;
 
     /**
+     * Resolve reference date in business timezone.
+     */
+    protected function businessRef(?CarbonInterface $referenceDate = null): Carbon
+    {
+        return Carbon::instance(BusinessTime::toBusiness($referenceDate ?? now()));
+    }
+
+    /**
      * Get available months for the forecast month selector.
      * Defaults to last 5 months, current month, and 1 month ahead (total 7 months).
      */
     public function getAvailableMonths(int $pastMonths = 5, int $futureMonths = 1, ?CarbonInterface $referenceDate = null): array
     {
-        $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+        $ref = $this->businessRef($referenceDate);
         $startMonth = (clone $ref)->startOfMonth()->subMonths($pastMonths);
         $totalMonths = $pastMonths + 1 + $futureMonths;
         $months = [];
@@ -47,13 +56,13 @@ class PaymentForecastService
     public function getWeeklyForecast(string|CarbonInterface|int|null $month = null, ?CarbonInterface $referenceDate = null): array
     {
         if (is_int($month)) {
-            $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+            $ref = $this->businessRef($referenceDate);
         } elseif ($month instanceof CarbonInterface) {
-            $ref = Carbon::instance($month);
+            $ref = $this->businessRef($month);
         } elseif (is_string($month) && ! empty($month)) {
-            $ref = Carbon::parse($month)->startOfMonth();
+            $ref = Carbon::parse($month, BusinessTime::tz())->startOfMonth();
         } else {
-            $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+            $ref = $this->businessRef($referenceDate);
         }
 
         return $this->aggregateWeeklyByMonth($ref);
@@ -69,13 +78,16 @@ class PaymentForecastService
         $monthStart = (clone $targetMonth)->startOfDay();
         $monthEnd = (clone $targetMonth)->endOfMonth()->endOfDay();
 
+        $storageStart = BusinessTime::toStorage($monthStart);
+        $storageEnd = BusinessTime::toStorage($monthEnd);
+
         // 1. Fetch invoices within this month
         $invoices = LocalInvoice::with('currentVerification')
-            ->where(function ($q) use ($monthStart, $monthEnd) {
-                $q->whereBetween('ready_to_pay_at', [$monthStart, $monthEnd])
-                    ->orWhere(function ($sub) use ($monthStart, $monthEnd) {
+            ->where(function ($q) use ($storageStart, $storageEnd) {
+                $q->whereBetween('ready_to_pay_at', [$storageStart, $storageEnd])
+                    ->orWhere(function ($sub) use ($storageStart, $storageEnd) {
                         $sub->whereNull('ready_to_pay_at')
-                            ->whereBetween('approved_at', [$monthStart, $monthEnd]);
+                            ->whereBetween('approved_at', [$storageStart, $storageEnd]);
                     });
             })
             ->whereNotIn('status', [
@@ -112,16 +124,22 @@ class PaymentForecastService
             $monthFull = $targetMonth->translatedFormat('F');
             $year = $targetMonth->format('Y');
 
-            $label = sprintf('Minggu %d (%02d %s - %02d %s %s)', $weekNumber, $def['start_day'], $monthName, $def['end_day'], $monthName, $year);
+            $label = __('finance.forecast_copy.week_range', [
+                'week' => $weekNumber,
+                'start' => sprintf('%02d', $def['start_day']),
+                'end' => sprintf('%02d', $def['end_day']),
+                'month' => $monthName,
+                'year' => $year,
+            ]);
             $shortLabel = sprintf('W%d (%02d-%02d %s)', $weekNumber, $def['start_day'], $def['end_day'], $monthName);
-            $periodName = 'Minggu '.$weekNumber;
+            $periodName = __('finance.forecast_copy.week', ['week' => $weekNumber]);
 
             $periodInvoices = $invoices->filter(function ($inv) use ($periodStart, $periodEnd) {
                 $eventAt = $inv->ready_to_pay_at ?? $inv->approved_at;
                 if (! $eventAt) {
                     return false;
                 }
-                $eventDate = $eventAt instanceof CarbonInterface ? $eventAt : Carbon::parse($eventAt);
+                $eventDate = BusinessTime::toBusiness($eventAt);
 
                 return $eventDate->betweenIncluded($periodStart, $periodEnd);
             });
@@ -183,16 +201,19 @@ class PaymentForecastService
      */
     protected function aggregateMonthlyForecast(int $periodCount, ?CarbonInterface $referenceDate = null): array
     {
-        $ref = $referenceDate ? Carbon::instance($referenceDate) : Carbon::now();
+        $ref = $this->businessRef($referenceDate);
         $windowStart = (clone $ref)->startOfMonth()->subMonths($periodCount - 1)->startOfDay();
         $windowEnd = (clone $ref)->endOfMonth()->endOfDay();
 
+        $storageStart = BusinessTime::toStorage($windowStart);
+        $storageEnd = BusinessTime::toStorage($windowEnd);
+
         $invoices = LocalInvoice::with('currentVerification')
-            ->where(function ($q) use ($windowStart, $windowEnd) {
-                $q->whereBetween('ready_to_pay_at', [$windowStart, $windowEnd])
-                    ->orWhere(function ($sub) use ($windowStart, $windowEnd) {
+            ->where(function ($q) use ($storageStart, $storageEnd) {
+                $q->whereBetween('ready_to_pay_at', [$storageStart, $storageEnd])
+                    ->orWhere(function ($sub) use ($storageStart, $storageEnd) {
                         $sub->whereNull('ready_to_pay_at')
-                            ->whereBetween('approved_at', [$windowStart, $windowEnd]);
+                            ->whereBetween('approved_at', [$storageStart, $storageEnd]);
                     });
             })
             ->whereNotIn('status', [
@@ -217,7 +238,7 @@ class PaymentForecastService
                 if (! $eventAt) {
                     return false;
                 }
-                $eventDate = $eventAt instanceof CarbonInterface ? $eventAt : Carbon::parse($eventAt);
+                $eventDate = BusinessTime::toBusiness($eventAt);
 
                 return $eventDate->betweenIncluded($periodStart, $periodEnd);
             });

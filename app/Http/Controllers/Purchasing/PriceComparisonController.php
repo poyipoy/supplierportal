@@ -87,25 +87,24 @@ class PriceComparisonController extends Controller
             $quotationCount = (int) ($eligiblePrCounts[$pr->id] ?? 0);
             $pr->eligible_quotation_count = $quotationCount;
             $itemCount = $pr->items->count();
-            $label = ($pr->pr_number ?? 'DRAFT')
-                .' - '
-                .($pr->period->display_label ?? $pr->period->name ?? '-')
-                .' ('
-                .$quotationCount
-                .' quotation(s))';
+            $prNumber = $pr->pr_number ?? __('purchasing.copy.draft');
+            $periodLabel = $pr->period->display_label ?? $pr->period->name ?? '-';
+            $quotationCountLabel = trans_choice('purchasing.copy.comparison_quotation_count', $quotationCount, ['count' => $quotationCount]);
+            $label = $prNumber.' - '.$periodLabel.' ('.$quotationCountLabel.')';
 
             $previewMaterials = $pr->items->take(3)->pluck('material_name')->implode(', ');
             if ($itemCount > 3) {
-                $previewMaterials .= ' (+'.($itemCount - 3).' lainnya)';
+                $previewMaterials .= ' ('.__('purchasing.copy.more_materials_count', ['count' => $itemCount - 3]).')';
             }
 
 
             return [
                 'id' => $pr->getRouteKey(),
                 'label' => $label,
-                'prNumber' => $pr->pr_number ?? 'DRAFT',
+                'prNumber' => $prNumber,
                 'period' => $pr->period->display_label ?? $pr->period->name ?? '-',
                 'quotationCount' => $quotationCount,
+                'quotationCountLabel' => $quotationCountLabel,
                 'previewMaterials' => $previewMaterials,
                 'search' => strtolower($label),
             ];
@@ -125,7 +124,7 @@ class PriceComparisonController extends Controller
                 $selectedPrOption = $eligiblePrOptions->firstWhere('id', $selectedPr->getRouteKey());
                 $selectedPrOption ??= [
                     'id' => $selectedPr->getRouteKey(),
-                    'label' => ($selectedPr->pr_number ?? 'DRAFT').' - '.($selectedPr->period->display_label ?? $selectedPr->period->name ?? '-'),
+                    'label' => ($selectedPr->pr_number ?? __('purchasing.copy.draft')).' - '.($selectedPr->period->display_label ?? $selectedPr->period->name ?? '-'),
                 ];
                 $comparisonItems = $selectedPr->items->values();
                 $materialOptions = $comparisonItems;
@@ -146,7 +145,7 @@ class PriceComparisonController extends Controller
                     'status' => $q->status,
                     'quotation_id' => $q->id,
                     'estimated_delivery' => $q->estimated_delivery ? $q->estimated_delivery->format('Y-m-d') : null,
-                    'estimated_delivery_formatted' => $q->estimated_delivery ? $q->estimated_delivery->format('d M Y') : '-',
+                    'estimated_delivery_formatted' => $q->estimated_delivery ? $this->regionalFormatter->date($q->estimated_delivery, 'human') : '-',
                 ]);
 
                 $matrix = [];
@@ -541,7 +540,7 @@ class PriceComparisonController extends Controller
                 return '<div class="fw-bold text-primary">'.$this->formatRupiah($row->current_price_idr).'</div>'
                     .'<div class="text-muted small">'.$this->formatNumber($row->current_price, 4).' '.e($row->current_currency).'/kg</div>'
                     .'<div class="text-muted small">'.e($row->current_supplier ?: '-').'</div>'
-                    .'<div class="text-muted small">'.e($this->formatDate($row->current_submitted_at) ?? 'Draft').'</div>';
+                    .'<div class="text-muted small">'.e($this->formatDate($row->current_submitted_at) ?? __('purchasing.copy.draft')).'</div>';
             })
             ->addColumn('best_price_display', function ($row) use ($returnUrl) {
                 $html = '<div class="fw-bold text-success">'.$this->formatRupiah($row->best_price_idr).'</div>'
@@ -593,8 +592,8 @@ class PriceComparisonController extends Controller
                     Hashids::encode((int) $row->current_quotation_id),
                     $returnUrl
                 );
-                $html = '<div class="d-inline-flex align-items-center gap-1" role="group" aria-label="Quotation comparison actions">'
-                    .'<a href="'.e($currentQuotationUrl).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="View current quotation">Current</a>';
+                $html = '<div class="d-inline-flex align-items-center gap-1" role="group" aria-label="'.e(__('purchasing.copy.quotation_comparison_actions')).'">'
+                    .'<a href="'.e($currentQuotationUrl).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.copy.view_current_quotation')).'">'.e(__('purchasing.copy.current')).'</a>';
 
                 if ($row->best_quotation_id) {
                     $bestQuotationUrl = $this->routeWithReturn(
@@ -602,7 +601,7 @@ class PriceComparisonController extends Controller
                         Hashids::encode((int) $row->best_quotation_id),
                         $returnUrl
                     );
-                    $html .= '<a href="'.e($bestQuotationUrl).'" class="ui-data-action ui-data-action--success ui-focus-ring" aria-label="View historical best quotation">Best</a>';
+                    $html .= '<a href="'.e($bestQuotationUrl).'" class="ui-data-action ui-data-action--success ui-focus-ring" aria-label="'.e(__('purchasing.copy.view_historical_best_quotation')).'">'.e(__('purchasing.copy.best')).'</a>';
                 }
 
                 return $html.'</div>';
@@ -844,36 +843,36 @@ class PriceComparisonController extends Controller
     {
         if ($diffPercent === null) {
             return [
-                'label' => 'N/A',
+                'label' => __('status.meta.not_applicable'),
                 'class' => 'bg-secondary',
                 'icon' => 'circle-minus',
-                'recommendation' => 'Safe',
+                'recommendation' => __('status.meta.safe'),
             ];
         }
 
         if ($diffPercent <= 0) {
             return [
-                'label' => 'Best Price',
+                'label' => __('purchasing.copy.best_price'),
                 'class' => 'bg-success',
                 'icon' => 'check-circle',
-                'recommendation' => 'Safe',
+                'recommendation' => __('status.meta.safe'),
             ];
         }
 
         if ($diffPercent <= $competitiveThreshold) {
             return [
-                'label' => 'Competitive',
+                'label' => __('purchasing.copy.competitive'),
                 'class' => 'bg-primary',
                 'icon' => 'shield-check',
-                'recommendation' => 'Safe',
+                'recommendation' => __('status.meta.safe'),
             ];
         }
 
         return [
-            'label' => 'Above History',
+            'label' => __('purchasing.copy.above_history'),
             'class' => 'bg-warning text-dark',
             'icon' => 'info',
-            'recommendation' => 'Safe, check context',
+            'recommendation' => __('purchasing.copy.safe_check_context'),
         ];
     }
 
@@ -1081,8 +1080,9 @@ class PriceComparisonController extends Controller
                 $priceIdr = $rate !== null && $item->price_per_kg !== null
                     ? round((float) $item->price_per_kg * (float) $rate, 0)
                     : null;
-                $periodLabel = $purchaseAt?->format('M Y')
-                    ?? $this->historicalPeriodLabel(
+                $periodLabel = $purchaseAt
+                    ? $this->regionalFormatter->monthYear($purchaseAt)
+                    : $this->historicalPeriodLabel(
                         $item->history_period_name,
                         $item->history_period_month,
                         $item->history_period_year,
@@ -1156,7 +1156,9 @@ class PriceComparisonController extends Controller
             $periodSort = $purchaseAt
                 ? $purchaseAt->format('Y-m-d H:i:s').'-'.str_pad((string) $item->id, 10, '0', STR_PAD_LEFT)
                 : sprintf('9999-99-99 99:99:99-%010d', (int) $item->id);
-            $periodLabel = $purchaseAt?->format('M Y') ?? ($period->display_label ?? $period->name ?? 'Unknown');
+            $periodLabel = $purchaseAt
+                ? $this->regionalFormatter->monthYear($purchaseAt)
+                : ($period->display_label ?? $period->name ?? __('purchasing.copy.unknown_period'));
 
             return [
                 'period' => $periodLabel,
@@ -1213,7 +1215,7 @@ class PriceComparisonController extends Controller
     private function historicalPeriodLabel($name, $month, $year): string
     {
         if ($year === null) {
-            return 'Unknown';
+            return __('purchasing.copy.unknown_period');
         }
 
         return $month === null
@@ -1327,7 +1329,7 @@ class PriceComparisonController extends Controller
                 '1y' => '1 Year',
                 '2y' => '2 Years',
                 '5y' => '5 Years',
-                'all' => 'All Years',
+                'all' => __('purchasing.copy.all_years'),
             ];
         }
 
@@ -1336,7 +1338,7 @@ class PriceComparisonController extends Controller
             '6m' => '6 Months',
             '12m' => '12 Months',
             '24m' => '24 Months',
-            'all' => 'All Months',
+            'all' => __('purchasing.copy.all_months'),
         ];
     }
 
@@ -1403,7 +1405,7 @@ class PriceComparisonController extends Controller
         }
 
         if (empty($selections)) {
-            return back()->with('error', 'Please select at least one item offer.');
+            return back()->with('error', __('purchasing.copy.please_select_at_least_one_item_offer'));
         }
 
         try {
@@ -1423,7 +1425,7 @@ class PriceComparisonController extends Controller
                         ->get();
 
                     if ($lockedPrItems->count() !== count($prItemIds)) {
-                        throw new \InvalidArgumentException('One or more selected PR items do not belong to this requisition.');
+                        throw new \InvalidArgumentException(__('purchasing.copy.one_or_more_selected_pr_items_do_not_belong_to_this_requisition'));
                     }
 
                     $quotationItemIds = array_values($selections);
@@ -1443,13 +1445,13 @@ class PriceComparisonController extends Controller
                         ->get();
 
                     if ($lockedQuotations->count() !== count($quotationIds)) {
-                        throw new \InvalidArgumentException('One or more selected quotations could not be found.');
+                        throw new \InvalidArgumentException(__('purchasing.copy.one_or_more_selected_quotations_could_not_be_found'));
                     }
 
                     foreach ($lockedQuotations as $quotation) {
                         if (! in_array($quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
                             throw new \InvalidArgumentException(
-                                "Quotation #{$quotation->id} has ineligible status '{$quotation->status}'."
+                                __('purchasing.comparison.ineligible_status', ['quotation' => $quotation->id, 'status' => $quotation->status])
                             );
                         }
                     }
@@ -1461,7 +1463,7 @@ class PriceComparisonController extends Controller
                         ->get();
 
                     if ($lockedQuotationItems->count() !== count($quotationItemIds)) {
-                        throw new \InvalidArgumentException('One or more selected quotation items could not be found.');
+                        throw new \InvalidArgumentException(__('purchasing.copy.one_or_more_selected_quotation_items_could_not_be_found'));
                     }
 
                     PrItemAward::query()
@@ -1480,18 +1482,18 @@ class PriceComparisonController extends Controller
 
                 if ($pos->count() === 1) {
                     return redirect()->route('purchasing.purchase-orders.show', $pos->first())
-                        ->with('success', "Item selections finalized and Purchase Order {$pos->first()->po_number} successfully created!");
+                        ->with('success', __('purchasing.feedback.selected_po', ['po' => $pos->first()->po_number]));
                 }
 
                 $poNumbers = $pos->pluck('po_number')->implode(', ');
 
                 return redirect()->route('purchasing.purchase-orders.index')
-                    ->with('success', "Item selections finalized and {$pos->count()} Purchase Orders created ({$poNumbers})!");
+                    ->with('success', __('purchasing.feedback.selected_pos', ['count' => $pos->count(), 'pos' => $poNumbers]));
             }
 
             $awardService->awardBatch($pr, $selections, auth()->user());
 
-            return back()->with('success', 'Selected item offers saved successfully.');
+            return back()->with('success', __('purchasing.copy.selected_item_offers_saved_successfully'));
         } catch (\InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         } catch (UniqueConstraintViolationException $e) {
@@ -1499,12 +1501,12 @@ class PriceComparisonController extends Controller
 
             return back()->withInput()->with(
                 'error',
-                'The item selection or Purchase Order state changed while it was being finalized. Please refresh and try again.'
+                __('purchasing.copy.the_item_selection_or_purchase_order_state_changed_while_it_was_being_finalized_please_refresh_and_t')
             );
         } catch (\Throwable $e) {
             report($e);
 
-            return back()->withInput()->with('error', 'Failed to finalize item selections and Purchase Orders.');
+            return back()->withInput()->with('error', __('purchasing.copy.failed_to_finalize_item_selections_and_purchase_orders'));
         }
     }
 }

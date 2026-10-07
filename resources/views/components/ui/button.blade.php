@@ -41,7 +41,7 @@
     >
         @if($loading)
             <span class="ui-spinner" aria-hidden="true"></span>
-            <span class="tw-sr-only">Processing</span>
+            <span class="tw-sr-only">{{ __('common.states.processing') }}</span>
         @elseif(isset($leading))
             <span class="tw-inline-flex tw-shrink-0 tw-items-center" aria-hidden="true">{{ $leading }}</span>
         @endif
@@ -67,7 +67,7 @@
     >
         @if($loading)
             <span class="ui-spinner" aria-hidden="true"></span>
-            <span class="tw-sr-only">Processing</span>
+            <span class="tw-sr-only">{{ __('common.states.processing') }}</span>
         @elseif(isset($leading))
             <span class="tw-inline-flex tw-shrink-0 tw-items-center" aria-hidden="true">{{ $leading }}</span>
         @endif

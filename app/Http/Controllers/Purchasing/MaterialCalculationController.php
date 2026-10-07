@@ -21,6 +21,9 @@ class MaterialCalculationController extends Controller
         );
         $material = MaterialMaster::findOrFail($result->data['material_master_id']);
         $weight = $result->weight->toArray();
+        if ($result->weight->messageKey !== null) {
+            $weight['message'] = __($result->weight->messageKey);
+        }
 
         if (($result->data['weight_calculation_status'] ?? null) === 'manual') {
             $unitKg = (float) ($result->data['weight_needed'] ?? 0);
@@ -30,7 +33,7 @@ class MaterialCalculationController extends Controller
             $weight['total_kg'] = round($unitKg * $quantity, 4, PHP_ROUND_HALF_UP);
             $weight['formula_key'] = 'manual';
             $weight['factor'] = null;
-            $weight['message'] = 'KG per unit was entered manually.';
+            $weight['message'] = __('purchasing.copy.kg_per_unit_was_entered_manually');
         }
 
         return response()->json([

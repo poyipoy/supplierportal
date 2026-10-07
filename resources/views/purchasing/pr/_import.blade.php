@@ -3,24 +3,24 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h6 class="modal-title fw-bold" id="prImportModalLabel">Import PR Materials from Spreadsheet</h6>
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">Validate your Excel spreadsheet (.xlsx, .xls, .csv) before inserting into the requisition.</div>
+                    <h6 class="modal-title fw-bold" id="prImportModalLabel">{{ __('purchasing.copy.import_pr_materials_from_spreadsheet') }}</h6>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">{{ __('purchasing.copy.validate_your_excel_spreadsheet_xlsx_xls_csv_before_inserting_into_the_requisition') }}</div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body tw-p-3.5">
                 <div class="tw-grid tw-gap-4 md:tw-grid-cols-[minmax(0,1.4fr)_minmax(14rem,1fr)]">
                     <x-ui.file-upload
                         name="import_file"
                         id="prImportFile"
-                        label="Spreadsheet File"
-                        helper="XLSX, XLS, or CSV format; maximum 10 MB and up to 1,000 rows."
+                        :label="__('purchasing.copy.spreadsheet_file')"
+                        :helper="__('purchasing.copy.xlsx_xls_or_csv_format_maximum_10_mb_and_up_to_1_000_rows')"
                         accept=".xlsx,.xls,.csv"
                     />
                     <div>
-                        <x-ui.select name="import_mode" id="prImportMode" label="Import Mode" aria-describedby="prImportModeHelp">
-                            <option value="replace" selected>Replace Current Rows</option>
-                            <option value="append">Append to Current Rows</option>
+                        <x-ui.select name="import_mode" id="prImportMode" :label="__('purchasing.copy.import_mode')" aria-describedby="prImportModeHelp">
+                            <option value="replace" selected>{{ __('purchasing.copy.replace_current_rows') }}</option>
+                            <option value="append">{{ __('purchasing.copy.append_to_current_rows') }}</option>
                         </x-ui.select>
                         <div id="prImportModeHelp" class="form-text tw-text-ui-xs" aria-live="polite"></div>
                     </div>
@@ -30,28 +30,28 @@
                     <div id="prImportSummary" class="tw-mb-3 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
 
                     <div id="prImportWarningsPanel" class="d-none tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2.5 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
-                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> Warnings</div>
+                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> {{ __('purchasing.copy.warnings') }}</div>
                         <ul id="prImportWarnings" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="prImportErrorsPanel" class="d-none tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-px-3 tw-py-2.5 tw-text-ui-xs tw-text-error-container-foreground" role="alert">
-                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="circle-x" size="sm" /> Import Errors</div>
+                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="circle-x" size="sm" /> {{ __('purchasing.copy.import_errors') }}</div>
                         <ul id="prImportErrors" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="prImportPreviewPanel" class="d-none">
-                        <div class="fw-bold tw-text-on-surface tw-text-ui-sm mb-2">Parsed Materials Preview</div>
+                        <div class="fw-bold tw-text-on-surface tw-text-ui-sm mb-2">{{ __('purchasing.copy.parsed_materials_preview') }}</div>
                         <div class="pr-import-preview table-responsive border rounded">
                             <table class="table table-sm table-striped table-hover align-middle mb-0 tw-text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th scope="col" style="width: 40px;" class="text-center">Row</th>
-                                        <th scope="col">Material</th>
-                                        <th scope="col">HS Code Result</th>
-                                        <th scope="col" class="text-center">Shape</th>
-                                        <th scope="col" class="text-center">Qty</th>
+                                        <th scope="col" style="width: 40px;" class="text-center">{{ __('purchasing.copy.row') }}</th>
+                                        <th scope="col">{{ __('purchasing.copy.material') }}</th>
+                                        <th scope="col">{{ __('purchasing.copy.hs_code_result') }}</th>
+                                        <th scope="col" class="text-center">{{ __('purchasing.copy.shape') }}</th>
+                                        <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
                                         <th scope="col" class="text-end">KG/Unit</th>
-                                        <th scope="col">Remark</th>
+                                        <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody id="prImportPreviewBody"></tbody>
@@ -61,13 +61,13 @@
                 </div>
             </div>
             <div class="modal-footer tw-bg-surface-low border-top">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParsePrImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="prImportSpinner"></span>
-                    Parse & Validate
+                    {{ __('purchasing.copy.parse_validate') }}
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnApplyPrImport" disabled>
-                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> Apply to Form
+                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> {{ __('purchasing.copy.apply_to_form') }}
                 </x-ui.button>
             </div>
         </div>
@@ -135,18 +135,18 @@
         const isManual = String(data.manual_hs_code) === '1';
         const hsStatus = data.hs_code_resolution_status || 'insufficient_data';
         const labelMap = {
-            matched: 'Auto matched',
-            ambiguous: 'Ambiguous',
-            no_rule: 'No rule',
-            unmapped_material: 'Unmapped material',
-            insufficient_data: 'Needs more data'
+            matched: @json(__('purchasing.copy.auto_matched')),
+            ambiguous: @json(__('purchasing.copy.ambiguous')),
+            no_rule: @json(__('purchasing.copy.no_rule')),
+            unmapped_material: @json(__('purchasing.copy.unmapped_material')),
+            insufficient_data: @json(__('purchasing.copy.needs_more_data'))
         };
 
         $row.find('.hs-code-display').val(data.hs_code ?? '');
         $row.find('.hs-status-badge')
             .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
             .addClass(isManual ? 'ui-status-chip--warning' : (hsStatus === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
-            .text(isManual ? 'Manual selection' : (labelMap[hsStatus] || hsStatus || 'Needs more data'));
+            .text(isManual ? @json(__('purchasing.copy.manual_selection')) : (labelMap[hsStatus] || hsStatus || @json(__('purchasing.copy.needs_more_data'))));
 
         const weight = Number(data.weight_needed || 0);
         $row.find('.weight-unit-display').val(weight.toFixed(4));
@@ -155,7 +155,11 @@
             $row.find('.pr-remark-trigger__text').text(data.remark);
             $row.find('.pr-remark-trigger').addClass('has-remark').attr('title', data.remark);
             if (!$row.find('.pr-remark-trigger__badge').length) {
-                $row.find('.pr-remark-trigger').append('<span class="pr-remark-trigger__badge" title="Remark entered" aria-hidden="true"></span>');
+                const remarkBadge = document.createElement('span');
+                remarkBadge.className = 'pr-remark-trigger__badge';
+                remarkBadge.title = @json(__('purchasing.copy.remark_entered'));
+                remarkBadge.setAttribute('aria-hidden', 'true');
+                $row.find('.pr-remark-trigger').append(remarkBadge);
             }
             $row.find('.pr-remark-draft').val(data.remark);
         }
@@ -170,8 +174,10 @@
 
     function formatPrImportMessage(entry) {
         const location = entry.row
-            ? `Row ${entry.row}${entry.column ? `, ${entry.column}` : ''}`
-            : (entry.column || 'File');
+            ? (entry.column
+                ? window.AdasiI18n.t('js.import.row_column', { row: entry.row, column: entry.column })
+                : window.AdasiI18n.t('js.import.row', { row: entry.row }))
+            : (entry.column || window.AdasiI18n.t('js.import.file'));
 
         return `${location}: ${entry.message}`;
     }
@@ -184,7 +190,11 @@
 
         $('#prImportResult').removeClass('d-none');
         $('#prImportSummary').text(
-            `Total: ${summary.total || 0} | Valid: ${summary.valid || 0} | Invalid: ${summary.invalid || 0}`
+            window.AdasiI18n.t('js.import.summary', {
+                total: summary.total || 0,
+                valid: summary.valid || 0,
+                invalid: summary.invalid || 0,
+            })
         );
 
         const $warnings = $('#prImportWarnings').empty();
@@ -230,7 +240,7 @@
         const fileInput = document.getElementById('prImportFile');
         const file = fileInput.files[0];
         if (!file) {
-            fileInput.setCustomValidity('Select an XLSX, XLS, or CSV file before continuing.');
+            fileInput.setCustomValidity(@json(__('purchasing.copy.select_an_xlsx_xls_or_csv_file_before_continuing')));
             fileInput.reportValidity();
             return;
         }
@@ -261,7 +271,7 @@
                 rows: [],
                 warnings: [],
                 summary: { total: 0, valid: 0, invalid: 0 },
-                errors: [{ row: null, column: 'import_file', message: 'The spreadsheet could not be processed.' }]
+                errors: [{ row: null, column: 'import_file', message: @json(__('purchasing.copy.the_spreadsheet_could_not_be_processed')) }]
             });
         }).always(() => {
             setPrImportBusy(false);
@@ -285,8 +295,8 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById('prImportModal')).hide();
         AdasiToast.show({
             type: 'success',
-            title: 'Import Applied',
-            message: `${prImportRows.length} material row(s) were added to the form. Review them before saving.`,
+            title: @json(__('purchasing.copy.import_applied')),
+            message: window.AdasiI18n.choice('purchasing.js.import_added', prImportRows.length),
             autoClose: 2200
         });
     }
@@ -301,10 +311,10 @@
 
         if (mode === 'replace' && hasCurrentData) {
             AdasiAlert.confirmDanger({
-                title: 'Replace current material rows?',
-                text: 'Material values currently entered in the form will be replaced by the validated import.',
-                confirmText: 'Yes, Replace Rows',
-                cancelText: 'Cancel'
+                title: @json(__('purchasing.copy.replace_current_material_rows')),
+                text: @json(__('purchasing.copy.material_values_currently_entered_in_the_form_will_be_replaced_by_the_validated_import')),
+                confirmText: @json(__('purchasing.copy.yes_replace_rows')),
+                cancelText: @json(__('purchasing.copy.cancel'))
             }).then((result) => {
                 if (result.isConfirmed) {
                     performPrImportApply(mode);
@@ -318,8 +328,8 @@
 
     $(document).ready(function() {
         const importModeDescriptions = {
-            replace: 'Removes the material rows currently shown in this form and replaces them with the validated rows from the spreadsheet.',
-            append: 'Keeps the material rows currently shown and adds validated spreadsheet rows below them.',
+            replace: @json(__('purchasing.copy.removes_the_material_rows_currently_shown_in_this_form_and_replaces_them_with_the_validated_rows_fro')),
+            append: @json(__('purchasing.copy.keeps_the_material_rows_currently_shown_and_adds_validated_spreadsheet_rows_below_them')),
         };
         const updateImportModeHelp = () => {
             $('#prImportModeHelp').text(importModeDescriptions[$('#prImportMode').val()] || '');

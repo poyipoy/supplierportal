@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Quotation Price Form - ADASI Portal')
-@section('page-title', 'Create Quotation')
+@section('title', __('supplier.copy.quotation_price_form_adasi_portal'))
+@section('page-title', __('supplier.copy.create_quotation'))
 
 @push('styles')
 <style>
@@ -649,32 +649,32 @@
 <div class="quotation-page tw-grid tw-min-w-0 tw-max-w-full tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Quotation Periods' => route('supplier.quotations.index'),
-        ($pr->period->display_label ?? 'Requisitions') => route('supplier.quotations.period', $pr->period_id),
-        ($quotation?->status === 'revision_requested' ? 'Revise Quotation' : 'Submit Quotation') => null,
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.quotation_periods') => route('supplier.quotations.index'),
+        ($pr->period->display_label ?? __('purchasing.breadcrumbs.requisitions')) => route('supplier.quotations.period', $pr->period_id),
+        ($quotation?->status === 'revision_requested' ? __('purchasing.breadcrumbs.revise_quotation') : __('purchasing.breadcrumbs.submit_quotation')) => null,
     ]" />
 
     <x-ui.page-header
-        :title="$quotation?->status === 'revision_requested' ? 'Revise Quotation' : 'Create Quotation'"
-        eyebrow="Supplier Proposal Entry"
-        :description="'Provide pricing, availability parameters, and technical MTC files for ' . ($pr->pr_number ?? 'this requisition') . '.'"
+        :title="$quotation?->status === 'revision_requested' ? __('supplier.audit_ui.revise_quotation') : __('supplier.copy.create_quotation')"
+        :eyebrow="__('supplier.copy.supplier_proposal_entry')"
+        :description="__('supplier.page.quotation_help', ['reference' => $pr->pr_number ?? __('terms.purchase_requisition')])"
     >
         <x-slot:meta>
             @if($quotation?->status === 'revision_requested')
                 <span class="ui-status-chip ui-status-chip--warning">
-                    <x-ui.icon name="rotate-ccw" size="sm" class="me-1" />Revision Requested
+                    <x-ui.icon name="rotate-ccw" size="sm" class="me-1" />{{ __('supplier.copy.revision_requested') }}
                 </span>
             @else
                 <span class="ui-status-chip ui-status-chip--neutral">
-                    <x-ui.icon name="square-pen" size="sm" class="me-1" />New Offer
+                    <x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.new_offer') }}
                 </span>
             @endif
         </x-slot:meta>
         <x-slot:actions>
             <x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Back to Requisitions</span>
+                <span>{{ __('supplier.copy.back_to_requisitions') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -687,27 +687,27 @@
         <div class="tw-grid tw-gap-5">
             {{-- Section 1: Procurement Context --}}
             <x-ui.form-section
-                title="Procurement Context"
-                description="General requisition parameters and notes established by ADASI Purchasing."
+                :title="__('supplier.copy.procurement_context')"
+                :description="__('supplier.copy.general_requisition_parameters_and_notes_established_by_adasi_purchasing')"
             >
                 <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Procurement Period</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.procurement_period') }}</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $pr->period->display_label }}</div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Requisition Reference</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
                         <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">{{ $pr->pr_number ?? 'PR -' }}</div>
                     </div>
                     <div class="sm:tw-col-span-2 lg:tw-col-span-1 tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">Purchasing Instructions</div>
-                        <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $pr->notes ?: 'No additional notes provided.' }}</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
+                        <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $pr->notes ?: __('supplier.copy.no_additional_notes_provided') }}</div>
                     </div>
                 </div>
 
                 @if($quotation?->status === 'revision_requested')
-                    <x-ui.alert tone="warning" title="Quotation Revision Requested" class="tw-mt-3">
-                        Purchasing asked this quotation to be resubmitted. Update unit prices, delivery schedule, validity date, or specifications before submitting again.
+                    <x-ui.alert tone="warning" :title="__('supplier.copy.quotation_revision_requested')" class="tw-mt-3">
+                        {{ __('supplier.copy.purchasing_asked_this_quotation_to_be_resubmitted_update_unit_prices_delivery_schedule_validity_date') }}
                     </x-ui.alert>
                 @endif
             </x-ui.form-section>
@@ -715,14 +715,14 @@
             {{-- Section 2: Material Pricing & Availability Matrix --}}
             <x-ui.form-section
                 class="quotation-material-section"
-                title="Material Commercial Offer"
-                description="Specify your availability, dimensions, price per kg, and attach MTC certificates."
+                :title="__('supplier.copy.material_commercial_offer')"
+                :description="__('supplier.copy.specify_your_availability_dimensions_price_per_kg_and_attach_mtc_certificates')"
             >
                 <x-slot:actions>
                     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
                         {{-- Autosave Indicator --}}
                         <span id="autoSaveBadge" class="ui-status-chip ui-status-chip--success d-none">
-                            <x-ui.icon name="check" size="sm" class="me-1" />Draft Saved
+                            <x-ui.icon name="check" size="sm" class="me-1" />{{ __('supplier.copy.draft_saved') }}
                         </span>
 
                         {{-- Import Controls --}}
@@ -731,14 +731,14 @@
                         {{-- Copy All Requested --}}
                         <x-ui.button type="button" id="copyAllRequested" variant="outline" size="sm">
                             <x-ui.icon name="clipboard-check" size="sm" />
-                            <span>Copy All Requested Values</span>
+                            <span>{{ __('supplier.copy.copy_all_requested_values') }}</span>
                         </x-ui.button>
 
                         {{-- Currency Select --}}
                         <div class="d-flex align-items-center tw-gap-1.5 ps-2 border-start">
-                            <label for="quotationCurrency" class="small fw-semibold tw-text-on-surface mb-0">Currency:</label>
+                            <label for="quotationCurrency" class="small fw-semibold tw-text-on-surface mb-0">{{ __('supplier.copy.currency_b66c8f') }}</label>
                             <select name="currency" id="quotationCurrency" class="form-select form-select-sm fw-bold @error('currency') is-invalid @enderror" style="width: 100px;" required>
-                                <option value="" disabled @selected($supplierCurrency === '')>Select</option>
+                                <option value="" disabled @selected($supplierCurrency === '')>{{ __('supplier.copy.select') }}</option>
                                 @foreach($currencyOptions as $currency)
                                     <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
                                 @endforeach
@@ -750,8 +750,8 @@
                     </div>
                 </x-slot:actions>
 
-                <x-ui.alert id="currencyRateWarning" tone="warning" title="Exchange Rate Required" class="tw-mb-2 {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
-                    Exchange rate for <strong id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</strong> is not recorded in master exchange rates. Contact Admin before final submission.
+                <x-ui.alert id="currencyRateWarning" tone="warning" :title="__('supplier.copy.exchange_rate_required')" class="tw-mb-2 {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
+                    {{ __('supplier.copy.exchange_rate_for') }} <strong id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</strong> {{ __('supplier.copy.is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission') }}
                 </x-ui.alert>
 
                 @php
@@ -766,12 +766,12 @@
                 <div class="border rounded overflow-hidden">
                     <div id="quotationTableScrollHint" class="tw-bg-surface-low border-bottom px-3 tw-py-1.5 tw-text-on-surface-variant tw-text-ui-xs d-flex align-items-center tw-gap-1.5">
                         <x-ui.icon name="move-horizontal" size="sm" />
-                        <span>Scroll horizontally to compare Requested and Offer values for each material.</span>
+                        <span>{{ __('supplier.copy.scroll_horizontally_to_compare_requested_and_offer_values_for_each_material') }}</span>
                     </div>
 
-                    <div class="table-responsive quotation-table-scroll" role="region" tabindex="0" aria-label="Material quotation price entry" aria-describedby="quotationTableScrollHint">
+                    <div class="table-responsive quotation-table-scroll" role="region" tabindex="0" aria-label="{{ __('supplier.copy.material_quotation_price_entry') }}" aria-describedby="quotationTableScrollHint">
                         <table class="table table-bordered align-middle mb-0 quotation-items-table tw-text-ui-xs">
-                            <caption class="visually-hidden">Supplier quotation entry table with paired Requested and Offer rows for each material</caption>
+                            <caption class="visually-hidden">{{ __('supplier.copy.supplier_quotation_entry_table_with_paired_requested_and_offer_rows_for_each_material') }}</caption>
                             <colgroup>
                                 <col class="quotation-col-number">
                                 <col class="quotation-col-material">
@@ -792,20 +792,20 @@
                             </colgroup>
                             <thead class="table-light text-center">
                                 <tr class="quotation-field-header">
-                                    <th scope="col" class="quotation-sticky-number">No</th>
-                                    <th scope="col" class="quotation-sticky-material">Material</th>
-                                    <th scope="col" class="quotation-sticky-row-type">Row Type</th>
-                                    <th scope="col">Qty</th>
+                                    <th scope="col" class="quotation-sticky-number">{{ __('supplier.copy.no') }}</th>
+                                    <th scope="col" class="quotation-sticky-material">{{ __('supplier.copy.material') }}</th>
+                                    <th scope="col" class="quotation-sticky-row-type">{{ __('supplier.copy.row_type') }}</th>
+                                    <th scope="col">{{ __('supplier.copy.qty') }}</th>
                                     @foreach($quotationDimensionOrder as $dimensionField)
-                                        <th scope="col">{{ \App\Models\PrItem::DIMENSION_LABELS[$dimensionField] }}</th>
+                                        <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
                                     @endforeach
-                                    <th scope="col">KG / Unit</th>
-                                    <th scope="col">Total KG</th>
-                                    <th scope="col">Price / KG (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
-                                    <th scope="col">Amount (<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
-                                    <th scope="col">Notes</th>
+                                    <th scope="col">{{ __('supplier.copy.kg_per_unit') }}</th>
+                                    <th scope="col">{{ __('supplier.copy.total_kg') }}</th>
+                                    <th scope="col">{{ __('supplier.copy.price_kg') }}<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
+                                    <th scope="col">{{ __('supplier.copy.amount') }}<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
+                                    <th scope="col">{{ __('supplier.copy.notes') }}</th>
                                     <th scope="col">MTC</th>
-                                    <th scope="col">Availability</th>
+                                    <th scope="col">{{ __('supplier.copy.availability') }}</th>
                                 </tr>
                             </thead>
                             @foreach($pr->items as $index => $item)
@@ -859,9 +859,9 @@
                                                 data-requested-width="{{ $item->width !== null ? (float) $item->width : '' }}"
                                                 data-requested-length="{{ $item->length !== null ? (float) $item->length : '' }}"
                                                 data-requested-weight="{{ $item->weight_needed }}"
-                                                title="Copy requested quantity, dimensions, and KG/unit into the Offer row"
+                                                :title="__('supplier.copy.copy_requested_quantity_dimensions_and_kg_unit_into_the_offer_row')"
                                             >
-                                                <x-ui.icon name="clipboard-check" size="sm" /> Copy Requested
+                                                <x-ui.icon name="clipboard-check" size="sm" /> {{ __('supplier.copy.copy_requested') }}
                                             </x-ui.button>
                                             <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
                                             <input type="hidden" name="items[{{ $index }}][is_available]" class="item-availability-input" value="{{ $itemIsAvailable ? '1' : '0' }}">
@@ -869,7 +869,7 @@
                                                 <div class="text-danger small tw-mt-1">{{ $message }}</div>
                                             @enderror
                                         </td>
-                                        <td class="quotation-sticky-row-type"><span class="quotation-row-label">Requested</span></td>
+                                        <td class="quotation-sticky-row-type"><span class="quotation-row-label">{{ __('supplier.copy.requested') }}</span></td>
                                         <td class="text-center fw-semibold ui-tabular-nums">{{ $item->quantity_value }}</td>
                                         @foreach($quotationScalarDimensionOrder as $dimension)
                                             <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
@@ -887,10 +887,10 @@
                                         </td>
                                         <td class="text-start tw-text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
                                         <td class="text-center tw-text-outline">—</td>
-                                        <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">Requested</span></td>
+                                        <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('supplier.copy.requested') }}</span></td>
                                     </tr>
                                     <tr class="quotation-offer-row {{ $itemIsAvailable ? '' : 'is-unavailable' }}">
-                                        <td class="quotation-sticky-row-type"><span class="quotation-row-label quotation-row-label--offer">Offer</span></td>
+                                        <td class="quotation-sticky-row-type"><span class="quotation-row-label quotation-row-label--offer">{{ __('supplier.copy.offer') }}</span></td>
                                         <td>
                                             <input
                                                 id="availableQty{{ $index }}"
@@ -902,7 +902,7 @@
                                                 class="form-control form-control-sm availability-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_qty") is-invalid @enderror"
                                                 data-availability-field="qty"
                                                 value="{{ old("items.{$index}.available_qty", $qItem?->available_qty) }}"
-                                                aria-label="Offer quantity for {{ $item->material_name }}; maximum {{ $item->quantity_value }}"
+                                                aria-label="{{ __('supplier.a11y.offer_quantity', ['material' => $item->material_name, 'maximum' => $item->quantity_value]) }}"
                                                 aria-describedby="availableQtyFeedback{{ $index }}"
                                             >
                                             <div id="availableQtyFeedback{{ $index }}" class="invalid-feedback offer-qty-feedback">
@@ -920,11 +920,11 @@
                                                         class="form-control form-control-sm availability-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_{$dimension}") is-invalid @enderror"
                                                         data-availability-field="{{ $dimension }}"
                                                         value="{{ old("items.{$index}.available_{$dimension}", $qItem?->{'available_'.$dimension}) }}"
-                                                        aria-label="Offer {{ \App\Models\PrItem::DIMENSION_LABELS[$dimension] }} for {{ $item->material_name }} in millimeters"
+                                                        aria-label="{{ __('supplier.a11y.offer_dimension', ['dimension' => \App\Models\PrItem::dimensionLabel($dimension), 'material' => $item->material_name]) }}"
                                                     >
                                                     @error("items.{$index}.available_{$dimension}")<div class="invalid-feedback">{{ $message }}</div>@enderror
                                                 @else
-                                                    <div class="text-center tw-text-outline" aria-label="Not applicable">—</div>
+                                                    <div class="text-center tw-text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                                 @endif
                                             </td>
                                         @endforeach
@@ -938,16 +938,16 @@
                                                     class="form-control form-control-sm availability-input offer-length-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_length_input") is-invalid @enderror"
                                                     data-availability-field="length"
                                                     value="{{ old("items.{$index}.available_length_input", $storedLength) }}"
-                                                    placeholder="e.g. 2300 or 2300-2500 mm"
-                                                    aria-label="Offer exact or ranged length for {{ $item->material_name }} in millimeters"
+                                                    placeholder="{{ __('supplier.copy.e_g_2300_or_2300_2500_mm') }}"
+                                                    aria-label="{{ __('supplier.a11y.offer_length', ['material' => $item->material_name]) }}"
                                                     aria-describedby="availableLengthHelp{{ $index }} availableLengthFeedback{{ $index }}"
                                                 >
-                                                <div id="availableLengthHelp{{ $index }}" class="quotation-value-secondary">Exact or min-max</div>
+                                                <div id="availableLengthHelp{{ $index }}" class="quotation-value-secondary">{{ __('supplier.copy.exact_or_min_max') }}</div>
                                                 <div id="availableLengthFeedback{{ $index }}" class="invalid-feedback offer-length-feedback">
                                                     @error("items.{$index}.available_length_input"){{ $message }}@enderror
                                                 </div>
                                             @else
-                                                <div class="text-center tw-text-outline" aria-label="Not applicable">—</div>
+                                                <div class="text-center tw-text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                             @endif
                                         </td>
                                         <td>
@@ -959,9 +959,9 @@
                                                     name="items[{{ $index }}][offered_weight_per_unit]"
                                                     class="form-control form-control-sm offered-weight-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.offered_weight_per_unit") is-invalid @enderror"
                                                     value="{{ old("items.{$index}.offered_weight_per_unit", $qItem?->offered_weight_per_unit) }}"
-                                                    aria-label="Offer KG per unit for {{ $item->material_name }}"
+                                                    aria-label="{{ __('supplier.a11y.offer_weight', ['material' => $item->material_name]) }}"
                                                 >
-                                                <span class="ui-status-chip ui-status-chip--warning offer-weight-indicator {{ $manualWeightOverride ? '' : 'd-none' }}">Est Weight</span>
+                                                <span class="ui-status-chip ui-status-chip--warning offer-weight-indicator {{ $manualWeightOverride ? '' : 'd-none' }}">{{ __('supplier.copy.est_weight') }}</span>
                                             </div>
                                             <input type="hidden" name="items[{{ $index }}][offered_weight_manual_override]" class="offered-weight-manual-override" value="{{ $manualWeightOverride }}">
                                             @error("items.{$index}.offered_weight_per_unit")<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
@@ -977,8 +977,8 @@
                                                 name="items[{{ $index }}][price_per_kg]"
                                                 class="form-control form-control-sm price-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.price_per_kg") is-invalid @enderror"
                                                 value="{{ old("items.{$index}.price_per_kg", $qItem?->price_per_kg) }}"
-                                                aria-label="Price per kilogram for {{ $item->material_name }}"
-                                                placeholder="e.g. 4.2500"
+                                                aria-label="{{ __('supplier.a11y.price_weight', ['material' => $item->material_name]) }}"
+                                                placeholder="{{ __('supplier.copy.e_g_4_2500') }}"
                                             >
                                             @error("items.{$index}.price_per_kg")<div class="invalid-feedback">{{ $message }}</div>@enderror
                                         </td>
@@ -990,7 +990,7 @@
                                             <textarea
                                                 name="items[{{ $index }}][notes]"
                                                 class="quotation-item-notes quotation-editable @error("items.{$index}.notes") is-invalid @enderror"
-                                                aria-label="Offer notes for {{ $item->material_name }}"
+                                                aria-label="{{ __('supplier.a11y.offer_notes', ['material' => $item->material_name]) }}"
                                                 tabindex="-1"
                                             >{{ $currentNote }}</textarea>
 
@@ -1000,24 +1000,24 @@
                                                 data-notes-trigger
                                                 aria-haspopup="dialog"
                                                 aria-expanded="false"
-                                                aria-label="Edit notes for {{ $item->material_name }}"
-                                                title="{{ $currentNote ?: 'Click to add notes' }}"
+                                                aria-label="{{ __('supplier.a11y.edit_notes', ['material' => $item->material_name]) }}"
+                                                title="{{ $currentNote ?: __('supplier.copy.click_to_add_notes') }}"
                                             >
                                                 <x-ui.icon name="file-text" size="sm" class="quotation-notes-trigger__icon" aria-hidden="true" />
-                                                <span class="quotation-notes-trigger__text text-truncate">{{ $currentNote ?: 'Add note...' }}</span>
+                                                <span class="quotation-notes-trigger__text text-truncate">{{ $currentNote ?: __('supplier.copy.add_note') }}</span>
                                                 @if(!empty($currentNote))
-                                                    <span class="quotation-notes-trigger__badge" title="Note entered" aria-hidden="true"></span>
+                                                    <span class="quotation-notes-trigger__badge" title="{{ __('supplier.copy.note_entered') }}" aria-hidden="true"></span>
                                                 @endif
                                             </button>
                                             @error("items.{$index}.notes")<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 
-                                            <div class="quotation-notes-popover" data-notes-popover hidden role="dialog" aria-modal="false" aria-label="Offer notes for {{ $item->material_name }}">
+                                            <div class="quotation-notes-popover" data-notes-popover hidden role="dialog" aria-modal="false" aria-label="{{ __('supplier.a11y.offer_notes', ['material' => $item->material_name]) }}">
                                                 <div class="quotation-notes-popover__header">
                                                     <div>
-                                                        <span class="quotation-notes-popover__title">Offer Notes</span>
+                                                        <span class="quotation-notes-popover__title">{{ __('supplier.copy.offer_notes') }}</span>
                                                         <span class="quotation-notes-popover__subtitle text-truncate">{{ $item->material_name }}</span>
                                                     </div>
-                                                    <button type="button" class="quotation-notes-popover__close" data-notes-cancel aria-label="Close notes popover">
+                                                    <button type="button" class="quotation-notes-popover__close" data-notes-cancel aria-label="{{ __('supplier.copy.close_notes_popover') }}">
                                                         <x-ui.icon name="x" size="sm" />
                                                     </button>
                                                 </div>
@@ -1025,15 +1025,15 @@
                                                     <textarea
                                                         class="form-control form-control-sm quotation-notes-draft"
                                                         rows="4"
-                                                        placeholder="e.g. Mill tolerance ±0.5mm, prime grade, MTC included..."
-                                                        aria-label="Notes draft for {{ $item->material_name }}"
+                                                        placeholder="{{ __('supplier.copy.e_g_mill_tolerance_0_5mm_prime_grade_mtc_included') }}"
+                                                        aria-label="{{ __('supplier.a11y.draft_notes', ['material' => $item->material_name]) }}"
                                                     >{{ $currentNote }}</textarea>
-                                                    <div class="quotation-notes-popover__hint">Provide tolerances, specs, or availability details.</div>
+                                                    <div class="quotation-notes-popover__hint">{{ __('supplier.copy.provide_tolerances_specs_or_availability_details') }}</div>
                                                 </div>
                                                 <div class="quotation-notes-popover__footer">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary quotation-notes-btn-cancel" data-notes-cancel>Cancel</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary quotation-notes-btn-cancel" data-notes-cancel>{{ __('supplier.copy.cancel') }}</button>
                                                     <button type="button" class="btn btn-sm btn-primary quotation-notes-btn-save" data-notes-save>
-                                                        <x-ui.icon name="check" size="sm" class="me-1" /> Save
+                                                        <x-ui.icon name="check" size="sm" class="me-1" /> {{ __('supplier.copy.save') }}
                                                     </button>
                                                 </div>
                                             </div>
@@ -1047,7 +1047,7 @@
                                                     name="items[{{ $index }}][mtc_file]"
                                                     class="visually-hidden mtc-file-input offer-disable-when-unavailable @error("items.{$index}.mtc_file") is-invalid @enderror"
                                                     accept=".pdf,.jpg,.jpeg,.png"
-                                                    aria-label="MTC file for {{ $item->material_name }}"
+                                                    aria-label="{{ __('supplier.a11y.mtc_file', ['material' => $item->material_name]) }}"
                                                     aria-describedby="mtcFileHelp{{ $index }}"
                                                 >
                                                 <input
@@ -1065,11 +1065,11 @@
 
                                                 {{-- State 1: Empty State (Upload MTC Button) --}}
                                                 <div class="mtc-empty-state {{ $hasMtc ? 'd-none' : '' }}" data-mtc-empty>
-                                                    <label for="mtcFile{{ $index }}" class="mtc-file-label ui-motion ui-focus-ring" title="Accepted files: PDF, JPG, or PNG; maximum 5MB.">
+                                                    <label for="mtcFile{{ $index }}" class="mtc-file-label ui-motion ui-focus-ring" title="{{ __('supplier.copy.accepted_files_pdf_jpg_or_png_maximum_5mb') }}">
                                                         <x-ui.icon name="paperclip" size="sm" class="me-1.5" />
-                                                        <span>Upload MTC</span>
+                                                        <span>{{ __('supplier.copy.upload_mtc') }}</span>
                                                     </label>
-                                                    <div id="mtcFileHelp{{ $index }}" class="mtc-file-hint">PDF/JPG/PNG, max 5MB</div>
+                                                    <div id="mtcFileHelp{{ $index }}" class="mtc-file-hint">{{ __('supplier.copy.pdf_jpg_png_max_5mb') }}</div>
                                                 </div>
 
                                                 {{-- State 2: File Pill/Card State (Attached / Selected) --}}
@@ -1082,9 +1082,9 @@
                                                     </div>
                                                     <div class="mtc-file-card__actions">
                                                         @if($mtcAttachment)
-                                                            <a href="{{ route('attachments.show', $mtcAttachment->id) }}" class="mtc-file-action-link" target="_blank" rel="noopener" title="View attached file" data-mtc-server-link>
+                                                            <a href="{{ route('attachments.show', $mtcAttachment) }}" class="mtc-file-action-link" target="_blank" rel="noopener" title="{{ __('supplier.copy.view_attached_file') }}" data-mtc-server-link>
                                                                 <x-ui.icon name="external-link" size="sm" />
-                                                                <span>View</span>
+                                                                <span>{{ __('supplier.copy.view') }}</span>
                                                             </a>
                                                         @endif
                                                         <div class="dropdown d-inline-block mtc-copy-dropdown">
@@ -1094,7 +1094,7 @@
                                                                 data-bs-toggle="dropdown"
                                                                 data-bs-display="static"
                                                                 aria-expanded="false"
-                                                                title="Copy MTC to other items"
+                                                                title="{{ __('supplier.copy.copy_mtc_to_other_items') }}"
                                                                 data-mtc-copy-trigger
                                                             >
                                                                 <x-ui.icon name="copy" size="sm" />
@@ -1103,21 +1103,21 @@
                                                                 <li>
                                                                     <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="same_material">
                                                                         <x-ui.icon name="layers" size="sm" class="tw-text-on-surface-variant flex-shrink-0" />
-                                                                        <span>Apply to same material (<strong class="text-truncate d-inline-block align-bottom" style="max-width: 105px;">{{ $item->material_name }}</strong>)</span>
+                                                                        <span>{{ __('supplier.copy.apply_to_same_material') }}<strong class="text-truncate d-inline-block align-bottom" style="max-width: 105px;">{{ $item->material_name }}</strong>)</span>
                                                                     </button>
                                                                 </li>
                                                                 <li>
                                                                     <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="all_available">
                                                                         <x-ui.icon name="check-check" size="sm" class="tw-text-on-surface-variant flex-shrink-0" />
-                                                                        <span>Apply to all available items</span>
+                                                                        <span>{{ __('supplier.copy.apply_to_all_available_items') }}</span>
                                                                     </button>
                                                                 </li>
                                                             </ul>
                                                         </div>
-                                                        <label for="mtcFile{{ $index }}" class="mtc-file-action-btn" title="Change file" role="button">
+                                                        <label for="mtcFile{{ $index }}" class="mtc-file-action-btn" title="{{ __('supplier.copy.change_file') }}" role="button">
                                                             <x-ui.icon name="refresh-cw" size="sm" />
                                                         </label>
-                                                        <button type="button" class="mtc-file-action-btn text-danger" title="Remove file" data-mtc-remove aria-label="Remove selected MTC file">
+                                                        <button type="button" class="mtc-file-action-btn text-danger" title="{{ __('supplier.copy.remove_file') }}" data-mtc-remove aria-label="{{ __('supplier.copy.remove_selected_mtc_file') }}">
                                                             <x-ui.icon name="x" size="sm" />
                                                         </button>
                                                     </div>
@@ -1133,7 +1133,7 @@
                                                     data-availability-toggle
                                                     role="switch"
                                                     aria-checked="{{ $itemIsAvailable ? 'true' : 'false' }}"
-                                                    aria-label="Toggle availability for {{ $item->material_name }}"
+                                                    aria-label="{{ __('supplier.a11y.toggle_availability', ['material' => $item->material_name]) }}"
                                                 >
                                                     <input
                                                         id="notAvailable{{ $index }}"
@@ -1147,7 +1147,7 @@
                                                         <x-ui.icon :name="$itemIsAvailable ? 'check' : 'x'" size="sm" />
                                                     </span>
                                                     <span class="availability-toggle__label item-availability-label">
-                                                        {{ $itemIsAvailable ? 'Available' : 'Not Available' }}
+                                                        {{ $itemIsAvailable ? __('status.availability.available') : __('supplier.copy.not_available') }}
                                                     </span>
                                                 </button>
                                             </div>
@@ -1157,7 +1157,7 @@
                             @endforeach
                             <tfoot class="table-light fw-bold border-top">
                                 <tr>
-                                    <td colspan="12" class="text-end tw-text-on-surface">TOTAL OFFER AMOUNT</td>
+                                    <td colspan="12" class="text-end tw-text-on-surface">{{ __('supplier.copy.total_offer_amount') }}</td>
                                     <td class="text-end tw-text-on-surface ui-tabular-nums">
                                         <span id="totalAmount">0</span>
                                     </td>
@@ -1171,43 +1171,43 @@
 
             {{-- Section 3: Commercial Terms & Logistics --}}
             <x-ui.form-section
-                title="Commercial Terms and Logistics"
-                description="Specify estimated delivery timeline, proposal validity duration, and payment arrangements."
+                :title="__('supplier.copy.commercial_terms_and_logistics')"
+                :description="__('supplier.copy.specify_estimated_delivery_timeline_proposal_validity_duration_and_payment_arrangements')"
             >
                 <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw-mb-4 d-none">
-                    All requested items are marked <strong>Not Available</strong>. Delivery timeline, validity period, and payment terms are disabled. You may still provide General Supplier Notes before submitting.
+                    {{ __('common.final_review.all_unavailable') }}
                 </x-ui.alert>
 
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <x-ui.date-picker
                         name="estimated_delivery"
-                        label="Supplier Estimated Ready / Dispatch Date"
+                        :label="__('supplier.copy.supplier_estimated_ready_dispatch_date')"
                         :value="optional($quotation?->estimated_delivery)->format('Y-m-d')"
-                        helper="Estimated date material will be ready for dispatch from your facility."
+                        :helper="__('supplier.copy.estimated_date_material_will_be_ready_for_dispatch_from_your_facility')"
                         required
                     />
                     <x-ui.date-picker
                         name="validity_period"
                         id="validityPeriod"
-                        label="Quotation Valid Until"
+                        :label="__('supplier.copy.quotation_valid_until')"
                         :value="optional($quotation?->validity_period)->format('Y-m-d')"
                         :min="now()->toDateString()"
-                        helper="Required for final submission. Prices remain firm until this date."
+                        :helper="__('supplier.copy.required_for_final_submission_prices_remain_firm_until_this_date')"
                     />
                     <x-ui.textarea
                         name="payment_terms"
-                        label="Payment Terms"
+                        :label="__('supplier.copy.payment_terms')"
                         :rows="2"
                         maxlength="100"
                         required
-                        placeholder="e.g. T/T 30 Days after B/L date, L/C at sight, CAD"
+                        :placeholder="__('supplier.copy.e_g_t_t_30_days_after_b_l_date_l_c_at_sight_cad')"
                         :value="$quotation->payment_terms ?? 'TT 30 Days'"
                     />
                     <x-ui.textarea
                         name="general_notes"
-                        label="General Supplier Notes"
+                        :label="__('supplier.copy.general_supplier_notes')"
                         :rows="2"
-                        placeholder="e.g. CIF Tanjung Priok, sea freight in wooden cases, valid 14 days"
+                        :placeholder="__('supplier.copy.e_g_cif_tanjung_priok_sea_freight_in_wooden_cases_valid_14_days')"
                         :value="$quotation->general_notes ?? ''"
                     />
                 </div>
@@ -1219,17 +1219,17 @@
             <x-slot:left>
                 <x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm">
                     <x-ui.icon name="arrow-left" size="sm" />
-                    <span>Cancel</span>
+                    <span>{{ __('supplier.copy.cancel') }}</span>
                 </x-ui.button>
             </x-slot:left>
 
             <x-slot:right>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
-                    <span>{{ $quotation?->status === 'revision_requested' ? 'Save Revision Draft' : 'Save Draft' }}</span>
+                    <span>{{ $quotation?->status === 'revision_requested' ? __('supplier.copy.save_revision_draft') : __('supplier.copy.save_draft') }}</span>
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSubmitQuotation" onclick="confirmSubmit()">
                     <x-ui.icon name="send" size="sm" />
-                    <span>{{ $quotation?->status === 'revision_requested' ? 'Resubmit Quotation' : 'Submit Final Quotation' }}</span>
+                    <span>{{ $quotation?->status === 'revision_requested' ? __('supplier.copy.resubmit_quotation') : __('supplier.copy.submit_final_quotation') }}</span>
                 </x-ui.button>
             </x-slot:right>
         </x-ui.action-bar>
@@ -1242,23 +1242,23 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h6 class="modal-title fw-bold" id="quotationImportModalLabel">Import Quotation Items from Spreadsheet</h6>
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs">Imported values are mapped by PR Item ID and are not committed to database until saved.</div>
+                    <h6 class="modal-title fw-bold" id="quotationImportModalLabel">{{ __('supplier.copy.import_quotation_items_from_spreadsheet') }}</h6>
+                    <div class="tw-text-on-surface-variant tw-text-ui-xs">{{ __('supplier.copy.imported_values_are_mapped_by_pr_item_id_and_are_not_committed_to_database_until_saved') }}</div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
                     <div class="col-md-7">
-                        <label for="quotationImportFile" class="form-label small fw-semibold tw-text-on-surface">Spreadsheet File (.xlsx, .xls, .csv)</label>
+                        <label for="quotationImportFile" class="form-label small fw-semibold tw-text-on-surface">{{ __('supplier.copy.spreadsheet_file_xlsx_xls_csv') }}</label>
                         <input type="file" id="quotationImportFile" class="form-control form-control-sm" accept=".xlsx,.xls,.csv">
-                        <div class="form-text tw-text-ui-xs">Use the template for this PR. Max 10 MB and 1,000 data rows.</div>
+                        <div class="form-text tw-text-ui-xs">{{ __('supplier.copy.use_the_template_for_this_pr_max_10_mb_and_1_000_data_rows') }}</div>
                     </div>
                     <div class="col-md-5">
-                        <label for="quotationImportMode" class="form-label small fw-semibold tw-text-on-surface">Import Mode</label>
+                        <label for="quotationImportMode" class="form-label small fw-semibold tw-text-on-surface">{{ __('supplier.copy.import_mode') }}</label>
                         <select id="quotationImportMode" class="form-select form-select-sm" aria-describedby="quotationImportModeHelp">
-                            <option value="fill_empty" selected>Fill Empty Fields Only</option>
-                            <option value="replace">Replace Imported Fields</option>
+                            <option value="fill_empty" selected>{{ __('supplier.copy.fill_empty_fields_only') }}</option>
+                            <option value="replace">{{ __('supplier.copy.replace_imported_fields') }}</option>
                         </select>
                         <div id="quotationImportModeHelp" class="form-text tw-text-ui-xs" aria-live="polite"></div>
                     </div>
@@ -1268,30 +1268,30 @@
                     <div id="quotationImportSummary" class="tw-mb-2.5 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
 
                     <div id="quotationImportWarningsPanel" class="d-none tw-mb-2.5 tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
-                        <div class="fw-bold mb-1"><x-ui.icon name="triangle-alert" size="sm" class="me-1" />Warnings</div>
+                        <div class="fw-bold mb-1"><x-ui.icon name="triangle-alert" size="sm" class="me-1" />{{ __('supplier.copy.warnings') }}</div>
                         <ul id="quotationImportWarnings" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="quotationImportErrorsPanel" class="d-none tw-mb-2.5 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-px-3 tw-py-2 tw-text-ui-xs tw-text-error-container-foreground" role="alert">
-                        <div class="fw-bold mb-1"><x-ui.icon name="circle-x" size="sm" class="me-1" />Import Errors</div>
+                        <div class="fw-bold mb-1"><x-ui.icon name="circle-x" size="sm" class="me-1" />{{ __('supplier.copy.import_errors') }}</div>
                         <ul id="quotationImportErrors" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="quotationImportPreviewPanel" class="d-none">
-                        <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mb-1.5">Parsed Item Preview</div>
+                        <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mb-1.5">{{ __('supplier.copy.parsed_item_preview') }}</div>
                         <div class="table-responsive border rounded tw-max-h-64">
                             <table class="table table-sm table-striped align-middle mb-0 tw-text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th scope="col">PR Item ID</th>
-                                        <th scope="col">Availability</th>
-                                        <th scope="col">Price/Kg</th>
-                                        <th scope="col">Offer Qty</th>
+                                        <th scope="col">{{ __('supplier.copy.pr_item_id') }}</th>
+                                        <th scope="col">{{ __('supplier.copy.availability') }}</th>
+                                        <th scope="col">{{ __('supplier.copy.price_kg') }}</th>
+                                        <th scope="col">{{ __('supplier.copy.offer_qty') }}</th>
                                         @foreach($quotationDimensionOrder as $dimensionField)
-                                            <th scope="col">{{ \App\Models\PrItem::DIMENSION_LABELS[$dimensionField] }}</th>
+                                            <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
                                         @endforeach
-                                        <th scope="col">Offer KG/Unit</th>
-                                        <th scope="col">Notes</th>
+                                        <th scope="col">{{ __('supplier.copy.offer_kg_unit') }}</th>
+                                        <th scope="col">{{ __('supplier.copy.notes') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody id="quotationImportPreviewBody"></tbody>
@@ -1301,13 +1301,13 @@
                 </div>
             </div>
             <div class="modal-footer tw-bg-surface-low border-top">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Cancel</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseQuotationImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="quotationImportSpinner"></span>
-                    Parse & Validate
+                    {{ __('supplier.copy.parse_validate') }}
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnApplyQuotationImport" disabled>
-                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> Apply to Form
+                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> {{ __('supplier.copy.apply_to_form') }}
                 </x-ui.button>
             </div>
         </div>
@@ -1355,8 +1355,10 @@
 
     function formatQuotationImportMessage(entry) {
         const location = entry.row
-            ? `Row ${entry.row}${entry.column ? `, ${entry.column}` : ''}`
-            : (entry.column || 'File');
+            ? (entry.column
+                ? window.AdasiI18n.t('js.import.row_column', { row: entry.row, column: entry.column })
+                : window.AdasiI18n.t('js.import.row', { row: entry.row }))
+            : (entry.column || window.AdasiI18n.t('js.import.file'));
 
         return `${location}: ${entry.message}`;
     }
@@ -1369,7 +1371,7 @@
 
         $('#quotationImportResult').removeClass('d-none');
         $('#quotationImportSummary').text(
-            `Total Rows: ${summary.total || 0} | Valid: ${summary.valid || 0} | Invalid: ${summary.invalid || 0}`
+            window.AdasiI18n.t('supplier.js.import_summary', { total: summary.total || 0, valid: summary.valid || 0, invalid: summary.invalid || 0 })
         );
 
         const $warnings = $('#quotationImportWarnings').empty();
@@ -1385,7 +1387,7 @@
             const $tableRow = $('<tr>');
             [
                 row.pr_item_id,
-                row.availability ?? (row.is_available === false ? 'Not Available' : 'Available'),
+                row.is_available === false ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available')),
                 row.price_per_kg,
                 row.available_qty ?? '-',
                 row.available_thickness ?? '-',
@@ -1419,7 +1421,7 @@
         const fileInput = document.getElementById('quotationImportFile');
         const file = fileInput.files[0];
         if (!file) {
-            fileInput.setCustomValidity('Select an XLSX, XLS, or CSV file before continuing.');
+            fileInput.setCustomValidity(@json(__('supplier.copy.select_an_xlsx_xls_or_csv_file_before_continuing')));
             fileInput.reportValidity();
             return;
         }
@@ -1450,7 +1452,7 @@
                 rows: [],
                 warnings: [],
                 summary: { total: 0, valid: 0, invalid: 0 },
-                errors: [{ row: null, column: 'import_file', message: 'The spreadsheet could not be processed.' }]
+                errors: [{ row: null, column: 'import_file', message: @json(__('supplier.copy.the_spreadsheet_could_not_be_processed')) }]
             });
         }).always(() => {
             setQuotationImportBusy(false);
@@ -1570,10 +1572,11 @@
         recalculateQuotationTotals();
         updateCommercialTermsState();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('quotationImportModal')).hide();
+        const changedFieldCount = window.AdasiI18n.choice('supplier.js.field_change_count', changedFields);
         AdasiToast.show({
             type: 'success',
-            title: 'Import Applied',
-            message: `${changedFields} field(s) across ${importedItems} item(s) applied.`,
+            title: @json(__('supplier.copy.import_applied')),
+            message: window.AdasiI18n.choice('supplier.js.import_result', importedItems, { field_count: changedFieldCount }),
             autoClose: 2400
         });
     }
@@ -1586,10 +1589,10 @@
         const mode = $('#quotationImportMode').val();
         if (mode === 'replace' && quotationImportWouldOverwrite()) {
             AdasiAlert.confirmDanger({
-                title: 'Replace existing item values?',
-                text: 'Imported values will replace values currently entered for matching items.',
-                confirmText: 'Yes, Replace Fields',
-                cancelText: 'Cancel'
+                title: @json(__('supplier.copy.replace_existing_item_values')),
+                text: @json(__('supplier.copy.imported_values_will_replace_values_currently_entered_for_matching_items')),
+                confirmText: @json(__('supplier.copy.yes_replace_fields')),
+                cancelText: @json(__('supplier.copy.cancel'))
             }).then((result) => {
                 if (result.isConfirmed) {
                     performQuotationImportApply(mode);
@@ -1682,11 +1685,11 @@
         let message = '';
 
         if (raw === '' && requireValue) {
-            message = 'Offer Qty is required for an available item.';
+            message = @json(__('supplier.copy.offer_qty_is_required_for_an_available_item'));
         } else if (raw !== '' && (!Number.isInteger(value) || value < 1)) {
-            message = 'Offer Qty must be a whole number of at least 1.';
+            message = @json(__('supplier.copy.offer_qty_must_be_a_whole_number_of_at_least_1'));
         } else if (raw !== '' && value > requested) {
-            message = `Offer Qty cannot exceed the requested Qty (${requested}).`;
+            message = window.AdasiI18n.t('supplier.js.offer_limit', { requested });
         }
 
         setFieldValidity($input, message === '', message);
@@ -1771,8 +1774,8 @@
         let message = '';
         if (!parsed.valid) {
             message = parsed.reason === 'reversed'
-                ? 'The minimum Offer Length cannot exceed the maximum length.'
-                : 'Enter one length (e.g. 2300) or a range from minimum to maximum (e.g. 2300-2500).';
+                ? @json(__('supplier.copy.the_minimum_offer_length_cannot_exceed_the_maximum_length'))
+                : @json(__('supplier.copy.enter_one_length_e_g_2300_or_a_range_from_minimum_to_maximum_e_g_2300_2500'));
         }
 
         setFieldValidity($input, parsed.valid, message);
@@ -1877,7 +1880,7 @@
             .toggleClass('is-available', !unavailable)
             .toggleClass('is-unavailable', unavailable)
             .attr('aria-checked', unavailable ? 'false' : 'true');
-        $toggleBtn.find('.item-availability-label').text(unavailable ? 'Not Available' : 'Available');
+        $toggleBtn.find('.item-availability-label').text(unavailable ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available')));
 
         const iconSvg = unavailable
             ? '<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
@@ -1887,15 +1890,15 @@
         $group.find('.quotation-item-notes').attr(
             'placeholder',
             unavailable
-                ? 'e.g. Out of stock, earliest rolling schedule next quarter...'
-                : 'e.g. Mill tolerance ±0.5mm, prime grade, MTC included...'
+                ? @json(__('supplier.copy.e_g_out_of_stock_earliest_rolling_schedule_next_quarter'))
+                : @json(__('supplier.copy.e_g_mill_tolerance_0_5mm_prime_grade_mtc_included'))
         );
         $group.find('.quotation-notes-trigger').prop('disabled', unavailable).attr('aria-disabled', unavailable ? 'true' : 'false');
         $group.find('.quotation-notes-draft').attr(
             'placeholder',
             unavailable
-                ? 'e.g. Out of stock, earliest rolling schedule next quarter...'
-                : 'e.g. Mill tolerance ±0.5mm, prime grade, MTC included...'
+                ? @json(__('supplier.copy.e_g_out_of_stock_earliest_rolling_schedule_next_quarter'))
+                : @json(__('supplier.copy.e_g_mill_tolerance_0_5mm_prime_grade_mtc_included'))
         );
 
         if (unavailable) {
@@ -2060,7 +2063,7 @@
         });
 
         if (copiedRows > 0) {
-            showCopyFeedback(`Copied requested values for ${copiedRows} item(s).`);
+            showCopyFeedback(window.AdasiI18n.choice('supplier.js.requested_copied', copiedRows));
         }
 
         return copiedRows;
@@ -2069,13 +2072,13 @@
     function showCopyFeedback(message) {
         if (window.AdasiToast && typeof window.AdasiToast.success === 'function') {
             window.AdasiToast.success(message, {
-                title: 'Values Copied',
+                title: @json(__('supplier.copy.values_copied')),
                 autoClose: 2000
             });
         } else if (window.AdasiToast && typeof window.AdasiToast.show === 'function') {
             window.AdasiToast.show({
                 type: 'success',
-                title: 'Values Copied',
+                title: @json(__('supplier.copy.values_copied')),
                 message: message,
                 autoClose: 2000
             });
@@ -2101,14 +2104,14 @@
         }
 
         if (window.copyRequestedValues(button)) {
-            showCopyFeedback('Requested values copied to row.');
+            showCopyFeedback(@json(__('supplier.copy.requested_values_copied_to_row')));
         }
     });
 
     $(document).ready(function() {
         const importModeDescriptions = {
-            fill_empty: 'Only fills offer fields that are still empty. Existing values entered in the form are preserved.',
-            replace: 'Replaces the matching offer fields for the same PR items using values from the spreadsheet. It does not create additional quotation items.',
+            fill_empty: @json(__('supplier.copy.only_fills_offer_fields_that_are_still_empty_existing_values_entered_in_the_form_are_preserved')),
+            replace: @json(__('supplier.copy.replaces_the_matching_offer_fields_for_the_same_pr_items_using_values_from_the_spreadsheet_it_does_n')),
         };
         const updateQuotationImportModeHelp = () => {
             $('#quotationImportModeHelp').text(importModeDescriptions[$('#quotationImportMode').val()] || '');
@@ -2177,7 +2180,7 @@
 
             if (!sourceFile && !sourceAttachmentId) {
                 if (window.AdasiToast) {
-                    AdasiToast.error('Please upload or select an MTC file first before copying.');
+                    AdasiToast.error(@json(__('supplier.copy.please_upload_or_select_an_mtc_file_first_before_copying')));
                 }
                 return;
             }
@@ -2220,8 +2223,8 @@
             if (targetList.length === 0) {
                 if (window.AdasiToast) {
                     const msg = mode === 'same_material'
-                        ? 'No other available items with the same material (' + sourceMaterialName + ').'
-                        : 'No other available items found.';
+                        ? @js(__('common.final_review.no_same_material')).replace(':material', sourceMaterialName)
+                        : @json(__('supplier.copy.no_other_available_items_found'));
                     AdasiToast.info(msg);
                 }
                 return;
@@ -2274,25 +2277,25 @@
                 });
 
                 if (window.AdasiToast) {
-                    AdasiToast.success('MTC file applied to ' + appliedCount + ' item(s).');
+                    AdasiToast.success(window.AdasiI18n.choice('supplier.js.mtc_applied', appliedCount));
                 }
             };
 
             if (overwriteTargets.length > 0) {
                 if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
                     AdasiAlert.confirm({
-                        title: 'Overwrite Existing MTC Files?',
-                        text: overwriteTargets.length + ' item(s) already have an MTC file attached. Do you want to overwrite them with "' + sourceFileName + '"?',
+                        title: @json(__('supplier.copy.overwrite_existing_mtc_files')),
+                        text: window.AdasiI18n.t('supplier.js.mtc_overwrite_file', { count: overwriteTargets.length, file: sourceFileName }),
                         type: 'warning',
-                        confirmText: 'Yes, Overwrite',
-                        cancelText: 'Cancel'
+                        confirmText: window.AdasiI18n.t('supplier.js.overwrite_confirm'),
+                        cancelText: @json(__('supplier.copy.cancel'))
                     }).then((result) => {
                         if (result.isConfirmed) {
                             executeApply();
                         }
                     });
                 } else {
-                    if (confirm(overwriteTargets.length + ' item(s) already have an MTC file attached. Do you want to overwrite them?')) {
+                    if (confirm(window.AdasiI18n.t('supplier.js.mtc_overwrite', { count: overwriteTargets.length }))) {
                         executeApply();
                     }
                 }
@@ -2413,11 +2416,11 @@
                 $triggerText.text(draftVal);
                 $trigger.addClass('has-notes').attr('title', draftVal);
                 if (!$trigger.find('.quotation-notes-trigger__badge').length) {
-                    $trigger.append('<span class="quotation-notes-trigger__badge" title="Note entered" aria-hidden="true"></span>');
+                    $trigger.append($('<span class="quotation-notes-trigger__badge" aria-hidden="true"></span>').attr('title', @js(__('common.final_review.note_entered'))));
                 }
             } else {
-                $triggerText.text('Add note...');
-                $trigger.removeClass('has-notes').attr('title', 'Click to add notes');
+                $triggerText.text(@json(__('supplier.copy.add_note')));
+                $trigger.removeClass('has-notes').attr('title', @json(__('supplier.copy.click_to_add_notes')));
                 $trigger.find('.quotation-notes-trigger__badge').remove();
             }
 
@@ -2441,11 +2444,11 @@
                 $triggerText.text(val);
                 $trigger.addClass('has-notes').attr('title', val);
                 if (!$trigger.find('.quotation-notes-trigger__badge').length) {
-                    $trigger.append('<span class="quotation-notes-trigger__badge" title="Note entered" aria-hidden="true"></span>');
+                    $trigger.append($('<span class="quotation-notes-trigger__badge" aria-hidden="true"></span>').attr('title', @js(__('common.final_review.note_entered'))));
                 }
             } else {
-                $triggerText.text('Add note...');
-                $trigger.removeClass('has-notes').attr('title', 'Click to add notes');
+                $triggerText.text(@json(__('supplier.copy.add_note')));
+                $trigger.removeClass('has-notes').attr('title', @json(__('supplier.copy.click_to_add_notes')));
                 $trigger.find('.quotation-notes-trigger__badge').remove();
             }
         });
@@ -2595,14 +2598,14 @@
             const $price = $group.find('.price-input');
             const price = Number($price.val());
             const priceValid = String($price.val() ?? '').trim() !== '' && Number.isFinite(price) && price > 0;
-            setFieldValidity($price, priceValid, 'Price / KG must be greater than zero for an available item.');
+            setFieldValidity($price, priceValid, @json(__('supplier.copy.price_kg_must_be_greater_than_zero_for_an_available_item')));
             if (!priceValid) valid = false;
 
             const $weight = $group.find('.offered-weight-input');
             const weightRaw = String($weight.val() ?? '').trim();
             const weight = Number(weightRaw);
             const weightValid = !requireCompleteOffer || (weightRaw !== '' && Number.isFinite(weight) && weight > 0);
-            setFieldValidity($weight, weightValid, 'Offer KG / Unit is required and must be greater than zero for a final available offer.');
+            setFieldValidity($weight, weightValid, @json(__('supplier.copy.offer_kg_unit_is_required_and_must_be_greater_than_zero_for_a_final_available_offer')));
             if (!weightValid) valid = false;
 
             if (!firstInvalid) {
@@ -2674,14 +2677,14 @@
 
         AdasiAlert.confirm({
             title: allUnavailable
-                ? @json('Submit quotation with all requested items marked Not Available?')
-                : {!! json_encode($quotation?->status === 'revision_requested' ? 'Resubmit Quotation?' : 'Send Final Quotation?') !!},
+                ? @json(__('supplier.copy.submit_quotation_with_all_requested_items_marked_not_available'))
+                : @js($quotation?->status === 'revision_requested' ? __('supplier.copy.resubmit_quotation') : __('supplier.copy.send_final_quotation')),
             text: allUnavailable
-                ? @json('Requested rows remain visible, but this quotation contains no available commercial offer lines.')
-                : {!! json_encode($quotation?->status === 'revision_requested' ? 'The revised quotation will be sent back to Purchasing for evaluation.' : 'Submitted quotations cannot be modified after sending.') !!},
+                ? @json(__('supplier.copy.requested_rows_remain_visible_but_this_quotation_contains_no_available_commercial_offer_lines'))
+                : @js($quotation?->status === 'revision_requested' ? __('supplier.copy.the_revised_quotation_will_be_sent_back_to_purchasing_for_evaluation') : __('supplier.copy.submitted_quotations_cannot_be_modified_after_sending')),
             type: 'warning',
-            confirmText: @json($quotation?->status === 'revision_requested' ? 'Yes, Resubmit!' : 'Yes, Send!'),
-            cancelText: @json('Cancel')
+            confirmText: @js($quotation?->status === 'revision_requested' ? __('supplier.copy.resubmit_quotation') : __('supplier.copy.submit_final_quotation')),
+            cancelText: @json(__('supplier.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
                 localStorage.removeItem(draftKey);
@@ -2704,7 +2707,7 @@
     const draftKey = 'quotation_draft_' + prId;
 
     function saveDraft() {
-        $('#autoSaveBadge').removeClass('d-none ui-status-chip--success').addClass('ui-status-chip--neutral').html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+        $('#autoSaveBadge').removeClass('d-none ui-status-chip--success').addClass('ui-status-chip--neutral').html('<span class="spinner-border spinner-border-sm me-1"></span>' + @json(__('supplier.audit_ui.saving')));
         
         try {
             const formData = $('#quotationForm').serializeArray();
@@ -2717,13 +2720,13 @@
             localStorage.setItem(draftKey, JSON.stringify(data));
 
             setTimeout(() => {
-                $('#autoSaveBadge').removeClass('ui-status-chip--neutral').addClass('ui-status-chip--success').text('Draft Saved');
+                $('#autoSaveBadge').removeClass('ui-status-chip--neutral').addClass('ui-status-chip--success').text(@json(__('supplier.copy.draft_saved')));
                 setTimeout(() => {
                     $('#autoSaveBadge').addClass('d-none');
                 }, 2000);
             }, 300);
         } catch (e) {
-            $('#autoSaveBadge').removeClass('ui-status-chip--neutral ui-status-chip--success').addClass('ui-status-chip--error').text('Save failed');
+            $('#autoSaveBadge').removeClass('ui-status-chip--neutral ui-status-chip--success').addClass('ui-status-chip--error').text(@json(__('supplier.copy.save_failed')));
         }
     }
 
@@ -2744,7 +2747,7 @@
                 validateOfferLength($group);
             });
             recalculateQuotationTotals();
-            $('#autoSaveBadge').removeClass('d-none ui-status-chip--error ui-status-chip--neutral').addClass('ui-status-chip--success').text('Draft Restored');
+            $('#autoSaveBadge').removeClass('d-none ui-status-chip--error ui-status-chip--neutral').addClass('ui-status-chip--success').text(@json(__('supplier.copy.draft_restored')));
             setTimeout(() => $('#autoSaveBadge').addClass('d-none'), 3000);
         }
     }

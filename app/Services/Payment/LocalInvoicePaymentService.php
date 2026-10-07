@@ -29,18 +29,18 @@ class LocalInvoicePaymentService
         return DB::transaction(function () use ($voucher, $data, $actor) {
             $lockedVoucher = LocalInvoiceVoucher::whereKey($voucher->id)->lockForUpdate()->firstOrFail();
             if ($lockedVoucher->status !== LocalInvoiceVoucher::STATUS_FINAL) {
-                throw new RuntimeException('Only a FINAL Voucher Bayar can be settled.');
+                throw new RuntimeException(__('finance.validation.final_voucher'));
             }
             if (LocalInvoicePayment::where('local_invoice_id', $lockedVoucher->local_invoice_id)->lockForUpdate()->exists()) {
-                throw ValidationException::withMessages(['payment' => 'This invoice already has a Payment Settlement.']);
+                throw ValidationException::withMessages(['payment' => __('finance.validation.settlement_exists')]);
             }
             $invoice = LocalInvoice::whereKey($lockedVoucher->local_invoice_id)->lockForUpdate()->firstOrFail();
             if (! $invoice->isReadyToPay()) {
-                throw new RuntimeException('The invoice is no longer Ready to Pay.');
+                throw new RuntimeException(__('finance.validation.not_ready'));
             }
             $amount = (string) $data['amount'];
             if (bccomp($amount, (string) $lockedVoucher->amount, 2) < 0 && trim((string) ($data['correction_reason'] ?? '')) === '') {
-                throw ValidationException::withMessages(['correction_reason' => 'A short transfer reason is required.']);
+                throw ValidationException::withMessages(['correction_reason' => __('finance.validation.short_reason')]);
             }
             $payment = LocalInvoicePayment::create([
                 'local_invoice_id' => $invoice->id, 'local_invoice_voucher_id' => $lockedVoucher->id,
@@ -62,10 +62,10 @@ class LocalInvoicePaymentService
         return DB::transaction(function () use ($payment, $data, $actor) {
             $locked = LocalInvoicePayment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== LocalInvoicePayment::STATUS_CORRECTION_REQUIRED) {
-                throw ValidationException::withMessages(['payment' => 'A correction is only allowed for an underpaid settlement.']);
+                throw ValidationException::withMessages(['payment' => __('finance.validation.underpaid_correction')]);
             }
             if (trim((string) ($data['correction_reason'] ?? '')) === '') {
-                throw ValidationException::withMessages(['correction_reason' => 'Correction reason is required.']);
+                throw ValidationException::withMessages(['correction_reason' => __('finance.validation.correction_reason')]);
             }
             $this->addTransfer($locked, LocalInvoicePaymentTransfer::TYPE_CORRECTION, $data, $actor);
 
@@ -77,11 +77,11 @@ class LocalInvoicePaymentService
     {
         $transferReference = trim((string) ($data['transfer_reference'] ?? ''));
         if ($transferReference === '' || mb_strlen($transferReference) > 100) {
-            throw ValidationException::withMessages(['transfer_reference' => 'Transfer reference is required and may not exceed 100 characters.']);
+            throw ValidationException::withMessages(['transfer_reference' => __('finance.validation.transfer_reference')]);
         }
         $transferDate = $data['transfer_date'] ?? null;
         if (! is_string($transferDate) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $transferDate)) {
-            throw ValidationException::withMessages(['transfer_date' => 'Transfer date must use YYYY-MM-DD format.']);
+            throw ValidationException::withMessages(['transfer_date' => __('finance.validation.transfer_date')]);
         }
 
         $sequence = (int) $payment->transfers()->lockForUpdate()->max('sequence_no') + 1;
@@ -105,17 +105,33 @@ class LocalInvoicePaymentService
             $invoice = LocalInvoice::whereKey($payment->local_invoice_id)->lockForUpdate()->firstOrFail();
             $latestTransfer = $payment->transfers()->latest('sequence_no')->first();
             $remaining = bcsub((string) $payment->expected_amount, (string) $actual, 2);
-            $reasonText = $latestTransfer?->correction_reason ? " Alasan: {$latestTransfer->correction_reason}." : '';
+            $reason = trim((string) ($latestTransfer?->correction_reason ?? ''));
+            $historyMessage = $reason === ''
+                ? 'local_invoice.history.partial_payment'
+                : 'local_invoice.history.partial_payment_with_reason';
 
             $history = $invoice->statusHistories()->create([
                 'from_status' => $invoice->status,
                 'to_status' => $invoice->status,
                 'actor_id' => $actor->id,
                 'event' => 'partial_payment',
-                'notes' => 'Pembayaran parsial sebesar Rp '.number_format((float) ($latestTransfer?->amount ?? $actual), 0, ',', '.')." dicatat (Ref: {$latestTransfer?->transfer_reference}). Total terbayar: Rp ".number_format((float) $actual, 0, ',', '.').', Sisa tagihan: Rp '.number_format((float) $remaining, 0, ',', '.').".{$reasonText}",
+                'notes' => __($historyMessage, [
+                    'amount' => number_format((float) ($latestTransfer?->amount ?? $actual), 0, ',', '.'),
+                    'reference' => (string) ($latestTransfer?->transfer_reference ?? ''),
+                    'actual' => number_format((float) $actual, 0, ',', '.'),
+                    'remaining' => number_format((float) $remaining, 0, ',', '.'),
+                    'reason' => $reason,
+                ]),
                 'created_at' => now(),
             ]);
-            $this->notifications->send($invoice, $history);
+            $this->notifications->send($invoice, $history, [
+                'amount' => (string) ($latestTransfer?->amount ?? $actual),
+                'reference' => (string) ($latestTransfer?->transfer_reference ?? ''),
+                'actual' => (string) $actual,
+                'expected' => (string) $payment->expected_amount,
+                'remaining' => (string) $remaining,
+                'reason' => (string) ($latestTransfer?->correction_reason ?? ''),
+            ]);
 
             return $payment->fresh('transfers');
         }
@@ -125,8 +141,13 @@ class LocalInvoicePaymentService
         $invoice = LocalInvoice::whereKey($payment->local_invoice_id)->lockForUpdate()->firstOrFail();
         if ($invoice->status !== LocalInvoice::STATUS_PAID) {
             $invoice->update(['status' => LocalInvoice::STATUS_PAID, 'paid_at' => $now, 'completed_at' => $now]);
-            $history = $invoice->statusHistories()->create(['from_status' => LocalInvoice::STATUS_READY_TO_PAY, 'to_status' => LocalInvoice::STATUS_PAID, 'actor_id' => $actor->id, 'event' => 'paid', 'notes' => 'Invoice settlement finalized.', 'created_at' => $now]);
-            $this->notifications->send($invoice, $history);
+            $history = $invoice->statusHistories()->create(['from_status' => LocalInvoice::STATUS_READY_TO_PAY, 'to_status' => LocalInvoice::STATUS_PAID, 'actor_id' => $actor->id, 'event' => 'paid', 'notes' => __('local_invoice.history.settlement_finalized'), 'created_at' => $now]);
+            $this->notifications->send($invoice, $history, [
+                'amount' => (string) $actual,
+                'reference' => (string) ($payment->transfers()->latest('sequence_no')->value('transfer_reference') ?? ''),
+                'expected' => (string) $payment->expected_amount,
+                'actual' => (string) $actual,
+            ]);
         }
         if ($comparison > 0) {
             $overpaymentAmount = bcsub((string) $actual, (string) $payment->expected_amount, 2);
@@ -143,10 +164,10 @@ class LocalInvoicePaymentService
                 'to_status' => $invoice->status,
                 'actor_id' => $actor->id,
                 'event' => 'overpaid',
-                'notes' => 'Terjadi kelebihan bayar sebesar Rp '.number_format((float) $overpaymentAmount, 0, ',', '.').'. Kelebihan dana tercatat sebagai pengembalian (refund) ke ADASI.',
+                'notes' => __('local_invoice.history.overpaid', ['amount' => number_format((float) $overpaymentAmount, 0, ',', '.')]),
                 'created_at' => $now,
             ]);
-            $this->notifications->send($invoice, $overHistory);
+            $this->notifications->send($invoice, $overHistory, ['amount' => (string) $overpaymentAmount]);
         }
         $this->syncContainers($payment);
         $this->audit->record($payment, 'settlement_finalized', $actor, null, $payment->fresh()->toArray());
@@ -179,7 +200,7 @@ class LocalInvoicePaymentService
     {
         $value = trim((string) $value);
         if (! preg_match('/^\d{1,18}(?:\.\d{1,2})?$/', $value) || bccomp($value, '0', 2) <= 0) {
-            throw ValidationException::withMessages(['amount' => 'Transfer amount must be positive with up to two decimal places.']);
+            throw ValidationException::withMessages(['amount' => __('finance.validation.transfer_amount')]);
         }
         if (! str_contains($value, '.')) {
             return $value.'.00';

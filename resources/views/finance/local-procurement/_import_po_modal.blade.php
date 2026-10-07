@@ -4,13 +4,13 @@
             <div class="modal-header tw-border-b tw-border-outline-variant">
                 <div>
                     <h6 class="modal-title fw-bold tw-text-on-surface" id="localPoImportModalLabel">
-                        Import Purchase Order (Infor ERP)
+                        {{ __('local_procurement.import.po_title') }}
                     </h6>
                     <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
-                        Unggah file ekspor ERP Infor (.xlsx) untuk membuat atau memperbarui referensi PO.
+                        {{ __('local_procurement.import.po_help') }}
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
             </div>
 
             <div class="modal-body tw-p-4 tw-space-y-4">
@@ -20,28 +20,28 @@
                         <x-ui.file-upload
                             name="import_file"
                             id="localPoImportFile"
-                            label="File Spreadsheet Purchase Order (PO) ERP (.xlsx)"
-                            helper="Format XLSX maksimal 10 MB. Kolom formula dilarang; seluruh nominal berupa angka desimal positif."
+                            :label="__('local_procurement.import.po_file')"
+                            :helper="__('local_procurement.import.po_format')"
                             accept=".xlsx"
                         />
                     </div>
 
                     <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3.5 tw-space-y-3">
                         <div class="tw-flex tw-items-center tw-justify-between">
-                            <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface">Template Purchase Order (PO) ERP</span>
+                            <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface">{{ __('local_procurement.import.po_template') }}</span>
                             <x-ui.button :href="route($routePrefix.'.import.po.template')" variant="outline" size="sm">
                                 <x-ui.icon name="download" size="sm" />
-                                <span>Unduh Template</span>
+                                <span>{{ __('local_procurement.import.template') }}</span>
                             </x-ui.button>
                         </div>
                         <div class="tw-text-[11px] tw-text-on-surface-variant tw-leading-relaxed">
-                            <p class="tw-mb-1.5 tw-font-semibold tw-text-on-surface">Pemetaan Kolom ERP Infor Purchase Order (PO):</p>
+                            <p class="tw-mb-1.5 tw-font-semibold tw-text-on-surface">{{ __('finance.review.po_mapping') }}</p>
                             <ul class="tw-list-disc tw-ps-3.5 tw-space-y-1 tw-mb-0">
-                                <li><strong>Kolom E:</strong> Nomor PO (<code>Order</code>).</li>
-                                <li><strong>Kolom G:</strong> Nama Rekanan Supplier Lokal aktif.</li>
-                                <li><strong>Kolom J:</strong> Tanggal PO (<code>Order Date</code>).</li>
-                                <li><strong>Kolom K:</strong> Plafon Nominal PO (<code>Order Amount</code>).</li>
-                                <li>PO dengan data identik yang sudah ada di sistem akan otomatis dilewati (aman).</li>
+                                <li>{{ __('finance.review.column_e') }}</li>
+                                <li>{{ __('finance.review.column_g') }}</li>
+                                <li>{{ __('finance.review.column_j_po') }}</li>
+                                <li>{{ __('finance.review.column_k') }}</li>
+                                <li>{{ __('finance.review.po_duplicate') }}</li>
                             </ul>
                         </div>
                     </div>
@@ -52,23 +52,23 @@
                     {{-- KPI Summary Pills --}}
                     <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-5 tw-gap-3">
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">Total Baris ERP</div>
+                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('local_procurement.import.rows') }}</div>
                             <div class="tw-text-title-md tw-font-bold tw-text-on-surface" id="kpiPoTotalRows">0</div>
                         </div>
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">PO Baru</div>
+                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('finance.review.new_po') }}</div>
                             <div class="tw-text-title-md tw-font-bold tw-text-primary" id="kpiPoNew">0</div>
                         </div>
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">PO Terdaftar (Skip)</div>
+                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('finance.review.existing_po') }}</div>
                             <div class="tw-text-title-md tw-font-bold tw-text-on-surface" id="kpiPoExisting">0</div>
                         </div>
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">Konflik Header</div>
+                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('finance.review.header_conflict') }}</div>
                             <div class="tw-text-title-md tw-font-bold tw-text-warning" id="kpiPoConflict">0</div>
                         </div>
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">Baris Error</div>
+                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('local_procurement.import.error_rows') }}</div>
                             <div class="tw-text-title-md tw-font-bold tw-text-error" id="kpiPoInvalidRows">0</div>
                         </div>
                     </div>
@@ -77,10 +77,10 @@
                     <div id="localPoImportErrorsPanel" class="d-none tw-rounded-ui-md tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3.5 tw-text-ui-xs tw-text-error-container-foreground" role="alert">
                         <div class="fw-bold mb-1.5 d-flex align-items-center tw-gap-1.5 tw-text-ui-sm">
                             <x-ui.icon name="circle-x" size="sm" />
-                            <span>Ditemukan Kesalahan Validasi Spreadsheet PO</span>
+                            <span>{{ __('local_procurement.import.po_error') }}</span>
                         </div>
                         <p class="tw-mb-1.5 tw-text-[11px]">
-                            Import tidak dapat dikonfirmasi sebelum seluruh kesalahan berikut diperbaiki pada file spreadsheet:
+                            {{ __('local_procurement.import.errors_help') }}:
                         </p>
                         <ul id="localPoImportErrorsList" class="tw-mb-0 tw-ps-4 tw-space-y-0.5"></ul>
                     </div>
@@ -89,7 +89,7 @@
                     <div id="localPoImportPreviewPanel" class="d-none tw-space-y-2">
                         <div class="tw-flex tw-items-center tw-justify-between">
                             <div class="tw-font-bold tw-text-on-surface tw-text-ui-sm">
-                                Pratinjau Baris PO (Parsed Rows)
+                                {{ __('finance.review.po_preview') }}
                             </div>
                             <span class="tw-text-[11px] tw-text-on-surface-variant" id="localPoImportRowCount"></span>
                         </div>
@@ -97,12 +97,12 @@
                             <table class="table table-sm table-striped table-hover align-middle mb-0 tw-text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th scope="col" style="width: 45px;" class="text-center">Baris</th>
-                                        <th scope="col">Nomor PO</th>
-                                        <th scope="col">Rekanan Supplier</th>
-                                        <th scope="col" class="text-center">Tgl PO</th>
-                                        <th scope="col" class="text-end">Plafon PO (IDR)</th>
-                                        <th scope="col" class="text-center">Status / Aksi</th>
+                                        <th scope="col" style="width: 45px;" class="text-center">{{ __('local_procurement.import.row') }}</th>
+                                        <th scope="col">{{ __('local_invoice.receipt.po_number') }}</th>
+                                        <th scope="col">{{ __('local_procurement.labels.supplier_partner') }}</th>
+                                        <th scope="col" class="text-center">{{ __('local_procurement.labels.po_date_short') }}</th>
+                                        <th scope="col" class="text-end">{{ __('finance.review.po_ceiling') }}</th>
+                                        <th scope="col" class="text-center">{{ __('finance.review.status_action') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody id="localPoImportPreviewBody"></tbody>
@@ -114,18 +114,18 @@
 
             <div class="modal-footer tw-bg-surface-container-lowest tw-border-t tw-border-outline-variant">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
-                    Batal
+                    {{ __('local_invoice.actions.cancel') }}
                 </x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseLocalPoImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="localPoImportSpinner"></span>
-                    <span>Validasi & Tinjau Data</span>
+                    <span>{{ __('local_procurement.import.validate') }}</span>
                 </x-ui.button>
                 <form id="localPoImportConfirmForm" method="POST" action="{{ route($routePrefix.'.import.po.confirm') }}" class="d-inline">
                     @csrf
                     <input type="hidden" name="token" id="localPoImportToken" value="">
                     <x-ui.button type="submit" size="sm" variant="primary" id="btnConfirmLocalPoImport" disabled>
                         <x-ui.icon name="circle-check" size="sm" class="me-1" />
-                        <span>Konfirmasi Import PO</span>
+                        <span>{{ __('finance.review.confirm_po') }}</span>
                     </x-ui.button>
                 </form>
             </div>
@@ -138,6 +138,12 @@
     (function() {
         let requestInFlight = false;
         const previewUrl = @json(route($routePrefix.'.import.po.preview'));
+
+        function escapeHtml(value) {
+            const span = document.createElement('span');
+            span.textContent = String(value ?? '');
+            return span.innerHTML;
+        }
 
         function formatRupiah(val) {
             if (!val || val === '0.00' || val === '0') return '-';
@@ -165,9 +171,9 @@
             const file = fileInput.files[0];
             if (!file) {
                 if (typeof AdasiToast !== 'undefined') {
-                    AdasiToast.error('Pilih file spreadsheet PO (.xlsx) terlebih dahulu.');
+                    AdasiToast.error(@js(__('finance.async_copy.choose_po')));
                 } else {
-                    alert('Pilih file spreadsheet PO (.xlsx) terlebih dahulu.');
+                    alert(@js(__('finance.async_copy.choose_po')));
                 }
                 return;
             }
@@ -198,7 +204,7 @@
                     errorsPanel.classList.remove('d-none');
                     previewPanel.classList.add('d-none');
                     errorsList.innerHTML = '';
-                    const msgs = body.errors ? Object.values(body.errors).flat() : [body.message || 'Terjadi kesalahan validasi.'];
+                    const msgs = body.errors ? Object.values(body.errors).flat() : [body.message || @js(__('finance.async_copy.validation_error'))];
                     msgs.forEach(m => {
                         const li = document.createElement('li');
                         li.textContent = m;
@@ -214,9 +220,9 @@
                 parseBtn.disabled = false;
                 spinner.classList.add('d-none');
                 if (typeof AdasiToast !== 'undefined') {
-                    AdasiToast.error('Gagal menghubungi server: ' + err.message);
+                    AdasiToast.error(@js(__('finance.async_copy.server_error')).replace(':message', String(err.message)));
                 } else {
-                    alert('Gagal menghubungi server: ' + err.message);
+                    alert(@js(__('finance.async_copy.server_error')).replace(':message', String(err.message)));
                 }
             });
         });
@@ -236,7 +242,7 @@
                 errorsList.innerHTML = '';
                 preview.errors.forEach(e => {
                     const li = document.createElement('li');
-                    li.textContent = `Baris ${e.row || '-'} [${e.column || '-'}]: ${e.message}`;
+                    li.textContent = @js(__('finance.async_copy.row_error')).replace(':row', String(e.row || '-')).replace(':column', String(e.column || '-')).replace(':message', String(e.message));
                     errorsList.appendChild(li);
                 });
                 confirmBtn.disabled = true;
@@ -252,22 +258,25 @@
             const rows = preview.rows || [];
             if (rows.length > 0) {
                 previewPanel.classList.remove('d-none');
-                rowCountLabel.textContent = `${rows.length} baris ditampilkan`;
+                rowCountLabel.textContent = @js(__('finance.async_copy.po_count')).replace(':count', String(rows.length));
                 previewBody.innerHTML = '';
 
                 rows.slice(0, 100).forEach(r => {
                     const tr = document.createElement('tr');
-                    let badge = '<span class="badge bg-secondary">UNKNOWN</span>';
-                    if (r.action === 'NEW') badge = '<span class="badge bg-primary">PO BARU</span>';
-                    else if (r.action === 'EXISTING') badge = '<span class="badge bg-info text-dark">TERDAFTAR</span>';
-                    else if (r.action === 'CONFLICT') badge = '<span class="badge bg-danger">KONFLIK</span>';
+                    let badge = document.createElement('span');
+                    badge.className = 'badge bg-secondary';
+                    badge.textContent = @js(__('finance.async_copy.unknown'));
+                    badge = badge.outerHTML;
+                    if (r.action === 'NEW') badge = `<span class="badge bg-primary">${escapeHtml(@js(__('finance.async_copy.new_po')))}</span>`;
+                    else if (r.action === 'EXISTING') badge = `<span class="badge bg-info text-dark">${escapeHtml(@js(__('finance.async_copy.existing')))}</span>`;
+                    else if (r.action === 'CONFLICT') badge = `<span class="badge bg-danger">${escapeHtml(@js(__('finance.async_copy.conflict')))}</span>`;
 
                     tr.innerHTML = `
-                        <td class="text-center font-monospace">${r._row || '-'}</td>
-                        <td class="fw-semibold font-monospace">${r.po_number || '-'}</td>
-                        <td>${r.supplier_name || '-'}</td>
-                        <td class="text-center font-monospace">${r.po_date || '-'}</td>
-                        <td class="text-end font-monospace">${formatRupiah(r.po_amount)}</td>
+                        <td class="text-center font-monospace">${escapeHtml(r._row || '-')}</td>
+                        <td class="fw-semibold font-monospace">${escapeHtml(r.po_number || '-')}</td>
+                        <td>${escapeHtml(r.supplier_name || '-')}</td>
+                        <td class="text-center font-monospace">${escapeHtml(r.po_date || '-')}</td>
+                        <td class="text-end font-monospace">${escapeHtml(formatRupiah(r.po_amount))}</td>
                         <td class="text-center">${badge}</td>
                     `;
                     previewBody.appendChild(tr);

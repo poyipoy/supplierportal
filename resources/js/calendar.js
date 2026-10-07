@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import {
     addLocalMonths,
     compareIso,
@@ -29,6 +30,7 @@ const isoForGranularity = (value, granularity) => granularity === 'month'
     ? (isIsoMonth(value) ? value : '')
     : (isIsoDate(value) ? value : '');
 
+const escapeAttribute = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 const panelFocusables = (panel) => [...panel.querySelectorAll(FOCUSABLE)]
     .filter((element) => !element.hidden && element.getClientRects().length > 0);
 
@@ -186,7 +188,7 @@ class CalendarController {
         form.addEventListener('submit', (event) => {
             if (this.isDisabled() || !this.isRequired() || this.hasRequiredValue()) return;
             event.preventDefault();
-            this.setError('Complete the required date field before continuing.');
+                this.setError(t('js.calendar.required'));
             this.focusTrigger();
         });
 
@@ -217,7 +219,7 @@ class CalendarController {
             this.viewDate = new Date(this.viewDate.getFullYear() - 9, this.viewDate.getMonth(), 1);
             this.buildYearPanel();
             if (this.yearLabel) this.yearLabel.textContent = this.viewDate.getFullYear();
-            this.announce(`Years ${this.viewDate.getFullYear() - 4} to ${this.viewDate.getFullYear() + 4}.`);
+            this.announce(t('js.calendar.years', { start: this.viewDate.getFullYear() - 4, end: this.viewDate.getFullYear() + 4 }));
             return;
         }
         this.viewDate = new Date(this.viewDate.getFullYear(), this.viewDate.getMonth() - 1, 1);
@@ -230,7 +232,7 @@ class CalendarController {
             this.viewDate = new Date(this.viewDate.getFullYear() + 9, this.viewDate.getMonth(), 1);
             this.buildYearPanel();
             if (this.yearLabel) this.yearLabel.textContent = this.viewDate.getFullYear();
-            this.announce(`Years ${this.viewDate.getFullYear() - 4} to ${this.viewDate.getFullYear() + 4}.`);
+            this.announce(t('js.calendar.years', { start: this.viewDate.getFullYear() - 4, end: this.viewDate.getFullYear() + 4 }));
             return;
         }
         this.viewDate = new Date(this.viewDate.getFullYear(), this.viewDate.getMonth() + 1, 1);
@@ -254,7 +256,7 @@ class CalendarController {
                 this.viewDate = new Date(selectedYear, this.viewDate.getMonth(), 1);
                 this.toggleYearPanel(false);
                 this.renderSingleCalendar();
-                this.announce(`Year ${selectedYear} selected.`);
+                this.announce(t('js.calendar.year_selected', { year: selectedYear }));
             });
         });
     }
@@ -271,10 +273,7 @@ class CalendarController {
 
     renderSingleCalendar() {
         if (!this.daysGrid) return;
-        const MONTH_NAMES = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
+        const MONTH_NAMES = Array.from({ length: 12 }, (_, index) => t('js.calendar.month_' + (index + 1)));
         const year = this.viewDate.getFullYear();
         const month = this.viewDate.getMonth();
 
@@ -314,7 +313,7 @@ class CalendarController {
                 `type="button"`,
                 `class="${classes.join(' ')}"`,
                 `data-calendar-day="${iso}"`,
-                `aria-label="${d} ${MONTH_NAMES[month]} ${year}"`,
+                `aria-label="${d} ${escapeAttribute(MONTH_NAMES[month])} ${year}"`,
             ];
             if (disabledMatch) {
                 attrs.push('disabled', 'tabindex="-1"');
@@ -347,7 +346,7 @@ class CalendarController {
     onTodayClick() {
         const todayIso = localToday();
         if (this.isDayDisallowed(todayIso)) {
-            this.setError(this.allowedDaysMessage || 'Today is outside the allowed date range.');
+            this.setError(this.allowedDaysMessage || t('js.calendar.today_outside'));
             return;
         }
         this.draft = todayIso;
@@ -394,17 +393,17 @@ class CalendarController {
         this.panel.querySelector('[data-calendar-year-previous]')?.addEventListener('click', () => {
             this.displayYear -= 1;
             this.renderMonthGrid();
-            this.announce(`Calendar year ${this.displayYear}.`);
+            this.announce(t('js.calendar.year', { year: this.displayYear }));
         });
         this.panel.querySelector('[data-calendar-year-next]')?.addEventListener('click', () => {
             this.displayYear += 1;
             this.renderMonthGrid();
-            this.announce(`Calendar year ${this.displayYear}.`);
+            this.announce(t('js.calendar.year', { year: this.displayYear }));
         });
         this.yearSelect?.addEventListener('change', () => {
             this.displayYear = Number(this.yearSelect.value);
             this.renderMonthGrid();
-            this.announce(`Calendar year ${this.displayYear}.`);
+            this.announce(t('js.calendar.year', { year: this.displayYear }));
         });
         this.monthGrid.addEventListener('click', (event) => {
             const button = event.target.closest('[data-calendar-month]');
@@ -474,7 +473,7 @@ class CalendarController {
         this.syncPanel();
         this.updateTriggerBoundaries();
         this.reposition();
-        this.announce(this.type === 'range' ? `Select ${this.activeBoundary === 'start' ? 'a start' : 'an end'} ${this.granularity === 'month' ? 'month' : 'date'}.` : 'Select a date.');
+        this.announce(this.type === 'range' ? t('js.calendar.select_' + this.activeBoundary + '_' + (this.granularity === 'month' ? 'month' : 'date')) : t('js.calendar.select_date'));
 
         window.requestAnimationFrame(() => {
             this.panel.classList.add('is-open');
@@ -602,18 +601,18 @@ class CalendarController {
         for (const [index, value] of values.entries()) {
             if (!value) continue;
             const input = this.native[index];
-            if (input?.min && compareIso(value, input.min) < 0) return 'Choose a date within the allowed range.';
-            if (input?.max && compareIso(value, input.max) > 0) return 'Choose a date within the allowed range.';
+            if (input?.min && compareIso(value, input.min) < 0) return t('js.calendar.allowed_range');
+            if (input?.max && compareIso(value, input.max) > 0) return t('js.calendar.allowed_range');
             if (this.allowedDays && this.allowedDays.length) {
                 const [y, m, d] = value.split('-').map(Number);
                 const dayOfWeek = new Date(y, m - 1, d).getDay();
                 if (!this.allowedDays.includes(dayOfWeek)) {
-                    return this.allowedDaysMessage || 'Tanggal harus jatuh pada hari yang ditentukan.';
+                    return this.allowedDaysMessage || t('js.calendar.allowed_day');
                 }
             }
         }
         if (this.type === 'range' && values[0] && values[1] && compareIso(values[1], values[0]) < 0) {
-            return 'The end date cannot be before the start date.';
+            return t('js.calendar.end_before_start');
         }
         return '';
     }
@@ -662,7 +661,7 @@ class CalendarController {
 
     commitRange() {
         if (this.draft.start && this.draft.end && compareIso(this.draft.end, this.draft.start) < 0) {
-            this.setError('The end date cannot be before the start date.');
+            this.setError(t('js.calendar.end_before_start'));
             return;
         }
         this.setNativeValue(this.native[0], this.draft.start);
@@ -686,7 +685,7 @@ class CalendarController {
         this.draft = { start: '', end: '' };
         this.activeBoundary = 'start';
         this.syncPanel();
-        this.announce('Date range cleared. Select Apply to use the cleared range.');
+        this.announce(t('js.calendar.cleared'));
     }
 
     selectRangeStart(value) {
@@ -698,7 +697,7 @@ class CalendarController {
             this.dayGrid.tentative = '';
             this.activeBoundary = 'start';
             this.syncPanel();
-            this.announce('End date selected. Select Apply to use this range.');
+            this.announce(t('js.calendar.end_selected'));
             return;
         }
         const next = value;
@@ -709,7 +708,7 @@ class CalendarController {
         this.dayGrid.tentative = next;
         this.dayGrid.value = this.draft.end ? `${this.draft.start}/${this.draft.end}` : '';
         this.syncPanel();
-        this.announce(this.draft.end ? 'Start date updated. Select Apply to use this range.' : 'Start date selected. Select an end date.');
+        this.announce(this.draft.end ? t('js.calendar.start_updated') : t('js.calendar.start_selected'));
     }
 
     selectRangeEnd(value) {
@@ -724,7 +723,7 @@ class CalendarController {
         this.dayGrid.tentative = '';
         this.activeBoundary = 'start';
         this.syncPanel();
-        this.announce(this.draft.start ? 'End date selected. Select Apply to use this range.' : 'End date selected. Select Apply to use this range.');
+        this.announce(this.draft.start ? t('js.calendar.end_selected') : t('js.calendar.end_selected'));
     }
 
     selectMonth(value) {
@@ -733,12 +732,12 @@ class CalendarController {
             this.draft.start = value;
             if (this.draft.end && compareIso(value, this.draft.end) > 0) this.draft.end = '';
             this.activeBoundary = 'end';
-            this.announce('Start month selected. Select an end month.');
+            this.announce(t('js.calendar.start_month_selected'));
         } else {
             if (this.draft.start && compareIso(value, this.draft.start) < 0) return;
             this.draft.end = value;
             this.activeBoundary = 'start';
-            this.announce('End month selected. Select Apply to use this range.');
+            this.announce(t('js.calendar.end_month_selected'));
         }
         this.renderMonthGrid();
         this.updatePanelContext();
@@ -781,8 +780,8 @@ class CalendarController {
 
     updatePanelContext() {
         if (!this.context) return;
-        const label = this.activeBoundary === 'end' ? 'end' : 'start';
-        this.context.textContent = `Select ${label} ${this.granularity === 'month' ? 'month' : 'date'}`;
+        const label = t(this.activeBoundary === 'end' ? 'js.calendar.end' : 'js.calendar.start');
+        this.context.textContent = t('js.calendar.select_boundary', { label, unit: t(this.granularity === 'month' ? 'js.calendar.month' : 'js.calendar.date') });
     }
 
     updateRangeSummary() {
@@ -798,19 +797,19 @@ class CalendarController {
                 const [y1, m1] = this.draft.start.split('-').map(Number);
                 const [y2, m2] = this.draft.end.split('-').map(Number);
                 const monthsCount = (y2 - y1) * 12 + (m2 - m1) + 1;
-                this.rangeSummary.textContent = `${formatMonthDisplay(this.draft.start)} – ${formatMonthDisplay(this.draft.end)} (${monthsCount} ${monthsCount === 1 ? 'month' : 'months'})`;
+                this.rangeSummary.textContent = t('js.calendar.range_months', { start: formatMonthDisplay(this.draft.start), end: formatMonthDisplay(this.draft.end), count: monthsCount });
             } else {
                 const d1 = new Date(this.draft.start);
                 const d2 = new Date(this.draft.end);
                 const daysCount = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
-                this.rangeSummary.textContent = `${formatDateDisplay(this.draft.start)} – ${formatDateDisplay(this.draft.end)} (${daysCount} ${daysCount === 1 ? 'day' : 'days'})`;
+                this.rangeSummary.textContent = t('js.calendar.range_days', { start: formatDateDisplay(this.draft.start), end: formatDateDisplay(this.draft.end), count: daysCount });
             }
         } else if (this.draft.start) {
             const startLabel = this.granularity === 'month' ? formatMonthDisplay(this.draft.start) : formatDateDisplay(this.draft.start);
-            this.rangeSummary.textContent = `From ${startLabel} – Select end date`;
+            this.rangeSummary.textContent = t('js.calendar.from', { start: startLabel });
         } else if (this.draft.end) {
             const endLabel = this.granularity === 'month' ? formatMonthDisplay(this.draft.end) : formatDateDisplay(this.draft.end);
-            this.rangeSummary.textContent = `Until ${endLabel}`;
+            this.rangeSummary.textContent = t('js.calendar.until', { end: endLabel });
         }
     }
 
@@ -847,7 +846,7 @@ class CalendarController {
                 this.draft = { start: preset.start, end: preset.end };
                 this.activeBoundary = 'start';
                 this.syncPanel();
-                this.announce(`${preset.label} selected. Select Apply to use this range.`);
+                this.announce(t('js.calendar.preset_selected', { label: preset.label }));
             });
             container.append(button);
         });
@@ -869,7 +868,7 @@ class CalendarController {
             return option;
         }));
 
-        const formatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
+        const formatter = new Intl.DateTimeFormat(window.AdasiI18n.locale === 'id' ? 'id-ID' : 'en-US', { month: 'short' });
         this.monthGrid.replaceChildren(...Array.from({ length: 12 }, (_, index) => {
             const value = `${this.displayYear}-${String(index + 1).padStart(2, '0')}`;
             const button = document.createElement('button');
@@ -897,7 +896,7 @@ class CalendarController {
             const display = this.wrapper.querySelector('[data-calendar-display]');
             const displayValue = formatDateDisplay(this.committed);
             if (display) display.textContent = displayValue;
-            const label = this.trigger?.dataset.calendarLabel || 'Choose date';
+            const label = this.trigger?.dataset.calendarLabel || t('js.calendar.choose_date');
             this.trigger?.setAttribute('aria-label', this.committed ? `${label}: ${displayValue}` : label);
             return;
         }
@@ -906,7 +905,7 @@ class CalendarController {
     }
 
     formatRangeValue(value) {
-        if (!value) return 'Any time';
+        if (!value) return t('js.calendar.any_time');
         return this.granularity === 'month' ? formatMonthDisplay(value) : formatDateDisplay(value);
     }
 

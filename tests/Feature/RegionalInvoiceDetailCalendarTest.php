@@ -55,6 +55,9 @@ class RegionalInvoiceDetailCalendarTest extends TestCase
         $this->accounting = User::factory()->create(['role' => 'accounting']);
         $this->finance = User::factory()->create(['role' => 'finance']);
         $this->purchasing = User::factory()->create(['role' => 'purchasing']);
+        foreach ([$this->supplier, $this->accounting, $this->finance, $this->purchasing] as $user) {
+            $user->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);
+        }
         $this->po = LocalPurchaseOrder::create(['supplier_id' => $this->supplier->id, 'po_number' => 'PO-CALENDAR-001', 'po_date' => '2026-09-29', 'currency' => 'IDR', 'total_amount' => '2000000.50', 'status' => 'OPEN']);
         $this->invoice = LocalInvoice::create([
             'supplier_id' => $this->supplier->id, 'submission_number' => 'SUB-CALENDAR-001', 'invoice_number' => 'INV-CALENDAR-001',
@@ -93,21 +96,21 @@ class RegionalInvoiceDetailCalendarTest extends TestCase
                 foreach (['system', 'Asia/Jakarta'] as $timezone) {
                     $this->preference($user, $format, $timezone);
                     $html = $this->page($user, $route);
-                    $this->assertSame(Carbon::parse('2026-09-28')->format($pattern), $this->label($html, $portal === 'shared' ? 'Tanggal Invoice' : 'Tanggal Invoice:'));
+                    $this->assertSame(Carbon::parse('2026-09-28')->locale('id')->translatedFormat($pattern), $this->label($html, $portal === 'shared' ? 'Tanggal Invoice' : 'Tanggal Invoice:'));
                     if ($portal === 'shared') {
-                        $this->assertSame(Carbon::parse('2026-09-29')->format($pattern), $this->label($html, 'Tanggal PO'));
-                        $this->assertSame(Carbon::parse('2026-09-30')->format($pattern), $this->rowCell($html, 'GR-CALENDAR-001', 1));
-                        $this->assertSame(Carbon::parse('2026-10-06')->format($pattern), $this->rowCell($html, 'BANK-CALENDAR-001', 1));
+                        $this->assertSame(Carbon::parse('2026-09-29')->locale('id')->translatedFormat($pattern), $this->label($html, 'Tanggal PO'));
+                        $this->assertSame(Carbon::parse('2026-09-30')->locale('id')->translatedFormat($pattern), $this->rowCell($html, 'GR-CALENDAR-001', 1));
+                        $this->assertSame(Carbon::parse('2026-10-06')->locale('id')->translatedFormat($pattern), $this->rowCell($html, 'BANK-CALENDAR-001', 1));
                         if ($user->role !== 'supplier') {
-                            $this->assertSame(Carbon::parse('2026-10-02')->format($pattern), $this->label($html, 'Jatuh Tempo:'));
-                            $this->assertSame(Carbon::parse('2026-10-05')->format($pattern), $this->label($html, 'Jadwal Bayar ADASI:'));
+                            $this->assertSame(Carbon::parse('2026-10-02')->locale('id')->translatedFormat($pattern), $this->label($html, 'Jatuh Tempo:'));
+                            $this->assertSame(Carbon::parse('2026-10-05')->locale('id')->translatedFormat($pattern), $this->label($html, 'Jadwal Bayar ADASI:'));
                         }
                     } elseif ($portal === 'finance') {
-                        $this->assertSame(Carbon::parse('2026-09-29')->format($pattern), $this->label($html, 'PO Date'));
-                        $this->assertSame(Carbon::parse('2026-09-30')->format($pattern), $this->rowCell($html, 'GR-CALENDAR-001', 1));
-                        $this->assertSame(Carbon::parse('2026-10-02')->format($pattern), $this->label($html, 'Jatuh Tempo:'));
+                        $this->assertSame(Carbon::parse('2026-09-29')->locale('id')->translatedFormat($pattern), $this->label($html, __('local_procurement.labels.po_date')));
+                        $this->assertSame(Carbon::parse('2026-09-30')->locale('id')->translatedFormat($pattern), $this->rowCell($html, 'GR-CALENDAR-001', 1));
+                        $this->assertSame(Carbon::parse('2026-10-02')->locale('id')->translatedFormat($pattern), $this->label($html, 'Jatuh Tempo:'));
                     } else {
-                        $this->assertSame(Carbon::parse('2026-10-02')->format($pattern), $this->label($html, 'Jatuh Tempo:'));
+                        $this->assertSame(Carbon::parse('2026-10-02')->locale('id')->translatedFormat($pattern), $this->label($html, 'Jatuh Tempo:'));
                     }
                 }
             }
@@ -149,7 +152,7 @@ class RegionalInvoiceDetailCalendarTest extends TestCase
             $this->assertSame('—', $this->label($shared, 'Jatuh Tempo:'));
             $this->assertStringNotContainsString('Jadwal Bayar ADASI:', $shared);
             foreach ([[$this->finance, 'finance.invoices.show'], [$this->purchasing, 'purchasing.local-invoices.show']] as [$user, $route]) {
-                $this->assertSame('Menunggu Kasir', $this->label($this->page($user, $route), 'Jatuh Tempo:'));
+                $this->assertSame(__('finance.waiting_cashier', [], 'id'), $this->label($this->page($user, $route), 'Jatuh Tempo:'));
             }
         }
         $this->assertNull($this->invoice->fresh()->getRawOriginal('due_date'));
@@ -167,7 +170,7 @@ class RegionalInvoiceDetailCalendarTest extends TestCase
         $invoice->invoice_date = null;
         $finance = $this->renderLoaded($this->finance, 'finance.invoices.show', $invoice);
         $this->assertSame('—', $this->label($finance, 'Tanggal Invoice:'));
-        $this->assertSame('—', $this->label($finance, 'PO Date'));
+        $this->assertSame('—', $this->label($finance, __('local_procurement.labels.po_date')));
         $this->assertSame('—', $this->rowCell($finance, 'GR-CALENDAR-001', 1));
         $purchasing = $this->renderLoaded($this->purchasing, 'purchasing.local-vendors.invoice-show', $invoice);
         $this->assertSame('—', $this->label($purchasing, 'Tanggal Invoice:'));
@@ -316,7 +319,7 @@ class RegionalInvoiceDetailCalendarTest extends TestCase
 
     private function preference(User $user, string $date, string $timezone = 'Asia/Jakarta'): void
     {
-        $user->preference()->updateOrCreate([], [...config('user_preferences.defaults'), 'timezone' => $timezone, 'date_format' => $date, 'time_format' => '12h', 'number_format' => 'international']);
+        $user->preference()->updateOrCreate([], [...config('user_preferences.defaults'), 'locale' => 'id', 'timezone' => $timezone, 'date_format' => $date, 'time_format' => '12h', 'number_format' => 'international']);
         app()->forgetScopedInstances();
     }
 

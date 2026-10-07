@@ -1,17 +1,17 @@
 @extends('layouts.app')
-@section('title', 'Create Announcement - ADASI Portal')
-@section('page-title', 'Create Announcement')
+@section('title', __('admin.copy.create_announcement_adasi_portal'))
+@section('page-title', __('admin.copy.create_announcement'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-24">
     <x-ui.page-header
-        title="Create Announcement"
-        description="Prepare a portal-wide notice and choose its initial publication state."
-        eyebrow="Admin Content"
+        :title="__('admin.copy.create_announcement')"
+        :description="__('admin.copy.prepare_a_portal_wide_notice_and_choose_its_initial_publication_state')"
+        :eyebrow="__('admin.copy.admin_content')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('admin.announcements.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" size="sm" /> Back to Announcements
+                <x-ui.icon name="arrow-left" size="sm" /> {{ __('admin.copy.back_to_announcements') }}
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -20,13 +20,13 @@
         @csrf
 
         <x-ui.form-section
-            title="Announcement Content"
-            description="Keep the title specific and the body operationally useful."
+            :title="__('admin.copy.announcement_content')"
+            :description="__('admin.copy.keep_the_title_specific_and_the_body_operationally_useful')"
         >
             <div class="tw-grid tw-gap-4">
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="annTitle">
-                        Notice Title <span class="text-danger">*</span>
+                        {{ __('admin.copy.notice_title') }} <span class="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -34,7 +34,7 @@
                         id="annTitle"
                         class="form-control @error('title') is-invalid @enderror"
                         value="{{ old('title') }}"
-                        placeholder="e.g. Scheduled System Maintenance Notice"
+                        placeholder="{{ __('admin.copy.e_g_scheduled_system_maintenance_notice') }}"
                         required
                     >
                     @error('title')
@@ -44,14 +44,14 @@
 
                 <div>
                     <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="annContent">
-                        Announcement Body / Description <span class="text-danger">*</span>
+                        {{ __('admin.copy.announcement_body_description') }} <span class="text-danger">*</span>
                     </label>
                     <textarea
                         name="content"
                         id="annContent"
                         class="form-control @error('content') is-invalid @enderror"
                         rows="8"
-                        placeholder="Enter full details of the notice..."
+                        placeholder="{{ __('admin.copy.enter_full_details_of_the_notice') }}"
                         required
                     >{{ old('content') }}</textarea>
                     @error('content')
@@ -70,7 +70,7 @@
                             {{ old('is_published', true) ? 'checked' : '' }}
                         >
                         <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="is_published">
-                            Publish notice immediately (Broadcast to all active users)
+                            {{ __('admin.copy.publish_notice_immediately_broadcast_to_all_active_users') }}
                         </label>
                     </div>
                 </div>
@@ -81,11 +81,11 @@
         <x-ui.action-bar>
             <x-slot:right>
                 <x-ui.button :href="route('admin.announcements.index')" variant="ghost">
-                    Cancel
+                    {{ __('admin.copy.cancel') }}
                 </x-ui.button>
                 <x-ui.button type="submit">
                     <x-ui.icon name="check" size="sm" />
-                    Save Announcement
+                    {{ __('admin.copy.save_announcement') }}
                 </x-ui.button>
             </x-slot:right>
         </x-ui.action-bar>

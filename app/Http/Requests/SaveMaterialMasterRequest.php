@@ -11,7 +11,7 @@ class SaveMaterialMasterRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user() && $this->user()->isAdmin();
     }
 
     protected function prepareForValidation(): void

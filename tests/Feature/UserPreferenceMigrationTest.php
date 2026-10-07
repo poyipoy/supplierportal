@@ -27,8 +27,10 @@ class UserPreferenceMigrationTest extends TestCase
 
         $regional = require database_path('migrations/2026_09_29_000001_extend_user_preferences_for_regional_preferences.php');
         $notifications = require database_path('migrations/2026_09_30_000001_add_notification_preferences_to_user_preferences_table.php');
+        $locale = require database_path('migrations/2026_10_04_000001_add_locale_to_user_preferences_table.php');
 
         try {
+            $locale->down();
             $notifications->down();
             $regional->down();
             $extension->down();
@@ -58,7 +60,9 @@ class UserPreferenceMigrationTest extends TestCase
             $this->assertSame(['admin.users'], $user->fresh()->preference->quick_access);
             $regional->up();
             $notifications->up();
+            $locale->up();
             $this->assertNull($user->fresh()->preference->notification_preferences);
+            $this->assertSame('en', $user->fresh()->preference->locale);
         } finally {
             if (! Schema::hasTable('user_preferences')) {
                 $migration->up();
@@ -71,6 +75,9 @@ class UserPreferenceMigrationTest extends TestCase
             }
             if (! Schema::hasColumn('user_preferences', 'notification_preferences')) {
                 $notifications->up();
+            }
+            if (! Schema::hasColumn('user_preferences', 'locale')) {
+                $locale->up();
             }
         }
     }

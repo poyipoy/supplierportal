@@ -4,24 +4,24 @@
 
     $fieldMeta = [
         // Profil Perusahaan
-        'company_name' => ['label' => 'Nama Perusahaan', 'icon' => 'building-2'],
-        'vendor_category' => ['label' => 'Kategori Vendor', 'icon' => 'tag'],
-        'category' => ['label' => 'Kategori', 'icon' => 'tag'],
+        'company_name' => ['label' => __('local_procurement.change_details.company'), 'icon' => 'building-2'],
+        'vendor_category' => ['label' => __('local_invoice.labels.vendor_category'), 'icon' => 'tag'],
+        'category' => ['label' => __('common.fields.category'), 'icon' => 'tag'],
         'npwp' => ['label' => 'NPWP', 'icon' => 'file-text'],
-        'is_pkp' => ['label' => 'Status Pajak', 'icon' => 'receipt'],
-        'address' => ['label' => 'Alamat Perusahaan', 'icon' => 'map-pin'],
-        'phone' => ['label' => 'Telepon Perusahaan', 'icon' => 'phone'],
-        'payment_term_days' => ['label' => 'Payment Term', 'icon' => 'calendar'],
+        'is_pkp' => ['label' => __('local_invoice.labels.tax_status'), 'icon' => 'receipt'],
+        'address' => ['label' => __('local_invoice.labels.company_address'), 'icon' => 'map-pin'],
+        'phone' => ['label' => __('local_invoice.labels.company_phone'), 'icon' => 'phone'],
+        'payment_term_days' => ['label' => __('local_procurement.change_details.payment_term'), 'icon' => 'calendar'],
 
         // Kontak PIC
-        'pic_name' => ['label' => 'Nama PIC', 'icon' => 'user'],
-        'pic_email' => ['label' => 'Email PIC', 'icon' => 'mail'],
-        'pic_phone' => ['label' => 'No. Telepon / WA PIC', 'icon' => 'phone-call'],
+        'pic_name' => ['label' => __('local_procurement.change_details.pic'), 'icon' => 'user'],
+        'pic_email' => ['label' => __('local_invoice.labels.pic_email'), 'icon' => 'mail'],
+        'pic_phone' => ['label' => __('local_procurement.change_details.pic_phone'), 'icon' => 'phone-call'],
 
         // Rekening Bank
-        'bank_name' => ['label' => 'Nama Bank', 'icon' => 'landmark'],
-        'account_number' => ['label' => 'Nomor Rekening', 'icon' => 'credit-card'],
-        'account_holder_name' => ['label' => 'Atas Nama Rekening', 'icon' => 'check-circle'],
+        'bank_name' => ['label' => __('local_procurement.change_details.bank'), 'icon' => 'landmark'],
+        'account_number' => ['label' => __('local_procurement.change_details.account_number'), 'icon' => 'credit-card'],
+        'account_holder_name' => ['label' => __('local_procurement.change_details.account_holder'), 'icon' => 'check-circle'],
     ];
 
     $formatVal = function ($key, $val) {
@@ -29,13 +29,13 @@
             return null;
         }
         if ($key === 'is_pkp') {
-            return ((string) $val === '1' || $val === true || $val === 'true') ? 'PKP (Pengusaha Kena Pajak)' : 'Non-PKP';
+            return ((string) $val === '1' || $val === true || $val === 'true') ? __('local_procurement.change_details.pkp') : __('local_procurement.change_details.non_pkp');
         }
         if ($key === 'payment_term_days') {
-            return 'Net ' . $val . ' Hari';
+            return trans_choice('local_invoice.table.term_days', (int) $val);
         }
         if (is_bool($val)) {
-            return $val ? 'Ya' : 'Tidak';
+            return $val ? __('local_procurement.change_details.yes') : __('local_procurement.change_details.no');
         }
         return (string) $val;
     };
@@ -45,10 +45,10 @@
     <div class="tw-px-3 tw-py-2 tw-bg-surface-container-low tw-border-b tw-border-outline-variant tw-flex tw-items-center tw-justify-between">
         <span class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-flex tw-items-center tw-gap-1.5">
             <x-ui.icon name="file-text" size="sm" class="tw-text-primary" />
-            <span>Rincian Perbandingan Data yang Diajukan</span>
+            <span>{{ __('local_procurement.change_details.heading') }}</span>
         </span>
         <span class="tw-text-[11px] tw-text-on-surface-variant">
-            Periksa data sebelum mengambil keputusan
+            {{ __('local_procurement.change_details.help') }}
         </span>
     </div>
 
@@ -57,9 +57,9 @@
             <table class="table table-sm table-hover tw-m-0 tw-text-ui-xs align-middle">
                 <thead class="tw-bg-surface-container-lowest tw-border-b tw-border-outline-variant/60">
                     <tr>
-                        <th class="tw-py-2 tw-ps-3 tw-text-on-surface-variant tw-font-semibold" style="width: 25%;">Informasi / Field</th>
-                        <th class="tw-py-2 tw-text-on-surface-variant tw-font-semibold" style="width: 35%;">Data Saat Ini (Lama)</th>
-                        <th class="tw-py-2 tw-text-on-surface-variant tw-font-semibold" style="width: 40%;">Perubahan Diajukan (Baru)</th>
+                        <th class="tw-py-2 tw-ps-3 tw-text-on-surface-variant tw-font-semibold" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>
+                        <th class="tw-py-2 tw-text-on-surface-variant tw-font-semibold" style="width: 35%;">{{ __('local_procurement.change_details.current') }}</th>
+                        <th class="tw-py-2 tw-text-on-surface-variant tw-font-semibold" style="width: 40%;">{{ __('local_procurement.change_details.proposed') }}</th>
                     </tr>
                 </thead>
                 <tbody class="tw-divide-y tw-divide-outline-variant/30">
@@ -86,7 +86,7 @@
                                 @if($oldVal !== null)
                                     <span class="{{ $isChanged ? 'tw-line-through tw-text-on-surface-variant/60' : '' }}">{{ $oldVal }}</span>
                                 @else
-                                    <span class="tw-text-on-surface-variant/40 tw-italic">— Belum ada data —</span>
+                                    <span class="tw-text-on-surface-variant/40 tw-italic">{{ __('local_procurement.change_details.missing') }}</span>
                                 @endif
                             </td>
                             <td class="tw-py-2.5">
@@ -94,16 +94,16 @@
                                     @if($newVal !== null)
                                         <strong class="{{ $isChanged ? 'tw-text-primary' : 'tw-text-on-surface' }}">{{ $newVal }}</strong>
                                     @else
-                                        <span class="tw-text-on-surface-variant/40 tw-italic">— Dikosongkan —</span>
+                                        <span class="tw-text-on-surface-variant/40 tw-italic">{{ __('local_procurement.change_details.cleared') }}</span>
                                     @endif
 
                                     @if($isChanged)
                                         <x-ui.status-chip tone="info" size="sm">
-                                            Diubah
+                                            {{ __('local_procurement.change_details.changed') }}
                                         </x-ui.status-chip>
                                     @elseif($isNew)
                                         <x-ui.status-chip tone="success" size="sm">
-                                            Data Baru
+                                            {{ __('local_procurement.change_details.new') }}
                                         </x-ui.status-chip>
                                     @endif
                                 </div>
@@ -115,7 +115,7 @@
         </div>
     @else
         <div class="tw-p-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">
-            Tidak ada rincian data perubahan yang diajukan.
+            {{ __('local_procurement.change_details.empty') }}
         </div>
     @endif
 </div>

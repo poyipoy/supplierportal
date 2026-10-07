@@ -34,6 +34,12 @@ class NotificationPreferenceService
         return is_array($registry) ? $registry : [];
     }
 
+    /** Reuse the delivery-local bulk preference read without another recipient query. */
+    public function primeStoredOverrides(User $user, array $stored): void
+    {
+        $this->overrides[$user->getKey()] = $this->normalizeStored($stored);
+    }
+
     public function keyFor(Notification $notification): ?string
     {
         if ($notification::class !== SystemNotification::class || $notification->event() === null) {
@@ -63,7 +69,7 @@ class NotificationPreferenceService
         foreach ($submitted as $key => $value) {
             if (! isset($events[$key]) || ! in_array($value, [true, false, 0, 1, '0', '1'], true)) {
                 throw ValidationException::withMessages([
-                    'notification_preferences' => 'Choose only notifications available for your account and boolean values.',
+                    'notification_preferences' => __('notifications.validation.available_boolean'),
                 ]);
             }
             $normalized[$key] = in_array($value, [true, 1, '1'], true);

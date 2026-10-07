@@ -5,8 +5,8 @@
 @php
     $categories = [
         'invoice' => [
-            'title' => 'Berkas Invoice Fisik / Asli',
-            'subtitle' => 'Invoice tagihan resmi dari rekanan supplier',
+            'title' => __('local_invoice.documents.invoice_title'),
+            'subtitle' => __('local_invoice.documents.invoice_description'),
             'icon' => 'file-text',
             'types' => ['invoice'],
             'border_l' => 'tw-border-l-4 tw-border-l-primary',
@@ -14,8 +14,8 @@
             'badge_class' => 'tw-bg-primary-container tw-text-primary-container-foreground',
         ],
         'tax_invoice' => [
-            'title' => 'Faktur Pajak',
-            'subtitle' => 'e-Faktur PPN / Bukti potong pajak resmi',
+            'title' => __('local_invoice.labels.tax_invoice'),
+            'subtitle' => __('local_invoice.documents.tax_description'),
             'icon' => 'receipt',
             'types' => ['tax_invoice'],
             'border_l' => 'tw-border-l-4 tw-border-l-success',
@@ -23,8 +23,8 @@
             'badge_class' => 'tw-bg-success-container tw-text-success-container-foreground',
         ],
         'delivery_note' => [
-            'title' => 'Surat Jalan (Delivery Note)',
-            'subtitle' => 'Bukti fisik ekspedisi & serah terima barang',
+            'title' => __('local_invoice.labels.delivery_note'),
+            'subtitle' => __('local_invoice.documents.delivery_description'),
             'icon' => 'truck',
             'types' => ['delivery_note', 'surat_jalan'],
             'border_l' => 'tw-border-l-4 tw-border-l-warning',
@@ -32,8 +32,8 @@
             'badge_class' => 'tw-bg-warning-container tw-text-warning-container-foreground',
         ],
         'supporting' => [
-            'title' => 'Dokumen Pendukung Tambahan',
-            'subtitle' => 'BAP, Purchase Order, atau lampiran pelengkap',
+            'title' => __('local_invoice.documents.supporting_title'),
+            'subtitle' => __('local_invoice.documents.supporting_description'),
             'icon' => 'paperclip',
             'types' => ['supporting'],
             'border_l' => 'tw-border-l-4 tw-border-l-secondary',
@@ -69,11 +69,11 @@
                     @if($count > 0)
                         <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-border tw-border-outline-variant {{ $cat['badge_class'] }}">
                             <x-ui.icon name="files" size="sm" />
-                            <span>{{ $count }} Berkas</span>
+                            <span>{{ trans_choice('local_invoice.documents.count', $count) }}</span>
                         </span>
                     @else
                         <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-medium tw-bg-surface-high tw-text-on-surface-variant">
-                            Tidak Ada
+                            {{ __('local_invoice.labels.none') }}
                         </span>
                     @endif
                 </div>
@@ -109,7 +109,7 @@
                                         class="tw-py-1 tw-px-2.5 tw-text-ui-xs"
                                     >
                                         <x-ui.icon name="external-link" size="sm" />
-                                        <span>Buka</span>
+                                        <span>{{ __('local_invoice.documents.open') }}</span>
                                     </x-ui.button>
                                 </div>
                             </div>
@@ -118,8 +118,8 @@
                 @else
                     <div class="tw-flex-1 tw-flex tw-flex-col tw-items-center tw-justify-center tw-p-4 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant tw-bg-surface-low/50 tw-text-center tw-min-h-[100px]">
                         <x-ui.icon name="file-x" size="sm" class="tw-text-on-surface-variant/40 tw-mb-1" />
-                        <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface-variant">Tidak ada dokumen terlampir</span>
-                        <span class="tw-text-[10px] tw-text-on-surface-variant/70 tw-mt-0.5">Berkas tidak diunggah untuk kategori ini</span>
+                        <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface-variant">{{ __('local_invoice.empty.no_documents') }}</span>
+                        <span class="tw-text-[10px] tw-text-on-surface-variant/70 tw-mt-0.5">{{ __('local_invoice.documents.category_empty') }}</span>
                     </div>
                 @endif
             </div>

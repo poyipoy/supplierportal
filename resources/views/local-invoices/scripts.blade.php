@@ -7,7 +7,7 @@ document.querySelectorAll('.local-invoice-form').forEach(form => form.addEventLi
 }));
 document.querySelectorAll('.local-workflow-form').forEach(form => form.addEventListener('submit', async event => {
     event.preventDefault();
-    const result = await window.AdasiAlert.confirm({title: form.dataset.confirm, text: 'This action will be recorded in the invoice history.', confirmText: 'Confirm'});
+    const result = await window.AdasiAlert.confirm({title: form.dataset.confirm, text: @js(__('local_invoice.interaction.recorded_history')), confirmText: @js(__('local_invoice.interaction.confirm'))});
     if (result.isConfirmed) { const button = form.querySelector('[type="submit"]'); button.disabled = true; button.setAttribute('aria-busy', 'true'); button.insertAdjacentHTML('afterbegin', '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>'); form.submit(); }
 }));
 document.querySelectorAll('[data-print-receipt]').forEach(button => button.addEventListener('click', () => window.print()));
@@ -15,7 +15,7 @@ document.querySelectorAll('[data-copy-text], [data-copy-target]').forEach(button
     const targetSelector = button.getAttribute('data-copy-target');
     const targetEl = targetSelector ? document.querySelector(targetSelector) : null;
     const text = targetEl ? (targetEl.value ?? targetEl.textContent) : button.getAttribute('data-copy-text');
-    const successMsg = button.getAttribute('data-copy-msg') || 'Nomor rekening berhasil disalin!';
+    const successMsg = button.getAttribute('data-copy-msg') || @js(__('local_invoice.interaction.bank_copied'));
     if (!text) return;
     try {
         if (navigator.clipboard && window.isSecureContext) {
@@ -40,7 +40,7 @@ document.querySelectorAll('[data-copy-text], [data-copy-target]').forEach(button
     } catch (err) {
         console.error('Failed to copy text: ', err);
         if (window.AdasiToast) {
-            window.AdasiToast.error('Gagal menyalin teks.');
+            window.AdasiToast.error(@js(__('local_invoice.interaction.copy_failed')));
         }
     }
 }));

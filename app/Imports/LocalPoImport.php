@@ -15,7 +15,7 @@ class LocalPoImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
     public function collection(Collection $collection): void
     {
         if ($collection->isEmpty()) {
-            $this->addFileError(null, 'import_file', 'The spreadsheet does not contain any data rows.');
+            $this->addFileError(null, 'import_file', __('local_procurement.import.empty_rows'));
 
             return;
         }
@@ -33,7 +33,7 @@ class LocalPoImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             $this->addFileError(
                 null,
                 'import_file',
-                'The spreadsheet may contain no more than '.self::MAX_DATA_ROWS.' non-empty data rows.'
+                __('local_procurement.import.row_limit', ['count' => self::MAX_DATA_ROWS])
             );
 
             return;
@@ -72,7 +72,7 @@ class LocalPoImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
         }
 
         if (empty($this->rows) && ! $this->fileInvalid) {
-            $this->addFileError(null, 'import_file', 'The spreadsheet does not contain any populated PO data rows.');
+            $this->addFileError(null, 'import_file', __('local_procurement.import.empty_po'));
         }
     }
 
@@ -80,17 +80,17 @@ class LocalPoImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
     {
         $orderHeader = mb_strtolower(trim((string) ($header[4] ?? '')));
         if ($orderHeader !== '' && ! str_contains($orderHeader, 'order') && ! str_contains($orderHeader, 'po')) {
-            $this->addWarning(1, 'E', "Expected 'Order' header at column E, found '{$header[4]}'.");
+            $this->addWarning(1, 'E', __('local_procurement.import.header_warning', ['header' => 'Order', 'column' => 'E', 'actual' => $header[4]]));
         }
 
         $dateHeader = mb_strtolower(trim((string) ($header[9] ?? '')));
         if ($dateHeader !== '' && ! str_contains($dateHeader, 'date') && ! str_contains($dateHeader, 'tanggal')) {
-            $this->addWarning(1, 'J', "Expected 'Order Date' header at column J, found '{$header[9]}'.");
+            $this->addWarning(1, 'J', __('local_procurement.import.header_warning', ['header' => 'Order Date', 'column' => 'J', 'actual' => $header[9]]));
         }
 
         $amountHeader = mb_strtolower(trim((string) ($header[10] ?? '')));
         if ($amountHeader !== '' && ! str_contains($amountHeader, 'amount') && ! str_contains($amountHeader, 'nilai')) {
-            $this->addWarning(1, 'K', "Expected 'Order Amount' header at column K, found '{$header[10]}'.");
+            $this->addWarning(1, 'K', __('local_procurement.import.header_warning', ['header' => 'Order Amount', 'column' => 'K', 'actual' => $header[10]]));
         }
     }
 }

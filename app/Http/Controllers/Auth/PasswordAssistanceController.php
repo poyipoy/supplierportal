@@ -13,8 +13,8 @@ class PasswordAssistanceController extends Controller
         $supportEmail = is_string($configured)
             && filter_var($configured, FILTER_VALIDATE_EMAIL)
             && ! preg_match('/[\r\n,]/', $configured) ? $configured : null;
-        $subject = 'Supplier Portal - Password Assistance Request';
-        $template = "Dear Support Team,\n\nI would like to request assistance resetting my Supplier Portal password.\n\nCompany Name: [Company Name]\nSupplier/Vendor Name: [Supplier/Vendor Name]\nRegistered Email: [Registered Email]\nContact Person: [Contact Person]\n\nPlease assist with the password reset process.\n\nThank you.";
+        $subject = __('auth.password_assistance.subject');
+        $template = str_replace(["\r\n", "\r"], "\n", __('auth.password_assistance.template'));
         $mailto = $supportEmail === null ? null : 'mailto:'.str_replace('%40', '@', rawurlencode($supportEmail)).'?'.http_build_query([
             'subject' => $subject,
             'body' => $template,

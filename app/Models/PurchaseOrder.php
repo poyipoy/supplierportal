@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -50,7 +51,7 @@ class PurchaseOrder extends Model
             || (
                 $this->status === 'active'
                 && $this->estimated_arrival
-                && $this->estimated_arrival->isBefore(today())
+                && $this->estimated_arrival->isBefore(BusinessTime::today())
                 && ! $this->actual_arrival
             );
     }
@@ -288,9 +289,9 @@ class PurchaseOrder extends Model
         ]);
 
         $docLabels = [
-            'invoice' => 'Commercial Invoice',
-            'bl' => 'Bill of Lading (B/L)',
-            'packing_list' => 'Packing List',
+            'invoice' => __('purchasing.copy.commercial_invoice'),
+            'bl' => __('purchasing.copy.bill_of_lading_b_l'),
+            'packing_list' => __('purchasing.copy.packing_list'),
             'form_e' => 'Form-E Certificate',
         ];
 
@@ -460,37 +461,37 @@ class PurchaseOrder extends Model
         } elseif (is_string($value)) {
             $normalized = trim($value);
         } else {
-            throw new \InvalidArgumentException('Quantity must be an integer, float, or numeric string.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_must_be_an_integer_float_or_numeric_string'));
         }
 
         if ($normalized === '') {
-            throw new \InvalidArgumentException('Quantity cannot be empty.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_cannot_be_empty'));
         }
 
         if (! is_numeric($normalized)) {
-            throw new \InvalidArgumentException('Quantity must be numeric.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_must_be_numeric'));
         }
 
         if (str_contains($normalized, '-') || (float) $normalized < 0) {
-            throw new \InvalidArgumentException('Quantity must be a positive plain decimal number.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_must_be_a_positive_plain_decimal_number'));
         }
 
         if (stripos($normalized, 'e') !== false) {
-            throw new \InvalidArgumentException('Quantity must be a plain decimal number.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_must_be_a_plain_decimal_number'));
         }
 
         if (! preg_match('/^\d+(?:\.(\d+))?$/D', $normalized, $matches)) {
-            throw new \InvalidArgumentException('Quantity must be a non-negative plain decimal number.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_must_be_a_non_negative_plain_decimal_number'));
         }
 
         $fraction = $matches[1] ?? '';
         if (strlen($fraction) > 4) {
-            throw new \InvalidArgumentException('Quantity may have a maximum of 4 decimal places.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_may_have_a_maximum_of_4_decimal_places'));
         }
 
         [$whole] = explode('.', $normalized, 2);
         if (strlen(ltrim($whole, '0')) > 8) {
-            throw new \InvalidArgumentException('Quantity exceeds the DECIMAL(12,4) storage limit.');
+            throw new \InvalidArgumentException(__('purchasing.copy.quantity_exceeds_the_decimal_12_4_storage_limit'));
         }
         $fraction = str_pad($fraction, 4, '0');
 
@@ -755,8 +756,9 @@ class PurchaseOrder extends Model
     public static function generatePoNumber(): string
     {
         return DB::transaction(function () {
-            $year = (int) now()->year;
-            $month = (int) now()->month;
+            $bizNow = BusinessTime::now();
+            $year = (int) $bizNow->year;
+            $month = (int) $bizNow->month;
 
             $seq = DB::table('document_sequences')
                 ->where('type', 'PO')
@@ -782,7 +784,7 @@ class PurchaseOrder extends Model
                 ]);
             }
 
-            return 'PO/'.now()->format('m/Y').'/'.str_pad($next, 3, '0', STR_PAD_LEFT);
+            return 'PO/'.$bizNow->format('m/Y').'/'.str_pad((string) $next, 3, '0', STR_PAD_LEFT);
         });
     }
 }

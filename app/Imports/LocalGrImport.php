@@ -15,7 +15,7 @@ class LocalGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
     public function collection(Collection $collection): void
     {
         if ($collection->isEmpty()) {
-            $this->addFileError(null, 'import_file', 'The spreadsheet does not contain any data rows.');
+            $this->addFileError(null, 'import_file', __('local_procurement.import.empty_rows'));
 
             return;
         }
@@ -33,7 +33,7 @@ class LocalGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             $this->addFileError(
                 null,
                 'import_file',
-                'The spreadsheet may contain no more than '.self::MAX_DATA_ROWS.' non-empty data rows.'
+                __('local_procurement.import.row_limit', ['count' => self::MAX_DATA_ROWS])
             );
 
             return;
@@ -74,7 +74,7 @@ class LocalGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
         }
 
         if (empty($this->rows) && ! $this->fileInvalid) {
-            $this->addFileError(null, 'import_file', 'The spreadsheet does not contain any populated GR data rows.');
+            $this->addFileError(null, 'import_file', __('local_procurement.import.empty_gr'));
         }
     }
 
@@ -82,22 +82,22 @@ class LocalGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
     {
         $receiptHeader = mb_strtolower(trim((string) ($header[9] ?? '')));
         if ($receiptHeader !== '' && ! str_contains($receiptHeader, 'receipt') && ! str_contains($receiptHeader, 'gr')) {
-            $this->addWarning(1, 'J', "Expected 'Receipt' header at column J, found '{$header[9]}'.");
+            $this->addWarning(1, 'J', __('local_procurement.import.header_warning', ['header' => 'Receipt', 'column' => 'J', 'actual' => $header[9]]));
         }
 
         $orderLineHeader = mb_strtolower(trim((string) ($header[11] ?? '')));
         if ($orderLineHeader !== '' && ! str_contains($orderLineHeader, 'order') && ! str_contains($orderLineHeader, 'po') && ! str_contains($orderLineHeader, 'line')) {
-            $this->addWarning(1, 'L', "Expected 'Order Line' header at column L, found '{$header[11]}'.");
+            $this->addWarning(1, 'L', __('local_procurement.import.header_warning', ['header' => 'Order Line', 'column' => 'L', 'actual' => $header[11]]));
         }
 
         $qtyHeader = mb_strtolower(trim((string) ($header[15] ?? '')));
         if ($qtyHeader !== '' && ! str_contains($qtyHeader, 'quant') && ! str_contains($qtyHeader, 'qty')) {
-            $this->addWarning(1, 'P', "Expected 'Received Quantity' header at column P, found '{$header[15]}'.");
+            $this->addWarning(1, 'P', __('local_procurement.import.header_warning', ['header' => 'Received Quantity', 'column' => 'P', 'actual' => $header[15]]));
         }
 
         $dateHeader = mb_strtolower(trim((string) ($header[19] ?? '')));
         if ($dateHeader !== '' && ! str_contains($dateHeader, 'date') && ! str_contains($dateHeader, 'tanggal')) {
-            $this->addWarning(1, 'T', "Expected 'Actual Receipt Date' header at column T, found '{$header[19]}'.");
+            $this->addWarning(1, 'T', __('local_procurement.import.header_warning', ['header' => 'Actual Receipt Date', 'column' => 'T', 'actual' => $header[19]]));
         }
     }
 }

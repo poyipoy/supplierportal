@@ -14,6 +14,6 @@ class LocalPoGrImportTemplateExport implements FromArray, WithHeadings
 
     public function array(): array
     {
-        return [['PO-LOCAL-001', 'PT Supplier Contoh', now()->format('Y-m-d'), 100000000, 'Optional', 'GR-LOCAL-001', now()->format('Y-m-d'), 50000000, 'Optional']];
+        return [['PO-LOCAL-001', 'PT Supplier Contoh', now()->format('Y-m-d'), 100000000, 'Optional', 'GR-LOCAL-001', now()->format('Y-m-d'), 50000000, 'Optional']]; // biz-time:ignore sample data for import template
     }
 }

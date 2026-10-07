@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 /**
  * AdasiServerTabs — Reusable server-side AJAX tab/filter/pagination controller.
  *
@@ -265,6 +266,14 @@ async function fetchAndSwap(state, url, pushHistory) {
     tableTarget.style.pointerEvents = 'none';
     showLoadingOverlay(tableTarget);
 
+    let isTimeout = false;
+    const timeoutId = setTimeout(() => {
+        isTimeout = true;
+        if (state.abortController) {
+            state.abortController.abort();
+        }
+    }, 15000);
+
     try {
         const response = await fetch(url, {
             headers: {
@@ -273,6 +282,8 @@ async function fetchAndSwap(state, url, pushHistory) {
             },
             signal: state.abortController.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -285,7 +296,8 @@ async function fetchAndSwap(state, url, pushHistory) {
 
         applyData(state, container, tableTarget, data, url, pushHistory, options);
     } catch (err) {
-        if (err.name === 'AbortError') return; // Intentional cancellation
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError' && !isTimeout) return; // Intentional cancellation
         console.error('[AdasiServerTabs] Fetch failed:', err);
 
         // Rollback optimistic tab state on error
@@ -294,8 +306,12 @@ async function fetchAndSwap(state, url, pushHistory) {
             state.previousTab = null;
         }
 
-        // Fallback: navigate normally
-        window.location.href = url;
+        if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
+            const message = isTimeout
+                ? t('js.server_tabs.timeout')
+                : t('js.server_tabs.failed');
+            window.AdasiToast.error(message);
+        }
     } finally {
         tableTarget.removeAttribute('aria-busy');
         tableTarget.classList.remove('tw-opacity-50');
@@ -303,6 +319,7 @@ async function fetchAndSwap(state, url, pushHistory) {
         hideLoadingOverlay(tableTarget);
         state.abortController = null;
     }
+
 }
 
 /**
@@ -475,7 +492,7 @@ function updateMetrics(container, metrics) {
                     el.textContent = Number(metrics[key]).toLocaleString('id-ID');
                 } else {
                     // count metrics used as meta descriptions
-                    el.textContent = `${Number(metrics[key]).toLocaleString('id-ID')} Batch ${key === 'unpaid_count' ? 'belum lunas' : 'selesai dibayar'}`;
+                    el.textContent = t(key === 'unpaid_count' ? 'js.server_tabs.unpaid' : 'js.server_tabs.paid', { count: Number(metrics[key]).toLocaleString('id-ID') });
                 }
             });
         }
@@ -502,9 +519,10 @@ function showLoadingOverlay(target) {
         overlay.innerHTML = `
             <div class="tw-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-rounded-lg tw-bg-surface tw-shadow-md tw-border tw-border-outline-variant">
                 <div class="tw-animate-spin tw-w-4 tw-h-4 tw-border-2 tw-border-primary tw-border-t-transparent tw-rounded-full"></div>
-                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium">Memuat data...</span>
+                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium" data-server-tabs-loading-text></span>
             </div>
         `;
+        overlay.querySelector('[data-server-tabs-loading-text]').textContent = t('js.tables.loading');
         target.style.position = 'relative';
         target.appendChild(overlay);
     }

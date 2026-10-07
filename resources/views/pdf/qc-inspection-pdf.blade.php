@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() === 'id' ? 'id' : 'en' }}">
 <head>
     <meta charset="UTF-8">
-    <title>QC Inspection Report - {{ $inspection->purchaseOrder->po_number ?? 'N/A' }}</title>
+    <title>{{ __('qc.copy.qc_inspection_report') }} - {{ $inspection->purchaseOrder->po_number ?? 'N/A' }}</title>
     <style>
         * {
             margin: 0;
@@ -299,8 +299,8 @@
                     <div class="company-subtitle">Kawasan Industri Suryacipta, Karawang, Jawa Barat 41363</div>
                 </div>
                 <div class="header-right">
-                    <div class="doc-title">BERITA ACARA</div>
-                    <div class="doc-subtitle">Quality Control Inspection</div>
+                    <div class="doc-title">{{ __('qc.pdf.report') }}</div>
+                    <div class="doc-subtitle">{{ __('qc.copy.quality_control_inspection') }}</div>
                 </div>
             </div>
         </div>
@@ -308,25 +308,25 @@
         <!-- Info Section -->
         <div class="info-section">
             <div class="info-box">
-                <div class="info-label">No. Purchase Order</div>
+                <div class="info-label">{{ __('qc.copy.no_purchase_order') }}</div>
                 <div class="info-value"><strong>{{ $inspection->purchaseOrder->po_number ?? '-' }}</strong></div>
 
-                <div class="info-label">Period</div>
+                <div class="info-label">{{ __('qc.copy.period') }}</div>
                 <div class="info-value">{{ $inspection->purchaseOrder->quotations->first()?->purchaseRequisition->period->display_label ?? $inspection->purchaseOrder->quotations->first()?->purchaseRequisition->period->name ?? '-' }}</div>
 
-                <div class="info-label">Supplier</div>
+                <div class="info-label">{{ __('qc.copy.supplier') }}</div>
                 <div class="info-value"><strong>{{ $inspection->purchaseOrder->supplier->name ?? '-' }}</strong></div>
             </div>
             <div class="info-box info-box-right">
-                <div class="info-label">Inspection Date</div>
-                <div class="info-value"><strong>{{ $inspection->inspected_at ? $inspection->inspected_at->format('d F Y, H:i') : '-' }}</strong></div>
+                <div class="info-label">{{ __('qc.copy.inspection_date') }}</div>
+                <div class="info-value"><strong>{{ $inspection->inspected_at ? \App\Support\BusinessTime::toBusiness($inspection->inspected_at)->locale(app()->getLocale())->translatedFormat('d F Y, H:i') : '-' }}</strong></div>
 
-                <div class="info-label">Inspektur</div>
+                <div class="info-label">{{ __('qc.pdf.inspector_short', []) }}</div>
                 <div class="info-value">{{ $inspection->inspector->name ?? '-' }}</div>
 
-                <div class="info-label">Inspection Result</div>
+                <div class="info-label">{{ __('qc.copy.inspection_result') }}</div>
                 <div class="info-value">
-                    <span class="status-{{ $inspection->status }}">{{ strtoupper($inspection->status) }}</span>
+                    <span class="status-{{ $inspection->status }}">{{ \App\Support\StatusHelper::qcLabel($inspection->status) }}</span>
                 </div>
             </div>
         </div>
@@ -340,15 +340,15 @@
         <div class="summary-section">
             <div class="summary-cell">
                 <div class="summary-number color-total">{{ $totalItems }}</div>
-                <div class="summary-label">Total Items Inspected</div>
+                <div class="summary-label">{{ __('qc.copy.total_items_inspected') }}</div>
             </div>
             <div class="summary-cell">
                 <div class="summary-number color-ok">{{ $okItems }}</div>
-                <div class="summary-label">Item OK</div>
+                <div class="summary-label">{{ __('qc.copy.item_ok') }}</div>
             </div>
             <div class="summary-cell">
                 <div class="summary-number color-ng">{{ $ngItems }}</div>
-                <div class="summary-label">Item NG</div>
+                <div class="summary-label">{{ __('qc.copy.item_ng') }}</div>
             </div>
         </div>
 
@@ -356,18 +356,18 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th scope="col" style="width:25px;">No</th>
-                    <th scope="col">Material</th>
-                    <th scope="col">Thickness<br>Requested</th>
-                    <th scope="col">Thickness<br>Actual</th>
-                    <th scope="col">Width<br>Requested</th>
-                    <th scope="col">Width<br>Actual</th>
-                    <th scope="col">Length<br>Requested</th>
-                    <th scope="col">Length<br>Actual</th>
-                    <th scope="col">Qty</th>
-                    <th scope="col">Weight/Unit<br>Requested</th>
-                    <th scope="col">Weight<br>Actual</th>
-                    <th scope="col">Status</th>
+                    <th scope="col" style="width:25px;">{{ __('qc.copy.no') }}</th>
+                    <th scope="col">{{ __('qc.copy.material') }}</th>
+                    <th scope="col">{{ __('qc.copy.thickness') }}<br>{{ __('qc.copy.requested') }}</th>
+                    <th scope="col">{{ __('qc.copy.thickness') }}<br>{{ __('qc.copy.actual') }}</th>
+                    <th scope="col">{{ __('qc.copy.width') }}<br>{{ __('qc.copy.requested') }}</th>
+                    <th scope="col">{{ __('qc.copy.width') }}<br>{{ __('qc.copy.actual') }}</th>
+                    <th scope="col">{{ __('qc.copy.length') }}<br>{{ __('qc.copy.requested') }}</th>
+                    <th scope="col">{{ __('qc.copy.length') }}<br>{{ __('qc.copy.actual') }}</th>
+                    <th scope="col">{{ __('qc.copy.qty') }}</th>
+                    <th scope="col">{{ __('qc.copy.weight_unit') }}<br>{{ __('qc.copy.requested') }}</th>
+                    <th scope="col">{{ __('qc.copy.weight') }}<br>{{ __('qc.copy.actual') }}</th>
+                    <th scope="col">{{ __('qc.copy.status') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -384,7 +384,7 @@
                         <td>{{ number_format($item->prItem->quantity_value, 0) }}</td>
                         <td>{{ number_format($item->prItem->weight_needed, 0) }}</td>
                         <td>{{ $item->actual_weight ? number_format($item->actual_weight, 0) : '-' }}</td>
-                        <td class="cell-{{ $item->status }}">{{ strtoupper($item->status) }}</td>
+                        <td class="cell-{{ $item->status }}">{{ \App\Support\StatusHelper::qcLabel($item->status) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -393,27 +393,27 @@
         <!-- Conclusion -->
         <div class="conclusion conclusion-{{ $inspection->status }}">
             @if($inspection->status === 'ok')
-                CONCLUSION: All materials have been inspected and confirmed to meet the specification (OK).
+                {{ __('qc.pdf.conclusion_ok') }}
             @else
-                ✗ CONCLUSION: Found {{ $ngItems }} items DO NOT MEET SPECIFICATION (NG). Material requires claim follow-up.
+                {{ __('qc.pdf.conclusion_ng', ['count' => $ngItems]) }}
             @endif
         </div>
 
         <!-- Signatures -->
         <div class="signature-section">
             <div class="signature-box">
-                <div class="signature-title">Inspektur QC</div>
-                <div class="signature-line">{{ $inspection->inspector->name ?? '_______________' }}<br>Quality Control</div>
+                <div class="signature-title">{{ __('qc.pdf.inspector') }}</div>
+                <div class="signature-line">{{ $inspection->inspector->name ?? '_______________' }}<br>{{ __('qc.copy.quality_control') }}</div>
             </div>
             <div class="signature-box">
-                <div class="signature-title">Mengetahui</div>
-                <div class="signature-line">_______________<br>Manager QC</div>
+                <div class="signature-title">{{ __('qc.pdf.acknowledged') }}</div>
+                <div class="signature-line">_______________<br>{{ __('qc.copy.manager_qc') }}</div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            This document was generated automatically by ADASI Supplier Portal on {{ now()->format('d F Y, H:i') }} WIB.
+            {{ __('documents.pdf.generated', ['date' => \App\Support\BusinessTime::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i').' '.\App\Support\BusinessTime::label()]) }}
         </div>
     </div>
 </body>

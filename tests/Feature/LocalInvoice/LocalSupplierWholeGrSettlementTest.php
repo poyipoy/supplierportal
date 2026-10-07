@@ -235,6 +235,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
 
     public function test_underpayment_requires_correction_and_refund_requires_exact_full_amount(): void
     {
+        app()->setLocale('id');
         $invoice = $this->invoice();
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -245,8 +246,14 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $voucher = app(LocalInvoiceVoucherService::class)->finalize($item, ['voucher_date' => '2026-09-14', 'payment_method' => 'BANK'], $this->finance);
         $payment = app(LocalInvoicePaymentService::class)->recordPrimary($voucher, ['amount' => '299.00', 'transfer_reference' => 'TRF-SHORT', 'transfer_date' => '2026-09-15', 'correction_reason' => 'Bank short transfer'], $this->finance);
         $this->assertSame(LocalInvoicePayment::STATUS_CORRECTION_REQUIRED, $payment->status);
+        $partialHistory = $invoice->statusHistories()->where('event', 'partial_payment')->latest('id')->firstOrFail();
+        $this->assertSame(__('local_invoice.history.partial_payment_with_reason', [
+            'amount' => '299', 'reference' => 'TRF-SHORT', 'actual' => '299', 'remaining' => '1', 'reason' => 'Bank short transfer',
+        ], 'id'), $partialHistory->notes);
         $payment = app(LocalInvoicePaymentService::class)->recordCorrection($payment, ['amount' => '1.00', 'transfer_reference' => 'TRF-CORR', 'transfer_date' => '2026-09-16', 'correction_reason' => 'Short transfer correction'], $this->finance);
         $this->assertSame(LocalInvoicePayment::STATUS_FINALIZED, $payment->status);
+        $paidHistory = $invoice->statusHistories()->where('event', 'paid')->latest('id')->firstOrFail();
+        $this->assertSame(__('local_invoice.history.settlement_finalized', [], 'id'), $paidHistory->notes);
         $refund = $payment->overpayment;
         if ($refund) {
             $this->fail('An exact correction should not create an overpayment.');
@@ -339,8 +346,8 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
 
         $supplierShow = $this->actingAs($this->supplier)->get(route('local-supplier.invoices.show', $invoice));
         $supplierShow->assertOk();
-        $supplierShow->assertSee('Pemberitahuan Kelebihan Pembayaran (Overpayment)');
-        $supplierShow->assertSee('Riwayat Pembayaran &amp; Mutasi Transfer Bank', false);
+        $supplierShow->assertSee(__('local_invoice.detail.overpayment_title', [], 'en'));
+        $supplierShow->assertSee(__('local_invoice.labels.payment_history', [], 'en'));
 
         try {
             app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '0.50', 'refund_reference' => 'REF-PARTIAL', 'refund_date' => '2026-09-16'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);

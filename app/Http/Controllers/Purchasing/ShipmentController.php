@@ -9,6 +9,7 @@ use App\Models\ShipmentDocument;
 use App\Models\User;
 use App\Services\ShipmentService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use App\Support\NumberFormat;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
@@ -101,7 +102,7 @@ class ShipmentController extends Controller
 
                     return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
-                ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.$shp->shipment_date->format('d M Y').'</span>' : '-')
+                ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($shp->shipment_date->format('d M Y')).'</span>' : '-')
                 ->addColumn('shipment_date_display', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->shipment_date, 'human')).'</span>' : '-')
                 ->addColumn('estimated_arrival', fn ($shp) => $shp->estimated_arrival_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->estimated_arrival_date, 'human')).'</span>' : '-')
                 ->addColumn('actual_arrival', function ($shp) use ($regionalFormatter) {
@@ -120,7 +121,7 @@ class ShipmentController extends Controller
                 ->addColumn('action', function ($shp) {
                     $url = route('purchasing.shipments.show', $shp);
 
-                    return '<a href="'.e($url).'" class="ui-data-action ui-data-action--primary">Details</a>';
+                    return '<a href="'.e($url).'" class="ui-data-action ui-data-action--primary">'.e(__('shipments.copy.details')).'</a>';
                 })
                 ->rawColumns(['shipment_number_display', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'actual_arrival', 'status_badge', 'action'])
                 ->toJson();
@@ -173,19 +174,23 @@ class ShipmentController extends Controller
     public function confirmArrival(Request $request, $id)
     {
         $validated = $request->validate([
-            'actual_arrival_date' => 'nullable|date|before_or_equal:today',
+            'actual_arrival_date' => 'nullable|date|before_or_equal:'.BusinessTime::today()->toDateString(),
         ]);
         $shipment = Shipment::findOrFail($id);
 
         try {
             $arrived = $this->shipmentService->confirmArrival($shipment, auth()->user(), [
-                'actual_arrival_date' => $validated['actual_arrival_date'] ?? now()->toDateString(),
+                'actual_arrival_date' => $validated['actual_arrival_date'] ?? BusinessTime::today()->toDateString(),
             ]);
 
             return redirect()->route('purchasing.shipments.show', $arrived)
-                ->with('success', "Shipment {$arrived->shipment_number} arrival confirmed. QC team notified for inspection.");
-        } catch (\Throwable $e) {
+                ->with('success', __('shipments.feedback.arrived', ['shipment' => $arrived->shipment_number]));
+        } catch (\InvalidArgumentException|\DomainException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_confirming_shipment_arrival_please_try_again'));
         }
     }
 
@@ -208,6 +213,6 @@ class ShipmentController extends Controller
 
         PoDocument::syncFromShipmentDocument($document);
 
-        return back()->with('success', "Document status updated to {$document->status}.");
+        return back()->with('success', __('shipments.feedback.document_status', ['status' => \App\Support\StatusHelper::shipmentDocLabel($document->status)]));
     }
 }

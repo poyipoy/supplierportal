@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveHsCodeRuleRequest;
 use App\Models\HsCodeRule;
+use App\Models\MaterialMaster;
+use App\Models\PrItem;
 use App\Services\Materials\HsCodeRuleConflictDetector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -25,16 +27,18 @@ class HsCodeRuleController extends Controller
         return DataTables::eloquent($query)
             ->addIndexColumn()
             ->removeColumn('rule_key')
+            ->addColumn('material_category_label', fn (HsCodeRule $rule) => MaterialMaster::hsCategoryLabel($rule->material_category))
+            ->addColumn('shape_label', fn (HsCodeRule $rule) => PrItem::shapeLabel($rule->shape))
             ->addColumn('conditions_display', fn (HsCodeRule $rule) => e($this->conditionSummary($rule->conditions)))
             ->addColumn('status_badge', fn (HsCodeRule $rule) => match ($rule->status) {
-                HsCodeRule::STATUS_ACTIVE => '<span class="ui-status-chip ui-status-chip--success">Active</span>',
-                HsCodeRule::STATUS_CONFLICT => '<span class="ui-status-chip ui-status-chip--error">Conflict</span>',
-                default => '<span class="ui-status-chip ui-status-chip--neutral">Inactive</span>',
+                HsCodeRule::STATUS_ACTIVE => '<span class="ui-status-chip ui-status-chip--success">'.e(__('admin.copy.active')).'</span>',
+                HsCodeRule::STATUS_CONFLICT => '<span class="ui-status-chip ui-status-chip--error">'.e(__('admin.copy.conflict')).'</span>',
+                default => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.inactive')).'</span>',
             })
             ->addColumn('source_display', fn (HsCodeRule $rule) => e(collect($rule->source_refs)
-                ->map(fn (array $ref) => basename($ref['file'] ?? 'Admin').' #'.implode(',', $ref['entries'] ?? []))
-                ->join('; ') ?: 'Admin'))
-            ->addColumn('updated_date', fn (HsCodeRule $rule) => $rule->updated_at?->format('d M Y') ?? '-')
+                ->map(fn (array $ref) => basename($ref['file'] ?? __('admin.copy.admin')).' #'.implode(',', $ref['entries'] ?? []))
+                ->join('; ') ?: __('admin.copy.admin')))
+            ->addColumn('updated_date', fn (HsCodeRule $rule) => $rule->updated_at ? \App\Support\BusinessTime::format($rule->updated_at, 'd M Y', false) : '-')
             ->addColumn('action', function (HsCodeRule $rule) {
                 $payload = e(json_encode([
                     'id' => $rule->id,
@@ -47,11 +51,11 @@ class HsCodeRuleController extends Controller
                     'notes' => $rule->notes,
                 ], JSON_THROW_ON_ERROR));
 
-                $stateLabel = $rule->status === HsCodeRule::STATUS_ACTIVE ? 'Deactivate rule' : 'Activate rule';
+                $stateLabel = $rule->status === HsCodeRule::STATUS_ACTIVE ? __('admin.copy.deactivate_rule') : __('admin.copy.activate_rule');
 
                 return '<div class="d-inline-flex align-items-center gap-1">'
-                    .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-rule" data-rule="'.$payload.'" aria-label="Edit HS Code rule '.e($rule->hs_code).'">Edit</button>'
-                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions for HS Code '.e($rule->hs_code).'">More</button>'
+                    .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-rule" data-rule="'.$payload.'" aria-label="'.e(__('purchasing.action_names.edit_hs_code_rule', ['name' => $rule->hs_code])).'">'.e(__('admin.copy.edit')).'</button>'
+                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for_hs_code', ['name' => $rule->hs_code])).'">'.e(__('admin.copy.more')).'</button>'
                     .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'">'.$stateLabel.'</button></li></ul></div>'
                     .'</div>';
             })
@@ -66,7 +70,7 @@ class HsCodeRuleController extends Controller
         $rule->save();
 
         return redirect()->to(route('admin.material-hs-code.index').'#rules')
-            ->with('success', 'HS Code rule successfully created.');
+            ->with('success', __('admin.copy.hs_code_rule_successfully_created'));
     }
 
     public function update(
@@ -79,7 +83,7 @@ class HsCodeRuleController extends Controller
         $hsCodeRule->save();
 
         return redirect()->to(route('admin.material-hs-code.index').'#rules')
-            ->with('success', 'HS Code rule successfully updated.');
+            ->with('success', __('admin.copy.hs_code_rule_successfully_updated'));
     }
 
     public function status(
@@ -125,7 +129,7 @@ class HsCodeRuleController extends Controller
     {
         if ($rule->status === HsCodeRule::STATUS_ACTIVE && $conflicts->hasBlockingConflict($rule)) {
             throw ValidationException::withMessages([
-                'conditions' => 'This rule overlaps an active rule with the same priority and a different HS Code.',
+                'conditions' => __('admin.copy.this_rule_overlaps_an_active_rule_with_the_same_priority_and_a_different_hs_code'),
             ]);
         }
     }
@@ -141,7 +145,7 @@ class HsCodeRuleController extends Controller
                 $parts[] = ($bounds['max_inclusive'] ?? true ? '≤ ' : '< ').$bounds['max'];
             }
 
-            return $dimension.' '.implode(' and ', $parts);
+            return PrItem::dimensionLabel($dimension).' '.implode(' '.__('admin.copy.condition_and').' ', $parts);
         })->join('; ');
     }
 }

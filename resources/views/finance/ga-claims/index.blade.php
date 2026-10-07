@@ -1,22 +1,22 @@
 @extends('layouts.app')
-@section('title', 'Register Klaim GA - Finance AP')
-@section('page-title', 'Register Klaim General Affairs')
+@section('title', __('finance.ga.register_title').' - '.__('finance.labels.finance_ap'))
+@section('page-title', __('finance.ga.register_title'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Register Klaim General Affairs"
-        description="Verifikasi dokumen dan kelayakan pembayaran pengajuan klaim operasional serta reimbursement dari General Affairs."
-        eyebrow="Finance & Accounts Payable"
+        :title="__('finance.ga.register_title')"
+        :description="__('finance.ga.register_help')"
+        :eyebrow="__('finance.labels.finance_ap')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('finance.dashboard')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Dashboard</span>
+                <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('finance.drp.ga')" variant="outline" size="sm">
                 <x-ui.icon name="credit-card" size="sm" />
-                <span>Kelola DRP GA</span>
+                <span>{{ __('finance.ga.manage_drp') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -36,23 +36,23 @@
                     type="text"
                     name="search"
                     class="form-control form-control-sm"
-                    placeholder="Cari no. klaim, nama karyawan, departemen..."
+                    placeholder="{{ __('ga.filters.claim_search') }}"
                     value="{{ request('search') }}"
                 >
             </div>
             <div class="tw-w-44">
                 <select name="status" class="form-select form-select-sm">
-                    <option value="">Semua Status</option>
-                    <option value="SUBMITTED" @selected(request('status') === 'SUBMITTED')>SUBMITTED</option>
-                    <option value="BASIC_VERIFIED" @selected(request('status') === 'BASIC_VERIFIED')>BASIC_VERIFIED</option>
-                    <option value="NEED_REVISION" @selected(request('status') === 'NEED_REVISION')>NEED_REVISION</option>
-                    <option value="READY_TO_PAY" @selected(request('status') === 'READY_TO_PAY')>READY_TO_PAY</option>
-                    <option value="PAID" @selected(request('status') === 'PAID')>PAID</option>
+                    <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
+                    <option value="SUBMITTED" @selected(request('status') === 'SUBMITTED')>{{ __('local_invoice.labels.submitted') }}</option>
+                    <option value="BASIC_VERIFIED" @selected(request('status') === 'BASIC_VERIFIED')>{{ \App\Support\StatusHelper::gaClaimLabel('BASIC_VERIFIED') }}</option>
+                    <option value="NEED_REVISION" @selected(request('status') === 'NEED_REVISION')>{{ \App\Support\StatusHelper::gaClaimLabel('NEED_REVISION') }}</option>
+                    <option value="READY_TO_PAY" @selected(request('status') === 'READY_TO_PAY')>{{ \App\Support\StatusHelper::gaClaimLabel('READY_TO_PAY') }}</option>
+                    <option value="PAID" @selected(request('status') === 'PAID')>{{ __('local_invoice.labels.paid') }}</option>
                 </select>
             </div>
             <div class="tw-w-48">
                 <select name="employee_id" class="form-select form-select-sm">
-                    <option value="">Semua Karyawan</option>
+                    <option value="">{{ __('ga.filters.all_employees') }}</option>
                     @foreach($employees as $emp)
                         <option value="{{ $emp->id }}" @selected(request('employee_id') == $emp->id)>
                             {{ $emp->name }} ({{ $emp->department }})
@@ -63,11 +63,11 @@
             <div class="tw-flex tw-gap-2">
                 <x-ui.button type="submit" variant="primary" size="sm">
                     <x-ui.icon name="search" size="sm" />
-                    <span>Filter</span>
+                    <span>{{ __('common.labels_review.filter') }}</span>
                 </x-ui.button>
                 @if(request()->hasAny(['search', 'status', 'employee_id']))
                     <x-ui.button :href="route('finance.ga-claims.index')" variant="ghost" size="sm">
-                        <span>Reset</span>
+                        <span>{{ __('common.actions.reset') }}</span>
                     </x-ui.button>
                 @endif
             </div>
@@ -76,21 +76,21 @@
 
     {{-- Data Table --}}
     <x-ui.data-table
-        title="Daftar Pengajuan Klaim GA"
-        description="Klaim berstatus BASIC_VERIFIED siap diverifikasi Finance untuk diteruskan ke tahap pembayaran (DRP GA)."
+        :title="__('ga.list.heading')"
+        :description="__('finance.ga.verification_help')"
     >
         <div class="table-responsive">
             <table class="table table-hover align-middle tw-m-0 tw-text-ui-xs w-100">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">No. Klaim</th>
-                        <th scope="col">Tanggal</th>
-                        <th scope="col">Karyawan / Dept</th>
-                        <th scope="col">Tipe Klaim</th>
-                        <th scope="col">Nominal (Rp)</th>
-                        <th scope="col">Tujuan Transfer</th>
-                        <th scope="col">Status</th>
-                        <th scope="col" class="text-end">Aksi</th>
+                        <th scope="col">{{ __('finance.ga.claim_number') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.date') }}</th>
+                        <th scope="col">{{ __('ga.labels.employee_department') }}</th>
+                        <th scope="col">{{ __('ga.labels.claim_type') }}</th>
+                        <th scope="col">{{ __('finance.ga.amount_rupiah') }}</th>
+                        <th scope="col">{{ __('finance.drp.transfer_destination') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="text-end">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -104,32 +104,30 @@
                             </td>
                             <td>
                                 <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
-                                    {{ $claim->claim_type }}
+                                    {{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}
                                 </span>
                             </td>
                             <td><strong class="tw-font-mono tw-text-ui-sm">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</strong></td>
                             <td>
                                 <span class="tw-font-semibold">{{ $claim->employee?->bank_name }}</span> ·
                                 <span class="tw-font-mono">{{ $claim->employee?->account_number }}</span>
-                                <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">a.n {{ $claim->employee?->account_holder_name }}</span>
+                                <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">{{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</span>
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="match($claim->status) { 'PAID' => 'success', 'READY_TO_PAY' => 'success', 'NEED_REVISION' => 'error', 'BASIC_VERIFIED' => 'info', default => 'warning' }">
-                                    {{ $claim->status }}
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::gaClaimTone($claim->status)">
+                                    {{ \App\Support\StatusHelper::gaClaimLabel($claim->status) }}
                                 </x-ui.status-chip>
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('finance.ga-claims.show', $claim)" size="sm" variant="outline">
                                     <x-ui.icon name="eye" size="sm" />
-                                    <span>Detail & Verifikasi</span>
+                                    <span>{{ __('finance.labels.verification_short') }}</span>
                                 </x-ui.button>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant">
-                                Tidak ada pengajuan klaim GA yang sesuai.
-                            </td>
+                            <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant">{{ __('finance.copy_review.ga_empty') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'Supplier Registrations - ADASI Portal')
-@section('page-title', 'Supplier Registrations')
+@section('title', __('local_procurement.registration.list_title'))
+@section('page-title', __('local_procurement.registration.list_heading'))
 
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header
-        title="Supplier Registrations"
-        description="Review, request revision, reject, or approve and assign portal scopes for supplier onboarding submissions."
-        eyebrow="Onboarding Management"
+        :title="__('navigation.quick.registrations')"
+        :description="__('local_procurement.registration.list_description')"
+        :eyebrow="__('local_procurement.registration.management')"
     />
 
     @if (session('success'))
@@ -28,11 +28,11 @@
     <div class="tw-flex tw-items-center tw-gap-2 tw-overflow-x-auto tw-pb-1">
         @php
             $tabs = [
-                'ALL' => ['label' => 'All Registrations', 'icon' => 'layers'],
-                'PENDING' => ['label' => 'Pending Review', 'icon' => 'clock'],
-                'REVISION' => ['label' => 'Revision Required', 'icon' => 'alert-circle'],
-                'APPROVED' => ['label' => 'Approved', 'icon' => 'check-circle'],
-                'REJECTED' => ['label' => 'Rejected', 'icon' => 'x-circle'],
+                'ALL' => ['label' => __('local_procurement.registration.all'), 'icon' => 'layers'],
+                'PENDING' => ['label' => __('local_procurement.registration.pending_review'), 'icon' => 'clock'],
+                'REVISION' => ['label' => __('local_procurement.registration.revision_required'), 'icon' => 'alert-circle'],
+                'APPROVED' => ['label' => __('local_procurement.registration.approved'), 'icon' => 'check-circle'],
+                'REJECTED' => ['label' => __('local_procurement.registration.rejected'), 'icon' => 'x-circle'],
             ];
         @endphp
 
@@ -62,38 +62,38 @@
                 type="search"
                 name="search"
                 value="{{ request('search') }}"
-                placeholder="Search by company, NIB, NPWP, or reference..."
+                placeholder="{{ __('local_procurement.registration.search') }}"
                 class="ui-motion tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary"
             >
         </div>
         <button type="submit" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-h-10 tw-px-4 tw-rounded-ui-sm tw-bg-primary tw-text-primary-foreground tw-text-ui-sm tw-font-semibold tw-border-0 hover:tw-brightness-95">
-            Filter
+            {{ __('finance.drp_ui.filter') }}
         </button>
         @if (request('search'))
             <a href="{{ route('supplier-registrations.index', ['status' => $statusFilter]) }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-h-10 tw-px-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-sm tw-text-on-surface hover:tw-bg-surface-container tw-no-underline">
                 <x-ui.icon name="x" size="xs" />
-                <span>Clear</span>
+                <span>{{ __('common.actions.clear') }}</span>
             </a>
         @endif
     </form>
 
     {{-- REGISTRATION ATTEMPTS TABLE --}}
     <x-ui.data-table
-        title="Registration Attempts ({{ $attempts->total() }})"
-        description="Any single reviewer (Admin, Finance, or Purchasing) may evaluate and approve submissions."
+        :title="__('local_procurement.registration.attempt_count', ['count' => $attempts->total()])"
+        :description="__('local_procurement.registration.review_help')"
     >
         <div class="ui-data-table__scroll tw-overflow-x-auto">
             <table class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" style="width: 140px;">Reference</th>
-                        <th scope="col">Company Name</th>
-                        <th scope="col">Legal & Tax ID</th>
-                        <th scope="col">PIC Contact</th>
-                        <th scope="col">Submitted Date</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Last Reviewer</th>
-                        <th scope="col" class="text-end" style="width: 100px;">Actions</th>
+                        <th scope="col" style="width: 140px;">{{ __('local_procurement.registration.reference_label') }}</th>
+                        <th scope="col">{{ __('local_procurement.registration.company_label') }}</th>
+                        <th scope="col">{{ __('local_procurement.registration.legal_tax') }}</th>
+                        <th scope="col">{{ __('registration.pic_contact') }}</th>
+                        <th scope="col">{{ __('local_procurement.registration.submitted_date', ['timezone' => \App\Support\BusinessTime::label()]) }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col">{{ __('local_procurement.registration.last_reviewer') }}</th>
+                        <th scope="col" class="text-end" style="width: 100px;">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -105,7 +105,7 @@
                         <tr>
                             <td>
                                 <span class="tw-font-mono tw-font-semibold tw-text-ui-xs tw-text-primary">{{ $ref }}</span>
-                                <div class="tw-text-[11px] tw-text-on-surface-variant">Attempt #{{ $attempt->attempt_number }}</div>
+                                <div class="tw-text-[11px] tw-text-on-surface-variant">{{ __('common.final_copy.attempt_number', ['number' => $attempt->attempt_number]) }}</div>
                             </td>
                             <td>
                                 <div class="tw-font-semibold tw-text-on-surface">
@@ -122,20 +122,12 @@
                                 <div class="tw-text-[11px] tw-text-on-surface-variant">{{ $supplier?->pic_phone ?? '-' }}</div>
                             </td>
                             <td>
-                                <span class="tw-text-ui-xs">{{ $attempt->submitted_at?->format('d M Y, H:i') ?? '-' }}</span>
+                                <span class="tw-text-ui-xs">{{ $attempt->submitted_at ? $regionalFormatter->timestamp($attempt->submitted_at, 'datetime_comma') : '-' }}</span>
                             </td>
                             <td>
-                                @if ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_PENDING)
-                                    <span class="ui-status-chip ui-status-chip--warning">Pending</span>
-                                @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_REVISION)
-                                    <span class="ui-status-chip ui-status-chip--info">Revision</span>
-                                @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_APPROVED)
-                                    <span class="ui-status-chip ui-status-chip--success">Approved</span>
-                                @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_REJECTED)
-                                    <span class="ui-status-chip ui-status-chip--danger">Rejected</span>
-                                @else
-                                    <span class="ui-status-chip ui-status-chip--neutral">{{ $attempt->status }}</span>
-                                @endif
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::registrationTone($attempt->status)">
+                                    {{ \App\Support\StatusHelper::registrationLabel($attempt->status) }}
+                                </x-ui.status-chip>
                             </td>
                             <td>
                                 <span class="tw-text-ui-xs text-muted">{{ $attempt->reviewer?->name ?? '-' }}</span>
@@ -145,7 +137,7 @@
                                     href="{{ route('supplier-registrations.show', $attempt->hash) }}"
                                     class="ui-data-action ui-data-action--primary ui-focus-ring tw-no-underline"
                                 >
-                                    Review
+                                    {{ __('common.labels_review.review') }}
                                 </a>
                             </td>
                         </tr>
@@ -153,7 +145,7 @@
                         <tr>
                             <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant">
                                 <x-ui.icon name="inbox" size="lg" class="tw-mb-2 tw-opacity-50" />
-                                <p class="tw-m-0 tw-text-ui-sm">No supplier registration records found.</p>
+                                <p class="tw-m-0 tw-text-ui-sm">{{ __('finance.copy_review.registration_empty') }}</p>
                             </td>
                         </tr>
                     @endforelse

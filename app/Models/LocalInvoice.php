@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -181,7 +182,7 @@ class LocalInvoice extends Model
         return ! $this->isPaid()
             && ! $this->isExpired()
             && $this->due_date !== null
-            && $this->due_date->lt(today());
+            && $this->due_date->lt(BusinessTime::today());
     }
 
     public function getIsOverdueAttribute(): bool
@@ -192,32 +193,48 @@ class LocalInvoice extends Model
     public function paymentCategory(): string
     {
         if ($this->isPaid()) {
-            return 'Completed';
+            return __('local_invoice.payment_category.completed');
         }
         if ($this->isOverdue()) {
-            return 'Overdue';
+            return __('local_invoice.payment_category.overdue');
         }
-        if ($this->due_date && $this->due_date->lt(today()->addDays(7))) {
-            return 'Due < 7 Days';
+        if ($this->due_date && $this->due_date->lt(BusinessTime::today()->addDays(7))) {
+            return __('local_invoice.payment_category.due_soon');
         }
 
         if ($this->status === 'PAYMENT_SCHEDULED' || $this->scheduled_payment_date) {
-            return 'Scheduled';
+            return __('local_invoice.payment_category.scheduled');
         }
 
-        return $this->isReadyToPay() ? 'Ready to Pay' : 'Unscheduled';
+        return $this->isReadyToPay()
+            ? __('local_invoice.payment_category.ready')
+            : __('local_invoice.payment_category.unscheduled');
+    }
+
+    public static function eventLabel(string $event): string
+    {
+        $events = [
+            'submitted', 'resubmitted', 'physical_received', 'physical_verified',
+            'delivery_missed', 'rescheduled', 'expired', 'revision_requested',
+            'approved', 'payment_scheduled', 'partial_payment', 'overpaid',
+            'refund_settled', 'completed', 'paid', 'cancelled', 'rejected',
+        ];
+
+        return in_array($event, $events, true)
+            ? __('notifications.invoice.events.'.$event.'.title')
+            : __('common.unknown');
     }
 
     public function remainingDays(): ?int
     {
-        return $this->due_date ? (int) today()->diffInDays($this->due_date, false) : null;
+        return $this->due_date ? (int) BusinessTime::today()->diffInDays($this->due_date, false) : null;
     }
 
     public function scopeOverdue(Builder $query): Builder
     {
         return $query->whereNotIn('status', [self::STATUS_PAID, 'COMPLETED', self::STATUS_EXPIRED])
             ->whereNotNull('due_date')
-            ->whereDate('due_date', '<', today());
+            ->whereDate('due_date', '<', BusinessTime::today()->toDateString());
     }
 
     public function scopeIsOverdue(Builder $query): Builder

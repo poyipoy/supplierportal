@@ -7,26 +7,26 @@
     $initialAmount = old('total_amount', $purchaseOrder->total_amount ?? '');
 @endphp
 
-@section('title', $isEdit ? 'Edit Purchase Order (PO)' : 'Buat Purchase Order (PO) Baru')
-@section('page-title', $isEdit ? 'Edit Purchase Order (PO)' : 'Buat Purchase Order (PO) Baru')
+@section('title', $isEdit ? __('finance.closure.po_edit') : __('finance.closure.po_create'))
+@section('page-title', $isEdit ? __('finance.closure.po_edit') : __('finance.closure.po_create'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        :title="$isEdit ? 'Edit Purchase Order (PO)' : 'Buat Purchase Order (PO) Baru'"
-        description="Mata uang PO lokal dikunci pada IDR. Identitas nomor PO dan supplier menjadi terkunci secara audit setelah memiliki Goods Receipt (GR) atau invoice."
-        eyebrow="Pengadaan Lokal"
+        :title="$isEdit ? __('finance.closure.po_edit') : __('finance.closure.po_create')"
+        :description="__('common.final_review.po_locked_help')"
+        :eyebrow="__('local_procurement.surface.local_audience')"
     >
         <x-slot:actions>
             <x-ui.button :href="route($routePrefix.'.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Kembali ke Master PO</span>
+                <span>{{ __('local_procurement.surface.back_master') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
     @if($errors->any())
-        <x-ui.alert tone="error" title="Harap periksa dan perbaiki kesalahan berikut:" class="tw-mb-2">
+        <x-ui.alert tone="error" title="{{ __('local_invoice.labels.errors') }}:" class="tw-mb-2">
             <ul class="tw-mb-0 tw-mt-1.5 tw-list-disc tw-ps-4 tw-space-y-0.5 tw-text-ui-xs">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -46,20 +46,20 @@
             <div class="lg:tw-col-span-8">
                 {{-- 1. Identitas Dokumen & Supplier --}}
                 <x-ui.form-section
-                    title="Identitas Dokumen & Supplier"
-                    description="Informasi otoritatif nomor PO, rekanan supplier lokal terdaftar, dan tanggal penetapan dokumen."
+                    :title="__('local_invoice.labels.document_identity')"
+                    :description="__('local_procurement.list.description')"
                 >
                     <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                         {{-- Nomor PO --}}
                         <div>
                             <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
                                 <label for="po_number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
-                                    Nomor PO <span class="tw-text-error">*</span>
+                                    {{ __('local_invoice.receipt.po_number') }} <span class="tw-text-error">*</span>
                                 </label>
                                 @if($isLocked)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-warning-container tw-text-warning-container-foreground">
                                         <x-ui.icon name="lock" size="sm" />
-                                        <span>Terkunci Audit</span>
+                                        <span>{{ __('local_procurement.surface.audit_locked') }}</span>
                                     </span>
                                 @endif
                             </div>
@@ -69,7 +69,7 @@
                                 id="po_number"
                                 class="form-control form-control-sm tw-font-mono @error('po_number') is-invalid @enderror"
                                 value="{{ old('po_number', $purchaseOrder->po_number) }}"
-                                placeholder="Contoh: PO/2026/09/001"
+                                placeholder="{{ __('common.reference_example', ['reference' => 'PO/2026/09/001']) }}"
                                 @if($isLocked) readonly @endif
                                 required
                             >
@@ -77,9 +77,7 @@
                                 <div class="invalid-feedback tw-text-ui-xs">{{ $message }}</div>
                             @enderror
                             @if($isLocked)
-                                <div class="form-text tw-text-[11px] tw-text-on-surface-variant">
-                                    Nomor PO tidak dapat diubah karena sudah memiliki relasi GR atau invoice tercatat.
-                                </div>
+                                <div class="form-text tw-text-[11px] tw-text-on-surface-variant">{{ __('local_procurement.surface.number_locked') }}</div>
                             @endif
                         </div>
 
@@ -87,12 +85,12 @@
                         <div>
                             <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
                                 <label for="supplier_id" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
-                                    Supplier Lokal <span class="tw-text-error">*</span>
+                                    {{ __('local_invoice.labels.local_supplier') }} <span class="tw-text-error">*</span>
                                 </label>
                                 @if($isLocked)
                                     <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-warning-container tw-text-warning-container-foreground">
                                         <x-ui.icon name="lock" size="sm" />
-                                        <span>Terkunci</span>
+                                        <span>{{ __('local_invoice.labels.locked') }}</span>
                                     </span>
                                 @endif
                             </div>
@@ -107,9 +105,7 @@
                                         @endif
                                     @endforeach
                                 </select>
-                                <div class="form-text tw-text-[11px] tw-text-on-surface-variant">
-                                    Entitas supplier lokal tidak dapat dialihkan pada PO yang telah aktif berjalan.
-                                </div>
+                                <div class="form-text tw-text-[11px] tw-text-on-surface-variant">{{ __('local_procurement.surface.supplier_locked') }}</div>
                             @else
                                 <select
                                     name="supplier_id"
@@ -117,7 +113,7 @@
                                     class="form-select form-select-sm @error('supplier_id') is-invalid @enderror"
                                     required
                                 >
-                                    <option value="">Pilih Supplier Lokal...</option>
+                                    <option value="">{{ __('local_procurement.surface.choose_supplier') }}</option>
                                     @foreach($suppliers as $supplier)
                                         <option
                                             value="{{ $supplier->id }}"
@@ -125,7 +121,7 @@
                                         >
                                             {{ $supplier->supplier?->company_name ?: $supplier->name }}
                                             @if($supplier->supplier?->vendor_category)
-                                                ({{ $supplier->supplier->vendor_category }})
+                                                ({{ \App\Support\StatusHelper::vendorCategoryLabel($supplier->supplier->vendor_category) }})
                                             @endif
                                         </option>
                                     @endforeach
@@ -139,7 +135,7 @@
                         {{-- Tanggal PO --}}
                         <div>
                             <label for="local_po_date" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1">
-                                Tanggal Dokumen PO <span class="tw-text-error">*</span>
+                                {{ __('local_procurement.labels.po_document_date') }} <span class="tw-text-error">*</span>
                             </label>
                             <x-ui.date-picker
                                 id="local_po_date"
@@ -155,7 +151,7 @@
                         {{-- Plafon Nilai PO (IDR) --}}
                         <div>
                             <label for="total_amount" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1">
-                                Plafon Nilai PO (IDR) <span class="tw-text-error">*</span>
+                                {{ __('local_procurement.surface.po_amount_cap') }} <span class="tw-text-error">*</span>
                             </label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text tw-font-semibold tw-text-on-surface-variant">Rp</span>
@@ -176,7 +172,7 @@
                             @enderror
                             @if($isLocked && $activeInvoicedTotal > 0)
                                 <div class="form-text tw-text-[11px] tw-text-warning tw-mt-1">
-                                    Batas minimum: Rp {{ number_format($activeInvoicedTotal, 2, ',', '.') }} (total akumulasi invoice aktif).
+                                    {{ __('finance.closure.plafon_minimum', ['amount' => number_format($activeInvoicedTotal, 2, ',', '.')]) }}
                                 </div>
                             @endif
                         </div>
@@ -185,19 +181,19 @@
 
                 {{-- 2. Keterangan & Catatan Operasional --}}
                 <x-ui.form-section
-                    title="Keterangan & Catatan Operasional"
-                    description="Instruksi pengadaan, catatan spesifikasi material, atau referensi penugasan internal."
+                    :title="__('local_procurement.surface.notes_title')"
+                    :description="__('local_procurement.list.notes_help')"
                 >
                     <div>
                         <label for="description" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1">
-                            Catatan / Deskripsi PO
+                            {{ __('local_procurement.labels.po_description_notes') }}
                         </label>
                         <textarea
                             name="description"
                             id="description"
                             class="form-control form-control-sm @error('description') is-invalid @enderror"
                             rows="4"
-                            placeholder="Tuliskan catatan tambahan mengenai pengadaan barang, kontak pemesan, atau ketentuan khusus..."
+                            placeholder="{{ __('local_procurement.surface.notes_placeholder') }}"
                         >{{ old('description', $purchaseOrder->description) }}</textarea>
                         @error('description')
                             <div class="invalid-feedback tw-text-ui-xs">{{ $message }}</div>
@@ -208,12 +204,12 @@
 
             {{-- Kolom Kanan: Sticky Sidebar Ringkasan Dokumen PO --}}
             <div class="lg:tw-col-span-4 tw-sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
-                <x-ui.card title="Ringkasan Dokumen PO">
+                <x-ui.card :title="__('local_procurement.labels.po_document_summary')">
                     <div class="tw-space-y-4">
                         {{-- Kartu Highlight Plafon Nilai PO --}}
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3.5 tw-space-y-1">
                             <div class="tw-flex tw-items-center tw-justify-between tw-text-ui-xs">
-                                <span class="tw-font-medium tw-text-on-surface-variant">Plafon Nilai PO</span>
+                                <span class="tw-font-medium tw-text-on-surface-variant">{{ __('local_procurement.surface.po_ceiling') }}</span>
                                 <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-bold tw-bg-primary/10 tw-text-primary">
                                     IDR
                                 </span>
@@ -226,28 +222,28 @@
                         {{-- Metadata Dokumen --}}
                         <div class="tw-space-y-2.5 tw-text-ui-xs">
                             <div class="tw-flex tw-items-center tw-justify-between tw-text-on-surface-variant">
-                                <span>Mata Uang:</span>
-                                <span class="tw-font-semibold tw-text-on-surface">IDR (Rupiah Indonesia)</span>
+                                <span>{{ __('local_procurement.surface.currency') }}</span>
+                                <span class="tw-font-semibold tw-text-on-surface">{{ __('local_procurement.closure.currency_idr') }}</span>
                             </div>
 
                             <div class="tw-flex tw-items-center tw-justify-between tw-text-on-surface-variant">
-                                <span>Sumber Pembuatan:</span>
+                                <span>{{ __('local_procurement.labels.purchase_source') }}:</span>
                                 <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-surface-container-high tw-text-on-surface">
-                                    {{ $purchaseOrder->source ?: 'MANUAL' }}
+                                    {{ __('local_procurement.sources.'.strtolower($purchaseOrder->source ?: 'MANUAL')) }}
                                 </span>
                             </div>
 
                             @if($isEdit)
                                 <div class="tw-flex tw-items-center tw-justify-between tw-text-on-surface-variant">
-                                    <span>Status PO:</span>
+                                    <span>{{ __('local_procurement.labels.po_status') }}:</span>
                                     <x-ui.status-chip :tone="$purchaseOrder->status === 'OPEN' ? 'success' : ($purchaseOrder->status === 'CLOSED' ? 'neutral' : 'error')">
-                                        {{ $purchaseOrder->status }}
+                                        {{ \App\Support\StatusHelper::localFinanceLabel($purchaseOrder->status) }}
                                     </x-ui.status-chip>
                                 </div>
 
                                 @if($activeGrTotal > 0)
                                     <div class="tw-flex tw-items-center tw-justify-between tw-text-on-surface-variant">
-                                        <span>Realisasi GR Aktif:</span>
+                                        <span>{{ __('local_procurement.surface.active_gr') }}</span>
                                         <span class="tw-font-mono tw-font-semibold tw-text-on-surface">
                                             Rp {{ number_format($activeGrTotal, 0, ',', '.') }}
                                         </span>
@@ -260,10 +256,10 @@
                         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-low tw-p-3 tw-space-y-1.5">
                             <div class="tw-flex tw-items-center tw-gap-1.5 tw-text-ui-xs tw-font-semibold tw-text-on-surface">
                                 <x-ui.icon name="shield-alert" size="sm" class="tw-text-primary" />
-                                <span>Integritas Audit Data</span>
+                                <span>{{ __('local_procurement.surface.audit_integrity') }}</span>
                             </div>
                             <p class="tw-text-[11px] tw-text-on-surface-variant tw-leading-relaxed tw-mb-0">
-                                Setelah dokumen PO memiliki catatan Goods Receipt (GR) atau tagihan invoice, nomor PO dan supplier terkunci permanen demi kepatuhan audit pengadaan.
+                                {{ __('local_procurement.surface.audit_integrity_help') }}
                             </p>
                         </div>
 
@@ -271,12 +267,12 @@
                         <div class="tw-space-y-2 tw-pt-1">
                             <x-ui.button type="submit" variant="primary" class="tw-w-full tw-justify-center">
                                 <x-ui.icon name="check" size="sm" class="me-1" />
-                                <span>{{ $isEdit ? 'Perbarui Dokumen PO' : 'Simpan Dokumen PO' }}</span>
+                                <span>{{ $isEdit ? __('local_procurement.surface.po_update') : __('local_procurement.surface.po_save') }}</span>
                             </x-ui.button>
 
                             <x-ui.button :href="route($routePrefix.'.index')" variant="outline" class="tw-w-full tw-justify-center">
                                 <x-ui.icon name="x" size="sm" class="me-1" />
-                                <span>Batalkan</span>
+                                <span>{{ __('common.labels_review.cancel') }}</span>
                             </x-ui.button>
                         </div>
                     </div>

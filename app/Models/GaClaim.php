@@ -42,6 +42,32 @@ class GaClaim extends Model
         self::TYPE_REIMBURSE_CLAIM,
     ];
 
+    public static function claimTypeLabel(string $type): string
+    {
+        $key = match ($type) {
+            self::TYPE_ENTERTAIN_SALES => 'ga.types.sales_entertainment',
+            self::TYPE_UPD_SALES => 'ga.types.sales_travel',
+            self::TYPE_UPD_GA => 'ga.types.ga_travel',
+            self::TYPE_REIMBURSE_CLAIM => 'ga.types.reimbursement',
+            default => null,
+        };
+
+        return $key === null ? $type : __($key);
+    }
+
+    public static function eventLabel(string $event): string
+    {
+        return match ($event) {
+            'submitted' => __('ga.events.submitted'),
+            'resubmitted' => __('ga.events.resubmitted'),
+            'basic_verified' => __('ga.events.basic_verified'),
+            'approved' => __('ga.events.approved'),
+            'revision_requested' => __('ga.events.revision_requested'),
+            'paid' => __('ga.events.paid'),
+            default => __('common.unknown'),
+        };
+    }
+
     protected $guarded = ['id'];
 
     protected function casts(): array

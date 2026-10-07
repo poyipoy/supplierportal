@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\PurchaseOrder;
+use App\Support\BusinessTime;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
 use Carbon\Carbon;
@@ -17,7 +18,7 @@ use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class PurchaseOrdersExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
 
@@ -81,7 +82,7 @@ class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColum
                     ->orWhere(function (Builder $activeQuery) {
                         $activeQuery->where('status', 'active')
                             ->whereNotNull('estimated_arrival')
-                            ->where('estimated_arrival', '<', today()->startOfDay())
+                            ->where('estimated_arrival', '<', BusinessTime::today()->toDateString())
                             ->whereNull('actual_arrival');
                     });
             });
@@ -154,7 +155,7 @@ class PurchaseOrdersExport implements FromQuery, TracksExportProgress, WithColum
 
     public function headings(): array
     {
-        return ['PO Number', 'PR Number', 'Supplier', 'Material', 'Currency', 'Total Amount', 'Total IDR', 'Est. Arrival', 'Remark', 'Status'];
+        return [__('exports.headings.po_number'), __('exports.headings.pr_number'), __('exports.headings.supplier'), __('exports.headings.material'), __('exports.headings.currency'), __('exports.headings.total_amount'), __('exports.headings.total_idr'), __('exports.headings.est_arrival'), __('exports.headings.remark'), __('exports.headings.status')];
     }
 
     public function columnWidths(): array

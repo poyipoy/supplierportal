@@ -16,4 +16,7 @@ return [
     'previous' => 'Previous',
     'next' => 'Next',
 
+    'navigation' => 'Pagination Navigation',
+    'page' => 'Go to page :page',
+    'summary' => 'Showing :first to :last of :total results',
 ];

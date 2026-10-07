@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\BusinessTime;
+use App\Support\StatusHelper;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -70,7 +72,7 @@ class Quotation extends Model
 
     public function isExpired(): bool
     {
-        return $this->validity_period !== null && $this->validity_period->lt(today());
+        return $this->validity_period !== null && $this->validity_period->lt(BusinessTime::today());
     }
 
     public function canRequestRevision(): bool
@@ -117,13 +119,13 @@ class Quotation extends Model
     public function statusLabel(): string
     {
         return match ($this->status) {
-            self::STATUS_DRAFT => 'Draft',
-            self::STATUS_SUBMITTED => 'Submitted',
-            self::STATUS_REVISION_REQUESTED => 'Needs Revision',
-            self::STATUS_ACCEPTED => 'Accepted',
-            self::STATUS_REJECTED => 'Rejected',
-            self::STATUS_ALL_UNAVAILABLE => 'All Unavailable',
-            default => ucwords(str_replace('_', ' ', (string) $this->status)),
+            self::STATUS_DRAFT => __('purchasing.copy.draft'),
+            self::STATUS_SUBMITTED => __('purchasing.copy.submitted'),
+            self::STATUS_REVISION_REQUESTED => __('purchasing.copy.needs_revision'),
+            self::STATUS_ACCEPTED => __('purchasing.copy.accepted'),
+            self::STATUS_REJECTED => __('purchasing.copy.rejected'),
+            self::STATUS_ALL_UNAVAILABLE => __('purchasing.copy.all_unavailable'),
+            default => StatusHelper::quotationLabel((string) $this->status),
         };
     }
 

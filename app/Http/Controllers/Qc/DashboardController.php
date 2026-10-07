@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Qc;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
+use App\Services\RegionalDisplayFormatter;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function dashboard()
+    public function dashboard(RegionalDisplayFormatter $regionalFormatter)
     {
         $allInspections = QcInspection::whereNotNull('inspected_at')->get();
         $totalInspections = $allInspections->count();
@@ -23,7 +24,7 @@ class DashboardController extends Controller
             ->sortBy('inspected_at')
             ->groupBy(fn ($inspection) => $inspection->inspected_at->format('Y-m'))
             ->map(fn ($items, $period) => [
-                'label' => Carbon::parse($period.'-01')->format('M Y'),
+                'label' => $regionalFormatter->monthYear(Carbon::parse($period.'-01')),
                 'ok' => $items->where('status', 'ok')->count(),
                 'ng' => $items->where('status', 'ng')->count(),
             ])

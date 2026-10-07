@@ -33,13 +33,13 @@ final class PrItemProcessor
             : ($materialId ? $this->materials->resolveById((int) $materialId) : null);
 
         if ($material === null) {
-            $errors['material_master_id'] = 'Select an active material from the master list.';
+            $errors['material_master_id'] = __('materials.copy.select_an_active_material_from_the_master_list');
 
             return new ProcessedPrItemResult(
                 [],
                 $errors,
-                new HsCodeResolutionResult('unmapped_material', null, null, [], 'Material could not be resolved.'),
-                new WeightCalculationResult('incomplete', null, null, null, null, 'Material could not be resolved.'),
+                new HsCodeResolutionResult('unmapped_material', null, null, [], __('materials.copy.material_could_not_be_resolved')),
+                new WeightCalculationResult('incomplete', null, null, null, null, __('materials.copy.material_could_not_be_resolved')),
             );
         }
 
@@ -54,12 +54,12 @@ final class PrItemProcessor
 
         foreach (PrItem::relevantDimensionFields($shape) as $field) {
             if ($dimensions[$field] !== null && $dimensions[$field] <= 0) {
-                $errors[$field] = 'Dimension must be greater than zero when provided.';
+                $errors[$field] = __('materials.copy.dimension_must_be_greater_than_zero_when_provided');
             }
         }
         if ($shape === PrItem::SHAPE_HOLLOW
             && ! MaterialDimensionRules::hasValidHollowDiameterPair($dimensions['d_inner'] ?? null, $dimensions['d_outer'] ?? null)) {
-            $errors['d_inner'] = 'Inner diameter must be smaller than outer diameter.';
+            $errors['d_inner'] = __('materials.copy.inner_diameter_must_be_smaller_than_outer_diameter');
         }
 
         $hsCode = $this->hsCodes->resolve($material, $shape, $dimensions, $rules);
@@ -80,7 +80,7 @@ final class PrItemProcessor
         if ($manualSelectionAllowed && $manualRaw !== '') {
             $canonicalManual = $this->canonicalHsCode($manualRaw);
             if ($canonicalManual === null) {
-                $errors[$hsManualOverride ? 'hs_code' : 'manual_hs_code'] = 'HS Code must contain exactly eight digits.';
+                $errors[$hsManualOverride ? 'hs_code' : 'manual_hs_code'] = __('materials.copy.hs_code_must_contain_exactly_eight_digits');
             } else {
                 $storedHsCode = $canonicalManual;
                 $storedRuleId = null;
@@ -106,7 +106,7 @@ final class PrItemProcessor
 
         if ($weightManualOverride && $manualWeightRaw !== null && $manualWeightRaw !== '') {
             if (! is_numeric($manualWeightRaw) || (float) $manualWeightRaw <= 0) {
-                $errors['weight_needed'] = 'Manual KG per unit must be greater than zero.';
+                $errors['weight_needed'] = __('materials.copy.manual_kg_per_unit_must_be_greater_than_zero');
             } else {
                 $storedWeight = round((float) $manualWeightRaw, 4, PHP_ROUND_HALF_UP);
                 $storedWeightStatus = PrItem::WEIGHT_STATUS_MANUAL;
@@ -118,15 +118,15 @@ final class PrItemProcessor
 
         if ($submitting) {
             if ($shape === null) {
-                $errors['shape'] = 'Shape is required before submitting.';
+                $errors['shape'] = __('materials.copy.shape_is_required_before_submitting');
             }
             foreach (PrItem::relevantDimensionFields($shape) as $field) {
                 if ($dimensions[$field] === null) {
-                    $errors[$field] = 'This dimension is required before submitting.';
+                    $errors[$field] = __('materials.copy.this_dimension_is_required_before_submitting');
                 }
             }
             if (! $weight->isCalculated() || ($weight->unitKg ?? 0) <= 0) {
-                $errors['weight_needed'] = $weight->message;
+                $errors['weight_needed'] = $weight->messageKey !== null ? __($weight->messageKey) : $weight->message;
             }
         }
 

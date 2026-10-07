@@ -1,28 +1,28 @@
 @extends('layouts.app')
-@section('title', 'Negotiation & Chat - ADASI Portal')
-@section('page-title', 'Negotiations with Suppliers')
+@section('title', __('purchasing.copy.negotiation_chat_adasi_portal'))
+@section('page-title', __('purchasing.copy.negotiations_with_suppliers'))
 
 @section('content')
 <div class="tw-grid tw-gap-6">
     <x-ui.page-header
-        title="Negotiations with Suppliers"
-        eyebrow="Purchasing"
-        description="Follow supplier conversations in their PR or PO context and prioritize threads that need a response."
+        :title="__('purchasing.copy.negotiations_with_suppliers')"
+        :eyebrow="__('purchasing.copy.purchasing')"
+        :description="__('purchasing.copy.follow_supplier_conversations_in_their_pr_or_po_context_and_prioritize_threads_that_need_a_response')"
     />
 
     <x-ui.data-table
-        title="Supplier conversations"
-        description="Search the current page by document, supplier, message, or status."
+        :title="__('purchasing.copy.supplier_conversations')"
+        :description="__('purchasing.copy.search_the_current_page_by_document_supplier_message_or_status')"
     >
         <table class="table table-hover align-middle datatable">
             <thead class="table-light">
                 <tr>
-                    <th scope="col">Document Context</th>
-                    <th scope="col">Supplier</th>
-                    <th scope="col">Latest Message</th>
-                    <th scope="col">Last Activity</th>
-                    <th scope="col">Status</th>
-                    <th scope="col" class="text-end">Action</th>
+                    <th scope="col">{{ __('purchasing.copy.document_context') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.latest_message') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.last_activity') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.status') }}</th>
+                    <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,11 +46,11 @@
                         <td>
                             @if($conv->latestMessage)
                                 @if($conv->latestMessage->sender_id === auth()->id())
-                                    <x-ui.icon name="reply" class="tw-me-1 tw-text-on-surface-variant" aria-label="Your reply" />
+                                    <x-ui.icon name="reply" class="tw-me-1 tw-text-on-surface-variant" aria-label="{{ __('purchasing.copy.your_reply') }}" />
                                 @endif
                                 {{ Str::limit($conv->latestMessage->body, 50) }}
                             @else
-                                <span class="tw-text-on-surface-variant">No messages yet</span>
+                                <span class="tw-text-on-surface-variant">{{ __('purchasing.copy.no_messages_yet') }}</span>
                             @endif
                         </td>
                         <td>
@@ -70,7 +70,7 @@
                             @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
                             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv)" variant="outline" size="sm" class="tw-relative">
                                 <x-slot:leading><x-ui.icon name="message-square-text" /></x-slot:leading>
-                                Open chat
+                                {{ __('purchasing.audit_ui.open_chat') }}
                                 @if($unreadCount > 0)
                                     <x-slot:trailing>
                                         <span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-error tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">{{ $unreadCount }}</span>
@@ -82,7 +82,7 @@
                 @empty
                     <tr>
                         <td colspan="6">
-                            <x-ui.empty-state icon="message-square-more" title="No conversations yet" description="Negotiation threads will appear after a supplier conversation is started." />
+                            <x-ui.empty-state icon="message-square-more" :title="__('purchasing.copy.no_conversations_yet')" :description="__('purchasing.copy.negotiation_threads_will_appear_after_a_supplier_conversation_is_started')" />
                         </td>
                     </tr>
                 @endforelse

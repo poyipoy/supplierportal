@@ -67,7 +67,7 @@
                     <h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">{{ $title }}</h2>
                 @endif
             @endisset
-            <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface" @click="closeDrawer()" aria-label="Close panel">
+            <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface" @click="closeDrawer()" aria-label="{{ __('common.panel.close') }}">
                 <x-ui.icon name="x" size="sm" />
             </button>
         </header>

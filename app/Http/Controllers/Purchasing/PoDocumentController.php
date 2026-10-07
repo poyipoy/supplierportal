@@ -34,28 +34,13 @@ class PoDocumentController extends Controller
         $doc->refresh();
 
         $po = $doc->purchaseOrder()->with('creator')->first();
-        $docLabel = [
-            'invoice' => 'Invoice',
-            'bl' => 'Bill of Lading',
-            'packing_list' => 'Packing List',
-            'form_e' => 'Form-E',
-        ][$doc->doc_type] ?? $doc->doc_type;
-        $statusLabel = [
-            'pending' => 'Not Available',
-            'received' => 'Accepted',
-            'verified' => 'Verified',
-            'issued' => 'Issued',
-            'processing' => 'Processing',
-            'done' => 'Completed',
-        ][$doc->status] ?? $doc->status;
-
         if ($statusChanged && $po?->creator) {
             $this->notifications->send(
                 $po->creator,
                 'document.status_updated',
                 'document.status_updated:'.$doc->id.':'.$doc->status.':'.($doc->updated_at?->format('YmdHis.u') ?? 'updated'),
-                'Document Status Updated',
-                "Document {$docLabel} on PO {$po->po_number} has been updated to \"{$statusLabel}\".",
+                'documents.copy.document_status_updated',
+                'documents.notify.updated_body',
                 route('purchasing.purchase-orders.show', $po, absolute: false),
                 'file-check text-primary',
                 [
@@ -64,6 +49,8 @@ class PoDocumentController extends Controller
                     'po_id' => $po->id,
                     'po_number' => $po->po_number,
                 ],
+                ['po' => $po->po_number],
+                ['document' => 'documents.notify.type_'.(in_array($doc->doc_type, ['invoice', 'bl', 'packing_list', 'form_e'], true) ? $doc->doc_type : 'other'), 'status' => 'documents.notify.status_'.(in_array($doc->status, ['pending', 'received', 'verified', 'issued', 'processing', 'done'], true) ? $doc->status : 'other')],
             );
         }
 
@@ -76,8 +63,8 @@ class PoDocumentController extends Controller
                 $po->creator,
                 'document.all_completed',
                 "document.all_completed:{$po->id}",
-                'All Import Documents Complete',
-                "All import documents for PO {$po->po_number} are complete. Confirm material arrival if it has arrived.",
+                'documents.copy.all_import_documents_complete',
+                'documents.notify.completed_body',
                 route('purchasing.purchase-orders.show', $po, absolute: false),
                 'circle-check text-success',
                 [
@@ -86,18 +73,19 @@ class PoDocumentController extends Controller
                     'po_id' => $po->id,
                     'po_number' => $po->po_number,
                 ],
+                ['po' => $po->po_number],
             );
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Status document successfully updated.',
+            'message' => __('documents.copy.status_document_successfully_updated'),
             'all_docs_complete' => $allDone,
             'doc' => [
                 'id' => $doc->id,
                 'doc_type' => $doc->doc_type,
                 'status' => $doc->status,
-                'updated_at' => $doc->updated_at->format('d M Y, H:i'),
+                'updated_at' => \App\Support\BusinessTime::format($doc->updated_at, 'd M Y, H:i'),
             ],
         ]);
     }

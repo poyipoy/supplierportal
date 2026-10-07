@@ -2,7 +2,7 @@
     'id' => null,
     'testId' => null,
     'icon' => 'clipboard-list',
-    'title' => 'No data available',
+    'title' => __('common.states.empty'),
     'text' => '',
     'actionUrl' => null,
     'actionText' => null,

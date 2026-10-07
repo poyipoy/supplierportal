@@ -21,14 +21,14 @@ class LocalProcurementMasterService
             $poNumber = trim((string) ($data['po_number'] ?? ''));
             $poAmount = $this->money($data['total_amount'] ?? null, 'total_amount');
             if ($poNumber === '') {
-                throw ValidationException::withMessages(['po_number' => 'PO Number is required.']);
+                throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.po_required')]);
             }
             if (LocalPurchaseOrder::whereRaw('LOWER(po_number) = ?', [mb_strtolower($poNumber)])->exists()) {
-                throw ValidationException::withMessages(['po_number' => 'This PO Number already exists.']);
+                throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.po_exists')]);
             }
             $supplier = User::localEligible()->whereKey($data['supplier_id'])->first();
             if (! $supplier) {
-                throw ValidationException::withMessages(['supplier_id' => 'Select an active Local Supplier.']);
+                throw ValidationException::withMessages(['supplier_id' => __('local_procurement.validation.supplier_required')]);
             }
             $po = LocalPurchaseOrder::create([
                 'po_number' => $poNumber, 'supplier_id' => $supplier->id,
@@ -50,29 +50,29 @@ class LocalProcurementMasterService
         return DB::transaction(function () use ($actor, $purchaseOrder, $data) {
             $po = LocalPurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
             if ($po->status === LocalPurchaseOrder::STATUS_CANCELLED) {
-                throw ValidationException::withMessages(['status' => 'A cancelled PO cannot be edited.']);
+                throw ValidationException::withMessages(['status' => __('local_procurement.validation.cancelled_edit')]);
             }
             $hasDependencies = $po->goodsReceipts()->exists() || $po->invoices()->exists();
             $poNumber = trim((string) ($data['po_number'] ?? ''));
             $poAmount = $this->money($data['total_amount'] ?? null, 'total_amount');
             if ($poNumber === '') {
-                throw ValidationException::withMessages(['po_number' => 'PO Number is required.']);
+                throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.po_required')]);
             }
             if ($hasDependencies && ((int) $data['supplier_id'] !== (int) $po->supplier_id || $poNumber !== $po->po_number)) {
-                throw ValidationException::withMessages(['po_number' => 'PO number and supplier are immutable after GR or invoice usage.']);
+                throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.po_immutable')]);
             }
             if (LocalPurchaseOrder::whereRaw('LOWER(po_number) = ?', [mb_strtolower($poNumber)])->where('id', '!=', $po->id)->exists()) {
-                throw ValidationException::withMessages(['po_number' => 'This PO Number already exists.']);
+                throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.po_exists')]);
             }
             $supplier = User::localEligible()->whereKey($data['supplier_id'])->first();
             if (! $supplier) {
-                throw ValidationException::withMessages(['supplier_id' => 'Select an active Local Supplier.']);
+                throw ValidationException::withMessages(['supplier_id' => __('local_procurement.validation.supplier_required')]);
             }
             $activeInvoiced = (string) $po->invoices()
                 ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
                 ->sum('invoice_amount');
             if (bccomp($poAmount, $activeInvoiced, 2) < 0) {
-                throw ValidationException::withMessages(['total_amount' => 'PO Amount cannot be lower than the active invoiced total.']);
+                throw ValidationException::withMessages(['total_amount' => __('local_procurement.validation.ceiling_low')]);
             }
             $before = $po->toArray();
             $po->update([
@@ -93,7 +93,7 @@ class LocalProcurementMasterService
         return DB::transaction(function () use ($actor, $purchaseOrder) {
             $po = LocalPurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
             if ($po->status !== LocalPurchaseOrder::STATUS_OPEN) {
-                throw ValidationException::withMessages(['status' => 'Only an OPEN PO can be closed.']);
+                throw ValidationException::withMessages(['status' => __('local_procurement.validation.close_open')]);
             }
             $po->update(['status' => LocalPurchaseOrder::STATUS_CLOSED, 'updated_by' => $actor->id]);
             $this->audit->record($po, 'po_closed', $actor, ['status' => LocalPurchaseOrder::STATUS_OPEN], ['status' => LocalPurchaseOrder::STATUS_CLOSED]);
@@ -109,12 +109,12 @@ class LocalProcurementMasterService
         return DB::transaction(function () use ($actor, $purchaseOrder) {
             $po = LocalPurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
             if ($po->status !== LocalPurchaseOrder::STATUS_OPEN) {
-                throw ValidationException::withMessages(['status' => 'Only an OPEN PO can be cancelled.']);
+                throw ValidationException::withMessages(['status' => __('local_procurement.validation.cancel_open')]);
             }
             $blocked = $po->goodsReceipts()->whereIn('status', [LocalGoodsReceipt::STATUS_RESERVED, LocalGoodsReceipt::STATUS_INVOICED])->exists()
                 || LocalInvoiceGoodsReceipt::where('local_purchase_order_id', $po->id)->whereIn('state', [LocalInvoiceGoodsReceipt::STATE_RESERVED, LocalInvoiceGoodsReceipt::STATE_CONSUMED])->exists();
             if ($blocked) {
-                throw ValidationException::withMessages(['status' => 'PO cannot be cancelled because it has a reserved or invoiced GR.']);
+                throw ValidationException::withMessages(['status' => __('local_procurement.validation.reserved_cancel')]);
             }
             $po->update(['status' => LocalPurchaseOrder::STATUS_CANCELLED, 'updated_by' => $actor->id]);
             $po->goodsReceipts()->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)
@@ -132,18 +132,18 @@ class LocalProcurementMasterService
         return DB::transaction(function () use ($actor, $purchaseOrder, $data, $source) {
             $po = LocalPurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
             if ($po->status !== LocalPurchaseOrder::STATUS_OPEN) {
-                throw ValidationException::withMessages(['local_purchase_order_id' => 'Goods Receipts may only be added to an OPEN PO.']);
+                throw ValidationException::withMessages(['local_purchase_order_id' => __('local_procurement.validation.gr_open')]);
             }
             $grNumber = trim((string) ($data['gr_number'] ?? ''));
             if ($grNumber === '') {
-                throw ValidationException::withMessages(['gr_number' => 'GR Number is required.']);
+                throw ValidationException::withMessages(['gr_number' => __('local_procurement.validation.gr_required')]);
             }
             if (LocalGoodsReceipt::whereRaw('LOWER(gr_number) = ?', [mb_strtolower($grNumber)])->exists()) {
-                throw ValidationException::withMessages(['gr_number' => 'This GR Number already exists.']);
+                throw ValidationException::withMessages(['gr_number' => __('local_procurement.validation.gr_exists')]);
             }
             $qty = isset($data['qty']) ? (float) $data['qty'] : 0.0;
             if ($qty <= 0) {
-                throw ValidationException::withMessages(['qty' => 'Quantity must be a positive number.']);
+                throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_positive')]);
             }
             $gr = $po->goodsReceipts()->create([
                 'gr_number' => $grNumber, 'gr_date' => $data['gr_date'],
@@ -167,18 +167,18 @@ class LocalProcurementMasterService
             $gr = LocalGoodsReceipt::whereKey($goodsReceipt->id)->lockForUpdate()->firstOrFail();
             $po = LocalPurchaseOrder::whereKey($gr->local_purchase_order_id)->lockForUpdate()->firstOrFail();
             if ($gr->status !== LocalGoodsReceipt::STATUS_AVAILABLE) {
-                throw ValidationException::withMessages(['status' => 'Only an AVAILABLE GR can be edited.']);
+                throw ValidationException::withMessages(['status' => __('local_procurement.validation.gr_edit_available')]);
             }
             $grNumber = trim((string) ($data['gr_number'] ?? ''));
             if ($grNumber === '') {
-                throw ValidationException::withMessages(['gr_number' => 'GR Number is required.']);
+                throw ValidationException::withMessages(['gr_number' => __('local_procurement.validation.gr_required')]);
             }
             if (LocalGoodsReceipt::whereRaw('LOWER(gr_number) = ?', [mb_strtolower($grNumber)])->where('id', '!=', $gr->id)->exists()) {
-                throw ValidationException::withMessages(['gr_number' => 'This GR Number already exists.']);
+                throw ValidationException::withMessages(['gr_number' => __('local_procurement.validation.gr_exists')]);
             }
             $qty = (isset($data['qty']) && $data['qty'] !== null && $data['qty'] !== '') ? (float) $data['qty'] : (float) ($gr->qty ?? 0);
             if ($qty <= 0) {
-                throw ValidationException::withMessages(['qty' => 'Quantity must be a positive number.']);
+                throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_positive')]);
             }
             $before = $gr->toArray();
             $gr->update([
@@ -201,7 +201,7 @@ class LocalProcurementMasterService
         return DB::transaction(function () use ($actor, $goodsReceipt) {
             $gr = LocalGoodsReceipt::whereKey($goodsReceipt->id)->lockForUpdate()->firstOrFail();
             if ($gr->status !== LocalGoodsReceipt::STATUS_AVAILABLE) {
-                throw ValidationException::withMessages(['status' => 'Only an AVAILABLE GR can be cancelled.']);
+                throw ValidationException::withMessages(['status' => __('local_procurement.validation.gr_cancel_available')]);
             }
             $gr->update(['status' => LocalGoodsReceipt::STATUS_CANCELLED, 'updated_by' => $actor->id]);
             $this->audit->record($gr, 'gr_cancelled', $actor, ['status' => LocalGoodsReceipt::STATUS_AVAILABLE], ['status' => LocalGoodsReceipt::STATUS_CANCELLED]);
@@ -221,7 +221,7 @@ class LocalProcurementMasterService
     {
         $value = trim((string) $value);
         if (! preg_match('/^\d{1,18}(?:\.\d{1,2})?$/', $value) || bccomp($value, '0', 2) <= 0) {
-            throw ValidationException::withMessages([$field => 'Amount must be a positive number with up to two decimal places.']);
+            throw ValidationException::withMessages([$field => __('local_procurement.validation.amount_positive')]);
         }
 
         if (! str_contains($value, '.')) {

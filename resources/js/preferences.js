@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 export function resolveEffectiveTheme(choice, prefersDark) {
     return choice === 'system' ? (prefersDark ? 'dark' : 'light') : choice;
 }
@@ -70,7 +72,7 @@ export function bindDashboardReorder(documentRef) {
 
             const updated = Array.from(list.querySelectorAll('[data-dashboard-choice]'));
             const status = list.closest('[data-dashboard-section]')?.querySelector('[data-dashboard-status]');
-            if (status) status.textContent = row.dataset.widgetLabel + ' is at position ' + (updated.indexOf(row) + 1) + ' of ' + updated.length + '. Save Changes to keep this order.';
+            if (status) status.textContent = t('js.dashboard.position', { label: row.dataset.widgetLabel, position: updated.indexOf(row) + 1, total: updated.length });
             button.focus();
         });
     });
@@ -143,7 +145,7 @@ export function bindDashboardDragAndDrop(documentRef) {
                 const updated = Array.from(list.querySelectorAll('[data-dashboard-choice]'));
                 const status = list.closest('[data-dashboard-section]')?.querySelector('[data-dashboard-status]');
                 if (status) {
-                    status.textContent = draggedRow.dataset.widgetLabel + ' is at position ' + (updated.indexOf(draggedRow) + 1) + ' of ' + updated.length + '. Save Changes to keep this order.';
+                status.textContent = t('js.dashboard.position', { label: draggedRow.dataset.widgetLabel, position: updated.indexOf(draggedRow) + 1, total: updated.length });
                 }
             }
 

@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'blade' => implode("\n", [
+        '<!-- Retained offset',
+        'comment -->',
+        '<style>',
+        '  .example { color: red; }',
+        '</style>',
+        "<span>{{ \$ready ? 'READY_TO_PAY' : __('common.empty') }}</span>",
+        "<p>{{ \$ok ? __('common.good') : 'Pending approval' }}</p>",
+        '<span>OPEN</span>',
+        '@if($visible)',
+        '    Waiting for inspection',
+        '@else',
+        '    No inspection found',
+        '@endif',
+        '<script>',
+        '// A comment must not shift following source lines.',
+        "const label = window.AdasiI18n.choice('js.files', count);",
+        'status.textContent = `Invoice ${invoice} saved.`;',
+        '</script>',
+    ]),
+    'php' => implode("\n", [
+        '<?php',
+        '/* A multiline comment',
+        '   retains line offsets. */',
+        '$message = "Shipment {$shipment->number} has arrived.";',
+        'throw new DomainException("Invoice {$invoice} cannot be paid.");',
+        "return ['label' => \$open ? 'Open' : 'Closed'];",
+    ]),
+    'js' => implode("\n", [
+        '// A comment must not shift following source lines.',
+        "const text = window.AdasiI18n.t('js.saved', { name });",
+        "const countText = AdasiI18n.choice('js.files', count);",
+        "const sample = '// not a comment';",
+        "const url = 'https://example.test/a';",
+        'toast.textContent = `Saved ${count} files.`;',
+    ]),
+    'blade_alpine' => implode("\n", [
+        "<div x-data=\"{ disabled: true, emptyText: 'No options are available', close() { if (this.disabled) return; } }\"></div>",
+        '<span>Visible copy</span>',
+    ]),
+    'blade_x_text' => '<span x-text="allowed ? \'Ready\' : window.AdasiI18n.t(\'js.waiting\')"></span>',
+];

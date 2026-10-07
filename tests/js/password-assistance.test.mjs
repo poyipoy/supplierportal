@@ -1,3 +1,5 @@
+import { installI18n } from './i18n-fixture.mjs';
+globalThis.window = installI18n(globalThis.window || {});
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { copyAssistanceText, bootPasswordAssistance } from '../../resources/js/password-assistance.js';

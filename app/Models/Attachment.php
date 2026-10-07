@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Attachment extends Model
 {
+    use HasHashids;
+
     protected $fillable = [
         'attachable_type',
         'attachable_id',

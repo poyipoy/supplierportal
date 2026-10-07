@@ -1,22 +1,22 @@
 @extends('layouts.app')
-@section('title', 'Dashboard Supplier Lokal - Portal ADASI')
-@section('page-title', 'Dashboard Invoice Lokal')
+@section('title', __('local_invoice.dashboard.title'))
+@section('page-title', __('local_invoice.dashboard.page_heading'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="Dashboard Supplier Lokal"
-        description="Ajukan invoice digital, pantau verifikasi dokumen fisik, dan monitor jadwal pembayaran."
-        eyebrow="Penagihan & Invoice Lokal"
+        :title="__('local_invoice.dashboard.heading')"
+        :description="__('local_invoice.dashboard.description')"
+        :eyebrow="__('local_invoice.dashboard.eyebrow')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary">
                 <x-ui.icon name="plus" size="sm" />
-                <span>Ajukan Invoice</span>
+                <span>{{ __('local_invoice.actions.submit') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('local-supplier.invoices.index')" variant="outline">
                 <x-ui.icon name="list" size="sm" />
-                <span>Lihat Semua Invoice</span>
+                <span>{{ __('local_invoice.dashboard.all') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -32,35 +32,35 @@
 
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-5 tw-gap-4">
         <x-ui.metric-card
-            label="Total Diajukan"
+            :label="__('local_invoice.dashboard.submitted')"
             :value="$regionalFormatter->number((string) ($totalInvoices), 'plain')"
             icon="receipt"
             tone="primary"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
-            label="Dalam Proses"
+            :label="__('local_invoice.dashboard.processing')"
             :value="$regionalFormatter->number((string) ($inProgress), 'plain')"
             icon="clock"
             tone="warning"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
-            label="Perlu Revisi"
+            :label="__('local_invoice.dashboard.revision')"
             :value="$regionalFormatter->number((string) ($counts['NEED_REVISION'] ?? 0), 'plain')"
             icon="alert-circle"
             tone="error"
             :href="route('local-supplier.invoices.index', ['status' => 'NEED_REVISION'])"
         />
         <x-ui.metric-card
-            label="Siap Dibayar"
+            :label="__('local_invoice.labels.ready_to_pay')"
             :value="$regionalFormatter->number((string) ($readyToPay), 'plain')"
             icon="check-circle"
             tone="success"
             :href="route('local-supplier.invoices.index')"
         />
         <x-ui.metric-card
-            label="Selesai / Lunas"
+            :label="__('local_invoice.labels.completed')"
             :value="$regionalFormatter->number((string) ($counts['COMPLETED'] ?? 0), 'plain')"
             icon="check"
             tone="primary"
@@ -91,7 +91,7 @@
             <div>
                 <x-ui.button :href="route('local-supplier.invoices.create')" variant="outline" size="sm">
                     <x-ui.icon name="upload-cloud" size="sm" />
-                    <span>Upload Invoice Baru</span>
+                    <span>{{ __('local_invoice.actions.upload_new') }}</span>
                 </x-ui.button>
             </div>
         </div>
@@ -101,12 +101,12 @@
     <x-slot:invoices>
     {{-- Recent Invoices --}}
     <x-ui.data-table
-        title="Invoice Terbaru"
-        description="5 pengajuan invoice terakhir Anda."
+        :title="__('finance.labels.invoices_recent')"
+        :description="__('finance.labels.invoice_mine_help')"
     >
         <x-slot:toolbar>
             <x-ui.button :href="route('local-supplier.invoices.index')" variant="ghost" size="sm">
-                <span>Lihat Semua Invoice</span>
+                <span>{{ __('local_invoice.dashboard.all') }}</span>
                 <x-ui.icon name="arrow-right" size="sm" />
             </x-ui.button>
         </x-slot:toolbar>

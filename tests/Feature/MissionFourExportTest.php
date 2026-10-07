@@ -229,7 +229,7 @@ class MissionFourExportTest extends TestCase
 
         $emptySheet = $this->spreadsheetFor(new QuotationsExport(['pr_number' => 'NO-MATCH']))->getActiveSheet();
         $this->assertSame(1, $emptySheet->getHighestRow());
-        $this->assertSame('Submitted At', $emptySheet->getCell('Q1')->getValue());
+        $this->assertSame('Submitted At (WIB)', $emptySheet->getCell('Q1')->getValue());
 
         Carbon::setTestNow('2026-08-03 10:11:12');
         Queue::fake();

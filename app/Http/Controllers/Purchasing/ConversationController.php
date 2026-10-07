@@ -67,7 +67,7 @@ class ConversationController extends Controller
             ->exists();
 
         if (! $hasQuotation) {
-            return back()->with('error', 'This supplier does not have a quotation for this requisition yet.');
+            return back()->with('error', __('purchasing.copy.this_supplier_does_not_have_a_quotation_for_this_requisition_yet'));
         }
 
         // Find an existing conversation.

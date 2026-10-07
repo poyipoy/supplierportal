@@ -117,7 +117,7 @@ class ConversationMessageController extends Controller
 
         if ($body === '' && ! $hasAttachments) {
             throw ValidationException::withMessages([
-                'body' => 'Enter a message or attach at least one file.',
+                'body' => __('notifications.conversation.empty_message'),
             ]);
         }
 
@@ -144,7 +144,7 @@ class ConversationMessageController extends Controller
             $senderName = auth()->user()->name;
             $preview = $message->body !== ''
                 ? Str::limit($message->body, 50)
-                : 'Sent an attachment in the chat.';
+                : '';
 
             // Determine the correct route for the notification URL based on partner's role
             $routePrefix = $partner->role === 'purchasing' ? 'purchasing' : 'supplier';
@@ -154,14 +154,15 @@ class ConversationMessageController extends Controller
                 $partner,
                 'conversation.message_created',
                 "conversation.message_created:{$message->id}",
-                'New message from '.$senderName,
-                $preview,
+                'notifications.chat.message_title',
+                $message->body !== '' ? 'notifications.chat.message_body' : 'notifications.chat.attachment_body',
                 $url,
                 'message-circle-more',
                 [
                     'category' => NotificationCategory::CHAT,
                     'conversation_id' => $conversation->id,
                 ],
+                ['sender' => $senderName, 'preview' => $preview],
             );
         }
 
@@ -211,7 +212,7 @@ class ConversationMessageController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Conversation notifications muted.');
+        return back()->with('success', __('notifications.conversation.muted'));
     }
 
     public function unmute(Request $request, $id)
@@ -233,7 +234,7 @@ class ConversationMessageController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Conversation notifications unmuted.');
+        return back()->with('success', __('notifications.conversation.unmuted'));
     }
 
     public function quickAction(Request $request, $id): JsonResponse
@@ -242,7 +243,7 @@ class ConversationMessageController extends Controller
         $this->authorize('message', $conversation);
 
         if (auth()->user()->role !== 'purchasing') {
-            abort(403, 'Only Purchasing can run negotiation actions.');
+            abort(403, __('notifications.conversation.purchasing_only'));
         }
 
         $validated = $request->validate([
@@ -254,7 +255,7 @@ class ConversationMessageController extends Controller
 
         if (! $quotation) {
             throw ValidationException::withMessages([
-                'action' => 'No related quotation was found for this conversation.',
+                'action' => __('notifications.conversation.no_quotation'),
             ]);
         }
 
@@ -262,7 +263,7 @@ class ConversationMessageController extends Controller
 
         if (in_array($validated['action'], ['request_price_revision', 'reject_quotation'], true) && $note === '') {
             throw ValidationException::withMessages([
-                'note' => 'Notes are required for this action.',
+                'note' => __('notifications.conversation.note_required'),
             ]);
         }
 
@@ -277,7 +278,7 @@ class ConversationMessageController extends Controller
                     || PrItemAward::where('quotation_id', $quotation->id)
                         ->orWhereIn('quotation_item_id', $quotation->items()->select('id'))->exists())) {
                 throw ValidationException::withMessages([
-                    'action' => 'This quotation is used by an award or Purchase Order and cannot be changed.',
+                    'action' => __('notifications.conversation.quotation_in_use'),
                 ]);
             }
 
@@ -286,15 +287,13 @@ class ConversationMessageController extends Controller
                 'request_validity_extension' => $this->sendActionMessage(
                     $conversation,
                     $quotation,
-                    'Please extend the quotation validity for PR '
-                        .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id).'.',
+                    __('notifications.conversation.extend_validity', ['pr_number' => $quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id]),
                     $note
                 ),
                 'request_delivery_confirmation' => $this->sendActionMessage(
                     $conversation,
                     $quotation,
-                    'Please confirm the latest estimated delivery for PR '
-                        .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id).'.',
+                    __('notifications.conversation.confirm_delivery', ['pr_number' => $quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id]),
                     $note
                 ),
                 'accept_quotation' => $this->acceptQuotation($conversation, $quotation),
@@ -303,10 +302,10 @@ class ConversationMessageController extends Controller
         });
 
         $notification = match ($validated['action']) {
-            'request_price_revision' => ['quotation.revision_requested', 'Quotation Revision Requested', 'Purchasing requested a quotation revision for PR :pr_number.', NotificationCategory::QUOTATION],
-            'accept_quotation' => ['quotation.accepted', 'Quotation Accepted', 'Quotation for PR :pr_number has been accepted by Purchasing.', NotificationCategory::QUOTATION],
-            'reject_quotation' => ['quotation.rejected', 'Quotation Rejected', 'Quotation for PR :pr_number was rejected by Purchasing.', NotificationCategory::QUOTATION],
-            default => ['quotation.negotiation_message', 'New Negotiation Message', 'Purchasing sent a negotiation message for PR :pr_number.', NotificationCategory::CHAT],
+            'request_price_revision' => ['quotation.revision_requested', 'notifications.negotiation.revision.title', 'notifications.negotiation.revision.message', NotificationCategory::QUOTATION],
+            'accept_quotation' => ['quotation.accepted', 'notifications.negotiation.accepted.title', 'notifications.negotiation.accepted.message', NotificationCategory::QUOTATION],
+            'reject_quotation' => ['quotation.rejected', 'notifications.negotiation.rejected.title', 'notifications.negotiation.rejected.message', NotificationCategory::QUOTATION],
+            default => ['quotation.negotiation_message', 'notifications.negotiation.message.title', 'notifications.negotiation.message.message', NotificationCategory::CHAT],
         };
 
         $this->notifySupplier(
@@ -397,8 +396,8 @@ class ConversationMessageController extends Controller
             'context_type' => $conversation->conversable_type === PurchaseRequisition::class ? 'PR' : 'PO',
             'partner_name' => $this->displayName($partner),
             'partner_role' => $partner?->role,
-            'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : 'No messages yet',
-            'latest_time' => $latestMessage?->created_at?->diffForHumans(),
+            'latest_preview' => $latestMessage ? Str::limit($latestMessage->body, 70) : __('notifications.conversation.no_messages'),
+            'latest_time' => $latestMessage?->created_at?->copy()->locale(app()->getLocale())->diffForHumans(),
             'latest_at' => $latestMessage?->created_at?->toIso8601String(),
             'unread_count' => array_key_exists('unread_messages_count', $conversation->getAttributes())
                 ? (int) $conversation->unread_messages_count
@@ -418,10 +417,10 @@ class ConversationMessageController extends Controller
         return [
             'id' => $message->id,
             'sender_id' => $message->sender_id,
-            'sender_name' => $message->sender?->name ?? 'User',
+            'sender_name' => $message->sender?->name ?? __('notifications.conversation.user'),
             'sender' => [
                 'id' => $message->sender_id,
-                'name' => $message->sender?->name ?? 'User',
+                'name' => $message->sender?->name ?? __('notifications.conversation.user'),
             ],
             'body' => $message->body,
             'created_at' => $message->created_at?->toIso8601String(),
@@ -457,13 +456,13 @@ class ConversationMessageController extends Controller
     {
         if ($quotation->purchaseRequisition->status === 'completed') {
             throw ValidationException::withMessages([
-                'action' => 'The PR is completed. A quotation revision cannot be requested.',
+                'action' => __('notifications.conversation.completed_pr'),
             ]);
         }
 
         if (! $quotation->canRequestRevision()) {
             throw ValidationException::withMessages([
-                'action' => 'A revision can only be requested for submitted quotations that have not been used to create a PO.',
+                'action' => __('notifications.conversation.revision_ineligible'),
             ]);
         }
 
@@ -476,9 +475,10 @@ class ConversationMessageController extends Controller
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
-            'body' => 'Please revise the quotation price for PR '
-                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
-                .".\n\nRevision notes: ".$note,
+            'body' => __('notifications.conversation.revise_price', [
+                'pr_number' => $quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id,
+                'note' => $note,
+            ]),
         ]);
 
         $conversation->forceFill([
@@ -493,19 +493,19 @@ class ConversationMessageController extends Controller
     {
         if (! $quotation->canApproveBy(auth()->user())) {
             throw ValidationException::withMessages([
-                'action' => 'This quotation cannot be accepted.',
+                'action' => __('notifications.conversation.cannot_accept'),
             ]);
         }
 
         if (! $quotation->hasAvailableItems()) {
             throw ValidationException::withMessages([
-                'action' => 'This quotation cannot be accepted because all items are marked as not available by the supplier.',
+                'action' => __('notifications.conversation.all_unavailable'),
             ]);
         }
 
         if ($quotation->isExpired()) {
             throw ValidationException::withMessages([
-                'action' => 'This quotation has expired. Ask the supplier to submit a revision before accepting it.',
+                'action' => __('notifications.conversation.expired'),
             ]);
         }
 
@@ -517,9 +517,7 @@ class ConversationMessageController extends Controller
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
-            'body' => 'Quotation for PR '
-                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
-                .' has been accepted by Purchasing.',
+            'body' => __('notifications.negotiation.accepted.message', ['pr_number' => $quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id]),
         ]);
 
         $conversation->markResolved();
@@ -531,13 +529,13 @@ class ConversationMessageController extends Controller
     {
         if (! $quotation->canApproveBy(auth()->user())) {
             throw ValidationException::withMessages([
-                'action' => 'This quotation cannot be rejected.',
+                'action' => __('notifications.conversation.cannot_reject'),
             ]);
         }
 
         if (! $quotation->hasAvailableItems()) {
             throw ValidationException::withMessages([
-                'action' => 'Cannot reject a quotation that has no available items.',
+                'action' => __('notifications.conversation.no_available_items'),
             ]);
         }
 
@@ -550,9 +548,10 @@ class ConversationMessageController extends Controller
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
-            'body' => 'Quotation for PR '
-                .($quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id)
-                ." was rejected by Purchasing.\n\nNotes: ".$note,
+            'body' => __('notifications.conversation.rejected_with_note', [
+                'pr_number' => $quotation->purchaseRequisition->pr_number ?? '#'.$quotation->pr_id,
+                'note' => $note,
+            ]),
         ]);
 
         $conversation->markResolved();
@@ -563,7 +562,7 @@ class ConversationMessageController extends Controller
     private function sendActionMessage(Conversation $conversation, Quotation $quotation, string $body, string $note = ''): Message
     {
         if ($note !== '') {
-            $body .= "\n\nNotes: ".$note;
+            $body = __('notifications.conversation.with_note', ['message' => $body, 'note' => $note]);
         }
 
         $message = $conversation->messages()->create([
@@ -614,7 +613,7 @@ class ConversationMessageController extends Controller
     private function displayName(?User $user): string
     {
         if (! $user) {
-            return 'User';
+            return __('notifications.conversation.user');
         }
 
         if ($user->role === 'supplier') {

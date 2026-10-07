@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Pengajuan Invoice: ' . $invoice->submission_number . ' - ADASI Portal')
-@section('page-title', 'Detail Invoice')
+@section('title', __('local_invoice.form.detail_title', ['number' => $invoice->submission_number]))
+@section('page-title', __('local_invoice.labels.detail'))
 @section('content')
 @include('local-invoices.detail', ['portal'=>'local-supplier'])
 @endsection

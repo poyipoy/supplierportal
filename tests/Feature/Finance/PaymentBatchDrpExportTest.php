@@ -87,6 +87,131 @@ class PaymentBatchDrpExportTest extends TestCase
         ], $attributes));
     }
 
+    public function test_bilingual_drp_captions_preserve_financial_cells_and_formulas(): void
+    {
+        $batch = $this->createSupplierBatch(['created_at' => '2026-05-08 10:00:00']);
+        $group = $batch->groups()->create([
+            'payee_type' => 'supplier', 'payee_id' => $this->supplierUser->id,
+            'payee_name' => 'Locale Workbook Supplier', 'bank_name' => 'BCA',
+            'account_number' => '00112233', 'account_holder_name' => 'Locale Workbook Supplier',
+            'subtotal_amount' => 10000000, 'bank_fee' => 2500,
+            'net_payment_amount' => 9997500, 'status' => PaymentGroup::STATUS_UNPAID,
+        ]);
+        $invoice = $this->createInvoice(['invoice_number' => 'INV-LOCALE-DRP']);
+        $group->items()->create([
+            'payable_type' => LocalInvoice::class, 'payable_id' => $invoice->id,
+            'amount' => 10000000, 'status' => PaymentItem::STATUS_ACTIVE,
+        ]);
+        $cells = null;
+        foreach (['en' => 'MAY', 'id' => 'MEI'] as $locale => $month) {
+            app()->setLocale($locale);
+            $workbook = (new PaymentBatchDrpSheetRenderer)->render(collect([$batch]), locale: $locale);
+            $sheet = $workbook->getSheetByName('01');
+            $this->assertSame('  '.__('exports.drp.title', [], $locale), $sheet->getCell('D2')->getValue());
+            $this->assertSame($month, $sheet->getCell('D3')->getValue());
+            $this->assertSame(__('exports.drp.week', ['week' => 2, 'date' => '08/05/2026'], $locale), $sheet->getCell('D5')->getValue());
+            $this->assertSame(__('exports.drp.total', [], $locale), $sheet->getCell('E9')->getValue());
+            $this->assertSame(__('exports.drp.prepared_by', [], $locale), $sheet->getCell('A11')->getValue());
+            $this->assertSame(__('exports.drp.checked_by', [], $locale), $sheet->getCell('E11')->getValue());
+            $this->assertSame(__('exports.drp.acknowledged_by', [], $locale), $sheet->getCell('F11')->getValue());
+            $this->assertSame(__('exports.drp.approved_by', [], $locale), $sheet->getCell('H11')->getValue());
+
+            $financial = [$sheet->getCell('G8')->getValue(), $sheet->getCell('I8')->getValue(), $sheet->getCell('I9')->getValue(), $sheet->getCell('I9')->getCalculatedValue()];
+            $this->assertSame('00112233', (string) $financial[0]);
+            $this->assertEquals(10000000, $financial[1]);
+            $this->assertSame('=SUM(I8:I8)', $financial[2]);
+            if ($cells !== null) {
+                $this->assertSame($cells, $financial);
+            }
+            $cells = $financial;
+            $workbook->disconnectWorksheets();
+        }
+    }
+
+    public function test_export_pipeline_honors_active_app_locale_for_recap_file(): void
+    {
+        $batch = $this->createSupplierBatch(['created_at' => '2026-05-08 10:00:00']);
+        $group = $batch->groups()->create([
+            'payee_type' => 'supplier',
+            'payee_id' => $this->supplierUser->id,
+            'payee_name' => 'PT Lokal Nusantara',
+            'bank_name' => 'BCA',
+            'account_number' => '99887766',
+            'account_holder_name' => 'PT Lokal Nusantara',
+            'subtotal_amount' => 5000000,
+            'bank_fee' => 0,
+            'net_payment_amount' => 5000000,
+            'status' => PaymentGroup::STATUS_UNPAID,
+        ]);
+        $inv = $this->createInvoice(['invoice_number' => 'INV-PIPELINE-01']);
+        $group->items()->create([
+            'payable_type' => LocalInvoice::class,
+            'payable_id' => $inv->id,
+            'amount' => 5000000,
+            'status' => PaymentItem::STATUS_ACTIVE,
+        ]);
+
+        $this->actingAs($this->finance);
+
+        // Test Indonesian export
+        app()->setLocale('id');
+        $idRecord = ExportDispatcher::dispatch(
+            'DRP Rekap ID',
+            PaymentBatchDrpExport::class,
+            [$this->finance->id, [$batch->id]],
+            'drp_id.xlsx'
+        );
+        (new ProcessExportJob($idRecord->id))->handle(app(ExportProgressService::class));
+        (new GenerateWorkbookJob($idRecord->id, 'id'))->handle(app(ExportProgressService::class));
+        $idRecord->refresh();
+
+        $tempIdFile = tempnam(sys_get_temp_dir(), 'test_id_');
+        file_put_contents($tempIdFile, Storage::disk('private')->get($idRecord->file_path));
+        $idWorkbook = IOFactory::load($tempIdFile);
+        $idSheet = $idWorkbook->getSheetByName('01');
+
+        $this->assertStringContainsString('REKAP PEMBAYARAN SUPPLIER', (string) $idSheet->getCell('D2')->getValue());
+        $this->assertSame('MEI', (string) $idSheet->getCell('D3')->getValue());
+        $this->assertStringContainsString('MINGGU KE-2', (string) $idSheet->getCell('D5')->getValue());
+        $this->assertSame('TOTAL PEMBAYARAN', (string) $idSheet->getCell('E9')->getValue());
+        $this->assertSame('DIBUAT OLEH,', (string) $idSheet->getCell('A11')->getValue());
+        $this->assertSame('DICEK OLEH,', (string) $idSheet->getCell('E11')->getValue());
+        $this->assertSame('DIKETAHUI OLEH,', (string) $idSheet->getCell('F11')->getValue());
+        $this->assertSame('DISETUJUI OLEH,', (string) $idSheet->getCell('H11')->getValue());
+
+        $idWorkbook->disconnectWorksheets();
+        @unlink($tempIdFile);
+
+        // Test English export
+        app()->setLocale('en');
+        $enRecord = ExportDispatcher::dispatch(
+            'DRP Recap EN',
+            PaymentBatchDrpExport::class,
+            [$this->finance->id, [$batch->id]],
+            'drp_en.xlsx'
+        );
+        (new ProcessExportJob($enRecord->id))->handle(app(ExportProgressService::class));
+        (new GenerateWorkbookJob($enRecord->id, 'en'))->handle(app(ExportProgressService::class));
+        $enRecord->refresh();
+
+        $tempEnFile = tempnam(sys_get_temp_dir(), 'test_en_');
+        file_put_contents($tempEnFile, Storage::disk('private')->get($enRecord->file_path));
+        $enWorkbook = IOFactory::load($tempEnFile);
+        $enSheet = $enWorkbook->getSheetByName('01');
+
+        $this->assertStringContainsString('SUPPLIER PAYMENT RECAP', (string) $enSheet->getCell('D2')->getValue());
+        $this->assertSame('MAY', (string) $enSheet->getCell('D3')->getValue());
+        $this->assertStringContainsString('WEEK 2', (string) $enSheet->getCell('D5')->getValue());
+        $this->assertSame('TOTAL PAYMENT', (string) $enSheet->getCell('E9')->getValue());
+        $this->assertSame('PREPARED BY,', (string) $enSheet->getCell('A11')->getValue());
+        $this->assertSame('CHECKED BY,', (string) $enSheet->getCell('E11')->getValue());
+        $this->assertSame('ACKNOWLEDGED BY,', (string) $enSheet->getCell('F11')->getValue());
+        $this->assertSame('APPROVED BY,', (string) $enSheet->getCell('H11')->getValue());
+
+        $enWorkbook->disconnectWorksheets();
+        @unlink($tempEnFile);
+    }
+
     public function test_guest_cannot_export_drp(): void
     {
         $batch = $this->createSupplierBatch();
@@ -273,9 +398,9 @@ class PaymentBatchDrpExportTest extends TestCase
 
         // Header assertions
         $this->assertStringContainsString('PT ASTRA DAIDO STEEL INDONESIA', (string) $sheet->getCell('D1')->getValue());
-        $this->assertStringContainsString('REKAP PEMBAYARAN SUPPLIER', (string) $sheet->getCell('D2')->getValue());
+        $this->assertStringContainsString(__('exports.drp.title', [], 'en'), (string) $sheet->getCell('D2')->getValue());
         $this->assertSame('SEPTEMBER', (string) $sheet->getCell('D3')->getValue());
-        $this->assertSame('MINGGU KE -2  (08/09/2026 )', (string) $sheet->getCell('D5')->getValue());
+        $this->assertSame(__('exports.drp.week', ['week' => 2, 'date' => '08/09/2026'], 'en'), (string) $sheet->getCell('D5')->getValue());
 
         // Data row 1 (Row 8)
         $this->assertEquals(1, $sheet->getCell('A8')->getValue());
@@ -296,7 +421,7 @@ class PaymentBatchDrpExportTest extends TestCase
         $this->assertEquals(25000000, $sheet->getCell('I9')->getValue());
 
         // Total row at Row 10
-        $this->assertStringContainsString('TOTAL PEMBAYARAN', (string) $sheet->getCell('E10')->getValue());
+        $this->assertStringContainsString(__('exports.drp.total', [], 'en'), (string) $sheet->getCell('E10')->getValue());
         $this->assertSame('=SUM(I8:I9)', (string) $sheet->getCell('I10')->getValue());
         $this->assertEquals(40000000, $sheet->getCell('I10')->getCalculatedValue());
 

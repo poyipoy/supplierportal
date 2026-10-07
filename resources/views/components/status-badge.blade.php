@@ -19,22 +19,36 @@
     };
 
     $label = match($type) {
-        'pr'        => StatusHelper::prLabel($status),
-        'quotation' => StatusHelper::quotationLabel($status),
-        'po'        => StatusHelper::poLabel($status, $isOverdue),
-        'claim'     => StatusHelper::claimLabel($status),
-        'qc'        => StatusHelper::qcLabel($status),
-        'doc'       => StatusHelper::docLabel($status),
-        default     => ucwords(str_replace('_', ' ', $status)),
+        'pr'            => StatusHelper::prLabel($status),
+        'quotation'     => StatusHelper::quotationLabel($status),
+        'po'            => StatusHelper::poLabel($status, $isOverdue),
+        'claim'         => StatusHelper::claimLabel($status),
+        'qc'            => StatusHelper::qcLabel($status),
+        'doc'           => StatusHelper::docLabel($status),
+        'shipment'      => StatusHelper::shipmentLabel($status),
+        'local_invoice' => StatusHelper::localInvoiceLabel($status),
+        'finance'       => StatusHelper::localFinanceLabel($status),
+        'ga'            => StatusHelper::gaClaimLabel($status),
+        'registration'  => StatusHelper::registrationLabel($status),
+        default         => StatusHelper::localFinanceLabel($status),
     };
 
-    $tone = str_contains($badgeClass, 'danger')
-        ? 'error'
-        : (str_contains($badgeClass, 'warning')
-            ? 'warning'
-            : (str_contains($badgeClass, 'success')
-                ? 'success'
-                : (str_contains($badgeClass, 'primary') || str_contains($badgeClass, 'info') ? 'info' : 'neutral')));
+    $tone = match($type) {
+        'shipment'      => StatusHelper::shipmentTone($status),
+        'local_invoice' => StatusHelper::localInvoiceTone($status),
+        'finance'       => StatusHelper::localFinanceTone($status),
+        'ga'            => StatusHelper::gaClaimTone($status),
+        'registration'  => StatusHelper::registrationTone($status),
+        default         => (
+            str_contains($badgeClass, 'danger')
+                ? 'error'
+                : (str_contains($badgeClass, 'warning')
+                    ? 'warning'
+                    : (str_contains($badgeClass, 'success')
+                        ? 'success'
+                        : (str_contains($badgeClass, 'primary') || str_contains($badgeClass, 'info') ? 'info' : 'neutral')))
+        ),
+    };
 @endphp
 
 <x-ui.status-chip :tone="$tone" :size="$size === 'lg' ? 'md' : 'sm'" {{ $attributes }}>{{ $label }}</x-ui.status-chip>

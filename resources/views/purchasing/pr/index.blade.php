@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Material Requisition List - ADASI Portal')
-@section('page-title', 'Purchase Requisitions')
+@section('title', __('purchasing.copy.material_requisition_list_adasi_portal'))
+@section('page-title', __('purchasing.copy.purchase_requisitions'))
 
 @push('styles')
 <style>
@@ -17,9 +17,9 @@
 <div class="tw-grid tw-gap-4">
     {{-- 1. Compact Page Header --}}
     <x-ui.page-header
-        title="Purchase Requisition"
-        eyebrow="Purchasing"
-        description="Create, filter, and monitor material requisitions across active procurement periods."
+        :title="__('purchasing.copy.purchase_requisition')"
+        :eyebrow="__('purchasing.copy.purchasing')"
+        :description="__('purchasing.copy.create_filter_and_monitor_material_requisitions_across_active_procurement_periods')"
     >
         <x-slot:actions>
             <x-ui.button
@@ -29,18 +29,18 @@
                 data-async-export
                 id="exportRequisitionsBtn"
                 :data-export-url="route('purchasing.export.requisitions')"
-                data-export-source-singular="requisition"
-                data-export-source-plural="requisitions"
+                data-export-source-singular="{{ __('exports.sources.requisition') }}"
+                data-export-source-plural="{{ __('exports.sources.requisitions') }}"
                 data-export-count-table="#prTable"
-                data-export-row-label="material rows"
-                data-export-row-explanation="Each material item will be written as a separate Excel row."
+                data-export-row-label="{{ __('purchasing.copy.material_rows') }}"
+                data-export-row-explanation="{{ __('purchasing.copy.each_material_item_will_be_written_as_a_separate_excel_row') }}"
             >
                 <x-ui.icon name="file-spreadsheet" size="sm" />
-                <span>Export Excel</span>
+                <span>{{ __('purchasing.copy.export_excel') }}</span>
             </x-ui.button>
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
                 <x-ui.icon name="plus-circle" size="sm" />
-                <span>Create Requisition</span>
+                <span>{{ __('purchasing.copy.create_requisition') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -50,8 +50,8 @@
         <x-slot:filters>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <div style="min-width: 200px;">
-                    <select name="period_id" id="period_id" class="form-select form-select-sm" aria-label="Filter by Period">
-                        <option value="">All Periods</option>
+                    <select name="period_id" id="period_id" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_period') }}">
+                        <option value="">{{ __('purchasing.copy.all_periods') }}</option>
                         @foreach($periods as $period)
                             <option value="{{ $period->id }}">{{ $period->display_label }}</option>
                         @endforeach
@@ -59,19 +59,19 @@
                 </div>
 
                 <div style="min-width: 150px;">
-                    <select name="status" id="status" class="form-select form-select-sm" aria-label="Filter by Status">
-                        <option value="">All Statuses</option>
-                        <option value="draft">Draft</option>
-                        <option value="submitted">Submitted</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="bidding">Bidding</option>
-                        <option value="completed">Completed</option>
+                    <select name="status" id="status" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+                        <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
+                        <option value="draft">{{ __('purchasing.copy.draft') }}</option>
+                        <option value="submitted">{{ __('purchasing.copy.submitted') }}</option>
+                        <option value="rejected">{{ __('purchasing.copy.rejected') }}</option>
+                        <option value="bidding">{{ __('purchasing.copy.bidding') }}</option>
+                        <option value="completed">{{ __('purchasing.copy.completed') }}</option>
                     </select>
                 </div>
 
                 <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset">
                     <x-ui.icon name="rotate-ccw" />
-                    <span>Reset</span>
+                    <span>{{ __('purchasing.copy.reset') }}</span>
                 </x-ui.button>
             </div>
             <div id="filterChips" class="d-none flex-wrap tw-gap-1.5 align-items-center ms-2" aria-live="polite"></div>
@@ -83,16 +83,16 @@
         <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="prTable">
             <thead class="table-light text-center">
                 <tr>
-                    <th scope="col" style="width: 40px;">No</th>
-                    <th scope="col">PR No.</th>
-                    <th scope="col">Period</th>
-                    <th scope="col">Created By</th>
-                    <th scope="col">Suppliers</th>
-                    <th scope="col">Items</th>
-                    <th scope="col" class="text-end">Total KG</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Date Created</th>
-                    <th scope="col">Action</th>
+                    <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.period') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.created_by') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.suppliers') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.items') }}</th>
+                    <th scope="col" class="text-end">{{ __('purchasing.copy.total_kg') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.status') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.date_created') }}</th>
+                    <th scope="col">{{ __('purchasing.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -127,6 +127,7 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
             language: {},
+
             order: []
         });
 
@@ -154,7 +155,7 @@
                 const $remove = $('<button>', {
                     type: 'button',
                     class: 'ui-focus-ring tw-inline-flex tw-h-5 tw-w-5 tw-items-center tw-justify-center tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-p-0 tw-text-primary hover:tw-bg-primary/10',
-                    'aria-label': `Remove ${label} filter`,
+                    'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
                     text: '×'
                 });
 
@@ -165,8 +166,8 @@
             };
 
             const chips = [];
-            if (periodText) chips.push(createChip(`Period: ${periodText}`, 'period_id'));
-            if (statusText) chips.push(createChip(`Status: ${statusText}`, 'status'));
+            if (periodText) chips.push(createChip(window.AdasiI18n.t('js.filters.period', { period: periodText }), 'period_id'));
+            if (statusText) chips.push(createChip(@js(__('common.final_copy.status')) + ' ' + statusText, 'status'));
 
             const $container = $('#filterChips');
             const $resetBtn = $('#resetFilter');
@@ -200,10 +201,10 @@
             const $btn = $(this);
             const form = $btn.closest('form');
             AdasiAlert.confirmDanger({
-                title: @json('Are you sure you want to delete?'),
-                text: @json('This material requisition will be permanently deleted!'),
-                confirmText: @json('Yes, delete!'),
-                cancelText: @json('Cancel')
+                title: @json(__('purchasing.copy.are_you_sure_you_want_to_delete')),
+                text: @json(__('purchasing.copy.this_material_requisition_will_be_permanently_deleted')),
+                confirmText: @json(__('purchasing.audit_ui.confirm_delete')),
+                cancelText: @json(__('purchasing.copy.cancel'))
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.AdasiButton?.startLoading($btn[0]);
@@ -223,10 +224,10 @@
             draftSubmitConfirmationOpen = true;
 
             AdasiAlert.confirm({
-                title: @json('Submit Requisition?'),
-                text: @json('Status will change to Submitted and cannot be edited anymore.'),
-                confirmText: @json('Yes, Submit!'),
-                cancelText: @json('Cancel')
+                title: @json(__('purchasing.copy.submit_requisition')),
+                text: @json(__('purchasing.copy.status_will_change_to_submitted_and_cannot_be_edited_anymore')),
+                confirmText: @json(__('purchasing.copy.yes_submit')),
+                cancelText: @json(__('purchasing.copy.cancel'))
             }).then((result) => {
                 draftSubmitConfirmationOpen = false;
 

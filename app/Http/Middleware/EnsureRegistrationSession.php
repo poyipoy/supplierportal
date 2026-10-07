@@ -19,7 +19,7 @@ class EnsureRegistrationSession
 
         if (! $accessId || ! $userId) {
             return redirect()->route('supplier.registration.access-form')
-                ->with('error', __('Please enter your registration reference and access key to view or update your registration.'));
+                ->with('error', __('auth.registration_session.required'));
         }
 
         /** @var SupplierRegistrationAccess|null $access */
@@ -35,7 +35,7 @@ class EnsureRegistrationSession
             $request->session()->forget(['registration_access_id', 'registration_user_id']);
 
             return redirect()->route('supplier.registration.access-form')
-                ->with('error', __('Your registration session has expired or been revoked. Please verify your reference and access key.'));
+                ->with('error', __('auth.registration_session.expired'));
         }
 
         $request->attributes->set('registrationAccess', $access);

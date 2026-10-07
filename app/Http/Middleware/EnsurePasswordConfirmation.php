@@ -26,7 +26,7 @@ class EnsurePasswordConfirmation
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Password confirmation required.',
+                'message' => __('auth.confirmation.required'),
             ], 423);
         }
 

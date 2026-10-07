@@ -202,7 +202,7 @@ class PaymentBatchTransferSheetRenderer
         $validation18->setAllowBlank(true);
         $validation18->setShowInputMessage(true);
         $validation18->setShowErrorMessage(true);
-        $validation18->setPrompt('Disamakan dengan kolom Transaction ID');
+        $validation18->setPrompt(__('exports.prompts.transfer_remark_match'));
         $validation18->setFormula1('18');
         $validation18->setSqref('M1:N1048576');
         $sheet->setDataValidation('M1:N1048576', $validation18);
@@ -214,7 +214,7 @@ class PaymentBatchTransferSheetRenderer
         $validation70->setAllowBlank(true);
         $validation70->setShowInputMessage(true);
         $validation70->setShowErrorMessage(true);
-        $validation70->setPrompt('Tidak lebih dari 70 karakter');
+        $validation70->setPrompt(__('exports.prompts.recipient_name_length'));
         $validation70->setFormula1('70');
         $validation70->setSqref('Q1:Q1048576');
         $sheet->setDataValidation('Q1:Q1048576', $validation70);
@@ -304,7 +304,13 @@ class PaymentBatchTransferSheetRenderer
     {
         $rows = [];
         $globalNo = 1;
-        $debitAccount = config('finance.transfer_debit_account', self::DEFAULT_DEBIT_ACCOUNT);
+        $debitAccount = config('finance.transfer_debit_account');
+        if (empty($debitAccount)) {
+            if (app()->isProduction()) {
+                throw new RuntimeException('Missing required production configuration: ADASI_TRANSFER_DEBIT_ACCOUNT');
+            }
+            $debitAccount = self::DEFAULT_DEBIT_ACCOUNT;
+        }
 
         // Batches are already ordered by created_at ASC, id ASC from the query
         foreach ($batches as $batch) {

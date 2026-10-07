@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Accounting\InvoiceController as AccountingInvoiceController;
+use App\Http\Controllers\Accounting\ReportController as AccountingReportController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AuthAuditLogController;
@@ -11,10 +13,35 @@ use App\Http\Controllers\Admin\PurchaseRequisitionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserTwoFactorController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\LogoutOtherDevicesController;
+use App\Http\Controllers\Auth\PasswordAssistanceController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\ProfileTwoFactorController;
+use App\Http\Controllers\Auth\RevokeSessionController;
 use App\Http\Controllers\Auth\SupplierRegistrationController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ConversationMessageController;
 use App\Http\Controllers\ExportDownloadController;
+use App\Http\Controllers\Finance\FinanceDashboardController;
+use App\Http\Controllers\Finance\FinanceDrpController;
+use App\Http\Controllers\Finance\FinanceDrpPaidController;
+use App\Http\Controllers\Finance\FinanceGaClaimController;
+use App\Http\Controllers\Finance\FinanceInvoiceController;
+use App\Http\Controllers\Finance\FinanceVendorController;
+use App\Http\Controllers\Finance\LocalInvoiceSettlementController;
 use App\Http\Controllers\Finance\LocalProcurementController;
+use App\Http\Controllers\Ga\EmployeeController;
+use App\Http\Controllers\Ga\GaController;
+use App\Http\Controllers\GaClaimDocumentController;
+use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\LocalInvoiceDocumentController;
+use App\Http\Controllers\LocalInvoiceReceiptController;
+use App\Http\Controllers\LocalSupplier\InformationController;
+use App\Http\Controllers\LocalSupplier\InvoiceController as LocalSupplierInvoiceController;
+use App\Http\Controllers\LocalSupplier\PurchaseOrderController as LocalSupplierPurchaseOrderController;
+use App\Http\Controllers\LocalSupplier\VendorProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Purchasing\AwardConsolidationController;
@@ -47,6 +74,8 @@ use App\Http\Controllers\Supplier\SupplierController;
 use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
 use App\Http\Controllers\Supplier\SupplierShipmentController;
+use App\Http\Controllers\SupplierContextController;
+use App\Http\Controllers\SupplierMasterDocumentController;
 use App\Http\Controllers\SupplierRegistrationReviewController;
 use App\Http\Controllers\UserNotificationPreferenceController;
 use App\Http\Controllers\UserPreferenceController;
@@ -54,10 +83,183 @@ use App\Models\PurchaseRequisition;
 use App\Support\PortalContext;
 use Illuminate\Support\Facades\Route;
 
-require __DIR__.'/supplier-local.php';
-require __DIR__.'/accounting.php';
-require __DIR__.'/finance.php';
-require __DIR__.'/ga.php';
+/*
+|--------------------------------------------------------------------------
+| Local Supplier, Context and Shared Local Documents
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:supplier'])->group(function () {
+    Route::get('/supplier-context', [SupplierContextController::class, 'index'])->name('supplier-context.index');
+    Route::post('/supplier-context', [SupplierContextController::class, 'store'])->name('supplier-context.store');
+});
+Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('local-supplier')->name('local-supplier.')->group(function () {
+    Route::get('/dashboard', [LocalSupplierInvoiceController::class, 'dashboard'])->name('dashboard');
+    Route::get('/purchase-orders', [LocalSupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::get('/purchase-orders/search', [LocalSupplierInvoiceController::class, 'searchPurchaseOrders'])->name('purchase-orders.search');
+    Route::get('/purchase-orders/{purchase_order}', [LocalSupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::get('/invoices', [LocalSupplierInvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/invoices/create', [LocalSupplierInvoiceController::class, 'create'])->name('invoices.create');
+    Route::post('/invoices', [LocalSupplierInvoiceController::class, 'store'])->middleware('throttle:30,1')->name('invoices.store');
+    Route::get('/invoices/{invoice}', [LocalSupplierInvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('/invoices/{invoice}/revision', [LocalSupplierInvoiceController::class, 'revision'])->name('invoices.revision');
+    Route::post('/invoices/{invoice}/resubmit', [LocalSupplierInvoiceController::class, 'resubmit'])->middleware('throttle:30,1')->name('invoices.resubmit');
+    Route::post('/invoices/{invoice}/cancel', [LocalSupplierInvoiceController::class, 'cancel'])->middleware('throttle:30,1')->name('invoices.cancel');
+    Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+    Route::get('/vendor-profile', [VendorProfileController::class, 'show'])->name('vendor-profile.show');
+    Route::post('/vendor-profile/change-requests', [VendorProfileController::class, 'storeChangeRequest'])->name('vendor-profile.change-requests.store');
+    Route::post('/vendor-profile/documents', [VendorProfileController::class, 'uploadDocument'])->name('vendor-profile.documents.upload');
+    Route::get('/information', [InformationController::class, 'index'])->name('information');
+});
+Route::get('/local-invoice-documents/{document}', [LocalInvoiceDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,accounting,finance,admin,purchasing'])->name('local-invoice-documents.show');
+Route::get('/supplier-master-documents/{document}', [SupplierMasterDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,finance,purchasing,admin'])->name('supplier-master-documents.show');
+Route::get('/ga-claim-documents/{document}', [GaClaimDocumentController::class, 'show'])->middleware(['auth', 'role:ga,finance,admin'])->name('ga-claim-documents.show');
+
+/*
+|--------------------------------------------------------------------------
+| Accounting Compatibility Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:accounting,finance,admin'])->prefix('accounting')->name('accounting.')->group(function () {
+    Route::get('/dashboard', [AccountingInvoiceController::class, 'dashboard'])->name('dashboard');
+    Route::get('/invoices', [AccountingInvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/physical-verification', [AccountingInvoiceController::class, 'index'])->name('physical-verification');
+    Route::get('/payment-schedule', [AccountingInvoiceController::class, 'index'])->name('payment-schedule');
+    Route::get('/invoices/{invoice}', [AccountingInvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+    Route::get('/reports', [AccountingReportController::class, 'index'])->name('reports');
+    Route::post('/reports/export', [AccountingReportController::class, 'export'])->name('reports.export');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Finance Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:finance,admin,purchasing'])->prefix('finance')->name('finance.')->group(function () {
+    Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+});
+
+Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('finance.')->group(function () {
+    // Dashboard & Forecast
+    Route::get('/dashboard', [FinanceDashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/forecast', [FinanceDashboardController::class, 'forecast'])->name('forecast');
+
+    // Invoice Register & Verification
+    Route::get('/invoices', [FinanceInvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/invoices/{invoice}', [FinanceInvoiceController::class, 'show'])->name('invoices.show');
+
+    // Cashier Physical Receipt
+    Route::post('/invoices/{invoice}/receive-physical', [FinanceInvoiceController::class, 'receivePhysical'])->name('invoices.receive-physical');
+
+    // Section A & Section B Verification
+    Route::post('/invoices/{invoice}/verify-section-a', [FinanceInvoiceController::class, 'verifySectionA'])->name('invoices.verify-section-a');
+    Route::post('/invoices/{invoice}/verify-section-b', [FinanceInvoiceController::class, 'verifySectionB'])->name('invoices.verify-section-b');
+    Route::post('/invoices/{invoice}/approve-ready-to-pay', [FinanceInvoiceController::class, 'approveReadyToPay'])->name('invoices.approve-ready-to-pay');
+    Route::post('/invoices/{invoice}/request-revision', [FinanceInvoiceController::class, 'requestRevision'])->name('invoices.request-revision');
+    Route::post('/invoices/{invoice}/reject', [FinanceInvoiceController::class, 'reject'])->name('invoices.reject');
+
+    // DRP Supplier
+    Route::get('/drp-supplier', [FinanceDrpController::class, 'indexSupplier'])->name('drp.supplier');
+    Route::post('/drp-supplier', [FinanceDrpController::class, 'createSupplierBatch'])->name('drp.supplier.create');
+
+    // DRP GA
+    Route::get('/drp-ga', [FinanceDrpController::class, 'indexGa'])->name('drp.ga');
+
+    // DRP Paid
+    Route::get('/drp-paid', [FinanceDrpPaidController::class, 'index'])->name('drp.paid.index');
+    Route::post('/drp-paid/{batch}/mark-paid', [FinanceDrpPaidController::class, 'markBatchPaid'])->name('drp.paid.mark-paid');
+
+    // GA Claims Register & Verification
+    Route::get('/ga-claims', [FinanceGaClaimController::class, 'index'])->name('ga-claims.index');
+    Route::get('/ga-claims/{claim}', [FinanceGaClaimController::class, 'show'])->name('ga-claims.show');
+    Route::post('/ga-claims/{claim}/verify', [FinanceGaClaimController::class, 'verify'])->name('ga-claims.verify');
+
+    // DRP Bulk Transfer Export (multi-batch → single TARIKAN TRANSFER workbook)
+    Route::post('/drp/export-transfer', [FinanceDrpController::class, 'exportTransferBulk'])->name('drp.export-transfer');
+
+    // DRP Batch Detail, Finalize, Item Removal, Fee Override, Voucher, Pay
+    Route::get('/drp/{batch}/export', [FinanceDrpController::class, 'export'])->name('drp.export');
+    Route::get('/drp/{batch}', [FinanceDrpController::class, 'show'])->name('drp.show');
+    Route::post('/drp/{batch}/finalize', [FinanceDrpController::class, 'finalize'])->name('drp.finalize');
+    Route::post('/drp/{batch}/cancel', [FinanceDrpController::class, 'cancelBatch'])->name('drp.cancel');
+    Route::post('/drp-items/{item}/remove', [FinanceDrpController::class, 'removeItem'])->name('drp.remove-item');
+    Route::post('/drp-groups/{group}/fee-override', [FinanceDrpController::class, 'overrideFee'])->name('drp.override-fee');
+    Route::post('/drp-groups/{group}/voucher', [FinanceDrpController::class, 'assignVoucher'])->name('drp.assign-voucher');
+    Route::post('/drp-groups/{group}/pay', [FinanceDrpController::class, 'markPaid'])->name('drp.mark-paid');
+
+    // Authoritative Local PO / whole-GR master (no delete routes)
+    Route::prefix('local-procurement')->name('local-procurement.')->group(function () {
+        Route::get('/', [LocalProcurementController::class, 'index'])->name('index');
+        Route::get('/create', [LocalProcurementController::class, 'create'])->name('create');
+        Route::post('/', [LocalProcurementController::class, 'store'])->name('store');
+        Route::get('/import/po/template', [LocalProcurementController::class, 'poTemplate'])->name('import.po.template');
+        Route::post('/import/po/preview', [LocalProcurementController::class, 'poPreview'])->middleware('throttle:15,1')->name('import.po.preview');
+        Route::post('/import/po/confirm', [LocalProcurementController::class, 'poConfirm'])->middleware('throttle:15,1')->name('import.po.confirm');
+        Route::get('/import/gr/template', [LocalProcurementController::class, 'grTemplate'])->name('import.gr.template');
+        Route::post('/import/gr/preview', [LocalProcurementController::class, 'grPreview'])->middleware('throttle:15,1')->name('import.gr.preview');
+        Route::post('/import/gr/confirm', [LocalProcurementController::class, 'grConfirm'])->middleware('throttle:15,1')->name('import.gr.confirm');
+        Route::get('/import/template', [LocalProcurementController::class, 'template'])->name('import.template');
+        Route::post('/import/preview', [LocalProcurementController::class, 'preview'])->middleware('throttle:15,1')->name('import.preview');
+        Route::post('/import/confirm', [LocalProcurementController::class, 'confirm'])->middleware('throttle:15,1')->name('import.confirm');
+        Route::post('/upload-po', [LocalProcurementController::class, 'uploadPo'])->name('upload-po');
+        Route::get('/{purchaseOrder}', [LocalProcurementController::class, 'show'])->name('show');
+        Route::get('/{purchaseOrder}/edit', [LocalProcurementController::class, 'edit'])->name('edit');
+        Route::put('/{purchaseOrder}', [LocalProcurementController::class, 'update'])->name('update');
+        Route::post('/{purchaseOrder}/close', [LocalProcurementController::class, 'close'])->name('close');
+        Route::post('/{purchaseOrder}/cancel', [LocalProcurementController::class, 'cancel'])->name('cancel');
+        Route::post('/{purchaseOrder}/goods-receipts', [LocalProcurementController::class, 'storeGoodsReceipt'])->name('goods-receipts.store');
+        Route::put('/goods-receipts/{goodsReceipt}', [LocalProcurementController::class, 'updateGoodsReceipt'])->name('goods-receipts.update');
+        Route::post('/goods-receipts/{goodsReceipt}/cancel', [LocalProcurementController::class, 'cancelGoodsReceipt'])->name('goods-receipts.cancel');
+    });
+
+    // One invoice -> one Voucher Bayar -> one settlement; corrections are separate transfers.
+    Route::post('/drp-items/{item}/voucher', [LocalInvoiceSettlementController::class, 'finalizeVoucher'])->name('vouchers.finalize');
+    Route::post('/drp-items/{item}/voucher/generate', [LocalInvoiceSettlementController::class, 'generateVoucher'])->name('vouchers.generate');
+    Route::get('/vouchers/{voucher}', [LocalInvoiceSettlementController::class, 'showVoucher'])->name('vouchers.show');
+    Route::get('/vouchers/{voucher}/print', [LocalInvoiceSettlementController::class, 'printVoucher'])->name('vouchers.print');
+    Route::post('/vouchers/{voucher}/payments', [LocalInvoiceSettlementController::class, 'primaryPayment'])->name('settlements.primary');
+    Route::post('/settlements/{payment}/corrections', [LocalInvoiceSettlementController::class, 'correction'])->name('settlements.correction');
+    Route::get('/supplier-overpayments', [LocalInvoiceSettlementController::class, 'overpayments'])->name('overpayments.index');
+    Route::post('/supplier-overpayments/{refund}/settle', [LocalInvoiceSettlementController::class, 'refund'])->name('overpayments.refund');
+
+    // Master Invoice (Reporting / Query Repository)
+    Route::get('/master-invoices', [FinanceInvoiceController::class, 'masterInvoice'])->name('master-invoices');
+    Route::get('/master-invoices/export', [FinanceInvoiceController::class, 'exportMasterInvoice'])->name('master-invoices.export');
+
+    // Vendor Master & Change Approvals
+    Route::get('/vendor-master', [FinanceVendorController::class, 'index'])->name('vendor-master.index');
+    Route::get('/vendor-master/{vendor}', [FinanceVendorController::class, 'show'])->name('vendor-master.show');
+    Route::post('/vendor-change-requests/{request}/approve', [FinanceVendorController::class, 'approveChange'])->name('vendor-change-requests.approve');
+    Route::post('/vendor-change-requests/{request}/reject', [FinanceVendorController::class, 'rejectChange'])->name('vendor-change-requests.reject');
+});
+
+/*
+|--------------------------------------------------------------------------
+| General Affairs Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:ga,admin,finance'])->prefix('ga')->name('ga.')->group(function () {
+    Route::get('/claims/{claim}/receipt', [GaController::class, 'receipt'])->name('claims.receipt');
+});
+
+Route::middleware(['auth', 'role:ga,admin'])->prefix('ga')->name('ga.')->group(function () {
+    Route::get('/dashboard', [GaController::class, 'dashboard'])->name('dashboard');
+    Route::get('/claims', [GaController::class, 'index'])->name('claims.index');
+    Route::get('/claims/create', [GaController::class, 'create'])->name('claims.create');
+    Route::post('/claims', [GaController::class, 'store'])->name('claims.store');
+    Route::get('/claims/{claim}', [GaController::class, 'show'])->name('claims.show');
+    Route::get('/claims/{claim}/revision', [GaController::class, 'revision'])->name('claims.revision');
+    Route::post('/claims/{claim}/resubmit', [GaController::class, 'resubmit'])->name('claims.resubmit');
+    Route::post('/claims/{claim}/basic-verify', [GaController::class, 'basicVerify'])->name('claims.basic-verify');
+
+    // Employee Master
+    Route::resource('employees', EmployeeController::class)->only(['index', 'store', 'update']);
+    Route::post('/employees/{employee}/toggle-status', [EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
+
+    // DRP GA Draft
+    Route::get('/drp-draft', [GaController::class, 'drpDraft'])->name('drp-draft');
+    Route::post('/drp-draft', [GaController::class, 'createDrpDraft'])->name('drp-draft.store');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -74,6 +276,10 @@ Route::get('/verify-receipt/ga/{receipt}', [ReceiptVerificationController::class
     ->middleware('throttle:60,1')
     ->name('receipts.verify-ga');
 
+// Application Locale Switcher (Guest & Authenticated)
+Route::match(['get', 'post'], '/locale/{locale?}', [LocaleController::class, 'switch'])
+    ->name('locale.switch');
+
 // Supplier Public Registration & Status Tracking
 Route::get('/supplier/register', [SupplierRegistrationController::class, 'create'])->name('supplier.register');
 Route::post('/supplier/register', [SupplierRegistrationController::class, 'store'])
@@ -85,6 +291,9 @@ Route::prefix('supplier/registration')->name('supplier.registration.')->group(fu
     Route::post('/access', [SupplierRegistrationController::class, 'authenticateAccess'])
         ->middleware('throttle:10,1')
         ->name('access');
+    Route::post('/access/credentials', [SupplierRegistrationController::class, 'authenticateCredentials'])
+        ->middleware('throttle:10,1')
+        ->name('access.credentials');
     Route::post('/logout', [SupplierRegistrationController::class, 'logoutAccess'])->name('logout');
     Route::get('/success', [SupplierRegistrationController::class, 'success'])->name('success');
 
@@ -412,4 +621,66 @@ Route::middleware(['auth', 'role:qc,purchasing'])->prefix('qc')->name('qc.')->gr
     Route::get('/inspections/{id}', [QcInspectionController::class, 'show'])->name('inspections.show');
 });
 
-require __DIR__.'/auth.php';
+/*
+|--------------------------------------------------------------------------
+| Authentication and Account Security Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('guest')->group(function () {
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+        ->middleware('no-store')->name('login');
+
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('no-store')->name('login.store');
+
+});
+
+// This is an informational assistance page only. Allow an authenticated account
+// to use its saved locale for the copied email template; no reset flow is added.
+Route::get('forgot-password', [PasswordAssistanceController::class, 'show'])
+    ->middleware('no-store')->name('password.request');
+
+Route::middleware(['mfa.pending', 'no-store'])->group(function () {
+    Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'show'])
+        ->name('two-factor.challenge');
+    Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
+        ->middleware('throttle:auth.mfa-code')->name('two-factor.challenge.store');
+});
+
+Route::middleware('auth')->group(function () {
+
+    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+        ->middleware('no-store')->name('password.confirm');
+
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
+        ->middleware(['throttle:auth.credentials', 'no-store']);
+
+    Route::put('password', [PasswordController::class, 'update'])
+        ->middleware('throttle:auth.credentials')->name('password.update');
+
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
+
+    Route::post('profile/logout-other-devices', LogoutOtherDevicesController::class)
+        ->middleware(['auth.session', 'throttle:auth.credentials'])
+        ->name('profile.logout-other-devices');
+
+    // Revoke one specific session (as opposed to logout-other-devices above,
+    // which nukes all of them at once and requires a password). This is a
+    // narrower, lower-friction action: it can only ever target a row that
+    // already belongs to the current user, scoped inside RevokeSessionController.
+    Route::delete('profile/sessions', RevokeSessionController::class)
+        ->middleware(['auth.session', 'throttle:auth.security-action'])
+        ->name('profile.sessions.revoke');
+
+    Route::post('profile/two-factor/setup', [ProfileTwoFactorController::class, 'start'])
+        ->middleware(['auth.session', 'password.confirm', 'throttle:auth.security-action'])->name('profile.two-factor.start');
+    Route::get('profile/two-factor/setup', [ProfileTwoFactorController::class, 'show'])
+        ->middleware('no-store')->name('profile.two-factor.setup');
+    Route::post('profile/two-factor/confirm', [ProfileTwoFactorController::class, 'confirm'])
+        ->middleware(['throttle:auth.mfa-code', 'no-store'])->name('profile.two-factor.confirm');
+    Route::post('profile/two-factor/recovery-codes', [ProfileTwoFactorController::class, 'recoveryCodes'])
+        ->middleware(['password.confirm', 'throttle:auth.security-action', 'no-store'])->name('profile.two-factor.recovery-codes');
+    Route::delete('profile/two-factor', [ProfileTwoFactorController::class, 'destroy'])
+        ->middleware(['password.confirm', 'throttle:auth.mfa-code', 'no-store'])->name('profile.two-factor.destroy');
+});

@@ -26,7 +26,7 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('brand-text sidebar-type-text', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-label sidebar-type-text', $sidebar);
         $this->assertStringContainsString('sidebar-heading-label sidebar-type-text', $sidebar);
-        $this->assertStringContainsString('Collapse sidebar', $sidebar);
+        $this->assertStringContainsString('navigation.collapse_sidebar', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-icon--collapse', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-icon--expand', $sidebar);
         $this->assertStringContainsString('sidebar-toggle-icon--collapse', $navbar);
@@ -51,7 +51,7 @@ class SidebarShellTest extends TestCase
             $this->assertStringContainsString("\$role === '{$role}'", $sidebar);
         }
 
-        $this->assertStringContainsString('aria-label="Unread conversations:', $sidebar);
+        $this->assertStringContainsString('navigation.unread_chats', $sidebar);
         $this->assertStringContainsString('closeMobileSidebar(false)', $sidebar);
     }
 

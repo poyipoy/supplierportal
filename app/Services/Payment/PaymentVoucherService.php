@@ -4,6 +4,7 @@ namespace App\Services\Payment;
 
 use App\Models\PaymentGroup;
 use App\Models\User;
+use App\Support\BusinessTime;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -11,7 +12,7 @@ class PaymentVoucherService
 {
     public function nextVoucherNumber(): string
     {
-        $period = now()->format('ym');
+        $period = BusinessTime::now()->format('ym');
         DB::table('payment_voucher_sequences')->insertOrIgnore(['period' => $period, 'last_number' => 0]);
         $sequence = DB::table('payment_voucher_sequences')->where('period', $period)->lockForUpdate()->first();
         $number = (int) $sequence->last_number + 1;
@@ -26,7 +27,7 @@ class PaymentVoucherService
     public function assignVoucher(PaymentGroup $group, string $voucherNumber, string $voucherDate, User $actor): PaymentGroup
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException('Only Finance or Admin can assign payment vouchers.');
+            throw new InvalidArgumentException(__('finance.validation.voucher_role'));
         }
 
         return DB::transaction(function () use ($group, $voucherNumber, $voucherDate) {

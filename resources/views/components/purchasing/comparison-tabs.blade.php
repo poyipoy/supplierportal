@@ -3,24 +3,24 @@
 @php
     $tabs = [
         'inter-supplier' => [
-            'label' => 'Inter-Supplier',
+            'label' => __('purchasing.copy.inter_supplier'),
             'icon' => 'users',
             'route' => 'purchasing.comparison.inter-supplier',
         ],
         'historical' => [
-            'label' => 'Historical',
+            'label' => __('purchasing.copy.historical'),
             'icon' => 'chart-no-axes-combined',
             'route' => 'purchasing.comparison.historical',
         ],
         'vs-best' => [
-            'label' => 'vs Best Price',
+            'label' => __('purchasing.copy.vs_best_price'),
             'icon' => 'trophy',
             'route' => 'purchasing.comparison.vs-best',
         ],
     ];
 @endphp
 
-<nav {{ $attributes->class(['tw-flex tw-gap-2 tw-overflow-x-auto tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-2 tw-shadow-none']) }} aria-label="Price comparison views">
+<nav {{ $attributes->class(['tw-flex tw-gap-2 tw-overflow-x-auto tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-2 tw-shadow-none']) }} aria-label="{{ __('purchasing.copy.price_comparison_views') }}">
     @foreach($tabs as $key => $tab)
         <a
             href="{{ \App\Support\PurchasingNavigation::listUrl($tab['route']) }}"

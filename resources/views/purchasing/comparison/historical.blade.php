@@ -1,14 +1,14 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
-@section('title', 'Price History - ADASI Portal')
-@section('page-title', 'Price Comparison')
+@section('title', __('purchasing.copy.price_history_adasi_portal'))
+@section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
 <div id="purchasingComparisonContainer" class="tw-grid tw-gap-6 tw-min-w-0 tw-max-w-full" data-server-tabs-container>
     <x-ui.page-header
-        title="Historical Price Analysis"
-        description="Trace supplier price movement by material, period, and matching dimensions."
-        eyebrow="Purchasing"
+        :title="__('purchasing.copy.historical_price_analysis')"
+        :description="__('purchasing.copy.trace_supplier_price_movement_by_material_period_and_matching_dimensions')"
+        :eyebrow="__('purchasing.copy.purchasing')"
     />
     <x-purchasing.comparison-tabs active="historical" />
 

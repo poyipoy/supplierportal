@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'PO ' . $purchaseOrder->po_number . ' - ADASI Portal')
-@section('page-title', 'Detail Local Purchase Order')
+@section('title', __('local_procurement.closure.po_detail_title', ['number' => $purchaseOrder->po_number]))
+@section('page-title', __('local_procurement.list.detail'))
 
 @php
     $activeGrs = $purchaseOrder->goodsReceipts->where('status', '!=', \App\Models\LocalGoodsReceipt::STATUS_CANCELLED);
@@ -18,39 +18,39 @@
     <x-ui.page-header
         :title="'PO ' . $purchaseOrder->po_number"
         :description="($purchaseOrder->supplier->supplier?->company_name ?: $purchaseOrder->supplier->name) . ' · IDR ' . number_format($purchaseOrder->total_amount, 2, ',', '.')"
-        eyebrow="Pengadaan Lokal">
+        :eyebrow="__('local_procurement.surface.local_audience')">
         <x-slot:actions>
             <x-ui.button :href="route($routePrefix.'.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
-                <span>Kembali ke Daftar</span>
+                <span>{{ __('local_invoice.form.back_list') }}</span>
             </x-ui.button>
 
             @if($purchaseOrder->latestPoDocument())
-                <x-ui.button :href="route('attachments.show', $purchaseOrder->latestPoDocument()->id)" target="_blank" variant="outline" size="sm">
+                <x-ui.button :href="route('attachments.show', $purchaseOrder->latestPoDocument())" target="_blank" variant="outline" size="sm">
                     <x-ui.icon name="file-text" size="sm" />
-                    <span>Dokumen PO (PDF)</span>
+                    <span>{{ __('local_procurement.labels.po_pdf') }}</span>
                 </x-ui.button>
             @endif
 
             @if($purchaseOrder->status === 'OPEN')
                 <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#addGrModal">
                     <x-ui.icon name="plus" size="sm" />
-                    <span>Tambah GR</span>
+                    <span>{{ __('local_procurement.actions.add_gr') }}</span>
                 </x-ui.button>
 
                 <x-ui.button :href="route($routePrefix.'.edit', $purchaseOrder)" variant="outline" size="sm">
                     <x-ui.icon name="file-pen" size="sm" />
-                    <span>Edit PO</span>
+                    <span>{{ __('local_procurement.actions.edit_po') }}</span>
                 </x-ui.button>
 
                 <button type="button" class="btn btn-sm btn-outline-secondary tw-inline-flex tw-items-center tw-gap-1.5" data-bs-toggle="modal" data-bs-target="#closePoModal">
                     <x-ui.icon name="lock" size="sm" />
-                    <span>Tutup PO</span>
+                    <span>{{ __('local_procurement.actions.close_po') }}</span>
                 </button>
 
                 <button type="button" class="btn btn-sm btn-outline-danger tw-inline-flex tw-items-center tw-gap-1.5" data-bs-toggle="modal" data-bs-target="#cancelPoModal">
                     <x-ui.icon name="x-circle" size="sm" />
-                    <span>Batalkan PO</span>
+                    <span>{{ __('local_procurement.actions.cancel_po') }}</span>
                 </button>
             @endif
         </x-slot:actions>
@@ -67,31 +67,31 @@
                     <div>
                         <div class="tw-text-ui-base tw-font-bold tw-font-mono tw-text-on-surface">{{ $purchaseOrder->po_number }}</div>
                         <div class="tw-text-ui-xs tw-text-on-surface-variant">
-                            Dibuat pada {{ $purchaseOrder->po_date?->format('d M Y') ?? '—' }} · Sumber: {{ $purchaseOrder->source ?: 'MANUAL' }}
+                            {{ __('local_procurement.surface.created_source', ['date' => $regionalFormatter->date($purchaseOrder->po_date, 'human') ?? '-', 'source' => __('local_procurement.sources.'.strtolower($purchaseOrder->source ?: 'MANUAL'))]) }}
                         </div>
                     </div>
                 </div>
                 <div class="tw-flex tw-items-center tw-gap-2">
                     <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($purchaseOrder->status)">
-                        Status: {{ $purchaseOrder->status }}
+                        {{ __('common.final_copy.status') }} {{ \App\Support\StatusHelper::localFinanceLabel($purchaseOrder->status) }}
                     </x-ui.status-chip>
                 </div>
             </div>
 
             <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3 tw-text-ui-xs">
                 <div>
-                    <span class="tw-text-on-surface-variant">Supplier:</span>
+                    <span class="tw-text-on-surface-variant">{{ __('local_invoice.labels.supplier') }}:</span>
                     <strong class="tw-block tw-text-ui-sm tw-text-on-surface tw-mt-0.5">
                         {{ $purchaseOrder->supplier->supplier?->company_name ?: $purchaseOrder->supplier->name }}
                     </strong>
                     <span class="tw-text-on-surface-variant">
-                        {{ $purchaseOrder->supplier->email }} · {{ $purchaseOrder->supplier->supplier?->vendor_category ?: $purchaseOrder->supplier->supplier?->category ?: 'Vendor' }}
+                        {{ $purchaseOrder->supplier->email }} · {{ \App\Support\StatusHelper::vendorCategoryLabel($purchaseOrder->supplier->supplier?->vendor_category ?: $purchaseOrder->supplier->supplier?->category ?: __('local_invoice.labels.supplier')) }}
                     </span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant">Catatan PO:</span>
+                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.po_notes') }}:</span>
                     <p class="tw-text-ui-xs tw-text-on-surface tw-mt-0.5 tw-mb-0">
-                        {{ $purchaseOrder->description ?: 'Tidak ada catatan khusus pada dokumen PO ini.' }}
+                        {{ $purchaseOrder->description === 'Imported via Infor ERP Purchase Order' ? __('local_procurement.provenance.imported_po') : ($purchaseOrder->description ?: __('local_procurement.closure.po_no_notes')) }}
                     </p>
                 </div>
             </div>
@@ -100,24 +100,24 @@
         {{-- Financial & Invoiced Progress Card --}}
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4 tw-space-y-3">
             <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant tw-uppercase tw-tracking-wider">
-                Status Finansial & Tagihan
+                {{ __('local_procurement.labels.bill_status') }}
             </div>
 
             <div class="tw-space-y-2 tw-text-ui-xs">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <span class="tw-text-on-surface-variant">Plafon Nilai PO:</span>
+                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.surface.po_ceiling_label') }}</span>
                     <strong class="tw-font-mono tw-text-on-surface">Rp {{ number_format($purchaseOrder->total_amount, 2, ',', '.') }}</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <span class="tw-text-on-surface-variant">Realisasi Invoice Aktif:</span>
+                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.surface.active_invoiced') }}</span>
                     <strong class="tw-font-mono tw-text-success">Rp {{ number_format($invoicedTotal, 2, ',', '.') }}</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <span class="tw-text-on-surface-variant">Total Kuantitas GR:</span>
+                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.gr_qty_total') }}:</span>
                     <strong class="tw-font-mono tw-text-on-surface">{{ number_format($activeGrQty, 4, ',', '.') }} pcs ({{ $activeGrCount }} GR)</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1.5">
-                    <span class="tw-text-on-surface-variant">Sisa Plafon PO:</span>
+                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.remaining_ceiling') }}:</span>
                     <strong class="tw-font-mono {{ $remainingPoAmount > 0 ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}">
                         Rp {{ number_format($remainingPoAmount, 2, ',', '.') }}
                     </strong>
@@ -127,7 +127,7 @@
             {{-- Progress bar --}}
             <div class="tw-space-y-1 tw-pt-1">
                 <div class="tw-flex tw-items-center tw-justify-between tw-text-[11px] tw-text-on-surface-variant">
-                    <span>Realisasi Invoice:</span>
+                    <span>{{ __('local_procurement.surface.invoiced') }}</span>
                     <span class="tw-font-semibold tw-text-on-surface">{{ $invoicedPercent }}%</span>
                 </div>
                 <div class="tw-w-full tw-bg-surface-high tw-rounded-full tw-h-2 tw-overflow-hidden">
@@ -139,21 +139,21 @@
 
     {{-- Goods Receipts Data Table --}}
     <x-ui.data-table
-        title="Daftar Penerimaan Barang (GR) Utuh"
-        :description="'Total ' . $purchaseOrder->goodsReceipts->count() . ' berkas GR tercatat pada PO ini. Hanya GR berstatus AVAILABLE yang dapat diubah atau dibatalkan.'"
+        :title="__('local_procurement.labels.whole_gr_list')"
+        :description="trans_choice('finance.closure.gr_count', $purchaseOrder->goodsReceipts->count())"
     >
         <div class="table-responsive">
             <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Nomor GR</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal GR</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Deskripsi Barang</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Qty</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Status</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Terhubung ke Invoice</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">Sumber</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Aksi</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.surface.gr_number') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_date') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.goods_description') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('common.fields.qty') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_invoice') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.source') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -162,12 +162,12 @@
                             <td>
                                 <strong class="tw-font-mono tw-text-on-surface">{{ $gr->gr_number }}</strong>
                                 @if($gr->notes)
-                                    <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">{{ $gr->notes }}</span>
+                                    <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">@if(preg_match('/^Imported via Infor ERP Goods Receipt \((\d+) line rows\)$/', $gr->notes, $provenance)){{ trans_choice('local_procurement.provenance.imported_gr', (int) $provenance[1]) }}@else{{ $gr->notes }}@endif</span>
                                 @endif
                             </td>
                             <td>
                                 <span class="tw-text-ui-xs tw-text-on-surface-variant">
-                                    {{ $gr->gr_date?->format('d M Y') ?? '—' }}
+                                    {{ $regionalFormatter->date($gr->gr_date, 'human') ?? '—' }}
                                 </span>
                             </td>
                             <td>
@@ -180,12 +180,17 @@
                             </td>
                             <td class="text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($gr->status)">
-                                    {{ $gr->status }}
+                                    {{ \App\Support\StatusHelper::localFinanceLabel($gr->status) }}
                                 </x-ui.status-chip>
                             </td>
                             <td>
                                 @if($gr->currentInvoice)
-                                    <a href="{{ route('finance.invoices.show', $gr->currentInvoice) }}" class="tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-underline">
+                                    @php
+                                        $invoiceShowRoute = ($routePrefix === 'purchasing.local-procurement' || (auth()->user() && auth()->user()->isPurchasing()))
+                                            ? 'purchasing.local-invoices.show'
+                                            : 'finance.invoices.show';
+                                    @endphp
+                                    <a href="{{ route($invoiceShowRoute, $gr->currentInvoice) }}" class="tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-underline">
                                         {{ $gr->currentInvoice->invoice_number }}
                                     </a>
                                 @else
@@ -194,7 +199,7 @@
                             </td>
                             <td class="text-center">
                                 <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold {{ $gr->source === 'IMPORT' ? 'tw-bg-secondary/10 tw-text-secondary' : 'tw-bg-surface-high tw-text-on-surface' }}">
-                                    {{ $gr->source ?: 'MANUAL' }}
+                                    {{ __('local_procurement.sources.'.strtolower($gr->source ?: 'MANUAL')) }}
                                 </span>
                             </td>
                             <td class="text-end">
@@ -207,7 +212,7 @@
                                             data-bs-target="#editGrModal-{{ $gr->id }}"
                                         >
                                             <x-ui.icon name="file-pen" size="sm" />
-                                            <span>Edit</span>
+                                            <span>{{ __('common.final_copy.edit') }}</span>
                                         </button>
 
                                         <button
@@ -217,11 +222,11 @@
                                             data-bs-target="#cancelGrModal-{{ $gr->id }}"
                                         >
                                             <x-ui.icon name="x" size="sm" />
-                                            <span>Batal</span>
+                                            <span>{{ __('local_invoice.actions.cancel') }}</span>
                                         </button>
                                     </div>
                                 @else
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant tw-italic">Terkunci ({{ $gr->status }})</span>
+                                    <span class="tw-text-ui-xs tw-text-on-surface-variant tw-italic">{{ __('local_procurement.surface.locked') }} ({{ \App\Support\StatusHelper::localFinanceLabel($gr->status) }})</span>
                                 @endif
                             </td>
                         </tr>
@@ -237,13 +242,13 @@
                                             <div class="modal-header">
                                                 <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-2">
                                                     <x-ui.icon name="file-pen" size="sm" class="tw-text-primary" />
-                                                    <span>Edit Goods Receipt: {{ $gr->gr_number }}</span>
+                                                    <span>{{ __('local_procurement.surface.gr_edit', ['number' => $gr->gr_number]) }}</span>
                                                 </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                             </div>
                                             <div class="modal-body tw-space-y-3">
                                                 <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">Nomor GR <span class="text-danger">*</span></label>
+                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.surface.gr_number') }}<span class="text-danger">*</span></label>
                                                     <input name="gr_number" class="form-control form-control-sm" value="{{ $gr->gr_number }}" required>
                                                 </div>
 
@@ -251,14 +256,14 @@
                                                     <x-ui.date-picker
                                                         :id="'edit_gr_date_'.$gr->id"
                                                         name="gr_date"
-                                                        label="Tanggal GR"
+                                                        :label="__('local_procurement.labels.gr_date')"
                                                         :value="$gr->gr_date?->format('Y-m-d')"
                                                         required="true"
                                                     />
                                                 </div>
 
                                                 <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">Kuantitas (Qty) <span class="text-danger">*</span></label>
+                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.closure.quantity') }} <span class="text-danger">*</span></label>
                                                     <input
                                                         name="qty"
                                                         type="number"
@@ -271,20 +276,20 @@
                                                 </div>
 
                                                 <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">Deskripsi Barang (Opsional)</label>
-                                                    <input name="description" class="form-control form-control-sm" value="{{ $gr->description }}" placeholder="Deskripsi material / barang...">
+                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.goods_description_optional') }}</label>
+                                                    <input name="description" class="form-control form-control-sm" value="{{ $gr->description }}" placeholder="{{ __('local_procurement.surface.material_placeholder') }}">
                                                 </div>
 
                                                 <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">Catatan (Opsional)</label>
-                                                    <input name="notes" class="form-control form-control-sm" value="{{ $gr->notes }}" placeholder="Keterangan penerimaan barang...">
+                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.optional_notes') }}</label>
+                                                    <input name="notes" class="form-control form-control-sm" value="{{ $gr->notes }}" placeholder="{{ __('local_procurement.surface.receipt_placeholder') }}">
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
-                                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
+                                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                                 <x-ui.button type="submit" variant="primary" size="sm">
                                                     <x-ui.icon name="check" size="sm" />
-                                                    <span>Simpan Perubahan</span>
+                                                    <span>{{ __('local_invoice.actions.save_changes') }}</span>
                                                 </x-ui.button>
                                             </div>
                                         </div>
@@ -301,23 +306,21 @@
                                             <div class="modal-header">
                                                 <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-error tw-flex tw-items-center tw-gap-2">
                                                     <x-ui.icon name="alert-triangle" size="sm" />
-                                                    <span>Batalkan Goods Receipt</span>
+                                                    <span>{{ __('local_procurement.actions.cancel_gr') }}</span>
                                                 </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                             </div>
                                             <div class="modal-body tw-space-y-2">
                                                 <p class="tw-text-ui-sm tw-text-on-surface tw-mb-0">
-                                                    Apakah Anda yakin ingin membatalkan Goods Receipt <strong>{{ $gr->gr_number }}</strong> (Qty: <strong>{{ number_format($gr->qty, 4, ',', '.') }}</strong>)?
+                                                    {{ __('local_procurement.surface.cancel_gr', ['number' => $gr->gr_number, 'qty' => number_format($gr->qty, 4, ',', '.')]) }}
                                                 </p>
-                                                <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">
-                                                    Setelah dibatalkan, alokasi GR ini tidak dapat digunakan lagi oleh invoice supplier.
-                                                </p>
+                                                <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">{{ __('local_procurement.surface.cancel_gr_help') }}</p>
                                             </div>
                                             <div class="modal-footer">
-                                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
+                                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                                 <button type="submit" class="btn btn-sm btn-danger tw-inline-flex tw-items-center tw-gap-1">
                                                     <x-ui.icon name="x" size="sm" />
-                                                    <span>Ya, Batalkan GR</span>
+                                                    <span>{{ __('local_procurement.surface.cancel_gr_yes') }}</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -328,7 +331,7 @@
                     @empty
                         <tr>
                             <td colspan="8" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
-                                Belum ada berkas Goods Receipt (GR) yang tercatat untuk Purchase Order ini.
+                                {{ __('local_procurement.empty.gr') }}
                             </td>
                         </tr>
                     @endforelse
@@ -348,35 +351,35 @@
                     <div class="modal-header">
                         <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-2">
                             <x-ui.icon name="plus-circle" size="sm" class="tw-text-primary" />
-                            <span>Tambah Goods Receipt (GR) Baru</span>
+                            <span>{{ __('local_procurement.actions.add_gr_full') }}</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw-space-y-3">
                         <div class="tw-rounded-lg tw-bg-surface-container tw-p-3 tw-text-ui-xs tw-space-y-1">
                             <div class="tw-flex tw-justify-between">
-                                <span class="tw-text-on-surface-variant">Purchase Order:</span>
+                                <span class="tw-text-on-surface-variant">{{ __('terms.purchase_order') }}:</span>
                                 <strong class="tw-font-mono">{{ $purchaseOrder->po_number }}</strong>
                             </div>
                         </div>
 
                         <div>
-                            <label class="form-label tw-text-ui-xs tw-font-semibold">Nomor GR <span class="text-danger">*</span></label>
-                            <input name="gr_number" class="form-control form-control-sm" placeholder="Contoh: GR-2026-09-001" required>
+                            <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.surface.gr_number') }}<span class="text-danger">*</span></label>
+                            <input name="gr_number" class="form-control form-control-sm" placeholder="{{ __('common.reference_example', ['reference' => 'GR-2026-09-001']) }}" required>
                         </div>
 
                         <div>
                             <x-ui.date-picker
                                 id="add_new_gr_date"
                                 name="gr_date"
-                                label="Tanggal GR"
+                                :label="__('local_procurement.labels.gr_date')"
                                 :value="now()->format('Y-m-d')"
                                 required="true"
                             />
                         </div>
 
                         <div>
-                            <label class="form-label tw-text-ui-xs tw-font-semibold">Kuantitas (Qty) <span class="text-danger">*</span></label>
+                            <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.closure.quantity') }} <span class="text-danger">*</span></label>
                             <input
                                 name="qty"
                                 type="number"
@@ -389,20 +392,20 @@
                         </div>
 
                         <div>
-                            <label class="form-label tw-text-ui-xs tw-font-semibold">Deskripsi Barang (Opsional)</label>
-                            <input name="description" class="form-control form-control-sm" placeholder="Deskripsi material / barang...">
+                            <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.goods_description_optional') }}</label>
+                            <input name="description" class="form-control form-control-sm" placeholder="{{ __('local_procurement.surface.material_placeholder') }}">
                         </div>
 
                         <div>
-                            <label class="form-label tw-text-ui-xs tw-font-semibold">Catatan / Keterangan</label>
-                            <input name="notes" class="form-control form-control-sm" placeholder="Catatan penerimaan fisik barang...">
+                            <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.surface.notes') }}</label>
+                            <input name="notes" class="form-control form-control-sm" placeholder="{{ __('local_procurement.surface.physical_notes') }}">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="plus" size="sm" />
-                            <span>Simpan Goods Receipt</span>
+                            <span>{{ __('local_procurement.actions.save_gr') }}</span>
                         </x-ui.button>
                     </div>
                 </div>
@@ -419,23 +422,21 @@
                     <div class="modal-header">
                         <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-2">
                             <x-ui.icon name="lock" size="sm" class="tw-text-warning" />
-                            <span>Tutup Purchase Order</span>
+                            <span>{{ __('local_procurement.actions.close_po_full') }}</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw-space-y-2">
                         <p class="tw-text-ui-sm tw-text-on-surface tw-mb-0">
-                            Apakah Anda yakin ingin menutup Purchase Order <strong>{{ $purchaseOrder->po_number }}</strong>?
+                            {{ __('local_procurement.surface.close_po', ['number' => $purchaseOrder->po_number]) }}
                         </p>
-                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">
-                            Setelah ditutup, PO tidak dapat lagi diterbitkan Goods Receipt baru.
-                        </p>
+                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">{{ __('local_procurement.surface.close_po_help') }}</p>
                     </div>
                     <div class="modal-footer">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="lock" size="sm" />
-                            <span>Ya, Tutup PO</span>
+                            <span>{{ __('local_procurement.surface.close_po_yes') }}</span>
                         </x-ui.button>
                     </div>
                 </div>
@@ -452,23 +453,21 @@
                     <div class="modal-header">
                         <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-error tw-flex tw-items-center tw-gap-2">
                             <x-ui.icon name="alert-triangle" size="sm" />
-                            <span>Batalkan Purchase Order</span>
+                            <span>{{ __('local_procurement.actions.cancel_po_full') }}</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw-space-y-2">
                         <p class="tw-text-ui-sm tw-text-on-surface tw-mb-0">
-                            Apakah Anda yakin ingin membatalkan Purchase Order <strong>{{ $purchaseOrder->po_number }}</strong>?
+                            {{ __('local_procurement.surface.cancel_po', ['number' => $purchaseOrder->po_number]) }}
                         </p>
-                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">
-                            Pembatalan PO hanya dapat dilakukan jika belum ada berkas invoice yang terhubung.
-                        </p>
+                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">{{ __('local_procurement.surface.cancel_po_help') }}</p>
                     </div>
                     <div class="modal-footer">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">Batal</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                         <button type="submit" class="btn btn-sm btn-danger tw-inline-flex tw-items-center tw-gap-1">
                             <x-ui.icon name="trash-2" size="sm" />
-                            <span>Ya, Batalkan PO</span>
+                            <span>{{ __('local_procurement.surface.cancel_po_yes') }}</span>
                         </button>
                     </div>
                 </div>

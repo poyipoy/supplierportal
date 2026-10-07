@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 const ISO_DATE = /^\d{4}-(\d{2})-(\d{2})$/;
 const ISO_MONTH = /^\d{4}-(\d{2})$/;
 
@@ -23,7 +24,7 @@ export const compareIso = (left, right) => String(left || '').localeCompare(Stri
 export const localToday = (date = new Date()) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
 export const formatDateDisplay = (value, locale = 'en-GB') => {
-    if (!isIsoDate(value)) return 'Choose date';
+    if (!isIsoDate(value)) return t('js.calendar.choose_date');
     const [year, month, day] = value.split('-').map(Number);
 
     return new Intl.DateTimeFormat(locale, {
@@ -34,7 +35,7 @@ export const formatDateDisplay = (value, locale = 'en-GB') => {
 };
 
 export const formatMonthDisplay = (value, locale = 'en-GB') => {
-    if (!isIsoMonth(value)) return 'Any time';
+    if (!isIsoMonth(value)) return t('js.calendar.any_time');
     const [year, month] = value.split('-').map(Number);
 
     return new Intl.DateTimeFormat(locale, {
@@ -69,19 +70,19 @@ export const rangePresets = (granularity, date = new Date()) => {
         const yearStart = `${date.getFullYear()}-01`;
 
         return [
-            { id: 'last-3-months', label: 'Last 3 months', start: addLocalMonths(currentMonth, -2), end: currentMonth },
-            { id: 'last-6-months', label: 'Last 6 months', start: addLocalMonths(currentMonth, -5), end: currentMonth },
-            { id: 'this-year', label: 'This year', start: yearStart, end: currentMonth },
+            { id: 'last-3-months', label: t('js.calendar.last_3_months'), start: addLocalMonths(currentMonth, -2), end: currentMonth },
+            { id: 'last-6-months', label: t('js.calendar.last_6_months'), start: addLocalMonths(currentMonth, -5), end: currentMonth },
+            { id: 'this-year', label: t('js.calendar.this_year'), start: yearStart, end: currentMonth },
         ];
     }
 
     const today = localToday(date);
 
     return [
-        { id: 'today', label: 'Today', start: today, end: today },
-        { id: 'last-7-days', label: 'Last 7 days', start: addLocalDays(today, -6), end: today },
-        { id: 'last-30-days', label: 'Last 30 days', start: addLocalDays(today, -29), end: today },
-        { id: 'this-month', label: 'This month', start: startOfLocalMonth(today), end: today },
+        { id: 'today', label: t('js.calendar.today'), start: today, end: today },
+        { id: 'last-7-days', label: t('js.calendar.last_7_days'), start: addLocalDays(today, -6), end: today },
+        { id: 'last-30-days', label: t('js.calendar.last_30_days'), start: addLocalDays(today, -29), end: today },
+        { id: 'this-month', label: t('js.calendar.this_month'), start: startOfLocalMonth(today), end: today },
     ];
 };
 

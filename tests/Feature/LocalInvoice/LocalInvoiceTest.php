@@ -4,6 +4,7 @@ namespace Tests\Feature\LocalInvoice;
 
 use App\Exports\LocalInvoicesExport;
 use App\Jobs\ProcessExportJob;
+use App\Models\Attachment;
 use App\Models\ExportJob;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceDocument;
@@ -14,12 +15,15 @@ use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Services\NotificationUrlResolver;
+use App\Support\BusinessTime;
+use App\Support\StatusHelper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -79,6 +83,14 @@ class LocalInvoiceTest extends TestCase
         return LocalInvoice::sole();
     }
 
+    private function signedReceiptQr(LocalInvoice $invoice): string
+    {
+        return URL::signedRoute('receipts.verify-supplier', [
+            'receipt' => $invoice->receipt->receipt_number,
+            'revision' => $invoice->revision_number,
+        ]);
+    }
+
     public static function scopes(): array
     {
         return [[['import'], true, false], [['local'], false, true], [['import', 'local'], true, true]];
@@ -111,8 +123,16 @@ class LocalInvoiceTest extends TestCase
             Storage::disk('private')->assertExists($document->file_path);
             $this->assertStringStartsWith('local-invoices/', $document->file_path);
         }
-        $this->get(route('local-supplier.invoices.receipt', $invoice))->assertOk()->assertSee($invoice->receipt->receipt_number);
-        $this->get(route('local-supplier.invoices.show', $invoice))->assertOk()->assertSee('Menunggu Dokumen Fisik');
+        $signedReceiptUrl = URL::signedRoute('receipts.verify-supplier', [
+            'receipt' => $invoice->receipt->receipt_number,
+            'revision' => $invoice->revision_number,
+        ]);
+        $this->get(route('local-supplier.invoices.receipt', $invoice))
+            ->assertOk()
+            ->assertSee($invoice->receipt->receipt_number)
+            ->assertViewHas('signedUrl', $signedReceiptUrl);
+        $this->get($signedReceiptUrl)->assertOk()->assertSee($invoice->receipt->receipt_number);
+        $this->get(route('local-supplier.invoices.show', $invoice))->assertOk()->assertSee(StatusHelper::localInvoiceLabel($invoice->status));
     }
 
     public static function legacyMutationActions(): array
@@ -173,7 +193,7 @@ class LocalInvoiceTest extends TestCase
     {
         $invoice = $this->submit();
         $paths = Storage::disk('private')->allFiles();
-        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice, scannedReceiptQr: $this->signedReceiptQr($invoice));
         app(InvoiceVerificationService::class)->requestRevision($invoice, 'Revise', $this->operator);
         $listener = function () {
             throw new \RuntimeException('Injected database write failure');
@@ -206,7 +226,7 @@ class LocalInvoiceTest extends TestCase
     public function test_context_resolution_and_navigation(): void
     {
         $this->actingAs($this->supplier)->get(route('dashboard'))->assertRedirect(route('local-supplier.dashboard', absolute: false));
-        $this->get(route('local-supplier.dashboard'))->assertSee('Ajukan Invoice')->assertDontSee('Quotation Period');
+        $this->get(route('local-supplier.dashboard'))->assertSee(__('local_invoice.actions.submit'))->assertDontSee('Quotation Period');
         $both = $this->supplier(['import', 'local']);
         $this->actingAs($both)->withSession(['supplier_context' => null])->get(route('dashboard'))->assertRedirect(route('supplier-context.index', absolute: false));
         $this->post(route('supplier-context.store'), ['context' => 'local'])->assertRedirect(route('local-supplier.dashboard', absolute: false));
@@ -229,14 +249,25 @@ class LocalInvoiceTest extends TestCase
     public function test_overdue_upcoming_and_completed_classification(): void
     {
         $invoice = $this->submit();
-        $invoice->forceFill(['status' => 'APPROVED', 'due_date' => today()->subDay()]);
-        $this->assertSame('Overdue', $invoice->paymentCategory());
-        $invoice->due_date = today()->addDays(6);
-        $this->assertSame('Due < 7 Days', $invoice->paymentCategory());
-        $invoice->forceFill(['status' => 'PAYMENT_SCHEDULED', 'due_date' => today()->addDays(7)]);
-        $this->assertSame('Scheduled', $invoice->paymentCategory());
-        $invoice->forceFill(['status' => 'COMPLETED', 'due_date' => today()->subDay()]);
-        $this->assertSame('Completed', $invoice->paymentCategory());
+        foreach ([
+            'en' => ['overdue', 'due_soon', 'scheduled', 'completed', 'ready'],
+            'id' => ['overdue', 'due_soon', 'scheduled', 'completed', 'ready'],
+        ] as $locale => $labels) {
+            app()->setLocale($locale);
+
+            $invoice->forceFill(['status' => 'APPROVED', 'due_date' => BusinessTime::today()->subDay()->toDateString()]);
+            $this->assertSame(trans('local_invoice.payment_category.'.$labels[0], [], $locale), $invoice->paymentCategory());
+            $invoice->due_date = BusinessTime::today()->addDays(6)->toDateString();
+            $this->assertSame(trans('local_invoice.payment_category.'.$labels[1], [], $locale), $invoice->paymentCategory());
+            $invoice->forceFill(['status' => 'PAYMENT_SCHEDULED', 'due_date' => BusinessTime::today()->addDays(7)->toDateString()]);
+            $this->assertSame(trans('local_invoice.payment_category.'.$labels[2], [], $locale), $invoice->paymentCategory());
+            $invoice->forceFill(['status' => 'COMPLETED', 'due_date' => BusinessTime::today()->subDay()->toDateString()]);
+            $this->assertSame(trans('local_invoice.payment_category.'.$labels[3], [], $locale), $invoice->paymentCategory());
+            $invoice->forceFill(['status' => 'READY_TO_PAY', 'due_date' => null]);
+            $this->assertSame(trans('local_invoice.payment_category.'.$labels[4], [], $locale), $invoice->paymentCategory());
+        }
+
+        app()->setLocale('en');
     }
 
     public function test_receipt_lookup_filters_and_reports_render(): void
@@ -260,7 +291,8 @@ class LocalInvoiceTest extends TestCase
     {
         $invoice = $this->submit();
         Notification::assertSentTo($this->operator, SystemNotification::class);
-        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        Notification::assertSentTo($this->supplier, SystemNotification::class, 1);
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice, scannedReceiptQr: $this->signedReceiptQr($invoice));
         Notification::assertSentTo($this->supplier, SystemNotification::class);
         app(InvoiceVerificationService::class)->requestRevision($invoice, 'Please replace Faktur Pajak', $this->operator);
         Notification::assertSentTo($this->supplier, SystemNotification::class, function (SystemNotification $notification) use ($invoice): bool {
@@ -349,7 +381,15 @@ class LocalInvoiceTest extends TestCase
         $this->supplier->supplierScopes()->delete();
         $this->actingAs($this->supplier)->get(route('local-supplier.invoices.show', $invoice))->assertForbidden();
         $this->get(route('local-invoice-documents.show', $invoice->documents()->first()))->assertForbidden();
-        $this->get(route('attachments.show', 1))->assertForbidden();
+        $attachment = Attachment::create([
+            'attachable_type' => LocalInvoice::class,
+            'attachable_id' => $invoice->id,
+            'file_path' => 'attachments/2026/09/scope-test.pdf',
+            'file_name' => 'scope-test.pdf',
+            'file_type' => 'application/pdf',
+            'uploaded_by' => $this->supplier->id,
+        ]);
+        $this->get(route('attachments.show', $attachment))->assertForbidden();
         $this->get(route('conversations.drawer.index'))->assertForbidden();
         $this->get(route('shared.pdf.purchase-order', $invoice))->assertForbidden();
     }
@@ -367,10 +407,10 @@ class LocalInvoiceTest extends TestCase
         $this->get(route('local-supplier.invoices.receipt', $invoice))
             ->assertOk()
             ->assertSee($invoice->receipt->receipt_number)
-            ->assertSee('Cetak Tanda Terima')
-            ->assertSee('Lihat Detail Invoice');
+            ->assertSee(__('local_invoice.actions.print_receipt'))
+            ->assertSee(__('local_invoice.actions.view_detail'));
 
-        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice, scannedReceiptQr: $this->signedReceiptQr($invoice));
         app(InvoiceVerificationService::class)->requestRevision($invoice, 'Please revise tax document', $this->operator);
         $this->assertSame('NEED_REVISION', $invoice->fresh()->status);
 
@@ -450,11 +490,12 @@ class LocalInvoiceTest extends TestCase
         )->assertSessionHasNoErrors();
 
         $invoice = LocalInvoice::where('invoice_number', 'INV-REVISE-01')->firstOrFail();
+        $this->supplier->preference()->updateOrCreate([], [...config('user_preferences.defaults'), 'locale' => 'id']);
         $initialInvDoc = $invoice->documents->where('document_type', 'invoice')->first();
         $this->assertNotNull($initialInvDoc);
 
         // Put to revision
-        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice);
+        app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice, scannedReceiptQr: $this->signedReceiptQr($invoice));
         app(InvoiceVerificationService::class)->requestRevision($invoice, 'Please add supporting documents', $this->operator);
 
         // Resubmit: keep existing invoice, add new tax invoice and 1 supporting document
@@ -476,6 +517,10 @@ class LocalInvoiceTest extends TestCase
 
         $fresh = $invoice->fresh();
         $this->assertSame(2, $fresh->revision_number);
+        $this->assertSame(
+            __('local_invoice.history.physical_verification_superseded', ['revision' => 2], 'id'),
+            $fresh->physicalVerifications()->where('status', 'invalidated')->latest('id')->value('notes'),
+        );
         $latestRev = $fresh->latestRevision;
         $revDocs = $latestRev->documents;
 

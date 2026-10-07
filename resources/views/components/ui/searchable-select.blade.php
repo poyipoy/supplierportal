@@ -6,11 +6,11 @@
     'error' => null,
     'value' => null,
     'options' => [],
-    'placeholder' => 'Pilih opsi...',
-    'searchPlaceholder' => 'Ketik untuk mencari...',
+    'placeholder' => __('common.select.placeholder'),
+    'searchPlaceholder' => __('common.select.search'),
     'required' => false,
     'disabled' => false,
-    'emptyMessage' => 'Tidak ada data yang cocok',
+    'emptyMessage' => __('common.select.empty'),
     'showSublabelOnTrigger' => true,
 ])
 
@@ -53,7 +53,7 @@
 @endphp
 
 <div
-    {{ $attributes->only('class')->class(['tw-grid tw-gap-1.5 tw-relative']) }}
+    {{ $attributes->class(['tw-grid tw-gap-1.5 tw-relative']) }}
     x-data="{
         open: false,
         search: '',
@@ -90,6 +90,7 @@
             this.open = false;
             this.search = '';
             this.highlightedIndex = -1;
+            this.$dispatch('change', { value: this.selectedValue });
             this.$nextTick(() => {
                 this.$refs.triggerButton?.focus();
             });
@@ -147,11 +148,12 @@
     }"
     @click.outside="close()"
     @keydown.escape.stop="close()"
+    x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { selectedValue = String($event.detail.value ?? ''); syncNativeSelect(selectedValue); }"
 >
     @if($label)
         <label for="{{ $resolvedId }}" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
             {{ $label }}
-            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> required</span>@endif
+            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> {{ __('common.required') }}</span>@endif
         </label>
     @endif
 
@@ -216,7 +218,7 @@
                 <span
                     @click.stop="clear()"
                     class="tw-p-1 tw-rounded-full tw-text-on-surface-variant hover:tw-text-error hover:tw-bg-surface-container tw-cursor-pointer ui-motion"
-                    title="Hapus pilihan"
+                    title="{{ __('common.select.clear') }}"
                 >
                     <x-ui.icon name="x" size="sm" class="tw-w-3.5 tw-h-3.5" />
                 </span>
@@ -250,9 +252,11 @@
                     <x-ui.icon name="search" size="sm" class="tw-w-4 tw-h-4" />
                 </span>
                 <input
+                    id="{{ $resolvedId }}-search"
                     type="text"
                     x-ref="searchInput"
                     x-model="search"
+                    data-ignore-dirty="true"
                     @keydown.arrow-down.prevent="navigate(1)"
                     @keydown.arrow-up.prevent="navigate(-1)"
                     @keydown.enter.prevent="selectHighlighted()"
@@ -267,7 +271,7 @@
                     @click="search = ''; $refs.searchInput.focus()"
                     style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; padding: 0; cursor: pointer; z-index: 2;"
                     class="tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface-container tw-rounded-full ui-motion"
-                    aria-label="Bersihkan pencarian"
+                    aria-label="{{ __('common.select.clear_search') }}"
                 >
                     <x-ui.icon name="x" size="sm" class="tw-w-3.5 tw-h-3.5" />
                 </button>

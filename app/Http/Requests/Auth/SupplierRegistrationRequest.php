@@ -70,7 +70,7 @@ class SupplierRegistrationRequest extends FormRequest
             $status = $turnstile->verify($this);
             if ($status === TurnstileStatus::Invalid) {
                 throw ValidationException::withMessages([
-                    'cf-turnstile-response' => __('Security verification failed. Please try again.'),
+                    'cf-turnstile-response' => __('auth.registration_verification_failed'),
                 ]);
             }
         }

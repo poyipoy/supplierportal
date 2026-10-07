@@ -5,6 +5,8 @@ namespace App\Services;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
+use App\Support\BusinessTime;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 /** Presentation only: accepts typed instants, calendar dates and trusted numeric display text. */
@@ -25,22 +27,38 @@ class RegionalDisplayFormatter
         }
     }
 
-    public function date(string|DateTimeInterface $value, string $profile = 'human'): string
+    public function date(string|DateTimeInterface|null $value, string $profile = 'human'): ?string
     {
+        if ($value === null) {
+            return null;
+        }
+
         $pattern = $this->registry['date_profiles'][$profile] ?? throw new InvalidArgumentException('Unknown calendar date presentation profile.');
         // DATE semantics preserve the source calendar day, including when given a model's Carbon date cast.
         $date = $value instanceof DateTimeInterface ? DateTimeImmutable::createFromInterface($value) : $this->calendarDate($value);
 
-        return $date === null ? (string) $value : $date->format($this->datePattern($pattern));
+        return $date === null ? (string) $value : $this->localizedFormat($date, $this->datePattern($pattern));
+    }
+
+    /** Localize a fixed calendar-date pattern without applying the user's regional date-format choice. */
+    public function fixedDate(string|DateTimeInterface|null $value, string $pattern = 'd M Y'): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $date = $value instanceof DateTimeInterface ? DateTimeImmutable::createFromInterface($value) : $this->calendarDate($value);
+
+        return $date === null ? (string) $value : $this->localizedFormat($date, $pattern);
     }
 
     public function timestamp(DateTimeInterface $value, string $profile = 'datetime'): string
     {
         $patterns = $this->registry['timestamp_profiles'][$profile] ?? throw new InvalidArgumentException('Unknown timestamp presentation profile.');
         $instant = $this->instant($value);
-        $text = $instant->format($this->datePattern($patterns['date']));
+        $text = $this->localizedFormat($instant, $this->datePattern($patterns['date']));
         if ($patterns['time'] !== null) {
-            $text .= $patterns['separator'].$instant->format($this->timePattern($patterns['time']));
+            $text .= $patterns['separator'].$this->localizedFormat($instant, $this->timePattern($patterns['time']));
         }
 
         return $text.$this->zoneLabel();
@@ -48,7 +66,21 @@ class RegionalDisplayFormatter
 
     public function time(DateTimeInterface $value): string
     {
-        return $this->instant($value)->format($this->timePattern('H:i')).$this->zoneLabel();
+        return $this->localizedFormat($this->instant($value), $this->timePattern('H:i')).$this->zoneLabel();
+    }
+
+    /** Localize month names while retaining the established month/year chart pattern. */
+    public function monthYear(DateTimeInterface $value): string
+    {
+        return $this->localizedFormat(DateTimeImmutable::createFromInterface($value), 'M Y');
+    }
+
+    /** Translate textual date parts after the unchanged business-time conversion. */
+    public function businessTime(DateTimeInterface $value, string $pattern = 'd M Y H:i'): string
+    {
+        $businessTime = BusinessTime::toBusiness($value);
+
+        return $this->localizedFormat(DateTimeImmutable::createFromInterface($businessTime), $pattern);
     }
 
     /** Transcode separators only; no float conversion, rounding or fractional digit changes. */
@@ -100,6 +132,13 @@ class RegionalDisplayFormatter
     private function timePattern(string $legacy): string
     {
         return $this->registry['time_formats'][$this->preferences['time_format']]['format'] ?? $legacy;
+    }
+
+    private function localizedFormat(DateTimeImmutable $value, string $pattern): string
+    {
+        return Carbon::instance($value)
+            ->locale(app()->getLocale())
+            ->translatedFormat($pattern);
     }
 
     private function zoneLabel(): string

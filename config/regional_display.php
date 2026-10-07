@@ -2,24 +2,24 @@
 
 return [
     'timezones' => [
-        'system' => ['label' => 'System (existing display)', 'example' => 'Keeps the timezone already used by each supported dashboard.'],
+        'system' => ['label' => 'customization.regional_choices.system', 'example' => 'customization.regional_choices.keep_timezone'],
         'Asia/Jakarta' => ['label' => 'Jakarta — WIB (UTC+07:00)', 'example' => '28 Sep 2026 23:35 UTC → 29 Sep 2026 06:35 WIB', 'zone_label' => 'WIB'],
     ],
     'date_formats' => [
-        'system' => ['label' => 'System (existing display)', 'example' => 'Keeps the current calendar date presentation.'],
-        'human' => ['label' => 'Human readable', 'example' => '28 Sep 2026', 'format' => 'd M Y'],
-        'dmy' => ['label' => 'Day / Month / Year', 'example' => '28/09/2026', 'format' => 'd/m/Y'],
-        'iso' => ['label' => 'Year - Month - Day', 'example' => '2026-09-28', 'format' => 'Y-m-d'],
+        'system' => ['label' => 'customization.regional_choices.system', 'example' => 'customization.regional_choices.keep_date'],
+        'human' => ['label' => 'customization.regional_choices.human', 'example' => '28 Sep 2026', 'format' => 'd M Y'],
+        'dmy' => ['label' => 'customization.regional_choices.dmy', 'example' => '28/09/2026', 'format' => 'd/m/Y'],
+        'iso' => ['label' => 'customization.regional_choices.iso', 'example' => '2026-09-28', 'format' => 'Y-m-d'],
     ],
     'time_formats' => [
-        'system' => ['label' => 'System (existing display)', 'example' => 'Keeps the current time presentation.'],
-        '24h' => ['label' => '24-hour clock', 'example' => '14:35', 'format' => 'H:i'],
-        '12h' => ['label' => '12-hour clock', 'example' => '2:35 PM', 'format' => 'g:i A'],
+        'system' => ['label' => 'customization.regional_choices.system', 'example' => 'customization.regional_choices.keep_time'],
+        '24h' => ['label' => 'customization.regional_choices.24h', 'example' => '14:35', 'format' => 'H:i'],
+        '12h' => ['label' => 'customization.regional_choices.12h', 'example' => '2:35 PM', 'format' => 'g:i A'],
     ],
     'number_formats' => [
-        'system' => ['label' => 'System (existing display)', 'example' => 'Keeps existing separators and decimal precision.'],
-        'international' => ['label' => 'International — comma grouping, decimal point', 'example' => '1,250,000.50'],
-        'indonesian' => ['label' => 'Indonesian — dot grouping, decimal comma', 'example' => '1.250.000,50'],
+        'system' => ['label' => 'customization.regional_choices.system', 'example' => 'customization.regional_choices.keep_number'],
+        'international' => ['label' => 'customization.regional_choices.international', 'example' => '1,250,000.50'],
+        'indonesian' => ['label' => 'customization.regional_choices.indonesian', 'example' => '1.250.000,50'],
     ],
     'date_profiles' => [
         'human' => 'd M Y',

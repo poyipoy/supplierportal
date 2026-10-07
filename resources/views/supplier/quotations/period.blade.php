@@ -1,22 +1,22 @@
 @extends('layouts.app')
 @section('uses-datatables', true)
 
-@section('title', 'Requisition List: ' . $period->display_label . ' - ADASI Portal')
-@section('page-title', 'Purchase Requisitions — ' . $period->display_label)
+@section('title', __('supplier.titles.requisitions', ['period' => $period->display_label]))
+@section('page-title', __('supplier.titles.requisitions_page', ['period' => $period->display_label]))
 
 @section('content')
 <div class="tw-grid tw-gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
-        'Dashboard' => route('supplier.dashboard'),
-        'Quotation Periods' => route('supplier.quotations.index'),
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.quotation_periods') => route('supplier.quotations.index'),
         $period->display_label => null,
     ]" />
 
     <x-ui.page-header
-        :title="'Purchase Requisitions — ' . $period->display_label"
-        eyebrow="Supplier Opportunities"
-        description="Review requisitions and manage quotations assigned to your supplier account."
+        :title="__('supplier.titles.requisitions_page', ['period' => $period->display_label])"
+        :eyebrow="__('supplier.copy.supplier_opportunities')"
+        :description="__('supplier.copy.review_requisitions_and_manage_quotations_assigned_to_your_supplier_account')"
     >
         <x-slot:actions>
             <x-ui.button
@@ -26,49 +26,49 @@
                 data-async-export
                 id="exportSupplierQuotationsBtn"
                 :data-export-url="route('supplier.export.quotations')"
-                data-export-source-singular="quotation"
-                data-export-source-plural="quotations"
-                data-export-row-label="quotation item rows"
-                data-export-row-explanation="Each quotation item will be written as a separate Excel row."
+                data-export-source-singular="{{ __('exports.sources.quotation') }}"
+                data-export-source-plural="{{ __('exports.sources.quotations') }}"
+                data-export-row-label="{{ __('supplier.copy.quotation_item_rows') }}"
+                data-export-row-explanation="{{ __('supplier.copy.each_quotation_item_will_be_written_as_a_separate_excel_row') }}"
             >
                 <x-ui.icon name="file-spreadsheet" />
-                <span>Export Excel</span>
+                <span>{{ __('supplier.copy.export_excel') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" />
-                <span>Back to Periods</span>
+                <span>{{ __('supplier.copy.back_to_periods') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
     {{-- Data Table with Integrated Toolbar --}}
     <x-ui.data-table
-        title="Requisition List"
-        description="Filter by PR number or your quotation status."
+        :title="__('supplier.copy.requisition_list')"
+        :description="__('supplier.copy.filter_by_pr_number_or_your_quotation_status')"
     >
         <x-slot:filters>
             <div class="row g-2 align-items-end">
                 <div class="col-md-5 col-lg-4">
-                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_pr_number">PR Number</label>
-                    <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="e.g. REQ/05/2026/001">
+                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_pr_number">{{ __('supplier.copy.pr_number') }}</label>
+                    <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}">
                 </div>
                 <div class="col-md-4 col-lg-3">
-                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_status">My Quotation Status</label>
+                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_status">{{ __('supplier.copy.my_quotation_status') }}</label>
                     <select id="filter_status" class="form-select form-select-sm">
-                        <option value="">All Statuses</option>
-                        <option value="unresponded">Awaiting Quotation</option>
-                        <option value="draft">Draft</option>
-                        <option value="revision_requested">Revision Requested</option>
-                        <option value="submitted">Submitted</option>
-                        <option value="accepted">Accepted</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="">{{ __('supplier.copy.all_statuses') }}</option>
+                        <option value="unresponded">{{ __('supplier.copy.awaiting_quotation') }}</option>
+                        <option value="draft">{{ __('supplier.copy.draft') }}</option>
+                        <option value="revision_requested">{{ __('supplier.copy.revision_requested') }}</option>
+                        <option value="submitted">{{ __('supplier.copy.submitted') }}</option>
+                        <option value="accepted">{{ __('supplier.copy.accepted') }}</option>
+                        <option value="rejected">{{ __('supplier.copy.rejected') }}</option>
                     </select>
                 </div>
                 <div class="col-md-3 col-lg-2 d-flex tw-gap-1.5">
                     <x-ui.button type="button" size="sm" class="tw-flex-1" id="applyFilter">
-                        <x-ui.icon name="search" size="sm" class="me-1" />Filter
+                        <x-ui.icon name="search" size="sm" class="me-1" />{{ __('supplier.copy.filter') }}
                     </x-ui.button>
-                    <x-ui.icon-button icon="rotate-ccw" label="Reset filters" variant="outline" size="sm" id="resetFilter" />
+                    <x-ui.icon-button icon="rotate-ccw" :label="__('supplier.copy.reset_filters')" variant="outline" size="sm" id="resetFilter" />
                 </div>
             </div>
         </x-slot:filters>
@@ -76,12 +76,12 @@
         <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" id="prTable">
             <thead class="table-light">
                 <tr>
-                    <th scope="col" style="width: 40px;">No</th>
-                    <th scope="col">PR Number</th>
-                    <th scope="col">Date Issued</th>
-                    <th scope="col" class="text-center">Items</th>
-                    <th scope="col" class="text-center">My Quotation Status</th>
-                    <th scope="col" class="text-end" style="width: 140px;">Action</th>
+                    <th scope="col" style="width: 40px;">{{ __('supplier.copy.no') }}</th>
+                    <th scope="col">{{ __('supplier.copy.pr_number') }}</th>
+                    <th scope="col">{{ __('supplier.copy.date_issued') }}</th>
+                    <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
+                    <th scope="col" class="text-center">{{ __('supplier.copy.my_quotation_status') }}</th>
+                    <th scope="col" class="text-end" style="width: 140px;">{{ __('supplier.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -112,6 +112,7 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},
+
             order: []
         });
 

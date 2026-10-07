@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import Alpine from 'alpinejs';
 import './password-assistance';
 import { bootAdasiCalendars } from './calendar';
@@ -36,12 +37,12 @@ const toastIcons = {
     progress: 'loader-circle',
 };
 const toastTitles = {
-    success: 'Operation completed',
-    error: 'Action could not be completed',
-    warning: 'Attention required',
-    info: 'Update',
-    message: 'New message',
-    progress: 'Processing',
+    success: t('js.toast.completed'),
+    error: t('js.toast.failed'),
+    warning: t('js.toast.attention'),
+    info: t('js.toast.update'),
+    message: t('js.toast.message'),
+    progress: t('js.processing'),
 };
 const allowedToastTypes = new Set(Object.keys(toastDefaults));
 const maxVisibleToasts = 4;
@@ -181,7 +182,7 @@ const makeToast = (rawOptions = {}) => {
         hasProgress: type === 'progress' || progress !== null,
         indeterminate: type === 'progress' && progress === null,
         progress: progress ?? 0,
-        progressLabel: String(options.progressLabel || (progress === null ? 'Processing' : 'Progress')),
+        progressLabel: String(options.progressLabel || (progress === null ? t('js.processing') : t('js.progress'))),
         restored: options.restored === true,
         visible: true,
     };
@@ -244,7 +245,7 @@ const updateToast = (id, rawChanges = {}) => {
         toast.hasProgress = false;
         toast.indeterminate = false;
     }
-    if (changes.progressLabel !== undefined) toast.progressLabel = String(changes.progressLabel || 'Progress');
+    if (changes.progressLabel !== undefined) toast.progressLabel = String(changes.progressLabel || t('js.progress'));
     if (changes.restored !== undefined) toast.restored = changes.restored === true;
 
     const actionsRequireManualClose = toast.actions.length && changes.autoClose === undefined;
@@ -314,13 +315,13 @@ Alpine.data('adasiShell', () => ({
     get sidebarToggleLabel() {
         if (this.viewportIsDesktop) {
             return this.desktopCollapsed
-                ? 'Expand sidebar'
-                : 'Collapse sidebar';
+                ? t('js.sidebar.expand')
+                : t('js.sidebar.collapse');
         }
 
         return this.mobileOpen
-            ? 'Close navigation menu'
-            : 'Open navigation menu';
+            ? t('js.sidebar.close_menu')
+            : t('js.sidebar.open_menu');
     },
 
     init() {

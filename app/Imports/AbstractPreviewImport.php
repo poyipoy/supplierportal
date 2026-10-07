@@ -37,7 +37,7 @@ abstract class AbstractPreviewImport
             $this->addWarning(
                 null,
                 'worksheet',
-                'Only the first worksheet is imported; '.(count($worksheets) - 1).' additional worksheet(s) were ignored.'
+                __('purchasing.imports.additional_sheets', ['count' => count($worksheets) - 1])
             );
         }
     }
@@ -70,7 +70,7 @@ abstract class AbstractPreviewImport
         $this->totalRowCount = $collection->count();
 
         if ($collection->isEmpty()) {
-            $this->addFileError(null, 'import_file', 'The spreadsheet does not contain any data rows.');
+            $this->addFileError(null, 'import_file', __('purchasing.imports.empty'));
 
             return false;
         }
@@ -80,7 +80,7 @@ abstract class AbstractPreviewImport
             $this->addFileError(
                 null,
                 'import_file',
-                'The spreadsheet may contain no more than '.self::MAX_ROWS.' non-empty data rows.'
+                __('purchasing.imports.max_rows', ['count' => self::MAX_ROWS])
             );
 
             return false;
@@ -92,12 +92,12 @@ abstract class AbstractPreviewImport
 
         foreach ($requiredHeadings as $requiredHeading) {
             if (! $headings->contains($requiredHeading)) {
-                $this->addFileError(1, $requiredHeading, "Required heading '{$requiredHeading}' is missing.");
+                $this->addFileError(1, $requiredHeading, __('purchasing.imports.required_heading', ['heading' => $requiredHeading]));
             }
         }
 
         $headings->diff($allowedHeadings)->each(function (string $heading): void {
-            $this->addWarning(1, $heading, "Unknown heading '{$heading}' was ignored.");
+            $this->addWarning(1, $heading, __('purchasing.imports.unknown_heading', ['heading' => $heading]));
         });
 
         return ! $this->fileInvalid;

@@ -16,11 +16,11 @@ class GaVerificationService
     public function financeVerify(GaClaim $claim, User $financeActor, bool $approve, ?string $reason = null): GaClaim
     {
         if (! $financeActor->isFinance() && ! $financeActor->isAdmin()) {
-            throw new InvalidArgumentException('Only Finance or Admin can perform finance verification on GA claims.');
+            throw new InvalidArgumentException(__('ga.validation.finance_role'));
         }
 
         if (! $approve && empty(trim((string) $reason))) {
-            throw new InvalidArgumentException('Reason is mandatory when requesting claim revision.');
+            throw new InvalidArgumentException(__('ga.validation.revision_reason'));
         }
 
         return DB::transaction(function () use ($claim, $financeActor, $approve, $reason) {
@@ -28,7 +28,7 @@ class GaVerificationService
             $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
             if ($clm->status !== GaClaim::STATUS_BASIC_VERIFIED) {
-                throw new RuntimeException('Cannot verify claim: claim must be in BASIC_VERIFIED status before Finance verification.');
+                throw new RuntimeException(__('ga.validation.basic_required'));
             }
 
             if ($approve) {
@@ -44,12 +44,12 @@ class GaVerificationService
                     'to_status' => GaClaim::STATUS_READY_TO_PAY,
                     'actor_id' => $financeActor->id,
                     'event' => 'approved',
-                    'notes' => 'Claim verified and marked Ready to Pay by Finance.',
+                    'notes' => __('ga.history.approved'),
                     'created_at' => now(),
                 ]);
             } else {
                 if (empty(trim((string) $reason))) {
-                    throw new InvalidArgumentException('Reason is mandatory when requesting claim revision.');
+                    throw new InvalidArgumentException(__('ga.validation.revision_reason'));
                 }
 
                 $clm->update([

@@ -1,27 +1,27 @@
 @extends('layouts.auth')
 
-@section('title', '429 - Terlalu Banyak Permintaan | ADASI Supplier Portal')
+@section('title', '429 - '.__('auth.rate_limit.heading').' | ADASI Supplier Portal')
 @section('meta')<meta name="robots" content="noindex, nofollow">@endsection
 
 @section('content')
 <div aria-labelledby="error-title" class="tw-text-left">
     <header class="tw-mb-5">
         <div class="tw-flex tw-items-center tw-gap-2">
-            <span class="ui-status-chip ui-status-chip--warning">Error 429</span>
-            <span class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">Too Many Requests</span>
+            <span class="ui-status-chip ui-status-chip--warning">{{ __('common.review.error_code', ['code' => 429]) }}</span>
+            <span class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">{{ __('auth.rate_limit.heading') }}</span>
         </div>
         <h1 id="error-title" class="tw-m-0 tw-mt-2 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">
-            Terlalu Banyak Permintaan
+            {{ __('auth.rate_limit.heading') }}
         </h1>
         <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">
-            Sistem mendeteksi aktivitas yang melebihi batas wajar dalam waktu singkat.
+            {{ __('common.review.rate_description') }}
         </p>
     </header>
 
     <div class="tw-mb-5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3.5 tw-text-ui-xs tw-text-on-surface-variant">
         <div class="tw-flex tw-items-center tw-gap-2.5">
             <x-ui.icon name="clock" size="sm" class="tw-flex-shrink-0 tw-text-warning" />
-            <span>Mohon tunggu beberapa saat sebelum mencoba kembali untuk menjaga stabilitas dan keamanan portal.</span>
+            <span>{{ __('common.review.rate_help') }}</span>
         </div>
     </div>
 
@@ -29,13 +29,13 @@
         <button type="button" onclick="window.history.length > 1 ? window.history.back() : window.location.assign('{{ url('/') }}')"
             class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-4 tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container">
             <x-ui.icon name="arrow-left" size="sm" />
-            <span>Kembali</span>
+            <span>{{ __('common.actions.back') }}</span>
         </button>
 
         <a href="{{ auth()->check() ? route('dashboard') : route('login') }}"
             class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-4 tw-text-ui-sm tw-font-semibold tw-text-primary-foreground tw-no-underline hover:tw-brightness-95">
             <x-ui.icon name="{{ auth()->check() ? 'layout-dashboard' : 'log-in' }}" size="sm" />
-            <span>{{ auth()->check() ? 'Dashboard' : 'Halaman Masuk' }}</span>
+            <span>{{ auth()->check() ? __('navigation.dashboard') : __('common.review.sign_in_page') }}</span>
         </a>
     </div>
 

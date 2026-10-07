@@ -24,6 +24,10 @@ class NotificationController extends Controller
 
     public function unreadCount(Request $request)
     {
+        if (session()->isStarted()) {
+            session()->save();
+        }
+
         return response()->json($this->summaryService->countsForUser($request->user()));
     }
 
@@ -46,7 +50,7 @@ class NotificationController extends Controller
         $notification = $request->user()->notifications()->findOrFail($id);
 
         if (! NotificationDomain::isNotificationAllowed($notification, $request->user())) {
-            abort(403, 'You do not have access to this notification.');
+            abort(403, __('common.errors.notification_forbidden'));
         }
 
         $targetUrl = $this->urlResolver->resolve($notification, $request->user());
@@ -97,10 +101,10 @@ class NotificationController extends Controller
                 ->update(['read_at' => now()]);
         }
 
-        $categoryLabel = NotificationCategory::optionsForUser($request->user())[$category]['label'] ?? 'Notification';
+        $categoryLabel = NotificationCategory::optionsForUser($request->user())[$category]['label'] ?? __('notifications.center.other');
         $message = $category === NotificationCategory::ALL
-            ? 'All notifications have been marked as read.'
-            : "{$categoryLabel} notifications have been marked as read.";
+            ? __('notifications.feedback.all_read')
+            : __('notifications.feedback.category_read', ['category' => $categoryLabel]);
 
         if ($request->expectsJson()) {
             $summary = $this->summaryService->countsForUser($request->user());

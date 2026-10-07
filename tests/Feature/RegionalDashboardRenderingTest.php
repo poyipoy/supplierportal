@@ -95,7 +95,7 @@ class RegionalDashboardRenderingTest extends TestCase
         $weekly = [['start' => '2026-09-28', 'end' => '2026-09-30', 'week' => 'Week 5', 'label' => 'Week 5', 'count' => 0, 'period_amount' => 1250000.5, 'cumulative_amount' => 1250000.5, 'period_amount_formatted' => 'Rp 1.250.001', 'cumulative_amount_formatted' => 'Rp 1.250.001']];
         View::composer('finance.dashboard', fn ($view) => $view->with(['weeklyForecast' => $weekly, 'selectedMonth' => '2026-09', 'availableMonths' => [['key' => '2026-09', 'label' => 'September 2026', 'is_current' => true]]]));
         $response = $this->actingAs($user)->get(route('finance.dashboard'))->assertOk();
-        $response->assertSee('28/09/2026 s/d 30/09/2026');
+        $response->assertSee(__('finance.review.date_range', ['start' => '28/09/2026', 'end' => '30/09/2026'], 'en'));
         $response->assertSee("selectedMonth: '2026-09'", false);
         $response->assertSee('"start":"2026-09-28"', false);
         $response->assertSee('"period_amount":1250000.5', false);

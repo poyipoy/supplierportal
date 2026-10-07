@@ -45,17 +45,17 @@ class NotificationCategoryOrderTest extends TestCase
     public function test_page_events_view_data_order_equals_the_expected_literal_list(): void
     {
         $expectedOrder = [
-            'Purchase requisitions',
-            'Quotations',
-            'Conversations',
-            'Purchase orders',
-            'Documents',
-            'Shipments and QC',
-            'Material claims',
-            'Local invoices',
-            'Supplier registration',
-            'Exports',
-            'Security',
+            'notifications.categories.requisitions',
+            'notifications.categories.quotations',
+            'notifications.categories.conversations',
+            'notifications.categories.purchase_orders',
+            'notifications.categories.documents',
+            'notifications.categories.shipments_qc',
+            'notifications.categories.claims',
+            'notifications.categories.local_invoices',
+            'notifications.categories.registration',
+            'notifications.categories.exports',
+            'notifications.categories.security',
         ];
 
         $user = User::factory()->create(['role' => 'admin']);

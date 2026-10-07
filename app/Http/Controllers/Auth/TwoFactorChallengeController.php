@@ -42,7 +42,7 @@ class TwoFactorChallengeController extends Controller
         if ($method === null) {
             event(new AuthSecurityEvent('mfa_challenge_failed', $user));
 
-            throw ValidationException::withMessages(['code' => 'The authentication code is invalid or has already been used.']);
+            throw ValidationException::withMessages(['code' => __('auth.feedback.used_code')]);
         }
 
         $remember = (bool) ($pending['remember'] ?? false);

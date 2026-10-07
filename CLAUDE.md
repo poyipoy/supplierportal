@@ -107,15 +107,13 @@ Roles are a MySQL enum on `users` (plus `is_active`), checked by [RoleMiddleware
 
 `accounting` is **legacy**: `2026_09_11_000001` migrated every existing accounting user to `finance` and kept the enum value only for compatibility. It is still assignable in the admin user form and still appears in `role:` lists, and `User::isLocalOperator()` returns true for both. Write new work against `finance`; keep `accounting` accepted wherever it already is.
 
-`routes/web.php` `require`s four sibling files at the top — put new routes in the matching one, not in `web.php`:
+All HTTP routes are defined directly in `routes/web.php` — put new routes in the matching domain section while preserving role/scope boundaries and static-before-dynamic route ordering. Console commands/schedules and broadcast channel authorization remain separate:
 
 | File | Group |
 |---|---|
-| [routes/web.php](routes/web.php) | admin, purchasing, supplier (import), qc, shared (profile, attachments, exports, notifications, conversations, shared PDF) |
-| [routes/supplier-local.php](routes/supplier-local.php) | `local-supplier.*`, supplier context switcher, the three signed document controllers |
-| [routes/finance.php](routes/finance.php) | `finance.*` — invoice verification, DRP, vouchers, settlements, local procurement, vendor master |
-| [routes/accounting.php](routes/accounting.php) | `accounting.*` — legacy read-oriented invoice views |
-| [routes/ga.php](routes/ga.php) | `ga.*` — employee master, claims, GA DRP draft |
+| [routes/web.php](routes/web.php) | All HTTP routes: import roles, `local-supplier.*`, `finance.*`, legacy `accounting.*`, `ga.*`, supplier context, shared documents/endpoints, public registration, login/MFA/password/session security |
+| [routes/console.php](routes/console.php) | Artisan closure commands and scheduled tasks |
+| [routes/channels.php](routes/channels.php) | Broadcast channel authorization |
 
 The partition runs through the whole stack — put new work in the matching slot:
 
@@ -203,6 +201,26 @@ Beyond Breeze: 2FA (google2fa + recovery codes), Cloudflare Turnstile, per-ident
 **Event auto-discovery is off** (`withEvents(discover: false)` in [bootstrap/app.php](bootstrap/app.php)) — a new listener must be registered explicitly via `Event::listen`. Providers are listed in [bootstrap/providers.php](bootstrap/providers.php).
 
 Run [tests/Feature/Auth/](tests/Feature/Auth/) after any change in the auth path. Deployment notes: [docs/guides/AUTH-SECURITY-DEPLOYMENT.md](docs/guides/AUTH-SECURITY-DEPLOYMENT.md).
+
+## Business Time Invariant (Invariant #11)
+
+`app.timezone` and the database are always **UTC** — do not change either. All calendar logic must use `App\Support\BusinessTime`:
+
+| Usage | Correct |
+|---|---|
+| Today's date | `BusinessTime::today()` |
+| Current moment | `BusinessTime::now()` |
+| Parse date string | `BusinessTime::parseDate('Y-m-d')` |
+| Convert UTC timestamp → business tz | `BusinessTime::toBusiness($carbon)` |
+| Convert business moment → UTC for storage | `BusinessTime::toStorage($carbon)` |
+| Timezone label for display | `BusinessTime::label()` |
+| Format timestamp in view | `@bizdt($model->created_at)` or `bizdt()` helper |
+
+**Date vs Datetime columns:**
+- `date` columns (`due_date`, `scheduled_physical_delivery_date`, etc.) represent calendar dates with no timezone — compare them directly as strings, never convert.
+- `datetime`/`timestamp` columns are stored UTC. Display only via `BusinessTime::format()` / `@bizdt`, always with the timezone label.
+
+**Guard:** `BusinessTimeGuardTest` enforces these rules in CI. Annotate legitimate instant-UTC usages (export filenames, storage paths, cache keys) with `// biz-time:ignore <reason>` — never suppress a genuine business-calendar violation.
 
 ## Database safety
 

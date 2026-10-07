@@ -34,10 +34,13 @@ class RegionalScopeProtectionTest extends TestCase
 
     public function test_fixed_po_pdf_and_export_rows_ignore_personal_display_preferences(): void
     {
+        $this->travelTo(Carbon::parse('2026-10-28 03:00:00', 'UTC'));
         $po = $this->purchaseOrder();
         $user = User::factory()->create(['role' => 'admin']);
         $this->actingAs($user);
+        app()->setLocale('en');
         $beforePdf = view('pdf.po-pdf', ['po' => $po, 'quotationRates' => [1 => $po->quotations->first()->exchange_rate]])->render();
+        $this->assertStringContainsString('28 October 2026, 10:00 WIB', $beforePdf);
         $beforeRow = (new PurchaseOrdersExport)->map($po);
         $this->assertSame(1250000.5, $beforeRow[5]);
         $this->assertSame('2026-09-28', $beforeRow[7]);
@@ -45,10 +48,17 @@ class RegionalScopeProtectionTest extends TestCase
         $user->preference()->create([...config('user_preferences.defaults'), 'timezone' => 'Asia/Jakarta', 'date_format' => 'iso', 'time_format' => '12h', 'number_format' => 'international']);
         $this->assertSame($beforePdf, view('pdf.po-pdf', ['po' => $po, 'quotationRates' => [1 => $po->quotations->first()->exchange_rate]])->render());
         $this->assertSame($beforeRow, (new PurchaseOrdersExport)->map($po));
+
+        app()->setLocale('id');
+        $indonesianPdf = view('pdf.po-pdf', ['po' => $po, 'quotationRates' => [1 => $po->quotations->first()->exchange_rate]])->render();
+        $this->assertStringContainsString('28 Oktober 2026, 10:00 WIB', $indonesianPdf);
+        $this->assertStringNotContainsString('2026-10-28', $indonesianPdf);
+        app()->setLocale('en');
     }
 
     public function test_voucher_print_uses_authoritative_snapshot_format_with_every_personal_preset(): void
     {
+        app()->setLocale('en');
         $user = User::factory()->create(['role' => 'admin']);
         $this->actingAs($user);
         $voucher = (object) [
@@ -62,7 +72,14 @@ class RegionalScopeProtectionTest extends TestCase
             'finalized_at' => Carbon::parse('2026-09-28T23:35:00Z'),
         ];
         $before = view('finance.vouchers.print', compact('voucher'))->render();
+        $this->assertStringContainsString('Phone: 021-39506699', $before);
+        $this->assertStringContainsString('Website: www.astra-daido.co.id', $before);
         $this->assertStringContainsString('Rp 1.362.500,55', $before);
+        app()->setLocale('id');
+        $indonesian = view('finance.vouchers.print', compact('voucher'))->render();
+        $this->assertStringContainsString('Telepon: 021-39506699', $indonesian);
+        $this->assertStringContainsString('Situs web: www.astra-daido.co.id', $indonesian);
+        app()->setLocale('en');
         $preference = $user->preference()->create([...config('user_preferences.defaults'), 'timezone' => 'Asia/Jakarta', 'date_format' => 'dmy', 'time_format' => '12h', 'number_format' => 'international']);
         $this->assertSame($before, view('finance.vouchers.print', compact('voucher'))->render());
         $preference->update(['date_format' => 'iso', 'number_format' => 'indonesian']);
@@ -157,7 +174,11 @@ class RegionalScopeProtectionTest extends TestCase
             ->andReturnUsing(function (...$args) use (&$messages, $supplier): void {
                 $this->assertSame($supplier->id, $args[0]->id);
                 $this->assertSame('claim.created', $args[1]);
-                $messages[] = $args[4];
+                $messages[] = [
+                    'message' => $args[4],
+                    'replace' => $args[8] ?? [],
+                    'localized_replace' => $args[9] ?? [],
+                ];
             });
         $this->actingAs($purchasing);
         foreach (['system', 'iso'] as $date) {
@@ -175,7 +196,11 @@ class RegionalScopeProtectionTest extends TestCase
         }
         $this->assertCount(2, $messages);
         $this->assertSame($messages[0], $messages[1]);
-        $this->assertSame('You received a new claim for PO PO-CLAIM-NOTIFICATION. Please respond before 02 Oct 2026.', $messages[0]);
+        $this->assertSame([
+            'message' => 'claims.notify.created_body',
+            'replace' => ['po' => 'PO-CLAIM-NOTIFICATION'],
+            'localized_replace' => ['deadline' => '@date:2026-10-02'],
+        ], $messages[0]);
         $this->assertSame(['2026-10-02', '2026-10-02'], DB::table('material_claims')->orderBy('id')->pluck('deadline')->all());
     }
 

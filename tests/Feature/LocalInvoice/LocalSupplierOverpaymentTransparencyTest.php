@@ -164,8 +164,8 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             ->get(route('local-supplier.invoices.show', $invoice));
 
         $response->assertOk();
-        $response->assertSee('Pemberitahuan Kelebihan Pembayaran (Overpayment)');
-        $response->assertSee('Perlu Pengembalian Dana');
+        $response->assertSee(__('local_invoice.detail.overpayment_title'));
+        $response->assertSee(__('local_invoice.detail.refund_required'));
         $response->assertSee('Rp 1.000'); // Bill amount
         $response->assertSee('Rp 1.050'); // Transferred amount
         $response->assertSee('Rp 50');    // Overpayment amount
@@ -179,14 +179,14 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $response->assertSee('mailto:finance-local@adasi.co.id', false);
         $response->assertSee('mail.google.com/mail', false);
         $response->assertSee('outlook.office.com/mail', false);
-        $response->assertSee('Salin Alamat Email');
+        $response->assertSee(__('local_invoice.refund_contact.copy_email'));
         $response->assertSee('WhatsApp');
         $response->assertSee('https://wa.me/6281298765432', false);
         $response->assertSee('fill="#25D366"', false);
 
         // Copy interaction attribute
         $response->assertSee('data-copy-text="888-001-9922"', false);
-        $response->assertSee('Salin Nomor Rekening');
+        $response->assertSee(__('local_invoice.detail.copy_account'));
     }
 
     public function test_supplier_can_view_settled_overpayment_card_and_reference_details(): void
@@ -205,14 +205,14 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             ->get(route('local-supplier.invoices.show', $invoice));
 
         $response->assertOk();
-        $response->assertSee('Penyelesaian Kelebihan Pembayaran (Overpayment)');
-        $response->assertSee('Selesai / Terverifikasi');
+        $response->assertSee(__('local_invoice.detail.refund_settlement'));
+        $response->assertSee(__('local_invoice.detail.verified_settlement'));
         $response->assertSee('Rp 75');
         $response->assertSee('16 Sep 2026');
         $response->assertSee('REF-ADASI-7788');
         $response->assertSee('Telah diterima via transfer BCA');
         $response->assertSee('bukti_refund.pdf');
-        $response->assertSee('Unduh Bukti');
+        $response->assertSee(__('local_invoice.actions.download_proof'));
     }
 
     public function test_supplier_can_download_own_overpayment_settlement_proof(): void
@@ -230,7 +230,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $this->assertNotNull($attachment);
 
         $response = $this->actingAs($this->supplier)
-            ->get(route('attachments.show', $attachment->id));
+            ->get(route('attachments.show', $attachment));
 
         $response->assertOk();
     }
@@ -251,13 +251,13 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
 
         // Other supplier forbidden
         $response = $this->actingAs($this->otherSupplier)
-            ->get(route('attachments.show', $attachment->id));
+            ->get(route('attachments.show', $attachment));
 
         $response->assertForbidden();
 
         // Unauthenticated forbidden / redirected
         auth()->logout();
-        $guestResponse = $this->get(route('attachments.show', $attachment->id));
+        $guestResponse = $this->get(route('attachments.show', $attachment));
         $guestResponse->assertRedirect(route('login'));
     }
 
@@ -349,12 +349,13 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             ->get(route('local-supplier.invoices.index'));
 
         $response->assertOk();
-        $response->assertSee('Kelebihan Bayar: Rp 40 (Perlu Refund)');
-        $response->assertSee('Refund Selesai');
+        $response->assertSee(__('local_invoice.closure.overpayment_refund', ['amount' => '40'], 'en'));
+        $response->assertSee(__('finance.refund.completed', [], 'en'));
     }
 
     public function test_settlement_creates_status_history_and_sends_notification_to_supplier(): void
     {
+        app()->setLocale('id');
         [$invoice, $payment, $refund] = $this->createInvoiceWithOverpayment('INV-NOTIF-001', '80.00');
 
         $proof = UploadedFile::fake()->create('proof_notif.pdf', 20, 'application/pdf');
@@ -374,9 +375,11 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $this->assertSame($invoice->status, $history->from_status);
         $this->assertSame($invoice->status, $history->to_status);
         $this->assertSame($this->finance->id, $history->actor_id);
-        $this->assertStringContainsString('80', $history->notes);
-        $this->assertStringContainsString('REF-NOTIF-99', $history->notes);
-        $this->assertStringContainsString('Konfirmasi diterima via m-Banking', $history->notes);
+        $this->assertSame(__('local_invoice.history.refund_settled_with_notes', [
+            'amount' => '80',
+            'reference' => 'REF-NOTIF-99',
+            'notes' => 'Konfirmasi diterima via m-Banking',
+        ], 'id'), $history->notes);
 
         // Verify in-app notification delivered to supplier
         $notification = $this->supplier->notifications()->where('data->event', 'local_invoice.refund_settled')->first();
@@ -539,8 +542,8 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             ->get(route('local-supplier.invoices.show', $invoice));
 
         $response->assertOk();
-        $response->assertSee('Penyelesaian Kelebihan Pembayaran (Overpayment)');
-        $response->assertSee('Selesai / Terverifikasi');
+        $response->assertSee(__('local_invoice.detail.refund_settlement', [], 'en'));
+        $response->assertSee(__('local_invoice.detail.verified_settlement', [], 'en'));
         $response->assertSee('REF-MANUAL-01');
         $response->assertDontSee('Unduh Bukti'); // No proof attachment rendered
     }
@@ -554,15 +557,15 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
 
         $response->assertOk();
         // Overpayment notice and amounts
-        $response->assertSee('Pemberitahuan Kelebihan Pembayaran (Overpayment)');
+        $response->assertSee(__('local_invoice.detail.overpayment_title', [], 'en'));
         $response->assertSee('Rp 75');
 
         // Structured email subject and body in links
-        $response->assertSee('Buka di Gmail (Web)');
-        $response->assertSee('Buka di Outlook (Web)');
-        $response->assertSee('Aplikasi Email Bawaan');
-        $response->assertSee('Salin Teks Draf Pesan');
-        $response->assertSee('Salin Alamat Email Saja');
+        $response->assertSee(__('local_invoice.refund_contact.gmail', [], 'en'));
+        $response->assertSee(__('local_invoice.refund_contact.outlook', [], 'en'));
+        $response->assertSee(__('local_invoice.refund_contact.email_app', [], 'en'));
+        $response->assertSee(__('local_invoice.refund_contact.copy_draft', [], 'en'));
+        $response->assertSee(__('local_invoice.refund_contact.copy_email', [], 'en'));
         $response->assertSee('mail.google.com/mail');
         $response->assertSee('outlook.office.com/mail');
         $response->assertSee('mailto:finance-local@adasi.co.id');
@@ -570,6 +573,6 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
 
         // WhatsApp structured message
         $response->assertSee('wa.me/6281298765432');
-        $response->assertSee(rawurlencode('Nilai Kelebihan Bayar: Rp 75'));
+        $response->assertSee(rawurlencode('Overpayment: Rp 75'));
     }
 }

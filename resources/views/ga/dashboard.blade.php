@@ -1,22 +1,22 @@
 @extends('layouts.app')
-@section('title', 'GA Claims Dashboard - ADASI')
-@section('page-title', 'General Affairs Dashboard')
+@section('title', __('ga.dashboard.page_title'))
+@section('page-title', __('ga.dashboard.title'))
 
 @section('content')
 <div class="tw-grid tw-gap-6 tw-pb-16">
     <x-ui.page-header
-        title="General Affairs (GA) Dashboard"
-        description="Kelola pengajuan klaim/reimbursement karyawan (Entertain Sales, UPD Sales, UPD GA, Reimburse), lakukan verifikasi berkas, dan siapkan draft DRP untuk Finance."
-        eyebrow="Internal Operations"
+        :title="__('ga.dashboard.title')"
+        :description="__('ga.review.help')"
+        :eyebrow="__('ga.review.internal')"
     >
         <x-slot:actions>
             <x-ui.button :href="route('ga.claims.create')" variant="primary">
                 <x-ui.icon name="plus" size="sm" />
-                <span>Pengajuan Klaim Baru</span>
+                <span>{{ __('ga.review.new_claim') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('ga.drp-draft')" variant="outline">
                 <x-ui.icon name="wallet" size="sm" />
-                <span>DRP GA Draft</span>
+                <span>{{ __('finance.drp.ga_draft') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -26,35 +26,35 @@
 {{-- KPI Cards --}}
     <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-5 tw-gap-4">
         <x-ui.metric-card
-            label="Diajukan"
+            :label="__('local_invoice.labels.submitted')"
             :value="$regionalFormatter->number((string) ($kpis['submitted'] ?? 0), 'plain')"
             icon="file-text"
             tone="primary"
             :href="route('ga.claims.index', ['status' => 'SUBMITTED'])"
         />
         <x-ui.metric-card
-            label="Verifikasi Dasar (GA)"
+            :label="__('ga.verification.basic_label')"
             :value="$regionalFormatter->number((string) ($kpis['basic_verified'] ?? 0), 'plain')"
             icon="clipboard-check"
             tone="info"
             :href="route('ga.claims.index', ['status' => 'BASIC_VERIFIED'])"
         />
         <x-ui.metric-card
-            label="Ready to Pay"
+            :label="__('local_invoice.labels.ready_to_pay')"
             :value="$regionalFormatter->number((string) ($kpis['ready_to_pay'] ?? 0), 'plain')"
             icon="badge-check"
             tone="success"
             :href="route('ga.claims.index', ['status' => 'READY_TO_PAY'])"
         />
         <x-ui.metric-card
-            label="Perlu Revisi"
+            :label="__('local_invoice.dashboard.revision')"
             :value="$regionalFormatter->number((string) ($kpis['need_revision'] ?? 0), 'plain')"
             icon="file-edit"
             tone="error"
             :href="route('ga.claims.index', ['status' => 'NEED_REVISION'])"
         />
         <x-ui.metric-card
-            label="Selesai Dibayar"
+            :label="__('ga.review.paid')"
             :value="$regionalFormatter->number((string) ($kpis['paid'] ?? 0), 'plain')"
             icon="check-circle-2"
             tone="neutral"
@@ -66,12 +66,12 @@
         <x-slot:claims>
 {{-- Recent Claims Table --}}
     <x-ui.data-table
-        title="Daftar Klaim GA Terbaru"
-        description="10 pengajuan klaim karyawan terakhir yang tercatat dalam sistem."
+        :title="__('ga.list.recent')"
+        :description="__('ga.list.recent_help')"
     >
         <x-slot:toolbar>
             <x-ui.button :href="route('ga.claims.index')" variant="ghost" size="sm">
-                <span>Lihat Semua Klaim</span>
+                <span>{{ __('ga.review.all_claims') }}</span>
                 <x-ui.icon name="arrow-right" size="sm" />
             </x-ui.button>
         </x-slot:toolbar>
@@ -80,13 +80,13 @@
             <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Nomor Klaim</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Karyawan</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tipe Klaim</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Tanggal</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Nominal (Rp)</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">Status</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">Aksi</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.detail.number') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.employee') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.claim_type') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.date') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('ga.labels.claim_amount') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,7 +101,7 @@
                             </td>
                             <td>
                                 <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
-                                    {{ $c->claim_type }}
+                                    {{ \App\Models\GaClaim::claimTypeLabel($c->claim_type) }}
                                 </span>
                             </td>
                             <td>{{ $c->claim_date ? $regionalFormatter->date($c->claim_date, 'human') : '' }}</td>
@@ -109,21 +109,21 @@
                                 Rp {{ $regionalFormatter->number(number_format($c->amount, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="match($c->status) { 'PAID' => 'success', 'READY_TO_PAY' => 'success', 'NEED_REVISION' => 'error', 'BASIC_VERIFIED' => 'info', default => 'warning' }">
-                                    {{ $c->status }}
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::gaClaimTone($c->status)">
+                                    {{ \App\Support\StatusHelper::gaClaimLabel($c->status) }}
                                 </x-ui.status-chip>
                             </td>
                             <td class="text-end">
                                 <x-ui.button :href="route('ga.claims.show', $c)" size="sm" variant="outline">
                                     <x-ui.icon name="eye" size="sm" />
-                                    <span>Detail</span>
+                                    <span>{{ __('local_invoice.actions.detail') }}</span>
                                 </x-ui.button>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="7" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
-                                Belum ada pengajuan klaim GA.
+                                {{ __('ga.list.empty_recent') }}
                             </td>
                         </tr>
                     @endforelse

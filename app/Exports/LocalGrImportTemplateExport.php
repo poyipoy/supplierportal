@@ -58,7 +58,7 @@ class LocalGrImportTemplateExport implements FromArray, WithHeadings, WithTitle
                 'pcs',
                 'Yes',
                 'Confirmed',
-                now()->format('Y-m-d H:i'),
+                now()->format('Y-m-d H:i'), // biz-time:ignore sample data for import template
                 '',
             ],
         ];

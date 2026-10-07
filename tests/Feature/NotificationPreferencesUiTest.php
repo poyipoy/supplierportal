@@ -64,8 +64,8 @@ class NotificationPreferencesUiTest extends TestCase
         // Assert Action needed status chip exists for finance
         $this->assertGreaterThan(0, $financeXpath->query('.//*[contains(normalize-space(.), "Action needed")]', $fieldset)->length);
 
-        // Assert pinned XPath for legend text is strictly unmodified
-        $this->assertCount(1, $financeXpath->query('//fieldset/legend[normalize-space(.)="Invoice diajukan"]'));
+        // The same event legend renders in the default English locale
+        $this->assertCount(1, $financeXpath->query('//fieldset/legend[normalize-space(.)="Invoice submitted"]'));
 
         // Assert inline note exists with accessibility attributes and is hidden by default when enabled
         $note = $financeXpath->query('.//p[contains(@class, "action-required-note")]', $fieldset)->item(0);
@@ -141,7 +141,8 @@ class NotificationPreferencesUiTest extends TestCase
         $response->assertDontSee('placeholder="Search notifications..."', false);
         $response->assertDontSeeText('Turn all on');
         $response->assertDontSeeText('Turn all off');
-        $response->assertDontSeeText('Expand all');
+        $xpath = $this->xpathFromHtml($response->getContent());
+        $this->assertCount(0, $xpath->query('//button[contains(normalize-space(.), "Expand all")]')); // Ignore inert JS dictionary text
 
         // The single switch is still rendered
         $xpath = $this->xpathFromHtml($response->getContent());

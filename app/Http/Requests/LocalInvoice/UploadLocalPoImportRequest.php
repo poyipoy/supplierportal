@@ -28,11 +28,11 @@ class UploadLocalPoImportRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'import_file.required' => 'File spreadsheet PO (.xlsx) wajib diunggah.',
-            'import_file.file' => 'File yang diunggah tidak valid.',
-            'import_file.extensions' => 'Format file harus berupa spreadsheet Excel (.xlsx).',
-            'import_file.mimes' => 'Format file harus berupa spreadsheet Excel (.xlsx).',
-            'import_file.max' => 'Ukuran file spreadsheet tidak boleh melebihi 10 MB.',
+            'import_file.required' => __('local_procurement.validation.po_sheet_required'),
+            'import_file.file' => __('local_procurement.validation.sheet_invalid'),
+            'import_file.extensions' => __('local_procurement.validation.sheet_type'),
+            'import_file.mimes' => __('local_procurement.validation.sheet_type'),
+            'import_file.max' => __('local_procurement.validation.sheet_size'),
         ];
     }
 }

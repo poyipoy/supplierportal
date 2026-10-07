@@ -43,11 +43,14 @@ class AuthAuditLogController extends Controller
             ->orderByDesc('created_at');
 
         return DataTables::eloquent($query)
-            ->addColumn('user_display', fn (AuthAuditLog $log): string => $log->user?->name ?? 'Unknown / deleted user')
+            ->addColumn('user_display', fn (AuthAuditLog $log): string => $log->user?->name ?? __('admin.copy.unknown_deleted_user'))
+            ->addColumn('event_display', fn (AuthAuditLog $log): string => __(in_array($log->event, AuthAuditLog::EVENTS, true)
+                ? 'security.audit_events.'.$log->event
+                : 'security.audit_events.unknown'))
             ->editColumn('email_attempted', fn (AuthAuditLog $log): string => $log->email_attempted ?? '—')
             ->editColumn('ip_address', fn (AuthAuditLog $log): string => $log->ip_address ?? '—')
             ->editColumn('metadata', fn (AuthAuditLog $log): string => $log->metadata ? json_encode($log->metadata, JSON_UNESCAPED_SLASHES) : '—')
-            ->editColumn('created_at', fn (AuthAuditLog $log): string => $log->created_at?->format('d M Y H:i:s') ?? '—')
+            ->editColumn('created_at', fn (AuthAuditLog $log): string => $log->created_at ? \App\Support\BusinessTime::format($log->created_at, 'd M Y H:i:s') : '—')
             ->toJson();
     }
 

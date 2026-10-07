@@ -122,6 +122,15 @@ BLADE;
         $this->assertNoCompilerLeakage($html);
     }
 
+    public function test_searchable_select_search_field_has_an_id_without_becoming_a_submitted_value(): void
+    {
+        $html = Blade::render('<x-ui.searchable-select name="bank_select" id="bank_select" label="Bank" :options="[]" />');
+
+        $this->assertStringContainsString('id="bank_select-search"', $html);
+        $this->assertStringNotContainsString('name="bank_select-search"', $html);
+        $this->assertStringContainsString('name="bank_select"', $html);
+    }
+
     public function test_modal_renders_cleanly(): void
     {
         $template = <<<'BLADE'
@@ -205,6 +214,7 @@ BLADE;
 
     public function test_local_invoice_filters_render_cleanly(): void
     {
+        app()->setLocale('id');
         $user = User::factory()->make(['id' => 1, 'role' => 'finance']);
         $this->actingAs($user);
 
@@ -220,7 +230,7 @@ BLADE;
         $this->assertStringContainsString('Kriteria Filter Lanjutan', $html);
         $this->assertStringContainsString('invoice-submitted-range', $html);
         $this->assertStringContainsString('invoice-due-range', $html);
-        $this->assertStringContainsString('Organisasi Supplier', $html);
+        $this->assertStringContainsString('Organisasi Pemasok', $html);
         $this->assertStringContainsString('PT Sumber Logam Mandiri', $html);
         $this->assertStringContainsString($mockSupplier->hash, $html);
         $this->assertStringContainsString('Hanya Jatuh Tempo', $html);
@@ -236,7 +246,7 @@ BLADE;
             'payments' => false,
         ])->render();
 
-        $this->assertStringNotContainsString('Organisasi Supplier', $supplierHtml);
+        $this->assertStringNotContainsString('Organisasi Pemasok', $supplierHtml);
         $this->assertStringNotContainsString('invoice-supplier', $supplierHtml);
         $this->assertStringNotContainsString('PT Sumber Logam Mandiri', $supplierHtml);
         $this->assertNoCompilerLeakage($supplierHtml);
@@ -244,6 +254,7 @@ BLADE;
 
     public function test_file_upload_single_mode_renders_ganti_berkas_and_omits_limit_reached_notice(): void
     {
+        app()->setLocale('id');
         $html = Blade::render(<<<'BLADE'
 <x-ui.file-upload
     name="import_file"
@@ -262,6 +273,7 @@ BLADE);
 
     public function test_file_upload_multi_mode_renders_tambah_berkas_and_limit_reached_notice(): void
     {
+        app()->setLocale('id');
         $html = Blade::render(<<<'BLADE'
 <x-ui.file-upload
     name="invoice"
@@ -280,12 +292,13 @@ BLADE);
 
     public function test_store_local_invoice_request_messages_differentiates_single_vs_multi_upload(): void
     {
+        app()->setLocale('id');
         $requestSingle = new StoreLocalInvoiceRequest;
         $requestSingle->files->set('invoice', UploadedFile::fake()->create('inv.pdf', 6000));
         $messagesSingle = $requestSingle->messages();
 
         $this->assertSame(
-            'Ukuran berkas Berkas Invoice tidak boleh melebihi 5 MB.',
+            __('local_invoice.validation.file_size', ['type' => __('local_invoice.labels.invoice')]),
             $messagesSingle['invoice.max']
         );
 
@@ -297,11 +310,11 @@ BLADE);
         $messagesMulti = $requestMulti->messages();
 
         $this->assertSame(
-            'Maksimal 5 berkas yang diizinkan untuk Berkas Invoice.',
+            __('local_invoice.validation.file_count', ['type' => __('local_invoice.labels.invoice')]),
             $messagesMulti['invoice.max']
         );
         $this->assertSame(
-            'Ukuran setiap berkas Berkas Invoice tidak boleh melebihi 5 MB.',
+            __('local_invoice.validation.file_size', ['type' => __('local_invoice.labels.invoice')]),
             $messagesMulti['invoice.*.max']
         );
     }
