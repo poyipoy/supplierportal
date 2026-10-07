@@ -48,20 +48,19 @@
         <x-ui.card :title="__('supplier.copy.analytics_and_material_selection')">
         <x-slot:actions>
             @if($selectedMaterialName && $selectedCurrency)
-                <x-ui.button
-                    :href="route('supplier.price-history.export', array_merge(request()->all(), ['currency' => $selectedCurrency]))"
-                    variant="outline"
-                    size="sm"
-                    data-async-export
-                    data-export-source-singular="{{ __('exports.sources.price_history_entry') }}"
-                    data-export-source-plural="{{ __('exports.sources.price_history_entries') }}"
-                    :data-export-source-count="count($tableData)"
-                    data-export-row-label="{{ __('supplier.copy.price_history_rows') }}"
-                    data-export-row-explanation="{{ __('supplier.copy.each_history_entry_will_be_written_as_one_excel_row') }}"
-                >
-                    <x-ui.icon name="file-spreadsheet" size="sm" />
-                    <span>{{ __('supplier.copy.export_analysis') }}</span>
-                </x-ui.button>
+                <form action="{{ route('supplier.price-history.export') }}" method="POST" data-format-export-form data-advanced-export-form data-export-failed="{{ __('exports.advanced.failed') }}" class="tw-flex tw-flex-wrap tw-items-end tw-gap-2">
+                    @csrf
+                    @foreach(array_merge(request()->only(['thickness', 'd_inner', 'd_outer', 'width', 'length']), ['material_name' => $selectedMaterialName, 'period_view' => $periodView, 'range' => $range, 'currency' => $selectedCurrency]) as $name => $value)
+                        <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                    @endforeach
+                    <div>
+                        <label for="history-export-format" class="form-label tw-text-ui-xs">{{ __('exports.advanced.format_title') }}</label>
+                        <select name="options[format]" id="history-export-format" aria-describedby="history-export-format-help" class="form-select form-select-sm tw-min-h-10"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
+                    </div>
+                    <x-ui.button type="submit" variant="outline" size="sm" class="tw-min-h-10"><x-ui.icon name="file-spreadsheet" size="sm" /><span>{{ __('supplier.copy.export_analysis') }}</span></x-ui.button>
+                    <p id="history-export-format-help" class="tw-w-full tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('exports.advanced.csv_hint') }}</p>
+                    <p data-format-export-error hidden role="alert" tabindex="-1" class="tw-w-full tw-m-0 tw-text-ui-sm tw-text-error"></p>
+                </form>
             @endif
         </x-slot:actions>
 

@@ -27,7 +27,7 @@ use InvalidArgumentException;
 
 class ExportPresetService
 {
-    public function definition(string $key, User $actor): ExportDefinition
+    public function definition(string $key, User $actor, bool $presets = false): ExportDefinition
     {
         try {
             $definition = ExportDefinitions::get($key);
@@ -35,6 +35,7 @@ class ExportPresetService
             abort(404);
         }
         abort_unless($definition->authorize($actor), 404);
+        abort_if($presets && ! ExportDefinitions::supportsColumns($definition), 404);
 
         return $definition;
     }
@@ -51,7 +52,7 @@ class ExportPresetService
             if (isset($input['export_key']) && $input['export_key'] !== $key) {
                 throw ValidationException::withMessages(['export_key' => __('exports.advanced.invalid_columns')]);
             }
-            $definition = $this->definition($key, $actor);
+            $definition = $this->definition($key, $actor, presets: true);
             $options = ExportOptionsResolver::resolve($key, $actor, $input);
             $cohort = ExportPreset::query()->where('user_id', $actor->id)->where('export_key', $key);
             if ($preset === null && (clone $cohort)->count() >= (int) config('exports.max_presets_per_key')) {
@@ -135,7 +136,7 @@ class ExportPresetService
 
     public function present(ExportPreset $preset, User $actor): array
     {
-        $definition = $this->definition($preset->export_key, $actor);
+        $definition = $this->definition($preset->export_key, $actor, presets: true);
         $allowed = ExportDefinitions::allowedColumns($definition);
         $keys = array_values(array_unique(array_intersect($preset->columns, array_map(fn ($c) => $c->key, $allowed))));
         if ($keys === []) {

@@ -19,6 +19,8 @@ class ExportDefinitionController extends Controller
 
         return response()->json([
             'export_key' => $exportKey, 'formats' => ['xlsx', 'csv'],
+            'supports_columns' => ExportDefinitions::supportsColumns($definition),
+            'supports_presets' => ExportDefinitions::supportsColumns($definition),
             'columns' => array_map(fn ($c) => ['key' => $c->key, 'label' => __('exports.headings.'.$c->headingKey).($c->headingSuffix ? ($c->headingSuffix)() : ''), 'default' => $c->default, 'required' => $c->required], ExportDefinitions::allowedColumns($definition)),
             'filters' => $fields,
         ]);

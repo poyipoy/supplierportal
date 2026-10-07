@@ -15,7 +15,9 @@ class ExportPresetPolicy
             return false;
         }
         try {
-            return ExportDefinitions::get($preset->export_key)->authorize($user);
+            $definition = ExportDefinitions::get($preset->export_key);
+
+            return ExportDefinitions::supportsColumns($definition) && $definition->authorize($user);
         } catch (InvalidArgumentException) {
             return false;
         }

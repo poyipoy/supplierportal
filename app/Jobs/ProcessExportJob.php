@@ -79,7 +79,7 @@ class ProcessExportJob implements ShouldQueue
             // Expensive construction/counting happens while the durable record is
             // still queued. A process death here is therefore safe for worker retry.
             $totalRows = max(0, $export->progressTotalRows());
-            if ($record->export_options !== null && $totalRows > (int) config('exports.max_rows')) {
+            if (ExportDispatcher::isListExport($record->export_class) && $totalRows > (int) config('exports.max_rows')) {
                 throw new RuntimeException('Export row limit exceeded after dispatch.');
             }
             $export->setExportProgressContext((int) $record->getKey());

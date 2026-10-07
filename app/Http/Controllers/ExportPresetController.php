@@ -13,7 +13,7 @@ class ExportPresetController extends Controller
     public function index(Request $request, ExportPresetService $service)
     {
         $data = $request->validate(['export_key' => ['required', 'string', 'max:64']]);
-        $service->definition($data['export_key'], $request->user());
+        $service->definition($data['export_key'], $request->user(), presets: true);
 
         return response()->json(['data' => ExportPreset::query()->where('user_id', $request->user()->id)->where('export_key', $data['export_key'])->orderBy('name')->get()->map(fn ($p) => $service->present($p, $request->user()))]);
     }

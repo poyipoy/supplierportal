@@ -94,10 +94,10 @@ class InspectionsExport implements AcceptsExportOptions, FromQuery, HasLocalePre
         ])->filter()->implode(' | ') ?: '-';
 
         return [
-            SpreadsheetCellSanitizer::text($inspection?->purchaseOrder?->po_number),
-            SpreadsheetCellSanitizer::text($inspection?->purchaseOrder?->supplier?->name),
-            SpreadsheetCellSanitizer::text($prItem?->material_name),
-            $prItem ? SpreadsheetCellSanitizer::text($requestedSpecification) : '-',
+            SpreadsheetCellSanitizer::text($inspection?->purchaseOrder?->po_number, preserveWhitespace: true),
+            SpreadsheetCellSanitizer::text($inspection?->purchaseOrder?->supplier?->name, preserveWhitespace: true),
+            SpreadsheetCellSanitizer::text($prItem?->material_name, preserveWhitespace: true),
+            $prItem ? SpreadsheetCellSanitizer::text($requestedSpecification, preserveWhitespace: true) : '-',
             $actualDimensions,
             strtoupper((string) $item->status),
             strtoupper((string) $inspection?->status),

@@ -30,12 +30,19 @@ test('advanced POST uses CSRF/JSON and the existing progress SDK without navigat
     assert.equal(app.requests[0].init.headers['X-CSRF-TOKEN'], 'test-token');
     assert.deepEqual(JSON.parse(app.requests[0].init.body), body);
     assert.equal(app.requests[0].init.credentials, 'same-origin');
+    const stored = JSON.parse(app.window.localStorage.getItem('adasi:pending-export-jobs:v1'))[0];
+    assert.equal(stored.csvProgressClock, true);
+    assert.equal(typeof stored.lastProgressAt, 'number');
     assert.equal(await app.window.AdasiAsyncExport.startExport(app.form, { url: app.form.action, body }), false);
     assert.equal(app.requests.length, 1);
 });
 test('different options have distinct request identities and cross-origin requests are rejected', async () => {
     const app = boot();
-    for (const format of ['csv', 'xlsx']) assert.equal(await app.window.AdasiAsyncExport.startExport(app.form, { url: app.form.action, body: { options: { columns: ['po_number'], format } } }), true);
+    for (const format of ['csv', 'xlsx']) {
+        assert.equal(await app.window.AdasiAsyncExport.startExport(app.form, { url: app.form.action, body: { options: { columns: ['po_number'], format } } }), true);
+        const stored = JSON.parse(app.window.localStorage.getItem('adasi:pending-export-jobs:v1')).at(-1);
+        assert.equal(stored.csvProgressClock, format === 'csv' ? true : undefined);
+    }
     assert.equal(app.requests.length, 2);
     assert.equal(await app.window.AdasiAsyncExport.startExport(app.form, { url: 'https://foreign.test/', body: {} }), false);
     assert.equal(app.requests.length, 2);
@@ -48,4 +55,13 @@ test('validation failure is returned to the modal and advanced forms skip legacy
     let prevented = false;
     app.listeners.submit({ target: app.form, preventDefault() { prevented = true; }, stopImmediatePropagation() { prevented = true; } });
     assert.equal(prevented, false);
+});
+
+test('CSV activity timeout cannot alter fixed workbook or detail endpoint monitoring', async () => {
+    const app = boot();
+    for (const path of ['/finance/drp/hashed/export', '/finance/drp/export-transfer', '/purchasing/export/quotations/hashed']) {
+        assert.equal(await app.window.AdasiAsyncExport.startExport(app.form, { url: `https://portal.test${path}`, body: { options: { format: 'csv' } } }), true);
+        const stored = JSON.parse(app.window.localStorage.getItem('adasi:pending-export-jobs:v1')).at(-1);
+        assert.equal(Object.hasOwn(stored, 'csvProgressClock'), false);
+    }
 });

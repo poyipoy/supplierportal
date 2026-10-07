@@ -2,7 +2,7 @@
 
 return [
     'max_rows' => 100000,
-    'max_concurrent_per_user' => 3,
+    'max_concurrent_per_user' => 5,
     'max_presets_per_key' => 20,
     'csv' => [
         'delimiter' => ',',

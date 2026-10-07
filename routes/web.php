@@ -604,7 +604,7 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('s
     Route::get('/price-history', [SupplierPriceHistoryController::class, 'index'])->name('price-history.index');
     Route::get('/price-history/historical', [SupplierPriceHistoryController::class, 'historical'])->name('price-history.historical');
     Route::get('/price-history/materials', [SupplierPriceHistoryController::class, 'materials'])->name('price-history.materials');
-    Route::get('/price-history/export', [SupplierPriceHistoryController::class, 'export'])->name('price-history.export');
+    Route::match(['get', 'post'], '/price-history/export', [SupplierPriceHistoryController::class, 'export'])->name('price-history.export');
     // Announcements
     Route::get('/announcements', [App\Http\Controllers\Supplier\AnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/announcements/{announcement}', [App\Http\Controllers\Supplier\AnnouncementController::class, 'show'])->name('announcements.show');

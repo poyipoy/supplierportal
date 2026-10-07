@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supplier;
 
 use App\Exports\SupplierPriceHistoryExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Models\ExchangeRate;
 use App\Models\ExportJob;
 use App\Models\PrItem;
@@ -132,7 +133,7 @@ class SupplierPriceHistoryController extends Controller
         ]);
     }
 
-    public function export(Request $request)
+    public function export(AdvancedExportRequest $request)
     {
         $validated = $request->validate([
             'material_name' => ['required', 'string', 'max:255'],
@@ -173,6 +174,7 @@ class SupplierPriceHistoryController extends Controller
                 $currency,
             ],
             $fileName,
+            $request->exportOptions('supplier.price-history'),
         );
 
         return $this->dispatchResponse($request, $exportJob);

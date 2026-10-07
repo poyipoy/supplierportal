@@ -4,6 +4,7 @@ namespace App\Support\Export;
 
 use App\Exports\Advanced\Definitions\InspectionDefinition;
 use App\Exports\Advanced\Definitions\LocalInvoiceDefinition;
+use App\Exports\Advanced\Definitions\PriceHistoryDefinition;
 use App\Exports\Advanced\Definitions\PurchaseOrderDefinition;
 use App\Exports\Advanced\Definitions\QuotationDefinition;
 use App\Exports\Advanced\Definitions\RequisitionDefinition;
@@ -20,6 +21,7 @@ final class ExportDefinitions
         'purchasing.shipments' => ShipmentDefinition::class,
         'purchasing.po' => PurchaseOrderDefinition::class,
         'supplier.po' => PurchaseOrderDefinition::class,
+        'supplier.price-history' => PriceHistoryDefinition::class,
         'qc.inspections' => InspectionDefinition::class,
         'finance.local-invoices' => LocalInvoiceDefinition::class,
         'accounting.local-invoices' => LocalInvoiceDefinition::class,
@@ -61,6 +63,13 @@ final class ExportDefinitions
 
     public static function sanitizeKeys(ExportDefinition $definition, array $keys): array
     {
+        if (! self::supportsColumns($definition)) {
+            if ($keys !== []) {
+                throw new InvalidArgumentException('This export supports formats only.');
+            }
+
+            return [];
+        }
         $allowed = self::allowedColumns($definition);
         $allowedKeys = array_map(fn ($column) => $column->key, $allowed);
         $required = array_map(fn ($column) => $column->key, array_filter($allowed, fn ($column) => $column->required));
@@ -69,5 +78,10 @@ final class ExportDefinitions
         }
 
         return array_values($keys);
+    }
+
+    public static function supportsColumns(ExportDefinition $definition): bool
+    {
+        return $definition::columns() !== [];
     }
 }

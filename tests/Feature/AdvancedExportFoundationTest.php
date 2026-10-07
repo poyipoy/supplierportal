@@ -31,7 +31,7 @@ class AdvancedExportFoundationTest extends TestCase
         $this->assertSame($options->toArray(), $restored->toArray());
         $this->assertSame($options->toArray(), ExportOptions::fromArray($options->toArray())->toArray());
         $this->assertSame(100000, config('exports.max_rows'));
-        $this->assertSame(3, config('exports.max_concurrent_per_user'));
+        $this->assertSame(5, config('exports.max_concurrent_per_user'));
         $this->assertSame(20, config('exports.max_presets_per_key'));
     }
 

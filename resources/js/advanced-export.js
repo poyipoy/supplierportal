@@ -165,5 +165,28 @@ const boot = () => document.querySelectorAll('[data-advanced-export]').forEach((
     });
 });
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-else boot();
+const bootFormats = () => document.querySelectorAll('[data-format-export-form]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = form.querySelector('[type="submit"]');
+        const error = form.querySelector('[data-format-export-error]');
+        if (button.disabled || !form.reportValidity()) return;
+        const showError = (message) => { error.textContent = message; error.hidden = false; error.focus(); };
+        error.hidden = true;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        try {
+            const data = Object.fromEntries(new FormData(form));
+            const format = data['options[format]'];
+            delete data['options[format]'];
+            delete data._token;
+            if (!window.AdasiAsyncExport?.startExport) throw new Error(form.dataset.exportFailed);
+            await window.AdasiAsyncExport.startExport(form, { url: form.action, body: { ...data, options: { format } }, onError: showError });
+        } catch { showError(form.dataset.exportFailed); }
+        finally { button.disabled = false; button.removeAttribute('aria-busy'); }
+    });
+});
+
+const bootAll = () => { boot(); bootFormats(); };
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootAll);
+else bootAll();

@@ -47,6 +47,12 @@ class ExportDispatcher
         ShipmentsExport::class,
     ];
 
+    private const LIST_EXPORT_CLASSES = [
+        PurchaseOrdersExport::class, QuotationsExport::class, RequisitionsExport::class,
+        ShipmentsExport::class, InspectionsExport::class, LocalInvoicesExport::class,
+        SupplierPriceHistoryExport::class,
+    ];
+
     public static function dispatch(string $label, string $exportClass, array $args, string $fileName, ?ExportOptions $options = null): ExportJob
     {
         $user = Auth::user();
@@ -75,17 +81,21 @@ class ExportDispatcher
 
         if ($options !== null && is_a($exportClass, AcceptsExportOptions::class, true)) {
             ExportOptionsResolver::authorizeStored($exportClass, $user, $options);
+        }
+        if (self::isListExport($exportClass)) {
             $preview = new $exportClass(...$args);
-            $preview->applyOptions($options);
+            if ($options !== null) {
+                $preview->applyOptions($options);
+            }
             if ($preview->progressTotalRows() > (int) config('exports.max_rows')) {
                 throw ValidationException::withMessages(['options' => __('exports.advanced.row_limit', ['limit' => config('exports.max_rows')])]);
             }
         }
 
         return $connection->transaction(function () use ($user, $label, $exportClass, $args, $fileName, $options): ExportJob {
-            if ($options !== null) {
+            if (self::isListExport($exportClass)) {
                 User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
-                if (ExportJob::query()->where('user_id', $user->getKey())->whereIn('status', [ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING])->count() >= (int) config('exports.max_concurrent_per_user')) {
+                if (ExportJob::query()->where('user_id', $user->getKey())->whereIn('export_class', self::LIST_EXPORT_CLASSES)->whereIn('status', [ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING])->count() >= (int) config('exports.max_concurrent_per_user')) {
                     throw ValidationException::withMessages(['options' => __('exports.advanced.concurrent_limit', ['limit' => config('exports.max_concurrent_per_user')])]);
                 }
             }
@@ -158,6 +168,11 @@ class ExportDispatcher
     public static function isSupported(string $exportClass): bool
     {
         return in_array($exportClass, self::SUPPORTED_EXPORT_CLASSES, true);
+    }
+
+    public static function isListExport(string $exportClass): bool
+    {
+        return in_array($exportClass, self::LIST_EXPORT_CLASSES, true);
     }
 
     private static function safeFileName(string $fileName, string $format = 'xlsx'): string

@@ -263,6 +263,7 @@
             exportJobId: normalizeExportJobId(state.exportJobId),
             statusUrl: state.statusUrl,
             startedAt: state.startedAt,
+            ...(state.csvProgressClock ? { csvProgressClock: true, lastProgressAt: state.lastProgressAt } : {}),
             toastId: state.toastId,
             exportsUrl: state.exportsUrl || previousRecord?.exportsUrl || null,
             cancelUrl: state.cancelUrl || previousRecord?.cancelUrl || null,
@@ -572,6 +573,9 @@
             return;
         }
 
+        if (state.csvProgressClock && (processedRows > state.lastProcessedRows || stage !== state.lastStage || payload.status !== state.lastStatus)) {
+            state.lastProgressAt = Date.now();
+        }
         state.lastStatus = payload.status;
         state.lastStage = stage;
         state.lastProgress = progress;
@@ -805,7 +809,8 @@
         const poll = async () => {
             if (state.monitoringStopped) return;
 
-            if (Date.now() - state.startedAt >= pollTimeoutMs) {
+            const timeoutOrigin = state.csvProgressClock ? (state.lastProgressAt ?? state.startedAt) : state.startedAt;
+            if (Date.now() - timeoutOrigin >= pollTimeoutMs) {
                 finish();
                 updateExportToast(state, {
                     forceNotify: true,
@@ -996,6 +1001,9 @@
             rowLabel: presentation.rowLabel,
             lastProgressSignature: null,
             startedAt: Date.now(),
+            csvProgressClock: options.body?.options?.format === 'csv'
+                && /^\/(?:(?:purchasing|supplier)\/export\/(?:requisitions|purchase-orders|quotations|shipments)|qc\/export\/inspections|finance\/master-invoices\/export|accounting\/reports\/export|supplier\/price-history\/export)\/?$/.test(new URL(endpointUrl).pathname),
+            lastProgressAt: Date.now(),
         };
 
         activeExports.set(requestUrl, state);
@@ -1024,6 +1032,7 @@
             }
 
             state.exportJobId = payload.export_job_id;
+            if (state.csvProgressClock) state.lastProgressAt = Date.now();
             state.statusUrl = payload.status_url;
             state.cancelUrl = payload.cancel_url || null;
             state.exportsUrl = payload.exports_url || null;
@@ -1141,6 +1150,8 @@
                 rowLabel: restoredRowLabel,
                 lastProgressSignature: null,
                 startedAt: Number(record.startedAt) || Date.now(),
+                csvProgressClock: record.csvProgressClock === true,
+                lastProgressAt: Number(record.lastProgressAt) || Number(record.startedAt) || Date.now(),
             };
 
             if (state.rehydrateToast) {

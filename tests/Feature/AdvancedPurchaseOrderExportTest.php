@@ -164,11 +164,11 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         $this->postJson(route('purchasing.export.purchase-orders'), ['options' => $options])->assertUnprocessable();
         $this->assertSame(0, ExportJob::count());
         config(['exports.max_rows' => 100000]);
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $this->postJson(route('purchasing.export.purchase-orders'), ['options' => $options])->assertAccepted();
         }
         $this->postJson(route('purchasing.export.purchase-orders'), ['options' => $options])->assertUnprocessable();
-        $this->assertSame(3, ExportJob::count());
+        $this->assertSame(5, ExportJob::count());
         ExportJob::firstOrFail()->update(['status' => 'cancelled']);
         $this->postJson(route('purchasing.export.purchase-orders'), ['options' => $options])->assertAccepted();
     }
