@@ -4,7 +4,13 @@ namespace App\Services\Export;
 
 use App\Exports\Advanced\ExportDefinition;
 use App\Exports\PurchaseOrdersExport;
+use App\Exports\QuotationsExport;
+use App\Exports\RequisitionsExport;
+use App\Exports\ShipmentsExport;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
+use App\Http\Requests\Export\Filters\QuotationExportFilters;
+use App\Http\Requests\Export\Filters\RequisitionExportFilters;
+use App\Http\Requests\Export\Filters\ShipmentExportFilters;
 use App\Models\ExportPreset;
 use App\Models\User;
 use App\Support\Export\ExportDefinitions;
@@ -71,12 +77,18 @@ class ExportPresetService
 
     private function filters(ExportDefinition $definition, array $filters): array
     {
-        $allowed = [...array_column($definition->filterSchema(), 'name'), 'date_range'];
+        $allowed = array_column($definition->filterSchema(), 'name');
+        if (in_array('start_date', $allowed, true)) {
+            $allowed[] = 'date_range';
+        }
         if (array_diff(array_keys($filters), $allowed) !== []) {
             throw ValidationException::withMessages(['filters' => __('exports.advanced.invalid_filters')]);
         }
         $request = Request::create('/', 'POST', [...$filters, 'options' => []]);
         $normalized = match ($definition->exportClass()) {
+            QuotationsExport::class => QuotationExportFilters::validated($request, supplier: str_starts_with($definition->key(), 'supplier.')),
+            RequisitionsExport::class => RequisitionExportFilters::validated($request),
+            ShipmentsExport::class => ShipmentExportFilters::validated($request),
             PurchaseOrdersExport::class => PurchaseOrderExportFilters::validated($request, supplier: str_starts_with($definition->key(), 'supplier.')),
             default => throw new InvalidArgumentException('Preset filters are not supported.'),
         };

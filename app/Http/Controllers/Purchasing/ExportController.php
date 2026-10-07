@@ -12,7 +12,9 @@ use App\Exports\ShipmentsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
-use App\Models\ExchangeRate;
+use App\Http\Requests\Export\Filters\QuotationExportFilters;
+use App\Http\Requests\Export\Filters\RequisitionExportFilters;
+use App\Http\Requests\Export\Filters\ShipmentExportFilters;
 use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
@@ -20,21 +22,12 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class ExportController extends Controller
 {
-    public function requisitions(Request $request)
+    public function requisitions(AdvancedExportRequest $request)
     {
-        $filters = $request->validate([
-            'period_id' => ['nullable', 'integer', 'exists:periods,id'],
-            'status' => ['nullable', Rule::in(['draft', 'submitted', 'rejected', 'bidding', 'completed'])],
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-        if (isset($filters['period_id'])) {
-            $filters['period_id'] = (int) $filters['period_id'];
-        }
+        $filters = RequisitionExportFilters::validated($request);
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.pr_summary'),
@@ -45,6 +38,7 @@ class ExportController extends Controller
                 $filters['search'] ?? null,
             ],
             'rekap_requisitions_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('purchasing.pr'),
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -72,24 +66,9 @@ class ExportController extends Controller
         return $this->dispatchResponse($request, $exportJob);
     }
 
-    public function shipments(Request $request)
+    public function shipments(AdvancedExportRequest $request)
     {
-        $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
-
-        $filters = $request->validate([
-            'supplier_id' => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', Rule::in(['draft', 'submitted', 'arrived', 'cancelled'])],
-            'search' => ['nullable', 'string', 'max:255'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date'],
-        ]);
-        $filters['supplier_id'] = $supplier?->getKey();
-
-        if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
-            throw ValidationException::withMessages([
-                'end_date' => __('purchasing.copy.end_date_cannot_be_before_start_date'),
-            ]);
-        }
+        $filters = ShipmentExportFilters::validated($request);
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.shipment_summary'),
@@ -100,8 +79,10 @@ class ExportController extends Controller
                 $filters['search'] ?? null,
                 $filters['start_date'] ?? null,
                 $filters['end_date'] ?? null,
+                ...($request->input('options') !== null ? [$filters['shipment_number'] ?? null] : []),
             ],
             'rekap_shipments_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('purchasing.shipments'),
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -119,41 +100,16 @@ class ExportController extends Controller
         return $this->dispatchResponse($request, $exportJob);
     }
 
-    public function quotations(Request $request)
+    public function quotations(AdvancedExportRequest $request)
     {
-        $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
-
-        $filters = $request->validate([
-            'pr_number' => ['nullable', 'string', 'max:100'],
-            'date_from' => ['nullable', 'date_format:Y-m'],
-            'date_to' => ['nullable', 'date_format:Y-m'],
-            'supplier_id' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-            'status' => ['nullable', Rule::in([
-                Quotation::STATUS_SUBMITTED,
-                Quotation::STATUS_REVISION_REQUESTED,
-                Quotation::STATUS_ACCEPTED,
-                Quotation::STATUS_REJECTED,
-                Quotation::STATUS_ALL_UNAVAILABLE,
-            ])],
-            'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
-        ]);
-        $filters['supplier_id'] = $supplier?->getKey();
-
-        if (! empty($filters['date_from']) && ! empty($filters['date_to']) && $filters['date_to'] < $filters['date_from']) {
-            throw ValidationException::withMessages([
-                'date_to' => __('purchasing.copy.end_date_cannot_be_before_start_date'),
-            ]);
-        }
+        $filters = QuotationExportFilters::validated($request);
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.quotation_summary'),
             QuotationsExport::class,
             [$filters],
             'rekap_quotations_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('purchasing.quotations'),
         );
 
         return $this->dispatchResponse($request, $exportJob);

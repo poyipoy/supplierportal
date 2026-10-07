@@ -22,22 +22,7 @@
         :description="__('purchasing.copy.create_filter_and_monitor_material_requisitions_across_active_procurement_periods')"
     >
         <x-slot:actions>
-            <x-ui.button
-                :href="route('purchasing.export.requisitions')"
-                variant="outline"
-                size="sm"
-                data-async-export
-                id="exportRequisitionsBtn"
-                :data-export-url="route('purchasing.export.requisitions')"
-                data-export-source-singular="{{ __('exports.sources.requisition') }}"
-                data-export-source-plural="{{ __('exports.sources.requisitions') }}"
-                data-export-count-table="#prTable"
-                data-export-row-label="{{ __('purchasing.copy.material_rows') }}"
-                data-export-row-explanation="{{ __('purchasing.copy.each_material_item_will_be_written_as_a_separate_excel_row') }}"
-            >
-                <x-ui.icon name="file-spreadsheet" size="sm" />
-                <span>{{ __('purchasing.copy.export_excel') }}</span>
-            </x-ui.button>
+<x-export.advanced-modal export-key="purchasing.pr" :action="route('purchasing.export.requisitions')" :periods="$periods" :filter-selectors="['period_id'=>'#period_id','status'=>'#status']" table="#prTable" trigger-id="exportRequisitionsBtn" />
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
                 <x-ui.icon name="plus-circle" size="sm" />
                 <span>{{ __('purchasing.copy.create_requisition') }}</span>
@@ -131,18 +116,6 @@
             order: []
         });
 
-        $('#exportRequisitionsBtn').on('click', function(event) {
-            const exportUrl = new URL(this.dataset.exportUrl, window.location.origin);
-            const periodId = $('#period_id').val();
-            const status = $('#status').val();
-            const search = table.search().trim();
-
-            if (periodId) exportUrl.searchParams.set('period_id', periodId);
-            if (status) exportUrl.searchParams.set('status', status);
-            if (search) exportUrl.searchParams.set('search', search);
-
-            this.href = exportUrl.toString();
-        });
 
         function updateFilterChips() {
             const periodText = $('#period_id option:selected').val() ? $('#period_id option:selected').text().trim() : null;

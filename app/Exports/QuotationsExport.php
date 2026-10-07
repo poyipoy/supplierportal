@@ -2,24 +2,31 @@
 
 namespace App\Exports;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
+use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
+use App\Support\BusinessTime;
 use App\Support\SpreadsheetCellSanitizer;
 use Carbon\Carbon;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
+    use UsesColumnCatalog;
 
     public function __construct(
         private readonly array $filters = [],
@@ -41,12 +48,18 @@ class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePre
             array_unshift($statuses, Quotation::STATUS_DRAFT);
         }
 
-        $query = QuotationItem::query()->with([
+        $query = QuotationItem::query()->with($this->hasExportOptions() ? $this->catalogEagerLoads() : [
             'quotation.supplier.supplier',
             'quotation.purchaseRequisition.period',
             'quotation.exchange_rate',
             'prItem',
         ])->whereHas('quotation', fn (Builder $quotation) => $quotation->whereIn('status', $statuses));
+
+        if ($this->hasExportOptions()) {
+            $query->whereHas('quotation', fn ($q) => QuotationExportFilters::apply($q, $this->filters, $this->forcedSupplierId));
+
+            return $query->orderByDesc('quotation_id')->orderBy('id');
+        }
 
         if (($this->filters['status'] ?? null) === 'unresponded') {
             return $query->whereRaw('1 = 0');
@@ -98,6 +111,9 @@ class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePre
 
     public function map($item): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogMap($item);
+        }
         $quotation = $item->quotation;
         $supplierName = $quotation?->supplier?->supplier?->company_name
             ?: $quotation?->supplier?->name;
@@ -127,7 +143,7 @@ class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePre
             $offerAmount === null ? null : $offerAmount * $rate,
             SpreadsheetCellSanitizer::text($item->notes),
             SpreadsheetCellSanitizer::text($quotation?->statusLabel()),
-            $quotation?->submitted_at ? \App\Support\BusinessTime::format($quotation->submitted_at, 'Y-m-d H:i:s', false) : '-',
+            $quotation?->submitted_at ? BusinessTime::format($quotation->submitted_at, 'Y-m-d H:i:s', false) : '-',
             $item->is_available ? __('status.availability.available') : __('status.availability.not_available'),
             $item->available_length_display !== '-' ? $item->available_length_display : null,
             $item->offered_weight_per_unit === null ? null : (float) $item->offered_weight_per_unit,
@@ -155,6 +171,10 @@ class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePre
 
     public function headings(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogHeadings();
+        }
+
         return [
             __('exports.headings.pr_number'),
             __('exports.headings.period'),
@@ -172,7 +192,7 @@ class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePre
             __('exports.headings.total_idr'),
             __('exports.headings.item_notes'),
             __('exports.headings.status'),
-            __('exports.headings.submitted_at').' ('.\App\Support\BusinessTime::label().')',
+            __('exports.headings.submitted_at').' ('.BusinessTime::label().')',
             __('exports.headings.availability'),
             __('exports.headings.offered_length'),
             __('exports.headings.offer_weight_unit'),
@@ -185,6 +205,10 @@ class QuotationsExport implements \Illuminate\Contracts\Translation\HasLocalePre
 
     public function columnWidths(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogWidths();
+        }
+
         return [
             'A' => 22,
             'B' => 18,

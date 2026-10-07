@@ -3,12 +3,19 @@
 namespace App\Support\Export;
 
 use App\Exports\Advanced\Definitions\PurchaseOrderDefinition;
+use App\Exports\Advanced\Definitions\QuotationDefinition;
+use App\Exports\Advanced\Definitions\RequisitionDefinition;
+use App\Exports\Advanced\Definitions\ShipmentDefinition;
 use App\Exports\Advanced\ExportDefinition;
 use InvalidArgumentException;
 
 final class ExportDefinitions
 {
     private const DEFINITIONS = [
+        'purchasing.quotations' => QuotationDefinition::class,
+        'supplier.quotations' => QuotationDefinition::class,
+        'purchasing.pr' => RequisitionDefinition::class,
+        'purchasing.shipments' => ShipmentDefinition::class,
         'purchasing.po' => PurchaseOrderDefinition::class,
         'supplier.po' => PurchaseOrderDefinition::class,
     ];

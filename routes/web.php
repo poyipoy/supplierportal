@@ -502,13 +502,13 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     // Laporan
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     // Export
-    Route::get('/export/requisitions', [ExportController::class, 'requisitions'])->name('export.requisitions');
+    Route::match(['get', 'post'], '/export/requisitions', [ExportController::class, 'requisitions'])->name('export.requisitions');
     Route::get('/export/requisitions/{purchaseRequisition}', [ExportController::class, 'requisitionDetail'])->name('export.requisitions.detail');
     Route::match(['get', 'post'], '/export/purchase-orders', [ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
     Route::get('/export/purchase-orders/{purchaseOrder}', [ExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
-    Route::get('/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
+    Route::match(['get', 'post'], '/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
-    Route::get('/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
+    Route::match(['get', 'post'], '/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
     // Local Vendors & Read-Only Invoices
     Route::get('/local-vendors', [PurchasingLocalVendorController::class, 'index'])->name('local-vendors.index');
     Route::get('/local-vendors/{vendor}', [PurchasingLocalVendorController::class, 'show'])->name('local-vendors.show');
@@ -572,7 +572,7 @@ Route::middleware(['auth'])->prefix('shared')->name('shared.')->group(function (
 */
 Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('supplier')->name('supplier.')->group(function () {
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
-    Route::get('/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
+    Route::match(['get', 'post'], '/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
     Route::match(['get', 'post'], '/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
     Route::get('/export/purchase-orders/{purchaseOrder}', [SupplierExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');

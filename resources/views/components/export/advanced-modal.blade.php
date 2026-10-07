@@ -1,4 +1,4 @@
-@props(['exportKey', 'action', 'suppliers' => [], 'filterSelectors' => [], 'table' => null, 'triggerId' => null])
+@props(['exportKey', 'action', 'suppliers' => [], 'periods' => [], 'initialFilters' => [], 'filterSelectors' => [], 'table' => null, 'triggerId' => null])
 @php
     $uid = 'advanced-export-'.str_replace('.', '-', $exportKey);
     $definition = \App\Support\Export\ExportDefinitions::get($exportKey);
@@ -7,7 +7,7 @@
 @endphp
 <div data-advanced-export data-export-key="{{ $exportKey }}" data-definition-url="{{ route('exports.definitions.show', $exportKey) }}"
      data-presets-url="{{ route('export-presets.index') }}" data-preset-store-url="{{ route('export-presets.store') }}"
-     data-filter-selectors='@json($filterSelectors)' data-export-copy='@json($copy)' data-export-table="{{ $table }}">
+     data-filter-selectors='@json($filterSelectors)' data-initial-filters='@json($initialFilters)' data-export-copy='@json($copy)' data-export-table="{{ $table }}">
     <div class="tw-flex tw-items-center tw-gap-2">
         <x-ui.button type="button" :id="$triggerId" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#{{ $uid }}" data-export-open>
             <x-ui.icon name="file-spreadsheet" />{{ __('exports.advanced.title') }}
@@ -30,20 +30,26 @@
                         <fieldset class="tw-border tw-border-outline tw-rounded-ui-sm tw-p-3">
                             <legend class="tw-float-none tw-w-auto tw-px-1 tw-text-ui-sm tw-font-semibold">{{ __('exports.advanced.filters_title') }}</legend>
                             <div class="tw-grid tw-gap-3 md:tw-grid-cols-2">
+                                @if(collect($fields)->contains('type','month'))
+                                    <div class="md:tw-col-span-2"><x-ui.date-range-picker :id="$uid.'-months'" granularity="month" start-name="date_from" :start-id="$uid.'-date_from'" :start-label="__('exports.advanced.filters.date_from')" end-name="date_to" :end-id="$uid.'-date_to'" :end-label="__('exports.advanced.filters.date_to')" :error-id="$uid.'-months-error'" /></div>
+                                @endif
                                 @foreach($fields as $field)
+                                    @continue($field['type'] === 'month')
                                     @php($fieldId = $uid.'-'.$field['name'])
                                     <div>
                                         @if($field['type'] === 'date')
                                             <x-ui.date-picker :name="$field['name']" :id="$fieldId" :label="__('exports.advanced.filters.'.$field['name'])" :data-filter-name="$field['name']" />
                                         @else
                                             <label for="{{ $fieldId }}" class="tw-text-ui-sm tw-font-medium">{{ __('exports.advanced.filters.'.$field['name']) }}</label>
-                                            @if($field['type'] === 'select' || $field['type'] === 'supplier')
+                                            @if(in_array($field['type'], ['select','supplier','period'], true))
                                                 <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-select form-select-sm">
                                                     <option value="">{{ __('exports.advanced.all') }}</option>
                                                     @if($field['type'] === 'supplier')
                                                         @foreach($suppliers as $supplier)<option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>@endforeach
+                                                    @elseif($field['type'] === 'period')
+                                                        @foreach($periods as $period)<option value="{{ $period->id }}">{{ $period->display_label }}</option>@endforeach
                                                     @else
-                                                        @foreach($field['options'] as $value)<option value="{{ $value }}">{{ __('status.po.'.$value) }}</option>@endforeach
+                                                        @foreach($field['options'] as $value)<option value="{{ $value }}">{{ ($field['domain'] ?? 'po') === 'currency' ? $value : ($value === 'unresponded' ? __('exports.advanced.unresponded') : __('status.'.($field['domain'] ?? 'po').'.'.$value)) }}</option>@endforeach
                                                     @endif
                                                 </select>
                                             @else
@@ -53,7 +59,7 @@
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="tw-mt-3">
+                            <div class="tw-mt-3" @if(!collect($fields)->contains('name','start_date')) hidden @endif>
                                 <label class="tw-text-ui-sm tw-inline-flex tw-items-center tw-gap-2"><input type="checkbox" data-export-relative>{{ __('exports.advanced.relative') }}</label>
                                 <label for="{{ $uid }}-days" class="tw-text-ui-xs">{{ __('exports.advanced.days') }}</label>
                                 <input id="{{ $uid }}-days" type="number" min="1" max="3650" value="30" data-export-days class="form-control form-control-sm" disabled>

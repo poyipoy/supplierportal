@@ -2,6 +2,7 @@
 
 return [
     'advanced' => [
+        'unresponded' => 'Not Responded',
         'all' => 'All',
         'title' => 'Advanced Export', 'quick' => 'Quick Export', 'export' => 'Export',
         'help' => 'Choose filters, columns and format, or use your saved preset.',
@@ -17,7 +18,7 @@ return [
         'preset_duplicate' => 'A preset with this name already exists for this export.',
         'invalid_filters' => 'Select filters allowed for this export.',
         'stale_preset' => 'This preset was adjusted to the currently available columns or format.',
-        'filters' => ['start_date' => 'Start Date', 'end_date' => 'End Date', 'po_number' => 'PO Number', 'search' => 'Search', 'status' => 'Status', 'supplier_id' => 'Supplier'],
+        'filters' => ['start_date' => 'Start Date', 'end_date' => 'End Date', 'po_number' => 'PO Number', 'search' => 'Search', 'status' => 'Status', 'supplier_id' => 'Supplier', 'period_id' => 'Period', 'pr_number' => 'PR Number', 'currency' => 'Currency', 'date_from' => 'From Month', 'date_to' => 'To Month', 'shipment_number' => 'Shipment Number'],
         'invalid_columns' => 'Select valid columns allowed for this export, including required columns.',
         'row_limit' => 'This export exceeds the maximum of :limit rows. Narrow the filters.',
         'concurrent_limit' => 'You already have :limit active exports. Wait for one to finish.',

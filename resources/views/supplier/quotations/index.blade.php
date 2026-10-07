@@ -17,20 +17,7 @@
         :description="__('supplier.copy.select_an_active_procurement_period_to_review_open_requisitions_and_submit_your_quotation_pricing')"
     >
         <x-slot:actions>
-            <x-ui.button
-                :href="route('supplier.export.quotations')"
-                variant="outline"
-                size="sm"
-                data-async-export
-                data-export-source-singular="{{ __('exports.sources.quotation') }}"
-                data-export-source-plural="{{ __('exports.sources.quotations') }}"
-                data-export-row-label="{{ __('supplier.copy.quotation_item_rows') }}"
-                data-export-row-explanation="{{ __('supplier.copy.each_quotation_item_will_be_written_as_a_separate_excel_row') }}"
-                data-export-filtered="false"
-            >
-                <x-ui.icon name="file-spreadsheet" />
-                <span>{{ __('supplier.copy.export_history') }}</span>
-            </x-ui.button>
+<x-export.advanced-modal export-key="supplier.quotations" :action="route('supplier.export.quotations')" :periods="$periods" />
         </x-slot:actions>
     </x-ui.page-header>
 

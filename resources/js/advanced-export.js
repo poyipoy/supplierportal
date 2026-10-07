@@ -43,10 +43,10 @@ const boot = () => document.querySelectorAll('[data-advanced-export]').forEach((
         return data;
     };
     const currentFilters = () => {
-        const values = Object.fromEntries(new URL(window.location.href).searchParams);
+        const values = { ...Object.fromEntries(new URL(window.location.href).searchParams), ...JSON.parse(root.dataset.initialFilters || '{}') };
         Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input) values[name] = input.value; });
         if (root.dataset.exportTable && window.jQuery?.fn?.DataTable?.isDataTable(root.dataset.exportTable)) {
-            values.search = window.jQuery(root.dataset.exportTable).DataTable().search().trim();
+            if (!selectors.search) values.search = window.jQuery(root.dataset.exportTable).DataTable().search().trim();
         }
         return values;
     };
@@ -60,6 +60,7 @@ const boot = () => document.querySelectorAll('[data-advanced-export]').forEach((
     };
     const setFilters = (values) => {
         form.querySelectorAll('[data-filter-name]').forEach((input) => { input.value = values[input.dataset.filterName] || ''; input.dispatchEvent(new Event('change', { bubbles: true })); });
+        ['date_from','date_to'].forEach((name) => { const input = form.querySelector(`[name="${name}"]`); if (input) { input.value = values[name] || ''; input.dispatchEvent(new Event('change', { bubbles: true })); } });
         root.querySelector('[data-export-relative]').checked = values.date_range?.mode === 'relative';
         root.querySelector('[data-export-days]').value = values.date_range?.days || 30;
         updateRelative();
@@ -67,6 +68,7 @@ const boot = () => document.querySelectorAll('[data-advanced-export]').forEach((
     const filters = () => {
         const data = {};
         form.querySelectorAll('[data-filter-name]').forEach((input) => { if (!input.disabled && input.value !== '') data[input.dataset.filterName] = input.value; });
+        ['date_from','date_to'].forEach((name) => { const input = form.querySelector(`[name="${name}"]`); if (input?.value) data[name] = input.value; });
         if (root.querySelector('[data-export-relative]').checked) data.date_range = { mode: 'relative', days: Number(root.querySelector('[data-export-days]').value) };
         return data;
     };

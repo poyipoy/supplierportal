@@ -2,41 +2,53 @@
 
 namespace App\Exports;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
+use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Http\Requests\Export\Filters\ShipmentExportFilters;
 use App\Models\Shipment;
 use App\Support\NumberFormat;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
 use Carbon\Carbon;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ShipmentsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class ShipmentsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
+    use UsesColumnCatalog;
 
     public function __construct(
         protected ?int $supplierId = null,
         protected ?string $status = null,
         protected ?string $search = null,
         protected ?string $startDate = null,
-        protected ?string $endDate = null
+        protected ?string $endDate = null,
+        protected ?string $shipmentNumber = null,
     ) {}
 
     public function query(): Builder
     {
-        $query = Shipment::query()->with([
+        $query = Shipment::query()->with($this->hasExportOptions() ? $this->catalogEagerLoads() : [
             'supplier',
             'items.purchaseOrder',
             'items.quotationItem.prItem',
         ]);
+        if ($this->hasExportOptions()) {
+            ShipmentExportFilters::apply($query, ['supplier_id' => $this->supplierId, 'status' => $this->status, 'search' => $this->search, 'start_date' => $this->startDate, 'end_date' => $this->endDate, 'shipment_number' => $this->shipmentNumber]);
+
+            return $query->latest('shipment_date');
+        }
 
         if ($this->supplierId) {
             $query->where('supplier_id', $this->supplierId);
@@ -69,6 +81,9 @@ class ShipmentsExport implements \Illuminate\Contracts\Translation\HasLocalePref
 
     public function map($shipment): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogMap($shipment);
+        }
         /** @var Shipment $shipment */
         $pos = $shipment->purchaseOrders()->pluck('po_number')->unique()->implode(', ');
         $totalQty = (int) $shipment->items->sum('shipped_qty');
@@ -106,6 +121,10 @@ class ShipmentsExport implements \Illuminate\Contracts\Translation\HasLocalePref
 
     public function headings(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogHeadings();
+        }
+
         return [
             __('exports.headings.shipment_number'),
             __('exports.headings.supplier'),
@@ -123,6 +142,10 @@ class ShipmentsExport implements \Illuminate\Contracts\Translation\HasLocalePref
 
     public function columnWidths(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogWidths();
+        }
+
         return [
             'A' => 20,
             'B' => 26,

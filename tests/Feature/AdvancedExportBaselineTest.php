@@ -18,6 +18,8 @@ use App\Models\Quotation;
 use App\Models\Shipment;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Support\Export\ExportDefinitions;
+use App\Support\Export\ExportOptions;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -144,6 +146,34 @@ class AdvancedExportBaselineTest extends TestCase
         ];
 
         return ($locale === 'en' ? $en : $id)[$key];
+    }
+
+    public static function rolledOutExports(): array
+    {
+        $cases = [];
+        foreach (['en', 'id'] as $locale) {
+            foreach (['quotation', 'pr', 'shipment'] as $key) {
+                $cases[$key.'-'.$locale] = [$key, $locale];
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('rolledOutExports')]
+    public function test_rollout_catalog_default_and_serialization_match_literal_baseline(string $key, string $locale): void
+    {
+        app()->setLocale($locale);
+        $export = match ($key) {
+            'quotation' => new QuotationsExport,'pr' => new RequisitionsExport,'shipment' => new ShipmentsExport
+        };
+        $definition = ExportDefinitions::forClass($export::class, 'purchasing');
+        $export->applyOptions(new ExportOptions(ExportDefinitions::defaultKeys($definition), 'xlsx', 'purchasing'));
+        $export->setExportLocale($locale);
+        $this->assertSame($this->headings($key, $locale), $export->headings());
+        $this->assertSame($this->mappedRow($key, $locale), $export->map($export->query()->firstOrFail()));
+        $restored = unserialize(serialize($export));
+        $this->assertSame($this->mappedRow($key, $locale), $restored->map($restored->query()->firstOrFail()));
     }
 
     private function mappedRow(string $key, string $locale): array

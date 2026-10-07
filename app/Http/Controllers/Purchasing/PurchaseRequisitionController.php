@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Exports\PrImportTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\Filters\RequisitionExportFilters;
 use App\Http\Requests\SavePurchaseRequisitionRequest;
 use App\Imports\PrItemsImport;
 use App\Models\Period;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Services\Materials\MaterialResolver;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\NumberFormat;
 use App\Support\PurchasingNavigation;
@@ -39,6 +41,7 @@ class PurchaseRequisitionController extends Controller
      */
     public function index(Request $request)
     {
+        $filters = RequisitionExportFilters::validated($request);
         if ($request->ajax()) {
             $query = PurchaseRequisition::query()
                 ->select([
@@ -70,15 +73,10 @@ class PurchaseRequisitionController extends Controller
                 )
                 ->orderBy('created_at', 'desc');
 
-            if ($request->filled('period_id')) {
-                $query->where('period_id', $request->period_id);
-            }
-
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
-            }
+            RequisitionExportFilters::apply($query, $filters);
 
             return DataTables::eloquent($query)
+                ->filter(fn ($query) => null)
                 ->addIndexColumn()
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
                 ->addColumn('period_name', fn ($pr) => $pr->period->display_label ?? '-')
@@ -112,7 +110,7 @@ class PurchaseRequisitionController extends Controller
 
                     return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>'.$responseChip;
                 })
-                ->addColumn('created_date', fn ($pr) => \App\Support\BusinessTime::format($pr->created_at, 'd M Y, H:i'))
+                ->addColumn('created_date', fn ($pr) => BusinessTime::format($pr->created_at, 'd M Y, H:i'))
                 ->addColumn('action', function ($pr) {
                     $viewUrl = PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr);
                     $editUrl = PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr);

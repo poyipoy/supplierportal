@@ -249,7 +249,7 @@ class DetailExportSecurityTest extends TestCase
         $this->assertStringNotContainsString('window.location.href', $script);
         $this->assertStringContainsString('x-export.advanced-modal', file_get_contents(resource_path('views/supplier/po/index.blade.php')));
         $this->assertStringContainsString('window.AdasiAsyncExport.startExport', file_get_contents(resource_path('js/advanced-export.js')));
-        $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
+        $this->assertStringContainsString('x-export.advanced-modal', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
         $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/reports/index.blade.php')));
         $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/supplier/price-history/historical.blade.php')));
         $this->assertStringNotContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/pr/_import_controls.blade.php')));

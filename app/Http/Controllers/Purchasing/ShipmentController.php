@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\Filters\ShipmentExportFilters;
 use App\Models\PoDocument;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\User;
-use App\Services\ShipmentService;
 use App\Services\RegionalDisplayFormatter;
+use App\Services\ShipmentService;
 use App\Support\BusinessTime;
 use App\Support\NumberFormat;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
 class ShipmentController extends Controller
@@ -28,45 +28,9 @@ class ShipmentController extends Controller
      */
     public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
-        $validated = $request->validate([
-            'status' => ['nullable', 'string', Rule::in(Shipment::STATUSES)],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date'],
-        ]);
-
-        $query = Shipment::query()
-            ->with(['supplier', 'items.purchaseOrder', 'documents.latestAttachment'])
-            ->latest('shipment_date');
-
-        if (($validated['status'] ?? null) !== null && $validated['status'] !== '') {
-            $query->where('status', $validated['status']);
-        }
-
-        if ($request->filled('supplier_id')) {
-            $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
-            $query->where('supplier_id', $supplier->getKey());
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('shipment_date', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('shipment_date', '<=', $request->date_to);
-        }
-
-        if ($request->filled('shipment_number')) {
-            $query->where('shipment_number', 'like', '%'.trim($request->shipment_number).'%');
-        }
-
-        if ($search = trim((string) $request->input('search.value', $request->input('search')))) {
-            $query->where(function ($q) use ($search) {
-                $q->where('shipment_number', 'like', "%{$search}%")
-                    ->orWhere('notes', 'like', "%{$search}%")
-                    ->orWhereHas('supplier', fn ($s) => $s->where('name', 'like', "%{$search}%"))
-                    ->orWhereHas('items.purchaseOrder', fn ($po) => $po->where('po_number', 'like', "%{$search}%"));
-            });
-        }
+        $filters = ShipmentExportFilters::validated($request);
+        $query = Shipment::query()->with(['supplier', 'items.purchaseOrder', 'documents.latestAttachment'])->latest('shipment_date');
+        ShipmentExportFilters::apply($query, $filters);
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
@@ -213,6 +177,6 @@ class ShipmentController extends Controller
 
         PoDocument::syncFromShipmentDocument($document);
 
-        return back()->with('success', __('shipments.feedback.document_status', ['status' => \App\Support\StatusHelper::shipmentDocLabel($document->status)]));
+        return back()->with('success', __('shipments.feedback.document_status', ['status' => StatusHelper::shipmentDocLabel($document->status)]));
     }
 }

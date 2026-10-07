@@ -58,22 +58,7 @@
             :description="__('purchasing.copy.review_submitted_supplier_offers_validity_currency_and_workflow_status_across_requisitions')"
         >
             <x-slot:actions>
-                <x-ui.button
-                    :href="route('purchasing.export.quotations', request()->only(['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency']))"
-                    variant="outline"
-                    size="sm"
-                    data-async-export
-                    id="exportQuotationsBtn"
-                    :data-export-url="route('purchasing.export.quotations')"
-                    data-export-source-singular="{{ __('exports.sources.quotation') }}"
-                    data-export-source-plural="{{ __('exports.sources.quotations') }}"
-                    :data-export-source-count="$quotations->total()"
-                    data-export-row-label="{{ __('purchasing.copy.quotation_item_rows') }}"
-                    data-export-row-explanation="{{ __('purchasing.copy.each_quotation_item_will_be_written_as_a_separate_excel_row') }}"
-                >
-                    <x-ui.icon name="file-spreadsheet" />
-                    <span>{{ __('purchasing.copy.export_excel') }}</span>
-                </x-ui.button>
+<x-export.advanced-modal export-key="purchasing.quotations" :action="route('purchasing.export.quotations')" :suppliers="$suppliers" :periods="\App\Models\Period::orderByDesc('year')->get()" :filter-selectors="['pr_number'=>'#quotationFilterForm [name=pr_number]', 'supplier_id'=>'#quotationFilterForm [name=supplier_id]', 'status'=>'#quotationFilterForm [name=status]', 'currency'=>'#quotationFilterForm [name=currency]', 'date_from'=>'#quotationDateFrom', 'date_to'=>'#quotationDateTo']" trigger-id="exportQuotationsBtn" />
                 <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums" id="quotationCountBadge">
                     {{ trans_choice('purchasing.summary.quotations', $quotations->total(), ['count' => $quotations->total()]) }}
                 </span>
@@ -278,16 +263,7 @@
                 return url;
             };
 
-            const updateExportUrl = (filterUrl) => {
-                const exportUrl = new URL(exportButton.dataset.exportUrl, window.location.origin);
-
-                ['pr_number', 'date_from', 'date_to', 'supplier_id', 'status', 'currency'].forEach((key) => {
-                    const value = filterUrl.searchParams.get(key);
-                    if (value) exportUrl.searchParams.set(key, value);
-                });
-
-                exportButton.href = exportUrl.toString();
-            };
+            const updateExportUrl = () => {};
 
             const captureTextCursor = () => {
                 const element = document.activeElement;

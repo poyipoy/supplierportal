@@ -19,21 +19,7 @@
         :description="__('supplier.copy.review_requisitions_and_manage_quotations_assigned_to_your_supplier_account')"
     >
         <x-slot:actions>
-            <x-ui.button
-                :href="route('supplier.export.quotations', ['period_id' => $period->id])"
-                variant="outline"
-                size="sm"
-                data-async-export
-                id="exportSupplierQuotationsBtn"
-                :data-export-url="route('supplier.export.quotations')"
-                data-export-source-singular="{{ __('exports.sources.quotation') }}"
-                data-export-source-plural="{{ __('exports.sources.quotations') }}"
-                data-export-row-label="{{ __('supplier.copy.quotation_item_rows') }}"
-                data-export-row-explanation="{{ __('supplier.copy.each_quotation_item_will_be_written_as_a_separate_excel_row') }}"
-            >
-                <x-ui.icon name="file-spreadsheet" />
-                <span>{{ __('supplier.copy.export_excel') }}</span>
-            </x-ui.button>
+<x-export.advanced-modal export-key="supplier.quotations" :action="route('supplier.export.quotations')" :periods="collect([$period])" :initial-filters="['period_id'=>$period->id]" :filter-selectors="['pr_number'=>'#filter_pr_number','status'=>'#filter_status']" table="#prTable" trigger-id="exportSupplierQuotationsBtn" />
             <x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('supplier.copy.back_to_periods') }}</span>
@@ -116,19 +102,6 @@
             order: []
         });
 
-        $('#exportSupplierQuotationsBtn').on('click', function(event) {
-            const exportUrl = new URL(this.dataset.exportUrl, window.location.origin);
-            const prNumber = $('#filter_pr_number').val().trim();
-            const status = $('#filter_status').val();
-            const search = table.search().trim();
-
-            exportUrl.searchParams.set('period_id', @json($period->id));
-            if (prNumber) exportUrl.searchParams.set('pr_number', prNumber);
-            if (status) exportUrl.searchParams.set('status', status);
-            if (search) exportUrl.searchParams.set('search', search);
-
-            this.href = exportUrl.toString();
-        });
 
         $('#filter_status').on('change', function() { table.ajax.reload(); });
         $('#applyFilter').on('click', function() { table.ajax.reload(); });

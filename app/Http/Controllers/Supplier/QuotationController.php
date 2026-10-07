@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supplier;
 
 use App\Exports\QuotationImportTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Imports\QuotationItemsImport;
 use App\Models\Attachment;
 use App\Models\Conversation;
@@ -17,6 +18,7 @@ use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\Materials\MaterialWeightCalculator;
 use App\Services\NotificationService;
+use App\Support\BusinessTime;
 use App\Support\Materials\DimensionRange;
 use App\Support\Materials\MaterialDimensionRules;
 use App\Support\NotificationCategory;
@@ -112,6 +114,7 @@ class QuotationController extends Controller
      */
     public function period(Request $request, $period_id)
     {
+        $filters = QuotationExportFilters::validated($request, supplier: true);
         $period = Period::findOrFail($period_id);
         $supplierId = auth()->id();
 
@@ -146,10 +149,15 @@ class QuotationController extends Controller
         }
 
         if ($request->ajax()) {
+            if ($search = trim((string) ($filters['search'] ?? ''))) {
+                $query->where(fn ($q) => $q->where('pr_number', 'like', '%'.$search.'%')->orWhere('updated_at', 'like', '%'.$search.'%'));
+            }
+
             return DataTables::eloquent($query->orderByDesc('updated_at'))
+                ->filter(fn ($query) => null)
                 ->addIndexColumn()
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
-                ->addColumn('updated_date', fn ($pr) => \App\Support\BusinessTime::format($pr->updated_at, 'd M Y, H:i'))
+                ->addColumn('updated_date', fn ($pr) => BusinessTime::format($pr->updated_at, 'd M Y, H:i'))
                 ->addColumn('item_count', fn ($pr) => $pr->items->count().' Item')
                 ->addColumn('status_badge', function ($pr) {
                     $quotation = $pr->quotations->first();
@@ -159,7 +167,7 @@ class QuotationController extends Controller
                         'unresponded' => '<span class="ui-status-chip ui-status-chip--error">Not Responded</span>',
                         'draft' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('supplier.copy.draft')).'</span>',
                         'revision_requested' => '<span class="ui-status-chip ui-status-chip--warning">'.e(__('supplier.copy.revision_requested')).'</span>',
-                        'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at ? \App\Support\BusinessTime::format($quotation->submitted_at, 'd M Y H:i') : '-').')</span>',
+                        'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at ? BusinessTime::format($quotation->submitted_at, 'd M Y H:i') : '-').')</span>',
                         'all_unavailable' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('supplier.copy.all_unavailable')).'</span>',
                         'accepted' => '<span class="ui-status-chip ui-status-chip--info">'.e(__('supplier.copy.accepted')).'</span>',
                         'rejected' => '<span class="ui-status-chip ui-status-chip--error">'.e(__('supplier.copy.rejected')).'</span>',

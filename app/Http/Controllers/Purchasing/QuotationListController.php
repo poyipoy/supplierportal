@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\PrItem;
@@ -16,11 +17,10 @@ use App\Services\PrItemAwardService;
 use App\Services\PurchaseOrderGenerationService;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
-use Carbon\Carbon;
+use App\Support\StatusHelper;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 
 class QuotationListController extends Controller
@@ -32,56 +32,10 @@ class QuotationListController extends Controller
      */
     public function index(Request $request)
     {
-        $supplierFilter = $this->resolveSupplierFilter($request->query('supplier_id'));
-
-        $request->validate([
-            'date_from' => 'nullable|date_format:Y-m',
-            'date_to' => 'nullable|date_format:Y-m',
-            'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
-            'supplier_id' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        if ($request->filled('date_from') && $request->filled('date_to') && $request->date_to < $request->date_from) {
-            return back()
-                ->withInput()
-                ->withErrors(['date_to' => __('purchasing.copy.end_date_cannot_be_before_start_date_36b168')]);
-        }
-
+        $filters = QuotationExportFilters::validated($request);
         $query = Quotation::with(['supplier', 'purchaseRequisition.period', 'items'])
-            ->whereIn('status', ['submitted', 'revision_requested', 'accepted', 'rejected']);
-
-        // Filter: Number PR
-        if ($request->filled('pr_number')) {
-            $query->whereHas('purchaseRequisition', function ($q) use ($request) {
-                $q->where('pr_number', 'like', '%'.trim($request->pr_number).'%');
-            });
-        }
-
-        // Filter: quotation submitted date range.
-        if ($request->filled('date_from')) {
-            $from = Carbon::createFromFormat('Y-m', $request->date_from)->startOfMonth();
-            $query->where('submitted_at', '>=', $from);
-        }
-
-        if ($request->filled('date_to')) {
-            $to = Carbon::createFromFormat('Y-m', $request->date_to)->endOfMonth();
-            $query->where('submitted_at', '<=', $to);
-        }
-
-        // Filter: Supplier
-        if ($supplierFilter) {
-            $query->where('supplier_id', $supplierFilter->getKey());
-        }
-
-        // Filter: Status
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter: currency.
-        if ($request->filled('currency')) {
-            $query->where('currency', $request->currency);
-        }
+            ->whereIn('status', ['submitted', 'revision_requested', 'accepted', 'rejected', 'all_unavailable']);
+        QuotationExportFilters::apply($query, $filters);
 
         $quotations = $query->orderByDesc('submitted_at')
             ->paginate(20)
@@ -226,7 +180,7 @@ class QuotationListController extends Controller
                 }
 
                 if (! in_array($lockedQuotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
-                    throw new InvalidArgumentException(__('purchasing.errors.ineligible_quotation', ['status' => \App\Support\StatusHelper::quotationLabel($lockedQuotation->status)]));
+                    throw new InvalidArgumentException(__('purchasing.errors.ineligible_quotation', ['status' => StatusHelper::quotationLabel($lockedQuotation->status)]));
                 }
 
                 if ($lockedQuotation->isExpired()) {
