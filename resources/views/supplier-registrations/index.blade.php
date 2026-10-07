@@ -125,17 +125,9 @@
                                 <span class="tw-text-ui-xs">{{ $attempt->submitted_at ? $regionalFormatter->timestamp($attempt->submitted_at, 'datetime_comma') : '-' }}</span>
                             </td>
                             <td>
-                                @if ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_PENDING)
-                                    <span class="ui-status-chip ui-status-chip--warning">{{ __('registration.statuses.pending') }}</span>
-                                @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_REVISION)
-                                    <span class="ui-status-chip ui-status-chip--info">{{ __('local_invoice.labels.revision') }}</span>
-                                @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_APPROVED)
-                                    <span class="ui-status-chip ui-status-chip--success">{{ __('local_invoice.labels.approved') }}</span>
-                                @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_REJECTED)
-                                    <span class="ui-status-chip ui-status-chip--danger">{{ __('registration.statuses.rejected') }}</span>
-                                @else
-                                    <span class="ui-status-chip ui-status-chip--neutral">{{ \App\Support\StatusHelper::registrationLabel($attempt->status) }}</span>
-                                @endif
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::registrationTone($attempt->status)">
+                                    {{ \App\Support\StatusHelper::registrationLabel($attempt->status) }}
+                                </x-ui.status-chip>
                             </td>
                             <td>
                                 <span class="tw-text-ui-xs text-muted">{{ $attempt->reviewer?->name ?? '-' }}</span>

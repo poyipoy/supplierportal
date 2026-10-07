@@ -170,6 +170,8 @@ return [
         'week' => 'MINGGU KE-:week (:date)',
         'total' => 'TOTAL PEMBAYARAN',
         'prepared_by' => 'DIBUAT OLEH,',
+        'checked_by' => 'DICEK OLEH,',
         'acknowledged_by' => 'DIKETAHUI OLEH,',
+        'approved_by' => 'DISETUJUI OLEH,',
     ],
 ];

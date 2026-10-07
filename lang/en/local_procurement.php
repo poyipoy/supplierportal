@@ -216,6 +216,7 @@ return [
         'event_approved' => 'Registration Approved',
         'event_scope' => 'Portal Scopes Assigned',
         'event_activated' => 'Account Activated',
+        'event_status_accessed' => 'Status Accessed (Email & Password)',
         'list_title' => 'Supplier Registrations - ADASI Portal',
         'list_heading' => 'Supplier Registrations',
         'list_description' => 'Review registrations, request revisions, reject, or approve applications and assign supplier portal scopes.',

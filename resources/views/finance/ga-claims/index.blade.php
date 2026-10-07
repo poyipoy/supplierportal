@@ -114,7 +114,7 @@
                                 <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">{{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</span>
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="match($claim->status) { 'PAID' => 'success', 'READY_TO_PAY' => 'success', 'NEED_REVISION' => 'error', 'BASIC_VERIFIED' => 'info', default => 'warning' }">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::gaClaimTone($claim->status)">
                                     {{ \App\Support\StatusHelper::gaClaimLabel($claim->status) }}
                                 </x-ui.status-chip>
                             </td>

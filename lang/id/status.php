@@ -96,6 +96,7 @@ return [
     ],
     'finance' => [
         'open' => 'Terbuka',
+        'approved' => 'Disetujui',
         'available' => 'Tersedia',
         'reserved' => 'Direservasi',
         'consumed' => 'Digunakan',

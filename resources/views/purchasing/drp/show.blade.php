@@ -22,7 +22,7 @@
         <x-ui.card>
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('finance.drp.batch_status') }}</span>
             <div class="tw-mt-1">
-                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
+                <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">
                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                 </x-ui.status-chip>
             </div>
@@ -71,7 +71,7 @@
                             <h3 class="tw-text-ui-base tw-font-bold tw-text-on-surface tw-m-0">
                                 {{ $group->payee_name }}
                             </h3>
-                            <x-ui.status-chip :tone="$group->status === 'PAID' ? 'success' : ($group->status === 'CANCELLED' ? 'neutral' : 'warning')">
+                            <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($group->status)">
                                 {{ \App\Support\StatusHelper::localFinanceLabel($group->status) }}
                             </x-ui.status-chip>
                         </div>
@@ -180,19 +180,19 @@
                                                         </span>
                                                     </div>
                                                 @else
-                                                    <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-primary/10 tw-text-primary">
+                                                    <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($item->localInvoicePayment->status)">
                                                         {{ \App\Support\StatusHelper::localFinanceLabel($item->localInvoicePayment->status) }}
-                                                    </span>
+                                                    </x-ui.status-chip>
                                                 @endif
                                             @else
-                                                <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-success/10 tw-text-success">
-                                                    {{ __('purchasing.copy.active') }}
-                                                </span>
+                                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($item->status)">
+                                                    {{ \App\Support\StatusHelper::localFinanceLabel($item->status) }}
+                                                </x-ui.status-chip>
                                             @endif
                                         @else
-                                            <span class="tw-inline-flex tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-error/10 tw-text-error">
+                                            <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($item->status)">
                                                 {{ \App\Support\StatusHelper::localFinanceLabel($item->status) }}
-                                            </span>
+                                            </x-ui.status-chip>
                                         @endif
                                     </td>
                                     <td class="text-end">

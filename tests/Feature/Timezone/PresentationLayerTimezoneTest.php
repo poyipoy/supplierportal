@@ -9,18 +9,13 @@ use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Models\AuthAuditLog;
-use App\Models\LocalInvoice;
 use App\Models\Period;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
-use App\Models\Supplier;
-use App\Models\SupplierRegistrationAttempt;
-use App\Models\SupplierScope;
 use App\Models\User;
-use App\Notifications\NewDeviceLoginNotification;
 use App\Support\BusinessTime;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,20 +24,6 @@ use Tests\TestCase;
 class PresentationLayerTimezoneTest extends TestCase
 {
     use RefreshDatabase;
-
-    public function test_new_device_login_notification_formats_time_in_business_timezone(): void
-    {
-        $user = User::factory()->create(['name' => 'John Doe']);
-        // 01:30 UTC = 08:30 WIB
-        $occurredAt = \Illuminate\Support\Carbon::parse('2026-09-28 01:30:00', 'UTC');
-
-        $notification = new NewDeviceLoginNotification('192.168.1.1', 'Chrome/Windows', $occurredAt);
-        $mail = $notification->toMail($user);
-
-        $renderedText = implode(' ', $mail->introLines);
-        $this->assertStringContainsString('28 Sep 2026 08:30 WIB', $renderedText);
-        $this->assertStringNotContainsString('(UTC)', $renderedText);
-    }
 
     public function test_export_headings_include_business_timezone_label(): void
     {

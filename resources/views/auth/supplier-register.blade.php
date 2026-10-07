@@ -323,6 +323,34 @@
         background: var(--md-primary-container);
         color: var(--md-on-primary-container);
     }
+    .lang-pill-btn {
+        transition-property: background-color, color, box-shadow, transform;
+        transition-duration: 160ms;
+        transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .lang-pill-btn:active {
+        transform: scale(0.96);
+    }
+    .lang-flag-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 14px;
+        border-radius: 2.5px;
+        overflow: hidden;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+        flex-shrink: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .lang-pill-btn {
+            transition: none !important;
+            transform: none !important;
+        }
+        .lang-pill-btn:active {
+            transform: none !important;
+        }
+    }
 </style>
 
 {{-- Mobile Compact Stepper Header (Visible only on < 1024px) --}}
@@ -361,22 +389,37 @@
             <button
                 type="button"
                 @click="switchLanguage('id')"
-                class="ui-motion ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold tw-transition-all"
-                :class="currentLocale === 'id' ? 'tw-bg-surface tw-text-primary tw-shadow-sm tw-scale-100' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50'"
+                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-min-h-8 tw-rounded-ui-full tw-text-ui-xs tw-font-bold"
+                :class="currentLocale === 'id' ? 'tw-bg-surface tw-text-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
                 aria-label="Bahasa Indonesia"
+                :aria-pressed="currentLocale === 'id'"
             >
-                <span class="tw-text-xs">ðŸ‡®ðŸ‡©</span>
-                <span>ID</span>
+                <span class="lang-flag-badge" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                        <rect width="60" height="20" fill="#e70011"/>
+                        <rect y="20" width="60" height="20" fill="#ffffff"/>
+                    </svg>
+                </span>
+                <span class="tw-tracking-wide">ID</span>
             </button>
             <button
                 type="button"
                 @click="switchLanguage('en')"
-                class="ui-motion ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold tw-transition-all"
-                :class="currentLocale === 'en' ? 'tw-bg-surface tw-text-primary tw-shadow-sm tw-scale-100' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50'"
+                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-min-h-8 tw-rounded-ui-full tw-text-ui-xs tw-font-bold"
+                :class="currentLocale === 'en' ? 'tw-bg-surface tw-text-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
                 aria-label="English"
+                :aria-pressed="currentLocale === 'en'"
             >
-                <span class="tw-text-xs">ðŸ‡¬ðŸ‡§</span>
-                <span>EN</span>
+                <span class="lang-flag-badge" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                        <path fill="#012169" d="M0 0h60v40H0z"/>
+                        <path stroke="#ffffff" stroke-width="8" d="M0 0l60 40M60 0L0 40"/>
+                        <path stroke="#c8102e" stroke-width="2.67" d="M0 0l27 18M60 0L33 18M60 40L33 22M0 40l27-18"/>
+                        <path stroke="#ffffff" stroke-width="13.33" d="M30 0v40M0 20h60"/>
+                        <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
+                    </svg>
+                </span>
+                <span class="tw-tracking-wide">EN</span>
             </button>
         </div>
     </div>
@@ -1414,6 +1457,7 @@ document.addEventListener('alpine:init', () => {
         isSubmitting: false,
         legalDeclaration: false,
         hasDraft: false,
+        isInitialized: false,
         clientStepError: '',
         currentLocale: @js(app()->getLocale()),
         lastWarningToast: '',
@@ -1600,26 +1644,58 @@ document.addEventListener('alpine:init', () => {
                         });
                     }
                 });
+
+                this.isInitialized = true;
             });
 
-            // Watch fields for debounced draft persistence
+            // Watch formData deeply for debounced draft persistence
             this.$watch('formData', () => {
-                this.persistDraft();
+                if (!this.isInitialized) return;
+                this.scheduleDraftPersist();
+            }, { deep: true });
+
+            // Ensure pending draft is saved if user abruptly navigates away
+            window.addEventListener('beforeunload', () => {
+                if (this.isInitialized) {
+                    this.persistDraft();
+                }
             });
+        },
+
+        scheduleDraftPersist() {
+            clearTimeout(this._draftTimer);
+            this._draftTimer = setTimeout(() => {
+                this.persistDraft();
+            }, 350);
         },
 
         checkStoredDraft() {
             try {
+                // If form is already filled from old() validation input, don't show draft prompt
+                if (Boolean((this.formData.email && this.formData.email.trim()) || (this.formData.company_name && this.formData.company_name.trim()))) {
+                    this.hasDraft = false;
+                    return;
+                }
+
                 const stored = localStorage.getItem('adasi_supplier_reg_draft');
                 if (stored) {
                     const parsed = JSON.parse(stored);
-                    if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 2) {
-                        this.hasDraft = true;
+                    if (parsed && typeof parsed === 'object') {
+                        // Check if there is actual non-empty, meaningful user data
+                        const hasMeaningfulData = Object.entries(parsed).some(([key, val]) => {
+                            if (['saved_step'].includes(key)) return false;
+                            if (key === 'company_title' && (val === 'PT' || !val)) return false;
+                            if (key === 'is_pkp' && !val) return false;
+                            return typeof val === 'string' ? val.trim().length > 0 : Boolean(val);
+                        });
+                        this.hasDraft = hasMeaningfulData;
+                        return;
                     }
                 }
             } catch (e) {
                 this.hasDraft = false;
             }
+            this.hasDraft = false;
         },
 
         restoreDraft(showToast = true) {
@@ -1628,10 +1704,26 @@ document.addEventListener('alpine:init', () => {
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     Object.keys(parsed).forEach(key => {
-                        if (key in this.formData) {
-                            this.formData[key] = parsed[key];
+                        if (key in this.formData && !['password', 'password_confirmation', 'saved_step'].includes(key)) {
+                            if (parsed[key] !== undefined && parsed[key] !== null) {
+                                this.formData[key] = parsed[key];
+                            }
                         }
                     });
+
+                    // Clear any previous validation errors for restored fields
+                    this.errors = {};
+                    this.clientStepError = '';
+
+                    // Sync bank_select to searchable-select component
+                    if (this.formData.bank_select) {
+                        this.$nextTick(() => {
+                            window.dispatchEvent(new CustomEvent('set-select-value', {
+                                detail: { name: 'bank_select', value: this.formData.bank_select }
+                            }));
+                        });
+                    }
+
                     this.hasDraft = false;
                     if (showToast && window.AdasiToast) {
                         window.AdasiToast.success(@js(__('registration.js.draft_restored')));
@@ -1656,8 +1748,21 @@ document.addEventListener('alpine:init', () => {
 
         persistDraft() {
             try {
+                // Check if any non-default meaningful text has been typed
+                const hasData = Object.entries(this.formData).some(([key, val]) => {
+                    if (['password', 'password_confirmation'].includes(key)) return false;
+                    if (key === 'company_title' && (val === 'PT' || !val)) return false;
+                    if (key === 'is_pkp' && !val) return false;
+                    return typeof val === 'string' ? val.trim().length > 0 : Boolean(val);
+                });
+
+                if (!hasData) {
+                    return;
+                }
+
                 // Never store passwords in localStorage
                 const safePayload = {
+                    email: this.formData.email,
                     company_title: this.formData.company_title,
                     custom_company_title: this.formData.custom_company_title,
                     company_name: this.formData.company_name,
@@ -1674,6 +1779,7 @@ document.addEventListener('alpine:init', () => {
                     other_bank_name: this.formData.other_bank_name,
                     account_number: this.formData.account_number,
                     account_holder_name: this.formData.account_holder_name,
+                    saved_step: this.step,
                 };
                 localStorage.setItem('adasi_supplier_reg_draft', JSON.stringify(safePayload));
             } catch (e) {

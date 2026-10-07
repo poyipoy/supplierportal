@@ -96,6 +96,7 @@ return [
     ],
     'finance' => [
         'open' => 'Open',
+        'approved' => 'Approved',
         'available' => 'Available',
         'reserved' => 'Reserved',
         'consumed' => 'Consumed',

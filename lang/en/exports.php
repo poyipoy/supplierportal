@@ -167,6 +167,8 @@ return [
         'week' => 'WEEK :week (:date)',
         'total' => 'TOTAL PAYMENT',
         'prepared_by' => 'PREPARED BY,',
+        'checked_by' => 'CHECKED BY,',
         'acknowledged_by' => 'ACKNOWLEDGED BY,',
+        'approved_by' => 'APPROVED BY,',
     ],
 ];

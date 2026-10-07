@@ -88,9 +88,9 @@
                                     <td><span class="tw-font-mono">{{ $b->account_number }}</span></td>
                                     <td>{{ $b->account_holder_name }}</td>
                                     <td>
-                                        <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] {{ $b->status === 'VERIFIED' ? 'tw-bg-success/10 tw-text-success' : 'tw-bg-warning/10 tw-text-warning' }}">
+                                        <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($b->status)">
                                             {{ \App\Support\StatusHelper::localFinanceLabel($b->status) }}
-                                        </span>
+                                        </x-ui.status-chip>
                                     </td>
                                     <td>
                                         @if($b->status === 'VERIFIED')
@@ -117,7 +117,7 @@
                     @forelse($sup?->masterDocuments ?? [] as $md)
                         <div class="tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-flex tw-items-center tw-justify-between">
                             <div>
-                                <strong class="tw-text-ui-xs tw-text-on-surface tw-block">{{ ucwords(str_replace('_', ' ', $md->document_type)) }}</strong>
+                                <strong class="tw-text-ui-xs tw-text-on-surface tw-block">{{ __('local_procurement.vendor_ui.document_types.'.strtolower($md->document_type)) }}</strong>
                                 <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">{{ $md->original_filename }}</span>
                             </div>
                             <a href="{{ route('supplier-master-documents.show', $md) }}" target="_blank" class="btn btn-xs btn-outline-primary">{{ __('local_invoice.actions.download') }}</a>

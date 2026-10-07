@@ -65,7 +65,7 @@
                                 Rp {{ $regionalFormatter->number(number_format($c->amount, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="match($c->status) { 'PAID' => 'success', 'READY_TO_PAY' => 'success', 'NEED_REVISION' => 'error', 'BASIC_VERIFIED' => 'info', default => 'warning' }">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::gaClaimTone($c->status)">
                                     {{ \App\Support\StatusHelper::gaClaimLabel($c->status) }}
                                 </x-ui.status-chip>
                             </td>

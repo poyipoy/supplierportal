@@ -225,7 +225,7 @@ class SupplierRegistrationService
             $reference = $this->generateRegistrationReference();
             $plainAccessKey = Str::random(32);
             $tokenHash = hash('sha256', $plainAccessKey);
-            $ttlDays = (int) config('supplier_registration.access_token_ttl_days', 30);
+            $ttlDays = $this->accessTtlDays();
 
             $access = SupplierRegistrationAccess::updateOrCreate(
                 ['user_id' => $user->id],
@@ -387,7 +387,7 @@ class SupplierRegistrationService
                 ->where('user_id', $user->id)
                 ->whereNull('revoked_at')
                 ->update([
-                    'expires_at' => now()->addDays((int) config('supplier_registration.access_token_ttl_days', 30)),
+                    'expires_at' => now()->addDays($this->accessTtlDays()),
                 ]);
 
             // Audit
@@ -655,6 +655,74 @@ class SupplierRegistrationService
         $access->update(['last_used_at' => now()]);
 
         return $access;
+    }
+
+    /**
+     * Authenticate an applicant via registered email + password so a lost access key
+     * does not lock them out of status tracking. Never authenticates the web guard.
+     *
+     * Eligible only while the latest attempt is PENDING/REVISION and the access row is
+     * not revoked. Approve/reject revoke access, so final decisions end tracking.
+     */
+    public function authenticateWithCredentials(string $email, string $password): ?SupplierRegistrationAccess
+    {
+        $user = User::query()
+            ->where('email', $email)
+            ->where('role', 'supplier')
+            ->first();
+
+        $latestAttempt = $user?->registrationAttempts()->orderByDesc('attempt_number')->first();
+
+        $eligible = $user instanceof User
+            && $latestAttempt instanceof SupplierRegistrationAttempt
+            && in_array($latestAttempt->status, [
+                SupplierRegistrationAttempt::STATUS_PENDING,
+                SupplierRegistrationAttempt::STATUS_REVISION,
+            ], true);
+
+        // Constant-time: always run one bcrypt comparison, even for unknown/ineligible accounts.
+        $targetHash = $eligible
+            ? (string) $user->password
+            : (string) config('auth_security.dummy_hash', '$2y$12$e80yq9M2XvH0WJ1aR8P1eeS4xLgXk2.mK6uV4C7W1A4rK5eS8V1ee');
+
+        if (! Hash::check($password, $targetHash) || ! $eligible) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($user, $latestAttempt) {
+            $access = SupplierRegistrationAccess::query()
+                ->where('user_id', $user->id)
+                ->whereNull('revoked_at')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $access) {
+                return null;
+            }
+
+            // Password just proved ownership, so an expired (non-revoked) window may be renewed.
+            if ($access->isExpired()) {
+                $access->expires_at = now()->addDays($this->accessTtlDays());
+            }
+
+            $access->last_used_at = now();
+            $access->save();
+
+            SupplierRegistrationAudit::record(
+                attemptId: $latestAttempt->id,
+                userId: $user->id,
+                event: 'status_accessed_credentials',
+                actorRole: 'applicant',
+                metadata: ['via' => 'password'],
+            );
+
+            return $access->load('user');
+        });
+    }
+
+    protected function accessTtlDays(): int
+    {
+        return (int) config('supplier_registration.access.token_ttl_days', 30);
     }
 
     /**

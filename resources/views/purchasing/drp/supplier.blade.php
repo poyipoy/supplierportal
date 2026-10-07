@@ -58,7 +58,7 @@
                                 Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}
                             </td>
                             <td>
-                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">
                                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>

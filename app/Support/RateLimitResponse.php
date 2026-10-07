@@ -37,7 +37,11 @@ final class RateLimitResponse
             return self::json($headers);
         }
 
-        return self::fullPage($headers, self::fullPageContext('login.store'));
+        $context = $request->route()?->getName() === 'supplier.registration.access.credentials'
+            ? self::fullPageContext('supplier.registration.access.credentials')
+            : self::fullPageContext('login.store');
+
+        return self::fullPage($headers, $context);
     }
 
     /**
@@ -89,6 +93,10 @@ final class RateLimitResponse
             'login.store' => [
                 'returnUrl' => route('login'),
                 'returnLabel' => __('auth.password_assistance.back'),
+            ],
+            'supplier.registration.access.credentials' => [
+                'returnUrl' => route('supplier.registration.access-form'),
+                'returnLabel' => __('registration.credential_access.back'),
             ],
             'two-factor.challenge.store' => [
                 'returnUrl' => route('two-factor.challenge'),

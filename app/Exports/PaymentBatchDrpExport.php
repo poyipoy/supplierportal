@@ -57,7 +57,7 @@ class PaymentBatchDrpExport implements \Illuminate\Contracts\Translation\HasLoca
         }
 
         $renderer = app(PaymentBatchDrpSheetRenderer::class);
-        $spreadsheet = $renderer->render($batches);
+        $spreadsheet = $renderer->render($batches, locale: $this->preferredLocale());
 
         $tempPath = tempnam(sys_get_temp_dir(), 'drp_exp_');
         if ($tempPath === false) {

@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\TurnstileStatus;
+use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\SupplierRegistrationRequest;
+use App\Http\Requests\SupplierRegistration\RegistrationCredentialAccessRequest;
 use App\Http\Requests\SupplierRegistration\ResubmitRegistrationRequest;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
+use App\Services\Auth\LoginRateLimiter;
 use App\Services\Auth\TurnstileVerifier;
 use App\Services\SupplierRegistrationService;
+use App\Support\BusinessTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
@@ -53,6 +58,7 @@ class SupplierRegistrationController extends Controller
             'registration_reference' => $result['reference'],
             'registration_access_key' => $result['access_key'],
             'company_name' => $safeData['company_name'],
+            'registration_submitted_at' => BusinessTime::now()->toIso8601String(),
         ]);
     }
 
@@ -70,6 +76,7 @@ class SupplierRegistrationController extends Controller
             'reference' => session('registration_reference'),
             'accessKey' => session('registration_access_key'),
             'companyName' => session('company_name'),
+            'submittedAt' => BusinessTime::format(session('registration_submitted_at') ?? BusinessTime::now()),
         ]);
     }
 
@@ -78,7 +85,93 @@ class SupplierRegistrationController extends Controller
      */
     public function showAccessForm()
     {
-        return view('auth.supplier-registration-access');
+        return view('auth.supplier-registration-access', [
+            'turnstileRequired' => (bool) session('auth_turnstile_required', false),
+            'turnstileSiteKey' => config('auth_security.turnstile.site_key'),
+        ]);
+    }
+
+    /**
+     * Authenticate applicant with registered email + password (lost access key fallback).
+     *
+     * Mirrors the normal sign-in defences (shared rate-limit budget, Turnstile, constant-time
+     * check, tarpit, audit) but only opens the isolated registration session.
+     */
+    public function authenticateCredentials(
+        RegistrationCredentialAccessRequest $request,
+        LoginRateLimiter $limiter,
+        TurnstileVerifier $turnstile,
+    ) {
+        $email = $limiter->normalizedEmail($request->string('email')->toString());
+        $limiter->ensureNotLimited($request, $email);
+
+        $routeMeta = ['route' => 'supplier.registration.access.credentials'];
+
+        if ($limiter->requiresTurnstile($request, $email) && $turnstile->configured()) {
+            if ($turnstile->verify($request) === TurnstileStatus::Invalid) {
+                $limiter->hit($request, $email);
+                event(new AuthSecurityEvent('captcha_failed', email: $email, metadata: $routeMeta));
+                $this->applyTarpit($limiter, $request, $email);
+
+                return $this->credentialFailure($email, true);
+            }
+        }
+
+        $access = $this->registrationService->authenticateWithCredentials(
+            $email,
+            $request->string('password')->toString(),
+        );
+
+        if (! $access) {
+            $limiter->hit($request, $email);
+            event(new AuthSecurityEvent('login_failed', email: $email, metadata: $routeMeta));
+            $this->applyTarpit($limiter, $request, $email);
+
+            return $this->credentialFailure($email, $limiter->requiresTurnstile($request, $email));
+        }
+
+        $limiter->clearAfterSuccess($request, $email);
+
+        // Isolated registration session only (never Auth::login)
+        $request->session()->regenerate();
+        $request->session()->put('registration_access_id', $access->id);
+        $request->session()->put('registration_user_id', $access->user_id);
+
+        return redirect()->route('supplier.registration.status');
+    }
+
+    private function credentialFailure(string $email, bool $turnstileRequired)
+    {
+        return back()
+            ->withInput(['email' => $email])
+            ->with('access_tab', 'credentials')
+            ->with('auth_turnstile_required', $turnstileRequired)
+            ->withErrors(['email' => __('registration.feedback.invalid_credentials')], 'credentials');
+    }
+
+    private function applyTarpit(LoginRateLimiter $limiter, Request $request, string $email): void
+    {
+        $tarpit = config('auth_security.login.tarpit');
+
+        if (! ($tarpit['enabled'] ?? false)) {
+            return;
+        }
+
+        $failures = $limiter->currentFailureCount($request, $email);
+        $threshold = (int) ($tarpit['threshold'] ?? 3);
+
+        if ($failures < $threshold) {
+            return;
+        }
+
+        $delayMs = min(
+            ($failures - $threshold + 1) * (int) ($tarpit['delay_step_ms'] ?? 1000),
+            (int) ($tarpit['max_delay_ms'] ?? 2000),
+        );
+
+        if ($delayMs > 0) {
+            usleep($delayMs * 1000);
+        }
     }
 
     /**

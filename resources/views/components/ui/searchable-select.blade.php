@@ -148,6 +148,7 @@
     }"
     @click.outside="close()"
     @keydown.escape.stop="close()"
+    x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { selectedValue = String($event.detail.value ?? ''); syncNativeSelect(selectedValue); }"
 >
     @if($label)
         <label for="{{ $resolvedId }}" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">

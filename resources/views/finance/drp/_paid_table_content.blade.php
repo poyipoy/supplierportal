@@ -81,7 +81,7 @@
                             @endif
                         </td>
                         <td class="text-center">
-                            <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($batch->status)">
+                            <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">
                                 {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                             </x-ui.status-chip>
                         </td>

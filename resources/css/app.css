@@ -3792,3 +3792,47 @@ div.dataTables_wrapper div.dataTables_processing {
         width: auto;
     }
 }
+
+/* Language selector pills & flag badge */
+.lang-pill-btn {
+    transition: background-color var(--ui-motion-fast) var(--ui-easing-standard),
+                color var(--ui-motion-fast) var(--ui-easing-standard),
+                box-shadow var(--ui-motion-fast) var(--ui-easing-standard),
+                transform var(--ui-motion-fast) var(--ui-easing-standard);
+    cursor: pointer;
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+.lang-pill-btn:disabled,
+.lang-pill-btn[aria-pressed="true"] {
+    cursor: default;
+}
+
+.lang-pill-btn:not(:disabled):active {
+    transform: scale(0.96);
+}
+
+.lang-flag-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 14px;
+    border-radius: 2.5px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lang-pill-btn {
+        transition: none !important;
+        transform: none !important;
+    }
+    .lang-pill-btn:active {
+        transform: none !important;
+    }
+}
+

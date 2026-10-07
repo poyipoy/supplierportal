@@ -94,9 +94,9 @@
                                     <td><span class="tw-font-mono">{{ $b->account_number }}</span></td>
                                     <td>{{ $b->account_holder_name }}</td>
                                     <td>
-                                        <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] {{ $b->status === 'VERIFIED' ? 'tw-bg-success/10 tw-text-success' : 'tw-bg-warning/10 tw-text-warning' }}">
+                                        <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($b->status)">
                                             {{ \App\Support\StatusHelper::localFinanceLabel($b->status) }}
-                                        </span>
+                                        </x-ui.status-chip>
                                     </td>
                                     <td>
                                         @if($b->status === 'VERIFIED')
@@ -127,9 +127,9 @@
                         <div class="tw-p-3 tw-rounded tw-bg-surface-container tw-text-ui-xs">
                             <div class="tw-flex tw-justify-between tw-mb-1">
                                 <strong>{{ __('local_procurement.vendor_ui.type', ['type' => match($cr->change_type) { 'profile' => __('local_procurement.vendor_ui.change_profile'), 'bank_account' => __('local_procurement.vendor_ui.change_bank'), default => ucwords(str_replace('_', ' ', $cr->change_type)) }]) }}</strong>
-                                <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] {{ $cr->status === 'APPROVED' ? 'tw-bg-success/10 tw-text-success' : ($cr->status === 'REJECTED' ? 'tw-bg-error/10 tw-text-error' : 'tw-bg-warning/10 tw-text-warning') }}">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($cr->status)">
                                     {{ \App\Support\StatusHelper::localFinanceLabel($cr->status) }}
-                                </span>
+                                </x-ui.status-chip>
                             </div>
                             <span class="tw-text-on-surface-variant tw-block">{{ __('local_procurement.vendor_ui.submitted_at', ['date' => $cr->created_at->format('d M Y H:i')]) }}</span>
                             @if($cr->review_notes)

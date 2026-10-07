@@ -106,9 +106,9 @@
                                     <td><span class="tw-font-mono">{{ $b->account_number }}</span></td>
                                     <td>{{ $b->account_holder_name }}</td>
                                     <td>
-                                        <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] {{ $b->status === 'VERIFIED' ? 'tw-bg-success/10 tw-text-success' : 'tw-bg-warning/10 tw-text-warning' }}">
+                                        <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($b->status)">
                                             {{ \App\Support\StatusHelper::localFinanceLabel($b->status) }}
-                                        </span>
+                                        </x-ui.status-chip>
                                     </td>
                                     <td>
                                         @if($b->status === 'VERIFIED')
@@ -244,15 +244,11 @@
                             @forelse($changeRequests as $cr)
                                 <tr>
                                     <td class="tw-whitespace-nowrap">{{ $regionalFormatter->timestamp($cr->requested_at, 'datetime') ?: $regionalFormatter->timestamp($cr->created_at, 'datetime') }}</td>
-                                    <td><span class="tw-capitalize">{{ $cr->change_type }}</span></td>
+                                    <td><span>{{ match($cr->change_type) { 'profile' => __('local_procurement.vendor_ui.change_profile'), 'bank_account' => __('local_procurement.vendor_ui.change_bank'), default => ucwords(str_replace('_', ' ', $cr->change_type)) } }}</span></td>
                                     <td>
-                                        @if($cr->status === 'APPROVED')
-                                            <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-success/10 tw-text-success tw-font-bold">{{ __('local_invoice.labels.approved') }}</span>
-                                        @elseif($cr->status === 'REJECTED')
-                                            <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-error/10 tw-text-error tw-font-bold">{{ __('terms.rejected') }}</span>
-                                        @else
-                                            <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-warning/10 tw-text-warning tw-font-bold">{{ __('status.qc.pending') }}</span>
-                                        @endif
+                                        <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($cr->status)">
+                                            {{ \App\Support\StatusHelper::localFinanceLabel($cr->status) }}
+                                        </x-ui.status-chip>
                                     </td>
                                     <td>
                                         <div class="tw-text-[11px] tw-space-y-0.5 tw-max-w-xs">

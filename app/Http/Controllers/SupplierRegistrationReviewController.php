@@ -8,6 +8,8 @@ use App\Http\Requests\SupplierRegistration\RevisionRequest;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierRegistrationAttempt;
 use App\Services\SupplierRegistrationService;
+use App\Support\BusinessTime;
+use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
@@ -54,15 +56,12 @@ class SupplierRegistrationReviewController extends Controller
                     return e($supplier->pic_name).'<br><small class="text-muted">'.e($supplier->pic_email).' | '.e($supplier->pic_phone).'</small>';
                 })
                 ->addColumn('status_badge', function ($attempt) {
-                    return match ($attempt->status) {
-                        SupplierRegistrationAttempt::STATUS_PENDING => '<span class="ui-status-chip ui-status-chip--warning">'.e(__('local_procurement.registration.pending')).'</span>',
-                        SupplierRegistrationAttempt::STATUS_REVISION => '<span class="ui-status-chip ui-status-chip--info">'.e(__('local_procurement.registration.revision')).'</span>',
-                        SupplierRegistrationAttempt::STATUS_APPROVED => '<span class="ui-status-chip ui-status-chip--success">'.e(__('local_procurement.registration.approved')).'</span>',
-                        SupplierRegistrationAttempt::STATUS_REJECTED => '<span class="ui-status-chip ui-status-chip--danger">'.e(__('local_procurement.registration.rejected')).'</span>',
-                        default => '<span class="ui-status-chip ui-status-chip--neutral">'.e($attempt->status).'</span>',
-                    };
+                    $tone = StatusHelper::registrationTone($attempt->status);
+                    $label = StatusHelper::registrationLabel($attempt->status);
+
+                    return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($label).'</span>';
                 })
-                ->addColumn('submitted_date', fn ($attempt) => $attempt->submitted_at ? \App\Support\BusinessTime::format($attempt->submitted_at, 'd M Y H:i') : '-')
+                ->addColumn('submitted_date', fn ($attempt) => $attempt->submitted_at ? BusinessTime::format($attempt->submitted_at, 'd M Y H:i') : '-')
                 ->addColumn('reviewer_name', fn ($attempt) => e($attempt->reviewer?->name ?? '-'))
                 ->addColumn('action', function ($attempt) {
                     $url = route('supplier-registrations.show', $attempt->hash);

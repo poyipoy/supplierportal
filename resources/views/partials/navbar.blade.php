@@ -74,6 +74,47 @@
             </div>
         </div>
 
+        {{-- Language Switcher Toggle --}}
+        <form action="{{ route('locale.switch') }}" method="POST" class="tw-inline-flex tw-items-center tw-p-0.5 tw-rounded-ui-full tw-bg-surface-container tw-border tw-border-outline-variant/60 tw-m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+            @csrf
+            <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
+            <button
+                type="submit"
+                name="locale"
+                value="id"
+                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'id' ? 'tw-bg-surface tw-text-primary tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
+                aria-label="Bahasa Indonesia"
+                {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+            >
+                <span class="lang-flag-badge" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                        <rect width="60" height="20" fill="#e70011"/>
+                        <rect y="20" width="60" height="20" fill="#ffffff"/>
+                    </svg>
+                </span>
+                <span class="tw-tracking-wide">ID</span>
+            </button>
+            <button
+                type="submit"
+                name="locale"
+                value="en"
+                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'en' ? 'tw-bg-surface tw-text-primary tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
+                aria-label="English"
+                {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+            >
+                <span class="lang-flag-badge" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                        <path fill="#012169" d="M0 0h60v40H0z"/>
+                        <path stroke="#ffffff" stroke-width="8" d="M0 0l60 40M60 0L0 40"/>
+                        <path stroke="#c8102e" stroke-width="2.67" d="M0 0l27 18M60 0L33 18M60 40L33 22M0 40l27-18"/>
+                        <path stroke="#ffffff" stroke-width="13.33" d="M30 0v40M0 20h60"/>
+                        <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
+                    </svg>
+                </span>
+                <span class="tw-tracking-wide">EN</span>
+            </button>
+        </form>
+
         {{-- Role Badge --}}
         <span class="role-badge role-badge-{{ auth()->user()->role }}">
             {{ __('navigation.roles.'.auth()->user()->role) }}

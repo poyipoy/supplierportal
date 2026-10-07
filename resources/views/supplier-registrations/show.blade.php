@@ -38,15 +38,9 @@
             <div>
                 <div class="tw-flex tw-items-center tw-gap-2.5">
                     <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface-variant tw-uppercase tw-tracking-wider">{{ __('local_procurement.registration.application_status') }}</span>
-                    @if ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_PENDING)
-                        <span class="ui-status-chip ui-status-chip--warning">{{ __('local_procurement.registration.pending_review') }}</span>
-                    @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_REVISION)
-                        <span class="ui-status-chip ui-status-chip--info">{{ __('registration.statuses.revision') }}</span>
-                    @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_APPROVED)
-                        <span class="ui-status-chip ui-status-chip--success">{{ __('local_procurement.registration.active_approved') }}</span>
-                    @elseif ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_REJECTED)
-                        <span class="ui-status-chip ui-status-chip--danger">{{ __('registration.statuses.rejected') }}</span>
-                    @endif
+                    <x-ui.status-chip :tone="\App\Support\StatusHelper::registrationTone($attempt->status)">
+                        {{ \App\Support\StatusHelper::registrationLabel($attempt->status) }}
+                    </x-ui.status-chip>
                 </div>
 
                 @if ($attempt->reviewed_by)
@@ -242,6 +236,7 @@
                                         'registration_approved' => __('local_procurement.registration.event_approved'),
                                         'scope_assigned' => __('local_procurement.registration.event_scope'),
                                         'account_activated' => __('local_procurement.registration.event_activated'),
+                                        'status_accessed_credentials' => __('local_procurement.registration.event_status_accessed'),
                                         default => str_replace('_', ' ', strtoupper($audit->event)),
                                     } }}</span>
                                     <span class="tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($audit->created_at, 'datetime_comma') }}</span>
@@ -314,19 +309,9 @@
                         <div class="tw-p-2.5 tw-rounded-ui-xs {{ $h->id === $attempt->id ? 'tw-bg-primary/10 tw-border tw-border-primary/30' : 'tw-bg-surface-container tw-border tw-border-outline-variant' }}">
                             <div class="tw-flex tw-items-center tw-justify-between">
                                 <span class="tw-font-bold tw-text-ui-xs">{{ __('local_procurement.registration.attempt', ['attempt' => $h->attempt_number]) }}</span>
-                                <span class="ui-status-chip {{ match($h->status) {
-                                    'PENDING' => 'ui-status-chip--warning',
-                                    'REVISION' => 'ui-status-chip--info',
-                                    'APPROVED' => 'ui-status-chip--success',
-                                    'REJECTED' => 'ui-status-chip--danger',
-                                    default => 'ui-status-chip--neutral',
-                                } }}">{{ match($h->status) {
-                                    'PENDING' => __('local_procurement.registration.pending_review'),
-                                    'REVISION' => __('local_procurement.registration.revision'),
-                                    'APPROVED' => __('local_procurement.registration.approved'),
-                                    'REJECTED' => __('local_procurement.registration.rejected'),
-                                    default => \App\Support\StatusHelper::registrationLabel($h->status),
-                                } }}</span>
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::registrationTone($h->status)">
+                                    {{ \App\Support\StatusHelper::registrationLabel($h->status) }}
+                                </x-ui.status-chip>
                             </div>
                             <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
                                 {{ $h->submitted_at ? $regionalFormatter->timestamp($h->submitted_at, 'datetime_comma') : '-' }}

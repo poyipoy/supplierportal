@@ -211,6 +211,7 @@ return [
         'event_approved' => 'Pendaftaran Disetujui',
         'event_scope' => 'Scope Portal Ditetapkan',
         'event_activated' => 'Akun Diaktifkan',
+        'event_status_accessed' => 'Status Diakses (Email & Kata Sandi)',
         'list_title' => 'Pendaftaran Pemasok - Portal ADASI',
         'list_heading' => 'Pendaftaran Pemasok',
         'list_description' => 'Tinjau pendaftaran, minta revisi, tolak, atau setujui pengajuan dan tetapkan cakupan portal pemasok.',

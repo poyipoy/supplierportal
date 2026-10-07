@@ -105,11 +105,17 @@ class PaymentBatchDrpExportTest extends TestCase
         $cells = null;
         foreach (['en' => 'MAY', 'id' => 'MEI'] as $locale => $month) {
             app()->setLocale($locale);
-            $workbook = (new PaymentBatchDrpSheetRenderer)->render(collect([$batch]));
+            $workbook = (new PaymentBatchDrpSheetRenderer)->render(collect([$batch]), locale: $locale);
             $sheet = $workbook->getSheetByName('01');
             $this->assertSame('  '.__('exports.drp.title', [], $locale), $sheet->getCell('D2')->getValue());
             $this->assertSame($month, $sheet->getCell('D3')->getValue());
             $this->assertSame(__('exports.drp.week', ['week' => 2, 'date' => '08/05/2026'], $locale), $sheet->getCell('D5')->getValue());
+            $this->assertSame(__('exports.drp.total', [], $locale), $sheet->getCell('E9')->getValue());
+            $this->assertSame(__('exports.drp.prepared_by', [], $locale), $sheet->getCell('A11')->getValue());
+            $this->assertSame(__('exports.drp.checked_by', [], $locale), $sheet->getCell('E11')->getValue());
+            $this->assertSame(__('exports.drp.acknowledged_by', [], $locale), $sheet->getCell('F11')->getValue());
+            $this->assertSame(__('exports.drp.approved_by', [], $locale), $sheet->getCell('H11')->getValue());
+
             $financial = [$sheet->getCell('G8')->getValue(), $sheet->getCell('I8')->getValue(), $sheet->getCell('I9')->getValue(), $sheet->getCell('I9')->getCalculatedValue()];
             $this->assertSame('00112233', (string) $financial[0]);
             $this->assertEquals(10000000, $financial[1]);
@@ -120,6 +126,90 @@ class PaymentBatchDrpExportTest extends TestCase
             $cells = $financial;
             $workbook->disconnectWorksheets();
         }
+    }
+
+    public function test_export_pipeline_honors_active_app_locale_for_recap_file(): void
+    {
+        $batch = $this->createSupplierBatch(['created_at' => '2026-05-08 10:00:00']);
+        $group = $batch->groups()->create([
+            'payee_type' => 'supplier',
+            'payee_id' => $this->supplierUser->id,
+            'payee_name' => 'PT Lokal Nusantara',
+            'bank_name' => 'BCA',
+            'account_number' => '99887766',
+            'account_holder_name' => 'PT Lokal Nusantara',
+            'subtotal_amount' => 5000000,
+            'bank_fee' => 0,
+            'net_payment_amount' => 5000000,
+            'status' => PaymentGroup::STATUS_UNPAID,
+        ]);
+        $inv = $this->createInvoice(['invoice_number' => 'INV-PIPELINE-01']);
+        $group->items()->create([
+            'payable_type' => LocalInvoice::class,
+            'payable_id' => $inv->id,
+            'amount' => 5000000,
+            'status' => PaymentItem::STATUS_ACTIVE,
+        ]);
+
+        $this->actingAs($this->finance);
+
+        // Test Indonesian export
+        app()->setLocale('id');
+        $idRecord = ExportDispatcher::dispatch(
+            'DRP Rekap ID',
+            PaymentBatchDrpExport::class,
+            [$this->finance->id, [$batch->id]],
+            'drp_id.xlsx'
+        );
+        (new ProcessExportJob($idRecord->id))->handle(app(ExportProgressService::class));
+        (new GenerateWorkbookJob($idRecord->id, 'id'))->handle(app(ExportProgressService::class));
+        $idRecord->refresh();
+
+        $tempIdFile = tempnam(sys_get_temp_dir(), 'test_id_');
+        file_put_contents($tempIdFile, Storage::disk('private')->get($idRecord->file_path));
+        $idWorkbook = IOFactory::load($tempIdFile);
+        $idSheet = $idWorkbook->getSheetByName('01');
+
+        $this->assertStringContainsString('REKAP PEMBAYARAN SUPPLIER', (string) $idSheet->getCell('D2')->getValue());
+        $this->assertSame('MEI', (string) $idSheet->getCell('D3')->getValue());
+        $this->assertStringContainsString('MINGGU KE-2', (string) $idSheet->getCell('D5')->getValue());
+        $this->assertSame('TOTAL PEMBAYARAN', (string) $idSheet->getCell('E9')->getValue());
+        $this->assertSame('DIBUAT OLEH,', (string) $idSheet->getCell('A11')->getValue());
+        $this->assertSame('DICEK OLEH,', (string) $idSheet->getCell('E11')->getValue());
+        $this->assertSame('DIKETAHUI OLEH,', (string) $idSheet->getCell('F11')->getValue());
+        $this->assertSame('DISETUJUI OLEH,', (string) $idSheet->getCell('H11')->getValue());
+
+        $idWorkbook->disconnectWorksheets();
+        @unlink($tempIdFile);
+
+        // Test English export
+        app()->setLocale('en');
+        $enRecord = ExportDispatcher::dispatch(
+            'DRP Recap EN',
+            PaymentBatchDrpExport::class,
+            [$this->finance->id, [$batch->id]],
+            'drp_en.xlsx'
+        );
+        (new ProcessExportJob($enRecord->id))->handle(app(ExportProgressService::class));
+        (new GenerateWorkbookJob($enRecord->id, 'en'))->handle(app(ExportProgressService::class));
+        $enRecord->refresh();
+
+        $tempEnFile = tempnam(sys_get_temp_dir(), 'test_en_');
+        file_put_contents($tempEnFile, Storage::disk('private')->get($enRecord->file_path));
+        $enWorkbook = IOFactory::load($tempEnFile);
+        $enSheet = $enWorkbook->getSheetByName('01');
+
+        $this->assertStringContainsString('SUPPLIER PAYMENT RECAP', (string) $enSheet->getCell('D2')->getValue());
+        $this->assertSame('MAY', (string) $enSheet->getCell('D3')->getValue());
+        $this->assertStringContainsString('WEEK 2', (string) $enSheet->getCell('D5')->getValue());
+        $this->assertSame('TOTAL PAYMENT', (string) $enSheet->getCell('E9')->getValue());
+        $this->assertSame('PREPARED BY,', (string) $enSheet->getCell('A11')->getValue());
+        $this->assertSame('CHECKED BY,', (string) $enSheet->getCell('E11')->getValue());
+        $this->assertSame('ACKNOWLEDGED BY,', (string) $enSheet->getCell('F11')->getValue());
+        $this->assertSame('APPROVED BY,', (string) $enSheet->getCell('H11')->getValue());
+
+        $enWorkbook->disconnectWorksheets();
+        @unlink($tempEnFile);
     }
 
     public function test_guest_cannot_export_drp(): void

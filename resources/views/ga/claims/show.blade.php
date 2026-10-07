@@ -38,7 +38,7 @@
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">{{ __('ga.labels.claim_status') }}:</span>
-                        <x-ui.status-chip :tone="match($claim->status) { 'PAID' => 'success', 'READY_TO_PAY' => 'success', 'NEED_REVISION' => 'error', 'BASIC_VERIFIED' => 'info', default => 'warning' }">
+                        <x-ui.status-chip :tone="\App\Support\StatusHelper::gaClaimTone($claim->status)">
                             {{ \App\Support\StatusHelper::gaClaimLabel($claim->status) }}
                         </x-ui.status-chip>
                     </div>

@@ -263,13 +263,10 @@ resources/views/
 └── admin/              dashboard, users/, material-hs-code, ...
 
 routes/
-├── web.php             Impor, purchasing, admin, qc, shared, registrasi; require file berikut
-├── supplier-local.php  local-supplier.*, context switcher, shared document routes
-├── finance.php         finance.*
-├── accounting.php      accounting.* legacy
-├── ga.php              ga.*
-├── auth.php            login, MFA, password, session/security
-└── console.php         scheduler & console entrypoint
+├── web.php             Seluruh route HTTP: Impor, Local Supplier, Finance, Accounting,
+│                       GA, shared, registrasi, login, MFA, password, session/security
+├── console.php         scheduler & console entrypoint
+└── channels.php        otorisasi channel broadcasting
 
 docs/
 ├── audits/             laporan audit teknis/non-UI
@@ -301,7 +298,7 @@ ADASI-UI-REDESIGN-PHASE2-MISSIONS/
 
 ## 🔐 Definisi Route
 
-Letakkan route baru pada file domain yang sesuai; `routes/web.php` me-require `supplier-local.php`, `accounting.php`, `finance.php`, dan `ga.php`. Contoh grup Impor:
+Letakkan seluruh route HTTP baru pada section domain yang sesuai di `routes/web.php`. Pertahankan batas group role/scope, pengecualian akses shared, dan urutan route statis sebelum parameter dinamis. `routes/console.php` tetap untuk command/scheduler dan `routes/channels.php` untuk otorisasi channel broadcasting; jangan memasukkan keduanya ke group HTTP. Contoh grup Impor:
 
 ```php
 // Purchasing — perhatikan resource-nya bernama "requisitions", bukan "requirements"

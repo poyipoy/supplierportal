@@ -16,11 +16,12 @@ class StatusHelper
 {
     public static function localFinanceTone(string $status): string
     {
-        return match ($status) {
-            'OPEN', 'AVAILABLE', 'FINAL', 'FINALIZED', 'SETTLED', 'PAID' => 'success',
-            'RESERVED', 'CORRECTION_REQUIRED' => 'warning',
+        return match (strtoupper($status)) {
+            'OPEN', 'AVAILABLE', 'FINAL', 'FINALIZED', 'SETTLED', 'PAID', 'VERIFIED', 'APPROVED', 'ACTIVE', 'CONSUMED' => 'success',
+            'RESERVED', 'CORRECTION_REQUIRED', 'PARTIALLY_PAID', 'UNPAID', 'PENDING' => 'warning',
             'INVOICED', 'CLOSED', 'DRAFT' => 'info',
-            'CANCELLED', 'REJECTED', 'EXPIRED' => 'error',
+            'CANCELLED', 'REJECTED', 'EXPIRED', 'REMOVED' => 'error',
+            'RELEASED', 'INACTIVE' => 'neutral',
             default => 'neutral',
         };
     }
@@ -30,9 +31,32 @@ class StatusHelper
         return match (strtoupper($status)) {
             'PAID' => 'success',
             'FINALIZED' => 'info',
-            'PARTIALLY_PAID' => 'warning',
+            'PARTIALLY_PAID', 'UNPAID' => 'warning',
             'DRAFT' => 'neutral',
             'CANCELLED' => 'error',
+            default => 'neutral',
+        };
+    }
+
+    public static function gaClaimTone(string $status): string
+    {
+        return match (strtoupper($status)) {
+            'PAID', 'READY_TO_PAY' => 'success',
+            'SUBMITTED', 'BASIC_VERIFIED', 'UNDER_VERIFICATION', 'UNDER_REVIEW' => 'info',
+            'NEED_REVISION' => 'warning',
+            'CANCELLED', 'REJECTED' => 'error',
+            'DRAFT' => 'neutral',
+            default => 'neutral',
+        };
+    }
+
+    public static function registrationTone(string $status): string
+    {
+        return match (strtoupper($status)) {
+            'APPROVED', 'ACTIVE' => 'success',
+            'PENDING' => 'warning',
+            'REVISION' => 'info',
+            'REJECTED' => 'error',
             default => 'neutral',
         };
     }
