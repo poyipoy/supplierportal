@@ -448,3 +448,73 @@ Kontrak JSON `GET /exports/definitions/purchasing.po`:
 - [ ] Login sebagai user lain: preset pengguna pertama tidak terlihat/terakses.
 - [ ] Export besar (±50.000 baris): progres berjalan, file selesai, unduhan berhasil.
 - [ ] Setelah masa kedaluwarsa, file dibersihkan oleh `exports:cleanup`.
+
+## 11. Hasil Verifikasi Fase 0
+
+### 11.1 Lingkup dan checkout
+
+- Tanggal eksekusi: 2026-10-07. Branch kerja: `feature/advance-export-phase-0`, dibuat dari `language-update` (`3a4dc9a17dbc12520e19f2db83639e7e5cc37e26`).
+- Saat pemeriksaan awal terbaru, checkout berada di `master` (`bcb29db8c78e14ad5cbd13ce6af2875ccb653ce3`), working tree bersih, dan `git diff --stat language-update` kosong. Pemeriksaan/test awal pada tree itu dibedakan dari run akhir pada branch Fase 0.
+- Seluruh `AGENTS.md`, `CLAUDE.md`, framework kognitif Laravel, `context.md`, dan dokumen rencana ini dibaca. Pencarian instruksi tidak menemukan `AGENTS.md` yang lebih spesifik untuk test/dokumentasi.
+- Perubahan Fase 0 hanya dua file test baru dan tambahan bagian ini. Tidak ada perubahan kode produksi, dependency, PDF, export detail, DRP/Transfer, atau template import. Tidak menjalankan migrasi terhadap database aplikasi.
+
+### 11.2 Hasil test yang benar-benar dijalankan
+
+Run awal sebelum test baru: sembilan suite berikut dijalankan serial dalam satu proses pada tree awal; **131 passed, 3.591 assertions, 85,62 detik**. Run akhir di branch Fase 0 menjalankan kedua test baru bersama sembilan suite yang sama; **151 passed, 5.803 assertions, 87,25 detik**, exit code 0. Tidak ada test dilewati pada kedua run tersebut.
+
+| Suite | Awal | Akhir | Catatan |
+|---|---:|---:|---|
+| AsyncExportQueueTest | 24 lulus | 24 lulus | Queue, ownership, progress, cleanup, retry |
+| DetailExportSecurityTest | 4 lulus | 4 lulus | Export detail hanya dijalankan; kodenya tidak diubah |
+| LocalizationExportTest | 3 lulus | 3 lulus | Locale en/id dan round-trip serialisasi existing |
+| MissionFourExportTest | 4 lulus | 4 lulus | Filter, mapping, scope, numeric cells |
+| RegionalExportHistoryTest | 4 lulus | 4 lulus | Kontrak timestamp dan polling |
+| ShipmentUiAndExportTest | 10 lulus | 10 lulus | Mapping shipment dan supplier isolation |
+| PaymentBatchDrpExportTest | 14 lulus | 14 lulus | Workbook tetap; hanya verifikasi regresi |
+| PaymentBatchTransferExportTest | 37 lulus | 37 lulus | Workbook tetap; hanya verifikasi regresi |
+| LocalInvoiceTest | 31 lulus | 31 lulus | Relevan karena Tier 1 mencakup LocalInvoicesExport |
+| AdvancedExportBaselineTest | Belum ada | 18 lulus | Golden enam export en/id, register/payments Finance/Accounting, serialisasi |
+| AdvancedExportQueuedCsvBaselineTest | Belum ada | 2 lulus | 1.001 baris, tiga chunk 500, locale en/id |
+
+Safety test database dijalankan sebelum feature tests: **2 passed, 4 assertions**, exit code 0; koneksi hidup diperiksa dengan `SELECT DATABASE()` dan menunjuk `adasi_portal_test` (`tests/Feature/TestingEnvironmentDatabaseSafetyTest.php:20`). Seluruh suite database dijalankan serial.
+
+Run pertama kedua test baru menghasilkan **4 failed, 16 passed, 198 assertions**. Penyebabnya fixture memasukkan `created_at` ke `PurchaseRequisition::create()`, padahal field itu tidak termasuk `$fillable` (`app/Models/PurchaseRequisition.php:24`). Fixture diperbaiki dengan `forceFill()` untuk timestamp tetap; tidak mengubah produksi atau mengganti expected golden agar mengikuti waktu runtime. Run akhir di atas membuktikan perbaikannya.
+
+Golden memakai array literal, bukan expected dari `headings()`, translator, atau model helper saat runtime. Jumlah kolom: PO 10, Quotations 24, PR 11, Shipments 11, Inspections 8, LocalInvoices 16. Seluruh urutan, nilai, tipe scalar, label locale, null fallback, dan konversi tanggal pada baris pertama diperiksa dengan `assertSame()` (`tests/Feature/AdvancedExportBaselineTest.php:94`).
+
+Perintah run akhir (satu proses, tanpa paralel):
+
+```powershell
+php artisan test tests/Feature/AdvancedExportBaselineTest.php tests/Feature/AdvancedExportQueuedCsvBaselineTest.php tests/Feature/AsyncExportQueueTest.php tests/Feature/DetailExportSecurityTest.php tests/Feature/LocalizationExportTest.php tests/Feature/MissionFourExportTest.php tests/Feature/RegionalExportHistoryTest.php tests/Feature/ShipmentUiAndExportTest.php tests/Feature/Finance/PaymentBatchDrpExportTest.php tests/Feature/Finance/PaymentBatchTransferExportTest.php tests/Feature/LocalInvoice/LocalInvoiceTest.php --compact
+```
+
+PHP lint kedua file baru lulus. Pint dijalankan hanya pada kedua file baru, kemudian `php vendor/bin/pint --test` untuk kedua file menghasilkan `passed`. Percobaan awal menjalankan Pint melalui sandbox gagal sebelum proses dibuat dengan `helper_unknown_error: setup refresh had errors`; run ulang dengan eskalasi tool berhasil. Peringatan PHPUnit tentang metadata doc-comment pada `BankTransferMappingTest` masih muncul pada safety test; file tersebut tidak diubah.
+
+### 11.3 Jawaban item [A] dan pemeriksaan a-f
+
+| Item | Jawaban dan tingkat bukti | Bukti file:baris |
+|---|---|---|
+| a / F16: pemakaian collection() | **Diinspeksi dan diuji.** PO, Quotations, PR, Inspections, dan Shipments memiliki compatibility method `collection()` dan dipakai test existing. Pencarian `collection\(` di app/Exports, app/Http, app/Services, app/Jobs, dan tests/Feature tidak menemukan caller produksi untuk kelima compatibility method tersebut. Tier 1 diproses sebagai FromQuery oleh vendor. **LocalInvoicesExport tidak memiliki collection()**. Jangan menghapus method yang masih dipakai test tanpa menyesuaikan test di fase yang relevan. | `app/Exports/PurchaseOrdersExport.php:141`; `QuotationsExport.php:141`; `RequisitionsExport.php:89`; `InspectionsExport.php:93`; `ShipmentsExport.php:92`; `LocalInvoicesExport.php:17`; `tests/Feature/AsyncExportQueueTest.php:971-974`; `tests/Feature/ShipmentUiAndExportTest.php:180`; `vendor/maatwebsite/excel/src/QueuedWriter.php:95-98` |
+| b: ekstensi cleanup/progress | **Diinspeksi.** CleanupExpiredExports dan ExportProgressService tidak mengasumsikan .xlsx; keduanya memakai disk/path tersimpan. Guard path juga tidak memeriksa ekstensi. Regresi cleanup/progress existing lulus, tetapi cleanup file CSV spesifik belum diuji. Dispatcher dan download masih khusus XLSX dan tetap perlu penyesuaian Fase 1. | `app/Console/Commands/CleanupExpiredExports.php:28-40`; `app/Services/ExportProgressService.php:216-230`; `app/Models/ExportJob.php:108-115`; `app/Support/ExportDispatcher.php:135-152`; `app/Http/Controllers/ExportDownloadController.php:65` |
+| c: database | **Konfigurasi dibaca, koneksi test dijalankan.** .env.example menetapkan mysql; phpunit.xml menetapkan mysql/adasi_portal_test. Config mendukung MySQL dan MariaDB, dengan fallback DB_CONNECTION=sqlite bila environment tidak diisi; `engine => null` tidak menetapkan storage engine. Dockerfile hanya image PHP/nginx, bukan definisi server database; pencarian compose tidak menemukan file compose. **Versi server dan engine tabel lokal/staging/produksi tidak terverifikasi**, karena belum menjalankan inspeksi metadata pada lingkungan tersebut. | `.env.example:34-39`; `phpunit.xml:33-37`; `config/database.php:20,45-85`; `Dockerfile:1`; `tests/Feature/TestingEnvironmentDatabaseSafetyTest.php:18-23` |
+| d: export bersamaan per user | **Diinspeksi.** Tidak ditemukan limit jumlah queued/processing per user pada dispatcher, controller export/download, route, dan config yang diperiksa. `has_pending` adalah exists untuk tampilan, bukan pembatas; lock/status pada launcher melindungi satu record, bukan membatasi jumlah record user. AUTH_MAX_CONCURRENT_SESSIONS bukan limit export. O3 default 3 masih pekerjaan fase berikutnya, tidak ditambahkan di Fase 0. | `app/Support/ExportDispatcher.php:43-91`; `app/Http/Controllers/ExportDownloadController.php:33-38`; `app/Services/ExportProgressService.php:37-44`; `config/auth_security.php:110-114`; `routes/web.php:495-501,565-568,616` |
+| e: JavaScript progres | **Diinspeksi, regresi HTTP existing lulus; browser tidak diuji.** Implementasi utama adalah IIFE public/assets/js/async-export.js, bukan modul resources/js. Poll status 1 detik, timeout 660 detik, AdasiToast, state localStorage, claim lintas-tab, Blob download, dan restore navigasi. Layout memuat public asset dan menghubungkan Echo `.export.progress`. History mempunyai script inline fetch/poll 5 detik. | `public/assets/js/async-export.js:1-25,229-247,793-959`; `resources/views/layouts/app.blade.php:686,1163-1164`; `resources/views/exports/index.blade.php:94-202` |
+| f / F4: CSV queued BOM/heading | **Runtime lulus dalam batas probe.** Excel::queue dengan writer CSV eksplisit, helper test-only WithCustomCsvSettings, delimiter koma, BOM/UTF-8, menghasilkan satu BOM dan satu heading untuk 1.001 baris / chunk 500 dalam locale en/id. Seluruh baris, urutan, angka, Unicode, koma, kutip, newline dalam field, dan teks formula-prefixed diperiksa. Vendor membuat heading saat QueueExport membuka sheet; append chunk membuka ulang worksheet dan menulis ulang file dengan mode wb, bukan append byte mentah. | `tests/Feature/AdvancedExportQueuedCsvBaselineTest.php:33-88`; `vendor/maatwebsite/excel/src/Jobs/QueueExport.php:61-82`; `Jobs/AppendQueryToSheet.php:91-106`; `Sheet.php:183-191`; `Writer.php:137-140,164-195`; `vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/BaseWriter.php:121`; `Writer/Csv.php:110-112` |
+| F17: serialisasi objek export | **Runtime lulus untuk keenam export existing.** Setelah query size cache, locale, dan scalar progress context diisi, serialize/unserialize mempertahankan headings, mapping, query size, dan preferredLocale. Job vendor menyimpan export sebagai properti. Ini tidak membuktikan katalog yang belum dibuat aman; test harus diperluas saat applyOptions/katalog diperkenalkan. Closure katalog tetap dilarang menjadi properti instance export. | `tests/Feature/AdvancedExportBaselineTest.php:115-123`; `tests/Feature/LocalizationExportTest.php:48-60`; `vendor/maatwebsite/excel/src/Jobs/QueueExport.php:22,39-44`; `Jobs/AppendQueryToSheet.php:44,63-73` |
+
+### 11.4 Penyimpangan dan usulan penyesuaian rencana
+
+1. **F16 terlalu umum:** LocalInvoicesExport tidak memiliki collection(); lima compatibility method lain masih dipakai test. Usulan: hapus hanya method yang benar-benar tidak dibutuhkan setelah caller/test disesuaikan, bukan penghapusan massal di awal.
+2. **Tanggal default tidak seragam:** Inspections menggunakan `d/m/Y H:i`; PR/Quotations menggunakan `Y-m-d H:i:s`, dengan business timezone. Usulan: katalog mempertahankan formatter per kolom, jangan memaksakan seluruh tanggal menjadi Y-m-d. Bukti: `app/Exports/InspectionsExport.php:89`, `RequisitionsExport.php:85`, `QuotationsExport.php:130`.
+3. **Tipe scalar default tidak seragam:** LocalInvoices map seluruh nilai menjadi string tersanitasi (`LocalInvoicesExport.php:37-42`); actual weight Shipments juga string terformat (`ShipmentsExport.php:79`). Usulan: bedakan metadata tipe kolom dari output legacy default; jangan mengubah nilai menjadi float hanya karena tipe katalog Money/Number.
+4. **Risiko keamanan yang membutuhkan keputusan sebelum Fase 5b:** InspectionsExport mengembalikan teks PO/supplier/material tanpa SpreadsheetCellSanitizer (`InspectionsExport.php:81-89`). Golden sengaja merekam `=Baseline Steel` mentah sebagai perilaku sekarang; ini characterization, bukan persetujuan atas keamanan perilaku itu. Aturan sanitizer otomatis semua kolom teks pada 5.3/5.8 akan mengubah baseline tersebut. Usulan: dokumentasikan dan setujui pengecualian backward compatibility untuk perbaikan formula injection, lalu update golden yang terdampak bersamaan dengan regression test keamanan. **Tidak diperbaiki dalam Fase 0.**
+5. **Pola frontend:** Fase 4 harus mempertahankan integrasi public asset + inline history + Echo dan kontrak async yang sudah ada, atau menjelaskan alasan pemindahan ke resources/js. Jangan menganggap sudah ada modul Vite export progress.
+6. **CSV settings dibuktikan lewat helper test-only:** probe menetapkan input_encoding dan output_encoding UTF-8 eksplisit. Helper tidak ditambahkan ke allowlist atau produksi. Fase berikutnya masih perlu menghubungkan options/writer, MIME, filename, dan CSV settings pada jalur produksi.
+
+### 11.5 Batas verifikasi dan gerbang berikutnya
+
+- Probe menjalankan chain queued Laravel Excel dengan **sync driver** dan private disk fake; bukan worker database terpisah, deployment, storage remote, atau pembukaan file di Microsoft Excel. Database queue atomic handoff tetap diuji oleh AsyncExportQueueTest, tetapi bukan end-to-end CSV pada database worker.
+- Tidak menguji browser/UX, Excel locale OS, dataset 50.000 baris, staging/produksi, migrasi baru, atau cleanup CSV spesifik. Tidak ada dependency maupun fitur Advance Export produksi yang dibuat.
+- Scope diff terhadap language-update hanya `tests/Feature/AdvancedExportBaselineTest.php`, `tests/Feature/AdvancedExportQueuedCsvBaselineTest.php`, dan dokumen ini. Commit test dan dokumentasi dipisahkan; tidak merge/push.
+- O1 100.000 baris, O3 tiga export aktif/user, O4 tanpa estimasi tetap keputusan untuk fase berikutnya. O2 tidak diputuskan oleh Fase 0; kolom sensitif memerlukan tinjauan pemilik bisnis.
+- Fase 0 menyelesaikan golden baseline dan mencatat semua [A] beserta keterbatasannya. **Berhenti setelah Fase 0; Fase 1 tidak dimulai.** Temuan sanitizer Inspections pada 11.4 harus menjadi acuan saat menyetujui perubahan perilaku default berikutnya.
