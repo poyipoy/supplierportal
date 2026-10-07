@@ -2,22 +2,30 @@
 
 namespace App\Exports;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
+use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Http\Requests\Export\Filters\RequisitionExportFilters;
 use App\Models\PrItem;
+use App\Support\BusinessTime;
 use App\Support\SpreadsheetCellSanitizer;
+use App\Support\StatusHelper;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class RequisitionsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class RequisitionsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
+    use UsesColumnCatalog;
 
     protected $periodId;
 
@@ -34,11 +42,16 @@ class RequisitionsExport implements \Illuminate\Contracts\Translation\HasLocaleP
 
     public function query(): Builder
     {
-        $q = PrItem::query()->with([
+        $q = PrItem::query()->with($this->hasExportOptions() ? $this->catalogEagerLoads() : [
             'purchaseRequisition.period',
             'purchaseRequisition.creator',
             'purchaseRequisition.items',
         ]);
+        if ($this->hasExportOptions()) {
+            $q->whereHas('purchaseRequisition', fn ($q) => RequisitionExportFilters::apply($q, ['period_id' => $this->periodId, 'status' => $this->status, 'search' => $this->search]));
+
+            return $q->orderByDesc('pr_id')->orderBy('id');
+        }
 
         if ($this->periodId) {
             $q->whereHas('purchaseRequisition', fn (Builder $pr) => $pr->where('period_id', $this->periodId));
@@ -64,6 +77,9 @@ class RequisitionsExport implements \Illuminate\Contracts\Translation\HasLocaleP
 
     public function map($item): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogMap($item);
+        }
         $pr = $item->purchaseRequisition;
         $prTotalKg = $pr?->items?->sum(fn (PrItem $prItem) => $prItem->total_weight) ?? 0;
         $spec = collect([
@@ -81,8 +97,8 @@ class RequisitionsExport implements \Illuminate\Contracts\Translation\HasLocaleP
             (float) $item->total_weight,
             (float) $prTotalKg,
             SpreadsheetCellSanitizer::text($item->remark),
-            SpreadsheetCellSanitizer::text(\App\Support\StatusHelper::prLabel((string) $pr?->status)),
-            $pr?->created_at ? \App\Support\BusinessTime::format($pr->created_at, 'Y-m-d H:i:s', false) : '-',
+            SpreadsheetCellSanitizer::text(StatusHelper::prLabel((string) $pr?->status)),
+            $pr?->created_at ? BusinessTime::format($pr->created_at, 'Y-m-d H:i:s', false) : '-',
         ];
     }
 
@@ -103,11 +119,19 @@ class RequisitionsExport implements \Illuminate\Contracts\Translation\HasLocaleP
 
     public function headings(): array
     {
-        return [__('exports.headings.pr_number'), __('exports.headings.period'), __('exports.headings.material_name'), __('exports.headings.specification'), __('exports.headings.qty'), __('exports.headings.weight_unit'), __('exports.headings.total_weight'), __('exports.headings.pr_total_kg'), __('exports.headings.remark'), __('exports.headings.status'), __('exports.headings.date_created').' ('.\App\Support\BusinessTime::label().')'];
+        if ($this->hasExportOptions()) {
+            return $this->catalogHeadings();
+        }
+
+        return [__('exports.headings.pr_number'), __('exports.headings.period'), __('exports.headings.material_name'), __('exports.headings.specification'), __('exports.headings.qty'), __('exports.headings.weight_unit'), __('exports.headings.total_weight'), __('exports.headings.pr_total_kg'), __('exports.headings.remark'), __('exports.headings.status'), __('exports.headings.date_created').' ('.BusinessTime::label().')'];
     }
 
     public function columnWidths(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogWidths();
+        }
+
         return [
             'A' => 22,
             'B' => 18,

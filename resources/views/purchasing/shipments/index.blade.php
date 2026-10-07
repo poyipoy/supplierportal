@@ -27,22 +27,7 @@
         :description="__('shipments.copy.monitor_physical_deliveries_across_suppliers_verify_shipping_documentation_sets_and_confirm_port_war')"
     >
         <x-slot:actions>
-            <x-ui.button
-                :href="route('purchasing.export.shipments')"
-                variant="outline"
-                size="sm"
-                data-async-export
-                id="exportShipmentsBtn"
-                :data-export-url="route('purchasing.export.shipments')"
-                data-export-source-singular="{{ __('exports.sources.shipment') }}"
-                data-export-source-plural="{{ __('exports.sources.shipments') }}"
-                data-export-count-table="#shipmentTable"
-                data-export-row-label="{{ __('shipments.copy.shipment_rows') }}"
-                data-export-row-explanation="{{ __('shipments.copy.each_shipment_will_be_exported_with_consolidated_pos_and_fulfillment_metrics') }}"
-            >
-                <x-ui.icon name="file-spreadsheet" />
-                <span>{{ __('shipments.copy.export_excel') }}</span>
-            </x-ui.button>
+<x-export.advanced-modal export-key="purchasing.shipments" :action="route('purchasing.export.shipments')" :suppliers="$suppliers" :filter-selectors="['search'=>'#filter_search','status'=>'#filter_status','supplier_id'=>'#filter_supplier','start_date'=>'#shipmentDateFrom','end_date'=>'#shipmentDateTo']" table="#shipmentTable" trigger-id="exportShipmentsBtn" />
         </x-slot:actions>
     </x-ui.page-header>
 

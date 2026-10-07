@@ -23,7 +23,9 @@ use App\Http\Controllers\Auth\RevokeSessionController;
 use App\Http\Controllers\Auth\SupplierRegistrationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ConversationMessageController;
+use App\Http\Controllers\ExportDefinitionController;
 use App\Http\Controllers\ExportDownloadController;
+use App\Http\Controllers\ExportPresetController;
 use App\Http\Controllers\Finance\FinanceDashboardController;
 use App\Http\Controllers\Finance\FinanceDrpController;
 use App\Http\Controllers\Finance\FinanceDrpPaidController;
@@ -224,7 +226,7 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
 
     // Master Invoice (Reporting / Query Repository)
     Route::get('/master-invoices', [FinanceInvoiceController::class, 'masterInvoice'])->name('master-invoices');
-    Route::get('/master-invoices/export', [FinanceInvoiceController::class, 'exportMasterInvoice'])->name('master-invoices.export');
+    Route::match(['get', 'post'], '/master-invoices/export', [FinanceInvoiceController::class, 'exportMasterInvoice'])->name('master-invoices.export');
 
     // Vendor Master & Change Approvals
     Route::get('/vendor-master', [FinanceVendorController::class, 'index'])->name('vendor-master.index');
@@ -354,6 +356,14 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
+        Route::get('/exports/definitions/{exportKey}', [ExportDefinitionController::class, 'show'])->middleware('no-store')->name('exports.definitions.show');
+        Route::middleware('no-store')->group(function () {
+            Route::get('/export-presets', [ExportPresetController::class, 'index'])->name('export-presets.index');
+            Route::post('/export-presets', [ExportPresetController::class, 'store'])->name('export-presets.store');
+            Route::put('/export-presets/{preset}', [ExportPresetController::class, 'update'])->name('export-presets.update');
+            Route::delete('/export-presets/{preset}', [ExportPresetController::class, 'destroy'])->name('export-presets.destroy');
+            Route::post('/export-presets/{preset}/default', [ExportPresetController::class, 'makeDefault'])->name('export-presets.default');
+        });
         Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
         Route::post('/exports/{exportJob}/cancel', [ExportDownloadController::class, 'cancel'])->name('exports.cancel');
         Route::get('/exports/{exportJob}/download', [ExportDownloadController::class, 'download'])->name('exports.download');
@@ -492,13 +502,13 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     // Laporan
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     // Export
-    Route::get('/export/requisitions', [ExportController::class, 'requisitions'])->name('export.requisitions');
+    Route::match(['get', 'post'], '/export/requisitions', [ExportController::class, 'requisitions'])->name('export.requisitions');
     Route::get('/export/requisitions/{purchaseRequisition}', [ExportController::class, 'requisitionDetail'])->name('export.requisitions.detail');
-    Route::get('/export/purchase-orders', [ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
+    Route::match(['get', 'post'], '/export/purchase-orders', [ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
     Route::get('/export/purchase-orders/{purchaseOrder}', [ExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
-    Route::get('/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
+    Route::match(['get', 'post'], '/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
-    Route::get('/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
+    Route::match(['get', 'post'], '/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
     // Local Vendors & Read-Only Invoices
     Route::get('/local-vendors', [PurchasingLocalVendorController::class, 'index'])->name('local-vendors.index');
     Route::get('/local-vendors/{vendor}', [PurchasingLocalVendorController::class, 'show'])->name('local-vendors.show');
@@ -562,9 +572,9 @@ Route::middleware(['auth'])->prefix('shared')->name('shared.')->group(function (
 */
 Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('supplier')->name('supplier.')->group(function () {
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
-    Route::get('/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
+    Route::match(['get', 'post'], '/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
-    Route::get('/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
+    Route::match(['get', 'post'], '/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
     Route::get('/export/purchase-orders/{purchaseOrder}', [SupplierExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
     Route::get('/quotations/period/{period_id}', [QuotationController::class, 'period'])->name('quotations.period');
     Route::get('/quotations/{pr_id}/import-template', [QuotationController::class, 'importTemplate'])->name('quotations.import-template');
@@ -594,7 +604,7 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('s
     Route::get('/price-history', [SupplierPriceHistoryController::class, 'index'])->name('price-history.index');
     Route::get('/price-history/historical', [SupplierPriceHistoryController::class, 'historical'])->name('price-history.historical');
     Route::get('/price-history/materials', [SupplierPriceHistoryController::class, 'materials'])->name('price-history.materials');
-    Route::get('/price-history/export', [SupplierPriceHistoryController::class, 'export'])->name('price-history.export');
+    Route::match(['get', 'post'], '/price-history/export', [SupplierPriceHistoryController::class, 'export'])->name('price-history.export');
     // Announcements
     Route::get('/announcements', [App\Http\Controllers\Supplier\AnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/announcements/{announcement}', [App\Http\Controllers\Supplier\AnnouncementController::class, 'show'])->name('announcements.show');
@@ -613,7 +623,7 @@ Route::middleware(['auth', 'role:qc'])->prefix('qc')->name('qc.')->group(functio
     Route::post('/inspections/{po_id}', [QcInspectionController::class, 'store'])->name('inspections.store');
     Route::post('/inspections/{id}/attachments', [QcInspectionController::class, 'storeAttachments'])->name('inspections.attachments.store');
     Route::get('/inspections', [QcInspectionController::class, 'index'])->name('inspections.index');
-    Route::get('/export/inspections', [QcExportController::class, 'inspections'])->name('export.inspections');
+    Route::match(['get', 'post'], '/export/inspections', [QcExportController::class, 'inspections'])->name('export.inspections');
 });
 
 // Shared QC Inspection Detail (QC + Purchasing can access)

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\UserPreferenceService;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,6 +41,8 @@ class ExportJob extends Model
         'label',
         'export_class',
         'export_args',
+        'format',
+        'export_options',
         'file_name',
         'file_path',
         'disk',
@@ -58,6 +61,7 @@ class ExportJob extends Model
     {
         return [
             'export_args' => 'array',
+            'export_options' => 'array',
             'progress' => 'integer',
             'total_rows' => 'integer',
             'processed_rows' => 'integer',
@@ -88,7 +92,8 @@ class ExportJob extends Model
 
     public function progressMessage(?string $locale = null): string
     {
-        $locale = \App\Services\UserPreferenceService::normalizeLocale($locale ?? app()->getLocale());
+        $locale = UserPreferenceService::normalizeLocale($locale ?? app()->getLocale());
+
         return match ($this->progress_stage) {
             self::STAGE_QUEUED => __('exports.progress.queued', [], $locale),
             self::STAGE_PREPARING => __('exports.progress.preparing', [], $locale),

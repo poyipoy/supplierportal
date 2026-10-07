@@ -18,22 +18,7 @@
         :description="__('supplier.copy.monitor_active_purchase_orders_delivery_milestones_and_quality_inspection_statuses_issued_to_your_co')"
     >
         <x-slot:actions>
-            <x-ui.button
-                :href="route('supplier.export.purchase-orders')"
-                variant="outline"
-                size="sm"
-                data-async-export
-                id="exportSupplierPurchaseOrdersBtn"
-                :data-export-url="route('supplier.export.purchase-orders')"
-                data-export-source-singular="{{ __('exports.sources.purchase_order') }}"
-                data-export-source-plural="{{ __('exports.sources.purchase_orders') }}"
-                data-export-count-table="#poTable"
-                data-export-row-label="{{ __('supplier.copy.purchase_order_rows') }}"
-                data-export-row-explanation="{{ __('supplier.copy.each_purchase_order_will_be_written_as_one_excel_row') }}"
-            >
-                <x-ui.icon name="file-spreadsheet" />
-                <span>{{ __('supplier.copy.export_excel') }}</span>
-            </x-ui.button>
+            <x-export.advanced-modal export-key="supplier.po" :action="route('supplier.export.purchase-orders')" table="#poTable" trigger-id="exportSupplierPurchaseOrdersBtn" />
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -67,7 +52,11 @@
         var table = $('#poTable').DataTable({
             processing: true,
             serverSide: true,
-            ajax: '{{ route("supplier.purchase-orders.index") }}',
+            search: { search: new URL(window.location.href).searchParams.get('search') || '' },
+            ajax: { url: '{{ route("supplier.purchase-orders.index") }}', data: function (d) {
+                const params = new URL(window.location.href).searchParams;
+                ['po_number', 'status', 'start_date', 'end_date'].forEach((name) => { if (params.has(name)) d[name] = params.get(name); });
+            } },
             columns: [
                 { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw-text-on-surface' },
                 { data: 'period_name', name: 'period_name', orderable: false, className: 'tw-text-on-surface-variant' },
@@ -83,18 +72,6 @@
             order: []
         });
 
-        $('#exportSupplierPurchaseOrdersBtn').on('click', function() {
-            const exportUrl = new URL(this.dataset.exportUrl, window.location.origin);
-            const search = table.search().trim();
-
-            if (search) {
-                exportUrl.searchParams.set('search', search);
-            } else {
-                exportUrl.searchParams.delete('search');
-            }
-
-            this.href = exportUrl.toString();
-        });
     });
 </script>
 @endpush

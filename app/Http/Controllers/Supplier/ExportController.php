@@ -7,35 +7,20 @@ use App\Exports\PurchaseOrdersExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\AdvancedExportRequest;
+use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
+use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class ExportController extends Controller
 {
-    public function quotations(Request $request)
+    public function quotations(AdvancedExportRequest $request)
     {
-        $filters = $request->validate([
-            'period_id' => ['nullable', 'integer', 'exists:periods,id'],
-            'pr_number' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', Rule::in([
-                'unresponded',
-                Quotation::STATUS_DRAFT,
-                Quotation::STATUS_REVISION_REQUESTED,
-                Quotation::STATUS_SUBMITTED,
-                Quotation::STATUS_ACCEPTED,
-                Quotation::STATUS_REJECTED,
-                Quotation::STATUS_ALL_UNAVAILABLE,
-            ])],
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-        if (isset($filters['period_id'])) {
-            $filters['period_id'] = (int) $filters['period_id'];
-        }
+        $filters = QuotationExportFilters::validated($request, supplier: true);
 
         $scope = ! empty($filters['period_id']) ? 'period_'.$filters['period_id'] : 'all';
 
@@ -44,6 +29,7 @@ class ExportController extends Controller
             QuotationsExport::class,
             [$filters, (int) auth()->id(), true],
             'quotation_supplier_'.$scope.'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('supplier.quotations'),
         );
 
         return $this->dispatchResponse($request, $exportJob);
@@ -67,21 +53,9 @@ class ExportController extends Controller
         return $this->dispatchResponse($request, $exportJob);
     }
 
-    public function purchaseOrders(Request $request)
+    public function purchaseOrders(AdvancedExportRequest $request)
     {
-        $filters = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date'],
-            'po_number' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', Rule::in(['draft', 'active', 'waiting_qc', 'claim_needed', 'overdue', 'completed', 'cancelled'])],
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        if (! empty($filters['start_date']) && ! empty($filters['end_date']) && $filters['end_date'] < $filters['start_date']) {
-            throw ValidationException::withMessages([
-                'end_date' => __('supplier.copy.end_date_cannot_be_before_start_date'),
-            ]);
-        }
+        $filters = PurchaseOrderExportFilters::validated($request, supplier: true);
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.supplier_po_summary'),
@@ -95,6 +69,7 @@ class ExportController extends Controller
                 $filters['search'] ?? null,
             ],
             'rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('supplier.po'),
         );
 
         return $this->dispatchResponse($request, $exportJob);

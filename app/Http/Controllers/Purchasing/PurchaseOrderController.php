@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
@@ -30,7 +31,7 @@ class PurchaseOrderController extends Controller
      */
     public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
-        $supplierFilter = $this->resolveSupplierFilter($request->query('supplier_id'));
+        $filters = PurchaseOrderExportFilters::validated($request, index: true);
 
         $query = PurchaseOrder::query()
             ->select([
@@ -70,32 +71,11 @@ class PurchaseOrderController extends Controller
             )
             ->orderBy('created_at', 'desc');
 
-        if ($request->filled('po_number')) {
-            $query->where('po_number', 'like', '%'.trim($request->po_number).'%');
-        }
-
-        if ($request->filled('status')) {
-            if ($request->status === 'overdue') {
-                $query->where(function ($q) {
-                    $q->where('status', 'overdue')
-                        ->orWhere(function ($q) {
-                            $q->where('status', 'active')
-                                ->whereNotNull('estimated_arrival')
-                                ->whereDate('estimated_arrival', '<', BusinessTime::today()->toDateString())
-                                ->whereNull('actual_arrival');
-                        });
-                });
-            } else {
-                $query->where('status', $request->status);
-            }
-        }
-
-        if ($supplierFilter) {
-            $query->where('supplier_id', $supplierFilter->getKey());
-        }
+        PurchaseOrderExportFilters::apply($query, $filters);
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
+                ->filter(fn ($query) => null)
                 ->addColumn('po_number_display', fn ($po) => $po->po_number)
                 ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
                 ->addColumn('period_name', function ($po) {

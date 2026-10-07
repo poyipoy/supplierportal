@@ -2,23 +2,31 @@
 
 namespace App\Exports;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
+use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Models\QcInspection;
 use App\Models\QcItem;
+use App\Support\BusinessTime;
+use App\Support\SpreadsheetCellSanitizer;
 use Carbon\Carbon;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class InspectionsExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class InspectionsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
+    use UsesColumnCatalog;
 
     protected $startDate;
 
@@ -35,22 +43,26 @@ class InspectionsExport implements \Illuminate\Contracts\Translation\HasLocalePr
 
     public function query(): Builder
     {
-        $query = QcItem::query()->with([
+        $query = QcItem::query()->with($this->hasExportOptions() ? $this->catalogEagerLoads() : [
             'inspection.purchaseOrder.supplier',
             'prItem',
         ]);
 
-        if ($this->startDate) {
+        if ($this->hasExportOptions()) {
+            $query->whereHas('inspection', fn (Builder $q) => InspectionExportFilters::apply($q, ['start_date' => $this->startDate, 'end_date' => $this->endDate, 'status' => $this->status]));
+        }
+
+        if (! $this->hasExportOptions() && $this->startDate) {
             $dateFrom = Carbon::parse($this->startDate)->startOfDay();
             $query->whereHas('inspection', fn (Builder $inspection) => $inspection->where('inspected_at', '>=', $dateFrom));
         }
 
-        if ($this->endDate) {
+        if (! $this->hasExportOptions() && $this->endDate) {
             $dateToExclusive = Carbon::parse($this->endDate)->addDay()->startOfDay();
             $query->whereHas('inspection', fn (Builder $inspection) => $inspection->where('inspected_at', '<', $dateToExclusive));
         }
 
-        if ($this->status) {
+        if (! $this->hasExportOptions() && $this->status) {
             $query->whereHas('inspection', fn (Builder $inspection) => $inspection->where('status', $this->status));
         }
 
@@ -64,6 +76,9 @@ class InspectionsExport implements \Illuminate\Contracts\Translation\HasLocalePr
 
     public function map($item): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogMap($item);
+        }
         $inspection = $item->inspection;
         $prItem = $item->prItem;
         $requestedSpecification = $prItem
@@ -79,14 +94,14 @@ class InspectionsExport implements \Illuminate\Contracts\Translation\HasLocalePr
         ])->filter()->implode(' | ') ?: '-';
 
         return [
-            $inspection?->purchaseOrder?->po_number ?? '-',
-            $inspection?->purchaseOrder?->supplier?->name ?? '-',
-            $prItem?->material_name ?? '-',
-            $requestedSpecification,
+            SpreadsheetCellSanitizer::text($inspection?->purchaseOrder?->po_number, preserveWhitespace: true),
+            SpreadsheetCellSanitizer::text($inspection?->purchaseOrder?->supplier?->name, preserveWhitespace: true),
+            SpreadsheetCellSanitizer::text($prItem?->material_name, preserveWhitespace: true),
+            $prItem ? SpreadsheetCellSanitizer::text($requestedSpecification, preserveWhitespace: true) : '-',
             $actualDimensions,
             strtoupper((string) $item->status),
             strtoupper((string) $inspection?->status),
-            $inspection?->inspected_at ? \App\Support\BusinessTime::format($inspection->inspected_at, 'd/m/Y H:i', false) : '-',
+            $inspection?->inspected_at ? BusinessTime::format($inspection->inspected_at, 'd/m/Y H:i', false) : '-',
         ];
     }
 
@@ -107,11 +122,19 @@ class InspectionsExport implements \Illuminate\Contracts\Translation\HasLocalePr
 
     public function headings(): array
     {
-        return [__('exports.headings.po_number'), __('exports.headings.supplier'), __('exports.headings.material'), __('exports.headings.requested_specification'), __('exports.headings.actual_dimensions'), __('exports.headings.item_status'), __('exports.headings.inspection_status'), __('exports.headings.inspection_date').' ('.\App\Support\BusinessTime::label().')'];
+        if ($this->hasExportOptions()) {
+            return $this->catalogHeadings();
+        }
+
+        return [__('exports.headings.po_number'), __('exports.headings.supplier'), __('exports.headings.material'), __('exports.headings.requested_specification'), __('exports.headings.actual_dimensions'), __('exports.headings.item_status'), __('exports.headings.inspection_status'), __('exports.headings.inspection_date').' ('.BusinessTime::label().')'];
     }
 
     public function columnWidths(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogWidths();
+        }
+
         return [
             'A' => 22,
             'B' => 25,

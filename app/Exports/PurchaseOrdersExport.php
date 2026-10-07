@@ -2,25 +2,31 @@
 
 namespace App\Exports;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
+use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\PurchaseOrder;
 use App\Support\BusinessTime;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
 use Carbon\Carbon;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class PurchaseOrdersExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromQuery, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomQuerySize, WithHeadings, WithMapping
+class PurchaseOrdersExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
 {
     use InteractsWithExportProgress;
+    use UsesColumnCatalog;
 
     protected $supplierId;
 
@@ -52,6 +58,12 @@ class PurchaseOrdersExport implements \Illuminate\Contracts\Translation\HasLocal
 
     public function query(): Builder
     {
+        if ($this->hasExportOptions()) {
+            $query = PurchaseOrder::query()->with($this->catalogEagerLoads());
+            PurchaseOrderExportFilters::apply($query, ['supplier_id' => $this->supplierId, 'start_date' => $this->startDate, 'end_date' => $this->endDate, 'po_number' => $this->poNumber, 'status' => $this->status, 'search' => $this->search]);
+
+            return $query->orderByDesc('id');
+        }
         $q = PurchaseOrder::query()->with([
             'supplier',
             'quotations.purchaseRequisition.period',
@@ -107,6 +119,9 @@ class PurchaseOrdersExport implements \Illuminate\Contracts\Translation\HasLocal
 
     public function map($po): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogMap($po);
+        }
         $prNumbers = $po->pr_reference;
         $commercialQuotations = $po->commercialQuotations();
         $materials = $commercialQuotations
@@ -155,11 +170,19 @@ class PurchaseOrdersExport implements \Illuminate\Contracts\Translation\HasLocal
 
     public function headings(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogHeadings();
+        }
+
         return [__('exports.headings.po_number'), __('exports.headings.pr_number'), __('exports.headings.supplier'), __('exports.headings.material'), __('exports.headings.currency'), __('exports.headings.total_amount'), __('exports.headings.total_idr'), __('exports.headings.est_arrival'), __('exports.headings.remark'), __('exports.headings.status')];
     }
 
     public function columnWidths(): array
     {
+        if ($this->hasExportOptions()) {
+            return $this->catalogWidths();
+        }
+
         return [
             'A' => 22,
             'B' => 28,

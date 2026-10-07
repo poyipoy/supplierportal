@@ -2,24 +2,44 @@
 
 namespace App\Exports;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Support\Export\ExportDefinitions;
+use App\Support\Export\ExportOptions;
+use App\Support\SpreadsheetCellSanitizer;
 use App\Support\SupplierPriceHistoryBuilder;
 use Carbon\Carbon;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SupplierPriceHistoryExport implements \Illuminate\Contracts\Translation\HasLocalePreference, FromCollection, TracksExportProgress, WithColumnWidths, WithHeadings, WithStyles, WithTitle
+class SupplierPriceHistoryExport implements AcceptsExportOptions, FromCollection, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomCsvSettings, WithHeadings, WithStyles, WithTitle
 {
     use InteractsWithExportProgress;
 
     private ?Collection $cachedRows = null;
+
+    private string $format = 'xlsx';
+
+    public function applyOptions(ExportOptions $options): void
+    {
+        $definition = ExportDefinitions::forClass(static::class, $options->audience);
+        ExportDefinitions::sanitizeKeys($definition, $options->columns);
+        $this->format = $options->format;
+    }
+
+    public function getCsvSettings(): array
+    {
+        return $this->format === 'csv' ? config('exports.csv') : [];
+    }
 
     public function __construct(
         private readonly int $supplierId,
@@ -59,9 +79,9 @@ class SupplierPriceHistoryExport implements \Illuminate\Contracts\Translation\Ha
         }
 
         return $data->map(fn (array $row) => [
-            $row['pr_number'] ?? '-',
+            ($row['pr_number'] ?? '-') === '-' ? '-' : SpreadsheetCellSanitizer::text($row['pr_number'], preserveWhitespace: true),
             $row['submitted_at_display'] ?? __('status.quotation.draft'),
-            $row['status_label'],
+            SpreadsheetCellSanitizer::text($row['status_label']),
             $row['price_per_kg'],
             $row['currency'],
             $row['change_pct'] !== null ? number_format($row['change_pct'], 2).'%' : '-',
@@ -114,6 +134,9 @@ class SupplierPriceHistoryExport implements \Illuminate\Contracts\Translation\Ha
 
     public function columnWidths(): array
     {
+        if ($this->format === 'csv') {
+            return [];
+        }
         if ($this->view === 'yearly') {
             return [
                 'A' => 14,

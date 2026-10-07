@@ -4,19 +4,15 @@ namespace App\Http\Controllers\Qc;
 
 use App\Exports\InspectionsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\AdvancedExportRequest;
+use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Support\ExportDispatcher;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class QcExportController extends Controller
 {
-    public function inspections(Request $request)
+    public function inspections(AdvancedExportRequest $request)
     {
-        $filters = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['nullable', Rule::in(['ok', 'ng'])],
-        ]);
+        $filters = InspectionExportFilters::validated($request);
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.qc_summary'),
@@ -26,7 +22,8 @@ class QcExportController extends Controller
                 $filters['end_date'] ?? null,
                 $filters['status'] ?? null,
             ],
-            'rekap_inspeksi_qc_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            'summary_qc_inspections_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('qc.inspections'),
         );
 
         $message = __('qc.copy.the_export_request_was_accepted_the_file_will_download_automatically_when_ready');

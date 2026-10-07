@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Finance;
 
 use App\Exports\LocalInvoicesExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\AdvancedExportRequest;
+use App\Http\Requests\Export\Filters\LocalInvoiceExportFilters;
 use App\Http\Requests\LocalInvoice\InvoiceFilterRequest;
 use App\Models\LocalInvoice;
 use App\Models\User;
@@ -189,15 +191,20 @@ class FinanceInvoiceController extends Controller
         ]);
     }
 
-    public function exportMasterInvoice(InvoiceFilterRequest $request)
+    public function exportMasterInvoice(AdvancedExportRequest $request)
     {
-        $filters = $request->validated();
-        ExportDispatcher::dispatch(
+        $filters = LocalInvoiceExportFilters::validated($request);
+        $job = ExportDispatcher::dispatch(
             __('exports.job_labels.invoice_master'),
             LocalInvoicesExport::class,
             [$request->user()->id, $filters, false],
-            'master-invoices-'.now()->format('Ymd-His').'.xlsx' // biz-time:ignore instant filename
+            'master-invoices-'.now()->format('Ymd-His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('finance.local-invoices'),
         );
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('local_invoice.feedback.export_queued'), 'export_job_id' => $job->getRouteKey(), 'exports_url' => route('exports.index', absolute: false), 'status_url' => route('exports.status', $job, absolute: false), 'cancel_url' => route('exports.cancel', $job, absolute: false)], 202);
+        }
 
         return redirect()->route('exports.index')->with('success', __('local_invoice.feedback.export_queued'));
     }

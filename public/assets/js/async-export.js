@@ -263,6 +263,7 @@
             exportJobId: normalizeExportJobId(state.exportJobId),
             statusUrl: state.statusUrl,
             startedAt: state.startedAt,
+            ...(state.csvProgressClock ? { csvProgressClock: true, lastProgressAt: state.lastProgressAt } : {}),
             toastId: state.toastId,
             exportsUrl: state.exportsUrl || previousRecord?.exportsUrl || null,
             cancelUrl: state.cancelUrl || previousRecord?.cancelUrl || null,
@@ -572,6 +573,9 @@
             return;
         }
 
+        if (state.csvProgressClock && (processedRows > state.lastProcessedRows || stage !== state.lastStage || payload.status !== state.lastStatus)) {
+            state.lastProgressAt = Date.now();
+        }
         state.lastStatus = payload.status;
         state.lastStage = stage;
         state.lastProgress = progress;
@@ -805,7 +809,8 @@
         const poll = async () => {
             if (state.monitoringStopped) return;
 
-            if (Date.now() - state.startedAt >= pollTimeoutMs) {
+            const timeoutOrigin = state.csvProgressClock ? (state.lastProgressAt ?? state.startedAt) : state.startedAt;
+            if (Date.now() - timeoutOrigin >= pollTimeoutMs) {
                 finish();
                 updateExportToast(state, {
                     forceNotify: true,
@@ -959,16 +964,19 @@
         window.setTimeout(poll, pollIntervalMs);
     };
 
-    const startExport = async (control) => {
-        const requestUrl = requestUrlFor(control);
+    const startExport = async (control, options = {}) => {
+        const endpointUrl = options.url ? new URL(options.url, window.location.origin).toString() : requestUrlFor(control);
+        if (new URL(endpointUrl).origin !== window.location.origin) return false;
+        const requestUrl = options.body ? `${endpointUrl}::${JSON.stringify(options.body)}` : endpointUrl;
         if (activeExports.has(requestUrl)) {
-            return;
+            options.onError?.(t('js.export.in_progress'));
+            return false;
         }
 
         const toastId = createExportToastId();
         const presentation = exportPresentationFor(control);
         const state = {
-            control,
+            control: options.body ? null : control,
             requestUrl,
             exportJobId: null,
             statusUrl: null,
@@ -993,17 +1001,23 @@
             rowLabel: presentation.rowLabel,
             lastProgressSignature: null,
             startedAt: Date.now(),
+            csvProgressClock: options.body?.options?.format === 'csv'
+                && /^\/(?:(?:purchasing|supplier)\/export\/(?:requisitions|purchase-orders|quotations|shipments)|qc\/export\/inspections|finance\/master-invoices\/export|accounting\/reports\/export|supplier\/price-history\/export)\/?$/.test(new URL(endpointUrl).pathname),
+            lastProgressAt: Date.now(),
         };
 
         activeExports.set(requestUrl, state);
-        setBusy(control, true);
+        setBusy(state.control, true);
 
         try {
-            const response = await window.fetch(requestUrl, {
+            const response = await window.fetch(endpointUrl, {
+                method: options.body ? 'POST' : 'GET',
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body ? { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' } : {}),
                 },
+                ...(options.body ? { body: JSON.stringify(options.body) } : {}),
                 credentials: 'same-origin',
                 cache: 'no-store',
             });
@@ -1018,6 +1032,7 @@
             }
 
             state.exportJobId = payload.export_job_id;
+            if (state.csvProgressClock) state.lastProgressAt = Date.now();
             state.statusUrl = payload.status_url;
             state.cancelUrl = payload.cancel_url || null;
             state.exportsUrl = payload.exports_url || null;
@@ -1040,10 +1055,11 @@
             });
 
             pollStatus(state);
+            return true;
         } catch (error) {
             activeExports.delete(requestUrl);
             releaseTrackedExportJob(state.exportJobId);
-            setBusy(control, false);
+            setBusy(state.control, false);
             updateExportToast(state, {
                 type: 'error',
                 title: t('js.export.start_failed'),
@@ -1051,6 +1067,8 @@
                 autoClose: 0,
                 terminal: true,
             });
+            options.onError?.(error instanceof Error ? error.message : t('js.export.request_failed'));
+            return false;
         }
     };
 
@@ -1132,6 +1150,8 @@
                 rowLabel: restoredRowLabel,
                 lastProgressSignature: null,
                 startedAt: Number(record.startedAt) || Date.now(),
+                csvProgressClock: record.csvProgressClock === true,
+                lastProgressAt: Number(record.lastProgressAt) || Number(record.startedAt) || Date.now(),
             };
 
             if (state.rehydrateToast) {
@@ -1163,6 +1183,7 @@
     };
 
     window.AdasiAsyncExport = Object.freeze({
+        startExport,
         handleProgress,
         isTrackingNotification,
     });
@@ -1202,7 +1223,7 @@
 
     document.addEventListener('submit', (event) => {
         const form = event.target;
-        if (!(form instanceof HTMLFormElement) || !isAsyncExportControl(form)) {
+        if (!(form instanceof HTMLFormElement) || form.hasAttribute?.('data-advanced-export-form') || !isAsyncExportControl(form)) {
             return;
         }
 

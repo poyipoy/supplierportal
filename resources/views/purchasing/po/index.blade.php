@@ -23,22 +23,8 @@
     >
         <x-slot:actions>
             <x-ui.button :href="route('purchasing.purchase-orders.consolidate-awards')" size="sm">{{ __('purchasing.copy.consolidate_selected_items') }}</x-ui.button>
-            <x-ui.button
-                :href="route('purchasing.export.purchase-orders')"
-                variant="outline"
-                size="sm"
-                data-async-export
-                id="exportPurchaseOrdersBtn"
-                :data-export-url="route('purchasing.export.purchase-orders')"
-                data-export-source-singular="{{ __('exports.sources.purchase_order') }}"
-                data-export-source-plural="{{ __('exports.sources.purchase_orders') }}"
-                data-export-count-table="#poTable"
-                data-export-row-label="{{ __('purchasing.copy.purchase_order_rows') }}"
-                data-export-row-explanation="{{ __('purchasing.copy.each_purchase_order_will_be_written_as_one_excel_row') }}"
-            >
-                <x-ui.icon name="file-spreadsheet" />
-                <span>{{ __('purchasing.copy.export_excel') }}</span>
-            </x-ui.button>
+            <x-export.advanced-modal export-key="purchasing.po" :action="route('purchasing.export.purchase-orders')" :suppliers="$suppliers"
+                :filter-selectors="['po_number' => '#filter_po_number', 'status' => '#filter_status', 'supplier_id' => '#filter_supplier']" table="#poTable" trigger-id="exportPurchaseOrdersBtn" />
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -123,12 +109,15 @@
         var table = $('#poTable').DataTable({
             processing: true,
             serverSide: true,
+            search: { search: new URL(window.location.href).searchParams.get('search') || '' },
             ajax: {
                 url: '{{ route("purchasing.purchase-orders.index") }}',
                 data: function (d) {
                     d.po_number = $('#filter_po_number').val();
                     d.status = $('#filter_status').val();
                     d.supplier_id = $('#filter_supplier').val();
+                    d.start_date = new URL(window.location.href).searchParams.get('start_date');
+                    d.end_date = new URL(window.location.href).searchParams.get('end_date');
                 }
             },
             columns: [
@@ -230,20 +219,6 @@
             }
         }
 
-        $('#exportPurchaseOrdersBtn').on('click', function (event) {
-            const exportUrl = new URL(this.dataset.exportUrl, window.location.origin);
-            const poNumber = $('#filter_po_number').val();
-            const status = $('#filter_status').val();
-            const supplierId = $('#filter_supplier').val();
-            const search = table.search().trim();
-
-            if (poNumber) exportUrl.searchParams.set('po_number', poNumber);
-            if (status) exportUrl.searchParams.set('status', status);
-            if (supplierId) exportUrl.searchParams.set('supplier_id', supplierId);
-            if (search) exportUrl.searchParams.set('search', search);
-
-            this.href = exportUrl.toString();
-        });
     });
 </script>
 @endpush
