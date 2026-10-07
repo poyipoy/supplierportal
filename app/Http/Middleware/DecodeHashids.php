@@ -28,6 +28,7 @@ class DecodeHashids
      */
     protected const HASHED_PARAM_KEYS = [
         'invoice',
+        'preset',
         'document',
         // Local Supplier settlement/master routes use implicit model binding
         // with hashed route keys. Keep these names in the decode allow-list so

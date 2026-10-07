@@ -23,7 +23,9 @@ use App\Http\Controllers\Auth\RevokeSessionController;
 use App\Http\Controllers\Auth\SupplierRegistrationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ConversationMessageController;
+use App\Http\Controllers\ExportDefinitionController;
 use App\Http\Controllers\ExportDownloadController;
+use App\Http\Controllers\ExportPresetController;
 use App\Http\Controllers\Finance\FinanceDashboardController;
 use App\Http\Controllers\Finance\FinanceDrpController;
 use App\Http\Controllers\Finance\FinanceDrpPaidController;
@@ -354,6 +356,14 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
+        Route::get('/exports/definitions/{exportKey}', [ExportDefinitionController::class, 'show'])->middleware('no-store')->name('exports.definitions.show');
+        Route::middleware('no-store')->group(function () {
+            Route::get('/export-presets', [ExportPresetController::class, 'index'])->name('export-presets.index');
+            Route::post('/export-presets', [ExportPresetController::class, 'store'])->name('export-presets.store');
+            Route::put('/export-presets/{preset}', [ExportPresetController::class, 'update'])->name('export-presets.update');
+            Route::delete('/export-presets/{preset}', [ExportPresetController::class, 'destroy'])->name('export-presets.destroy');
+            Route::post('/export-presets/{preset}/default', [ExportPresetController::class, 'makeDefault'])->name('export-presets.default');
+        });
         Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
         Route::post('/exports/{exportJob}/cancel', [ExportDownloadController::class, 'cancel'])->name('exports.cancel');
         Route::get('/exports/{exportJob}/download', [ExportDownloadController::class, 'download'])->name('exports.download');

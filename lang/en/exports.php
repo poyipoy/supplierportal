@@ -2,6 +2,11 @@
 
 return [
     'advanced' => [
+        'preset_limit' => 'You can save up to :limit presets for each export.',
+        'preset_duplicate' => 'A preset with this name already exists for this export.',
+        'invalid_filters' => 'Select filters allowed for this export.',
+        'stale_preset' => 'This preset was adjusted to the currently available columns or format.',
+        'filters' => ['start_date' => 'Start Date', 'end_date' => 'End Date', 'po_number' => 'PO Number', 'search' => 'Search', 'status' => 'Status', 'supplier_id' => 'Supplier'],
         'invalid_columns' => 'Select valid columns allowed for this export, including required columns.',
         'row_limit' => 'This export exceeds the maximum of :limit rows. Narrow the filters.',
         'concurrent_limit' => 'You already have :limit active exports. Wait for one to finish.',

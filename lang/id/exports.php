@@ -2,6 +2,11 @@
 
 return [
     'advanced' => [
+        'preset_limit' => 'Anda dapat menyimpan maksimal :limit preset untuk setiap ekspor.',
+        'preset_duplicate' => 'Preset dengan nama ini sudah ada untuk ekspor ini.',
+        'invalid_filters' => 'Pilih filter yang diizinkan untuk ekspor ini.',
+        'stale_preset' => 'Preset disesuaikan dengan kolom atau format yang tersedia saat ini.',
+        'filters' => ['start_date' => 'Tanggal Awal', 'end_date' => 'Tanggal Akhir', 'po_number' => 'Nomor PO', 'search' => 'Pencarian', 'status' => 'Status', 'supplier_id' => 'Pemasok'],
         'invalid_columns' => 'Pilih kolom yang diizinkan untuk ekspor ini, termasuk kolom wajib.',
         'row_limit' => 'Ekspor melebihi batas :limit baris. Persempit filter.',
         'concurrent_limit' => 'Anda memiliki :limit ekspor aktif. Tunggu salah satunya selesai.',
