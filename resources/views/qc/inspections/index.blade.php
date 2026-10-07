@@ -18,22 +18,7 @@
         :description="__('qc.copy.process_arrived_shipments_waiting_for_quality_evaluation_and_review_completed_inspection_history')"
     >
         <x-slot:actions>
-            <x-ui.button
-                :href="route('qc.export.inspections', request()->all())"
-                variant="outline"
-                size="sm"
-                class="d-none"
-                id="inspectionExportLink"
-                data-async-export
-                data-export-source-singular="{{ __('exports.sources.inspection') }}"
-                data-export-source-plural="{{ __('exports.sources.inspections') }}"
-                data-export-count-table="#historyTable"
-                data-export-row-label="{{ __('qc.copy.inspection_item_rows') }}"
-                data-export-row-explanation="{{ __('qc.copy.each_inspected_item_will_be_written_as_a_separate_excel_row') }}"
-            >
-                <x-ui.icon name="file-spreadsheet" />
-                <span>{{ __('qc.copy.export_history') }}</span>
-            </x-ui.button>
+            <div id="inspectionExportLink" class="d-none"><x-export.advanced-modal export-key="qc.inspections" :action="route('qc.export.inspections')" :filter-selectors="['status' => '#historyStatusFilter']" /></div>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -178,6 +163,9 @@
                         url: '{{ route("qc.inspections.data-history") }}',
                         data: function(d) {
                             d.status = $('#historyStatusFilter').val();
+                            const params = new URL(window.location.href).searchParams;
+                            d.start_date = params.get('start_date') || '';
+                            d.end_date = params.get('end_date') || '';
                         }
                     },
                     columns: [
@@ -211,7 +199,6 @@
             }
 
             window.history.replaceState({}, '', url.toString());
-            $('#inspectionExportLink').attr('href', exportUrl.toString());
 
             if (historyTable) {
                 historyTable.ajax.reload();

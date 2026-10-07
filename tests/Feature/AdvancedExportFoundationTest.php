@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Exports\InspectionsExport;
 use App\Exports\PaymentBatchDrpExport;
 use App\Exports\PaymentBatchTransferExport;
+use App\Exports\PurchaseRequisitionDetailExport;
 use App\Exports\RequisitionsExport;
 use App\Jobs\ProcessExportJob;
 use App\Models\ExportJob;
@@ -91,7 +91,7 @@ class AdvancedExportFoundationTest extends TestCase
     {
         Queue::fake();
         $this->actingAs(User::factory()->create(['role' => 'purchasing']));
-        $record = ExportDispatcher::dispatch('CSV', InspectionsExport::class, [], 'report.csv', new ExportOptions(['po_number'], 'csv', 'qc'));
+        $record = ExportDispatcher::dispatch('CSV', PurchaseRequisitionDetailExport::class, [1], 'report.csv', new ExportOptions(['pr_number'], 'csv', 'purchasing'));
         app()->setLocale('en');
         try {
             (new ProcessExportJob($record->id, 'id'))->handle(app(ExportProgressService::class));

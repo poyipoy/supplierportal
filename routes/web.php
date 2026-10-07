@@ -226,7 +226,7 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
 
     // Master Invoice (Reporting / Query Repository)
     Route::get('/master-invoices', [FinanceInvoiceController::class, 'masterInvoice'])->name('master-invoices');
-    Route::get('/master-invoices/export', [FinanceInvoiceController::class, 'exportMasterInvoice'])->name('master-invoices.export');
+    Route::match(['get', 'post'], '/master-invoices/export', [FinanceInvoiceController::class, 'exportMasterInvoice'])->name('master-invoices.export');
 
     // Vendor Master & Change Approvals
     Route::get('/vendor-master', [FinanceVendorController::class, 'index'])->name('vendor-master.index');
@@ -623,7 +623,7 @@ Route::middleware(['auth', 'role:qc'])->prefix('qc')->name('qc.')->group(functio
     Route::post('/inspections/{po_id}', [QcInspectionController::class, 'store'])->name('inspections.store');
     Route::post('/inspections/{id}/attachments', [QcInspectionController::class, 'storeAttachments'])->name('inspections.attachments.store');
     Route::get('/inspections', [QcInspectionController::class, 'index'])->name('inspections.index');
-    Route::get('/export/inspections', [QcExportController::class, 'inspections'])->name('export.inspections');
+    Route::match(['get', 'post'], '/export/inspections', [QcExportController::class, 'inspections'])->name('export.inspections');
 });
 
 // Shared QC Inspection Detail (QC + Purchasing can access)

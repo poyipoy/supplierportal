@@ -2,6 +2,8 @@
 
 namespace App\Support\Export;
 
+use App\Exports\Advanced\Definitions\InspectionDefinition;
+use App\Exports\Advanced\Definitions\LocalInvoiceDefinition;
 use App\Exports\Advanced\Definitions\PurchaseOrderDefinition;
 use App\Exports\Advanced\Definitions\QuotationDefinition;
 use App\Exports\Advanced\Definitions\RequisitionDefinition;
@@ -18,6 +20,9 @@ final class ExportDefinitions
         'purchasing.shipments' => ShipmentDefinition::class,
         'purchasing.po' => PurchaseOrderDefinition::class,
         'supplier.po' => PurchaseOrderDefinition::class,
+        'qc.inspections' => InspectionDefinition::class,
+        'finance.local-invoices' => LocalInvoiceDefinition::class,
+        'accounting.local-invoices' => LocalInvoiceDefinition::class,
     ];
 
     public static function get(string $key): ExportDefinition

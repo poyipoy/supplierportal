@@ -43,17 +43,21 @@
                                             <label for="{{ $fieldId }}" class="tw-text-ui-sm tw-font-medium">{{ __('exports.advanced.filters.'.$field['name']) }}</label>
                                             @if(in_array($field['type'], ['select','supplier','period'], true))
                                                 <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-select form-select-sm">
-                                                    <option value="">{{ __('exports.advanced.all') }}</option>
+                                                    @if(!($field['required'] ?? false))<option value="">{{ __('exports.advanced.all') }}</option>@endif
                                                     @if($field['type'] === 'supplier')
                                                         @foreach($suppliers as $supplier)<option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>@endforeach
                                                     @elseif($field['type'] === 'period')
                                                         @foreach($periods as $period)<option value="{{ $period->id }}">{{ $period->display_label }}</option>@endforeach
                                                     @else
-                                                        @foreach($field['options'] as $value)<option value="{{ $value }}">{{ ($field['domain'] ?? 'po') === 'currency' ? $value : ($value === 'unresponded' ? __('exports.advanced.unresponded') : __('status.'.($field['domain'] ?? 'po').'.'.$value)) }}</option>@endforeach
+                                                        @foreach($field['options'] as $value)<option value="{{ $value }}">{{ isset($field['labels'][$value]) ? __($field['labels'][$value]) : (($field['domain'] ?? 'po') === 'local_invoice' ? \App\Support\StatusHelper::localInvoiceLabel($value) : (($field['domain'] ?? 'po') === 'currency' ? $value : ($value === 'unresponded' ? __('exports.advanced.unresponded') : __('status.'.($field['domain'] ?? 'po').'.'.$value)))) }}</option>@endforeach
                                                     @endif
                                                 </select>
                                             @else
-                                                <input type="text" id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-control form-control-sm" maxlength="255">
+                                                @if($field['type'] === 'boolean')
+                                                    <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-select form-select-sm"><option value="">{{ __('exports.advanced.all') }}</option><option value="1">{{ __('exports.advanced.enabled') }}</option><option value="0">{{ __('exports.advanced.disabled') }}</option></select>
+                                                @else
+                                                    <input type="{{ $field['type'] === 'number' ? 'number' : 'text' }}" id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-control form-control-sm" maxlength="255">
+                                                @endif
                                             @endif
                                         @endif
                                     </div>

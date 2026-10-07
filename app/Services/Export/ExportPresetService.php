@@ -3,10 +3,14 @@
 namespace App\Services\Export;
 
 use App\Exports\Advanced\ExportDefinition;
+use App\Exports\InspectionsExport;
+use App\Exports\LocalInvoicesExport;
 use App\Exports\PurchaseOrdersExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\ShipmentsExport;
+use App\Http\Requests\Export\Filters\InspectionExportFilters;
+use App\Http\Requests\Export\Filters\LocalInvoiceExportFilters;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
@@ -86,6 +90,8 @@ class ExportPresetService
         }
         $request = Request::create('/', 'POST', [...$filters, 'options' => []]);
         $normalized = match ($definition->exportClass()) {
+            InspectionsExport::class => InspectionExportFilters::validated($request),
+            LocalInvoicesExport::class => LocalInvoiceExportFilters::validated($request, accounting: str_starts_with($definition->key(), 'accounting.')),
             QuotationsExport::class => QuotationExportFilters::validated($request, supplier: str_starts_with($definition->key(), 'supplier.')),
             RequisitionsExport::class => RequisitionExportFilters::validated($request),
             ShipmentsExport::class => ShipmentExportFilters::validated($request),

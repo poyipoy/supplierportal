@@ -14,10 +14,7 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
-            <x-ui.button :href="route('finance.master-invoices.export', request()->all())" variant="outline" size="sm">
-                <x-ui.icon name="file-spreadsheet" size="sm" />
-                <span>{{ __('exports.actions.excel') }}</span>
-            </x-ui.button>
+            <x-export.advanced-modal export-key="finance.local-invoices" :action="route('finance.master-invoices.export')" :suppliers="$suppliers" :filter-selectors="['q' => '#invoice-search', 'status' => '#invoice-status', 'supplier' => '#invoice-supplier', 'overpayment_status' => '#invoice-overpayment-status', 'overdue' => '#overdue', 'from' => '#from', 'to' => '#to', 'due_from' => '#due_from', 'due_to' => '#due_to']" />
         </x-slot:actions>
     </x-ui.page-header>
 

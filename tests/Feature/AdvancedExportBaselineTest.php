@@ -152,7 +152,7 @@ class AdvancedExportBaselineTest extends TestCase
     {
         $cases = [];
         foreach (['en', 'id'] as $locale) {
-            foreach (['quotation', 'pr', 'shipment'] as $key) {
+            foreach (['quotation', 'pr', 'shipment', 'inspection', 'invoice'] as $key) {
                 $cases[$key.'-'.$locale] = [$key, $locale];
             }
         }
@@ -165,10 +165,14 @@ class AdvancedExportBaselineTest extends TestCase
     {
         app()->setLocale($locale);
         $export = match ($key) {
-            'quotation' => new QuotationsExport,'pr' => new RequisitionsExport,'shipment' => new ShipmentsExport
+            'quotation' => new QuotationsExport,'pr' => new RequisitionsExport,'shipment' => new ShipmentsExport,
+            'inspection' => new InspectionsExport, 'invoice' => new LocalInvoicesExport($this->finance->id),
         };
-        $definition = ExportDefinitions::forClass($export::class, 'purchasing');
-        $export->applyOptions(new ExportOptions(ExportDefinitions::defaultKeys($definition), 'xlsx', 'purchasing'));
+        $audience = match ($key) {
+            'inspection' => 'qc', 'invoice' => 'finance', default => 'purchasing'
+        };
+        $definition = ExportDefinitions::forClass($export::class, $audience);
+        $export->applyOptions(new ExportOptions(ExportDefinitions::defaultKeys($definition), 'xlsx', $audience));
         $export->setExportLocale($locale);
         $this->assertSame($this->headings($key, $locale), $export->headings());
         $this->assertSame($this->mappedRow($key, $locale), $export->map($export->query()->firstOrFail()));
@@ -185,7 +189,7 @@ class AdvancedExportBaselineTest extends TestCase
             'quotation' => ['REQ/08/2026/901', 'Baseline Period (08/2026)', 'Baseline Company', 'USD', "'=Baseline Steel", '7209.16.00', 2, '2.5 × 1000 × 2000', 2, '2.5 × 1000 × 2000', 2.5, 500.0, 16000.0, 8000000.0, "'@Baseline note", $english ? 'Submitted' : 'Diajukan', '2026-08-16 01:30:00', $english ? 'Available' : 'Tersedia', '2000', 100.0, 'supplier', 200.0, 500.0, 500.0],
             'pr' => ['REQ/08/2026/901', 'Baseline Period (08/2026)', "'=Baseline Steel", 'Flat | 2.5 × 1000 × 2000', 2, 100.0, 200.0, 200.0, "'+Baseline remark", $english ? 'Bidding' : 'Penawaran Berlangsung', '2026-08-16 01:30:00'],
             'shipment' => ['SHP/08/2026/901', 'Baseline Supplier', 'PO/08/2026/901', 1, 2, '123.45', '2026-08-17', '2026-08-31', '-', $english ? 'Draft' : 'Draf', "'=Baseline shipment"],
-            'inspection' => ['PO/08/2026/901', 'Baseline Supplier', '=Baseline Steel', 'Flat | 2.5 × 1000 × 2000', 'T:2.5000 | W:1000.0000 | L:2000.0000', 'OK', 'OK', '16/08/2026 01:30'],
+            'inspection' => ['PO/08/2026/901', 'Baseline Supplier', "'=Baseline Steel", 'Flat | 2.5 × 1000 × 2000', 'T:2.5000 | W:1000.0000 | L:2000.0000', 'OK', 'OK', '16/08/2026 01:30'],
             'invoice' => ['LSI-2026-00901', 'RCP-BASELINE', 'INV-BASELINE', '010.000-26.12345678', 'LOCAL-PO-901', 'Baseline Company', 'IDR', '100000.25', '11000.03', $english ? 'Ready to Pay' : 'Siap Dibayar', '2026-08-16', '2026-08-17', '30', '2026-09-15', '2026-09-16', '-'],
         };
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Qc;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
@@ -12,6 +13,7 @@ use App\Models\ShipmentItem;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\StatusHelper;
 use Illuminate\Database\Eloquent\Model;
@@ -88,14 +90,12 @@ class QcInspectionController extends Controller
         $query = QcInspection::with(['purchaseOrder.supplier', 'shipment', 'inspector'])
             ->orderBy('inspected_at', 'desc');
 
-        if ($request->filled('status') && in_array($request->status, ['ok', 'ng'], true)) {
-            $query->where('status', $request->status);
-        }
+        InspectionExportFilters::apply($query, InspectionExportFilters::validated($request));
 
         return DataTables::eloquent($query)
             ->addColumn('po_number', fn ($i) => $i->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn ($i) => $i->purchaseOrder->supplier->name ?? '-')
-            ->addColumn('inspected_date', fn ($i) => $i->inspected_at ? \App\Support\BusinessTime::format($i->inspected_at, 'd M Y, H:i') : '-')
+            ->addColumn('inspected_date', fn ($i) => $i->inspected_at ? BusinessTime::format($i->inspected_at, 'd M Y, H:i') : '-')
             ->addColumn('status_badge', fn ($i) => StatusHelper::badge(
                 StatusHelper::qcBadge($i->status),
                 StatusHelper::qcLabel($i->status)

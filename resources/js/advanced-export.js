@@ -44,22 +44,22 @@ const boot = () => document.querySelectorAll('[data-advanced-export]').forEach((
     };
     const currentFilters = () => {
         const values = { ...Object.fromEntries(new URL(window.location.href).searchParams), ...JSON.parse(root.dataset.initialFilters || '{}') };
-        Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input) values[name] = input.value; });
+        Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input) values[name] = input.type === 'checkbox' ? (input.checked ? '1' : '0') : input.value; });
         if (root.dataset.exportTable && window.jQuery?.fn?.DataTable?.isDataTable(root.dataset.exportTable)) {
-            if (!selectors.search) values.search = window.jQuery(root.dataset.exportTable).DataTable().search().trim();
+            if (!selectors.search && !root.dataset.exportKey.startsWith('qc.')) values.search = window.jQuery(root.dataset.exportTable).DataTable().search().trim();
         }
         return values;
     };
     // Initialize existing page controls from canonical query filters before its first table load.
     const initial = new URL(window.location.href).searchParams;
-    Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input && initial.has(name)) input.value = initial.get(name); });
+    Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input && initial.has(name)) { if (input.type === 'checkbox') input.checked = initial.get(name) === '1'; else input.value = initial.get(name); } });
     const updateRelative = () => {
         const relative = root.querySelector('[data-export-relative]').checked;
         root.querySelector('[data-export-days]').disabled = !relative;
         form.querySelectorAll('[data-filter-name="start_date"], [data-filter-name="end_date"]').forEach((input) => { input.disabled = relative; input.dispatchEvent(new Event('change', { bubbles: true })); });
     };
     const setFilters = (values) => {
-        form.querySelectorAll('[data-filter-name]').forEach((input) => { input.value = values[input.dataset.filterName] || ''; input.dispatchEvent(new Event('change', { bubbles: true })); });
+        form.querySelectorAll('[data-filter-name]').forEach((input) => { const field = definition.filters.find((f) => f.name === input.dataset.filterName); input.value = values[input.dataset.filterName] ?? field?.default ?? ''; input.dispatchEvent(new Event('change', { bubbles: true })); });
         ['date_from','date_to'].forEach((name) => { const input = form.querySelector(`[name="${name}"]`); if (input) { input.value = values[name] || ''; input.dispatchEvent(new Event('change', { bubbles: true })); } });
         root.querySelector('[data-export-relative]').checked = values.date_range?.mode === 'relative';
         root.querySelector('[data-export-days]').value = values.date_range?.days || 30;
