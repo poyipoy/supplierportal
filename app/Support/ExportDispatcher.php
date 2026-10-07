@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Contracts\GeneratesWorkbook;
 use App\Exports\InspectionsExport;
 use App\Exports\LocalInvoicesExport;
 use App\Exports\PaymentBatchDrpExport;
@@ -16,6 +17,8 @@ use App\Exports\ShipmentsExport;
 use App\Exports\SupplierPriceHistoryExport;
 use App\Jobs\ProcessExportJob;
 use App\Models\ExportJob;
+use App\Services\UserPreferenceService;
+use App\Support\Export\ExportOptions;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use JsonException;
@@ -40,7 +43,7 @@ class ExportDispatcher
         ShipmentsExport::class,
     ];
 
-    public static function dispatch(string $label, string $exportClass, array $args, string $fileName): ExportJob
+    public static function dispatch(string $label, string $exportClass, array $args, string $fileName, ?ExportOptions $options = null): ExportJob
     {
         $user = Auth::user();
 
@@ -50,6 +53,10 @@ class ExportDispatcher
 
         if (! self::isSupported($exportClass)) {
             throw new InvalidArgumentException('The requested export class is not supported.');
+        }
+
+        if ($options !== null && is_a($exportClass, GeneratesWorkbook::class, true)) {
+            throw new InvalidArgumentException('Fixed workbooks do not accept advanced export options.');
         }
 
         $args = array_values($args);
@@ -62,13 +69,15 @@ class ExportDispatcher
 
         $connection = ExportJob::query()->getModel()->getConnection();
 
-        return $connection->transaction(function () use ($user, $label, $exportClass, $args, $fileName): ExportJob {
+        return $connection->transaction(function () use ($user, $label, $exportClass, $args, $fileName, $options): ExportJob {
             $record = ExportJob::create([
                 'user_id' => $user->getKey(),
                 'label' => $label,
                 'export_class' => $exportClass,
                 'export_args' => $args,
-                'file_name' => self::safeFileName($fileName),
+                'file_name' => self::safeFileName($fileName, $options?->format ?? 'xlsx'),
+                'format' => $options?->format ?? 'xlsx',
+                'export_options' => $options?->toArray(),
                 'disk' => 'private',
                 'status' => ExportJob::STATUS_QUEUED,
                 'progress_stage' => ExportJob::STAGE_QUEUED,
@@ -80,8 +89,8 @@ class ExportDispatcher
 
             self::assertAtomicQueueConfiguration($record);
             $activeLocale = app()->getLocale();
-            $userPrefLocale = app(\App\Services\UserPreferenceService::class)->for($user)['locale'] ?? 'en';
-            $locale = \App\Services\UserPreferenceService::normalizeLocale($activeLocale ?: $userPrefLocale);
+            $userPrefLocale = app(UserPreferenceService::class)->for($user)['locale'] ?? 'en';
+            $locale = UserPreferenceService::normalizeLocale($activeLocale ?: $userPrefLocale);
             $pending = ProcessExportJob::dispatch((int) $record->getKey(), $locale)->onQueue('exports');
 
             // Force the root database-queue insert before the record transaction
@@ -132,11 +141,18 @@ class ExportDispatcher
         return in_array($exportClass, self::SUPPORTED_EXPORT_CLASSES, true);
     }
 
-    private static function safeFileName(string $fileName): string
+    private static function safeFileName(string $fileName, string $format = 'xlsx'): string
     {
         $fileName = basename(str_replace('\\', '/', $fileName));
         $fileName = str_replace(["\r", "\n", "\0"], '', $fileName);
         $fileName = preg_replace('/[^A-Za-z0-9._-]+/', '_', $fileName) ?: '';
+
+        if ($format === 'csv') {
+            $stem = preg_replace('/\.(xlsx|csv)$/i', '', $fileName) ?: '';
+            $stem = trim(substr($stem, 0, 235), '._-');
+
+            return ($stem === '' ? 'export' : $stem).'.csv';
+        }
 
         if (! str_ends_with(strtolower($fileName), '.xlsx')) {
             $fileName .= '.xlsx';

@@ -39,6 +39,7 @@
                         <tr>
                             <td>
                                 <div class="tw-font-semibold">{{ $item['label'] }}</div>
+                                <span class="tw-text-ui-xs tw-font-semibold">{{ strtoupper($item['format']) }}</span>
                                 <div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">{{ $item['file_name'] }}</div>
                             </td>
                             <td>
@@ -156,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : '<span class="tw-text-ui-xs tw-text-on-surface-variant">-</span>';
 
             return `<tr>
-                <td><div class="tw-font-semibold">${escapeHtml(item.label)}</div><div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">${escapeHtml(item.file_name)}</div></td>
+                <td><div class="tw-font-semibold">${escapeHtml(item.label)}</div><span class="tw-text-ui-xs tw-font-semibold">${escapeHtml(String(item.format || 'xlsx').toUpperCase())}</span><div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">${escapeHtml(item.file_name)}</div></td>
                 <td><span class="${badgeClass(item.status)}">${escapeHtml(statusLabel(item.status))}</span></td>
                 <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">${escapeHtml(regionalTimestamp(item.created_at))}</td>
                 <td class="tw-text-ui-xs tw-text-on-surface-variant">${completed}${expiry}</td>

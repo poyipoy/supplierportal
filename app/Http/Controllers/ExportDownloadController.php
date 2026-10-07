@@ -56,13 +56,16 @@ class ExportDownloadController extends Controller
             abort(404, __('exports.feedback.not_ready'));
         }
 
+        $format = $exportJob->format ?? 'xlsx';
+        abort_unless(in_array($format, ['xlsx', 'csv'], true), 404);
+
         $disk = Storage::disk($exportJob->disk);
 
         return $disk->download(
             $exportJob->file_path,
             $exportJob->file_name,
             [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Type' => $format === 'csv' ? 'text/csv; charset=UTF-8' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'Cache-Control' => 'no-store, private',
                 'Pragma' => 'no-cache',
                 'X-Content-Type-Options' => 'nosniff',
@@ -152,6 +155,7 @@ class ExportDownloadController extends Controller
             'processed_rows' => $exportJob->processed_rows,
             'total_rows' => $exportJob->total_rows,
             'file_name' => $exportJob->file_name,
+            'format' => $exportJob->format ?? 'xlsx',
             'created_at' => $exportJob->created_at?->toIso8601String(),
             'completed_at' => $exportJob->completed_at?->toIso8601String(),
             'expires_at' => $exportJob->expires_at?->toIso8601String(),

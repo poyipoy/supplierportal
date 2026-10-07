@@ -2,11 +2,14 @@
 
 namespace App\Jobs;
 
+use App\Contracts\AcceptsExportOptions;
 use App\Contracts\GeneratesWorkbook;
 use App\Contracts\TracksExportProgress;
 use App\Jobs\Callbacks\MarkExportFailed;
 use App\Models\ExportJob;
 use App\Services\ExportProgressService;
+use App\Services\UserPreferenceService;
+use App\Support\Export\ExportOptions;
 use App\Support\ExportDispatcher;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,7 +34,7 @@ class ProcessExportJob implements ShouldQueue
 
     public function __construct(public readonly int $exportJobId, string $locale = 'en')
     {
-        $this->locale = \App\Services\UserPreferenceService::normalizeLocale($locale);
+        $this->locale = UserPreferenceService::normalizeLocale($locale);
     }
 
     public function handle(ExportProgressService $progress): void
@@ -48,10 +51,24 @@ class ProcessExportJob implements ShouldQueue
 
         $previousLocale = app()->getLocale();
         try {
-            app()->setLocale(\App\Services\UserPreferenceService::normalizeLocale($this->locale));
+            app()->setLocale(UserPreferenceService::normalizeLocale($this->locale));
             $exportClass = $record->export_class;
             $export = new $exportClass(...$record->export_args);
             $export->setExportLocale($this->locale);
+
+            $format = $record->format ?? 'xlsx';
+            if (! in_array($format, ['xlsx', 'csv'], true)) {
+                throw new RuntimeException('Unsupported export format.');
+            }
+            if ($record->export_options !== null) {
+                $options = ExportOptions::fromArray($record->export_options);
+                if (! $export instanceof AcceptsExportOptions || $options->format !== $format || $export instanceof GeneratesWorkbook) {
+                    throw new RuntimeException('The export does not accept these options.');
+                }
+                $export->applyOptions($options);
+            } elseif ($format !== 'xlsx') {
+                throw new RuntimeException('CSV exports require explicit export options.');
+            }
 
             if (! $export instanceof TracksExportProgress) {
                 throw new RuntimeException('The export does not support row progress tracking.');
@@ -85,7 +102,7 @@ class ProcessExportJob implements ShouldQueue
                 $path,
                 $totalRows,
                 function () use ($export, $path, $record): void {
-                    $pending = Excel::queue($export, $path, $record->disk)
+                    $pending = Excel::queue($export, $path, $record->disk, ($record->format ?? 'xlsx') === 'csv' ? \Maatwebsite\Excel\Excel::CSV : \Maatwebsite\Excel\Excel::XLSX)
                         ->allOnQueue('exports')
                         ->appendToChain(new FinalizeExportJob((int) $record->getKey()));
 
