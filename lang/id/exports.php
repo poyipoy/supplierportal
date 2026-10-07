@@ -2,6 +2,17 @@
 
 return [
     'advanced' => [
+        'all' => 'Semua',
+        'title' => 'Ekspor Lanjutan', 'quick' => 'Ekspor Cepat', 'export' => 'Ekspor',
+        'help' => 'Pilih filter, kolom dan format, atau gunakan preset tersimpan.',
+        'filters_title' => 'Filter', 'columns_title' => 'Kolom dan Urutan', 'format_title' => 'Format',
+        'presets_title' => 'Preset Pribadi', 'preset_name' => 'Nama Preset', 'make_default' => 'Gunakan sebagai default',
+        'save' => 'Simpan sebagai Preset', 'update' => 'Perbarui Preset', 'delete' => 'Hapus Preset', 'reset' => 'Reset Kolom',
+        'relative' => 'Gunakan rentang tanggal relatif', 'days' => 'Jumlah hari',
+        'csv_hint' => 'Untuk lebih dari 20.000 baris, CSV disarankan. Di Excel, gunakan Data → From Text/CSV jika kolom tidak terpisah.',
+        'loading' => 'Menyiapkan opsi ekspor…', 'failed' => 'Opsi ekspor tidak dapat dimuat. Silakan coba lagi.',
+        'default_columns' => 'Konfigurasi Default', 'move_up' => 'Pindahkan :column ke atas', 'move_down' => 'Pindahkan :column ke bawah',
+        'selected' => 'Kolom dipilih: :count', 'saved' => 'Preset tersimpan.', 'required' => 'Wajib', 'save_failed' => 'Preset tidak dapat disimpan.',
         'preset_limit' => 'Anda dapat menyimpan maksimal :limit preset untuk setiap ekspor.',
         'preset_duplicate' => 'Preset dengan nama ini sudah ada untuk ekspor ini.',
         'invalid_filters' => 'Pilih filter yang diizinkan untuk ekspor ini.',

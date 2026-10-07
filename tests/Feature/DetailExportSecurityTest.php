@@ -241,13 +241,14 @@ class DetailExportSecurityTest extends TestCase
         $script = file_get_contents(public_path('assets/js/async-export.js'));
 
         $this->assertStringContainsString("asset('assets/js/async-export.js')", $layout);
-        $this->assertStringContainsString('window.fetch(requestUrl', $script);
+        $this->assertStringContainsString('window.fetch(endpointUrl', $script);
         $this->assertStringContainsString('const blob = await response.blob()', $script);
         $this->assertStringContainsString('window.URL.createObjectURL(blob)', $script);
         $this->assertStringContainsString("document.addEventListener('click'", $script);
         $this->assertStringNotContainsString("document.createElement('iframe')", $script);
         $this->assertStringNotContainsString('window.location.href', $script);
-        $this->assertStringContainsString('this.href = exportUrl.toString()', file_get_contents(resource_path('views/supplier/po/index.blade.php')));
+        $this->assertStringContainsString('x-export.advanced-modal', file_get_contents(resource_path('views/supplier/po/index.blade.php')));
+        $this->assertStringContainsString('window.AdasiAsyncExport.startExport', file_get_contents(resource_path('js/advanced-export.js')));
         $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
         $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/purchasing/reports/index.blade.php')));
         $this->assertStringContainsString('data-async-export', file_get_contents(resource_path('views/supplier/price-history/historical.blade.php')));

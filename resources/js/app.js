@@ -8,6 +8,7 @@ import './chart-theme';
 import './preferences';
 import './submit-guard';
 import './asset-protection';
+import './advanced-export';
 import './server-tabs';
 import { adasiFileUploadComponent } from './file-upload';
 

@@ -2,6 +2,17 @@
 
 return [
     'advanced' => [
+        'all' => 'All',
+        'title' => 'Advanced Export', 'quick' => 'Quick Export', 'export' => 'Export',
+        'help' => 'Choose filters, columns and format, or use your saved preset.',
+        'filters_title' => 'Filters', 'columns_title' => 'Columns and Order', 'format_title' => 'Format',
+        'presets_title' => 'Personal Presets', 'preset_name' => 'Preset Name', 'make_default' => 'Use as default',
+        'save' => 'Save as Preset', 'update' => 'Update Preset', 'delete' => 'Delete Preset', 'reset' => 'Reset Columns',
+        'relative' => 'Use a relative date range', 'days' => 'Number of days',
+        'csv_hint' => 'For more than 20,000 rows, CSV is recommended. In Excel, use Data → From Text/CSV if columns do not separate.',
+        'loading' => 'Preparing export options…', 'failed' => 'Export options could not be loaded. Please try again.',
+        'default_columns' => 'Default Configuration', 'move_up' => 'Move :column up', 'move_down' => 'Move :column down',
+        'selected' => 'Selected columns: :count', 'saved' => 'Preset saved.', 'required' => 'Required', 'save_failed' => 'The preset could not be saved.',
         'preset_limit' => 'You can save up to :limit presets for each export.',
         'preset_duplicate' => 'A preset with this name already exists for this export.',
         'invalid_filters' => 'Select filters allowed for this export.',

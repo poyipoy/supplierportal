@@ -959,16 +959,19 @@
         window.setTimeout(poll, pollIntervalMs);
     };
 
-    const startExport = async (control) => {
-        const requestUrl = requestUrlFor(control);
+    const startExport = async (control, options = {}) => {
+        const endpointUrl = options.url ? new URL(options.url, window.location.origin).toString() : requestUrlFor(control);
+        if (new URL(endpointUrl).origin !== window.location.origin) return false;
+        const requestUrl = options.body ? `${endpointUrl}::${JSON.stringify(options.body)}` : endpointUrl;
         if (activeExports.has(requestUrl)) {
-            return;
+            options.onError?.(t('js.export.in_progress'));
+            return false;
         }
 
         const toastId = createExportToastId();
         const presentation = exportPresentationFor(control);
         const state = {
-            control,
+            control: options.body ? null : control,
             requestUrl,
             exportJobId: null,
             statusUrl: null,
@@ -996,14 +999,17 @@
         };
 
         activeExports.set(requestUrl, state);
-        setBusy(control, true);
+        setBusy(state.control, true);
 
         try {
-            const response = await window.fetch(requestUrl, {
+            const response = await window.fetch(endpointUrl, {
+                method: options.body ? 'POST' : 'GET',
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body ? { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' } : {}),
                 },
+                ...(options.body ? { body: JSON.stringify(options.body) } : {}),
                 credentials: 'same-origin',
                 cache: 'no-store',
             });
@@ -1040,10 +1046,11 @@
             });
 
             pollStatus(state);
+            return true;
         } catch (error) {
             activeExports.delete(requestUrl);
             releaseTrackedExportJob(state.exportJobId);
-            setBusy(control, false);
+            setBusy(state.control, false);
             updateExportToast(state, {
                 type: 'error',
                 title: t('js.export.start_failed'),
@@ -1051,6 +1058,8 @@
                 autoClose: 0,
                 terminal: true,
             });
+            options.onError?.(error instanceof Error ? error.message : t('js.export.request_failed'));
+            return false;
         }
     };
 
@@ -1163,6 +1172,7 @@
     };
 
     window.AdasiAsyncExport = Object.freeze({
+        startExport,
         handleProgress,
         isTrackingNotification,
     });
@@ -1202,7 +1212,7 @@
 
     document.addEventListener('submit', (event) => {
         const form = event.target;
-        if (!(form instanceof HTMLFormElement) || !isAsyncExportControl(form)) {
+        if (!(form instanceof HTMLFormElement) || form.hasAttribute?.('data-advanced-export-form') || !isAsyncExportControl(form)) {
             return;
         }
 
