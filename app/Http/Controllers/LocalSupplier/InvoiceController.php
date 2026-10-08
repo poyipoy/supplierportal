@@ -63,7 +63,7 @@ class InvoiceController extends Controller
                     'gr_reference' => $po->goodsReceipts->pluck('gr_number')->implode(', '),
                     'status' => $po->status,
                     'goods_receipts' => $po->goodsReceipts->map(fn (LocalGoodsReceipt $gr) => [
-                        'id' => $gr->id, 'gr_number' => $gr->gr_number, 'gr_date' => $gr->gr_date?->format('Y-m-d'), 'qty' => (float) $gr->qty,
+                        'id' => $gr->id, 'gr_number' => $gr->gr_number, 'gr_date' => $gr->gr_date?->format('Y-m-d'), 'qty' => (float) $gr->qty, 'uom' => $gr->uom,
                     ])->values(),
                 ];
             })->values()]);

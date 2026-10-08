@@ -33,8 +33,7 @@ class LocalProcurementController extends Controller
     public function index(Request $request)
     {
         $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
-        $query = LocalPurchaseOrder::with('supplier.supplier')->withCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)])
-            ->withSum(['goodsReceipts as active_gr_qty' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)], 'qty');
+        $query = LocalPurchaseOrder::with('supplier.supplier')->withCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
         if ($request->filled('q')) {
             $query->where('po_number', 'like', '%'.addcslashes($request->string('q'), '%_').'%');
         }
@@ -55,7 +54,6 @@ class LocalProcurementController extends Controller
             'total_pos' => LocalPurchaseOrder::count(),
             'total_po_amount' => (float) LocalPurchaseOrder::sum('total_amount'),
             'open_pos_count' => LocalPurchaseOrder::where('status', LocalPurchaseOrder::STATUS_OPEN)->count(),
-            'active_gr_qty' => (float) LocalGoodsReceipt::where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->sum('qty'),
             'active_gr_count' => LocalGoodsReceipt::where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->count(),
         ];
 

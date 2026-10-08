@@ -27,27 +27,23 @@ class GaClaim extends Model
 
     public const STATUS_CANCELLED = 'CANCELLED';
 
-    public const TYPE_ENTERTAIN_SALES = 'Entertain Sales';
+    public const TYPE_ENTERTAINMENT = 'Entertainment';
 
-    public const TYPE_UPD_SALES = 'UPD Sales';
-
-    public const TYPE_UPD_GA = 'UPD GA';
+    public const TYPE_BUSINESS_TRAVEL = 'Business Travel';
 
     public const TYPE_REIMBURSE_CLAIM = 'Reimburse/Claim';
 
     public const CLAIM_TYPES = [
-        self::TYPE_ENTERTAIN_SALES,
-        self::TYPE_UPD_SALES,
-        self::TYPE_UPD_GA,
+        self::TYPE_ENTERTAINMENT,
+        self::TYPE_BUSINESS_TRAVEL,
         self::TYPE_REIMBURSE_CLAIM,
     ];
 
     public static function claimTypeLabel(string $type): string
     {
         $key = match ($type) {
-            self::TYPE_ENTERTAIN_SALES => 'ga.types.sales_entertainment',
-            self::TYPE_UPD_SALES => 'ga.types.sales_travel',
-            self::TYPE_UPD_GA => 'ga.types.ga_travel',
+            self::TYPE_ENTERTAINMENT => 'ga.types.entertainment',
+            self::TYPE_BUSINESS_TRAVEL => 'ga.types.business_travel',
             self::TYPE_REIMBURSE_CLAIM => 'ga.types.reimbursement',
             default => null,
         };
@@ -117,6 +113,17 @@ class GaClaim extends Model
     public function isReadyToPay(): bool
     {
         return $this->status === self::STATUS_READY_TO_PAY;
+    }
+
+    public function scopeEligibleForPaymentBatch($query)
+    {
+        return $query->where('status', self::STATUS_READY_TO_PAY)
+            ->whereDoesntHave('paymentItem', function ($q) {
+                $q->where('status', PaymentItem::STATUS_ACTIVE)
+                    ->whereHas('group', fn ($g) => $g->where('status', PaymentGroup::STATUS_UNPAID)
+                        ->whereHas('batch', fn ($b) => $b->whereIn('status', PaymentBatch::ACTIVE_STATUSES))
+                    );
+            });
     }
 
     public function isPaid(): bool

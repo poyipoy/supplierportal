@@ -56,8 +56,8 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
         $masters = app(LocalProcurementMasterService::class);
         $this->po = $masters->createPurchaseOrder($this->finance, ['supplier_id' => $this->supplier->id, 'po_number' => 'PO-WHOLE-001', 'po_date' => '2026-09-10', 'total_amount' => '300.00']);
-        $this->gr1 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-001', 'gr_date' => '2026-09-11', 'qty' => 10.0]);
-        $this->gr2 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-002', 'gr_date' => '2026-09-12', 'qty' => 20.0]);
+        $this->gr1 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-001', 'gr_date' => '2026-09-11', 'uom' => 'pcs', 'qty' => 10.0]);
+        $this->gr2 = $masters->createGoodsReceipt($this->finance, $this->po, ['gr_number' => 'GR-WHOLE-002', 'gr_date' => '2026-09-12', 'uom' => 'pcs', 'qty' => 20.0]);
     }
 
     private function invoice(array $overrides = []): LocalInvoice
@@ -264,8 +264,8 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
     {
         $service = app(LocalPoGrImportService::class);
         $rows = [
-            ['_row' => 2, 'po_number' => 'PO-IMPORT-001', 'supplier_name' => 'PT Whole GR', 'po_date' => '2026-09-15', 'po_amount' => '500.00', 'po_remarks' => null, 'gr_number' => 'GR-IMPORT-001', 'gr_date' => '2026-09-15', 'gr_amount' => '500.00', 'gr_remarks' => null, '_formula_columns' => []],
-            ['_row' => 3, 'po_number' => 'PO-IMPORT-002', 'supplier_name' => 'Unknown Supplier', 'po_date' => '2026-09-15', 'po_amount' => '10.00', 'po_remarks' => null, 'gr_number' => null, 'gr_date' => null, 'gr_amount' => null, 'gr_remarks' => null, '_formula_columns' => []],
+            ['_row' => 2, 'po_number' => 'PO-IMPORT-001', 'supplier_name' => 'PT Whole GR', 'po_date' => '2026-09-15', 'po_amount' => '500.00', 'po_remarks' => null, 'gr_number' => 'GR-IMPORT-001', 'gr_date' => '2026-09-15', 'qty' => '5', 'uom' => 'pcs', 'gr_remarks' => null, '_formula_columns' => []],
+            ['_row' => 3, 'po_number' => 'PO-IMPORT-002', 'supplier_name' => 'Unknown Supplier', 'po_date' => '2026-09-15', 'po_amount' => '10.00', 'po_remarks' => null, 'gr_number' => null, 'gr_date' => null, 'qty' => null, 'uom' => null, 'gr_remarks' => null, '_formula_columns' => []],
         ];
         $result = $service->validate($rows);
         $this->assertFalse($result['success']);
@@ -278,8 +278,8 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
     public function test_valid_import_creates_new_po_and_multiple_whole_gr_rows(): void
     {
         $rows = [
-            ['_row' => 2, 'po_number' => 'PO-IMPORT-VALID', 'supplier_name' => 'PT Whole GR', 'po_date' => '2026-09-15', 'po_amount' => '500.00', 'po_remarks' => 'Imported', 'gr_number' => 'GR-IMPORT-A', 'gr_date' => '2026-09-15', 'gr_amount' => '200.00', 'gr_remarks' => null, '_formula_columns' => []],
-            ['_row' => 3, 'po_number' => 'PO-IMPORT-VALID', 'supplier_name' => 'pt whole gr', 'po_date' => '2026-09-15', 'po_amount' => '500', 'po_remarks' => 'Imported', 'gr_number' => 'GR-IMPORT-B', 'gr_date' => '2026-09-16', 'gr_amount' => '300.00', 'gr_remarks' => null, '_formula_columns' => []],
+            ['_row' => 2, 'po_number' => 'PO-IMPORT-VALID', 'supplier_name' => 'PT Whole GR', 'po_date' => '2026-09-15', 'po_amount' => '500.00', 'po_remarks' => 'Imported', 'gr_number' => 'GR-IMPORT-A', 'gr_date' => '2026-09-15', 'qty' => '2', 'uom' => 'pcs', 'gr_remarks' => null, '_formula_columns' => []],
+            ['_row' => 3, 'po_number' => 'PO-IMPORT-VALID', 'supplier_name' => 'pt whole gr', 'po_date' => '2026-09-15', 'po_amount' => '500', 'po_remarks' => 'Imported', 'gr_number' => 'GR-IMPORT-B', 'gr_date' => '2026-09-16', 'qty' => '3', 'uom' => 'pcs', 'gr_remarks' => null, '_formula_columns' => []],
         ];
 
         $service = app(LocalPoGrImportService::class);
@@ -350,13 +350,13 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $supplierShow->assertSee(__('local_invoice.labels.payment_history', [], 'en'));
 
         try {
-            app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '0.50', 'refund_reference' => 'REF-PARTIAL', 'refund_date' => '2026-09-16'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+            app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '0.50', 'refund_date' => '2026-09-16'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
             $this->fail('A partial refund must be rejected.');
         } catch (ValidationException) {
             $this->assertSame(SupplierOverpaymentRefund::STATUS_OPEN, $refund->fresh()->status);
         }
 
-        $settled = app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '1.00', 'refund_reference' => 'REF-FULL', 'refund_date' => '2026-09-16'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+        $settled = app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '1.00', 'refund_date' => '2026-09-16'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
         $attachment = $settled->attachments->first();
         $this->assertSame(SupplierOverpaymentRefund::STATUS_SETTLED, $settled->status);
         $this->assertNotNull($attachment);
@@ -366,7 +366,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->assertFalse($purchasing->can('view', $attachment));
 
         $this->expectException(ValidationException::class);
-        app(SupplierOverpaymentService::class)->settle($settled, ['refund_amount' => '1.00', 'refund_reference' => 'REF-TWICE', 'refund_date' => '2026-09-17'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+        app(SupplierOverpaymentService::class)->settle($settled, ['refund_amount' => '1.00', 'refund_date' => '2026-09-17'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
     }
 
     public function test_invoice_with_ten_goods_receipts_does_not_truncate_references(): void
@@ -386,7 +386,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             $gr = $masters->createGoodsReceipt($this->finance, $po, [
                 'gr_number' => $grNumber,
                 'gr_date' => '2026-09-11',
-                'qty' => 10.0,
+                'uom' => 'pcs', 'qty' => 10.0,
             ]);
             $grIds[] = $gr->id;
             $expectedGrNumbers[] = $grNumber;
@@ -418,7 +418,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'po_date' => '2026-09-10',
             'total_amount' => '100.00',
         ]);
-        $gr = $masters->createGoodsReceipt($this->finance, $po, ['gr_number' => 'GR-CEIL-001', 'gr_date' => '2026-09-11', 'qty' => 5.0]);
+        $gr = $masters->createGoodsReceipt($this->finance, $po, ['gr_number' => 'GR-CEIL-001', 'gr_date' => '2026-09-11', 'uom' => 'pcs', 'qty' => 5.0]);
 
         $this->expectException(ValidationException::class);
         app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -430,5 +430,35 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
         ], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+    }
+
+    public function test_invoice_retains_quantity_and_uom_snapshot_after_master_change(): void
+    {
+        $this->gr1->update(['uom' => 'kg']);
+        $invoice = $this->invoice();
+        $snapshot = $invoice->goodsReceiptHistories()->where('local_goods_receipt_id', $this->gr1->id)->firstOrFail();
+        $this->assertSame('kg', $snapshot->gr_uom_snapshot);
+        $this->assertSame('10.0000', $snapshot->gr_qty_snapshot);
+        $this->gr1->update(['uom' => 'pcs', 'qty' => '25']);
+        $this->assertSame('kg', $snapshot->fresh()->gr_uom_snapshot);
+        $this->assertSame('10.0000', $snapshot->fresh()->gr_qty_snapshot);
+        app(LocalGrReservationService::class)->reserve($this->supplier, $invoice, $this->po->id, [$this->gr1->id, $this->gr2->id]);
+        $this->assertSame('kg', $snapshot->fresh()->gr_uom_snapshot);
+    }
+
+    public function test_combined_import_requires_explicit_quantity_and_unit(): void
+    {
+        $row = ['_row' => 2, 'po_number' => 'PO-COMBINED-UOM', 'supplier_name' => 'PT Whole GR',
+            'po_date' => '2026-09-15', 'po_amount' => '500.00', 'po_remarks' => null,
+            'gr_number' => 'GR-COMBINED-UOM', 'gr_date' => '2026-09-15', 'qty' => '10.125', 'uom' => 'KG',
+            'gr_remarks' => null, '_formula_columns' => []];
+        $service = app(LocalPoGrImportService::class);
+        $valid = $service->validate([$row]);
+        $this->assertTrue($valid['success']);
+        $this->assertSame('kg', $valid['rows'][0]['uom']);
+        $this->assertSame('10.125', $valid['rows'][0]['qty']);
+        $this->assertFalse($service->validate([array_replace($row, ['qty' => null, 'uom' => null, 'gr_amount' => '100'])])['success']);
+        $this->assertFalse($service->validate([array_replace($row, ['qty' => '10.1256'])])['success']);
+        $this->assertFalse($service->validate([array_replace($row, ['uom' => 'unknown'])])['success']);
     }
 }

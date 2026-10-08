@@ -96,17 +96,17 @@ class LocalizationLocalRenderingTest extends TestCase
         }
     }
 
-    public function test_claim_type_labels_change_but_machine_claim_types_remain_unchanged(): void
+    public function test_canonical_claim_types_have_consistent_localized_labels(): void
     {
         $expected = [
-            'en' => 'GA Business Travel',
-            'id' => 'Perjalanan Dinas GA',
+            'en' => 'Business Travel',
+            'id' => 'Perjalanan Dinas',
         ];
         foreach ($expected as $locale => $label) {
             app()->setLocale($locale);
-            $this->assertSame($label, GaClaim::claimTypeLabel(GaClaim::TYPE_UPD_GA));
-            $this->assertSame('UPD GA', GaClaim::TYPE_UPD_GA);
-            $this->assertContains('UPD GA', GaClaim::CLAIM_TYPES);
+            $this->assertSame($label, GaClaim::claimTypeLabel(GaClaim::TYPE_BUSINESS_TRAVEL));
+            $this->assertSame('Business Travel', GaClaim::TYPE_BUSINESS_TRAVEL);
+            $this->assertContains('Business Travel', GaClaim::CLAIM_TYPES);
         }
     }
 

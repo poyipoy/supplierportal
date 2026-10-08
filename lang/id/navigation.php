@@ -45,7 +45,6 @@ return [
     'ga_claims' => 'Klaim GA',
     'drp_supplier' => 'DRP Pemasok',
     'drp_ga' => 'DRP GA',
-    'drp_draft' => 'Draf DRP GA',
     'drp_paid' => 'DRP Lunas',
     'invoice_register' => 'Daftar Invoice',
     'master_invoices' => 'Master Invoice',
@@ -149,7 +148,6 @@ return [
         'payment_schedule' => 'Jadwal Pembayaran',
         'claim_create' => 'Ajukan Klaim',
         'employees' => 'Master Karyawan',
-        'drp_draft' => 'Draf DRP GA',
         'inspections' => 'Inspeksi QC',
     ],
     'roles' => [

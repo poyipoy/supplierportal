@@ -324,7 +324,7 @@ return array (
     'proof' => 'proof',
     'transfer_reference' => 'transfer reference',
     'transfer_date' => 'transfer date',
-    'refund_reference' => 'refund reference',
+
     'refund_date' => 'refund date',
     'notes' => 'notes',
     'reason' => 'reason',

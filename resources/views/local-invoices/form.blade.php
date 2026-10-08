@@ -61,10 +61,12 @@
 
                     return [
                         'value' => (string) $gr->id,
-                        'label' => $gr->gr_number . ($gr->qty ? ' Â· ' . rtrim(rtrim(number_format((float) $gr->qty, 4, ',', '.'), '0'), ',') . ' pcs' : ''),
+                        'label' => $gr->gr_number,
                         'description' => $description,
                         'sublabel' => $dateFormatted ? __('local_invoice.labels.date') . ': ' . $dateFormatted : null,
                         'qty' => (float) $gr->qty,
+                        'uom' => $gr->uom,
+                        'quantityLabel' => \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty),
                         'date' => $gr->gr_date?->format('Y-m-d'),
                         'dateFormatted' => $dateFormatted,
                         'searchKeywords' => $gr->gr_number . ' ' . ($gr->qty ?? '') . ' ' . ($description ?? '') . ' ' . ($dateFormatted ?? ''),
@@ -740,8 +742,8 @@
                             <span id="summary-gr-count" class="tw-font-medium tw-text-on-surface">{{ __('local_invoice.interaction.document_count', ['count' => 0]) }}</span>
                         </div>
                         <div class="tw-flex tw-items-center tw-justify-between tw-text-ui-xs">
-                            <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.gr_qty') }}:</span>
-                            <span id="summary-gr-qty" class="tw-font-mono tw-font-semibold tw-text-on-surface">0 pcs</span>
+                            <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.qty_by_uom') }}:</span>
+                            <span id="summary-gr-qty" class="tw-font-mono tw-font-semibold tw-text-on-surface">—</span>
                         </div>
                         <div class="tw-flex tw-items-center tw-justify-between tw-text-ui-xs tw-border-t tw-border-outline-variant tw-pt-2">
                             <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.ceiling_status') }}:</span>
@@ -907,7 +909,7 @@ function updateValidation() {
 
     if (summaryPoCeiling) summaryPoCeiling.textContent = poData ? rupiah(poCeiling) : 'â€”';
     if (summaryGrCount) summaryGrCount.textContent = @js(__('local_invoice.interaction.document_count')).replace(':count', () => String(selectedGrCount));
-    if (summaryGrQty) summaryGrQty.textContent = selectedGrQty.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 }) + ' pcs';
+    if (summaryGrQty) summaryGrQty.textContent = selectedGrQty || '—';
     if (summaryDpp) summaryDpp.textContent = rupiah(dpp);
     if (summaryTax) summaryTax.textContent = rupiah(tax);
     if (summaryGrandTotal) summaryGrandTotal.textContent = rupiah(grandTotal);
@@ -958,7 +960,7 @@ poSelect?.addEventListener('change', () => {
 grSelect?.addEventListener('multi-select-change', (e) => {
     const options = e.detail?.options || [];
     selectedGrCount = options.length;
-    selectedGrQty = options.reduce((sum, opt) => sum + (Number(opt.qty) || 0), 0);
+    selectedGrQty = options.map(opt => `${opt.quantityLabel} ${opt.uom || '—'}`).join(', ');
     updateValidation();
 });
 
@@ -989,7 +991,7 @@ if (initialPoVal && localPoGr[String(initialPoVal)]) {
     const poGrs = localPoGr[String(initialPoVal)].grs;
     const matching = poGrs.filter(g => preselectedGrs.includes(String(g.value)));
     selectedGrCount = matching.length;
-    selectedGrQty = matching.reduce((sum, g) => sum + (Number(g.qty) || 0), 0);
+    selectedGrQty = matching.map(g => `${g.quantityLabel} ${g.uom || '—'}`).join(', ');
 }
 updateValidation();
 

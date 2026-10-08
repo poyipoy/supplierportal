@@ -47,6 +47,8 @@ class LocalGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             $grNumber = self::nullableText($rowArray[9] ?? null);
             $poNumber = self::nullableText($rowArray[11] ?? null);
             $qty = self::nullableNumber($rowArray[15] ?? null);
+            // Infor sample and template: Q has a blank heading beside P Received Quantity.
+            $uom = self::nullableText($rowArray[16] ?? null);
             $grDate = $rowArray[19] ?? null;
 
             // Skip completely empty rows
@@ -55,7 +57,7 @@ class LocalGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             }
 
             $formulaCols = [];
-            foreach ([8 => 'description', 9 => 'gr_number', 11 => 'po_number', 15 => 'qty', 19 => 'gr_date'] as $colIdx => $colName) {
+            foreach ([8 => 'description', 9 => 'gr_number', 11 => 'po_number', 15 => 'qty', 16 => 'uom', 19 => 'gr_date'] as $colIdx => $colName) {
                 $val = $rowArray[$colIdx] ?? null;
                 if (is_string($val) && str_starts_with($val, '=')) {
                     $formulaCols[] = $colName;
@@ -68,6 +70,7 @@ class LocalGrImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
                 'gr_number' => $grNumber,
                 'po_number' => $poNumber,
                 'qty' => $qty,
+                'uom' => $uom,
                 'gr_date' => $grDate,
                 '_formula_columns' => $formulaCols,
             ];

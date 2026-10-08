@@ -9,6 +9,7 @@ use App\Support\BusinessTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
@@ -30,10 +31,7 @@ class GaClaimService
         }
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
-        if ($supportingFile !== null) {
-            $rules = ['file', 'mimes:pdf,jpg,jpeg,png,xlsx,xls,doc,docx', 'max:10240'];
-            Validator::make(['file' => $supportingFile], ['file' => $rules])->validate();
-        }
+        $this->validateSubmission($data, $supportingFile);
 
         $written = [];
 
@@ -126,10 +124,7 @@ class GaClaimService
         }
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
-        if ($supportingFile !== null) {
-            $rules = ['file', 'mimes:pdf,jpg,jpeg,png,xlsx,xls,doc,docx', 'max:10240'];
-            Validator::make(['file' => $supportingFile], ['file' => $rules])->validate();
-        }
+        $this->validateSubmission($data, $supportingFile);
 
         $written = [];
 
@@ -202,6 +197,23 @@ class GaClaimService
             }
             throw $e;
         }
+    }
+
+    private function validateSubmission(array $data, mixed $supportingFile): void
+    {
+        Validator::make(
+            ['claim_type' => $data['claim_type'] ?? null, 'supporting' => $supportingFile],
+            [
+                'claim_type' => ['required', Rule::in(GaClaim::CLAIM_TYPES)],
+                // Documents belong to a specific revision; every Entertainment submission
+                // must provide a document for the revision being submitted.
+                'supporting' => [
+                    Rule::requiredIf(($data['claim_type'] ?? null) === GaClaim::TYPE_ENTERTAINMENT),
+                    'nullable', 'file', 'mimes:pdf,jpg,jpeg,png,xlsx,xls,doc,docx', 'max:10240',
+                ],
+            ],
+            ['supporting.required' => __('ga.validation.entertainment_supporting')]
+        )->validate();
     }
 
     /**

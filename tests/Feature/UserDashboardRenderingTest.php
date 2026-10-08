@@ -25,7 +25,7 @@ class UserDashboardRenderingTest extends TestCase
             ['finance', 'finance', 'finance.dashboard', 'batches', 'forecast', 'Payment Forecast', 'Finance AP Dashboard'],
             ['accounting', 'accounting', 'accounting.dashboard', 'lifecycle', 'invoices', 'Recent Submissions', 'Invoice Register'],
             ['qc', 'qc', 'qc.dashboard', 'charts', 'queue', 'Recent Inspection Activity', 'View Full History'],
-            ['ga', 'ga', 'ga.dashboard', 'claims', 'statuses', __('ga.verification.basic_label', [], 'en'), 'DRP GA Draft'],
+            ['ga', 'ga', 'ga.dashboard', 'claims', 'statuses', __('ga.verification.basic_label', [], 'en'), __('ga.review.new_claim', [], 'en')],
             ['supplier', 'supplier.import', 'supplier.dashboard', 'metrics', 'orders', 'Latest Purchase Orders', 'Supplier Dashboard'],
             ['supplier', 'supplier.local', 'local-supplier.dashboard', 'company', 'invoices', __('finance.labels.invoices_recent', [], 'en'), __('local_invoice.actions.submit', [], 'en')],
         ];

@@ -111,7 +111,7 @@ class LocalInvoiceSettlementController extends Controller
 
     public function refund(Request $request, SupplierOverpaymentRefund $refund, SupplierOverpaymentService $service)
     {
-        $data = $request->validate(['refund_amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'], 'refund_reference' => ['required', 'string', 'max:100'], 'refund_date' => ['required', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:1000'], 'proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240']]);
+        $data = $request->validate(['refund_amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'], 'refund_date' => ['required', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:1000'], 'proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240']]);
         $service->settle($refund, $data, $request->file('proof'), $request->user());
 
         return back()->with('success', __('finance.feedback.refund_settled'));

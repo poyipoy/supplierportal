@@ -214,7 +214,7 @@ class LocalInvoiceViewTimezoneTest extends TestCase
             'claim_number' => 'CLM-GA-001',
             'employee_id' => $employee->id,
             'submitted_by' => $gaUser->id,
-            'claim_type' => GaClaim::TYPE_UPD_GA,
+            'claim_type' => GaClaim::TYPE_BUSINESS_TRAVEL,
             'claim_date' => '2026-10-14',
             'amount' => 500000,
             'status' => GaClaim::STATUS_SUBMITTED,

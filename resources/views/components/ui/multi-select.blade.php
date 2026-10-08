@@ -51,6 +51,8 @@
                 'sublabel' => $sub ?? ($date ? __('js.select.date', ['date' => $dateFormatted ?? $date]) : null),
                 'amount' => $amt,
                 'qty' => $qty,
+                'uom' => $item['uom'] ?? null,
+                'quantityLabel' => $item['quantityLabel'] ?? null,
                 'date' => $date,
                 'dateFormatted' => $dateFormatted,
                 'searchKeywords' => strtolower($keywords),
@@ -187,6 +189,8 @@
                 sublabel: opt.sublabel ?? (opt.date ? window.AdasiI18n.t('js.select.date', { date: opt.dateFormatted ?? opt.date }) : null),
                 amount: parseFloat(opt.amount ?? 0),
                 qty: opt.qty !== undefined ? parseFloat(opt.qty) : null,
+                uom: opt.uom ?? null,
+                quantityLabel: opt.quantityLabel ?? null,
                 date: opt.date ?? null,
                 dateFormatted: opt.dateFormatted ?? null,
                 searchKeywords: (String(opt.number ?? opt.label ?? '') + ' ' + (opt.description ?? '') + ' ' + (opt.sublabel ?? '') + ' ' + (opt.amount ?? '') + ' ' + (opt.date ?? '')).toLowerCase(),
@@ -435,6 +439,12 @@
                         </div>
                     </div>
 
+                    <template x-if="opt.quantityLabel !== undefined && opt.quantityLabel !== null">
+                        <div class="tw-flex tw-gap-4 tw-shrink-0">
+                            <div class="tw-text-end"><span class="tw-block tw-text-ui-xs">{{ __('common.fields.qty') }}</span><span class="tw-font-mono" x-text="opt.quantityLabel"></span></div>
+                            <div><span class="tw-block tw-text-ui-xs">{{ __('local_procurement.labels.uom') }}</span><span x-text="opt.uom || '—'"></span></div>
+                        </div>
+                    </template>
                     <template x-if="opt.amount !== undefined && Number(opt.amount) > 0">
                         <div class="tw-shrink-0 tw-text-end">
                             <span class="tw-font-mono tw-font-semibold tw-text-ui-sm tw-text-primary" x-text="formatRupiah(opt.amount)"></span>

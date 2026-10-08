@@ -308,7 +308,7 @@ return [
             ],
             'refund_settled' => [
                 'title' => 'Refund settled',
-                'message' => ':submission - Refund for invoice :invoice is complete. Amount: :amount. Reference: :reference. :raw_notes',
+                'message' => ':submission - Refund for invoice :invoice is complete. Amount: :amount. :raw_notes',
             ],
             'physical_delivery_reminder' => [
                 'title' => 'Physical delivery reminder',

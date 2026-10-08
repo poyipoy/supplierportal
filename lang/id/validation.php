@@ -312,7 +312,7 @@ return [
         'proof' => 'bukti',
         'transfer_reference' => 'referensi transfer',
         'transfer_date' => 'tanggal transfer',
-        'refund_reference' => 'referensi pengembalian dana',
+
         'refund_date' => 'tanggal pengembalian dana',
         'notes' => 'catatan',
         'reason' => 'alasan',

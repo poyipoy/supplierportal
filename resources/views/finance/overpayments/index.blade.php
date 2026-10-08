@@ -99,9 +99,6 @@
                                     </x-ui.button>
                                 @else
                                     <div class="tw-flex tw-flex-col tw-items-end tw-gap-1">
-                                        <span class="tw-font-mono tw-text-ui-xs tw-font-semibold tw-text-on-surface">
-                                            {{ $refund->refund_reference }}
-                                        </span>
                                         @if($refund->attachments->first())
                                             <x-ui.button
                                                 :href="route('attachments.show', $refund->attachments->first())"
@@ -207,24 +204,6 @@
 
                                 {{-- Form Inputs --}}
                                 <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
-                                    <div>
-                                        <label for="refund_reference_{{ $refund->id }}" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">
-                                            {{ __('finance.refund_ui.reference_label') }} <span class="text-danger">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="refund_reference_{{ $refund->id }}"
-                                            name="refund_reference"
-                                            class="form-control form-control-sm"
-                                            placeholder="{{ __('common.reference_example', ['reference' => 'TRF-REFUND-20260901']) }}"
-                                            required
-                                            maxlength="100"
-                                        >
-                                        <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
-                                            {{ __('finance.refund_ui.reference_help') }}
-                                        </div>
-                                    </div>
-
                                     <div>
                                         <x-ui.date-picker
                                             :id="'refund_date_'.$refund->id"

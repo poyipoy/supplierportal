@@ -34,7 +34,6 @@
     {{-- Summary Cards Grid --}}
     @php
         $activeGrs = $purchaseOrder->goodsReceipts->where('status', '!=', \App\Models\LocalGoodsReceipt::STATUS_CANCELLED);
-        $totalGrQty = (float) $activeGrs->sum('qty');
         $invoicedAmount = (float) $purchaseOrder->invoices->whereNotIn('status', [\App\Models\LocalInvoice::STATUS_REJECTED, \App\Models\LocalInvoice::STATUS_CANCELLED])->sum('invoice_amount');
         $remainingPoCeiling = max(0, (float) $purchaseOrder->total_amount - $invoicedAmount);
     @endphp
@@ -50,7 +49,7 @@
 
         <x-ui.metric-card
             :label="__('local_procurement.labels.gr_total')"
-            :value="number_format($totalGrQty, 4, ',', '.')"
+            :value="number_format($activeGrs->count())"
             icon="package-check"
             tone="success"
             :meta="trans_choice('local_procurement.closure.gr_record_count', $activeGrs->count())"
@@ -129,6 +128,7 @@
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.review.gr_number') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_date') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('common.fields.qty') }}</th>
+                        <th scope="col">{{ __('local_procurement.labels.uom') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.claim_description') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_procurement.labels.gr_status') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.billing_status') }}</th>
@@ -146,8 +146,9 @@
                                 </span>
                             </td>
                             <td class="text-end tw-font-mono">
-                                {{ $gr->qty ? rtrim(rtrim(number_format($gr->qty, 4, ',', '.'), '0'), ',') : '-' }}
+                                {{ $gr->qty ? \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty) : '-' }}
                             </td>
+                            <td>{{ $gr->uom ?? '—' }}</td>
                             <td>
                                 <span class="tw-text-ui-xs tw-text-on-surface">
                                     {{ $gr->description ?: '-' }}
@@ -172,7 +173,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="7" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
                                 {{ __('local_procurement.empty.gr_po') }}
                             </td>
                         </tr>

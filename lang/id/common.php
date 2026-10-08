@@ -37,7 +37,7 @@ return [
         'bank_fee' => 'Biaya Bank: Rp :amount',
         'created_by' => 'Oleh: :name',
         'transfer_date' => 'Tanggal Transfer:',
-        'ga_workflow' => 'Staf GA menyiapkan draf DRP GA dari klaim karyawan yang telah diverifikasi dan siap dibayar. Keuangan memeriksa dan memfinalisasi batch, mengunci keanggotaan dan rekening tujuan, lalu mengonfirmasi pembayaran setelah transfer dilakukan. Biaya administrasi bank untuk DRP GA selalu :amount.',
+        'ga_workflow' => 'Keuangan memilih klaim karyawan yang telah diverifikasi dan siap dibayar untuk membuat batch DRP GA, memfinalisasi batch untuk mengunci keanggotaan dan rekening tujuan, lalu mengonfirmasi pembayaran setelah transfer dilakukan. Biaya administrasi bank untuk DRP GA selalu :amount.',
     ],
     'errors.file_not_found' => 'Berkas tidak ditemukan.',
     'errors.notification_forbidden' => 'Anda tidak memiliki akses ke notifikasi ini.',

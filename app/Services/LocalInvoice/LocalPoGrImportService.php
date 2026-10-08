@@ -59,7 +59,7 @@ class LocalPoGrImportService
                 $rowErrors[] = ['po_amount', __('local_procurement.import.po_amount_positive')];
             }
 
-            $grFields = [$row['gr_number'], $row['gr_date'], $row['gr_amount']];
+            $grFields = [$row['gr_number'], $row['gr_date'], $row['qty'] ?? null, $row['uom'] ?? null];
             $hasAnyGr = collect($grFields)->contains(fn ($v) => $v !== null && $v !== '');
             $hasAllGr = collect($grFields)->every(fn ($v) => $v !== null && $v !== '');
             if ($hasAnyGr && ! $hasAllGr) {
@@ -69,9 +69,13 @@ class LocalPoGrImportService
             if ($hasAllGr && ! $grDate) {
                 $rowErrors[] = ['gr_date', __('local_procurement.import.date_required')];
             }
-            $grAmount = $hasAllGr ? $this->money($row['gr_amount']) : null;
-            if ($hasAllGr && ($grAmount === null || bccomp($grAmount, '0', 2) <= 0)) {
-                $rowErrors[] = ['gr_amount', __('local_procurement.import.gr_amount_positive')];
+            $grQty = $hasAllGr ? trim((string) $row['qty']) : null;
+            $uom = LocalGoodsReceipt::normalizeUom($row['uom'] ?? null);
+            if ($hasAllGr && ! LocalGoodsReceipt::isSupportedUom($uom)) {
+                $rowErrors[] = ['uom', __('local_procurement.validation.uom_required')];
+            }
+            if ($hasAllGr && ! LocalGoodsReceipt::validQuantity($grQty)) {
+                $rowErrors[] = ['qty', __('local_procurement.validation.quantity_precision')];
             }
 
             $poKey = mb_strtolower(trim((string) $row['po_number']));
@@ -94,7 +98,7 @@ class LocalPoGrImportService
                 '_row' => $number, 'po_number' => trim((string) $row['po_number']), 'supplier_id' => $supplierMatches->first()?->id,
                 'supplier_name' => trim((string) $row['supplier_name']), 'po_date' => $poDate, 'po_amount' => $poAmount ?? '0.00',
                 'po_remarks' => $row['po_remarks'], 'gr_number' => $hasAllGr ? trim((string) $row['gr_number']) : null,
-                'gr_date' => $grDate, 'gr_amount' => $grAmount, 'gr_remarks' => $row['gr_remarks'],
+                'gr_date' => $grDate, 'qty' => $grQty, 'uom' => $uom, 'gr_remarks' => $row['gr_remarks'],
             ];
         }
         $errors = array_merge($errors, $this->databaseErrors($normalized));
@@ -125,7 +129,8 @@ class LocalPoGrImportService
                     $this->masters->createGoodsReceipt($actor, $poCache[$key], [
                         'gr_number' => $row['gr_number'],
                         'gr_date' => $row['gr_date'],
-                        'qty' => (float) ($row['qty'] ?? 1.0),
+                        'qty' => $row['qty'],
+                        'uom' => $row['uom'],
                         'notes' => $row['gr_remarks'],
                     ], LocalPurchaseOrder::SOURCE_IMPORT);
                     $newGr++;

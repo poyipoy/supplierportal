@@ -43,7 +43,7 @@ class LocalGrImportService
                 $rowErrors[] = [$column, __('local_procurement.import.formula')];
             }
 
-            foreach (['gr_number', 'po_number', 'qty', 'gr_date'] as $field) {
+            foreach (['gr_number', 'po_number', 'qty', 'uom', 'gr_date'] as $field) {
                 if (! isset($row[$field]) || $row[$field] === null || $row[$field] === '') {
                     $rowErrors[] = [$field, __('local_procurement.import.field_required')];
                 }
@@ -55,8 +55,13 @@ class LocalGrImportService
             }
 
             $qty = $this->decimal($row['qty'] ?? null);
-            if (($row['qty'] !== null && $row['qty'] !== '') && ($qty === null || bccomp($qty, '0', 4) <= 0)) {
-                $rowErrors[] = ['qty', __('local_procurement.validation.quantity_positive')];
+            if (filled($row['qty'] ?? null) && ! LocalGoodsReceipt::validQuantity($qty)) {
+                $rowErrors[] = ['qty', __('local_procurement.validation.quantity_precision')];
+            }
+
+            $uom = LocalGoodsReceipt::normalizeUom($row['uom'] ?? null);
+            if (! LocalGoodsReceipt::isSupportedUom($uom)) {
+                $rowErrors[] = ['uom', __('local_procurement.validation.uom_required')];
             }
 
             foreach ($rowErrors as [$field, $message]) {
@@ -75,6 +80,7 @@ class LocalGrImportService
                     'po_number' => trim((string) $row['po_number']),
                     'description' => $desc,
                     'qty' => $qty,
+                    'uom' => $uom,
                     'gr_date' => $grDate,
                 ];
             }
@@ -111,9 +117,14 @@ class LocalGrImportService
 
         foreach ($grGroups as $grKey => $groupRows) {
             $first = $groupRows->first();
+            if ($groupRows->pluck('uom')->unique()->count() !== 1) {
+                $errors[] = ['row' => $first['_row'], 'column' => 'uom', 'message' => __('local_procurement.import.mixed_uom', ['gr' => $first['gr_number']])];
+
+                continue;
+            }
             $totalQty = $groupRows->reduce(fn ($sum, $r) => bcadd($sum, (string) $r['qty'], 4), '0.0000');
 
-            if (bccomp($totalQty, '0', 4) <= 0) {
+            if (! LocalGoodsReceipt::validQuantity(rtrim(rtrim($totalQty, '0'), '.'))) {
                 $errors[] = [
                     'row' => $first['_row'],
                     'column' => 'qty',
@@ -143,7 +154,8 @@ class LocalGrImportService
                 'po_id' => null,
                 'po_status' => null,
                 'gr_date' => $first['gr_date'],
-                'qty' => $totalQty,
+                'qty' => rtrim(rtrim($totalQty, '0'), '.'),
+                'uom' => $first['uom'],
                 'source_rows_count' => $groupRows->count(),
                 'contributing_rows' => $groupRows->pluck('_row')->all(),
                 'action' => 'NEW',
@@ -206,7 +218,7 @@ class LocalGrImportService
             $dateMatch = $existing->gr_date?->format('Y-m-d') === $group['gr_date'];
             $qtyMatch = bccomp((string) ($existing->qty ?? '0'), (string) $group['qty'], 4) === 0;
 
-            if ($poMatch && $dateMatch && $qtyMatch) {
+            if ($poMatch && $dateMatch && $qtyMatch && $existing->uom === $group['uom']) {
                 $group['action'] = 'EXISTING';
             } else {
                 $errors[] = [
@@ -257,6 +269,7 @@ class LocalGrImportService
                     'gr_number' => $group['gr_number'],
                     'gr_date' => $group['gr_date'],
                     'qty' => $group['qty'],
+                    'uom' => $group['uom'],
                     'description' => $group['description'] ?? null,
                     'notes' => "Imported via Infor ERP Goods Receipt ({$group['source_rows_count']} line rows)",
                 ], LocalPurchaseOrder::SOURCE_IMPORT);

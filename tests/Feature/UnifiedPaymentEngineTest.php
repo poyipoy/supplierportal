@@ -193,7 +193,7 @@ class UnifiedPaymentEngineTest extends TestCase
         $claim = GaClaim::create([
             'claim_number' => 'CLM-TEST-'.uniqid(),
             'employee_id' => $employee->id,
-            'claim_type' => GaClaim::TYPE_UPD_GA,
+            'claim_type' => GaClaim::TYPE_BUSINESS_TRAVEL,
             'claim_date' => '2026-09-10',
             'amount' => 1200000,
             'status' => GaClaim::STATUS_READY_TO_PAY,
@@ -202,7 +202,7 @@ class UnifiedPaymentEngineTest extends TestCase
             'ready_to_pay_at' => now(),
         ]);
 
-        $batch = $this->batchService->createGaBatch($gaUser, [$claim->id]);
+        $batch = $this->batchService->createGaBatch(User::factory()->create(['role' => 'finance']), [$claim->id]);
 
         $this->assertSame(PaymentBatch::TYPE_GA, $batch->batch_type);
         $group = $batch->groups->first();

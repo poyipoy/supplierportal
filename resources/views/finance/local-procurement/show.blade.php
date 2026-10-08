@@ -5,7 +5,6 @@
 @php
     $activeGrs = $purchaseOrder->goodsReceipts->where('status', '!=', \App\Models\LocalGoodsReceipt::STATUS_CANCELLED);
     $activeGrCount = $activeGrs->count();
-    $activeGrQty = (float) $activeGrs->sum('qty');
     $activeInvoices = $purchaseOrder->invoices->whereNotIn('status', [\App\Models\LocalInvoice::STATUS_REJECTED, \App\Models\LocalInvoice::STATUS_CANCELLED]);
     $invoicedTotal = (float) $activeInvoices->sum('invoice_amount');
     $remainingPoAmount = max(0, (float) $purchaseOrder->total_amount - $invoicedTotal);
@@ -113,8 +112,8 @@
                     <strong class="tw-font-mono tw-text-success">Rp {{ number_format($invoicedTotal, 2, ',', '.') }}</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.gr_qty_total') }}:</span>
-                    <strong class="tw-font-mono tw-text-on-surface">{{ number_format($activeGrQty, 4, ',', '.') }} pcs ({{ $activeGrCount }} GR)</strong>
+                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.gr_list') }}:</span>
+                    <strong class="tw-font-mono tw-text-on-surface">{{ $activeGrCount }} GR</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1.5">
                     <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.remaining_ceiling') }}:</span>
@@ -150,6 +149,7 @@
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_date') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.goods_description') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('common.fields.qty') }}</th>
+                        <th scope="col">{{ __('local_procurement.labels.uom') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_invoice') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.source') }}</th>
@@ -176,8 +176,9 @@
                                 </span>
                             </td>
                             <td class="text-end tw-font-mono tw-text-ui-xs tw-text-on-surface">
-                                {{ number_format($gr->qty, 4, ',', '.') }}
+                                {{ \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty) }}
                             </td>
+                            <td>{{ $gr->uom ?? '—' }}</td>
                             <td class="text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($gr->status)">
                                     {{ \App\Support\StatusHelper::localFinanceLabel($gr->status) }}
@@ -267,12 +268,22 @@
                                                     <input
                                                         name="qty"
                                                         type="number"
-                                                        step="0.0001"
-                                                        min="0.0001"
+                                                        step="0.001"
+                                                        min="0.001"
                                                         class="form-control form-control-sm tw-font-mono"
-                                                        value="{{ $gr->qty }}"
+                                                        value="{{ rtrim(rtrim((string) $gr->qty, '0'), '.') }}"
                                                         required
                                                     >
+                                                </div>
+                                                <div>
+                                                    <label for="gr_uom_{{ $gr->id }}" class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.uom') }} <span class="text-danger">*</span></label>
+                                                    <select name="uom" id="gr_uom_{{ $gr->id }}" class="form-select form-select-sm @error('uom') is-invalid @enderror" @error('uom') aria-invalid="true" aria-describedby="gr_uom_{{ $gr->id }}_error" @enderror required>
+                                                        <option value="">{{ __('local_procurement.labels.choose_uom') }}</option>
+                                                        @foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)
+                                                            <option value="{{ $uom }}" @selected(old('uom', $gr->uom) === $uom)>{{ $uom }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('uom')<div id="gr_uom_{{ $gr->id }}_error" class="invalid-feedback">{{ $message }}</div>@enderror
                                                 </div>
 
                                                 <div>
@@ -312,7 +323,7 @@
                                             </div>
                                             <div class="modal-body tw-space-y-2">
                                                 <p class="tw-text-ui-sm tw-text-on-surface tw-mb-0">
-                                                    {{ __('local_procurement.surface.cancel_gr', ['number' => $gr->gr_number, 'qty' => number_format($gr->qty, 4, ',', '.')]) }}
+                                                    {{ __('local_procurement.surface.cancel_gr', ['number' => $gr->gr_number, 'qty' => \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty)]) }}
                                                 </p>
                                                 <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">{{ __('local_procurement.surface.cancel_gr_help') }}</p>
                                             </div>
@@ -330,7 +341,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td colspan="8" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="9" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
                                 {{ __('local_procurement.empty.gr') }}
                             </td>
                         </tr>
@@ -383,12 +394,22 @@
                             <input
                                 name="qty"
                                 type="number"
-                                step="0.0001"
-                                min="0.0001"
+                                step="0.001"
+                                min="0.001"
                                 class="form-control form-control-sm tw-font-mono"
-                                placeholder="1.0000"
+                                placeholder="1.125"
                                 required
                             >
+                        </div>
+                        <div>
+                            <label for="gr_uom_new" class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.uom') }} <span class="text-danger">*</span></label>
+                            <select name="uom" id="gr_uom_new" class="form-select form-select-sm @error('uom') is-invalid @enderror" @error('uom') aria-invalid="true" aria-describedby="gr_uom_new_error" @enderror required>
+                                <option value="">{{ __('local_procurement.labels.choose_uom') }}</option>
+                                @foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)
+                                    <option value="{{ $uom }}" @selected(old('uom') === $uom)>{{ $uom }}</option>
+                                @endforeach
+                            </select>
+                            @error('uom')<div id="gr_uom_new_error" class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div>

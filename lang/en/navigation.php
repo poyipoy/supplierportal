@@ -45,7 +45,6 @@ return [
     'ga_claims' => 'GA Claims',
     'drp_supplier' => 'DRP Supplier',
     'drp_ga' => 'DRP GA',
-    'drp_draft' => 'DRP GA Draft',
     'drp_paid' => 'DRP Paid',
     'invoice_register' => 'Invoice Register',
     'master_invoices' => 'Master Invoices',
@@ -149,7 +148,6 @@ return [
         'payment_schedule' => 'Payment Schedule',
         'claim_create' => 'Submit Claim',
         'employees' => 'Employee Master',
-        'drp_draft' => 'DRP GA Draft',
         'inspections' => 'QC Inspection',
     ],
     'roles' => [

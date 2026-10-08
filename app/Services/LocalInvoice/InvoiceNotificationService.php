@@ -35,6 +35,9 @@ class InvoiceNotificationService
             'due_date' => $invoice->due_date?->format('Y-m-d') ?? '',
             'payment_term' => $invoice->payment_term_days_snapshot ?? '',
         ], $copyData);
+        if ($history->event === 'refund_settled') {
+            unset($replace['reference']);
+        }
         $url = route(($internal ? 'finance' : 'local-supplier').'.invoices.show', $invoice, absolute: false);
 
         // 1. In-app system notification

@@ -14,10 +14,6 @@
                 <x-ui.icon name="plus" size="sm" />
                 <span>{{ __('ga.review.new_claim') }}</span>
             </x-ui.button>
-            <x-ui.button :href="route('ga.drp-draft')" variant="outline">
-                <x-ui.icon name="wallet" size="sm" />
-                <span>{{ __('finance.drp.ga_draft') }}</span>
-            </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 

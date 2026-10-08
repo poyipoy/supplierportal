@@ -37,7 +37,7 @@ return [
         'bank_fee' => 'Bank Fee: Rp :amount',
         'created_by' => 'By: :name',
         'transfer_date' => 'Transfer Date:',
-        'ga_workflow' => 'GA staff prepare draft GA DRP batches from employee claims verified as Ready to Pay. Finance reviews and finalizes each batch, locking membership and destination accounts, then confirms payment after the transfer. Bank administration fees for GA DRP are always :amount.',
+        'ga_workflow' => 'Finance selects verified employee claims that are Ready to Pay and creates the GA DRP batch, finalizes the batch to lock membership and destination accounts, then confirms payment after transfer. Bank fees for GA DRP are always :amount.',
     ],
     'errors.file_not_found' => 'File not found.',
     'errors.notification_forbidden' => 'You do not have access to this notification.',

@@ -88,6 +88,7 @@ class LocalGrReservationService
                 'state' => LocalInvoiceGoodsReceipt::STATE_RESERVED,
                 'gr_number_snapshot' => $receipt->gr_number,
                 'gr_qty_snapshot' => $receipt->qty,
+                'gr_uom_snapshot' => $receipt->uom,
                 'reserved_at' => now(),
             ]);
             app(LocalFinanceAuditService::class)->record($receipt, 'gr_reserved', $supplier, $before, $receipt->fresh()->toArray(), ['invoice_id' => $invoice->id, 'po_id' => $po->id]);

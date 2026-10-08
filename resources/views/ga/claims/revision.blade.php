@@ -89,11 +89,16 @@
                         <label for="supporting" class="form-label tw-text-ui-xs tw-font-semibold">
                             {{ __('ga.form.upload_revision') }}
                         </label>
-                        <input type="file" name="supporting" id="supporting" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx">
-                        <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-mt-1">
+                        <input type="file" name="supporting" id="supporting" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" aria-describedby="supporting-help" @if($errors->has('supporting')) aria-invalid="true" @endif>
+                        <span id="supporting-help" class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-mt-1">
+                            {{ __('ga.form.entertainment_supporting') }}
                             {{ __('ga.form.revision_formats') }}
                         </span>
                     </div>
+
+                    @error('supporting')
+                        <p class="text-danger" role="alert">{{ $message }}</p>
+                    @enderror
 
                     {{-- Submit Button --}}
                     <div class="tw-flex tw-justify-end tw-gap-2 tw-pt-4">

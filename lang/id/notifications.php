@@ -308,7 +308,7 @@ return [
             ],
             'refund_settled' => [
                 'title' => 'Pengembalian dana selesai',
-                'message' => ':submission - Pengembalian dana invoice :invoice selesai. Nilai: :amount. Referensi: :reference. :raw_notes',
+                'message' => ':submission - Pengembalian dana invoice :invoice selesai. Nilai: :amount. :raw_notes',
             ],
             'physical_delivery_reminder' => [
                 'title' => 'Pengingat penyerahan berkas fisik',

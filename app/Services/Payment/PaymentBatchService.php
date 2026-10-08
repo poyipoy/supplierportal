@@ -161,7 +161,7 @@ class PaymentBatchService
      */
     public function createGaBatch(User $actor, array $claimIds, ?string $notes = null): PaymentBatch
     {
-        if (! $actor->isGa() && ! $actor->isFinance() && ! $actor->isAdmin()) {
+        if (! $actor->isFinance() && ! $actor->isAdmin()) {
             throw new InvalidArgumentException(__('finance.batch_validation.ga_role'));
         }
 
@@ -211,6 +211,10 @@ class PaymentBatchService
                 }
 
                 $employee = $claim->employee;
+                if (! $employee || collect([$employee->bank_name, $employee->account_number, $employee->account_holder_name])
+                    ->contains(fn ($value) => trim((string) $value) === '')) {
+                    throw new RuntimeException(__('finance.batch_validation.employee_bank', ['number' => $claim->claim_number]));
+                }
                 $groupKey = (string) $employee->id;
 
                 if (! isset($grouped[$groupKey])) {

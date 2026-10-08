@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'candidates' => [
+        'due_from' => 'Due Date From', 'due_to' => 'Due Date To',
+        'verification_from' => 'Verification Date From', 'verification_to' => 'Verification Date To',
+        'verification_date' => 'Verification Date', 'reset' => 'Reset',
+        'select_invoice' => 'Select invoice :number', 'select_claim' => 'Select claim :number',
+        'create_ga' => 'Create New GA DRP Batch',
+        'ga_help' => 'Select Ready to Pay claims verified by Finance. GA bank fees remain zero.',
+        'empty_ga' => 'No eligible Ready to Pay GA claims.',
+        'search_ga' => 'Claim Number / Employee', 'all_types' => 'All Claim Types',
+    ],
     'closure.plafon_minimum' => 'Minimum: Rp :amount (total active invoices).',
     'closure.remaining_settlement' => 'Matches Remaining Settlement',
     'closure.matches_voucher' => 'Matches Voucher Amount',
@@ -95,7 +105,7 @@ return [
     ],
 
     'drp_surface' => [
-        'ga_help' => 'Review GA claim batches from General Affairs, finalize them, and execute transfers to each employee account.',
+        'ga_help' => 'Select verified GA claims, create a batch, finalize it, and execute transfers to each employee account.',
         'ga_workflow' => 'GA DRP Workflow',
         'batch_number' => 'Batch Number',
         'settlement_tabs' => 'DRP batch settlement status tabs',
@@ -146,8 +156,6 @@ return [
         'heading' => 'Process Overpayment Refund',
         'supplier' => 'Supplier Name:',
         'full_amount' => 'Required Refund Amount (100%):',
-        'reference_label' => 'Transfer / Refund Reference Number',
-        'reference_help' => 'Enter the supplier bank transfer transaction reference.',
         'proof' => 'Transfer Proof (PDF / Image)',
         'formats' => 'Supported formats: PDF, JPG, JPEG, PNG (maximum 10 MB).',
     ],
@@ -389,7 +397,8 @@ return [
         'invoice_reserved' => 'One or more invoices are already reserved in an active DRP batch.',
         'invoice_status' => 'Invoice [:number] is not Ready to Pay (status: :status).',
         'supplier_bank' => 'Supplier [:name] does not have a verified bank account.',
-        'ga_role' => 'Only GA, Finance, or Admin can create GA DRP batches.',
+        'ga_role' => 'Only Finance or Admin can create GA DRP batches.',
+        'employee_bank' => 'Claim :number requires complete employee bank details.',
         'claim_select' => 'Select at least one Ready to Pay GA claim.',
         'claim_missing' => 'One or more selected claims do not exist.',
         'claim_reserved' => 'One or more claims are already reserved in an active DRP batch.',
@@ -428,7 +437,7 @@ return [
         'transfer_amount' => 'Transfer amount must be positive with up to two decimal places.',
         'refund_proof' => 'Refund proof must be a valid PDF, JPG, or PNG file up to 10 MB.',
         'refund_amount' => 'Refund amount must be positive with up to two decimal places.',
-        'refund_reference' => 'Refund reference and date are required.',
+
         'proof_read' => 'Refund proof could not be read.',
         'proof_store' => 'Refund proof could not be stored.',
         'already_settled' => 'This overpayment has already been settled.',
@@ -529,11 +538,9 @@ return [
         'supplier_list' => 'Supplier DRP Batches',
         'ga_heading' => 'General Affairs Payment Plan (DRP)',
         'ga_list' => 'General Affairs DRP Batches',
-        'ga_draft' => 'Draft GA DRP',
         'general_affairs' => 'General Affairs DRP',
         'create_supplier' => 'Create New Supplier DRP Batch',
         'create_draft' => 'Create Draft DRP Batch',
-        'prepare_ga' => 'Prepare Draft GA DRP',
         'open_supplier' => 'Open Supplier DRP',
         'open_ga' => 'Open GA DRP',
         'open_paid' => 'Open DRP Paid',
@@ -586,7 +593,7 @@ return [
         'empty_supplier_candidates' => 'No Ready to Pay supplier invoices are currently available.',
         'empty_ga_candidates' => 'No Ready to Pay claims are available for a new DRP.',
         'ga_selection' => 'Select the claims to include in the new draft GA DRP batch.',
-        'ga_submissions' => 'All GA DRP batch submissions sent to Finance.',
+        'ga_submissions' => 'GA DRP batches created by Finance.',
         'ga_recorded' => 'All GA DRP batch submissions recorded in the system.',
     ],
     'voucher' => [

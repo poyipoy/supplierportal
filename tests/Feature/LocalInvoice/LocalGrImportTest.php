@@ -69,7 +69,8 @@ class LocalGrImportTest extends TestCase
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
                 'description' => 'Item A',
-                'qty' => '1.5000',
+                'uom' => 'pcs',
+                'qty' => '1.5',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -78,7 +79,8 @@ class LocalGrImportTest extends TestCase
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
                 'description' => 'Item B',
-                'qty' => '2.5000',
+                'uom' => 'pcs',
+                'qty' => '2.5',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -87,7 +89,8 @@ class LocalGrImportTest extends TestCase
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
                 'description' => 'Item A',
-                'qty' => '1.0000',
+                'uom' => 'pcs',
+                'qty' => '1.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -105,7 +108,7 @@ class LocalGrImportTest extends TestCase
         $this->assertSame('PO-TEST-001', $group['po_number']);
         $this->assertSame('Item A, Item B', $group['description']);
         $this->assertSame($this->openPo->id, $group['po_id']);
-        $this->assertSame('5.0000', $group['qty']);
+        $this->assertSame('5', $group['qty']);
         $this->assertSame(3, $group['source_rows_count']);
         $this->assertSame('NEW', $group['action']);
     }
@@ -117,7 +120,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-UNKNOWN-999',
-                'qty' => '1.0000',
+                'uom' => 'pcs',
+                'qty' => '1.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -149,7 +153,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
-                'qty' => '1.0000',
+                'uom' => 'pcs',
+                'qty' => '1.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -157,7 +162,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 3,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-002',
-                'qty' => '2.0000',
+                'uom' => 'pcs',
+                'qty' => '2.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -179,7 +185,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
-                'qty' => '1.0000',
+                'uom' => 'pcs',
+                'qty' => '1.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -187,7 +194,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 3,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
-                'qty' => '2.0000',
+                'uom' => 'pcs',
+                'qty' => '2.0',
                 'gr_date' => '2026-09-15', // Conflicting calendar date!
                 '_formula_columns' => [],
             ],
@@ -208,6 +216,7 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
+                'uom' => 'pcs',
                 'qty' => '0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
@@ -219,7 +228,7 @@ class LocalGrImportTest extends TestCase
         $this->assertFalse($result['success']);
         $found = collect($result['errors'])->firstWhere('column', 'qty');
         $this->assertNotNull($found);
-        $this->assertStringContainsString('Quantity must be a positive number', $found['message']);
+        $this->assertSame(__('local_procurement.validation.quantity_precision'), $found['message']);
     }
 
     public function test_formula_in_cells_is_rejected(): void
@@ -229,7 +238,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
-                'qty' => '5.0000',
+                'uom' => 'pcs',
+                'qty' => '5.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => ['qty'],
             ],
@@ -258,7 +268,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-CLOSED-999',
-                'qty' => '5.0000',
+                'uom' => 'pcs',
+                'qty' => '5.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -276,7 +287,8 @@ class LocalGrImportTest extends TestCase
             'local_purchase_order_id' => $this->openPo->id,
             'gr_number' => 'REC060436',
             'gr_date' => '2026-09-10',
-            'qty' => '5.0000',
+            'uom' => 'pcs',
+            'qty' => '5.0',
             'status' => LocalGoodsReceipt::STATUS_AVAILABLE,
             'created_by' => $this->finance->id,
         ]);
@@ -287,7 +299,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
-                'qty' => '5.0000',
+                'uom' => 'pcs',
+                'qty' => '5.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -304,7 +317,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC060436',
                 'po_number' => 'PO-TEST-001',
-                'qty' => '10.0000', // Different Qty!
+                'uom' => 'pcs',
+                'qty' => '10.0', // Different Qty!
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -323,7 +337,8 @@ class LocalGrImportTest extends TestCase
                 'gr_number' => 'REC-NEW-888',
                 'po_number' => 'PO-TEST-001',
                 'description' => 'Material Alpha',
-                'qty' => '3.0000',
+                'uom' => 'pcs',
+                'qty' => '3.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -332,7 +347,8 @@ class LocalGrImportTest extends TestCase
                 'gr_number' => 'REC-NEW-888',
                 'po_number' => 'PO-TEST-001',
                 'description' => 'Material Beta',
-                'qty' => '2.0000',
+                'uom' => 'pcs',
+                'qty' => '2.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -362,7 +378,8 @@ class LocalGrImportTest extends TestCase
                 '_row' => 2,
                 'gr_number' => 'REC-HTTP-001',
                 'po_number' => 'PO-TEST-001',
-                'qty' => '4.0000',
+                'uom' => 'pcs',
+                'qty' => '4.0',
                 'gr_date' => '2026-09-10',
                 '_formula_columns' => [],
             ],
@@ -397,6 +414,7 @@ class LocalGrImportTest extends TestCase
 
         $firstRow = $base['rows'][0];
         $this->assertArrayHasKey('description', $firstRow);
+        $this->assertSame('pcs', $firstRow['uom']);
         $this->assertNotEmpty($firstRow['description']);
 
         // Collect all unique POs referenced in the real whinh file and seed them
@@ -458,5 +476,22 @@ class LocalGrImportTest extends TestCase
         $this->actingAs($this->supplierUser)
             ->post(route('finance.local-procurement.import.gr.preview'))
             ->assertForbidden();
+    }
+
+    public function test_import_uom_and_precision_and_mixed_uom_guard(): void
+    {
+        $row = ['_row' => 2, 'gr_number' => 'GR-UOM', 'po_number' => $this->openPo->po_number,
+            'gr_date' => '2026-09-24', 'qty' => '10.125', 'uom' => 'Kg', '_formula_columns' => []];
+        $valid = $this->service->validate([$row]);
+        $this->assertTrue($valid['success']);
+        $this->assertSame('kg', $valid['rows'][0]['uom']);
+        foreach (['', '   ', 'unknown'] as $uom) {
+            $this->assertFalse($this->service->validate([array_replace($row, ['uom' => $uom])])['success']);
+        }
+        $this->assertFalse($this->service->validate([array_replace($row, ['qty' => '10.1256'])])['success']);
+        $mixed = $this->service->validate([$row, array_replace($row, ['_row' => 3, 'uom' => 'pcs'])]);
+        $this->assertFalse($mixed['success']);
+        $this->assertSame([], $mixed['rows']);
+        $this->assertSame('uom', $mixed['errors'][0]['column']);
     }
 }

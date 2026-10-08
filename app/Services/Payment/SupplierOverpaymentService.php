@@ -29,9 +29,7 @@ class SupplierOverpaymentService
         if (! preg_match('/^\d{1,18}(?:\.\d{1,2})?$/', $refundAmount) || bccomp($refundAmount, '0', 2) <= 0) {
             throw ValidationException::withMessages(['refund_amount' => __('finance.validation.refund_amount')]);
         }
-        if (blank(trim((string) ($data['refund_reference'] ?? ''))) || blank($data['refund_date'] ?? null)) {
-            throw ValidationException::withMessages(['refund_reference' => __('finance.validation.refund_reference')]);
-        }
+        validator($data, ['refund_date' => ['required', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:1000']])->validate();
         $path = 'attachments/'.now()->format('Y/m').'/'.$proof->hashName(); // biz-time:ignore storage path
         $stream = fopen($proof->getPathname(), 'r');
         if ($stream === false) {
@@ -57,7 +55,7 @@ class SupplierOverpaymentService
                     throw ValidationException::withMessages(['refund_amount' => __('finance.validation.refund_full')]);
                 }
                 $locked->update(['status' => SupplierOverpaymentRefund::STATUS_SETTLED, 'refund_amount' => $data['refund_amount'],
-                    'refund_reference' => trim($data['refund_reference']), 'refund_date' => $data['refund_date'],
+                    'refund_date' => $data['refund_date'],
                     'notes' => $data['notes'] ?? null, 'settled_by' => $actor->id, 'settled_at' => now()]);
                 $locked->attachments()->create(['file_path' => $path, 'file_name' => $proof->getClientOriginalName(),
                     'file_type' => $proof->getMimeType(), 'uploaded_by' => $actor->id]);
@@ -71,7 +69,6 @@ class SupplierOverpaymentService
                         : 'local_invoice.history.refund_settled_with_notes';
                     $notes = __($historyMessage, [
                         'amount' => number_format((float) $data['refund_amount'], 0, ',', '.'),
-                        'reference' => trim($data['refund_reference']),
                         'notes' => $additionalNotes,
                     ]);
 
@@ -86,7 +83,6 @@ class SupplierOverpaymentService
 
                     $this->notifications->send($invoice, $history, [
                         'amount' => (string) $data['refund_amount'],
-                        'reference' => trim($data['refund_reference']),
                         'raw_notes' => (string) ($data['notes'] ?? ''),
                     ]);
                 }

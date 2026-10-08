@@ -5,11 +5,7 @@ namespace App\Http\Controllers\Ga;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\GaClaim;
-use App\Models\PaymentBatch;
-use App\Models\PaymentGroup;
-use App\Models\PaymentItem;
 use App\Services\Ga\GaClaimService;
-use App\Services\Payment\PaymentBatchService;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -120,35 +116,6 @@ class GaController extends Controller
         $service->basicVerify($claim, $request->user(), $request->input('notes'));
 
         return back()->with('success', __('ga.feedback.verified'));
-    }
-
-    public function drpDraft()
-    {
-        $eligibleClaims = GaClaim::where('status', GaClaim::STATUS_READY_TO_PAY)
-            ->whereDoesntHave('paymentItem', function ($q) {
-                $q->where('status', PaymentItem::STATUS_ACTIVE)
-                    ->whereHas('group', fn ($g) => $g->where('status', PaymentGroup::STATUS_UNPAID)
-                        ->whereHas('batch', fn ($b) => $b->whereIn('status', PaymentBatch::ACTIVE_STATUSES))
-                    );
-            })
-            ->with('employee')
-            ->latest('id')
-            ->get();
-
-        return view('ga.drp.draft', compact('eligibleClaims'));
-    }
-
-    public function createDrpDraft(Request $request, PaymentBatchService $service)
-    {
-        $request->validate([
-            'claim_ids' => 'required|array|min:1',
-            'claim_ids.*' => 'required|integer|exists:ga_claims,id',
-            'notes' => 'nullable|string|max:1000',
-        ]);
-
-        $batch = $service->createGaBatch($request->user(), $request->input('claim_ids'), $request->input('notes'));
-
-        return redirect()->route('ga.claims.index')->with('success', __('ga.feedback.drp_prepared', ['number' => $batch->batch_number]));
     }
 
     public function revision(GaClaim $claim)

@@ -27,8 +27,13 @@
         :description="__('common.final_review.ready_invoice_help')"
     >
         <form method="GET" action="{{ route('finance.drp.supplier') }}" class="tw-mb-4 tw-flex tw-flex-wrap tw-items-end tw-gap-3">
-            <div><label class="form-label tw-text-ui-xs">{{ __('finance.drp_surface.supplier_filter') }}</label><select name="supplier_id" class="form-select form-select-sm"><option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
+            <input type="hidden" name="sort" value="{{ $candidateSort }}">
+            <input type="hidden" name="direction" value="{{ $candidateDirection }}">
+            <div><label for="candidate_supplier" class="form-label tw-text-ui-xs">{{ __('finance.drp_surface.supplier_filter') }}</label><select id="candidate_supplier" name="supplier_id" class="form-select form-select-sm"><option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
+            <x-ui.date-range-picker id="candidate-due-range" start-name="due_date_from" end-name="due_date_to" :start-label="__('finance.candidates.due_from')" :end-label="__('finance.candidates.due_to')" :start-value="request('due_date_from')" :end-value="request('due_date_to')" :compact="true" />
+            <x-ui.date-range-picker id="candidate-verification-range" start-name="verification_date_from" end-name="verification_date_to" :start-label="__('finance.candidates.verification_from')" :end-label="__('finance.candidates.verification_to')" :start-value="request('verification_date_from')" :end-value="request('verification_date_to')" :compact="true" />
             <x-ui.button type="submit" size="sm" variant="outline">{{ __('common.labels_review.filter') }}</x-ui.button>
+            <x-ui.button :href="route('finance.drp.supplier')" size="sm" variant="ghost">{{ __('finance.candidates.reset') }}</x-ui.button>
         </form>
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
@@ -40,7 +45,14 @@
                                 <th scope="col" style="width: 40px;">{{ __('common.actions.choose') }}</th>
                                 <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp.payee_account') }}</th>
                                 <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp_surface.invoice_po') }}</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.due_date') }}</th>
+                                @foreach(['due_date' => __('local_invoice.labels.due_date'), 'verification_date' => __('finance.candidates.verification_date')] as $sortKey => $sortLabel)
+                                    <th scope="col" class="tw-text-ui-xs tw-font-semibold" aria-sort="{{ $candidateSort === $sortKey ? ($candidateDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                        <a class="tw-inline-flex tw-items-center tw-gap-1 tw-min-h-6" href="{{ route('finance.drp.supplier', array_merge(request()->except('candidate_page'), ['sort' => $sortKey, 'direction' => $candidateSort === $sortKey && $candidateDirection === 'asc' ? 'desc' : 'asc'])) }}">
+                                            {{ $sortLabel }}
+                                            @if($candidateSort === $sortKey)<x-ui.icon :name="$candidateDirection === 'asc' ? 'arrow-up' : 'arrow-down'" size="sm" />@endif
+                                        </a>
+                                    </th>
+                                @endforeach
                                 <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
                                 <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
                                 <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp.total_payment') }}</th>
@@ -49,12 +61,12 @@
                         <tbody>
                             @forelse($eligibleInvoices as $inv)
                                 @php
-                                    $bank = $inv->supplier->supplier?->activeBankAccount;
+                                    $bank = $inv->supplier->activeSupplierBankAccount;
                                     $totalNominal = $inv->currentVerification?->calculateNetPayable((float) $inv->invoice_amount) ?? ((float) $inv->invoice_amount + (float) $inv->tax_amount);
                                 @endphp
                                 <tr>
                                     <td>
-                                        <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" class="form-check-input">
+                                        <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" class="form-check-input" aria-label="{{ __('finance.candidates.select_invoice', ['number' => $inv->invoice_number]) }}">
                                     </td>
                                     <td>
                                         <strong class="tw-text-on-surface">{{ $inv->supplier->supplier?->company_name ?: $inv->supplier->name }}</strong>
@@ -71,6 +83,7 @@
                                             {{ $regionalFormatter->date($inv->due_date, 'human') ?? '—' }}
                                         </span>
                                     </td>
+                                    <td class="tw-text-ui-xs">@bizdt($inv->ready_to_pay_at)</td>
                                     <td class="text-end tw-font-mono">Rp {{ number_format($inv->invoice_amount, 0, ',', '.') }}</td>
                                     <td class="text-end tw-font-mono">Rp {{ number_format($inv->tax_amount, 0, ',', '.') }}</td>
                                     <td class="text-end tw-font-mono tw-font-bold tw-text-primary">
@@ -79,7 +92,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
+                                    <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
                                         {{ __('finance.drp.empty_supplier_candidates') }}
                                     </td>
                                 </tr>
@@ -87,11 +100,12 @@
                         </tbody>
                     </table>
                 </div>
+                {{ $eligibleInvoices->links() }}
 
                 @if($eligibleInvoices->isNotEmpty())
                     <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3">
                         <div class="tw-flex-1">
-                            <input type="text" name="notes" class="form-control form-control-sm" placeholder="{{ __('common.final_review.batch_notes') }}">
+                            <input type="text" name="notes" class="form-control form-control-sm" aria-label="{{ __('common.final_review.batch_notes') }}" placeholder="{{ __('common.final_review.batch_notes') }}">
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="plus" size="sm" />
@@ -366,4 +380,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
-

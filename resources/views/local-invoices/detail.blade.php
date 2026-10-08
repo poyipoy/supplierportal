@@ -374,12 +374,6 @@
                             </span>
                         </div>
                         <div>
-                            <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.detail.refund_reference') }}</span>
-                            <span class="tw-font-mono tw-font-semibold tw-text-on-surface">
-                                {{ $overpaymentRefund->refund_reference ?: '-' }}
-                            </span>
-                        </div>
-                        <div>
                             <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.labels.finance_notes') }}</span>
                             <span class="tw-text-on-surface">
                                 {{ $overpaymentRefund->notes ?: '-' }}
@@ -477,11 +471,11 @@
                         <div><span class="tw-text-on-surface-variant tw-block">{{ __('local_procurement.labels.po_date') }}</span><strong class="tw-text-on-surface">{{ $invoice->localPurchaseOrder->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
                         <div><span class="tw-text-on-surface-variant tw-block">{{ __('local_procurement.labels.po_total') }}</span><strong class="tw-font-mono tw-text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
                     </div>
-                    <div class="table-responsive"><table class="table table-sm align-middle tw-m-0 tw-text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
+                    <div class="table-responsive"><table class="table table-sm align-middle tw-m-0 tw-text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
-                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
+                            <tr><td class="tw-font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end tw-font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
                         @empty
-                            <tr><td colspan="4" class="tw-text-center tw-text-on-surface-variant">{{ __('local_procurement.empty.gr_history') }}</td></tr>
+                            <tr><td colspan="5" class="tw-text-center tw-text-on-surface-variant">{{ __('local_procurement.empty.gr_history') }}</td></tr>
                         @endforelse
                     </tbody></table></div>
                 </x-ui.card>

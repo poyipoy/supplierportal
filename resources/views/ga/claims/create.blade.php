@@ -111,13 +111,18 @@
                     {{-- Dokumen Pendukung --}}
                     <div class="tw-border-t tw-border-outline-variant tw-pt-3">
                         <label for="supporting" class="form-label tw-text-ui-xs tw-font-semibold">
-                            {{ __('ga.form.upload_supporting') }} <span class="tw-text-on-surface-variant font-normal">{{ __('ga.form.optional') }}</span>
+                            {{ __('ga.form.upload_supporting') }}
                         </label>
-                        <input type="file" name="supporting" id="supporting" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx">
-                        <span class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-mt-1">
+                        <input type="file" name="supporting" id="supporting" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" aria-describedby="supporting-help" @if($errors->has('supporting')) aria-invalid="true" @endif>
+                        <span id="supporting-help" class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-mt-1">
+                            {{ __('ga.form.entertainment_supporting') }}
                             {{ __('ga.form.support_formats') }}
                         </span>
                     </div>
+
+                    @error('supporting')
+                        <p class="text-danger" role="alert">{{ $message }}</p>
+                    @enderror
 
                     {{-- Submit Button --}}
                     <div class="tw-flex tw-justify-end tw-gap-2 tw-pt-4">

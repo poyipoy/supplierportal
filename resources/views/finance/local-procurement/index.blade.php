@@ -58,7 +58,7 @@
 
         <x-ui.metric-card
             :label="__('local_procurement.labels.gr_total')"
-            :value="number_format($metrics['active_gr_qty'] ?? 0, 2, ',', '.') . ' pcs'"
+            :value="number_format($metrics['active_gr_count'] ?? 0)"
             icon="package-check"
             tone="success"
             :meta="__('local_procurement.register.active_grs', ['count' => number_format($metrics['active_gr_count'] ?? 0)])"
@@ -190,7 +190,7 @@
                             </td>
                             <td class="text-end">
                                 <div class="tw-font-mono tw-font-semibold tw-text-on-surface">
-                                    {{ number_format($po->active_gr_qty ?? 0, 2, ',', '.') }} pcs
+                                    {{ $po->active_gr_count }} GR
                                 </div>
                                 <div class="tw-text-[11px] tw-text-on-surface-variant">
                                     {{ __('local_procurement.register.gr_files', ['count' => $po->active_gr_count]) }}

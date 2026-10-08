@@ -166,6 +166,7 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
 
     // DRP GA
     Route::get('/drp-ga', [FinanceDrpController::class, 'indexGa'])->name('drp.ga');
+    Route::post('/drp-ga', [FinanceDrpController::class, 'createGaBatch'])->name('drp.ga.create');
 
     // DRP Paid
     Route::get('/drp-paid', [FinanceDrpPaidController::class, 'index'])->name('drp.paid.index');
@@ -258,9 +259,6 @@ Route::middleware(['auth', 'role:ga,admin'])->prefix('ga')->name('ga.')->group(f
     Route::resource('employees', EmployeeController::class)->only(['index', 'store', 'update']);
     Route::post('/employees/{employee}/toggle-status', [EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
 
-    // DRP GA Draft
-    Route::get('/drp-draft', [GaController::class, 'drpDraft'])->name('drp-draft');
-    Route::post('/drp-draft', [GaController::class, 'createDrpDraft'])->name('drp-draft.store');
 });
 
 /*

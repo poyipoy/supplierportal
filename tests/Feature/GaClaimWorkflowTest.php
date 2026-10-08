@@ -52,7 +52,7 @@ class GaClaimWorkflowTest extends TestCase
             $gaUser,
             [
                 'employee_id' => $employee->id,
-                'claim_type' => GaClaim::TYPE_ENTERTAIN_SALES,
+                'claim_type' => GaClaim::TYPE_ENTERTAINMENT,
                 'claim_date' => '2026-09-10',
                 'amount' => 1500000,
                 'description' => 'Dinner with client PT Krakatau',
@@ -91,7 +91,7 @@ class GaClaimWorkflowTest extends TestCase
             $gaUser,
             [
                 'employee_id' => $employee->id,
-                'claim_type' => GaClaim::TYPE_UPD_SALES,
+                'claim_type' => GaClaim::TYPE_BUSINESS_TRAVEL,
                 'claim_date' => '2026-09-10',
                 'amount' => 750000,
             ],
@@ -166,7 +166,7 @@ class GaClaimWorkflowTest extends TestCase
             $gaUser,
             [
                 'employee_id' => $employee->id,
-                'claim_type' => GaClaim::TYPE_UPD_GA,
+                'claim_type' => GaClaim::TYPE_BUSINESS_TRAVEL,
                 'claim_date' => '2026-09-12',
                 'amount' => 250000,
             ],
@@ -337,10 +337,11 @@ class GaClaimWorkflowTest extends TestCase
             $gaUser,
             [
                 'employee_id' => $employee->id,
-                'claim_type' => GaClaim::TYPE_ENTERTAIN_SALES,
+                'claim_type' => GaClaim::TYPE_ENTERTAINMENT,
                 'claim_date' => '2026-09-10',
                 'amount' => 1200000,
-            ]
+            ],
+            ['supporting' => UploadedFile::fake()->create('receipt.pdf', 100)]
         );
         $this->claimService->basicVerify($claim, $gaUser);
 
@@ -369,7 +370,7 @@ class GaClaimWorkflowTest extends TestCase
             $supplier,
             [
                 'employee_id' => $employee->id,
-                'claim_type' => GaClaim::TYPE_UPD_GA,
+                'claim_type' => GaClaim::TYPE_BUSINESS_TRAVEL,
                 'claim_date' => '2026-09-10',
                 'amount' => 500000,
             ],
@@ -414,7 +415,7 @@ class GaClaimWorkflowTest extends TestCase
 
         $response = $this->actingAs($ga)->post(route('ga.claims.store'), [
             'employee_id' => $employee->id,
-            'claim_type' => GaClaim::TYPE_UPD_GA,
+            'claim_type' => GaClaim::TYPE_BUSINESS_TRAVEL,
             'claim_date' => '2026-09-18',
             'amount' => 750000,
             'description' => 'Operasional ATK dan logistik GA',
@@ -423,38 +424,20 @@ class GaClaimWorkflowTest extends TestCase
         $claim = GaClaim::where('employee_id', $employee->id)->latest('id')->first();
         $this->assertNotNull($claim);
         $this->assertEquals(750000, $claim->amount);
-        $this->assertEquals(GaClaim::TYPE_UPD_GA, $claim->claim_type);
+        $this->assertEquals(GaClaim::TYPE_BUSINESS_TRAVEL, $claim->claim_type);
         $this->assertNotNull($claim->receipt);
 
         $response->assertRedirect(route('ga.claims.show', $claim));
         $response->assertSessionHas('success');
     }
 
-    public function test_ga_drp_draft_renders_and_creates_batch_draft(): void
+    public function test_ga_draft_workflow_routes_and_navigation_are_removed(): void
     {
         $ga = User::factory()->create(['role' => 'ga', 'is_active' => true]);
-        $employee = $this->createEmployee();
-
-        $claim = GaClaim::create([
-            'claim_number' => 'GA-CLAIM-READY-01',
-            'employee_id' => $employee->id,
-            'claim_type' => GaClaim::TYPE_UPD_GA,
-            'claim_date' => '2026-09-10',
-            'amount' => 500000,
-            'status' => GaClaim::STATUS_READY_TO_PAY,
-            'submitted_by' => $ga->id,
-            'submitted_at' => now(),
-        ]);
-
-        $response = $this->actingAs($ga)->get(route('ga.drp-draft'));
-        $response->assertOk();
-        $response->assertSee('GA-CLAIM-READY-01');
-
-        $storeResponse = $this->actingAs($ga)->post(route('ga.drp-draft.store'), [
-            'claim_ids' => [$claim->id],
-            'notes' => 'Batch draft for test',
-        ]);
-        $storeResponse->assertRedirect(route('ga.claims.index'));
-        $storeResponse->assertSessionHas('success');
+        $this->assertFalse(Route::has('ga.drp-draft'));
+        $this->assertFalse(Route::has('ga.drp-draft.store'));
+        $this->actingAs($ga)->get('/ga/drp-draft')->assertNotFound();
+        $this->actingAs($ga)->post('/ga/drp-draft', ['claim_ids' => [1]])->assertNotFound();
+        $this->actingAs($ga)->get(route('ga.dashboard'))->assertOk()->assertDontSee('/ga/drp-draft');
     }
 }

@@ -28,8 +28,8 @@ return [
         'expired' => 'Invoice kedaluwarsa setelah dua kali melewatkan jadwal penyerahan dokumen fisik.',
         'delivery_missed' => 'Penyerahan dokumen fisik terlewat pada tanggal yang dijadwalkan. Jadwal perlu diatur ulang.',
         'rescheduled' => 'Jadwal penyerahan dokumen fisik diubah ke hari Rabu, :date.',
-        'refund_settled' => 'Pengembalian kelebihan bayar sebesar Rp :amount diselesaikan oleh Keuangan ADASI (referensi: :reference).',
-        'refund_settled_with_notes' => 'Pengembalian kelebihan bayar sebesar Rp :amount diselesaikan oleh Keuangan ADASI (referensi: :reference). Catatan: :notes.',
+        'refund_settled' => 'Pengembalian kelebihan bayar sebesar Rp :amount diselesaikan oleh Keuangan ADASI.',
+        'refund_settled_with_notes' => 'Pengembalian kelebihan bayar sebesar Rp :amount diselesaikan oleh Keuangan ADASI. Catatan: :notes.',
     ],
 
     'documents' => [
@@ -107,7 +107,7 @@ return [
         'verified_settlement' => 'Selesai / Terverifikasi',
         'refund_settled_help' => 'Pengembalian kelebihan dana invoice ini telah diselesaikan dan diverifikasi tim Keuangan ADASI.',
         'returned_amount' => 'Nominal Dikembalikan',
-        'refund_reference' => 'Nomor Referensi Pengembalian Dana',
+
         'settlement_proof' => 'Bukti Penyelesaian: :filename',
         'due_today' => 'Jatuh Tempo Hari Ini',
         'payment_term' => 'Termin Pembayaran:',

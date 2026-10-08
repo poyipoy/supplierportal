@@ -74,7 +74,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         $masters->createGoodsReceipt($this->finance, $this->poA1, [
             'gr_number' => 'GR-A-001',
             'gr_date' => '2026-09-11',
-            'qty' => '5.0000',
+            'uom' => 'pcs', 'qty' => '5.0',
             'description' => 'First batch delivery',
         ]);
     }

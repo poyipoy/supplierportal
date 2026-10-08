@@ -211,7 +211,6 @@
             <x-ui.sidebar-item :href="route('ga.claims.index')" icon="receipt" :active="request()->routeIs('ga.claims.index', 'ga.claims.show', 'ga.claims.receipt')" :label="__('navigation.ga_claims')">{{ __('navigation.ga_claims') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('ga.claims.create')" icon="file-plus" :active="request()->routeIs('ga.claims.create')" :label="__('navigation.submit_claim')">{{ __('navigation.submit_claim') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('ga.employees.index')" icon="users" :active="request()->routeIs('ga.employees.*')" :label="__('navigation.employee_master')">{{ __('navigation.employee_master') }}</x-ui.sidebar-item>
-            <x-ui.sidebar-item :href="route('ga.drp-draft')" icon="wallet" :active="request()->routeIs('ga.drp-draft*')" :label="__('navigation.drp_draft')">{{ __('navigation.drp_draft') }}</x-ui.sidebar-item>
         @elseif(auth()->user()->isLocalOperator())
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 21;">{{ __('navigation.invoice_control') }}</span></div>
             <x-ui.sidebar-item :href="route('accounting.dashboard')" icon="gauge" :active="request()->routeIs('accounting.dashboard')" :label="__('navigation.dashboard')">{{ __('navigation.dashboard') }}</x-ui.sidebar-item>

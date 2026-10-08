@@ -23,6 +23,7 @@ use App\Services\Payment\LocalInvoiceVoucherService;
 use App\Services\Payment\SupplierOverpaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -77,7 +78,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $this->gr1 = $masters->createGoodsReceipt($this->finance, $this->po, [
             'gr_number' => 'GR-OP-001',
             'gr_date' => '2026-09-11',
-            'qty' => 10.0,
+            'qty' => 10.0, 'uom' => 'pcs',
         ]);
     }
 
@@ -189,14 +190,14 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $response->assertSee(__('local_invoice.detail.copy_account'));
     }
 
-    public function test_supplier_can_view_settled_overpayment_card_and_reference_details(): void
+    public function test_supplier_can_view_settled_overpayment_card_without_refund_reference(): void
     {
         [$invoice, $payment, $refund] = $this->createInvoiceWithOverpayment('INV-SETTLE-001', '75.00');
 
         $proof = UploadedFile::fake()->create('bukti_refund.pdf', 100, 'application/pdf');
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '75.00',
-            'refund_reference' => 'REF-ADASI-7788',
+
             'refund_date' => '2026-09-16',
             'notes' => 'Telah diterima via transfer BCA',
         ], $proof, $this->finance);
@@ -209,7 +210,6 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $response->assertSee(__('local_invoice.detail.verified_settlement'));
         $response->assertSee('Rp 75');
         $response->assertSee('16 Sep 2026');
-        $response->assertSee('REF-ADASI-7788');
         $response->assertSee('Telah diterima via transfer BCA');
         $response->assertSee('bukti_refund.pdf');
         $response->assertSee(__('local_invoice.actions.download_proof'));
@@ -222,7 +222,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $proof = UploadedFile::fake()->create('settlement_proof.pdf', 50, 'application/pdf');
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '25.00',
-            'refund_reference' => 'REF-PROOF-01',
+
             'refund_date' => '2026-09-16',
         ], $proof, $this->finance);
 
@@ -242,7 +242,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $proof = UploadedFile::fake()->create('secret_proof.pdf', 50, 'application/pdf');
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '30.00',
-            'refund_reference' => 'REF-IDOR-01',
+
             'refund_date' => '2026-09-16',
         ], $proof, $this->finance);
 
@@ -276,7 +276,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $gr2 = $masters->createGoodsReceipt($this->finance, $po2, [
             'gr_number' => 'GR-OP-002',
             'gr_date' => '2026-09-11',
-            'qty' => 10.0,
+            'qty' => 10.0, 'uom' => 'pcs',
         ]);
 
         $settledInvoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -341,7 +341,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $refund = $payment->overpayment;
         app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '60.00',
-            'refund_reference' => 'REF-BADGE-OK',
+
             'refund_date' => '2026-09-16',
         ], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
 
@@ -361,7 +361,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $proof = UploadedFile::fake()->create('proof_notif.pdf', 20, 'application/pdf');
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '80.00',
-            'refund_reference' => 'REF-NOTIF-99',
+
             'refund_date' => '2026-09-16',
             'notes' => 'Konfirmasi diterima via m-Banking',
         ], $proof, $this->finance);
@@ -377,7 +377,6 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $this->assertSame($this->finance->id, $history->actor_id);
         $this->assertSame(__('local_invoice.history.refund_settled_with_notes', [
             'amount' => '80',
-            'reference' => 'REF-NOTIF-99',
             'notes' => 'Konfirmasi diterima via m-Banking',
         ], 'id'), $history->notes);
 
@@ -385,6 +384,27 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $notification = $this->supplier->notifications()->where('data->event', 'local_invoice.refund_settled')->first();
         $this->assertNotNull($notification);
         $this->assertSame('local_invoice.refund_settled', $notification->data['event'] ?? null);
+        $this->assertStringNotContainsString(':reference', $history->notes);
+        $this->assertStringNotContainsString(':reference', $notification->data['message']);
+        $this->assertFalse(Schema::hasColumn('supplier_overpayment_refunds', 'refund_reference'));
+    }
+
+    public function test_refund_still_requires_valid_date_and_private_proof(): void
+    {
+        [, , $refund] = $this->createInvoiceWithOverpayment('INV-REFUND-VALIDATION', '80.00');
+        foreach ([[], ['refund_date' => '2026-02-30']] as $dateData) {
+            try {
+                app(SupplierOverpaymentService::class)->settle($refund, array_merge(['refund_amount' => '80.00'], $dateData),
+                    UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+                $this->fail('Missing or invalid refund date must be rejected.');
+            } catch (ValidationException $e) {
+                $this->assertArrayHasKey('refund_date', $e->errors());
+                $this->assertSame(SupplierOverpaymentRefund::STATUS_OPEN, $refund->fresh()->status);
+            }
+        }
+        $this->actingAs($this->finance)->post(route('finance.overpayments.refund', $refund), [
+            'refund_amount' => '80.00', 'refund_date' => '2026-10-07',
+        ])->assertSessionHasErrors('proof');
     }
 
     public function test_overpayment_status_filter_open_and_settled(): void
@@ -402,7 +422,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $gr3 = $masters->createGoodsReceipt($this->finance, $po3, [
             'gr_number' => 'GR-OP-003',
             'gr_date' => '2026-09-11',
-            'qty' => 10.0,
+            'qty' => 10.0, 'uom' => 'pcs',
         ]);
 
         $settledInvoice = app(InvoiceSubmissionService::class)->submit($this->supplier, [
@@ -467,7 +487,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $refund = $payment->overpayment;
         app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '40.00',
-            'refund_reference' => 'REF-FLT-01',
+
             'refund_date' => '2026-09-16',
         ], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
 
@@ -506,7 +526,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $proof1 = UploadedFile::fake()->create('proof1.pdf', 10, 'application/pdf');
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '10.00',
-            'refund_reference' => 'REF-IDEMP-01',
+
             'refund_date' => '2026-09-16',
         ], $proof1, $this->finance);
 
@@ -518,7 +538,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $proof2 = UploadedFile::fake()->create('proof2.pdf', 10, 'application/pdf');
         app(SupplierOverpaymentService::class)->settle($settled, [
             'refund_amount' => '10.00',
-            'refund_reference' => 'REF-IDEMP-02',
+
             'refund_date' => '2026-09-17',
         ], $proof2, $this->finance);
     }
@@ -531,7 +551,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $refund->update([
             'status' => SupplierOverpaymentRefund::STATUS_SETTLED,
             'refund_amount' => '15.00',
-            'refund_reference' => 'REF-MANUAL-01',
+
             'refund_date' => '2026-09-16',
             'notes' => null,
             'settled_by' => $this->finance->id,
@@ -544,7 +564,6 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         $response->assertOk();
         $response->assertSee(__('local_invoice.detail.refund_settlement', [], 'en'));
         $response->assertSee(__('local_invoice.detail.verified_settlement', [], 'en'));
-        $response->assertSee('REF-MANUAL-01');
         $response->assertDontSee('Unduh Bukti'); // No proof attachment rendered
     }
 

@@ -36,7 +36,7 @@ class LocalGrReservationConcurrencyTest extends TestCase
         $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
         $master = app(LocalProcurementMasterService::class);
         $po = $master->createPurchaseOrder($finance, ['supplier_id' => $supplier->id, 'po_number' => 'PO-CONCURRENT-GR', 'po_date' => '2026-09-15', 'total_amount' => '100.00']);
-        $gr = $master->createGoodsReceipt($finance, $po, ['gr_number' => 'GR-CONCURRENT-GR', 'gr_date' => '2026-09-15', 'qty' => 10.0]);
+        $gr = $master->createGoodsReceipt($finance, $po, ['gr_number' => 'GR-CONCURRENT-GR', 'gr_date' => '2026-09-15', 'uom' => 'pcs', 'qty' => 10.0]);
 
         $makeInvoice = function (string $number) use ($supplier, $po): LocalInvoice {
             return LocalInvoice::create([

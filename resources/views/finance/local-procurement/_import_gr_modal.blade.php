@@ -108,6 +108,7 @@
                                         <th scope="col">{{ __('local_invoice.labels.description') }}</th>
                                         <th scope="col" class="text-center">{{ __('local_procurement.labels.receipt_date') }}</th>
                                         <th scope="col" class="text-end">{{ __('local_procurement.labels.gr_qty_pcs') }}</th>
+                                        <th scope="col">{{ __('local_procurement.labels.uom') }}</th>
                                         <th scope="col" class="text-center">{{ __('local_procurement.import.rows_short') }}</th>
                                         <th scope="col" class="text-center">{{ __('finance.review.status_action') }}</th>
                                     </tr>
@@ -288,7 +289,7 @@
                         <td class="font-monospace">${escapeHtml(r.po_number || '-')}</td>
                         <td class="tw-max-w-[200px] tw-truncate" title="${escapeHtml(r.description || '')}">${escapeHtml(r.description || '-')}</td>
                         <td class="text-center font-monospace">${escapeHtml(r.gr_date || '-')}</td>
-                        <td class="text-end font-monospace">${escapeHtml(formatQty(r.qty))}</td>
+                        <td class="text-end font-monospace">${escapeHtml(formatQty(r.qty))}</td><td>${escapeHtml(r.uom || '—')}</td>
                         <td class="text-center font-monospace"><span class="badge bg-light text-dark border">${escapeHtml(@js(__('finance.async_copy.source_rows')).replace(':count', String(r.source_rows_count || 1)))}</span></td>
                         <td class="text-center">${badge}</td>
                     `;

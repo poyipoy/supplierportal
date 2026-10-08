@@ -248,7 +248,7 @@ class RegionalInvoiceFinancialDisplayTest extends TestCase
             'refund_date' => '2026-09-26',
             'settled_at' => Carbon::parse('2026-09-26 11:00:00'),
             'status' => SupplierOverpaymentRefund::STATUS_SETTLED,
-            'refund_reference' => 'REF-001',
+
             'created_by' => $this->finance->id,
         ]);
 

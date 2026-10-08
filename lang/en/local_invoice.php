@@ -28,8 +28,8 @@ return [
         'expired' => 'Invoice expired after missing the scheduled physical document delivery twice.',
         'delivery_missed' => 'Physical document delivery was missed on the scheduled date. Rescheduling is required.',
         'rescheduled' => 'Physical document delivery was rescheduled to Wednesday, :date.',
-        'refund_settled' => 'Overpayment refund of Rp :amount was completed by Finance ADASI (reference: :reference).',
-        'refund_settled_with_notes' => 'Overpayment refund of Rp :amount was completed by Finance ADASI (reference: :reference). Notes: :notes.',
+        'refund_settled' => 'Overpayment refund of Rp :amount was completed by Finance ADASI.',
+        'refund_settled_with_notes' => 'Overpayment refund of Rp :amount was completed by Finance ADASI. Notes: :notes.',
     ],
 
     'documents' => [
@@ -107,7 +107,7 @@ return [
         'verified_settlement' => 'Completed / Verified',
         'refund_settled_help' => 'The overpayment refund for this invoice has been settled and verified by ADASI Finance.',
         'returned_amount' => 'Refunded Amount',
-        'refund_reference' => 'Refund Reference Number',
+
         'settlement_proof' => 'Settlement Proof: :filename',
         'due_today' => 'Due Today',
         'payment_term' => 'Payment Term:',

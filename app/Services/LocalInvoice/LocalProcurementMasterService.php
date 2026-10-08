@@ -141,13 +141,14 @@ class LocalProcurementMasterService
             if (LocalGoodsReceipt::whereRaw('LOWER(gr_number) = ?', [mb_strtolower($grNumber)])->exists()) {
                 throw ValidationException::withMessages(['gr_number' => __('local_procurement.validation.gr_exists')]);
             }
-            $qty = isset($data['qty']) ? (float) $data['qty'] : 0.0;
-            if ($qty <= 0) {
-                throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_positive')]);
+            $qty = trim((string) ($data['qty'] ?? ''));
+            if (! LocalGoodsReceipt::validQuantity($qty)) {
+                throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_precision')]);
             }
+            $uom = $this->uom($data['uom'] ?? null);
             $gr = $po->goodsReceipts()->create([
                 'gr_number' => $grNumber, 'gr_date' => $data['gr_date'],
-                'qty' => $qty,
+                'qty' => $qty, 'uom' => $uom,
                 'description' => $data['description'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'source' => $source,
@@ -176,14 +177,15 @@ class LocalProcurementMasterService
             if (LocalGoodsReceipt::whereRaw('LOWER(gr_number) = ?', [mb_strtolower($grNumber)])->where('id', '!=', $gr->id)->exists()) {
                 throw ValidationException::withMessages(['gr_number' => __('local_procurement.validation.gr_exists')]);
             }
-            $qty = (isset($data['qty']) && $data['qty'] !== null && $data['qty'] !== '') ? (float) $data['qty'] : (float) ($gr->qty ?? 0);
-            if ($qty <= 0) {
-                throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_positive')]);
+            $qty = trim((string) ($data['qty'] ?? ''));
+            if (! LocalGoodsReceipt::validQuantity($qty)) {
+                throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_precision')]);
             }
+            $uom = $this->uom($data['uom'] ?? null);
             $before = $gr->toArray();
             $gr->update([
                 'gr_number' => $grNumber, 'gr_date' => $data['gr_date'],
-                'qty' => $qty,
+                'qty' => $qty, 'uom' => $uom,
                 'description' => array_key_exists('description', $data) ? $data['description'] : $gr->description,
                 'notes' => $data['notes'] ?? null,
                 'updated_by' => $actor->id,
@@ -208,6 +210,15 @@ class LocalProcurementMasterService
 
             return $gr->fresh();
         });
+    }
+
+    private function uom(mixed $value): string
+    {
+        if (! LocalGoodsReceipt::isSupportedUom($value)) {
+            throw ValidationException::withMessages(['uom' => __('local_procurement.validation.uom_required')]);
+        }
+
+        return LocalGoodsReceipt::normalizeUom($value);
     }
 
     private function authorize(User $actor): void

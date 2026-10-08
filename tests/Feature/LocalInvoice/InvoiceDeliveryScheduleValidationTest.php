@@ -63,7 +63,7 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
         $this->gr = $masters->createGoodsReceipt($finance, $this->po, [
             'gr_number' => 'GR-TEST-001',
             'gr_date' => '2026-09-11',
-            'qty' => '1.0000',
+            'uom' => 'pcs', 'qty' => '1.0',
         ]);
     }
 

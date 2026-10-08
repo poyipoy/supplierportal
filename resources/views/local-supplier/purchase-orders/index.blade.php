@@ -123,7 +123,7 @@
                             </td>
                             <td class="text-end">
                                 <div class="tw-font-mono tw-font-semibold tw-text-on-surface">
-                                    {{ number_format((float) ($po->active_gr_qty ?? 0), 4, ',', '.') }} pcs
+                                    {{ $po->active_gr_count }} GR
                                 </div>
                                 <div class="tw-text-[11px] tw-text-on-surface-variant">
                                     {{ __('local_procurement.review.gr_count', ['count' => $po->active_gr_count]) }}

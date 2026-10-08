@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Finance;
 use App\Exports\PaymentBatchDrpExport;
 use App\Exports\PaymentBatchTransferExport;
 use App\Http\Controllers\Controller;
+use App\Models\GaClaim;
 use App\Models\LocalInvoice;
 use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
@@ -13,34 +14,53 @@ use App\Models\User;
 use App\Services\Payment\PaymentBatchService;
 use App\Services\Payment\PaymentVoucherService;
 use App\Support\BankTransferMapping;
+use App\Support\BusinessTime;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Vinkla\Hashids\Facades\Hashids;
 
 class FinanceDrpController extends Controller
 {
     public function indexSupplier(Request $request)
     {
+        $filters = $request->validate([
+            'due_date_from' => ['nullable', 'date_format:Y-m-d'],
+            'due_date_to' => array_filter(['nullable', 'date_format:Y-m-d', $request->filled('due_date_from') ? 'after_or_equal:due_date_from' : null]),
+            'verification_date_from' => ['nullable', 'date_format:Y-m-d'],
+            'verification_date_to' => array_filter(['nullable', 'date_format:Y-m-d', $request->filled('verification_date_from') ? 'after_or_equal:verification_date_from' : null]),
+        ]);
+        $sortColumns = ['due_date' => 'due_date', 'verification_date' => 'ready_to_pay_at'];
+        $validSort = is_string($request->query('sort')) && isset($sortColumns[$request->query('sort')]);
+        $sort = $validSort ? $request->query('sort') : 'due_date';
+        $direction = $validSort && in_array($request->query('direction'), ['asc', 'desc'], true)
+            ? $request->query('direction') : 'asc';
         $batches = PaymentBatch::where('batch_type', PaymentBatch::TYPE_SUPPLIER)
             ->withCount('groups')
             ->latest('id')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         // Candidate Ready to Pay invoices not yet in active DRP
         $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
         $eligibleInvoices = LocalInvoice::eligibleForPaymentBatch()
             ->when($supplier, fn ($q) => $q->where('supplier_id', $supplier->id))
+            ->when($filters['due_date_from'] ?? null, fn ($q, $date) => $q->where('due_date', '>=', $date))
+            ->when($filters['due_date_to'] ?? null, fn ($q, $date) => $q->where('due_date', '<=', $date))
+            ->when($filters['verification_date_from'] ?? null, fn ($q, $date) => $q->where('ready_to_pay_at', '>=', BusinessTime::toStorage(BusinessTime::parseDate($date))))
+            ->when($filters['verification_date_to'] ?? null, fn ($q, $date) => $q->where('ready_to_pay_at', '<', BusinessTime::toStorage(BusinessTime::parseDate($date)->addDay())))
             ->whereDoesntHave('paymentItem', function ($q) {
                 $q->where('status', PaymentItem::STATUS_ACTIVE)
                     ->whereHas('group', fn ($g) => $g->where('status', PaymentGroup::STATUS_UNPAID)
                         ->whereHas('batch', fn ($b) => $b->whereIn('status', PaymentBatch::ACTIVE_STATUSES))
                     );
             })
-            ->with(['supplier.supplier', 'receipt', 'currentVerification'])
-            ->latest('id')
-            ->get();
+            ->with(['supplier.supplier', 'supplier.activeSupplierBankAccount', 'currentVerification'])
+            ->orderBy($sortColumns[$sort], $direction)
+            ->orderBy('id')
+            ->paginate(25, ['*'], 'candidate_page')
+            ->withQueryString();
 
-        return view('finance.drp.supplier', ['batches' => $batches, 'eligibleInvoices' => $eligibleInvoices, 'supplierFilter' => $supplier, 'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get()]);
+        return view('finance.drp.supplier', ['batches' => $batches, 'eligibleInvoices' => $eligibleInvoices, 'supplierFilter' => $supplier, 'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get(), 'candidateSort' => $sort, 'candidateDirection' => $direction]);
     }
 
     public function createSupplierBatch(Request $request, PaymentBatchService $service)
@@ -56,14 +76,41 @@ class FinanceDrpController extends Controller
         return redirect()->route('finance.drp.show', $batch)->with('success', __('finance.feedback.batch_created', ['number' => $batch->batch_number]));
     }
 
-    public function indexGa()
+    public function indexGa(Request $request)
     {
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'claim_type' => ['nullable', Rule::in(GaClaim::CLAIM_TYPES)],
+        ]);
         $batches = PaymentBatch::where('batch_type', PaymentBatch::TYPE_GA)
             ->withCount('groups')
             ->latest('id')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
-        return view('finance.drp.ga', compact('batches'));
+        $eligibleClaims = GaClaim::eligibleForPaymentBatch()
+            ->when($filters['claim_type'] ?? null, fn ($q, $type) => $q->where('claim_type', $type))
+            ->when(isset($filters['q']) && $filters['q'] !== '', function ($query) use ($filters) {
+                $search = '%'.addcslashes($filters['q'], '\\%_').'%';
+                $query->where(fn ($q) => $q->where('claim_number', 'like', $search)
+                    ->orWhereHas('employee', fn ($employee) => $employee->where('name', 'like', $search)));
+            })
+            ->with('employee')
+            ->orderBy('ready_to_pay_at')->orderBy('id')
+            ->paginate(25, ['*'], 'candidate_page')->withQueryString();
+
+        return view('finance.drp.ga', compact('batches', 'eligibleClaims'));
+    }
+
+    public function createGaBatch(Request $request, PaymentBatchService $service)
+    {
+        $validated = $request->validate([
+            'claim_ids' => ['required', 'array', 'min:1'],
+            'claim_ids.*' => ['required', 'integer', 'distinct', 'exists:ga_claims,id'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $batch = $service->createGaBatch($request->user(), $validated['claim_ids'], $validated['notes'] ?? null);
+
+        return redirect()->route('finance.drp.show', $batch)->with('success', __('finance.feedback.batch_created', ['number' => $batch->batch_number]));
     }
 
     public function show(PaymentBatch $batch, PaymentVoucherService $voucherService)

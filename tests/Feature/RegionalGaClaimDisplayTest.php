@@ -257,7 +257,7 @@ class RegionalGaClaimDisplayTest extends TestCase
     {
         return GaClaim::create([
             'claim_number' => 'CLM-REGIONAL-'.(GaClaim::count() + 1), 'employee_id' => $employee->id,
-            'claim_type' => GaClaim::TYPE_UPD_GA, 'claim_date' => '2026-09-28', 'amount' => $amount,
+            'claim_type' => GaClaim::TYPE_BUSINESS_TRAVEL, 'claim_date' => '2026-09-28', 'amount' => $amount,
             'description' => 'Display fixture', 'status' => GaClaim::STATUS_SUBMITTED,
             'submitted_by' => $this->ga->id, 'submitted_at' => '2026-09-28 23:35:00',
         ]);
